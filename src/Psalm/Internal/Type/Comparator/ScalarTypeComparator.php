@@ -7,6 +7,7 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\Type\StringRefinement;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
@@ -75,6 +76,18 @@ final class ScalarTypeComparator
             && $input_type_part instanceof TFloat
         ) {
             return true;
+        }
+
+        if ($input_type_part instanceof TString
+            && $container_type_part instanceof TString
+            && (StringRefinement::isCombinedRefinement($input_type_part)
+                || StringRefinement::isCombinedRefinement($container_type_part))
+        ) {
+            return self::isContainedByRefinedString(
+                $input_type_part,
+                $container_type_part,
+                $atomic_comparison_result,
+            );
         }
 
         if ($input_type_part instanceof TDecimalIntString
@@ -583,6 +596,49 @@ final class ScalarTypeComparator
                     = $input_type_part instanceof TScalar;
                 $atomic_comparison_result->scalar_type_match_found = !$container_type_part->from_docblock;
             }
+        }
+
+        return false;
+    }
+
+    /**
+     * Compares string types when either is only modelled by its refinements, such as
+     * `lowercase-string&non-falsy-string`: the input is contained when it has every refinement of the container
+     */
+    private static function isContainedByRefinedString(
+        TString $input_type_part,
+        TString $container_type_part,
+        ?TypeComparisonResult $atomic_comparison_result,
+    ): bool {
+        $input_refinements = StringRefinement::get($input_type_part);
+        $container_refinements = StringRefinement::get($container_type_part);
+
+        if ($container_refinements === null) {
+            // e.g. a class-string, of which the input may be
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+
+            return false;
+        }
+
+        $input_refinements ??= StringRefinement::getImplied($input_type_part);
+
+        if ($container_type_part instanceof TLiteralString) {
+            // the input is not a literal string here, but it may have the value of the container
+            if ($atomic_comparison_result && ($input_refinements & ~$container_refinements) === 0) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+
+            return false;
+        }
+
+        if (($container_refinements & ~$input_refinements) === 0) {
+            return true;
+        }
+
+        if ($atomic_comparison_result && !$input_type_part instanceof TLiteralString) {
+            $atomic_comparison_result->type_coerced = true;
         }
 
         return false;

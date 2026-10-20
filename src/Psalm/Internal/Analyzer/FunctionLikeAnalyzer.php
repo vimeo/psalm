@@ -43,6 +43,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\InvalidDocblockParamName;
 use Psalm\Issue\InvalidOverride;
@@ -1670,6 +1671,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             if ($function_param->type) {
                 $param_type = $function_param->type;
+
+                if ($function_param->type_location) {
+                    TypeChecker::checkDeferredIntersections(
+                        $param_type,
+                        $this,
+                        $function_param->type_location,
+                        $storage->suppressed_issues,
+                        $context,
+                    );
+                }
 
                 try {
                     $param_type = TypeExpander::expandUnion(

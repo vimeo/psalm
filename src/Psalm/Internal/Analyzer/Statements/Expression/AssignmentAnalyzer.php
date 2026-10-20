@@ -43,6 +43,7 @@ use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Issue\AssignmentToVoid;
 use Psalm\Issue\ImpureByReferenceAssignment;
 use Psalm\Issue\ImpureGlobalVariable;
@@ -844,6 +845,14 @@ final class AssignmentAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         try {
+            TypeChecker::checkDeferredIntersections(
+                $var_comment->type,
+                $statements_analyzer,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getSuppressedIssues(),
+                $context,
+            );
+
             $var_comment_type = TypeExpander::expandUnion(
                 $codebase,
                 $var_comment->type,

@@ -20,6 +20,7 @@ use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -41,6 +42,8 @@ use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 
+use function array_all;
+use function array_any;
 use function array_merge;
 use function array_values;
 use function assert;
@@ -79,6 +82,44 @@ final class AtomicTypeComparator
                 $container_type_part,
                 $allow_interface_equality,
                 $atomic_comparison_result,
+            );
+        }
+
+        if ($container_type_part instanceof TIntersection) {
+            // the input has all the types of the intersection
+            $input_type = new Union([$input_type_part]);
+
+            return array_all(
+                $container_type_part->types,
+                static fn(Union $type): bool => UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $input_type,
+                    $type,
+                    false,
+                    false,
+                    null,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                ),
+            );
+        }
+
+        if ($input_type_part instanceof TIntersection) {
+            // any type of the intersection contains all of its values
+            $container_type = new Union([$container_type_part]);
+
+            return array_any(
+                $input_type_part->types,
+                static fn(Union $type): bool => UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $type,
+                    $container_type,
+                    false,
+                    false,
+                    null,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                ),
             );
         }
 

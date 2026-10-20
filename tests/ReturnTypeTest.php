@@ -1470,6 +1470,259 @@ final class ReturnTypeTest extends TestCase
                     '$a===' => 'non-empty-literal-string',
                 ],
             ],
+            'scalarAndConditionalIntersections' => [
+                'code' => '<?php
+                    /** @return lowercase-string&non-falsy-string */
+                    function nonce(): string {
+                        return "abc";
+                    }
+
+                    /** @return ($prefix is "" ? lowercase-string : string)&non-falsy-string */
+                    function uniqueId(string $prefix = ""): string {
+                        throw new RuntimeException();
+                    }
+
+                    /** @return int<0, max>&int<min, 10> */
+                    function digit(): int {
+                        return 5;
+                    }
+
+                    /** @return int-mask<1, 2>&int-mask<2, 4> */
+                    function flags(): int {
+                        return 2;
+                    }
+
+                    /**
+                     * @param string&callable $callback
+                     * @return callable-string
+                     */
+                    function callbackName($callback): string {
+                        return $callback;
+                    }
+
+                    $a = nonce();
+                    $b = uniqueId();
+                    $c = uniqueId("ID-");
+                    $d = digit();
+                    $e = flags();',
+                'assertions' => [
+                    '$a===' => 'lowercase-string&non-falsy-string',
+                    '$b===' => 'lowercase-string&non-falsy-string',
+                    '$c===' => 'non-falsy-string',
+                    '$d===' => 'int<0, 10>',
+                    '$e===' => '0|2',
+                ],
+            ],
+            'numericStringIntersections' => [
+                'code' => '<?php
+                    /**
+                     * @return ($prefix is ""|numeric-string ? numeric-string : string)&non-falsy-string&($prefix is lowercase-string ? lowercase-string : string)
+                     */
+                    function uniqueId(string $prefix = ""): string {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @return ($threshold is 0 ? lowercase-string&non-empty-string&numeric-string : lowercase-string&non-empty-string)
+                     */
+                    function sizeFormat(int $threshold = 0): string {
+                        throw new RuntimeException();
+                    }
+
+                    $a = uniqueId();
+                    $b = uniqueId("ID-");
+                    $c = uniqueId("id-");
+                    $d = sizeFormat();
+                    $e = sizeFormat(1);',
+                'assertions' => [
+                    '$a===' => 'lowercase-string&non-falsy-string&numeric-string',
+                    '$b===' => 'non-falsy-string',
+                    '$c===' => 'lowercase-string&non-falsy-string',
+                    '$d===' => 'lowercase-string&numeric-string',
+                    '$e===' => 'non-empty-lowercase-string',
+                ],
+            ],
+            'classConstantIntersections' => [
+                'code' => '<?php
+                    /** @return value-of<Flags::LIST>&int */
+                    function a(): int {
+                        return 1;
+                    }
+
+                    /** @return key-of<Flags::MAP>&string */
+                    function b(): string {
+                        return "a";
+                    }
+
+                    /** @return (Flags::A|Flags::B|Flags::C)&int<2, 5> */
+                    function c(): int {
+                        return 2;
+                    }
+
+                    /** @return int-mask-of<Flags::*>&int-mask<1, 2> */
+                    function d(): int {
+                        return 0;
+                    }
+
+                    final class Flags {
+                        const A = 1;
+                        const B = 2;
+                        const C = 4;
+                        const LIST = [1, 2, "x"];
+                        const MAP = ["a" => 1, 5 => 2];
+                    }
+
+                    $a = a();
+                    $b = b();
+                    $c = c();
+                    $d = d();',
+                'assertions' => [
+                    '$a===' => '1|2',
+                    '$b===' => "'a'",
+                    '$c===' => '2|4',
+                    '$d===' => '0|1|2|3',
+                ],
+            ],
+            'globalConstantWildcardIntersection' => [
+                'code' => '<?php
+                    /** @return PHP_URL_*&int<0, 2> */
+                    function component(): int {
+                        return PHP_URL_HOST;
+                    }
+
+                    $a = component();',
+                'assertions' => [
+                    '$a===' => '0|1|2',
+                ],
+            ],
+            'templateInClassConstantIntersection' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $t
+                     * @param-out value-of<Flags::LIST>&(T is int ? int : string) $out
+                     */
+                    function flag($t, mixed &$out): void {
+                        $out = 1;
+                    }
+
+                    flag(5, $a);
+                    flag("x", $b);
+
+                    final class Flags {
+                        const LIST = [1, 2, "x"];
+                    }',
+                'assertions' => [
+                    '$a===' => '1|2',
+                    '$b===' => "'x'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateInferredFromClassConstantIntersection' => [
+                'code' => '<?php
+                    interface Card {}
+
+                    enum Suit implements Card {
+                        case Hearts;
+                        case Spades;
+                    }
+
+                    /**
+                     * @template T of Card
+                     * @param Suit::Hearts&T $card
+                     * @return T
+                     */
+                    function card(Card $card): Card {
+                        return $card;
+                    }
+
+                    $a = card(Suit::Hearts);',
+                'assertions' => [
+                    '$a===' => 'enum(Suit::Hearts)',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invalidClassConstantIntersectionIsIgnored' => [
+                'code' => '<?php
+                    /** @return Names::FOO&class-string */
+                    function name(): string {
+                        return "Foo";
+                    }
+
+                    final class Names {
+                        const FOO = "Foo";
+                    }
+
+                    $a = name();
+                    $b = is_string($a);',
+                'assertions' => [
+                    '$a===' => 'mixed',
+                ],
+                'ignored_issues' => ['InvalidDocblock', 'MixedAssignment'],
+            ],
+            'truthyAndFalsyNumericString' => [
+                'code' => '<?php
+                    /** @var numeric-string $s */
+                    $s = "1";
+                    /** @var lowercase-string&numeric-string $l */
+                    $l = "1";
+                    $t = null;
+                    $f = null;
+                    $u = null;
+                    if ($s) {
+                        $t = $s;
+                    } else {
+                        $f = $s;
+                    }
+                    if ($l) {
+                        $u = $l;
+                    }',
+                'assertions' => [
+                    '$t===' => 'non-falsy-string&numeric-string|null',
+                    '$f===' => "'0'|null",
+                    '$u===' => 'lowercase-string&non-falsy-string&numeric-string|null',
+                ],
+            ],
+            'isNumericKeepsStringRefinements' => [
+                'code' => '<?php
+                    /** @var lowercase-string $s */
+                    $s = "a";
+                    /** @var lowercase-string&non-falsy-string $l */
+                    $l = "a";
+                    /** @var non-falsy-string $f */
+                    $f = "a";
+                    $a = null;
+                    $b = null;
+                    $c = null;
+                    if (is_numeric($s)) {
+                        $a = $s;
+                    }
+                    if (is_numeric($l)) {
+                        $b = $l;
+                    }
+                    if (is_numeric($f)) {
+                        $c = $f;
+                    }',
+                'assertions' => [
+                    '$a===' => 'lowercase-string&numeric-string|null',
+                    '$b===' => 'lowercase-string&non-falsy-string&numeric-string|null',
+                    '$c===' => 'non-falsy-string&numeric-string|null',
+                ],
+            ],
+            'truthyLowercaseStringIsNonFalsy' => [
+                'code' => '<?php
+                    /** @var lowercase-string $s */
+                    $s = "a";
+                    $t = null;
+                    if ($s) {
+                        $t = $s;
+                    }',
+                'assertions' => [
+                    '$t===' => 'lowercase-string&non-falsy-string|null',
+                ],
+            ],
             'laravelStyleStrLowerConditionalReturnType' => [
                 'code' => '<?php
                     /**
@@ -1500,6 +1753,79 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'unrepresentableScalarIntersection' => [
+                'code' => '<?php
+                    /** @return literal-string&non-falsy-string */
+                    function f(): string {
+                        return "1";
+                    }',
+                'error_message' => 'Psalm has no type for the intersection of literal-string and non-falsy-string',
+            ],
+            'nonFalsyNumericStringRejectsZero' => [
+                'code' => '<?php
+                    /** @param non-falsy-string&numeric-string $s */
+                    function f(string $s): void {}
+                    f("0");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'emptyClassConstantIntersection' => [
+                'code' => '<?php
+                    /** @return Flags::A&int<2, 5> */
+                    function f(): int {
+                        throw new RuntimeException();
+                    }
+
+                    final class Flags {
+                        const A = 1;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33',
+            ],
+            'unrepresentableClassConstantIntersection' => [
+                'code' => '<?php
+                    /** @return Names::FOO&class-string */
+                    function name(): string {
+                        return "Foo";
+                    }
+
+                    final class Names {
+                        const FOO = "Foo";
+                    }',
+                'error_message' => "Psalm has no type for the intersection of 'Foo' and class-string",
+            ],
+            'templateAndClassConstantIntersection' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $t
+                     * @return value-of<Flags::LIST>&T
+                     */
+                    function flag(int $t) {
+                        return $t;
+                    }
+
+                    final class Flags {
+                        const LIST = [1, 2];
+                    }',
+                'error_message' => 'Psalm has no type for the intersection of',
+            ],
+            'emptyClassConstantIntersectionParam' => [
+                'code' => '<?php
+                    /** @param Flags::A&string $flag */
+                    function f($flag): void {}
+
+                    final class Flags {
+                        const A = 1;
+                    }',
+                'error_message' => 'No value has all the types of the intersection',
+            ],
+            'emptyScalarIntersection' => [
+                'code' => '<?php
+                    /** @return int<0, 5>&int<6, 10> */
+                    function f(): int {
+                        return 1;
+                    }',
+                'error_message' => 'No value has all the types of the intersection',
+            ],
             'wrongReturnType1' => [
                 'code' => '<?php
                     function fooFoo(): string {

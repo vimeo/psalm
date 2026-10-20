@@ -11,6 +11,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\IntMask;
+use Psalm\Internal\Type\StringRefinement;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
@@ -994,6 +995,12 @@ abstract class Type
                 )) {
                     $intersection_atomic = $type_1_atomic;
                     $wider_type = $type_2_atomic;
+                    $intersection_performed = true;
+                } elseif ($type_1_atomic instanceof TString
+                    && $type_2_atomic instanceof TString
+                    && ($refined_string = StringRefinement::intersect($type_1_atomic, $type_2_atomic)) !== null
+                ) {
+                    $intersection_atomic = $refined_string;
                     $intersection_performed = true;
                 } elseif ($type_1_atomic instanceof TArray
                     && $type_2_atomic instanceof TArray

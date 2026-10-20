@@ -831,6 +831,14 @@ final class ReturnTypeAnalyzer
             return null;
         }
 
+        TypeChecker::checkDeferredIntersections(
+            $storage->return_type,
+            $function_like_analyzer,
+            $storage->return_type_location,
+            $storage->suppressed_issues,
+            $context,
+        );
+
         $parent_class = null;
 
         $classlike_storage = null;

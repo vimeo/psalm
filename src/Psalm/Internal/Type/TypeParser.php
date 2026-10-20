@@ -10,6 +10,7 @@ use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\ParseTree;
 use Psalm\Internal\Type\ParseTree\CallableParamTree;
 use Psalm\Internal\Type\ParseTree\CallableTree;
@@ -33,22 +34,29 @@ use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
+use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TDecimalIntString;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGlobalConstant;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntMask;
 use Psalm\Type\Atomic\TIntMaskOf;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -56,19 +64,19 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
-use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNonDecimalIntString;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyLowercaseString;
-use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
-use Psalm\Type\Atomic\TNonEmptyString;
-use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
@@ -76,12 +84,15 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplatePropertiesOf;
 use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TUnknownClassString;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
+use function array_all;
+use function array_any;
 use function array_key_exists;
 use function array_key_first;
 use function array_keys;
@@ -99,7 +110,6 @@ use function defined;
 use function end;
 use function explode;
 use function in_array;
-use function is_a;
 use function is_int;
 use function is_numeric;
 use function ltrim;
@@ -1459,11 +1469,13 @@ final class TypeParser
         array $template_type_map,
         array $type_aliases,
         bool $from_docblock,
-    ): Atomic {
-        $intersection_types = [];
+    ): Atomic|Union {
+        $members = [];
+        $member_types = [];
+        $only_object_types = true;
 
         foreach ($parse_tree->children as $name => $child_tree) {
-            $atomic_type = self::getTypeFromTree(
+            $type = self::getTypeFromTree(
                 $child_tree,
                 $codebase,
                 null,
@@ -1472,19 +1484,77 @@ final class TypeParser
                 $from_docblock,
             );
 
-            if (!$atomic_type instanceof Atomic) {
-                throw new TypeParseTreeException(
-                    'Intersection types cannot contain unions',
-                );
+            if ($type instanceof Union) {
+                // e.g. `(A|B)&C`, or an `int-mask<…>`
+                $only_object_types = false;
+                $members[$name] = array_values($type->getAtomicTypes());
+                $member_types[] = $type;
+                continue;
             }
 
-            $intersection_types[$name] = $atomic_type;
+            if (!$type instanceof Atomic) {
+                throw new TypeParseTreeException('Invalid intersection member');
+            }
+
+            $member_types[] = new Union([$type], ['from_docblock' => $from_docblock]);
+
+            if (!self::isObjectIntersectionMember($type)
+                && !$type instanceof TArray
+                && !$type instanceof TKeyedArray
+                && !$type instanceof TTypeAlias
+            ) {
+                $only_object_types = false;
+            }
+
+            $members[$name] = [$type];
         }
 
-        if ($intersection_types === []) {
+        if ($members === [] || $member_types === []) {
             return new TMixed();
         }
 
+        // keyed arrays are merged, with a generic array as their fallback
+        if ($only_object_types
+            && !array_all(
+                $members,
+                static fn(array $member): bool => $member[0] instanceof TArray,
+            )
+        ) {
+            return self::intersectObjectTypes(
+                array_map(static fn(array $member): Atomic => $member[0], $members),
+                $codebase,
+                $from_docblock,
+            );
+        }
+
+        if (array_any(
+            $members,
+            static fn(array $member): bool => array_any($member, self::hasUnresolvedReference(...)),
+        )) {
+            // intersected once the class constants and type aliases it refers to are known
+            return new TIntersection($member_types, $from_docblock);
+        }
+
+        $atomic_types = self::intersectTypes(array_values($members), $codebase, $from_docblock);
+
+        if ($atomic_types === []) {
+            throw new TypeParseTreeException('No value has all the types of the intersection');
+        }
+
+        return count($atomic_types) === 1
+            ? $atomic_types[0]
+            : TypeCombiner::combine($atomic_types)->setProperties(['from_docblock' => $from_docblock]);
+    }
+
+    /**
+     * @param non-empty-array<array-key, Atomic> $intersection_types
+     * @throws TypeParseTreeException
+     */
+    private static function intersectObjectTypes(
+        array $intersection_types,
+        Codebase $codebase,
+        bool $from_docblock,
+    ): Atomic {
         $first_type = reset($intersection_types);
         $last_type = end($intersection_types);
 
@@ -1516,15 +1586,6 @@ final class TypeParser
                 $last_type,
                 $from_docblock,
             );
-        }
-
-        $collapsed_string = self::collapseStringPseudoTypeIntersection(
-            $intersection_types,
-            $from_docblock,
-        );
-
-        if ($collapsed_string !== null) {
-            return $collapsed_string;
         }
 
         $keyed_intersection_types = self::extractKeyedIntersectionTypes(
@@ -1578,104 +1639,521 @@ final class TypeParser
     }
 
     /**
-     * Mirrors the narrowing rules in Type::intersectAtomicTypes so that a
-     * docblock intersection like `non-empty-string&lowercase-string` collapses
-     * to its single-token equivalent (`non-empty-lowercase-string`) at parse
-     * time. Returns null when the intersection is not made of allow-listed
-     * string pseudo-types or has no known single-atomic equivalent.
+     * The types of the values having one of the types of each member of an intersection, none when no value does
      *
-     * @param non-empty-array<array-key, Atomic> $intersection_types
-     * @psalm-pure
+     * @param non-empty-list<list<Atomic>> $members
+     * @return list<Atomic>
+     * @throws TypeParseTreeException if Psalm has no type for the intersection
      */
-    private static function collapseStringPseudoTypeIntersection(
-        array $intersection_types,
-        bool $from_docblock,
-    ): ?TString {
-        $combined = null;
+    public static function intersectTypes(array $members, Codebase $codebase, bool $from_docblock): array
+    {
+        $atomic_types = array_shift($members);
 
-        foreach ($intersection_types as $type) {
-            if (!$type instanceof TNonEmptyString
-                && !$type instanceof TLowercaseString
-                && !$type instanceof TNonspecificLiteralString
-            ) {
-                return null;
-            }
-
-            if ($combined === null) {
-                $combined = $type;
-                continue;
-            }
-
-            $combined = self::intersectStringPseudoTypePair($combined, $type, $from_docblock);
-
-            if ($combined === null) {
-                return null;
-            }
+        foreach ($members as $member) {
+            $atomic_types = self::intersectAtomicTypeLists($atomic_types, $member, $codebase, $from_docblock);
         }
 
-        return $combined;
+        return $atomic_types;
     }
 
     /**
-     * Reduces two allow-listed string pseudo-types to their narrower common
-     * subtype. Returns null when no safe single-atomic representation exists
-     * (e.g. `non-falsy-string & lowercase-string`, which has no single-token
-     * equivalent). Widening such cases to `non-empty-lowercase-string` would
-     * silently drop the non-falsy constraint.
+     * Whether a type refers to class constants, global constants or type aliases, which are only known once every
+     * file is scanned
      *
      * @psalm-pure
      */
-    private static function intersectStringPseudoTypePair(
-        TString $a,
-        TString $b,
+    public static function hasUnresolvedReference(Atomic $type): bool
+    {
+        if ($type instanceof TConditional) {
+            return array_any($type->if_type->getAtomicTypes(), self::hasUnresolvedReference(...))
+                || array_any($type->else_type->getAtomicTypes(), self::hasUnresolvedReference(...));
+        }
+
+        return $type instanceof TClassConstant
+            || $type instanceof TValueOf
+            || $type instanceof TKeyOf
+            || $type instanceof TIntMask
+            || $type instanceof TIntMaskOf
+            || $type instanceof TTypeAlias
+            || $type instanceof TPropertiesOf
+            || $type instanceof TGlobalConstant
+            || $type instanceof TIntersection;
+    }
+
+    /**
+     * The types of the values having one of $types_1 and one of $types_2
+     *
+     * @param list<Atomic> $types_1
+     * @param list<Atomic> $types_2
+     * @return list<Atomic>
+     * @throws TypeParseTreeException if Psalm has no type for the intersection
+     */
+    private static function intersectAtomicTypeLists(
+        array $types_1,
+        array $types_2,
+        Codebase $codebase,
         bool $from_docblock,
-    ): ?TString {
-        if (is_a($a, $b::class)) {
-            return $a;
+    ): array {
+        foreach ([[$types_1, $types_2], [$types_2, $types_1]] as [$types, $other_types]) {
+            foreach ($types as $i => $type) {
+                if (!$type instanceof TConditional) {
+                    continue;
+                }
+
+                // `(T is A ? B : C) & D` is `(T is A ? B & D : C & D)`, a branch with no values being `never`
+                $intersected_types = [
+                    $type->setTypes(
+                        null,
+                        null,
+                        self::getUnionOrNever(
+                            self::intersectAtomicTypeLists(
+                                array_values($type->if_type->getAtomicTypes()),
+                                $other_types,
+                                $codebase,
+                                $from_docblock,
+                            ),
+                            $from_docblock,
+                        ),
+                        self::getUnionOrNever(
+                            self::intersectAtomicTypeLists(
+                                array_values($type->else_type->getAtomicTypes()),
+                                $other_types,
+                                $codebase,
+                                $from_docblock,
+                            ),
+                            $from_docblock,
+                        ),
+                    ),
+                ];
+
+                unset($types[$i]);
+
+                if ($types === []) {
+                    return $intersected_types;
+                }
+
+                return [
+                    ...$intersected_types,
+                    ...self::intersectAtomicTypeLists(array_values($types), $other_types, $codebase, $from_docblock),
+                ];
+            }
         }
 
-        if (is_a($b, $a::class)) {
-            return $b;
+        $intersected_types = [];
+
+        foreach ($types_1 as $type_1) {
+            foreach ($types_2 as $type_2) {
+                foreach (self::intersectAtomicTypes($type_1, $type_2, $codebase, $from_docblock) as $type) {
+                    $intersected_types[] = $type;
+                }
+            }
         }
 
-        // TNonEmptyLowercaseString extends TNonEmptyString but not
-        // TLowercaseString, so the is_a checks above miss the subtype
-        // relationship with TLowercaseString.
-        if ($a instanceof TNonEmptyLowercaseString && $b instanceof TLowercaseString) {
-            return $a;
+        return $intersected_types;
+    }
+
+    /**
+     * @param list<Atomic> $atomic_types
+     */
+    private static function getUnionOrNever(array $atomic_types, bool $from_docblock): Union
+    {
+        return $atomic_types === []
+            ? Type::getNever($from_docblock)
+            : TypeCombiner::combine($atomic_types)->setProperties(['from_docblock' => $from_docblock]);
+    }
+
+    /**
+     * The types of the values having both types: none when no value has both
+     *
+     * @return list<Atomic>
+     * @throws TypeParseTreeException if Psalm has no type for the intersection
+     */
+    private static function intersectAtomicTypes(
+        Atomic $type_1,
+        Atomic $type_2,
+        Codebase $codebase,
+        bool $from_docblock,
+    ): array {
+        if (self::hasUnresolvedReference($type_1) || self::hasUnresolvedReference($type_2)) {
+            throw self::getUnrepresentableIntersectionException($type_1, $type_2);
         }
 
-        if ($a instanceof TLowercaseString && $b instanceof TNonEmptyLowercaseString) {
-            return $b;
+        if ($type_1::class === TMixed::class) {
+            return [$type_2];
         }
 
-        // TNonEmptyNonspecificLiteralString extends TNonspecificLiteralString
-        // but not TNonEmptyString, so the is_a checks miss the subtype
-        // relationship with TNonEmptyString.
-        if ($a instanceof TNonEmptyNonspecificLiteralString && $b::class === TNonEmptyString::class) {
-            return $a;
+        if ($type_2::class === TMixed::class) {
+            return [$type_1];
         }
 
-        if ($a::class === TNonEmptyString::class && $b instanceof TNonEmptyNonspecificLiteralString) {
-            return $b;
+        if ($type_1->getId() === $type_2->getId()) {
+            return [$type_1];
         }
 
-        // Exact-class matching only: mirrors Type::intersectAtomicTypes. Using
-        // instanceof here would widen subclasses like TNumericString or
-        // TNonFalsyString and drop their extra constraints.
-        if (($a::class === TNonspecificLiteralString::class && $b::class === TNonEmptyString::class)
-            || ($a::class === TNonEmptyString::class && $b::class === TNonspecificLiteralString::class)
+        if (($type_1 instanceof Scalar || $type_1 instanceof TCallable)
+            && ($type_2 instanceof Scalar || $type_2 instanceof TCallable)
+            && ($type_1 instanceof Scalar || $type_2 instanceof Scalar)
         ) {
-            return new TNonEmptyNonspecificLiteralString($from_docblock);
+            return self::intersectScalarTypes($type_1, $type_2, $codebase, $from_docblock);
         }
 
-        if (($a::class === TLowercaseString::class && $b::class === TNonEmptyString::class)
-            || ($a::class === TNonEmptyString::class && $b::class === TLowercaseString::class)
+        if (($type_1 instanceof TTemplateParam && $type_2 instanceof Scalar)
+            || ($type_2 instanceof TTemplateParam && $type_1 instanceof Scalar)
         ) {
-            return new TNonEmptyLowercaseString($from_docblock);
+            throw self::getUnrepresentableIntersectionException($type_1, $type_2);
         }
 
-        return null;
+        if ($type_1 instanceof TArray && $type_2 instanceof TArray) {
+            return self::intersectArrayTypes($type_1, $type_2, $codebase, $from_docblock);
+        }
+
+        if ($type_1 instanceof TArray && $type_2 instanceof TKeyedArray) {
+            if (self::isMixedArray($type_1)) {
+                return [$type_2];
+            }
+
+            throw self::getUnrepresentableIntersectionException($type_1, $type_2);
+        }
+
+        if ($type_1 instanceof TKeyedArray && $type_2 instanceof TArray) {
+            if (self::isMixedArray($type_2)) {
+                return [$type_1];
+            }
+
+            throw self::getUnrepresentableIntersectionException($type_1, $type_2);
+        }
+
+        if ($type_1 instanceof TKeyedArray && $type_2 instanceof TKeyedArray) {
+            try {
+                return [self::intersectObjectTypes([$type_1, $type_2], $codebase, $from_docblock)];
+            } catch (TypeParseTreeException) {
+                // keyed arrays with incompatible properties
+                return [];
+            }
+        }
+
+        if (self::isObjectIntersectionMember($type_1) && self::isObjectIntersectionMember($type_2)) {
+            return [self::intersectObjectTypes([$type_1, $type_2], $codebase, $from_docblock)];
+        }
+
+        $kind_1 = self::getValueKind($type_1);
+        $kind_2 = self::getValueKind($type_2);
+
+        if ($kind_1 !== null && $kind_2 !== null && $kind_1 !== $kind_2) {
+            // e.g. an object and a scalar, or an array and null
+            return [];
+        }
+
+        throw self::getUnrepresentableIntersectionException($type_1, $type_2);
+    }
+
+    /**
+     * The kind of the values of a type, values of different kinds being different
+     *
+     * @psalm-pure
+     */
+    private static function getValueKind(Atomic $type): ?string
+    {
+        return match (true) {
+            $type instanceof Scalar => 'scalar',
+            $type instanceof TNamedObject,
+            $type instanceof TObject,
+            $type instanceof TObjectWithProperties => 'object',
+            $type instanceof TArray,
+            $type instanceof TKeyedArray => 'array',
+            $type instanceof TNull => 'null',
+            $type instanceof TResource,
+            $type instanceof TClosedResource => 'resource',
+            default => null,
+        };
+    }
+
+    /**
+     * @return list<TArray>
+     * @throws TypeParseTreeException if Psalm has no type for the intersection
+     */
+    private static function intersectArrayTypes(
+        TArray $type_1,
+        TArray $type_2,
+        Codebase $codebase,
+        bool $from_docblock,
+    ): array {
+        if (self::isMixedArray($type_1)) {
+            return [$type_2];
+        }
+
+        if (self::isMixedArray($type_2)) {
+            return [$type_1];
+        }
+
+        [$key_type_1, $value_type_1] = $type_1->type_params;
+        [$key_type_2, $value_type_2] = $type_2->type_params;
+
+        $key_type = self::intersectUnions($key_type_1, $key_type_2, $codebase, $from_docblock);
+        $value_type = self::intersectUnions($value_type_1, $value_type_2, $codebase, $from_docblock);
+
+        if ($key_type->isNever() || $value_type->isNever()) {
+            // only the empty array has both types
+            return $type_1 instanceof TNonEmptyArray || $type_2 instanceof TNonEmptyArray
+                ? []
+                : [new TArray([Type::getNever($from_docblock), Type::getNever($from_docblock)], $from_docblock)];
+        }
+
+        return [
+            $type_1 instanceof TNonEmptyArray || $type_2 instanceof TNonEmptyArray
+                ? new TNonEmptyArray([$key_type, $value_type], null, null, 'non-empty-array', $from_docblock)
+                : new TArray([$key_type, $value_type], $from_docblock),
+        ];
+    }
+
+    /**
+     * @throws TypeParseTreeException if Psalm has no type for the intersection
+     */
+    private static function intersectUnions(
+        Union $type_1,
+        Union $type_2,
+        Codebase $codebase,
+        bool $from_docblock,
+    ): Union {
+        return self::getUnionOrNever(
+            self::intersectAtomicTypeLists(
+                array_values($type_1->getAtomicTypes()),
+                array_values($type_2->getAtomicTypes()),
+                $codebase,
+                $from_docblock,
+            ),
+            $from_docblock,
+        );
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isMixedArray(TArray $type): bool
+    {
+        return !$type instanceof TNonEmptyArray
+            && $type->type_params[0]->isArrayKey()
+            && $type->type_params[1]->isMixed();
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isObjectIntersectionMember(Atomic $type): bool
+    {
+        return $type instanceof TNamedObject
+            || $type instanceof TObject
+            || $type instanceof TIterable
+            || $type instanceof TTemplateParam
+            || $type instanceof TObjectWithProperties
+            || $type instanceof TCallable;
+    }
+
+    /**
+     * Intersects scalar types, such as `lowercase-string&non-falsy-string` or `int<0, max>&int<min, 5>`, or a scalar
+     * type with `callable`, which only a `callable-string` can be.
+     *
+     * @return list<Atomic>
+     * @throws TypeParseTreeException if Psalm has no type for the intersection
+     */
+    private static function intersectScalarTypes(
+        Atomic $type_1,
+        Atomic $type_2,
+        Codebase $codebase,
+        bool $from_docblock,
+    ): array {
+        if ($type_1 instanceof TCallable || $type_2 instanceof TCallable) {
+            [$callable_type, $other_type] = $type_1 instanceof TCallable ? [$type_1, $type_2] : [$type_2, $type_1];
+
+            if ($other_type instanceof TCallable) {
+                throw self::getUnrepresentableIntersectionException($type_1, $type_2);
+            }
+
+            if ($callable_type->params !== null || $callable_type->return_type !== null) {
+                // a callable-string has no signature
+                throw self::getUnrepresentableIntersectionException($type_1, $type_2);
+            }
+
+            return self::intersectScalarTypes(
+                new TCallableString($from_docblock),
+                $other_type,
+                $codebase,
+                $from_docblock,
+            );
+        }
+
+        if ($type_1->getId() === $type_2->getId()) {
+            return [$type_1];
+        }
+
+        $components_1 = self::getScalarComponents($type_1, $from_docblock);
+        $components_2 = self::getScalarComponents($type_2, $from_docblock);
+
+        if ($components_1 !== null || $components_2 !== null) {
+            return self::intersectAtomicTypeLists(
+                $components_1 ?? [$type_1],
+                $components_2 ?? [$type_2],
+                $codebase,
+                $from_docblock,
+            );
+        }
+
+        if (AtomicTypeComparator::isContainedBy($codebase, $type_1, $type_2, false, false)) {
+            return [$type_1];
+        }
+
+        if (AtomicTypeComparator::isContainedBy($codebase, $type_2, $type_1, false, false)) {
+            return [$type_2];
+        }
+
+        if (self::isIntRange($type_1) && self::isIntRange($type_2)) {
+            $int_range = TIntRange::intersectIntRanges(
+                TIntRange::convertToIntRange($type_1),
+                TIntRange::convertToIntRange($type_2),
+            );
+
+            if ($int_range === null) {
+                return [];
+            }
+
+            if ($int_range->min_bound !== null && $int_range->min_bound === $int_range->max_bound) {
+                return [new TLiteralInt($int_range->min_bound, $from_docblock)];
+            }
+
+            return [new TIntRange($int_range->min_bound, $int_range->max_bound, $from_docblock)];
+        }
+
+        if ($type_1 instanceof TString && $type_2 instanceof TString) {
+            return self::intersectStringTypes($type_1, $type_2, $from_docblock);
+        }
+
+        $family_1 = self::getScalarFamily($type_1);
+        $family_2 = self::getScalarFamily($type_2);
+
+        if ($family_1 !== null && $family_2 !== null
+            && ($family_1 !== $family_2 || self::isSingleValue($type_1) || self::isSingleValue($type_2))
+        ) {
+            return [];
+        }
+
+        throw self::getUnrepresentableIntersectionException($type_1, $type_2);
+    }
+
+    /**
+     * The types a scalar type that is a union of others is made of, e.g. `int|string` for `array-key`
+     *
+     * @return list<Scalar>|null
+     * @psalm-pure
+     */
+    private static function getScalarComponents(Atomic $type, bool $from_docblock): ?array
+    {
+        return match ($type::class) {
+            TArrayKey::class => [new TInt($from_docblock), new TString($from_docblock)],
+            TNumeric::class => [
+                new TInt($from_docblock),
+                new TFloat($from_docblock),
+                new TNumericString($from_docblock),
+            ],
+            TScalar::class => [
+                new TInt($from_docblock),
+                new TFloat($from_docblock),
+                new TString($from_docblock),
+                new TBool($from_docblock),
+            ],
+            TBool::class => [new TTrue($from_docblock), new TFalse($from_docblock)],
+            default => null,
+        };
+    }
+
+    /**
+     * Intersects two string types neither of which contains the other
+     *
+     * @return list<TString>
+     * @throws TypeParseTreeException if Psalm has no type for the intersection
+     * @psalm-pure
+     */
+    private static function intersectStringTypes(TString $type_1, TString $type_2, bool $from_docblock): array
+    {
+        $refinements_1 = StringRefinement::get($type_1);
+        $refinements_2 = StringRefinement::get($type_2);
+
+        if ($refinements_1 !== null && $refinements_2 !== null) {
+            if ($type_1 instanceof TLiteralString || $type_2 instanceof TLiteralString) {
+                [$literal_refinements, $refinements] = $type_1 instanceof TLiteralString
+                    ? [$refinements_1, $refinements_2]
+                    : [$refinements_2, $refinements_1];
+
+                // the literal string, if it has every refinement of the other type
+                return ($refinements & ~$literal_refinements) === 0
+                    ? [$type_1 instanceof TLiteralString ? $type_1 : $type_2]
+                    : [];
+            }
+
+            $type = StringRefinement::getType($refinements_1 | $refinements_2, $from_docblock);
+
+            if ($type !== null) {
+                return [$type];
+            }
+        }
+
+        $is_decimal_int_type_1 = $type_1 instanceof TDecimalIntString || $type_1 instanceof TNonDecimalIntString;
+        $is_decimal_int_type_2 = $type_2 instanceof TDecimalIntString || $type_2 instanceof TNonDecimalIntString;
+
+        if (($is_decimal_int_type_1 && ($is_decimal_int_type_2 || $type_2 instanceof TLiteralString))
+            || ($is_decimal_int_type_2 && $type_1 instanceof TLiteralString)
+        ) {
+            // a string is a decimal int string or not: the other type of these, or a literal string neither contains
+            return [];
+        }
+
+        throw self::getUnrepresentableIntersectionException($type_1, $type_2);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getUnrepresentableIntersectionException(
+        Atomic $type_1,
+        Atomic $type_2,
+    ): TypeParseTreeException {
+        return new TypeParseTreeException(
+            'Psalm has no type for the intersection of ' . $type_1->getId() . ' and ' . $type_2->getId(),
+        );
+    }
+
+    /**
+     * @psalm-assert-if-true TInt $type
+     * @psalm-pure
+     */
+    private static function isIntRange(Atomic $type): bool
+    {
+        return $type::class === TInt::class
+            || $type instanceof TIntRange
+            || $type instanceof TLiteralInt;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isSingleValue(Atomic $type): bool
+    {
+        return $type instanceof TTrue
+            || $type instanceof TFalse
+            || $type instanceof TLiteralFloat;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getScalarFamily(Atomic $type): ?string
+    {
+        return match (true) {
+            $type instanceof TString => 'string',
+            $type instanceof TInt => 'int',
+            $type instanceof TFloat => 'float',
+            $type instanceof TBool => 'bool',
+            default => null,
+        };
     }
 
     /**

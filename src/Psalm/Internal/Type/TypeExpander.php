@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type;
 
 use Psalm\Codebase;
 use Psalm\Exception\CircularReferenceException;
+use Psalm\Exception\TypeParseTreeException;
 use Psalm\Exception\UnresolvableConstantException;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
@@ -26,11 +27,13 @@ use Psalm\Type\Atomic\TGlobalConstant;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntMask;
 use Psalm\Type\Atomic\TIntMaskOf;
+use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
@@ -495,6 +498,22 @@ final class TypeExpander
             return TypeParser::getComputedIntsFromMask($potential_ints);
         }
 
+        if ($return_type instanceof TIntersection) {
+            return self::expandIntersection(
+                $codebase,
+                $return_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant,
+            );
+        }
+
         if ($return_type instanceof TConditional) {
             return self::expandConditional(
                 $codebase,
@@ -857,6 +876,63 @@ final class TypeExpander
         }
 
         return $return_type;
+    }
+
+    /**
+     * Intersects the types of an intersection once the class constants and type aliases they refer to are known
+     *
+     * @return non-empty-list<Atomic>
+     */
+    private static function expandIntersection(
+        Codebase $codebase,
+        TIntersection $return_type,
+        ?string $self_class,
+        string|TNamedObject|TTemplateParam|null $static_class_type,
+        ?string $parent_class,
+        bool $evaluate_class_constants,
+        bool $evaluate_conditional_types,
+        bool $final,
+        bool $expand_generic,
+        bool $expand_templates,
+        bool $throw_on_unresolvable_constant,
+    ): array {
+        $types = [];
+
+        foreach ($return_type->types as $type) {
+            $types[] = self::expandUnion(
+                $codebase,
+                $type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant,
+            );
+        }
+
+        try {
+            $atomic_types = TypeParser::intersectTypes(
+                array_map(static fn(Union $type): array => array_values($type->getAtomicTypes()), $types),
+                $codebase,
+                $return_type->from_docblock,
+            );
+        } catch (TypeParseTreeException) {
+            if (!$evaluate_class_constants) {
+                // intersected once the class constants and type aliases its types refer to are evaluated
+                return [new TIntersection($types, $return_type->from_docblock)];
+            }
+
+            // Psalm has no type for the intersection: as a docblock type it can't parse, it's ignored (and reported
+            // by TypeChecker)
+            return [new TMixed($return_type->from_docblock)];
+        }
+
+        // an intersection no value has all the types of, reported by TypeChecker when the declared type is one
+        return $atomic_types === [] ? [new TNever($return_type->from_docblock)] : $atomic_types;
     }
 
     /**

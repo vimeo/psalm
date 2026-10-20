@@ -1116,7 +1116,15 @@ final class TypeCombiner
 
                 $combination->strings = null;
 
-                if ($string_type instanceof TDecimalIntString || $string_type instanceof TNonDecimalIntString) {
+                if (isset($combination->value_types['string'])
+                    && $combination->value_types['string'] instanceof TString
+                    && StringRefinement::isCombinedRefinement($combination->value_types['string'])
+                ) {
+                    $combination->value_types['string'] = self::combineRefinedStrings(
+                        $combination->value_types['string'],
+                        $type,
+                    );
+                } elseif ($string_type instanceof TDecimalIntString || $string_type instanceof TNonDecimalIntString) {
                     $combination->value_types['string'] = self::combineDecimalIntString($string_type, $type);
                 } elseif (isset($combination->value_types['string'])
                     && $combination->value_types['string'] instanceof TNumericString
@@ -1182,7 +1190,13 @@ final class TypeCombiner
 
             if (!isset($combination->value_types['string'])) {
                 if ($combination->strings) {
-                    if ($type instanceof TDecimalIntString || $type instanceof TNonDecimalIntString) {
+                    if ($type instanceof TString && StringRefinement::isCombinedRefinement($type)) {
+                        foreach ($combination->strings as $string_type) {
+                            $type = self::combineRefinedStrings($type, $string_type);
+                        }
+
+                        $combination->value_types['string'] = $type;
+                    } elseif ($type instanceof TDecimalIntString || $type instanceof TNonDecimalIntString) {
                         $combination->value_types['string'] = $type;
                         $combination->strings = self::removeLiteralsInDecimalIntString($type, $combination->strings);
 
@@ -1292,6 +1306,15 @@ final class TypeCombiner
                 } elseif ($combination->value_types['string']::class !== $type::class) {
                     if ($type instanceof TString
                         && $combination->value_types['string'] instanceof TString
+                        && (StringRefinement::isCombinedRefinement($type)
+                            || StringRefinement::isCombinedRefinement($combination->value_types['string']))
+                    ) {
+                        $combination->value_types['string'] = self::combineRefinedStrings(
+                            $combination->value_types['string'],
+                            $type,
+                        );
+                    } elseif ($type instanceof TString
+                        && $combination->value_types['string'] instanceof TString
                         && ($type instanceof TDecimalIntString
                             || $type instanceof TNonDecimalIntString
                             || $combination->value_types['string'] instanceof TDecimalIntString
@@ -1374,6 +1397,23 @@ final class TypeCombiner
                 }
             }
         }
+    }
+
+    /**
+     * The narrowest string type containing both types, when either is only modelled by its refinements: the
+     * refinements both types have
+     *
+     * @psalm-pure
+     */
+    private static function combineRefinedStrings(TString $type_1, TString $type_2): TString
+    {
+        $refinements = StringRefinement::getImplied($type_1) & StringRefinement::getImplied($type_2);
+
+        // the refinements shared by two string types, without the literal one, always make a string type
+        $type = StringRefinement::getType($refinements & ~StringRefinement::LITERAL);
+        assert($type !== null);
+
+        return $type;
     }
 
     /**

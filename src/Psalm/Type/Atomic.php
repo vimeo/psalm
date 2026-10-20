@@ -55,6 +55,7 @@ use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyScalar;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyNumericString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
@@ -888,7 +889,7 @@ abstract class Atomic implements TypeNode, Stringable
             return true;
         }
 
-        if ($this instanceof TNonFalsyString) {
+        if ($this instanceof TNonFalsyString || $this instanceof TNonFalsyNumericString) {
             return true;
         }
 

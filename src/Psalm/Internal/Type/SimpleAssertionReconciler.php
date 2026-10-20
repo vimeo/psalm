@@ -50,6 +50,7 @@ use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TLowercaseNumericString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -61,6 +62,9 @@ use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyScalar;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyLowercaseNumericString;
+use Psalm\Type\Atomic\TNonFalsyLowercaseString;
+use Psalm\Type\Atomic\TNonFalsyNumericString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNumeric;
@@ -1503,8 +1507,14 @@ final class SimpleAssertionReconciler extends Reconciler
 
         if ($existing_var_type->hasString()) {
             $redundant = false;
+            $string_type = $existing_var_type->getAtomicTypes()['string'] ?? null;
+            $refinements = $string_type instanceof TString ? StringRefinement::get($string_type) : null;
             $existing_var_type->removeType('string');
-            $existing_var_type->addType(new TNumericString);
+            // e.g. lowercase-string&numeric-string for a lowercase-string
+            $existing_var_type->addType(
+                ($refinements !== null ? StringRefinement::getType($refinements | StringRefinement::NUMERIC) : null)
+                    ?? new TNumericString,
+            );
         }
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
@@ -2821,15 +2831,29 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($string_atomic_type::class === TString::class) {
                 unset($types['string']);
                 $types []= new TNonFalsyString();
-            } elseif ($string_atomic_type::class === TLowercaseString::class) {
+            } elseif ($string_atomic_type::class === TLowercaseString::class
+                || $string_atomic_type::class === TNonEmptyLowercaseString::class
+            ) {
                 unset($types['string']);
-                $types []= new TNonEmptyLowercaseString();
+                $types []= new TNonFalsyLowercaseString();
             } elseif ($string_atomic_type::class === TNonspecificLiteralString::class) {
                 unset($types['string']);
                 $types []= new TNonEmptyNonspecificLiteralString();
             } elseif ($string_atomic_type::class === TNonEmptyString::class) {
                 unset($types['string']);
                 $types []= new TNonFalsyString();
+            }
+        }
+
+        if (isset($types['numeric-string'])) {
+            $numeric_string_atomic_type = $types['numeric-string'];
+
+            if ($numeric_string_atomic_type::class === TNumericString::class) {
+                unset($types['numeric-string']);
+                $types []= new TNonFalsyNumericString();
+            } elseif ($numeric_string_atomic_type instanceof TLowercaseNumericString) {
+                unset($types['numeric-string']);
+                $types []= new TNonFalsyLowercaseNumericString();
             }
         }
 

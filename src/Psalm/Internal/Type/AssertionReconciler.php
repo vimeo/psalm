@@ -955,10 +955,17 @@ final class AssertionReconciler extends Reconciler
             $matching_atomic_type = $new_range;
         }
 
-        // Lowercase-string and non-empty-string are compatible but none is contained into the other completely
-        if (($type_2_atomic instanceof TLowercaseString && $type_1_atomic instanceof TNonEmptyString) ||
+        $refined_string = $type_1_atomic instanceof TString && $type_2_atomic instanceof TString
+            ? StringRefinement::intersect($type_1_atomic, $type_2_atomic)
+            : null;
+
+        if ($refined_string !== null) {
+            // e.g. lowercase-string and non-falsy-string, none of which is contained into the other completely
+            $matching_atomic_type = $refined_string;
+        } elseif (($type_2_atomic instanceof TLowercaseString && $type_1_atomic instanceof TNonEmptyString) ||
             ($type_2_atomic instanceof TNonEmptyString && $type_1_atomic instanceof TLowercaseString)
         ) {
+            // Lowercase-string and non-empty-string are compatible but none is contained into the other completely
             $matching_atomic_type = new TNonEmptyLowercaseString();
         }
 
