@@ -60,6 +60,7 @@ use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyScalar;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyLowercaseString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNumeric;
@@ -2816,9 +2817,11 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($string_atomic_type::class === TString::class) {
                 unset($types['string']);
                 $types []= new TNonFalsyString();
-            } elseif ($string_atomic_type::class === TLowercaseString::class) {
+            } elseif ($string_atomic_type::class === TLowercaseString::class
+                || $string_atomic_type::class === TNonEmptyLowercaseString::class
+            ) {
                 unset($types['string']);
-                $types []= new TNonEmptyLowercaseString();
+                $types []= new TNonFalsyLowercaseString();
             } elseif ($string_atomic_type::class === TNonspecificLiteralString::class) {
                 unset($types['string']);
                 $types []= new TNonEmptyNonspecificLiteralString();

@@ -53,6 +53,8 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyLowercaseString;
+use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObject;
@@ -955,7 +957,10 @@ final class AssertionReconciler extends Reconciler
         if (($type_2_atomic instanceof TLowercaseString && $type_1_atomic instanceof TNonEmptyString) ||
             ($type_2_atomic instanceof TNonEmptyString && $type_1_atomic instanceof TLowercaseString)
         ) {
-            $matching_atomic_type = new TNonEmptyLowercaseString();
+            $matching_atomic_type = $type_1_atomic instanceof TNonFalsyString
+                || $type_2_atomic instanceof TNonFalsyString
+                ? new TNonFalsyLowercaseString()
+                : new TNonEmptyLowercaseString();
         }
 
         // Lowercase-string and non-empty-string are compatible but none is contained into the other completely

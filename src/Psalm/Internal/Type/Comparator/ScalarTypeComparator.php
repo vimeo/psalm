@@ -27,6 +27,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyLowercaseString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
@@ -72,6 +73,18 @@ final class ScalarTypeComparator
             && $input_type_part instanceof TFloat
         ) {
             return true;
+        }
+
+        if (($input_type_part instanceof TNonFalsyLowercaseString
+                || $container_type_part instanceof TNonFalsyLowercaseString)
+            && $input_type_part instanceof TString
+            && $container_type_part instanceof TString
+        ) {
+            return self::isContainedByNonFalsyLowercaseString(
+                $input_type_part,
+                $container_type_part,
+                $atomic_comparison_result,
+            );
         }
 
         if (($container_type_part instanceof TNonEmptyString
@@ -564,6 +577,46 @@ final class ScalarTypeComparator
                     = $input_type_part instanceof TScalar;
                 $atomic_comparison_result->scalar_type_match_found = !$container_type_part->from_docblock;
             }
+        }
+
+        return false;
+    }
+
+    /**
+     * Compares string types when either is a non-falsy lowercase string
+     */
+    private static function isContainedByNonFalsyLowercaseString(
+        TString $input_type_part,
+        TString $container_type_part,
+        ?TypeComparisonResult $atomic_comparison_result,
+    ): bool {
+        if ($container_type_part instanceof TNonFalsyLowercaseString) {
+            if ($input_type_part instanceof TNonFalsyLowercaseString) {
+                return true;
+            }
+
+            if ($input_type_part instanceof TLiteralString) {
+                return $input_type_part->value !== ''
+                    && $input_type_part->value !== '0'
+                    && strtolower($input_type_part->value) === $input_type_part->value;
+            }
+        } elseif ($container_type_part::class === TString::class
+            || $container_type_part::class === TNonEmptyString::class
+            || $container_type_part::class === TNonFalsyString::class
+            || $container_type_part instanceof TLowercaseString
+            || $container_type_part instanceof TNonEmptyLowercaseString
+        ) {
+            return true;
+        } elseif ($container_type_part instanceof TLiteralString
+            && ($container_type_part->value === ''
+                || $container_type_part->value === '0'
+                || strtolower($container_type_part->value) !== $container_type_part->value)
+        ) {
+            return false;
+        }
+
+        if ($atomic_comparison_result) {
+            $atomic_comparison_result->type_coerced = true;
         }
 
         return false;

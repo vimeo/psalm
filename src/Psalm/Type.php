@@ -41,6 +41,7 @@ use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyLowercaseString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
@@ -1006,7 +1007,10 @@ abstract class Type
                     || ($type_1_atomic instanceof TNonEmptyString
                         && $type_2_atomic instanceof TLowercaseString)
                 ) {
-                    $intersection_atomic = new TNonEmptyLowercaseString();
+                    $intersection_atomic = $type_1_atomic instanceof TNonFalsyString
+                        || $type_2_atomic instanceof TNonFalsyString
+                        ? new TNonFalsyLowercaseString()
+                        : new TNonEmptyLowercaseString();
                     $intersection_performed = true;
                 }
 

@@ -1460,7 +1460,7 @@ final class ReturnTypeTest extends TestCase
                         return "abc";
                     }
 
-                    /** @return ($prefix is "" ? numeric-string : string)&non-falsy-string */
+                    /** @return ($prefix is "" ? lowercase-string : string)&non-falsy-string */
                     function uniqueId(string $prefix = ""): string {
                         throw new RuntimeException();
                     }
@@ -1468,6 +1468,11 @@ final class ReturnTypeTest extends TestCase
                     /** @return int<0, max>&int<min, 10> */
                     function digit(): int {
                         return 5;
+                    }
+
+                    /** @return int-mask<1, 2>&int-mask<2, 4> */
+                    function flags(): int {
+                        return 2;
                     }
 
                     /**
@@ -1480,13 +1485,27 @@ final class ReturnTypeTest extends TestCase
 
                     $a = nonce();
                     $b = uniqueId();
-                    $c = uniqueId("id-");
-                    $d = digit();',
+                    $c = uniqueId("ID-");
+                    $d = digit();
+                    $e = flags();',
                 'assertions' => [
-                    '$a===' => 'non-falsy-string',
-                    '$b===' => 'numeric-string',
+                    '$a===' => 'lowercase-string&non-falsy-string',
+                    '$b===' => 'lowercase-string&non-falsy-string',
                     '$c===' => 'non-falsy-string',
                     '$d===' => 'int<0, 10>',
+                    '$e===' => '0|2',
+                ],
+            ],
+            'truthyLowercaseStringIsNonFalsy' => [
+                'code' => '<?php
+                    /** @var lowercase-string $s */
+                    $s = "a";
+                    $t = null;
+                    if ($s) {
+                        $t = $s;
+                    }',
+                'assertions' => [
+                    '$t===' => 'lowercase-string&non-falsy-string|null',
                 ],
             ],
             'laravelStyleStrLowerConditionalReturnType' => [
@@ -1519,6 +1538,22 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'unrepresentableScalarIntersection' => [
+                'code' => '<?php
+                    /** @return numeric-string&non-falsy-string */
+                    function f(): string {
+                        return "1";
+                    }',
+                'error_message' => 'Psalm has no type for the intersection of numeric-string and non-falsy-string',
+            ],
+            'emptyScalarIntersection' => [
+                'code' => '<?php
+                    /** @return int<0, 5>&int<6, 10> */
+                    function f(): int {
+                        return 1;
+                    }',
+                'error_message' => 'No value has all the types of the intersection',
+            ],
             'wrongReturnType1' => [
                 'code' => '<?php
                     function fooFoo(): string {

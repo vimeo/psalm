@@ -1793,6 +1793,7 @@ final class PreloaderList {
         \Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString::class,
         \Psalm\Type\Atomic\TNonEmptyScalar::class,
         \Psalm\Type\Atomic\TNonEmptyString::class,
+        \Psalm\Type\Atomic\TNonFalsyLowercaseString::class,
         \Psalm\Type\Atomic\TNonFalsyString::class,
         \Psalm\Type\Atomic\TNonspecificLiteralInt::class,
         \Psalm\Type\Atomic\TNonspecificLiteralString::class,

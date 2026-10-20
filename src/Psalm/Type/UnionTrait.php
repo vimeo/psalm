@@ -44,6 +44,7 @@ use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyLowercaseString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
@@ -719,7 +720,8 @@ trait UnionTrait
     {
         return isset($this->types['string'])
             && ($this->types['string'] instanceof TLowercaseString
-                || $this->types['string'] instanceof TNonEmptyLowercaseString);
+                || $this->types['string'] instanceof TNonEmptyLowercaseString
+                || $this->types['string'] instanceof TNonFalsyLowercaseString);
     }
 
     /**

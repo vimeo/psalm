@@ -645,6 +645,41 @@ final class TypeCombinationTest extends TestCase
                     'Exception::class',
                 ],
             ],
+            'combineNonFalsyLowercaseStringWithFalsyLiteral' => [
+                'non-empty-lowercase-string',
+                [
+                    'lowercase-string&non-falsy-string',
+                    "'0'",
+                ],
+            ],
+            'combineNonFalsyLowercaseStringWithUppercaseLiteral' => [
+                'non-falsy-string',
+                [
+                    'lowercase-string&non-falsy-string',
+                    "'Abc'",
+                ],
+            ],
+            'combineNonFalsyLowercaseStringWithEmptyLiteral' => [
+                'lowercase-string',
+                [
+                    'lowercase-string&non-falsy-string',
+                    "''",
+                ],
+            ],
+            'combineNonFalsyLowercaseStringWithNonEmptyLowercaseString' => [
+                'non-empty-lowercase-string',
+                [
+                    'lowercase-string&non-falsy-string',
+                    'non-empty-lowercase-string',
+                ],
+            ],
+            'combineNonFalsyLowercaseStringWithNonFalsyString' => [
+                'non-falsy-string',
+                [
+                    'non-falsy-string',
+                    'lowercase-string&non-falsy-string',
+                ],
+            ],
             'combineClassStringWithNumericString' => [
                 'class-string|numeric-string',
                 [

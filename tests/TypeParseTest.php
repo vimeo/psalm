@@ -425,58 +425,76 @@ final class TypeParseTest extends TestCase
         Type::parseString('non-empty-string&int');
     }
 
-    public function testIntersectionOfNumericStringAndLowercaseString(): void
+    public function testIntersectionOfNumericStringAndLowercaseStringRejected(): void
     {
-        $this->assertSame(
-            'numeric-string',
-            Type::parseString('numeric-string&lowercase-string')->getId(),
-        );
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('numeric-string&lowercase-string');
+    }
+
+    public function testIntersectionOfNumericStringAndNonFalsyStringRejected(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('numeric-string&non-falsy-string');
     }
 
     public function testIntersectionOfNonFalsyStringAndLowercaseString(): void
     {
         $this->assertSame(
-            'non-falsy-string',
+            'lowercase-string&non-falsy-string',
             Type::parseString('lowercase-string&non-falsy-string')->getId(),
+        );
+        $this->assertSame(
+            'lowercase-string&non-falsy-string',
+            Type::parseString('non-empty-lowercase-string&non-falsy-string')->getId(),
         );
     }
 
-    public function testIntersectionOfCallableStringAndLowercaseString(): void
+    public function testIntersectionOfNonEmptyStringAndCallableStringRejected(): void
     {
-        $this->assertSame(
-            'callable-string',
-            Type::parseString('callable-string&lowercase-string')->getId(),
-        );
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('callable-string&lowercase-string');
     }
 
     public function testIntersectionOfStringAndCallable(): void
     {
-        $this->assertSame(
-            'callable-string',
-            Type::parseString('string&(callable(string): string)')->getId(),
-        );
+        $this->assertSame('callable-string', Type::parseString('string&callable')->getId());
+    }
+
+    public function testIntersectionOfStringAndCallableWithSignatureRejected(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('string&(callable(string): string)');
     }
 
     public function testIntersectionOfNumericAndString(): void
     {
-        $this->assertSame(
-            'numeric-string',
-            Type::parseString('numeric&string')->getId(),
-        );
+        $this->assertSame('numeric-string', Type::parseString('numeric&string')->getId());
+    }
+
+    public function testIntersectionOfScalarsContainingEachOther(): void
+    {
+        $this->assertSame('int', Type::parseString('array-key&int')->getId());
+        $this->assertSame('string', Type::parseString('array-key&string')->getId());
+        $this->assertSame('bool', Type::parseString('scalar&bool')->getId());
+        $this->assertSame('int', Type::parseString('numeric&int')->getId());
+        $this->assertSame('int|numeric-string', Type::parseString('numeric&array-key')->getId());
     }
 
     public function testIntersectionOfScalarIntRanges(): void
     {
-        $this->assertSame(
-            'int<1, 5>',
-            Type::parseString('int<0, max>&int<1, 5>')->getId(),
-        );
+        $this->assertSame('int<1, 5>', Type::parseString('int<0, max>&int<1, 5>')->getId());
+    }
+
+    public function testIntersectionOfIntMasks(): void
+    {
+        $this->assertSame('0|2', Type::parseString('int-mask<1, 2>&int-mask<2, 4>')->getId());
+        $this->assertSame('0|1|2|3', Type::parseString('int&int-mask<1, 2>')->getId());
     }
 
     public function testIntersectionOfDisjointIntRangesRejected(): void
     {
         $this->expectException(TypeParseTreeException::class);
-        Type::parseString('int<0, max>&int<min, -1>');
+        Type::parseString('int<0, 5>&int<6, 10>');
     }
 
     public function testIntersectionOfLiteralStringNotContainedRejected(): void
@@ -485,24 +503,44 @@ final class TypeParseTest extends TestCase
         Type::parseString('"Abc"&lowercase-string');
     }
 
-    public function testIntersectionOfTemplateAndStrings(): void
+    public function testIntersectionOfTemplateAndStringRejected(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('T&lowercase-string', null, ['T' => ['fn-foo' => Type::getString()]]);
+    }
+
+    public function testIntersectionOfGenericArrays(): void
     {
         $this->assertSame(
-            'T:fn-foo as non-falsy-string',
-            Type::parseString(
-                'T&lowercase-string&non-falsy-string',
-                null,
-                ['T' => ['fn-foo' => Type::getString()]],
-            )->getId(),
+            'array<string, int<0, max>>',
+            Type::parseString('array<string, int>&array<array-key, int<0, max>>')->getId(),
         );
+    }
+
+    public function testIntersectionOfUnions(): void
+    {
+        $this->assertSame('A&C|B&C', Type::parseString('(A|B)&C')->getId());
     }
 
     public function testIntersectionOfConditionalTypes(): void
     {
         $this->assertSame(
-            '(T is int ? (T is string ? numeric-string : non-falsy-string) : never)',
+            '(T is int ? (T is string ? lowercase-string&non-falsy-string : lowercase-string&non-falsy-string)'
+                . ' : (T is string ? non-falsy-string : non-falsy-string))',
             Type::parseString(
-                '(T is int ? lowercase-string : int)&non-falsy-string&(T is string ? numeric-string : string)',
+                '(T is int ? lowercase-string : string)&non-falsy-string&(T is string ? non-empty-string : string)',
+                null,
+                ['T' => ['' => Type::getMixed()]],
+            )->getId(),
+        );
+    }
+
+    public function testIntersectionOfConditionalTypeWithEmptyBranch(): void
+    {
+        $this->assertSame(
+            '(T is int ? non-falsy-string : never)',
+            Type::parseString(
+                '(T is int ? string : int)&non-falsy-string',
                 null,
                 ['T' => ['' => Type::getMixed()]],
             )->getId(),

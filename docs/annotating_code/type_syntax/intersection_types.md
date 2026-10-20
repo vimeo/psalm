@@ -36,11 +36,13 @@ The returned type will contain the properties of both `A` and `B`. In other word
 Intersections of objects are only valid for lists of only *object types* and lists of only *object-like arrays*.
 
 Scalar types can be intersected too: `lowercase-string&non-empty-string` is a `non-empty-lowercase-string`,
-`int<0, max>&int<min, 10>` is an `int<0, 10>` and `string&callable` is a `callable-string`. When Psalm has no type for
-the exact intersection, it uses the most specific of the two: `lowercase-string&non-falsy-string` is a `non-falsy-string`.
-A template can be intersected with scalar types to narrow its bound.
+`lowercase-string&non-falsy-string` a non-falsy lowercase string, `int<0, max>&int<min, 10>` an `int<0, 10>`,
+`int&int-mask<1, 2>` is `0|1|2|3`, `array-key&string` is `string` and `string&callable` is a `callable-string`.
+An intersection Psalm has no exact type for (e.g. `numeric-string&non-falsy-string`) is reported as an invalid
+docblock, and so is one no value can have (e.g. `int<0, 5>&int<6, 10>`).
 
-A conditional type can be intersected with other types: `(T is int ? A : B)&C` is `(T is int ? A&C : B&C)`.
+A conditional type can be intersected with other types: `(T is int ? A : B)&C` is `(T is int ? A&C : B&C)`, a
+branch no value can have becoming `never`.
 
 You can also intersect a class with an object shape to describe properties the class doesn't declare. This helps with
 classes that read properties through the magic `__get` method, where Psalm can't know which properties exist:

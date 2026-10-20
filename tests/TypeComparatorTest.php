@@ -218,6 +218,22 @@ final class TypeComparatorTest extends TestCase
                 'callable',
                 "callable-list{class-string, 'from'}",
             ],
+            'lowercaseStringAcceptsNonFalsyLowercaseString' => [
+                'lowercase-string',
+                'lowercase-string&non-falsy-string',
+            ],
+            'nonEmptyLowercaseStringAcceptsNonFalsyLowercaseString' => [
+                'non-empty-lowercase-string',
+                'lowercase-string&non-falsy-string',
+            ],
+            'nonFalsyStringAcceptsNonFalsyLowercaseString' => [
+                'non-falsy-string',
+                'lowercase-string&non-falsy-string',
+            ],
+            'nonFalsyLowercaseStringAcceptsLowercaseNonFalsyLiteral' => [
+                'lowercase-string&non-falsy-string',
+                "'abc'",
+            ],
         ];
     }
 
@@ -227,6 +243,26 @@ final class TypeComparatorTest extends TestCase
      */
     public static function getUnsuccessfulComparisons(): iterable
     {
+        yield 'nonFalsyLowercaseStringDoesNotAcceptFalsyLiteral' => [
+            'lowercase-string&non-falsy-string',
+            "'0'",
+        ];
+        yield 'nonFalsyLowercaseStringDoesNotAcceptUppercaseLiteral' => [
+            'lowercase-string&non-falsy-string',
+            "'Abc'",
+        ];
+        yield 'nonFalsyLowercaseStringDoesNotAcceptNonEmptyLowercaseString' => [
+            'lowercase-string&non-falsy-string',
+            'non-empty-lowercase-string',
+        ];
+        yield 'nonFalsyLowercaseStringDoesNotAcceptNonFalsyString' => [
+            'lowercase-string&non-falsy-string',
+            'non-falsy-string',
+        ];
+        yield 'nonFalsyLowercaseStringDoesNotAcceptCallableString' => [
+            'lowercase-string&non-falsy-string',
+            'callable-string',
+        ];
         yield 'genericListDoesNotAcceptListTupleWithMismatchedTypes' => [
             'list<int>',
             'list{int, string}',
