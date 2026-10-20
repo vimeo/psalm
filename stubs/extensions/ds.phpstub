@@ -4,6 +4,7 @@ namespace Ds;
 
 use ArrayAccess;
 use Countable;
+use IteratorAggregate;
 use JsonSerializable;
 use OutOfBoundsException;
 use OutOfRangeException;
@@ -13,9 +14,9 @@ use UnderflowException;
 /**
  * @template-covariant TKey
  * @template-covariant TValue
- * @extends Traversable<TKey, TValue>
+ * @extends IteratorAggregate<TKey, TValue>
  */
-interface Collection extends Traversable, Countable, JsonSerializable
+interface Collection extends IteratorAggregate, Countable, JsonSerializable
 {
     /**
      * @return Collection<TKey, TValue>
@@ -46,6 +47,15 @@ interface Collection extends Traversable, Countable, JsonSerializable
  */
 final class Deque implements Sequence
 {
+    /**
+     * Iterating reads the collection.
+     *
+     * @return Traversable[read-props]<int, TValue>
+     *
+     * @psalm-mutation-free
+     */
+    public function getIterator(): Traversable {}
+
     /**
      * @param iterable<TValue> $values
      */
@@ -262,6 +272,15 @@ final class Deque implements Sequence
  */
 final class Map implements Collection, ArrayAccess
 {
+    /**
+     * Iterating reads the collection.
+     *
+     * @return Traversable[read-props]<TKey, TValue>
+     *
+     * @psalm-mutation-free
+     */
+    public function getIterator(): Traversable {}
+
     /**
      * @param iterable<TKey, TValue> $values
      */
@@ -826,6 +845,15 @@ interface Sequence extends Collection, ArrayAccess
 final class Vector implements Sequence
 {
     /**
+     * Iterating reads the collection.
+     *
+     * @return Traversable[read-props]<int, TValue>
+     *
+     * @psalm-mutation-free
+     */
+    public function getIterator(): Traversable {}
+
+    /**
      * @param iterable<TValue> $values
      */
     public function __construct(iterable $values = [])
@@ -1040,6 +1068,15 @@ final class Vector implements Sequence
  */
 final class Set implements Collection, ArrayAccess
 {
+    /**
+     * Iterating reads the collection.
+     *
+     * @return Traversable[read-props]<int, TValue>
+     *
+     * @psalm-mutation-free
+     */
+    public function getIterator(): Traversable {}
+
     /**
      * @param iterable<TValue> $values
      */
@@ -1259,6 +1296,14 @@ final class Set implements Collection, ArrayAccess
 final class Stack implements Collection, ArrayAccess
 {
     /**
+     * Iterating removes the values.
+     *
+     * @return Traversable[read-props]<int, TValue>
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function getIterator(): Traversable {}
+
+    /**
      * @param iterable<TValue> $values
      */
     public function __construct(iterable $values = [])
@@ -1342,6 +1387,14 @@ final class Stack implements Collection, ArrayAccess
 final class Queue implements Collection, ArrayAccess
 {
     /**
+     * Iterating removes the values.
+     *
+     * @return Traversable[read-props]<int, TValue>
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function getIterator(): Traversable {}
+
+    /**
      * @param iterable<TValue> $values
      */
     public function __construct(iterable $values = [])
@@ -1423,6 +1476,14 @@ final class Queue implements Collection, ArrayAccess
  */
 final class PriorityQueue implements Collection
 {
+    /**
+     * Iterating removes the values.
+     *
+     * @return Traversable[read-props]<int, TValue>
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function getIterator(): Traversable {}
+
     /**
      * @return PriorityQueue<TValue>
      * @psalm-mutation-free
