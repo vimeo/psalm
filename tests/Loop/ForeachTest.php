@@ -877,6 +877,63 @@ final class ForeachTest extends TestCase
                         echo $item->prop;
                     }',
             ],
+            'unboundAppendIteratorIterationIsMixed' => [
+                'code' => '<?php
+                    $appended = new AppendIterator();
+                    $keys = [];
+                    $items = [];
+                    foreach ($appended as $key => $item) {
+                        $keys[] = $key;
+                        $items[] = $item;
+                        echo $item->getPathname();
+                    }',
+                'assertions' => [
+                    '$keys===' => 'list<mixed>',
+                    '$items===' => 'list<mixed>',
+                ],
+                'ignored_issues' => [
+                    'MixedArgument',
+                    'MixedAssignment',
+                    'MixedMethodCall',
+                ],
+            ],
+            // pins what typed iterators give today, nullable current() and key() included,
+            // so the unbound fix above provably doesn't change them
+            'typedIteratorIterationKeepsTheNullCurrentAndKeyReturn' => [
+                'code' => '<?php
+                    interface Item {}
+
+                    /** @implements Iterator<int, Item> */
+                    final class Items implements Iterator {
+                        public function current(): ?Item { return null; }
+                        public function key(): int { return 0; }
+                        public function next(): void {}
+                        public function rewind(): void {}
+                        public function valid(): bool { return false; }
+                    }
+
+                    /** @var ArrayIterator<int, Item> */
+                    $array = new ArrayIterator([]);
+                    $array_keys = [];
+                    $array_items = [];
+                    foreach ($array as $key => $item) {
+                        $array_keys[] = $key;
+                        $array_items[] = $item;
+                    }
+
+                    $items_keys = [];
+                    $items_items = [];
+                    foreach (new Items() as $key => $item) {
+                        $items_keys[] = $key;
+                        $items_items[] = $item;
+                    }',
+                'assertions' => [
+                    '$array_keys===' => 'list<int|null>',
+                    '$array_items===' => 'list<Item|null>',
+                    '$items_keys===' => 'list<int>',
+                    '$items_items===' => 'list<Item|null>',
+                ],
+            ],
             'templatedIteratorAggregateIteration' => [
                 'code' => '<?php
                     class Item {
