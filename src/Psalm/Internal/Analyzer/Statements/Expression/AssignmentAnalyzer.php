@@ -1313,6 +1313,10 @@ final class AssignmentAnalyzer
                 $context->byref_constraints[$var_id] = new ReferenceConstraint($by_ref_type);
             }
 
+            if ($stmt instanceof PhpParser\Node\Expr\Variable) {
+                $statements_analyzer->unregisterUndefinedVariableRead($var_id);
+            }
+
             if (!$context->hasVariable($var_id)) {
                 $context->vars_possibly_in_scope[$var_id] = true;
 

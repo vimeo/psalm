@@ -118,6 +118,14 @@ final class StatementsAnalyzer extends SourceAnalyzer
     private array $var_branch_points = [];
 
     /**
+     * Variables read where they're undefined and not assigned since: whatever a call narrows such a variable to
+     * doesn't make it one the code defines (see LoopAnalyzer)
+     *
+     * @var array<string, true>
+     */
+    private array $undefined_var_reads = [];
+
+    /**
      * Possibly undefined variables should be initialised if we're altering code
      *
      * @var array<string, int>|null
@@ -1119,6 +1127,30 @@ final class StatementsAnalyzer extends SourceAnalyzer
     /**
      * @psalm-external-mutation-free
      */
+    public function registerUndefinedVariableRead(string $var_id): void
+    {
+        $this->undefined_var_reads[$var_id] = true;
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function unregisterUndefinedVariableRead(string $var_id): void
+    {
+        unset($this->undefined_var_reads[$var_id]);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function hasUndefinedVariableRead(string $var_id): bool
+    {
+        return isset($this->undefined_var_reads[$var_id]);
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
     public function registerVariable(string $var_id, CodeLocation $location, ?int $branch_point): void
     {
         $this->all_vars[$var_id] = $location;
@@ -1136,6 +1168,8 @@ final class StatementsAnalyzer extends SourceAnalyzer
     public function registerVariableAssignment(string $var_id, CodeLocation $location): void
     {
         $this->unused_var_locations[$location->getHash()] = [$var_id, $location];
+
+        unset($this->undefined_var_reads[$var_id]);
     }
 
     /**
