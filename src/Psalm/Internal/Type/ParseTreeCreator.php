@@ -154,20 +154,10 @@ final class ParseTreeCreator
                     break;
 
                 case 'is':
+                case 'is not':
                 case 'as':
                 case 'of':
                     $this->handleIsOrAs($type_token);
-                    break;
-
-                case 'not':
-                    if ($this->current_leaf instanceof TemplateIsTree
-                        && $this->current_leaf->children === []
-                        && $this->type_tokens[$this->t - 1][0] === 'is'
-                    ) {
-                        $this->current_leaf->negated = true;
-                    } else {
-                        $this->handleValue($type_token);
-                    }
                     break;
 
                 case 'covariant':
@@ -900,6 +890,7 @@ final class ParseTreeCreator
                     $this->current_leaf->value,
                     $current_parent,
                 );
+                $this->current_leaf->negated = $type_token[0] === 'is not';
 
                 if ($current_parent) {
                     $current_parent->children[] = $this->current_leaf;
