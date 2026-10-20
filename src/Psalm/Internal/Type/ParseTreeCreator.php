@@ -159,6 +159,17 @@ final class ParseTreeCreator
                     $this->handleIsOrAs($type_token);
                     break;
 
+                case 'not':
+                    if ($this->current_leaf instanceof TemplateIsTree
+                        && $this->current_leaf->children === []
+                        && $this->type_tokens[$this->t - 1][0] === 'is'
+                    ) {
+                        $this->current_leaf->negated = true;
+                    } else {
+                        $this->handleValue($type_token);
+                    }
+                    break;
+
                 case 'covariant':
                 case 'contravariant':
                     if ($this->t + 1 < $this->type_token_count
@@ -638,6 +649,8 @@ final class ParseTreeCreator
         }
 
         while (($current_parent instanceof UnionTree
+                || $current_parent instanceof IntersectionTree
+                || $current_parent instanceof NullableTree
                 || $current_parent instanceof CallableWithReturnTypeTree)
             && $this->current_leaf->parent
         ) {

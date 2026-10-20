@@ -182,6 +182,14 @@ final class TypeTokenizer
                 && in_array(implode('', array_slice($chars, $i, 3)), ['as ', 'is ', 'of '])
             ) {
                 $type_tokens[++$rtc] = [$char . $chars[$i+1], $i - 1];
+
+                // `T is not X`: the negation is a token of its own
+                if ($char === 'i' && preg_match('/\Gis +not /', $string_type, $matches, 0, $i)) {
+                    $i += strlen($matches[0]) - 4;
+                    $type_tokens[++$rtc] = ['not', $i];
+                    $i += 2;
+                }
+
                 $type_tokens[++$rtc] = ['', ++$i];
                 $was_char = false;
                 continue;
@@ -393,6 +401,10 @@ final class TypeTokenizer
                 ],
                 true,
             )) {
+                continue;
+            }
+
+            if ($string_type_token[0] === 'not' && $i > 0 && $type_tokens[$i - 1][0] === 'is') {
                 continue;
             }
 

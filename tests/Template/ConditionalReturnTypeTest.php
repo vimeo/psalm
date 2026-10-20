@@ -53,6 +53,55 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$c' => 'array<string, string>|string',
                 ],
             ],
+            'conditionalReturnTypeWithNullableBranches' => [
+                'code' => '<?php
+                    /**
+                     * @return ($format is "U" ? ?int : ?string)
+                     */
+                    function formatDate(string $format) {
+                        if ($format === "") {
+                            return null;
+                        }
+                        return $format === "U" ? time() : date($format);
+                    }
+
+                    $a = formatDate("U");
+                    $b = formatDate("Y-m-d");',
+                'assertions' => [
+                    '$a' => 'int|null',
+                    '$b' => 'null|string',
+                ],
+            ],
+            'conditionalReturnTypeWithIntersectionInIfBranch' => [
+                'code' => '<?php
+                    /**
+                     * @return ($value is "" ? non-empty-string&lowercase-string : string)
+                     */
+                    function lower(string $value): string {
+                        return $value === "" ? "a" : $value;
+                    }
+
+                    $a = lower("");',
+                'assertions' => [
+                    '$a===' => 'non-empty-lowercase-string',
+                ],
+            ],
+            'negatedConditionalReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @return ($handle is not non-empty-string ? false : true)
+                     */
+                    function query(string $handle): bool {
+                        return $handle !== "";
+                    }
+
+                    $a = query("");
+                    $b = query("jquery");',
+                'assertions' => [
+                    '$a===' => 'false',
+                    '$b===' => 'true',
+                ],
+            ],
             'nestedConditionalOnIntReturnType' => [
                 'code' => '<?php
                     /**
