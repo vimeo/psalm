@@ -369,6 +369,38 @@ final class AttributeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'delayedTargetValidationDefersInternalAttributeTarget' => [
+                'code' => '<?php
+                    #[\DelayedTargetValidation]
+                    #[\Override]
+                    final class Delayed {}
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'delayedTargetValidationInSeparateGroupAfterInternalAttribute' => [
+                'code' => '<?php
+                    class A {
+                        #[\NoDiscard]
+                        #[\DelayedTargetValidation]
+                        public int $foo = 1;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'delayedTargetValidationDefersAttributeAttributeTarget' => [
+                'code' => '<?php
+                    #[\DelayedTargetValidation]
+                    #[\Attribute]
+                    function f(): void {}
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'createObjectAsAttributeArg' => [
                 'code' => '<?php
                     #[Attribute]
@@ -919,6 +951,28 @@ final class AttributeTest extends TestCase
                 'error_message' => 'Attribute SensitiveParameter cannot be used on a method',
                 'ignored_issues' => [],
                 'php_version' => '8.2',
+            ],
+            'delayedTargetValidationKeepsUserAttributeTargetCheck' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_METHOD)]
+                    class MethodOnly {}
+
+                    #[\DelayedTargetValidation]
+                    #[MethodOnly]
+                    class Foo {}
+                ',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:23 - Attribute MethodOnly cannot be used on a class',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'delayedTargetValidationUndefinedBelowPhp85' => [
+                'code' => '<?php
+                    #[\DelayedTargetValidation]
+                    class Foo {}
+                ',
+                'error_message' => 'UndefinedAttributeClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:23',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
             ],
         ];
     }
