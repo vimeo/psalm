@@ -9,14 +9,17 @@ use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_pop;
+use function array_values;
 use function count;
 
 /**
- * strval() returns the string a scalar or null is cast to, as (string) does, e.g. a decimal-int-string for an int
+ * strval() returns the string its argument is cast to, as (string) does, e.g. a decimal-int-string for an int
  *
  * @internal
  */
@@ -46,6 +49,7 @@ final class StrvalReturnTypeProvider implements FunctionReturnTypeProviderInterf
             return null;
         }
 
+        $codebase = $statements_source->getCodebase();
         $atomic_types = $value_type->getAtomicTypes();
         $strings = [];
 
@@ -58,9 +62,20 @@ final class StrvalReturnTypeProvider implements FunctionReturnTypeProviderInterf
                 continue;
             }
 
+            if ($atomic_type instanceof TNamedObject || $atomic_type instanceof TObjectWithProperties) {
+                $object_string = CastAnalyzer::castObjectToString($codebase, $atomic_type);
+
+                if ($object_string === null) {
+                    return null;
+                }
+
+                $strings = [...$strings, ...array_values($object_string->getAtomicTypes())];
+
+                continue;
+            }
+
             $scalar_strings = CastAnalyzer::castScalarToString($atomic_type);
 
-            // leave the strings of objects to the signature
             if ($scalar_strings === null) {
                 return null;
             }
@@ -72,6 +87,6 @@ final class StrvalReturnTypeProvider implements FunctionReturnTypeProviderInterf
             return null;
         }
 
-        return TypeCombiner::combine($strings, $statements_source->getCodebase());
+        return TypeCombiner::combine($strings, $codebase);
     }
 }

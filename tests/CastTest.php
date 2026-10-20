@@ -51,6 +51,42 @@ final class CastTest extends TestCase
                 }
             ',
         ];
+        yield 'floatIsCastToANonNumericStringWhenInfiniteOrNotANumber' => [
+            'code' => '<?php
+                /** @param numeric $numeric */
+                function f(float $float, $numeric): void {
+                    $cast = (string) $float;
+                    $strval = strval($float);
+                    $interpolated = "$float";
+                    $numeric_strval = strval($numeric);
+                    $literal = strval(1.5);
+                    /** @psalm-check-type-exact $cast = non-empty-string */
+                    /** @psalm-check-type-exact $strval = non-empty-string */
+                    /** @psalm-check-type-exact $interpolated = non-empty-string */
+                    /** @psalm-check-type-exact $numeric_strval = non-empty-string */
+                    /** @psalm-check-type-exact $literal = \'1.5\' */
+                }
+
+                f(INF, NAN);
+            ',
+        ];
+        yield 'strvalOfAnObjectIsWhatItsToStringReturns' => [
+            'code' => '<?php
+                final class Name {
+                    /** @return lowercase-string */
+                    public function __toString(): string {
+                        return "name";
+                    }
+                }
+
+                function f(Name $name): void {
+                    $cast = (string) $name;
+                    $strval = strval($name);
+                    /** @psalm-check-type-exact $cast = lowercase-string */
+                    /** @psalm-check-type-exact $strval = lowercase-string */
+                }
+            ',
+        ];
         yield 'voidCastDiscardsValueWithoutError' => [
             'code' => '<?php
                 $x = strlen("hello");

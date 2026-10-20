@@ -934,7 +934,17 @@ final class CastAnalyzer
             }
 
             // an int is cast to its canonical decimal form
-            return [$atomic_type instanceof TInt ? new TDecimalIntString() : new TNumericString()];
+            if ($atomic_type instanceof TInt) {
+                return [new TDecimalIntString()];
+            }
+
+            // a float is numeric unless it is infinite or not a number
+            return [
+                new TNumericString(),
+                Type::getAtomicStringFromLiteral('INF'),
+                Type::getAtomicStringFromLiteral('-INF'),
+                Type::getAtomicStringFromLiteral('NAN'),
+            ];
         }
 
         if ($atomic_type instanceof TString) {
@@ -951,6 +961,34 @@ final class CastAnalyzer
 
         if ($atomic_type instanceof TBool) {
             return [Type::getAtomicStringFromLiteral('1'), Type::getAtomicStringFromLiteral('')];
+        }
+
+        return null;
+    }
+
+    /**
+     * What an object is cast to: what the __toString of its class returns, or null if it has none
+     */
+    public static function castObjectToString(
+        Codebase $codebase,
+        TNamedObject|TObjectWithProperties $atomic_type,
+    ): ?Union {
+        foreach ([$atomic_type, ...array_values($atomic_type->extra_types)] as $intersection_type) {
+            if ($intersection_type instanceof TNamedObject) {
+                $to_string_id = new MethodIdentifier($intersection_type->value, '__tostring');
+
+                if ($codebase->methodExists($to_string_id)) {
+                    $self_class = null;
+
+                    return $codebase->getMethodReturnType($to_string_id, $self_class) ?? Type::getString();
+                }
+            }
+
+            if ($intersection_type instanceof TObjectWithProperties
+                && isset($intersection_type->methods['__tostring'])
+            ) {
+                return Type::getString();
+            }
         }
 
         return null;
