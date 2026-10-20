@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
 use Psalm\Codebase;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\TypeVisitor\ConditionalSubjectReplacer;
 use Psalm\Type;
@@ -516,16 +517,26 @@ final class TemplateInferredTypeReplacer
             $l = $template_type->getAtomicTypes();
             foreach (isset($l['mixed']) ? [$l['mixed']] : $l as $candidate_atomic_type) {
                 $candidate = new Union([$candidate_atomic_type]);
-                if (UnionTypeComparator::isContainedBy(
+                $candidate_comparison_result = new TypeComparisonResult();
+                $candidate_contained = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $candidate,
                     $conditional_type,
                     false,
                     false,
-                    null,
+                    $candidate_comparison_result,
                     false,
                     false,
-                )
+                );
+
+                // an object with __toString() is accepted where a string is expected, but it is never a string
+                if ($candidate_contained && $candidate_comparison_result->to_string_cast === true) {
+                    $matching_else_types[] = $candidate_atomic_type;
+
+                    continue;
+                }
+
+                if ($candidate_contained
                     && (!$candidate_atomic_type instanceof TInt
                         || $conditional_type->getId() !== 'float')
                 ) {
