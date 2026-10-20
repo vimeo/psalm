@@ -154,6 +154,7 @@ final class ParseTreeCreator
                     break;
 
                 case 'is':
+                case 'is not':
                 case 'as':
                 case 'of':
                     $this->handleIsOrAs($type_token);
@@ -638,6 +639,8 @@ final class ParseTreeCreator
         }
 
         while (($current_parent instanceof UnionTree
+                || $current_parent instanceof IntersectionTree
+                || $current_parent instanceof NullableTree
                 || $current_parent instanceof CallableWithReturnTypeTree)
             && $this->current_leaf->parent
         ) {
@@ -887,6 +890,7 @@ final class ParseTreeCreator
                     $this->current_leaf->value,
                     $current_parent,
                 );
+                $this->current_leaf->negated = $type_token[0] === 'is not';
 
                 if ($current_parent) {
                     $current_parent->children[] = $this->current_leaf;

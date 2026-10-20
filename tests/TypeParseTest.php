@@ -857,6 +857,34 @@ final class TypeParseTest extends TestCase
         );
     }
 
+    public function testConditionalTypeWithNullableBranches(): void
+    {
+        $this->assertSame(
+            '(T is string ? null|string : int|null)',
+            (string) Type::parseString('(T is string ? ?string : ?int)', null, ['T' => ['' => Type::getArray()]]),
+        );
+    }
+
+    public function testConditionalTypeWithIntersectionInIfBranch(): void
+    {
+        $this->assertSame(
+            '(T is string ? A&B : int)',
+            (string) Type::parseString('(T is string ? A&B : int)', null, ['T' => ['' => Type::getArray()]]),
+        );
+    }
+
+    public function testNegatedConditionalType(): void
+    {
+        $this->assertSame(
+            '(T is non-empty-string ? int : string)',
+            Type::parseString(
+                '(T is not non-empty-string ? string : int)',
+                null,
+                ['T' => ['' => Type::getArray()]],
+            )->getId(),
+        );
+    }
+
     public function testConditionalTypeWithoutSpaces(): void
     {
         $this->assertSame(
