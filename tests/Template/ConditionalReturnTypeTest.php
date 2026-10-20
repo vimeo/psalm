@@ -102,6 +102,154 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$b===' => 'true',
                 ],
             ],
+            'conditionalReturnTypeOnValueOfTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $input
+                     * @return array<key-of<T>, (value-of<T> is string ? non-empty-string : value-of<T>)>
+                     */
+                    function quote(array $input): array {
+                        throw new RuntimeException();
+                    }
+
+                    /** @param array{a: "x", b: int} $x */
+                    function f(array $x): array {
+                        return quote($x);
+                    }
+
+                    $a = quote(["a" => "x", "b" => 1]);
+                    $b = quote(["a" => 1, "b" => 2]);',
+                'assertions' => [
+                    '$a===' => "array<'a'|'b', 1|non-empty-string>",
+                    '$b===' => "array<'a'|'b', 1|2>",
+                ],
+            ],
+            'conditionalReturnTypeOnValueOfTemplateNarrowsEachBranch' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $input
+                     * @return array<key-of<T>, (value-of<T> is string ? non-empty-string : value-of<T>)>
+                     */
+                    function quote(array $input): array {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $input
+                     * @return array<key-of<T>, (value-of<T> is not string ? value-of<T> : non-empty-string)>
+                     */
+                    function quoteUnlessNotString(array $input): array {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $input
+                     * @return (value-of<T> is int ? list<value-of<T>> : value-of<T>)
+                     */
+                    function ints(array $input) {
+                        throw new RuntimeException();
+                    }
+
+                    /** @var array<string, int|string> */
+                    $input = [];
+                    $a = quote($input);
+                    $b = quoteUnlessNotString($input);
+                    $c = ints($input);',
+                'assertions' => [
+                    '$a===' => 'array<string, int|non-empty-string>',
+                    '$b===' => 'array<string, int|non-empty-string>',
+                    '$c===' => 'list<int>|string',
+                ],
+            ],
+            'conditionalReturnTypeOnCandidateOverlappingTheCondition' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is non-empty-string ? "A" : "B")
+                     */
+                    function kind($value): string {
+                        return is_string($value) && $value !== "" ? "A" : "B";
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $input
+                     * @return (value-of<T> is non-empty-string ? "A" : "B")
+                     */
+                    function valueKind(array $input): string {
+                        throw new RuntimeException();
+                    }
+
+                    /** @var string|int */
+                    $string_or_int = 1;
+                    /** @var list<string|int> */
+                    $list = [];
+                    $a = kind($string_or_int);
+                    $b = kind(1);
+                    $c = kind("x");
+                    $d = valueKind($list);',
+                'assertions' => [
+                    '$a===' => "'A'|'B'",
+                    '$b===' => "'B'",
+                    '$c===' => "'A'",
+                    '$d===' => "'A'|'B'",
+                ],
+            ],
+            'conditionalReturnTypeOnArrayThatMayBeEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $x
+                     * @return (T is non-empty-array ? "ne" : "e")
+                     */
+                    function emptiness(array $x): string {
+                        return $x ? "ne" : "e";
+                    }
+
+                    /**
+                     * @param mixed $mixed
+                     * @param array<string, int> $typed
+                     */
+                    function f($mixed, array $untyped, array $typed): void {
+                        /** @psalm-suppress MixedArgument */
+                        $a = emptiness($mixed);
+                        /** @psalm-check-type-exact $a = "e"|"ne" */
+                        /** @psalm-suppress MixedArgumentTypeCoercion */
+                        $b = emptiness($untyped);
+                        /** @psalm-check-type-exact $b = "e"|"ne" */
+                        $c = emptiness($typed);
+                        /** @psalm-check-type-exact $c = "e"|"ne" */
+                        $d = emptiness(["a" => 1]);
+                        /** @psalm-check-type-exact $d = "ne" */
+                    }',
+            ],
+            'conditionalReturnTypeOnIterableThatMayBeAnArray' => [
+                'code' => '<?php
+                    /**
+                     * @template T of iterable<mixed>
+                     * @param T $x
+                     * @return (T is array<array-key, mixed> ? "Y" : "N")
+                     */
+                    function isArray(iterable $x): string {
+                        return is_array($x) ? "Y" : "N";
+                    }
+
+                    /** @param mixed $mixed */
+                    function f($mixed, iterable $iterable): void {
+                        /** @psalm-suppress MixedArgument */
+                        $a = isArray($mixed);
+                        /** @psalm-check-type-exact $a = "N"|"Y" */
+                        $b = isArray($iterable);
+                        /** @psalm-check-type-exact $b = "N"|"Y" */
+                        $c = isArray([1]);
+                        /** @psalm-check-type-exact $c = "Y" */
+                    }',
+            ],
             'nestedConditionalOnIntReturnType' => [
                 'code' => '<?php
                     /**

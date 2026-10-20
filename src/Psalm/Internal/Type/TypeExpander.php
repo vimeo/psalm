@@ -954,7 +954,10 @@ final class TypeExpander
                 $else_conditional_return_types = [...$else_conditional_return_types, ...$candidate_types];
             }
 
-            if ($assertion && $return_type->param_name === (string) $return_type->if_type) {
+            if ($assertion
+                && $return_type->subject_type === null
+                && $return_type->param_name === (string) $return_type->if_type
+            ) {
                 $if_conditional_return_type = TypeCombiner::combine(
                     $if_conditional_return_types,
                     $codebase,
@@ -972,7 +975,10 @@ final class TypeExpander
                 }
             }
 
-            if ($assertion && $return_type->param_name === (string) $return_type->else_type) {
+            if ($assertion
+                && $return_type->subject_type === null
+                && $return_type->param_name === (string) $return_type->else_type
+            ) {
                 $else_conditional_return_type = TypeCombiner::combine(
                     $else_conditional_return_types,
                     $codebase,

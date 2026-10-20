@@ -895,6 +895,21 @@ final class ParseTreeCreator
                 if ($current_parent) {
                     $current_parent->children[] = $this->current_leaf;
                 }
+            } elseif (($type_token[0] === 'is' || $type_token[0] === 'is not')
+                && ($this->current_leaf instanceof GenericTree || $this->current_leaf instanceof EncapsulationTree)
+                && $this->current_leaf->terminated
+            ) {
+                // a condition on a type depending on a template, e.g. `value-of<T> is string`
+                $subject = $this->current_leaf;
+                $subject->parent = null;
+
+                $this->current_leaf = new TemplateIsTree('', $current_parent);
+                $this->current_leaf->subject = $subject;
+                $this->current_leaf->negated = $type_token[0] === 'is not';
+
+                if ($current_parent) {
+                    $current_parent->children[] = $this->current_leaf;
+                }
             }
         }
     }

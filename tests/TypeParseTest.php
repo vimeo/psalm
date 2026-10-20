@@ -873,6 +873,18 @@ final class TypeParseTest extends TestCase
         );
     }
 
+    public function testUnionOfConditionalTypesOnATemplateAndOnATypeDependingOnIt(): void
+    {
+        $this->assertSame(
+            "(T is string ? 'a' : 'b')|(value-of<T: as array<array-key, mixed>> is string ? 'c' : 'd')",
+            Type::parseString(
+                "(T is string ? 'a' : 'b')|(value-of<T> is string ? 'c' : 'd')",
+                null,
+                ['T' => ['' => Type::getArray()]],
+            )->getId(),
+        );
+    }
+
     public function testConditionalTypeWithIntersection(): void
     {
         $this->assertSame(
@@ -907,6 +919,36 @@ final class TypeParseTest extends TestCase
                 ['T' => ['' => Type::getArray()]],
             )->getId(),
         );
+    }
+
+    public function testConditionalTypeOnTypeDependingOnTemplate(): void
+    {
+        $this->assertSame(
+            '(value-of<T> is string ? string : int)',
+            (string) Type::parseString(
+                '(value-of<T> is string ? string : int)',
+                null,
+                ['T' => ['' => Type::getArray()]],
+            ),
+        );
+    }
+
+    public function testNegatedConditionalTypeOnTypeDependingOnTemplate(): void
+    {
+        $this->assertSame(
+            '(value-of<T> is string ? int : string)',
+            (string) Type::parseString(
+                '(value-of<T> is not string ? string : int)',
+                null,
+                ['T' => ['' => Type::getArray()]],
+            ),
+        );
+    }
+
+    public function testConditionalTypeOnTypeNotDependingOnTemplate(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('(value-of<array> is string ? string : int)', null, ['T' => ['' => Type::getArray()]]);
     }
 
     public function testConditionalTypeWithoutSpaces(): void

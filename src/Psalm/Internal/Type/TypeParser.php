@@ -199,6 +199,140 @@ final class TypeParser
     /**
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias>            $type_aliases
+     * @throws TypeParseTreeException
+     */
+    private static function getTypeFromConditionalTree(
+        ConditionalTree $parse_tree,
+        Codebase $codebase,
+        array $template_type_map,
+        array $type_aliases,
+        bool $from_docblock,
+    ): TConditional {
+        $subject_type = null;
+
+        if ($parse_tree->condition->subject !== null) {
+            $template_param_name = self::findTemplateName(
+                $parse_tree->condition->subject,
+                $template_type_map,
+            );
+
+            if ($template_param_name === null) {
+                throw new TypeParseTreeException('The type before is must depend on a template');
+            }
+
+            $subject_type = self::getTypeFromTree(
+                $parse_tree->condition->subject,
+                $codebase,
+                null,
+                $template_type_map,
+                $type_aliases,
+                $from_docblock,
+            );
+
+            if ($subject_type instanceof Atomic) {
+                $subject_type = new Union([$subject_type], ['from_docblock' => $from_docblock]);
+            }
+        } else {
+            $template_param_name = $parse_tree->condition->param_name;
+        }
+
+        if (!isset($template_type_map[$template_param_name])) {
+            throw new TypeParseTreeException('Unrecognized template \'' . $template_param_name . '\'');
+        }
+
+        if (count($parse_tree->children) !== 2) {
+            throw new TypeParseTreeException('Invalid conditional');
+        }
+
+        if (count($parse_tree->condition->children) !== 1) {
+            throw new TypeParseTreeException('Invalid conditional, expected type after is');
+        }
+
+        $first_class = array_keys($template_type_map[$template_param_name])[0];
+
+        $conditional_type = self::getTypeFromTree(
+            $parse_tree->condition->children[0],
+            $codebase,
+            null,
+            $template_type_map,
+            $type_aliases,
+            $from_docblock,
+        );
+
+        $if_type = self::getTypeFromTree(
+            $parse_tree->children[0],
+            $codebase,
+            null,
+            $template_type_map,
+            $type_aliases,
+            $from_docblock,
+        );
+
+        $else_type = self::getTypeFromTree(
+            $parse_tree->children[1],
+            $codebase,
+            null,
+            $template_type_map,
+            $type_aliases,
+            $from_docblock,
+        );
+
+        if ($conditional_type instanceof Atomic) {
+            $conditional_type = new Union([$conditional_type], ['from_docblock' => $from_docblock]);
+        }
+
+        if ($if_type instanceof Atomic) {
+            $if_type = new Union([$if_type], ['from_docblock' => $from_docblock]);
+        }
+
+        if ($else_type instanceof Atomic) {
+            $else_type = new Union([$else_type], ['from_docblock' => $from_docblock]);
+        }
+
+        if ($parse_tree->condition->negated) {
+            [$if_type, $else_type] = [$else_type, $if_type];
+        }
+
+        return new TConditional(
+            $template_param_name,
+            $first_class,
+            $template_type_map[$template_param_name][$first_class],
+            $conditional_type,
+            $if_type,
+            $else_type,
+            $from_docblock,
+            $subject_type,
+        );
+    }
+
+    /**
+     * The first template a type depends on
+     *
+     * @param array<string, array<string, Union>> $template_type_map
+     * @psalm-mutation-free
+     */
+    private static function findTemplateName(ParseTree $parse_tree, array $template_type_map): ?string
+    {
+        if (($parse_tree instanceof Value || $parse_tree instanceof GenericTree)
+            && isset($template_type_map[$parse_tree->value])
+        ) {
+            return $parse_tree->value;
+        }
+
+        foreach ($parse_tree->children as $child_tree) {
+            $template_name = self::findTemplateName($child_tree, $template_type_map);
+
+            if ($template_name !== null) {
+                return $template_name;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, array<string, Union>> $template_type_map
+     * @param  array<string, TypeAlias>            $type_aliases
      * @return  Atomic|Union
      */
     public static function getTypeFromTree(
@@ -357,72 +491,11 @@ final class TypeParser
         }
 
         if ($parse_tree instanceof ConditionalTree) {
-            $template_param_name = $parse_tree->condition->param_name;
-
-            if (!isset($template_type_map[$template_param_name])) {
-                throw new TypeParseTreeException('Unrecognized template \'' . $template_param_name . '\'');
-            }
-
-            if (count($parse_tree->children) !== 2) {
-                throw new TypeParseTreeException('Invalid conditional');
-            }
-
-            if (count($parse_tree->condition->children) !== 1) {
-                throw new TypeParseTreeException('Invalid conditional, expected type after is');
-            }
-
-            $first_class = array_keys($template_type_map[$template_param_name])[0];
-
-            $conditional_type = self::getTypeFromTree(
-                $parse_tree->condition->children[0],
+            return self::getTypeFromConditionalTree(
+                $parse_tree,
                 $codebase,
-                null,
                 $template_type_map,
                 $type_aliases,
-                $from_docblock,
-            );
-
-            $if_type = self::getTypeFromTree(
-                $parse_tree->children[0],
-                $codebase,
-                null,
-                $template_type_map,
-                $type_aliases,
-                $from_docblock,
-            );
-
-            $else_type = self::getTypeFromTree(
-                $parse_tree->children[1],
-                $codebase,
-                null,
-                $template_type_map,
-                $type_aliases,
-                $from_docblock,
-            );
-
-            if ($conditional_type instanceof Atomic) {
-                $conditional_type = new Union([$conditional_type], ['from_docblock' => $from_docblock]);
-            }
-
-            if ($if_type instanceof Atomic) {
-                $if_type = new Union([$if_type], ['from_docblock' => $from_docblock]);
-            }
-
-            if ($else_type instanceof Atomic) {
-                $else_type = new Union([$else_type], ['from_docblock' => $from_docblock]);
-            }
-
-            if ($parse_tree->condition->negated) {
-                [$if_type, $else_type] = [$else_type, $if_type];
-            }
-
-            return new TConditional(
-                $template_param_name,
-                $first_class,
-                $template_type_map[$template_param_name][$first_class],
-                $conditional_type,
-                $if_type,
-                $else_type,
                 $from_docblock,
             );
         }
