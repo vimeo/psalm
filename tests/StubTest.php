@@ -1669,4 +1669,146 @@ final class StubTest extends TestCase
 
         $this->analyzeFile($file_path, new Context());
     }
+
+    private function analyzeWithDsStub(string $code): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="stubs/extensions/ds.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile($file_path, $code);
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testIteratingDsCollectionsIsMutationFree(): void
+    {
+        $this->analyzeWithDsStub(
+            '<?php
+                use Ds\Deque;
+                use Ds\Map;
+                use Ds\Set;
+                use Ds\Vector;
+
+                /** @psalm-immutable */
+                final class Permissions {
+                    /**
+                     * @param Map<string, bool> $map
+                     * @param Set<string> $set
+                     * @param Vector<string> $vector
+                     * @param Deque<string> $deque
+                     */
+                    public function __construct(
+                        private Map $map,
+                        private Set $set,
+                        private Vector $vector,
+                        private Deque $deque,
+                    ) {}
+
+                    /** @return list<string> */
+                    public function all(): array {
+                        $result = [];
+                        foreach ($this->map as $key => $_) {
+                            $result[] = $key;
+                        }
+                        foreach ($this->set as $value) {
+                            $result[] = $value;
+                        }
+                        foreach ($this->vector as $value) {
+                            $result[] = $value;
+                        }
+                        foreach ($this->deque as $value) {
+                            $result[] = $value;
+                        }
+                        return $result;
+                    }
+                }',
+        );
+    }
+
+    public function testIteratingAFreshDsStackOrQueueOnlyReadsIt(): void
+    {
+        $this->analyzeWithDsStub(
+            '<?php
+                use Ds\Queue;
+                use Ds\Stack;
+
+                /**
+                 * @param list<int> $values
+                 * @psalm-capabilities read-props
+                 */
+                function sumStack(array $values): int {
+                    $sum = 0;
+                    foreach (new Stack($values) as $value) {
+                        $sum += $value;
+                    }
+                    return $sum;
+                }
+
+                /**
+                 * @param list<int> $values
+                 * @psalm-capabilities read-props
+                 */
+                function sumQueue(array $values): int {
+                    $sum = 0;
+                    foreach (new Queue($values) as $value) {
+                        $sum += $value;
+                    }
+                    return $sum;
+                }',
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerDestructiveDsCollections(): iterable
+    {
+        yield 'Stack' => ['Stack'];
+        yield 'Queue' => ['Queue'];
+        yield 'PriorityQueue' => ['PriorityQueue'];
+    }
+
+    #[DataProvider('providerDestructiveDsCollections')]
+    public function testIteratingAHeldDsStackOrQueueWritesIt(string $class): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('requires read-props|write-props');
+
+        $this->analyzeWithDsStub(
+            '<?php
+                use Ds\\' . $class . ';
+
+                /** @psalm-immutable */
+                final class Pending {
+                    /** @param ' . $class . '<string> $values */
+                    public function __construct(private ' . $class . ' $values) {}
+
+                    public function count(): int {
+                        $n = 0;
+                        foreach ($this->values as $_) {
+                            $n++;
+                        }
+                        return $n;
+                    }
+                }',
+        );
+    }
 }
