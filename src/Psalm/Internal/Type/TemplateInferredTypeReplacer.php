@@ -7,6 +7,7 @@ namespace Psalm\Internal\Type;
 use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\TypeVisitor\ConditionalSubjectReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassString;
@@ -488,8 +489,18 @@ final class TemplateInferredTypeReplacer
                 $template_type = Type::getNull();
             }
 
+            if ($subject_type === null
+                && !UnionTypeComparator::isContainedBy($codebase, $template_type, $as_type)
+                && ($bounded_template_type = Type::intersectUnionTypes($template_type, $as_type, $codebase))
+            ) {
+                // a value of the template is of its bound, e.g. a mixed argument for a `T of ?string` param is a
+                // string or null
+                $template_type = $bounded_template_type;
+            }
+
             $matching_if_types = [];
             $matching_else_types = [];
+            $is_decidable = true;
 
             $l = $template_type->getAtomicTypes();
             foreach (isset($l['mixed']) ? [$l['mixed']] : $l as $candidate_atomic_type) {
@@ -508,49 +519,51 @@ final class TemplateInferredTypeReplacer
                         || $conditional_type->getId() !== 'float')
                 ) {
                     $matching_if_types[] = $candidate_atomic_type;
-                } elseif (null === Type::intersectUnionTypes(
+
+                    continue;
+                }
+
+                $matching_else_types[] = $candidate_atomic_type;
+
+                $if_part = Type::intersectUnionTypes(
                     $candidate,
                     $conditional_type,
                     $codebase,
                     false,
                     false,
-                )) {
-                    $matching_else_types[] = $candidate_atomic_type;
+                );
+
+                if ($if_part === null) {
+                    continue;
                 }
-            }
 
-            $if_candidate_type = $matching_if_types ? new Union($matching_if_types) : null;
-            $else_candidate_type = $matching_else_types ? new Union($matching_else_types) : null;
-
-            if ($if_candidate_type
-                && UnionTypeComparator::isContainedBy(
+                // the candidate may or may not be of the condition, e.g. a string being a non-empty-string
+                if (UnionTypeComparator::isContainedBy(
                     $codebase,
-                    $if_candidate_type,
+                    $if_part,
                     $conditional_type,
                     false,
                     false,
                     null,
                     false,
                     false,
-                )
-            ) {
-                $if_template_type = $if_type;
-
-                $refined_template_result = clone $template_result;
-
-                if ($subject_type === null) {
-                    $refined_template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]
-                        = [
-                        new TemplateBound(
-                            $if_candidate_type,
-                        ),
-                    ];
+                )) {
+                    $matching_if_types = [...$matching_if_types, ...array_values($if_part->getAtomicTypes())];
+                } else {
+                    $is_decidable = false;
                 }
+            }
 
-                $if_template_type = self::replace(
-                    $if_template_type,
-                    $refined_template_result,
+            $if_candidate_type = $matching_if_types && $is_decidable ? new Union($matching_if_types) : null;
+            $else_candidate_type = $matching_else_types && $is_decidable ? new Union($matching_else_types) : null;
+
+            if ($if_candidate_type) {
+                $if_template_type = self::replaceConditionalBranch(
                     $codebase,
+                    $atomic_type,
+                    $template_result,
+                    $if_type,
+                    $if_candidate_type,
                 );
             }
 
@@ -567,23 +580,12 @@ final class TemplateInferredTypeReplacer
                         false,
                     ))
             ) {
-                $else_template_type = $else_type;
-
-                $refined_template_result = clone $template_result;
-
-                if ($subject_type === null) {
-                    $refined_template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]
-                        = [
-                        new TemplateBound(
-                            $else_candidate_type,
-                        ),
-                    ];
-                }
-
-                $else_template_type = self::replace(
-                    $else_template_type,
-                    $refined_template_result,
+                $else_template_type = self::replaceConditionalBranch(
                     $codebase,
+                    $atomic_type,
+                    $template_result,
+                    $else_type,
+                    $else_candidate_type,
                 );
             }
         }
@@ -622,5 +624,29 @@ final class TemplateInferredTypeReplacer
         );
 
         return $class_template_type;
+    }
+
+    /**
+     * A branch of a conditional type, where the type the condition is on is the candidates of the branch
+     */
+    private static function replaceConditionalBranch(
+        Codebase $codebase,
+        TConditional $conditional,
+        TemplateResult $template_result,
+        Union $branch_type,
+        Union $candidate_type,
+    ): Union {
+        $refined_template_result = clone $template_result;
+
+        if ($conditional->subject_type === null) {
+            $refined_template_result->lower_bounds[$conditional->param_name][$conditional->defining_class] = [
+                new TemplateBound($candidate_type),
+            ];
+        } else {
+            (new ConditionalSubjectReplacer($conditional->subject_type, $candidate_type, $codebase))
+                ->traverse($branch_type);
+        }
+
+        return self::replace($branch_type, $refined_template_result, $codebase);
     }
 }

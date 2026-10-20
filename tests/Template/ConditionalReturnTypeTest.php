@@ -125,6 +125,81 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$b===' => "array<'a'|'b', 1|2>",
                 ],
             ],
+            'conditionalReturnTypeOnValueOfTemplateNarrowsEachBranch' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $input
+                     * @return array<key-of<T>, (value-of<T> is string ? non-empty-string : value-of<T>)>
+                     */
+                    function quote(array $input): array {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $input
+                     * @return array<key-of<T>, (value-of<T> is not string ? value-of<T> : non-empty-string)>
+                     */
+                    function quoteUnlessNotString(array $input): array {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $input
+                     * @return (value-of<T> is int ? list<value-of<T>> : value-of<T>)
+                     */
+                    function ints(array $input) {
+                        throw new RuntimeException();
+                    }
+
+                    /** @var array<string, int|string> */
+                    $input = [];
+                    $a = quote($input);
+                    $b = quoteUnlessNotString($input);
+                    $c = ints($input);',
+                'assertions' => [
+                    '$a===' => 'array<string, int|non-empty-string>',
+                    '$b===' => 'array<string, int|non-empty-string>',
+                    '$c===' => 'list<int>|string',
+                ],
+            ],
+            'conditionalReturnTypeOnCandidateOverlappingTheCondition' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is non-empty-string ? "A" : "B")
+                     */
+                    function kind($value): string {
+                        return is_string($value) && $value !== "" ? "A" : "B";
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $input
+                     * @return (value-of<T> is non-empty-string ? "A" : "B")
+                     */
+                    function valueKind(array $input): string {
+                        throw new RuntimeException();
+                    }
+
+                    /** @var string|int */
+                    $string_or_int = 1;
+                    /** @var list<string|int> */
+                    $list = [];
+                    $a = kind($string_or_int);
+                    $b = kind(1);
+                    $c = kind("x");
+                    $d = valueKind($list);',
+                'assertions' => [
+                    '$a===' => "'A'|'B'",
+                    '$b===' => "'B'",
+                    '$c===' => "'A'",
+                    '$d===' => "'A'|'B'",
+                ],
+            ],
             'nestedConditionalOnIntReturnType' => [
                 'code' => '<?php
                     /**
