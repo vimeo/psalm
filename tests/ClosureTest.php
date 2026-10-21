@@ -879,6 +879,83 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'FirstClassCallable:InheritedMagicStaticMethod' => [
+                'code' => '<?php
+                    abstract class Facade {
+                        /** @psalm-pure */
+                        public static function __callStatic(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+                    final class Encrypter extends Facade {}
+
+                    $closure = Encrypter::encrypt(...);
+                ',
+                'assertions' => [
+                    '$closure' => 'Closure[pure]:mixed',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InheritedMethodWithDynamicName' => [
+                'code' => '<?php
+                    abstract class A {
+                        public function make(string $s): int {
+                            return strlen($s);
+                        }
+                    }
+                    final class C extends A {}
+
+                    $method = "make";
+                    $closure = (new C())->$method(...);
+                ',
+                'assertions' => [
+                    '$closure' => 'Closure[impure](string):int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InheritedStaticMethodWithDynamicName' => [
+                'code' => '<?php
+                    abstract class A {
+                        public static function make(): int {
+                            return 1;
+                        }
+                    }
+                    final class C extends A {}
+
+                    $method = "make";
+                    $closure = C::$method(...);
+                ',
+                'assertions' => [
+                    '$closure' => 'Closure[impure]():int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:StaticMethodThroughMixin' => [
+                'code' => '<?php
+                    final class Builder {
+                        public function has(string $relation): self {
+                            return $this;
+                        }
+                    }
+
+                    /** @mixin Builder */
+                    final class Model {
+                        public static function __callStatic(string $name, array $args): mixed {
+                            return (new Builder())->$name(...$args);
+                        }
+                    }
+
+                    $closure = Model::has(...);
+                ',
+                'assertions' => [
+                    '$closure' => 'Closure[impure](string):Builder',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'FirstClassCallable:ParentMagicInstanceMethod' => [
                 'code' => '<?php
                     /** @method string has(string $s) */
