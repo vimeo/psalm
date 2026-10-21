@@ -2161,6 +2161,138 @@ final class ConstantTest extends TestCase
                     class FooBar implements FooInterface, BarInterface {}
                     PHP,
             ],
+            'firstClassCallableInClassConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace Foo;
+
+                    abstract class Base {
+                        public static function triple(int $x): int { return $x * 3; }
+                    }
+
+                    final class K extends Base {
+                        public const F = strtoupper(...);
+                        public const FQ = \strlen(...);
+                        public const M = SELF::double(...);
+                        public const P = PARENT::triple(...);
+                        public const B = Base::triple(...);
+
+                        public static function double(int $x): int { return $x * 2; }
+                    }
+
+                    $f = K::F;
+                    $fq = K::FQ;
+                    $m = K::M;
+                    $p = K::P;
+                    $b = K::B;
+                    PHP,
+                'assertions' => [
+                    '$f' => 'pure-Closure(string):string',
+                    '$fq' => 'pure-Closure(string):int<0, max>',
+                    '$m' => 'impure-Closure(int):int',
+                    '$p' => 'impure-Closure(int):int',
+                    '$b' => 'impure-Closure(int):int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'firstClassCallableInTraitConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait T {
+                        public const Closure F = self::twice(...);
+
+                        public static function twice(int $x): int { return $x * 2; }
+                    }
+
+                    class C {
+                        use T;
+                    }
+
+                    $f = C::F;
+                    PHP,
+                'assertions' => [
+                    '$f' => 'impure-Closure(int):int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'firstClassCallableInsideClosureInConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public const Closure F = static function (Closure $f): Closure {
+                            return $f(...);
+                        };
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'firstClassCallableInGlobalConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace Foo;
+
+                    function twice(int $x): int { return $x * 2; }
+
+                    const G = \strlen(...);
+                    const H = twice(...);
+
+                    $g = G;
+                    $h = H;
+                    PHP,
+                'assertions' => [
+                    '$g' => 'pure-Closure(string):int<0, max>',
+                    '$h' => 'impure-Closure(int):int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'firstClassCallableInConstantPrefersNamespacedFunction' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace N;
+
+                    use Closure;
+
+                    function strlen(int $x): int { return $x; }
+
+                    final class A {
+                        public const F = strlen(...);
+                    }
+
+                    /** @param A::F $f */
+                    function accept(Closure $f): void {}
+
+                    accept(A::F);
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'firstClassCallableInConstantExpandsRelativeTypesOfDeclaringClass' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class G {}
+
+                    class B extends G {
+                        public static function m(parent $x): parent { return $x; }
+                    }
+
+                    final class A extends B {
+                        public const F = self::m(...);
+                    }
+
+                    $f = A::F;
+                    PHP,
+                'assertions' => [
+                    '$f' => 'impure-Closure(G):G',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -2728,6 +2860,73 @@ final class ConstantTest extends TestCase
                 'error_message' => 'ParseError',
                 'error_levels' => [],
                 'php_version' => '8.2',
+            ],
+            'firstClassCallableOfUndefinedFunctionInConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public const F = undefined_function(...);
+                    }
+                    PHP,
+                'error_message' => 'UndefinedFunction',
+                'error_levels' => ['MissingClassConstType'],
+                'php_version' => '8.5',
+            ],
+            'firstClassCallableOfInstanceMethodInConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public function m(): void {}
+                        public const F = self::m(...);
+                    }
+                    PHP,
+                'error_message' => 'NonStaticSelfCall',
+                'error_levels' => ['MissingClassConstType'],
+                'php_version' => '8.5',
+            ],
+            'firstClassCallableOfObjectMethodInConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    const F = $o->m(...);
+                    PHP,
+                'error_message' => 'ParseError',
+                'error_levels' => ['MixedMethodCall', 'UndefinedGlobalVariable'],
+                'php_version' => '8.5',
+            ],
+            'firstClassCallableInConstantBeforePhp85' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public const F = strtoupper(...);
+                    }
+                    PHP,
+                'error_message' => 'ParseError',
+                'error_levels' => ['MissingClassConstType'],
+                'php_version' => '8.4',
+            ],
+            'firstClassCallableOfCallStaticTargetInConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public static function __callStatic(string $name, array $arguments): mixed { return null; }
+                        public const F = self::foo(...);
+                    }
+                    PHP,
+                'error_message' => 'UndefinedMethod',
+                'error_levels' => ['MissingClassConstType'],
+                'php_version' => '8.5',
+            ],
+            'firstClassCallableOfPseudoStaticMethodInConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @method static int foo() */
+                    class A {
+                        public const F = self::foo(...);
+                    }
+                    PHP,
+                'error_message' => 'UndefinedMethod',
+                'error_levels' => ['MissingClassConstType'],
+                'php_version' => '8.5',
             ],
         ];
     }
