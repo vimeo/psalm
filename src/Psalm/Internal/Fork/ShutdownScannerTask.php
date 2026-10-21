@@ -49,6 +49,7 @@ final class ShutdownScannerTask implements Task
             'global_constants' => $codebase->getAllStubbedConstants(),
             'unresolved_global_constants' => $codebase->getAllUnresolvedGlobalConstants(),
             'global_functions' => $codebase->functions->getAllStubbedFunctions(),
+            'progress_output' => $project_analyzer->progress->takeWorkerOutput(),
         ];
     }
 }

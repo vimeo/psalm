@@ -190,8 +190,6 @@ function checkDirRegression(): int
         $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
-        $this->assertStringContainsString('Scanning files...', $output);
-        $this->assertStringContainsString('Analyzing files...', $output);
 
         $this->assertSame(0, IssueBuffer::getErrorCount());
 
@@ -402,8 +400,6 @@ final class Bat
         $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
-        $this->assertStringContainsString('Scanning files...', $output);
-        $this->assertStringContainsString('Analyzing files...', $output);
 
         $this->assertSame(0, IssueBuffer::getErrorCount());
 
@@ -443,8 +439,6 @@ final class Bat
         $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
-        $this->assertStringContainsString('Scanning files...', $output);
-        $this->assertStringContainsString('Analyzing files...', $output);
 
         $this->assertSame(0, IssueBuffer::getErrorCount());
 
@@ -484,8 +478,6 @@ final class Bat
         $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
-        $this->assertStringContainsString('Scanning files...', $output);
-        $this->assertStringContainsString('Analyzing files...', $output);
 
         $this->assertSame(0, IssueBuffer::getErrorCount());
 

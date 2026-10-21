@@ -311,15 +311,13 @@ final class Psalter
         } elseif ($in_ci || !CliUtils::streamIsInteractive(STDERR)) {
             // Same rationale as in Psalm.php: a `\r`-based progress bar on a
             // piped stderr just floods the log with every intermediate update.
-            $progress = new LongProgress(true, false, true);
+            $progress = new LongProgress(true, false, true, CliUtils::useColor($options));
         } else {
-            $progress = new DefaultProgress();
+            $progress = new DefaultProgress(use_color: CliUtils::useColor($options));
         }
 
         $stdout_report_options = new ReportOptions();
-        $stdout_report_options->use_color = !array_key_exists('m', $options)
-            && !CliUtils::noColorRequested()
-            && !CliUtils::runningUnderAiAgent();
+        $stdout_report_options->use_color = CliUtils::useColor($options);
 
         $project_analyzer = new ProjectAnalyzer(
             $config,
