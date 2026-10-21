@@ -1464,6 +1464,30 @@ final class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'conditionalOnAConstantOfAClassNamedFalsy' => [
+                'code' => '<?php
+                    final class falsy {
+                        public const VALUE = 1;
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is falsy::VALUE ? "match" : "other")
+                     */
+                    function check(mixed $value): string {
+                        return $value === falsy::VALUE ? "match" : "other";
+                    }
+
+                    $one = check(1);
+                    $zero = check(0);',
+                'assertions' => [
+                    '$one===' => "'match'",
+                    '$zero===' => "'other'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'falsyConditionalSubjectMatchesFalsyValues' => [
                 'code' => '<?php
                     /**
