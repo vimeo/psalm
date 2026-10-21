@@ -6,6 +6,7 @@ namespace Psalm\Internal;
 
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\Any;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use UnexpectedValueException;
@@ -173,6 +174,12 @@ final class Algebra
             $clause_var = array_keys($clause_a->possibilities)[0];
             $only_type = array_pop(array_values($clause_a->possibilities)[0]);
             $negated_clause_type = $only_type->getNegation();
+
+            // assertions that cannot be negated (e.g. bounds implied by another operand) have no complement
+            if ($negated_clause_type instanceof Any) {
+                continue;
+            }
+
             $negated_clause_type_string = (string)$negated_clause_type;
 
             foreach ($cloned_clauses as $clause_b_hash => $clause_b) {

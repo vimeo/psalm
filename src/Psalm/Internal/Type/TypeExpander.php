@@ -844,14 +844,12 @@ final class TypeExpander
 
             $all_conditional_return_types = [...$if_conditional_return_types, ...$else_conditional_return_types];
 
-            $number_of_types = count($all_conditional_return_types);
             // we filter TNever that have no bearing on the return type
-            if ($number_of_types > 1) {
-                $all_conditional_return_types = array_filter(
-                    $all_conditional_return_types,
-                    static fn(Atomic $atomic_type): bool => !$atomic_type instanceof TNever,
-                );
-            }
+            // (there are always at least two types here: one from the if branch and one from the else branch)
+            $all_conditional_return_types = array_filter(
+                $all_conditional_return_types,
+                static fn(Atomic $atomic_type): bool => !$atomic_type instanceof TNever,
+            );
 
             // if we still have more than one type, we remove TVoid and replace it by TNull
             $number_of_types = count($all_conditional_return_types);
