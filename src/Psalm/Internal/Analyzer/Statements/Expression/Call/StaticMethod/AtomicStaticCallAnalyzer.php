@@ -1154,7 +1154,7 @@ final class AtomicStaticCallAnalyzer
         $fake_method_call_expr = new VirtualMethodCall(
             new VirtualVariable($virtual_var_name, $stmt->class->getAttributes()),
             $stmt_name,
-            $stmt->getArgs(),
+            $stmt->args,
             $stmt->getAttributes(),
         );
 
