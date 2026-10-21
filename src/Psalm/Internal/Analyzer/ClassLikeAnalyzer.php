@@ -772,7 +772,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             ? 0
             : count($parent_storage->template_types);
 
-        if ($parent_storage->getRequiredTemplateParamCount() > $given_param_count) {
+        if ($parent_storage->getRequiredExtendedTemplateParamCount() > $given_param_count) {
             IssueBuffer::maybeAdd(
                 new MissingTemplateParam(
                     $storage->name . ' has missing template params when extending ' . $parent_storage->name

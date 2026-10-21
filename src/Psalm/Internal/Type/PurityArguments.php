@@ -134,7 +134,7 @@ final class PurityArguments
                 break;
             }
 
-            $default = $bind_defaults ? $storage->template_defaults[$template_name] ?? null : null;
+            $default = $bind_defaults ? $storage->template_type_defaults[$template_name] ?? null : null;
             $type_args[] = $default ?? self::getOmittedArgument($bound);
         }
 

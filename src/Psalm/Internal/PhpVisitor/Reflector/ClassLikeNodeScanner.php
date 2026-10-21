@@ -581,7 +581,14 @@ final class ClassLikeNodeScanner
                         continue;
                     }
 
-                    $storage->template_defaults[$template_name] = $default_type;
+                    /** @psalm-suppress UnusedMethodCall */
+                    $default_type->queueClassLikesForScanning(
+                        $this->codebase,
+                        $this->file_storage,
+                        $storage->template_types,
+                    );
+
+                    $storage->template_type_defaults[$template_name] = $default_type;
                 }
 
                 foreach ($docblock_info->purity_templates as $purity_template) {

@@ -1123,12 +1123,15 @@ final class Populator
 
                 // trailing templates left out are bound to their default
                 foreach ($parent_storage->template_types as $template_name => $_) {
-                    if (!isset($storage->template_extended_params[$parent_storage->name][$template_name])
-                        && isset($parent_storage->template_defaults[$template_name])
+                    $default = $parent_storage->template_defaults[$template_name]
+                        ?? $parent_storage->template_type_defaults[$template_name]
+                        ?? null;
+
+                    if ($default !== null
+                        && !isset($storage->template_extended_params[$parent_storage->name][$template_name])
                     ) {
                         $storage->template_extended_params[$parent_storage->name][$template_name]
-                            = $parent_storage->template_defaults[$template_name]
-                                ->setProperties(['from_docblock' => false]);
+                            = $default->setProperties(['from_docblock' => false]);
                     }
                 }
 
@@ -1146,7 +1149,9 @@ final class Populator
                 foreach ($parent_storage->template_types as $template_name => $template_type_map) {
                     foreach ($template_type_map as $template_type) {
                         // a template with a default is bound to it, others to their bound
-                        $default_param = ($parent_storage->template_defaults[$template_name] ?? $template_type)
+                        $default_param = ($parent_storage->template_defaults[$template_name]
+                            ?? $parent_storage->template_type_defaults[$template_name]
+                            ?? $template_type)
                             ->setProperties(['from_docblock' => false]);
                         $storage->template_extended_params[$parent_storage->name][$template_name] = $default_param;
                     }

@@ -14,6 +14,29 @@ final class ClassTemplateDefaultTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    public function testClassOfADefaultIsQueuedForScanning(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace App;
+
+                /** @template T = \Ext\Value */
+                abstract class Box {}',
+        );
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $codebase->scanFiles();
+
+        $this->assertArrayHasKey(
+            'ext\value',
+            $codebase->file_storage_provider->get($file_path)->referenced_classlikes,
+        );
+    }
+
     /**
      * @psalm-pure
      */
