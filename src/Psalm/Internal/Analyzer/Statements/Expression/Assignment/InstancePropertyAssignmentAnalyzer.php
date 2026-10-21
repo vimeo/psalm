@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ConstExprClosureValidator;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -446,6 +447,12 @@ final class InstancePropertyAssignmentAnalyzer
                         ),
                     );
                 }
+
+                ConstExprClosureValidator::validate(
+                    $statements_analyzer,
+                    $prop->default,
+                    $statements_analyzer->getSuppressedIssues(),
+                );
 
                 ExpressionAnalyzer::analyze($statements_analyzer, $prop->default, $context);
 

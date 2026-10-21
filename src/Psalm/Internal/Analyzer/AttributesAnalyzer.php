@@ -14,6 +14,7 @@ use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Stmt\Expression;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\ConstExprClosureValidator;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Provider\NodeDataProvider;
@@ -86,6 +87,10 @@ final class AttributesAnalyzer
                 $attribute_class_storage,
                 $suppressed_issues,
             );
+
+            foreach ($attribute->args as $arg) {
+                ConstExprClosureValidator::validate($source, $arg->value, $suppressed_issues);
+            }
 
             self::analyzeAttributeConstruction(
                 $source,

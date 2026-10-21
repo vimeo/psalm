@@ -2161,6 +2161,149 @@ final class ConstantTest extends TestCase
                     class FooBar implements FooInterface, BarInterface {}
                     PHP,
             ],
+            'staticClosureInClassConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class K {
+                        public const C = static function (int $x): int { return $x * 2; };
+                    }
+
+                    $a = (K::C)(2);
+                    PHP,
+                'assertions' => [
+                    '$a' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'staticClosureInGlobalConstantUsedInFunction' => [
+                'code' => <<<'PHP'
+                    <?php
+                    const G = static function (string $s): string { return $s; };
+
+                    function f(): string {
+                        return (G)('x');
+                    }
+
+                    $a = f();
+                    PHP,
+                'assertions' => [
+                    '$a' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'staticClosureInClassConstantArrayKeepsShape' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class K {
+                        public const A = [
+                            'f' => static function (int $x): string { return (string) $x; },
+                            'n' => 1,
+                        ];
+                    }
+
+                    $a = K::A;
+                    PHP,
+                'assertions' => [
+                    '$a===' => 'array{f: Closure(int):string, n: 1}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'staticClosureInTraitConstantResolvesSelfToUsingClass' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait T {
+                        public const C = static function (): self { return new self; };
+                    }
+
+                    class A {
+                        use T;
+
+                        public function f(): int { return 1; }
+                    }
+
+                    final class B extends A {}
+
+                    $b = (B::C)();
+                    $a = (A::C)();
+                    PHP,
+                'assertions' => [
+                    '$a' => 'A',
+                    '$b' => 'A',
+                ],
+                'ignored_issues' => ['MissingClassConstType'],
+                'php_version' => '8.5',
+            ],
+            'staticClosureAsCallableParameterDefault' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(callable $c = static function (): int { return 1; }): void {
+                        $c();
+                    }
+
+                    function g(?callable $c = static function (): int { return 1; }): void {}
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'namespacedTraitAttributeDoesNotResolveToGlobalClassOfSameName' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace {
+                        class T {}
+
+                        #[Attribute]
+                        class At {
+                            public function __construct(public string $name) {}
+                        }
+                    }
+
+                    namespace N {
+                        #[\At(self::class)]
+                        trait T {}
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'staticClosureInOtherConstantExpressionContexts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    #[Attribute]
+                    final class At {
+                        public function __construct(public readonly Closure $f) {}
+                    }
+
+                    final class K {
+                        public Closure $p = static function (): int { return 1; };
+
+                        public function m(
+                            #[At(static function (): int { return 1; })] ?Closure $c = null,
+                            Closure $d = static function (): int { return 1; },
+                        ): void {
+                            static $s = function (): int { return 1; };
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'closureInStaticVariableInitialiserBeforePhp85' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        static $s = function (): int { return 1; };
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
@@ -2728,6 +2871,107 @@ final class ConstantTest extends TestCase
                 'error_message' => 'ParseError',
                 'error_levels' => [],
                 'php_version' => '8.2',
+            ],
+            'nonStaticClosureInClassConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class K {
+                        public const C = function (): int { return 1; };
+                    }
+                    PHP,
+                'error_message' => 'Closures in constant expressions must be static',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'closureWithUseInClassConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $x = 1;
+                    final class K {
+                        public const C = static function () use ($x): int { return 1; };
+                    }
+                    PHP,
+                'error_message' => 'Cannot use(...) variables in constant expression',
+                'error_levels' => ['UndefinedVariable'],
+                'php_version' => '8.5',
+            ],
+            'arrowFunctionInClassConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class K {
+                        public const C = static fn (): int => 1;
+                    }
+                    PHP,
+                'error_message' => 'Constant expression contains invalid operations',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'closureInClassConstantBeforePhp85' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class K {
+                        public const C = static function (): int { return 1; };
+                    }
+                    PHP,
+                'error_message' => 'Closures in constant expressions require PHP 8.5',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'nonStaticClosureInParameterDefault' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(Closure $c = function (): int { return 1; }): void {}
+                    PHP,
+                'error_message' => 'Closures in constant expressions must be static',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'nonStaticClosureInTraitConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace N;
+
+                    trait T {
+                        public const C = function (): int { return 1; };
+                    }
+
+                    final class A {
+                        use T;
+                    }
+                    PHP,
+                'error_message' => 'Closures in constant expressions must be static',
+                'error_levels' => ['MissingClassConstType'],
+                'php_version' => '8.5',
+            ],
+            'nonStaticClosureInGlobalTraitPropertyDefault' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait T {
+                        public \Closure $p = function (): int { return 1; };
+                    }
+
+                    final class A {
+                        use T;
+                    }
+                    PHP,
+                'error_message' => 'Closures in constant expressions must be static',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'staticClosureConstantInCircularInheritance' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A extends B {
+                        public const C = static function (): int { return 1; };
+                    }
+
+                    class B extends A {}
+
+                    $a = (A::C)();
+                    PHP,
+                'error_message' => 'CircularReference',
+                'error_levels' => ['MissingClassConstType'],
+                'php_version' => '8.5',
             ],
         ];
     }
