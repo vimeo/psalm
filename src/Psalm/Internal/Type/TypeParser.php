@@ -260,14 +260,20 @@ final class TypeParser
 
         $first_class = array_keys($template_type_map[$template_param_name])[0];
 
-        $conditional_type = self::getTypeFromTree(
-            $parse_tree->condition->children[0],
-            $codebase,
-            null,
-            $template_type_map,
-            $type_aliases,
-            $from_docblock,
-        );
+        $condition_tree = $parse_tree->condition->children[0];
+
+        // `empty` is an alias of `never`, which no value is of; as a condition it means PHP's `empty()`
+        $conditional_type = $condition_tree instanceof Value
+            && ($condition_tree->value === 'empty' || $condition_tree->value === 'falsy')
+            ? self::getFalsyUnion($from_docblock)
+            : self::getTypeFromTree(
+                $condition_tree,
+                $codebase,
+                null,
+                $template_type_map,
+                $type_aliases,
+                $from_docblock,
+            );
 
         $if_type = self::getTypeFromTree(
             $parse_tree->children[0],
@@ -313,6 +319,24 @@ final class TypeParser
             $from_docblock,
             $subject_type,
         );
+    }
+
+    /**
+     * The values `empty()` is true for
+     *
+     * @psalm-pure
+     */
+    private static function getFalsyUnion(bool $from_docblock): Union
+    {
+        return new Union([
+            new TFalse($from_docblock),
+            new TLiteralInt(0, $from_docblock),
+            new TLiteralFloat(0.0, $from_docblock),
+            TLiteralString::make('', $from_docblock),
+            TLiteralString::make('0', $from_docblock),
+            new TNull($from_docblock),
+            Type::getEmptyArrayAtomic(),
+        ], ['from_docblock' => $from_docblock]);
     }
 
     /**
