@@ -38,7 +38,105 @@ final class ClassLikeDocblockParserTest extends TestCase
         $node = new Class_(null);
         $php_parser_doc = new Doc($doc);
         $class_docblock = ClassLikeDocblockParser::parse($node, $php_parser_doc, new Aliases());
-        $this->assertSame([['T', 'of', 'string', true, 33]], $class_docblock->templates);
+        $this->assertSame([['T', 'of', 'string', true, 33, null]], $class_docblock->templates);
+    }
+
+    public function testTemplateDefaultWithoutBound(): void
+    {
+        $doc = '/**
+ * @template T = string
+ */
+';
+        $class_docblock = ClassLikeDocblockParser::parse(new Class_(null), new Doc($doc), new Aliases());
+        $this->assertSame([['T', null, null, false, 17, 'string']], $class_docblock->templates);
+    }
+
+    public function testTemplateDefaultWithBound(): void
+    {
+        $doc = '/**
+ * @template T of int|null = null
+ */
+';
+        $class_docblock = ClassLikeDocblockParser::parse(new Class_(null), new Doc($doc), new Aliases());
+        $this->assertSame([['T', 'of', 'int|null', false, 17, 'null']], $class_docblock->templates);
+    }
+
+    public function testTemplateDefaultWithoutSpaces(): void
+    {
+        $doc = '/**
+ * @template T=string
+ */
+';
+        $class_docblock = ClassLikeDocblockParser::parse(new Class_(null), new Doc($doc), new Aliases());
+        $this->assertSame([['T', null, null, false, 17, 'string']], $class_docblock->templates);
+    }
+
+    public function testTemplateBoundWithQuotedEqualsIsNotSplitAsDefault(): void
+    {
+        $doc = '/**
+ * @template T of \'a = b\'
+ */
+';
+        $class_docblock = ClassLikeDocblockParser::parse(new Class_(null), new Doc($doc), new Aliases());
+        $this->assertSame([['T', 'of', "'a = b'", false, 17, null]], $class_docblock->templates);
+    }
+
+    public function testTemplateDefaultOfZero(): void
+    {
+        $doc = '/**
+ * @template T of int = 0
+ * @template U=0
+ */
+';
+        $class_docblock = ClassLikeDocblockParser::parse(new Class_(null), new Doc($doc), new Aliases());
+        $this->assertSame(
+            [['T', 'of', 'int', false, 17, '0'], ['U', null, null, false, 43, '0']],
+            $class_docblock->templates,
+        );
+    }
+
+    public function testTemplateDefaultAfterBoundWithSpaces(): void
+    {
+        $doc = '/**
+ * @template T of array{a: int, b: string} = array{a: 1, b: \'x\'}
+ */
+';
+        $class_docblock = ClassLikeDocblockParser::parse(new Class_(null), new Doc($doc), new Aliases());
+        $this->assertSame(
+            [['T', 'of', 'array{a: int, b: string}', false, 17, "array{a: 1, b: 'x'}"]],
+            $class_docblock->templates,
+        );
+    }
+
+    public function testTemplateDefaultAfterSpacedUnionBound(): void
+    {
+        $doc = '/**
+ * @template T of int | string = int
+ * @template U of Foo<int, string> | null = null
+ * @template V of A & B = A
+ */
+';
+        $class_docblock = ClassLikeDocblockParser::parse(new Class_(null), new Doc($doc), new Aliases());
+        $templates = [];
+
+        foreach ($class_docblock->templates as $template) {
+            $templates[$template[0]] = [$template[2], $template[5]];
+        }
+
+        $this->assertSame(
+            ['T' => ['int | string', 'int'], 'U' => ['Foo<int, string> | null', 'null'], 'V' => ['A & B', 'A']],
+            $templates,
+        );
+    }
+
+    public function testEqualsSignInDescriptionIsNotADefault(): void
+    {
+        $doc = '/**
+ * @template T of Foo the foo, = sign
+ */
+';
+        $class_docblock = ClassLikeDocblockParser::parse(new Class_(null), new Doc($doc), new Aliases());
+        $this->assertSame([['T', 'of', 'Foo the foo, = sign', false, 17, null]], $class_docblock->templates);
     }
 
     /**

@@ -344,8 +344,9 @@ final class ClassLikeStorage implements HasAttributesInterface
     public ?array $template_covariants = null;
 
     /**
-     * The default value of each purity template that has one (`@psalm-purity-template C(pure) <= io`):
-     * what a subclass that does not bind the template gets.
+     * The default of each template that has one: what a use or a subclass that does not bind the template
+     * gets. A purity template (`@psalm-purity-template C(pure) <= io`) always ends up with one, a type
+     * template only when it declares one (`@template TCount of int|null = null`).
      *
      * @var array<string, Union>
      */
@@ -531,17 +532,23 @@ final class ClassLikeStorage implements HasAttributesInterface
     }
 
     /**
-     * How many template params a use of this class must give: all of them, except trailing purity
-     * templates with a default, which need not be given.
+     * How many template params an `@extends`, `@implements` or `@use` of this class must give: all of
+     * them, except trailing templates with a default, which need not be given.
+     *
+     * A generic type (`Box<int>`) can only leave out trailing purity templates: the default of a type
+     * template is for the classes extending it, as what reads the type arguments of a generic type
+     * (comparing two of them, fetching a property) does not apply it.
      *
      * @psalm-mutation-free
      */
-    public function getRequiredTemplateParamCount(): int
+    public function getRequiredTemplateParamCount(bool $purity_defaults_only = false): int
     {
         $required_param_count = count($this->template_types ?? []);
 
         foreach (array_reverse(array_keys($this->template_types ?? [])) as $template_name) {
-            if (!isset($this->template_defaults[$template_name])) {
+            $default = $this->template_defaults[$template_name] ?? null;
+
+            if ($default === null || ($purity_defaults_only && !Capabilities::isPurityType($default))) {
                 break;
             }
 

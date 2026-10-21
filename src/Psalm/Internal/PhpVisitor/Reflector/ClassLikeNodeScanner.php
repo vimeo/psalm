@@ -446,8 +446,8 @@ final class ClassLikeNodeScanner
                 usort(
                     $docblock_info->templates,
                     /**
-                     * @param array{string, ?string, ?string, bool, int} $l
-                     * @param array{string, ?string, ?string, bool, int} $r
+                     * @param array{string, ?string, ?string, bool, int, ?string} $l
+                     * @param array{string, ?string, ?string, bool, int, ?string} $r
                      */
                     static fn(array $l, array $r): int
                         => [in_array($l[0], $purity_templates, true), $l[4]]
@@ -535,6 +535,54 @@ final class ClassLikeNodeScanner
                 }
 
                 $this->class_template_types = $storage->template_types;
+
+                foreach ($docblock_info->templates as $template_map) {
+                    $template_name = $template_map[0];
+
+                    if ($template_map[5] === null
+                        || !isset($storage->template_types[$template_name])
+                        || in_array($template_name, $purity_templates, true)
+                    ) {
+                        continue;
+                    }
+
+                    try {
+                        $default_type = TypeParser::parseTokens(
+                            TypeTokenizer::getFullyQualifiedTokens(
+                                CommentAnalyzer::sanitizeDocblockType(
+                                    CommentAnalyzer::splitDocLine($template_map[5])[0],
+                                ),
+                                $this->aliases,
+                                $storage->template_types,
+                                $this->type_aliases,
+                            ),
+                            null,
+                            $storage->template_types,
+                            $this->type_aliases,
+                        );
+                    } catch (DocblockParseException | TypeParseTreeException $e) {
+                        $storage->docblock_issues[] = new InvalidDocblock(
+                            $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                            $name_location ?? $class_location,
+                        );
+
+                        continue;
+                    }
+
+                    // the default stands as it is for a class that omits the argument: no other template
+                    // of this class is bound by then to substitute for a reference to it
+                    if ($default_type->getTemplateTypes() !== []) {
+                        $storage->docblock_issues[] = new InvalidDocblock(
+                            'The default of template ' . $template_name . ' must not reference a template,'
+                            . ' in docblock for ' . $fq_classlike_name,
+                            $name_location ?? $class_location,
+                        );
+
+                        continue;
+                    }
+
+                    $storage->template_defaults[$template_name] = $default_type;
+                }
 
                 foreach ($docblock_info->purity_templates as $purity_template) {
                     $bound = $storage->template_types[$purity_template][$fq_classlike_name] ?? null;

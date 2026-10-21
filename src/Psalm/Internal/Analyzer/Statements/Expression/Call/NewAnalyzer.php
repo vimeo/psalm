@@ -1796,10 +1796,12 @@ final class NewAnalyzer extends CallAnalyzer
      */
     private static function hasTemplatesInferredByConstructor(Codebase $codebase, ClassLikeStorage $storage): bool
     {
-        // every purity template the class declares has a default (its upper bound without one),
-        // which tells it apart from a type template bounded by a type alias or a purity template
+        // every purity template the class declares has a purity default (its upper bound without one),
+        // which tells it apart from a type template, whether that has a default of its own or not
         foreach ($storage->template_types ?? [] as $template_name => $_) {
-            if (!isset($storage->template_defaults[$template_name])) {
+            $default = $storage->template_defaults[$template_name] ?? null;
+
+            if ($default === null || !Capabilities::isPurityType($default)) {
                 return true;
             }
         }

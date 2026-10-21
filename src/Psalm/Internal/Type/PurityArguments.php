@@ -99,12 +99,13 @@ final class PurityArguments
      * The type parameters of a use of the class, with the purity arguments in the positions of the
      * purity templates: `Foo[pure]`, for a class with type templates, gives them their bounds.
      * Parameters that do not fit the templates are left alone, for the checks to report them.
+     * With `$bind_defaults` (an `@extends Foo[pure]<int>`), the type templates left out take their default.
      *
      * @param list<Union> $type_params
      * @return list<Union>
      * @psalm-mutation-free
      */
-    public static function align(array $type_params, ClassLikeStorage $storage): array
+    public static function align(array $type_params, ClassLikeStorage $storage, bool $bind_defaults = false): array
     {
         [$type_args, $purity_args] = self::split($type_params);
 
@@ -122,7 +123,7 @@ final class PurityArguments
 
         $i = 0;
 
-        foreach ($storage->template_types ?? [] as $type_map) {
+        foreach ($storage->template_types ?? [] as $template_name => $type_map) {
             if ($i++ < count($type_args)) {
                 continue;
             }
@@ -133,7 +134,8 @@ final class PurityArguments
                 break;
             }
 
-            $type_args[] = self::getOmittedArgument($bound);
+            $default = $bind_defaults ? $storage->template_defaults[$template_name] ?? null : null;
+            $type_args[] = $default ?? self::getOmittedArgument($bound);
         }
 
         return [...$type_args, ...$purity_args];

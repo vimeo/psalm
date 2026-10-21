@@ -1107,6 +1107,7 @@ final class Populator
                 $storage->template_extended_offsets[$parent_storage->name] = PurityArguments::align(
                     array_values($storage->template_extended_offsets[$parent_storage->name]),
                     $parent_storage,
+                    true,
                 );
 
                 foreach ($storage->template_extended_offsets[$parent_storage->name] as $i => $type) {
@@ -1120,7 +1121,7 @@ final class Populator
                     }
                 }
 
-                // trailing purity templates left out are bound to their default
+                // trailing templates left out are bound to their default
                 foreach ($parent_storage->template_types as $template_name => $_) {
                     if (!isset($storage->template_extended_params[$parent_storage->name][$template_name])
                         && isset($parent_storage->template_defaults[$template_name])
@@ -1144,7 +1145,7 @@ final class Populator
             } else {
                 foreach ($parent_storage->template_types as $template_name => $template_type_map) {
                     foreach ($template_type_map as $template_type) {
-                        // a purity template with a default is bound to it, others to their bound
+                        // a template with a default is bound to it, others to their bound
                         $default_param = ($parent_storage->template_defaults[$template_name] ?? $template_type)
                             ->setProperties(['from_docblock' => false]);
                         $storage->template_extended_params[$parent_storage->name][$template_name] = $default_param;

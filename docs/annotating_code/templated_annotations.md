@@ -113,6 +113,29 @@ function array_combine(array $arr, array $arr2) {}
 - `@template` tag order matters for class docblocks, as they dictate the order in which those generic parameters are referenced in docblocks.
 - The names of your templated types (e.g. `TKey`, `TValue`) don't matter outside the scope of the class or function in which they're declared.
 
+### Default types
+
+A class, interface or trait `@template` can declare a default type with `= DefaultType`, after its bound if it has one. A trailing template left out of an `@extends`, `@implements` or `@use` tag is bound to its default instead of its bound, and is not reported as a missing template param.
+
+```php
+<?php
+/**
+ * @template TModel of object
+ * @template TCount of int|null = null
+ */
+abstract class Factory {
+    /** @return TCount */
+    abstract public function count();
+}
+
+/** @extends Factory<User> */
+final class UserFactory extends Factory {}
+
+// Psalm knows UserFactory::count() returns null; with `@extends Factory<User, int>` it would be int
+```
+
+A default can only be left out in trailing position, and it can't reference another template. A generic type (`Factory<User>` in a `@param`, say) still has to give every template argument.
+
 ## @param class-string&lt;T&gt;
 
 Psalm also allows you to parameterize class types
