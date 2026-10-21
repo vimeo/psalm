@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSource;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -87,7 +88,7 @@ final class EncapsulatedStringAnalyzer
 
                 if ($literal_string !== null) {
                     if ($casted_part_type->isSingleLiteral()) {
-                        $literal_string .= $casted_part_type->getSingleLiteral()->value;
+                        $literal_string .= LiteralCast::toString($casted_part_type->getSingleLiteral()->value);
                     } else {
                         $literal_string = null;
                     }

@@ -1140,7 +1140,7 @@ final class AssertionReconciler extends Reconciler
 
             if ($assertion instanceof IsLooselyEqual
                 && $existing_var_atomic_type instanceof TLiteralFloat
-                && (int)$existing_var_atomic_type->value === $value
+                && LiteralCast::toInt($existing_var_atomic_type->value) === $value
             ) {
                 return new Union([$existing_var_atomic_type]);
             }
