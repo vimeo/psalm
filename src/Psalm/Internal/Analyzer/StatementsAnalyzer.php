@@ -30,6 +30,7 @@ use Psalm\Internal\Analyzer\Statements\EchoAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
@@ -82,10 +83,12 @@ use function explode;
 use function fwrite;
 use function in_array;
 use function is_string;
+use function preg_replace;
 use function preg_split;
 use function reset;
 use function round;
 use function str_starts_with;
+use function strcspn;
 use function strlen;
 use function strrpos;
 use function strtolower;
@@ -135,6 +138,14 @@ final class StatementsAnalyzer extends SourceAnalyzer
      * @var array<string, true>
      */
     public array $byref_uses = [];
+
+    /**
+     * Variables, offsets and properties that may change through a reference whose effect Psalm doesn't
+     * propagate to the containing variable (see addUntrackedReference()).
+     *
+     * @var array<string, true>
+     */
+    private array $untracked_reference_ids = [];
 
     private ?ParsedDocblock $parsed_docblock = null;
 
@@ -1113,6 +1124,169 @@ final class StatementsAnalyzer extends SourceAnalyzer
     public function setByRefUses(array $byref_uses): void
     {
         $this->byref_uses = $byref_uses;
+    }
+
+    /**
+     * Records that the variable, offset or property may change through a reference whose effect Psalm
+     * doesn't propagate to the containing variable, e.g. $x = &$a[1], foreach ($a as &$v) or use (&$a).
+     * From then on, the tracked type of the containing variable may be stale for the rest of the function.
+     * Current aliases are recorded too, as they may be gone (e.g. unset) by the time the type is used.
+     */
+    public function addUntrackedReference(string $var_id, Context $context): void
+    {
+        foreach (self::getReferenceAliases(self::getKnownPath($var_id), $context) as $alias_id) {
+            $this->untracked_reference_ids[$alias_id] = true;
+        }
+    }
+
+    /**
+     * Like addUntrackedReference(), for an expression: an offset or property without an id (e.g. $a[$i + 1])
+     * is recorded through the closest containing expression that has one.
+     */
+    public function addUntrackedReferenceTo(PhpParser\Node\Expr $expr, Context $context): void
+    {
+        $var_id = $this->getClosestVarId($expr);
+
+        if ($var_id !== null) {
+            $this->addUntrackedReference($var_id, $context);
+        }
+    }
+
+    /**
+     * Called when $alias_id becomes a reference to $var_id: untracked references recorded under one
+     * name also apply to the other, even once the reference between them is gone.
+     */
+    public function addReferenceAlias(string $alias_id, string $var_id): void
+    {
+        foreach ([[$var_id, $alias_id], [$alias_id, $var_id]] as [$from_id, $to_id]) {
+            $known_from_id = self::getKnownPath($from_id);
+            $known_to_id = self::getKnownPath($to_id);
+            // with a dynamic offset on either side, the known paths don't line up: take the whole alias
+            $is_exact = $known_from_id === $from_id && $known_to_id === $to_id;
+
+            foreach ($this->untracked_reference_ids as $reference_id => $_) {
+                if ($reference_id === $known_from_id || self::isDescendantId($reference_id, $known_from_id)) {
+                    $this->untracked_reference_ids[
+                        $is_exact ? $to_id . substr($reference_id, strlen($from_id)) : $known_to_id
+                    ] = true;
+                } elseif (self::isDescendantId($known_from_id, $reference_id)) {
+                    $this->untracked_reference_ids[$known_to_id] = true;
+                }
+            }
+        }
+    }
+
+    /**
+     * Whether the value of the expression may have changed through a reference, in which case its tracked
+     * type may be stale: the variable holding it is shared with another scope (a by-reference parameter or
+     * argument, a global, a static or a closure use), or it, an offset or property of it, a variable
+     * containing it or an alias of any of them was recorded by addUntrackedReference().
+     */
+    public function mayHaveChangedThroughReference(PhpParser\Node\Expr $expr, Context $context): bool
+    {
+        $var_id = $this->getClosestVarId($expr);
+
+        if ($var_id === null) {
+            return false;
+        }
+
+        $var_ids = self::getReferenceAliases(self::getKnownPath($var_id), $context);
+
+        foreach ($var_ids as $alias_id) {
+            $root_var_id = substr($alias_id, 0, strcspn($alias_id, '[-'));
+
+            if (isset($context->references_to_external_scope[$root_var_id])
+                || isset($context->byref_constraints[$root_var_id])
+                || isset($context->referenced_globals[$root_var_id])
+                || isset($this->byref_uses[$root_var_id])
+            ) {
+                return true;
+            }
+
+            foreach ($this->untracked_reference_ids as $reference_id => $_) {
+                if ($reference_id === $alias_id
+                    || self::isDescendantId($reference_id, $alias_id)
+                    || self::isDescendantId($alias_id, $reference_id)
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The id of the expression, or of the closest offset or property container that has one.
+     */
+    private function getClosestVarId(PhpParser\Node\Expr $expr): ?string
+    {
+        $var_id = ExpressionIdentifier::getExtendedVarId($expr, $this->getFQCLN(), $this);
+
+        while ($var_id === null) {
+            if (!$expr instanceof PhpParser\Node\Expr\ArrayDimFetch
+                && !$expr instanceof PhpParser\Node\Expr\PropertyFetch
+                && !$expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            ) {
+                return null;
+            }
+
+            $expr = $expr->var;
+            $var_id = ExpressionIdentifier::getExtendedVarId($expr, $this->getFQCLN(), $this);
+        }
+
+        return $var_id;
+    }
+
+    /**
+     * A dynamic offset may be any key, so only the part of the id before it is known.
+     */
+    private static function getKnownPath(string $var_id): string
+    {
+        return preg_replace('/\[(?!\'[^\']*\'\]|-?\d+\]).*/s', '', $var_id) ?? $var_id;
+    }
+
+    /**
+     * Returns the variable id spelled through each variable it shares a reference with ($b = &$a),
+     * including itself.
+     *
+     * @return list<string>
+     */
+    private static function getReferenceAliases(string $var_id, Context $context): array
+    {
+        if (!$context->references_in_scope || !str_starts_with($var_id, '$')) {
+            return [$var_id];
+        }
+
+        // the plain variable before any offset or property
+        $root_var_id = substr($var_id, 0, strcspn($var_id, '[-'));
+        $aliases = [$root_var_id => true];
+
+        do {
+            $found_alias = false;
+
+            foreach ($context->references_in_scope as $reference_id => $referenced_id) {
+                if (isset($aliases[$reference_id]) !== isset($aliases[$referenced_id])) {
+                    $aliases[$reference_id] = true;
+                    $aliases[$referenced_id] = true;
+                    $found_alias = true;
+                }
+            }
+        } while ($found_alias);
+
+        $suffix = substr($var_id, strlen($root_var_id));
+        $var_ids = [];
+
+        foreach ($aliases as $alias_id => $_) {
+            $var_ids[] = $alias_id . $suffix;
+        }
+
+        return $var_ids;
+    }
+
+    private static function isDescendantId(string $var_id, string $ancestor_id): bool
+    {
+        return str_starts_with($var_id, $ancestor_id . '[') || str_starts_with($var_id, $ancestor_id . '->');
     }
 
     /**
