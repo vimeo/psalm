@@ -262,9 +262,12 @@ final class TypeParser
 
         $condition_tree = $parse_tree->condition->children[0];
 
-        // `empty` is an alias of `never`, which no value is of; as a condition it means PHP's `empty()`
-        $conditional_type = $condition_tree instanceof Value
-            && ($condition_tree->value === 'empty' || $condition_tree->value === 'falsy')
+        // `empty` is an alias of `never`, which no value is of; as a condition it means PHP's `empty()`.
+        // The token as written tells the keyword from a class named `falsy`, which is `\falsy` or an alias.
+        $condition_keyword = $condition_tree instanceof Value
+            ? ($condition_tree->text ?? $condition_tree->value)
+            : null;
+        $conditional_type = $condition_keyword === 'empty' || $condition_keyword === 'falsy'
             ? self::getFalsyUnion($from_docblock)
             : self::getTypeFromTree(
                 $condition_tree,
