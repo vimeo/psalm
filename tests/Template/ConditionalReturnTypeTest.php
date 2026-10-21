@@ -1407,6 +1407,63 @@ final class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'falsyConditionalInNamespaceAndNegated' => [
+                'code' => '<?php
+                    namespace App;
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is falsy ? "falsy" : "truthy")
+                     */
+                    function check(mixed $value): string {
+                        return $value ? "truthy" : "falsy";
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is not empty ? "truthy" : "falsy")
+                     */
+                    function checkNegated(mixed $value): string {
+                        return $value ? "truthy" : "falsy";
+                    }
+
+                    $zero = check(0);
+                    $one = check(1);
+                    $zeroNegated = checkNegated(0);
+                    $oneNegated = checkNegated(1);',
+                'assertions' => [
+                    '$zero===' => "'falsy'",
+                    '$one===' => "'truthy'",
+                    '$zeroNegated===' => "'falsy'",
+                    '$oneNegated===' => "'truthy'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'conditionalOnAClassNamedFalsyIsNotTheFalsyKeyword' => [
+                'code' => '<?php
+                    final class falsy {}
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is \\falsy ? "class" : "other")
+                     */
+                    function check(mixed $value): string {
+                        return $value instanceof falsy ? "class" : "other";
+                    }
+
+                    $object = check(new falsy());
+                    $zero = check(0);',
+                'assertions' => [
+                    '$object===' => "'class'",
+                    '$zero===' => "'other'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'falsyConditionalSubjectMatchesFalsyValues' => [
                 'code' => '<?php
                     /**
