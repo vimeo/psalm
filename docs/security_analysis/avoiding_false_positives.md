@@ -10,6 +10,8 @@ There are a number of ways you can prevent them:
 
 Some operations remove taints from data – for example, wrapping `$_GET['name']` in an `htmlentities` call prevents cross-site-scripting attacks in that `$_GET` call.
 
+`json_encode()` removes the `html` taint when its flags are a known value including `JSON_HEX_TAG` and `JSON_HEX_AMP`: what it returns then has no `<`, `>` or `&`. It keeps the `has_quotes` taint whatever the flags, as the `"` delimiting a JSON string ends a double-quoted attribute; a function that only puts JSON in a `<script>`, or with `JSON_HEX_APOS` in an attribute in single quotes, can declare `@psalm-taint-escape has_quotes`.
+
 Psalm allows you to remove taints via a `@psalm-taint-escape <taint-type>` annotation:
 
 ```php
