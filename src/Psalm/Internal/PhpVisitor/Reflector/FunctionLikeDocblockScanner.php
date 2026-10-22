@@ -16,6 +16,7 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
+use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowAnnotation;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Scanner\FileScanner;
@@ -447,8 +448,9 @@ final class FunctionLikeDocblockScanner
             }
         }
 
+        $has_this = $storage instanceof MethodStorage && !$storage->is_static;
         foreach ($docblock_info->flows as $flow) {
-            $invalid_flow = self::getInvalidFlow($flow, $param_names);
+            $invalid_flow = self::getInvalidFlow($flow, $param_names, $has_this);
             if ($invalid_flow !== null) {
                 $invalid_annotations[] = $invalid_flow;
             }
@@ -1364,7 +1366,14 @@ final class FunctionLikeDocblockScanner
                 continue;
             }
 
-            if ($flow->kind === TaintFlowAnnotation::STORE_WRITE || $flow->kind === TaintFlowAnnotation::STORE_READ) {
+            if ($flow->isOfProperty()) {
+                // one of a function-like without `$this` is reported by handleTaintAnnotations()
+                if ($storage instanceof MethodStorage && !$storage->is_static) {
+                    ReceiverPropertyTaints::addFlow($storage, $flow);
+                }
+            } elseif ($flow->kind === TaintFlowAnnotation::STORE_WRITE
+                || $flow->kind === TaintFlowAnnotation::STORE_READ
+            ) {
                 TaintStore::addFlow($storage, $flow, $aliases, $classlike_storage?->name);
             } elseif ($flow->kind === TaintFlowAnnotation::RETURN) {
                 foreach ($flow->sources as $source_param) {
@@ -1469,18 +1478,22 @@ final class FunctionLikeDocblockScanner
     }
 
     /**
-     * What is wrong with the `@psalm-flow` annotation $flow: it is malformed (see TaintFlowAnnotation), or it names a
-     * parameter (`$name`) that isn't one of $param_names
+     * What is wrong with the `@psalm-flow` annotation $flow: it is malformed (see TaintFlowAnnotation), it names a
+     * parameter (`$name`) that isn't one of $param_names, or a property of `$this` in a function-like without it
      *
      * @param array<string, true> $param_names
      * @return non-empty-string|null
      * @psalm-pure
      */
-    private static function getInvalidFlow(string $flow, array $param_names): ?string
+    private static function getInvalidFlow(string $flow, array $param_names, bool $has_this): ?string
     {
         $parsed_flow = TaintFlowAnnotation::parse($flow);
         if (is_string($parsed_flow)) {
             return $parsed_flow;
+        }
+
+        if (!$has_this && $parsed_flow->isOfProperty()) {
+            return '@psalm-flow names a property of $this, which only a method that is not static has';
         }
 
         foreach ($parsed_flow->getParamNames() as $name) {

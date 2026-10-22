@@ -163,6 +163,47 @@ echo Cache::get('title_1');   // no issue
   `Codebase::getTaintStoreNames()` tells for an expression, for stores whose keys an annotation can't express (a
   table named in an SQL query).
 
+### Properties set and got by name
+
+ORM models and other property bags often set and get properties by name. These annotations tell Psalm which property
+a method sets or returns:
+
+```php
+<?php // --taint-analysis
+/**
+ * @property string $title
+ * @property string $body
+ */
+abstract class Model
+{
+    abstract public function __get(string $name): mixed;
+
+    /** @psalm-flow ($value) -> $this->$name */
+    abstract public function set(string $name, string $value): void;
+
+    /** @psalm-flow $this->$name -> return */
+    abstract public function get(string $name): string;
+}
+
+function save(Model $model): void {
+    $model->set('title', $_GET['title'] ?? '');
+}
+
+function show(Model $model): void {
+    echo $model->title;       // TaintedHtml
+    echo $model->get('title'); // TaintedHtml
+    echo $model->get('body');  // no issue
+}
+```
+
++ `($value) -> $this->$name` sets the property named by `$name` to `$value`, like `$object->title = $value`.
++ `$this->$name -> return` returns that property, like `$object->title`.
++ `$this->*` is any property: `($values) -> $this->*` for a method like `setProperties()`, `$this->* -> return` for
+  one like `toArray()`.
++ When `$name` isn't a literal string, the call sets or returns every property it may name.
++ For a class with [`@psalm-taint-specialize`](avoiding_false_positives.md#specializing-taints-in-classes), properties
+  are tracked per object.
+
 ### Combined proxy & return value hint
 
 ```php
