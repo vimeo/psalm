@@ -480,7 +480,12 @@ final class StaticCallAnalyzer extends CallAnalyzer
         }
 
         if ($method_storage) {
-            FunctionCallReturnTypeFetcher::addReturnKeySources($method_storage, $taint_flow_graph, $method_source);
+            FunctionCallReturnTypeFetcher::addReturnKeySources(
+                $method_storage,
+                $taint_flow_graph,
+                $method_source,
+                $codebase->getInputTaints(),
+            );
 
             FunctionCallReturnTypeFetcher::taintUsingFlows(
                 $method_storage,

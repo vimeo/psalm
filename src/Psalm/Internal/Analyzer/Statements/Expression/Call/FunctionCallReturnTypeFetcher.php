@@ -1934,22 +1934,27 @@ final class FunctionCallReturnTypeFetcher
             $graph->addSource($taint_source);
         }
 
-        self::addReturnKeySources($function_storage, $graph, $function_call_node);
+        self::addReturnKeySources($function_storage, $graph, $function_call_node, $input_taints);
     }
 
     /**
      * Adds the sources of the taints a function-like returns under keys (`@psalm-taint-source input return['key']`),
      * leading into its return node $return_node under those keys
      *
+     * @param int $input_taints the taints of user input (see Codebase::getInputTaints())
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function addReturnKeySources(
         FunctionLikeStorage $function_storage,
         TaintFlowGraph $graph,
         DataFlowNode $return_node,
+        int $input_taints,
     ): void {
+        // as for a source of the whole return (see taintUsingStorage())
+        $removed_taints = $function_storage->removed_taints
+            | ($function_storage->signature_return_type?->getTaintsToRemove($input_taints) ?? 0);
         foreach ($function_storage->taint_source_keys as [$keys, $taints]) {
-            $taints &= ~$function_storage->removed_taints;
+            $taints &= ~$removed_taints;
             if ($taints === 0) {
                 continue;
             }

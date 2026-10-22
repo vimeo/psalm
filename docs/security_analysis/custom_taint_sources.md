@@ -16,14 +16,12 @@ In the below example the `input` taint type is specified as a standin for input 
 function getQueryParam(string $name) : string {}
 ```
 
-When only a key of what a function or a method returns comes from the user, name it after `return`: the other keys
-aren't sources. Keys are quoted (`'name'` or `"name"`) or digits, and can be nested: `return['file']['name']`.
+To taint only one key of the returned array, add it after the taint type. Keys are quoted or integers, and can be
+nested: `return['file']['name']`.
 
 ```php
 <?php
 /**
- * The name the client gave the uploaded file is its input; the path the upload is moved to isn't.
- *
  * @psalm-taint-source input return['original']
  * @return array{original: string, path: string}
  */

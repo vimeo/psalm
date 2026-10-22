@@ -643,15 +643,15 @@ final class FunctionLikeDocblockParser
      */
     private static function parseReturnKeys(string $target): array
     {
-        if (preg_match('/^return((?:\[(?:\'[^\'\]]*\'|"[^"\]]*"|\d+)\])+)$/', $target, $matches) !== 1) {
+        if (preg_match('/^return(?:\[(?:\'[^\'\]]*\'|"[^"\]]*"|\d+)\])+$/', $target) !== 1) {
             return [];
         }
 
-        preg_match_all('/\[([^\]]*)\]/', $matches[1], $key_matches);
+        preg_match_all('/\[([^\]]*)\]/', $target, $key_matches);
 
         $keys = [];
         foreach ($key_matches[1] as $key) {
-            $keys[] = $key[0] === '\'' || $key[0] === '"' ? substr($key, 1, -1) : $key;
+            $keys[] = str_starts_with($key, '\'') || str_starts_with($key, '"') ? substr($key, 1, -1) : $key;
         }
 
         return $keys;
