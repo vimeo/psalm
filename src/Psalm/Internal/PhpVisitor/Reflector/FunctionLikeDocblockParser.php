@@ -29,7 +29,6 @@ use function in_array;
 use function pathinfo;
 use function preg_last_error_msg;
 use function preg_match;
-use function preg_match_all;
 use function preg_replace;
 use function preg_split;
 use function reset;
@@ -647,10 +646,9 @@ final class FunctionLikeDocblockParser
             return [];
         }
 
-        preg_match_all('/\[([^\]]*)\]/', $target, $key_matches);
-
+        // `'a']['b'`, split on `][`: the keys can't hold `]`
         $keys = [];
-        foreach ($key_matches[1] as $key) {
+        foreach (explode('][', substr($target, strlen('return['), -1)) as $key) {
             $keys[] = str_starts_with($key, '\'') || str_starts_with($key, '"') ? substr($key, 1, -1) : $key;
         }
 
