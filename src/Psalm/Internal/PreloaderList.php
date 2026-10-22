@@ -778,6 +778,7 @@ final class PreloaderList {
         \Psalm\Internal\Codebase\Populator::class,
         \Psalm\Internal\Codebase\Properties::class,
         \Psalm\Internal\Codebase\PropertyMap::class,
+        \Psalm\Internal\Codebase\ReceiverPropertyTaints::class,
         \Psalm\Internal\Codebase\ReferenceMapGenerator::class,
         \Psalm\Internal\Codebase\Reflection::class,
         \Psalm\Internal\Codebase\Scanner::class,

@@ -53,3 +53,7 @@ Each `<arg>` is a parameter, like `$value`. With `-> return`, an `<arg>` can als
 ## `@psalm-flow ( <arg>, [ <arg>, ] ) -> <Class>::$<store>[<key>]` and `@psalm-flow <Class>::$<store>[<key>] -> return`
 
 See [Keyed stores](taint_flow.md#keyed-stores)
+
+## `@psalm-flow ( <arg>, [ <arg>, ] ) -> $this-><name>` and `@psalm-flow $this-><name> -> return`
+
+See [Properties set and got by name](taint_flow.md#properties-set-and-got-by-name)

@@ -166,6 +166,47 @@ echo Cache::get('title_1');   // no issue
   `Codebase::getTaintStoreNames()` tells for an expression, for stores whose keys an annotation can't express (a
   table named in an SQL query).
 
+### Properties set and got by name
+
+ORM models and other property bags often set and get properties by name. These annotations tell Psalm which property
+a method sets or returns:
+
+```php
+<?php // --taint-analysis
+/**
+ * @property string $title
+ * @property string $body
+ */
+abstract class Model
+{
+    abstract public function __get(string $name): mixed;
+
+    /** @psalm-flow ($value) -> $this->$name */
+    abstract public function set(string $name, string $value): void;
+
+    /** @psalm-flow $this->$name -> return */
+    abstract public function get(string $name): string;
+}
+
+function save(Model $model): void {
+    $model->set('title', $_GET['title'] ?? '');
+}
+
+function show(Model $model): void {
+    echo $model->title;       // TaintedHtml
+    echo $model->get('title'); // TaintedHtml
+    echo $model->get('body');  // no issue
+}
+```
+
++ `($value) -> $this->$name` sets the property named by `$name` to `$value`, like `$object->title = $value`.
++ `$this->$name -> return` returns that property, like `$object->title`.
++ `$this->*` is any property: `($values) -> $this->*` for a method like `setProperties()`, `$this->* -> return` for
+  one like `toArray()`.
++ When `$name` isn't a literal string, the call sets or returns every property it may name.
++ For a class with [`@psalm-taint-specialize`](avoiding_false_positives.md#specializing-taints-in-classes), properties
+  are tracked per object.
+
 ### Combined proxy & return value hint
 
 ```php
@@ -184,3 +225,20 @@ echo handleInput($_GET['malicious'] ?? '');
 
 The example above combines both previous examples and shows, that the `@psalm-flow` annotation
 can be used multiple times. Here, it would lead to detecting both `TaintedHtml` and `TaintedShell`.
+
+## Taint flows from plugins
+
+Plugins can add flows that annotations can't express with these `Codebase` methods (`$source` is the event's
+`getStatementsSource()`):
+
++ `getTaintNode($source, $label, $location, $value_type = null)`: a node for a value at a location. The taints of
+  `$value_type` flow into it. To make an expression carry what reaches the node, use
+  `$type->addParentNodes([$node->id => $node])`.
++ `getTaintPropertyNode('Class::$name')`: the node holding a property's value. The property doesn't need to be declared.
++ `addTaintSink($taint_id, $location, $taints)`: adds a sink and returns it.
++ `addTaintPath($source, $from, $to, $path_type = '=', $added_taints = 0, $removed_taints = 0)`: connects two nodes.
++ `tracksTaintFlow($source)`: false when taints aren't tracked there, e.g. when `TaintedInput` is suppressed. The
+  methods above then add nothing.
+
+See [examples/plugins/TaintModelFields.php](https://github.com/vimeo/psalm/blob/master/examples/plugins/TaintModelFields.php),
+which tracks ORM model fields from `set()` to `get()`.
