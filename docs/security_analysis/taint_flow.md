@@ -181,3 +181,20 @@ echo handleInput($_GET['malicious'] ?? '');
 
 The example above combines both previous examples and shows, that the `@psalm-flow` annotation
 can be used multiple times. Here, it would lead to detecting both `TaintedHtml` and `TaintedShell`.
+
+## Taint flows from plugins
+
+Plugins can add flows that annotations can't express with these `Codebase` methods (`$source` is the event's
+`getStatementsSource()`):
+
++ `getTaintNode($source, $label, $location, $value_type = null)`: a node for a value at a location. The taints of
+  `$value_type` flow into it. To make an expression carry what reaches the node, use
+  `$type->addParentNodes([$node->id => $node])`.
++ `getTaintPropertyNode('Class::$name')`: the node holding a property's value. The property doesn't need to be declared.
++ `addTaintSink($taint_id, $location, $taints)`: adds a sink and returns it.
++ `addTaintPath($source, $from, $to, $path_type = '=', $added_taints = 0, $removed_taints = 0)`: connects two nodes.
++ `tracksTaintFlow($source)`: false when taints aren't tracked there, e.g. when `TaintedInput` is suppressed. The
+  methods above then add nothing.
+
+See [examples/plugins/TaintModelFields.php](https://github.com/vimeo/psalm/blob/master/examples/plugins/TaintModelFields.php),
+which tracks ORM model fields from `set()` to `get()`.
