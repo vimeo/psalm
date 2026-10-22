@@ -517,14 +517,15 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $specialization_location,
             );
 
-            // a method of `$this` called through its class or a parent class (`parent::set()`)
+            // a method of `$this` called through its class or a parent class (`parent::set()`): the receiver is
+            // `$this`, of the class analyzed, whose properties may be kept per instance when its parent's aren't
             if ($context !== null && !$method_storage->is_static && isset($context->vars_in_scope['$this'])) {
                 $return_type_candidate = ReceiverPropertyTaints::taintCall(
                     $statements_analyzer,
                     $taint_flow_graph,
                     $method_storage,
                     $stmt->getArgs(),
-                    $method_id->fq_class_name,
+                    $context->self ?? $method_id->fq_class_name,
                     $context->vars_in_scope['$this']->parent_nodes,
                     '$this',
                     $context,

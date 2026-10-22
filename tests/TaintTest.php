@@ -5694,6 +5694,32 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'propertySetByNameThroughParentInASpecializedSubclassIsReadByAFetchOfIt' => [
+                'code' => '<?php // --taint-analysis
+                    class Model {
+                        public string $title = "";
+
+                        /**
+                         * @psalm-flow ($value) -> $this->$name
+                         * @psalm-capabilities write-this-props
+                         */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    /**
+                     * @psalm-taint-specialize
+                     * @psalm-suppress MutableDependency
+                     */
+                    final class Article extends Model {
+                        public function __construct(string $title) {
+                            parent::set("title", $title);
+                        }
+                    }
+
+                    $article = new Article((string) $_GET["x"]);
+                    echo $article->title;',
+                'error_message' => 'TaintedHtml',
+            ],
             'propertySetByNameOfAnObjectSpecializedIsReturnedByItsGetter' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
