@@ -29,6 +29,7 @@ use function in_array;
 use function pathinfo;
 use function preg_last_error_msg;
 use function preg_match;
+use function preg_match_all;
 use function preg_replace;
 use function preg_split;
 use function reset;
@@ -265,8 +266,24 @@ final class FunctionLikeDocblockParser
 
                 if ($param_parts[0]) {
                     $t = $codebase->getOrRegisterTaint($param_parts[0], $code_location);
+                    $keys = isset($param_parts[1]) && str_starts_with($param_parts[1], 'return[')
+                        ? self::parseReturnKeys($param_parts[1])
+                        : null;
+                    if ($keys === []) {
+                        // the whole of what is returned is a source, as the annotation says no key it can read
+                        $info->docblock_issues[] = new InvalidDocblock(
+                            '@psalm-taint-source expects keys of the return like return[\'key\'] in docblock for '
+                                . $cased_function_id,
+                            $code_location,
+                        );
+                    }
+
                     if ($t !== null) {
-                        $info->taint_source_types |= $t;
+                        if ($keys !== null && $keys !== []) {
+                            $info->taint_source_keys[] = [$keys, $t];
+                        } else {
+                            $info->taint_source_types |= $t;
+                        }
                     }
                 } else {
                     $info->docblock_issues[] = new InvalidDocblock(
@@ -615,6 +632,29 @@ final class FunctionLikeDocblockParser
         $info->public_api = isset($parsed_docblock->tags['psalm-api']) || isset($parsed_docblock->tags['api']);
 
         return $info;
+    }
+
+    /**
+     * The keys of `return['key']['other']` (quoted with ' or ", or digits), outermost first, or [] if it isn't
+     * that
+     *
+     * @return list<string>
+     * @psalm-pure
+     */
+    private static function parseReturnKeys(string $target): array
+    {
+        if (preg_match('/^return((?:\[(?:\'[^\'\]]*\'|"[^"\]]*"|\d+)\])+)$/', $target, $matches) !== 1) {
+            return [];
+        }
+
+        preg_match_all('/\[([^\]]*)\]/', $matches[1], $key_matches);
+
+        $keys = [];
+        foreach ($key_matches[1] as $key) {
+            $keys[] = $key[0] === '\'' || $key[0] === '"' ? substr($key, 1, -1) : $key;
+        }
+
+        return $keys;
     }
 
     /**

@@ -455,6 +455,39 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'taintSourceUnderAKeyOfTheReturnOnly' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @psalm-taint-source input return[\'original\']
+                     * @return array{original: string, path: string}
+                     */
+                    function upload(): array {
+                        return ["original" => "a.txt", "path" => "/tmp/a"];
+                    }
+
+                    final class Uploader {
+                        /**
+                         * @psalm-taint-source input return["file"]["name"]
+                         * @return array{file: array{name: string, size: int}, path: string}
+                         */
+                        public function handle(): array {
+                            return ["file" => ["name" => "a.txt", "size" => 1], "path" => "/tmp/a"];
+                        }
+
+                        /**
+                         * @psalm-taint-source input return[0]
+                         * @return array{string, string}
+                         */
+                        public static function pair(): array {
+                            return ["a", "b"];
+                        }
+                    }
+
+                    echo upload()["path"];
+                    echo (new Uploader())->handle()["path"];
+                    echo (string) (new Uploader())->handle()["file"]["size"];
+                    echo Uploader::pair()[1];',
+            ],
             'specializeTheCallsOfAFunctionThatOnlyReadsSharedState' => [
                 'code' => '<?php // --taint-analysis
                     final class Phone {
@@ -4273,6 +4306,73 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'taintSourceUnderAKeyOfTheReturnOfAFunction' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @psalm-taint-source input return[\'original\']
+                     * @return array{original: string, path: string}
+                     */
+                    function upload(): array {
+                        return ["original" => "a.txt", "path" => "/tmp/a"];
+                    }
+
+                    echo upload()["original"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSourceUnderNestedKeysOfTheReturnOfAMethod' => [
+                'code' => '<?php // --taint-analysis
+                    final class Uploader {
+                        /**
+                         * @psalm-taint-source input return["file"]["name"]
+                         * @return array{file: array{name: string, size: int}, path: string}
+                         */
+                        public function handle(): array {
+                            return ["file" => ["name" => "a.txt", "size" => 1], "path" => "/tmp/a"];
+                        }
+                    }
+
+                    $file = (new Uploader())->handle()["file"];
+                    echo $file["name"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSourceUnderAKeyOfTheReturnOfAStaticMethod' => [
+                'code' => '<?php // --taint-analysis
+                    final class Uploader {
+                        /**
+                         * @psalm-taint-source input return[0]
+                         * @return array{string, string}
+                         */
+                        public static function pair(): array {
+                            return ["a", "b"];
+                        }
+                    }
+
+                    echo Uploader::pair()[0];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSourceUnderAKeyOfTheReturnTaintsTheWholeArrayItIsIn' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @psalm-taint-source input return[\'original\']
+                     * @return array{original: string, path: string}
+                     */
+                    function upload(): array {
+                        return ["original" => "a.txt", "path" => "/tmp/a"];
+                    }
+
+                    echo implode(",", upload());',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSourceWithKeysOfTheReturnThatCantBeRead' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @psalm-taint-source input return[original]
+                     */
+                    function upload(): string {
+                        return "a.txt";
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
             'keysFetchInASpecializedCallWhereManyKeyedArraysConvergeTakesATaintedKey' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */

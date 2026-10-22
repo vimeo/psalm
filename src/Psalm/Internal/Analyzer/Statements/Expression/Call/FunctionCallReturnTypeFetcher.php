@@ -1933,6 +1933,43 @@ final class FunctionCallReturnTypeFetcher
             $taint_source = $function_call_node->setTaints($taints);
             $graph->addSource($taint_source);
         }
+
+        self::addReturnKeySources($function_storage, $graph, $function_call_node);
+    }
+
+    /**
+     * Adds the sources of the taints a function-like returns under keys (`@psalm-taint-source input return['key']`),
+     * leading into its return node $return_node under those keys
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public static function addReturnKeySources(
+        FunctionLikeStorage $function_storage,
+        TaintFlowGraph $graph,
+        DataFlowNode $return_node,
+    ): void {
+        foreach ($function_storage->taint_source_keys as [$keys, $taints]) {
+            $taints &= ~$function_storage->removed_taints;
+            if ($taints === 0) {
+                continue;
+            }
+
+            // a node for each key, outermost first, with a path to the node of the array holding it
+            $parent = $return_node;
+            $prefix = [];
+            foreach ($keys as $i => $key) {
+                $prefix[] = $key;
+                $is_source = $i === count($keys) - 1;
+                $node = DataFlowNode::getForReturnKey($return_node, $prefix, $is_source ? $taints : 0);
+                if ($is_source) {
+                    $graph->addSource($node);
+                }
+
+                $graph->addNode($node);
+                $graph->addPath($node, $parent, 'arrayvalue-assignment-\'' . $key . '\'');
+                $parent = $node;
+            }
+        }
     }
 
     /**
