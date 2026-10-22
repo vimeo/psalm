@@ -1,0 +1,11 @@
+<?php
+
+namespace LibraryStub;
+
+class Client
+{
+    /**
+     * @psalm-taint-sink ssrf $url
+     */
+    public function get(string $url): string {}
+}

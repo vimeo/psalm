@@ -354,6 +354,14 @@ When `true`, Psalm will complain when referencing an explicit integer offset on 
 ```
 When `true`, Psalm will report class and interface methods that override a method on a parent, but do not have an `Override` attribute. Defaults to `true`.
 
+#### loadLibraryStubs
+```xml
+<psalm
+  loadLibraryStubs="[bool]"
+>
+```
+When `true`, Psalm loads the stubs it ships for the libraries your code uses (in `stubs/libraries`), which declare how their methods pass taints along. A stub is only loaded when the scan finds one of the classes it declares, and it only refines what it declares of them. Defaults to `true`.
+
 #### phpVersion
 ```xml
 <psalm
@@ -731,6 +739,8 @@ or interfaces defined in a stub file, this stub should be configured with attrib
 
 Stubs aren't analyzed, but the issues of their docblocks (e.g. `InvalidDocblock`) are reported, also for the stubs
 plugins add, so that an annotation a stub gets wrong isn't silently dropped.
+
+Psalm also ships stubs for some libraries, loaded when your code uses them (see [loadLibraryStubs](#loadlibrarystubs)).
 
 Note: some extension stubs are already built into Psalm, and can be enabled by requiring the extension in your `composer.json` or by using the [enableExtensions](https://psalm.dev/docs/running_psalm/configuration/#enableextensions) config key.  
 

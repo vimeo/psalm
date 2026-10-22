@@ -1669,4 +1669,75 @@ final class StubTest extends TestCase
 
         $this->analyzeFile($file_path, new Context());
     }
+
+    private function analyzeWithLibraryStubs(string $code, bool $load_library_stubs = true): Config
+    {
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__),
+            '<?xml version="1.0"?>
+            <psalm
+                errorLevel="1"
+                loadLibraryStubs="' . ($load_library_stubs ? 'true' : 'false') . '"
+            >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+            </psalm>',
+        );
+        $config->library_stubs_dir = self::getLibraryStubsDir();
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig($config);
+        $this->project_analyzer->trackTaintedInputs();
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src/somefile.php';
+        $this->addFile($file_path, $code);
+        $this->analyzeFile($file_path, new Context());
+
+        return $config;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getLibraryStubsDir(): string
+    {
+        return dirname(__DIR__) . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'fixtures'
+            . DIRECTORY_SEPARATOR . 'library_stubs';
+    }
+
+    public function testLibraryStubIsNotLoadedWithoutItsClasses(): void
+    {
+        $config = $this->analyzeWithLibraryStubs(
+            '<?php
+                echo "safe";',
+        );
+
+        $this->assertNotContains(
+            self::getLibraryStubsDir() . DIRECTORY_SEPARATOR . 'library' . DIRECTORY_SEPARATOR . 'client.phpstub',
+            $config->internal_stubs,
+        );
+    }
+
+    public function testLibraryStubIsNotLoadedWhenLibraryStubsAreDisabled(): void
+    {
+        $config = $this->analyzeWithLibraryStubs(
+            '<?php
+                namespace LibraryStub;
+
+                class Client
+                {
+                    public function get(string $url): string
+                    {
+                        return "";
+                    }
+                }
+
+                (new Client())->get((string) $_GET["url"]);',
+            false,
+        );
+
+        $this->assertNotContains(
+            self::getLibraryStubsDir() . DIRECTORY_SEPARATOR . 'library' . DIRECTORY_SEPARATOR . 'client.phpstub',
+            $config->internal_stubs,
+        );
+    }
 }

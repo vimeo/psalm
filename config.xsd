@@ -84,6 +84,7 @@
         <xs:attribute name="sealAllProperties" type="xs:boolean" default="true" />
         <xs:attribute name="runTaintAnalysis" type="xs:boolean" default="true" />
         <xs:attribute name="usePhpStormMetaPath" type="xs:boolean" default="true" />
+        <xs:attribute name="loadLibraryStubs" type="xs:boolean" default="true" />
         <xs:attribute name="allowInternalNamedArgumentCalls" type="xs:boolean" default="true" />
         <xs:attribute name="allowNamedArgumentCalls" type="xs:boolean" default="true" />
         <xs:attribute name="reportInfo" type="xs:boolean" default="true" />
