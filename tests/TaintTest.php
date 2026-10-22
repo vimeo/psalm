@@ -4263,6 +4263,29 @@ final class TaintTest extends TestCase
                         echo $identity->get($value);
                     }',
             ],
+            'lateBoundKeyedStoreKeepsTheStoresOfUnrelatedClassesApart' => [
+                'code' => '<?php
+                    abstract class Model {
+                        /** @psalm-flow ($value) -> static::$temp[$key] */
+                        public function setTemp(string $key, string $value): void {}
+
+                        /** @psalm-flow static::$temp[$key] -> return */
+                        public function getTemp(string $key): string {
+                            return "";
+                        }
+                    }
+
+                    final class Article extends Model {}
+                    final class Comment extends Model {}
+
+                    function save(Article $article): void {
+                        $article->setTemp("k", (string) $_GET["x"]);
+                    }
+
+                    function show(Comment $comment): void {
+                        echo $comment->getTemp("k");
+                    }',
+            ],
         ];
     }
 
@@ -5781,6 +5804,98 @@ final class TaintTest extends TestCase
 
                     store_set_many(["a" => (string) $_GET["x"]]);
                     echo store_get("b");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'lateBoundKeyedStoreWrittenThroughASubclassIsReadThroughItsParent' => [
+                'code' => '<?php
+                    abstract class Model {
+                        /** @psalm-flow ($value) -> static::$temp[$key] */
+                        public function setTemp(string $key, string $value): void {}
+
+                        /** @psalm-flow static::$temp[$key] -> return */
+                        public function getTemp(string $key): string {
+                            return "";
+                        }
+                    }
+
+                    final class Article extends Model {}
+
+                    function save(Article $article): void {
+                        $article->setTemp("k", (string) $_GET["x"]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->getTemp("k");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'lateBoundKeyedStoreWrittenThroughAParentIsReadThroughASubclass' => [
+                'code' => '<?php
+                    abstract class Model {
+                        /** @psalm-flow ($value) -> static::$temp[$key] */
+                        public function setTemp(string $key, string $value): void {}
+
+                        /** @psalm-flow static::$temp[$key] -> return */
+                        public function getTemp(string $key): string {
+                            return "";
+                        }
+                    }
+
+                    final class Article extends Model {}
+
+                    function save(Model $model): void {
+                        $model->setTemp("k", (string) $_GET["x"]);
+                    }
+
+                    function show(Article $article): void {
+                        echo $article->getTemp("k");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'lateBoundKeyedStoreWrittenThroughAClassIsReadThroughAnInterfaceOfASubclass' => [
+                'code' => '<?php
+                    abstract class Model {
+                        /** @psalm-flow ($value) -> static::$temp[$key] */
+                        public function setTemp(string $key, string $value): void {}
+
+                        /** @psalm-flow static::$temp[$key] -> return */
+                        public function getTemp(string $key): string {
+                            return "";
+                        }
+                    }
+
+                    interface Tagged {
+                        /** @psalm-flow static::$temp[$key] -> return */
+                        public function getTemp(string $key): string;
+                    }
+
+                    final class Article extends Model implements Tagged {}
+
+                    function save(Model $model): void {
+                        $model->setTemp("k", (string) $_GET["x"]);
+                    }
+
+                    function show(Tagged $tagged): void {
+                        echo $tagged->getTemp("k");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'lateBoundKeyedStoreOfStaticMethods' => [
+                'code' => '<?php
+                    abstract class Registry {
+                        /** @psalm-flow ($value) -> static::$data[$key] */
+                        public static function set(string $key, string $value): void {}
+
+                        /** @psalm-flow static::$data[$key] -> return */
+                        public static function get(string $key): string {
+                            return "";
+                        }
+                    }
+
+                    final class Settings extends Registry {}
+
+                    Settings::set("k", (string) $_GET["x"]);
+                    echo Registry::get("k");',
                 'error_message' => 'TaintedHtml',
             ],
             'keyedStoreOfMethods' => [

@@ -45,6 +45,7 @@ use Psalm\Type\Union;
 use function array_filter;
 use function array_values;
 use function count;
+use function explode;
 use function in_array;
 use function ltrim;
 use function str_ends_with;
@@ -76,7 +77,7 @@ final class TaintStore
      * (`Store::$data[$key] -> return`), see TaintFlowAnnotation. Any other flow is not one of a keyed store.
      *
      * @param ?Aliases $aliases resolve the class of the store, else it is fully qualified
-     * @param ?string $self_class the class `self` and `static` name
+     * @param ?string $self_class the class `self` names, and `static` where the class of a call is not known
      */
     public static function addFlow(
         FunctionLikeStorage $storage,
@@ -89,6 +90,10 @@ final class TaintStore
         }
 
         $class_name = $flow->store_class;
+
+        // `static::$data`: the store of the class the method is called on
+        $is_late_bound = $self_class !== null && strtolower($class_name) === 'static';
+
         if ($self_class !== null && in_array(strtolower($class_name), ['self', 'static'], true)) {
             $class_name = $self_class;
         } elseif ($aliases !== null) {
@@ -114,6 +119,7 @@ final class TaintStore
                 'key' => $key,
                 'is_list' => $flow->store_key_is_list,
                 'path_type' => $flow->path_type,
+                'is_late_bound' => $is_late_bound,
             ];
 
             return;
@@ -144,6 +150,7 @@ final class TaintStore
                 'params' => $params,
                 'callable_params' => $callable_params,
                 'path_type' => $flow->path_type,
+                'is_late_bound' => $is_late_bound,
             ];
         }
     }
@@ -219,13 +226,11 @@ final class TaintStore
             }
 
             $graph->addNode($write_node);
-            self::addWrite(
-                $graph,
-                $write['store'],
-                self::getKeyNames($statements_analyzer, $write['key'], $write['is_list'], $args),
-                $write_node,
-                $write['path_type'],
-            );
+
+            $names = self::getKeyNames($statements_analyzer, $write['key'], $write['is_list'], $args);
+            foreach (self::getStores($statements_analyzer->getCodebase(), $write, $method_id, true) as $store) {
+                self::addWrite($graph, $store, $names, $write_node, $write['path_type']);
+            }
         }
 
         foreach ($storage->taint_store_reads as $read) {
@@ -234,18 +239,73 @@ final class TaintStore
                 $call_location,
             );
             $graph->addNode($read_node);
-            self::addRead(
-                $graph,
-                $read['store'],
-                self::getKeyNames($statements_analyzer, $read['key'], $read['is_list'], $args),
-                $read_node,
-                $read['path_type'],
-            );
+
+            $names = self::getKeyNames($statements_analyzer, $read['key'], $read['is_list'], $args);
+            foreach (self::getStores($statements_analyzer->getCodebase(), $read, $method_id, false) as $store) {
+                self::addRead($graph, $store, $names, $read_node, $read['path_type']);
+            }
 
             $return_type = $return_type->addParentNodes([$read_node->id => $read_node]);
         }
 
         return $return_type;
+    }
+
+    /**
+     * The stores a call writes or reads: the one of the flow, or for `static::$data` the one of the class the method
+     * is called on. An object of a class may be one of the classes extending it, and be read as one of their parent
+     * classes and interfaces: a write is into the store of each of them, a read from the store of the class only.
+     *
+     * @param array{store: string, is_late_bound: bool, ...} $flow
+     * @return list<string>
+     * @psalm-capabilities read-props
+     */
+    private static function getStores(
+        Codebase $codebase,
+        array $flow,
+        ?MethodIdentifier $method_id,
+        bool $is_write,
+    ): array {
+        if (!$flow['is_late_bound']
+            || $method_id === null
+            || !$codebase->classlike_storage_provider->has($method_id->fq_class_name)
+        ) {
+            return [$flow['store']];
+        }
+
+        [, $property] = explode('::$', $flow['store'], 2);
+        $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+
+        if (!$is_write) {
+            return [$class_storage->name . '::$' . $property];
+        }
+
+        $classes = [];
+        foreach ([strtolower($class_storage->name) => true, ...$class_storage->dependent_classlikes] as $class => $_) {
+            if (!$codebase->classlike_storage_provider->has($class)) {
+                continue;
+            }
+
+            $storage = $codebase->classlike_storage_provider->get($class);
+            $classes[$storage->name] = true;
+
+            foreach ([
+                ...$storage->parent_classes,
+                ...$storage->parent_interfaces,
+                ...$storage->class_implements,
+            ] as $ancestor) {
+                if ($codebase->classlike_storage_provider->has($ancestor)) {
+                    $classes[$codebase->classlike_storage_provider->get($ancestor)->name] = true;
+                }
+            }
+        }
+
+        $stores = [];
+        foreach ($classes as $class => $_) {
+            $stores[] = $class . '::$' . $property;
+        }
+
+        return $stores;
     }
 
     /**
