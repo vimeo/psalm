@@ -182,21 +182,19 @@ echo handleInput($_GET['malicious'] ?? '');
 The example above combines both previous examples and shows, that the `@psalm-flow` annotation
 can be used multiple times. Here, it would lead to detecting both `TaintedHtml` and `TaintedShell`.
 
-## Taint flows of plugins
+## Taint flows from plugins
 
-Plugins add the flows annotations can't express with these methods of `Codebase`, for the statements of a
-`StatementsSource` (an event's `getStatementsSource()`):
+Plugins can add flows that annotations can't express with these `Codebase` methods (`$source` is the event's
+`getStatementsSource()`):
 
-+ `getTaintNode($source, $label, $location, $value_type)` gives a node for a value at a location, into which what
-  `$value_type` holds flows, if given. Add it to the parent nodes of an expression's type for the expression to
-  evaluate to what reaches the node: `$type->addParentNodes([$node->id => $node])`.
-+ `getTaintPropertyNode('Class::$name')` gives the node of what a property holds, which also stands for a field
-  that only a plugin knows of.
-+ `addTaintSink($taint_id, $location, $taints)` adds a sink and returns it, and `addTaintSource()` adds a source to
-  a type.
-+ `addTaintPath($source, $from, $to, $path_type, $added_taints, $removed_taints)` adds a path between two nodes.
-+ `tracksTaintFlow($source)` tells whether the analysis follows the flows of the statements: not while they
-  suppress `TaintedInput`. The methods above add no path then.
++ `getTaintNode($source, $label, $location, $value_type = null)`: a node for a value at a location. The taints of
+  `$value_type` flow into it. To make an expression carry what reaches the node, use
+  `$type->addParentNodes([$node->id => $node])`.
++ `getTaintPropertyNode('Class::$name')`: the node holding a property's value. The property doesn't need to be declared.
++ `addTaintSink($taint_id, $location, $taints)`: adds a sink and returns it.
++ `addTaintPath($source, $from, $to, $path_type = '=', $added_taints = 0, $removed_taints = 0)`: connects two nodes.
++ `tracksTaintFlow($source)`: false when taints aren't tracked there, e.g. when `TaintedInput` is suppressed. The
+  methods above then add nothing.
 
 See [examples/plugins/TaintModelFields.php](https://github.com/vimeo/psalm/blob/master/examples/plugins/TaintModelFields.php),
-which follows the fields of an ORM's models from where they are set to where they are read.
+which tracks ORM model fields from `set()` to `get()`.

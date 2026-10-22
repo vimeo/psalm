@@ -2884,8 +2884,7 @@ final class Codebase
     }
 
     /**
-     * Returns the sink, which the paths addTaintPath() adds to it lead the taints given to it to, or null without
-     * taint analysis
+     * Adds a sink and returns it, so addTaintPath() can lead to it (null without taint analysis)
      *
      * @param ?int $taints the taints the sink must not be given, those of user input (see getInputTaints()) if null
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
@@ -2911,9 +2910,8 @@ final class Codebase
     }
 
     /**
-     * Whether the taint analysis follows the flows of the statements of $source: not while they suppress
-     * TaintedInput, nor while Psalm analyzes them again only to collect what they mutate, nor without taint analysis.
-     * The methods adding paths for $source do nothing then.
+     * Whether taints are tracked in the statements of $source: false without taint analysis, while they suppress
+     * TaintedInput, or while Psalm re-analyzes them only to collect mutations. The methods adding paths do nothing then.
      *
      * @psalm-mutation-free
      */
@@ -2923,12 +2921,8 @@ final class Codebase
     }
 
     /**
-     * A node of the taint graph for a value at $location, one per label and location, as Psalm makes for an
-     * assignment. Plugins connect it with addTaintPath(), and give it to the type of an expression with
-     * `$type->addParentNodes([$node->id => $node])` for what the expression evaluates to to come from it.
-     *
-     * With $value_type, what it holds flows into the node: from its parent nodes, or from those of the items of an
-     * array literal that has none of its own.
+     * A taint node for a value at $location (one per label and location). The taints of $value_type flow into it.
+     * To make an expression's value come from the node, use `$type->addParentNodes([$node->id => $node])`.
      *
      * @psalm-capabilities read-props|write-props
      */
@@ -2958,8 +2952,8 @@ final class Codebase
     }
 
     /**
-     * The node of what a property, `Class::$name`, holds: assigning it leads there, and fetching it reads from there.
-     * The class and the property need not exist, for the fields a plugin knows of but the class doesn't declare.
+     * The taint node of the property `Class::$name`: assignments flow into it, fetches read from it. The property
+     * doesn't need to be declared.
      *
      * @psalm-pure
      */
@@ -2969,14 +2963,11 @@ final class Codebase
     }
 
     /**
-     * Adds a path of type $path_type from $from to $to (see getTaintNode(), getTaintPropertyNode() and addTaintSink()),
-     * adding the taints $added_taints to what flows along it and removing $removed_taints, into the taint graph the
-     * statements of $source add theirs to (none while tracksTaintFlow() is false), or into the codebase's for another
-     * source.
+     * Adds a path from $from to $to that adds $added_taints and removes $removed_taints. Does nothing while
+     * tracksTaintFlow($source) is false.
      *
-     * Path types are those of Psalm's own paths: `=` for a plain copy, and for arrays `arrayvalue-assignment-'key'`
-     * (the value is put under the key), `arrayvalue-fetch-'key'` (only what is under the key is taken),
-     * `arrayvalue-assignment` and `arrayvalue-fetch` for any key.
+     * $path_type is `=` for a plain copy. For arrays, `arrayvalue-assignment-'key'` stores the value under a key,
+     * `arrayvalue-fetch-'key'` reads only that key, and `arrayvalue-assignment` / `arrayvalue-fetch` match any key.
      *
      * @psalm-capabilities read-props|write-props
      */

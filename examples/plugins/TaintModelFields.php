@@ -16,9 +16,8 @@ use Psalm\Type\TaintKind;
 use function str_ends_with;
 
 /**
- * Follows the fields of the models of an ORM, `app\Model`, from `$model->set('field', $value)` to
- * `$model->get('field')` through the node of the field, `Model::$field`, and reports the values set to the fields
- * whose name ends with `_html`, which the ORM's templates output without escaping them.
+ * Tracks the fields of `app\Model` subclasses from `$model->set('field', $value)` to `$model->get('field')`, and
+ * reports tainted values set to fields ending in `_html`, which templates output unescaped.
  */
 final class TaintModelFields implements AfterExpressionAnalysisInterface
 {
