@@ -163,6 +163,57 @@ echo Cache::get('title_1');   // no issue
   `Codebase::getTaintStoreNames()` tells for an expression, for stores whose keys an annotation can't express (a
   table named in an SQL query).
 
+### Properties set and got by name
+
+Models of ORMs and other property bags set and get their properties by name, through methods that keep them all in
+one array, or that Psalm doesn't analyze. These methods can say which property they set or return, and the property
+then holds what is set as if it were assigned:
+
+```php
+<?php // --taint-analysis
+/**
+ * @property string $title
+ * @property string $body
+ */
+abstract class Model
+{
+    abstract public function __get(string $name): mixed;
+
+    /** @psalm-flow ($value) -> $this->$name */
+    abstract public function set(string $name, string $value): void;
+
+    /** @psalm-flow $this->$name -> return */
+    abstract public function get(string $name): string;
+}
+
+function save(Model $model): void {
+    $model->set('title', $_GET['title'] ?? '');
+}
+
+function show(Model $model): void {
+    echo $model->title;       // TaintedHtml
+    echo $model->get('title'); // TaintedHtml
+    echo $model->get('body');  // no issue
+}
+```
+
++ `($value, $other) -> $this->$name` sets the property named by the argument given to `$name` of the object the method
+  is called on to what is given to `$value` and `$other`, as `$object->title = $value` does. `$this->$name -> return`
+  makes a call return that property, as `$object->title` does. Both read and write the property where the other
+  property assignments and fetches of the class do: through the class of the object, its parent classes and the
+  classes extending it.
++ `$this->*` is any property: `($values) -> $this->*` for a method setting the properties of an array of names and
+  values, and `$this->* -> return` for one returning them all, like `toArray()`.
++ A name the analysis knows exactly (a literal string) is that property. One it knows only the start of (see
+  [Keyed stores](#keyed-stores)) is each property starting with it, and one it knows nothing of is each property:
+  those declared and those of `@property` tags, of the class and of the classes extending it. A call setting a name
+  not known exactly may also set a property none of them declares, which the calls of `$this->$name -> return` and
+  `$this->* -> return` then read.
++ What the body of the method does, when Psalm analyzes it, flows as well: a body keeping all the properties in one
+  array makes every read of the array get all of them.
++ The properties of an object of a class with [`@psalm-taint-specialize`](avoiding_false_positives.md#specializing-taints-in-classes)
+  are its own: a call sets them in the variable holding the object, and returns them from the object.
+
 ### Combined proxy & return value hint
 
 ```php

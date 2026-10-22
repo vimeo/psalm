@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -515,6 +516,22 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $method_id,
                 $specialization_location,
             );
+
+            // a method of `$this` called through its class or a parent class (`parent::set()`)
+            if ($context !== null && !$method_storage->is_static && isset($context->vars_in_scope['$this'])) {
+                $return_type_candidate = ReceiverPropertyTaints::taintCall(
+                    $statements_analyzer,
+                    $taint_flow_graph,
+                    $method_storage,
+                    $stmt->getArgs(),
+                    $method_id->fq_class_name,
+                    $context->vars_in_scope['$this']->parent_nodes,
+                    '$this',
+                    $context,
+                    $node_location,
+                    $return_type_candidate,
+                );
+            }
         }
     }
 }

@@ -479,7 +479,7 @@ final class TaintStore
      * @return array<int, list<Arg>>|null
      * @psalm-capabilities read-props
      */
-    private static function getArgsByParam(FunctionLikeStorage $storage, array $args): ?array
+    public static function getArgsByParam(FunctionLikeStorage $storage, array $args): ?array
     {
         $by_param = [];
         $param_count = count($storage->params);
@@ -514,7 +514,7 @@ final class TaintStore
     /**
      * @psalm-mutation-free
      */
-    private static function getParamOffset(FunctionLikeStorage $storage, string $param_name): ?int
+    public static function getParamOffset(FunctionLikeStorage $storage, string $param_name): ?int
     {
         foreach ($storage->params as $i => $param_storage) {
             if ($param_storage->name === $param_name) {
