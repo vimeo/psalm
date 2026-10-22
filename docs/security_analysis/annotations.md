@@ -1,6 +1,6 @@
 # Security analysis annotations
 
-## `@psalm-taint-source <taint-type>`
+## `@psalm-taint-source <taint-type> [return['key']]`
 
 See [Custom taint sources](custom_taint_sources.md#taint-source-annotation).
 

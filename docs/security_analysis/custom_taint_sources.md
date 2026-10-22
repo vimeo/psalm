@@ -16,6 +16,18 @@ In the below example the `input` taint type is specified as a standin for input 
 function getQueryParam(string $name) : string {}
 ```
 
+To taint only one key of the returned array, add it after the taint type. Keys are quoted or integers, and can be
+nested: `return['file']['name']`.
+
+```php
+<?php
+/**
+ * @psalm-taint-source input return['original']
+ * @return array{original: string, path: string}
+ */
+function handleUpload(): array {}
+```
+
 ## Custom taints declared in the configuration
 
 Custom taints can be declared in `psalm.xml`, so that the annotations can name them without a plugin registering
