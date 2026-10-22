@@ -33,6 +33,7 @@ use Psalm\Internal\GzipSerializer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Lz4Serializer;
 use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
+use Psalm\Internal\Provider\AddRemoveTaints\JsonEncodeTainter;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Issue\ArgumentIssue;
 use Psalm\Issue\ClassConstantIssue;
@@ -1787,8 +1788,10 @@ final class Config
         }
 
         new HtmlFunctionTainter();
+        new JsonEncodeTainter();
 
         $socket->registerHooksFromClass(HtmlFunctionTainter::class);
+        $socket->registerHooksFromClass(JsonEncodeTainter::class);
     }
 
     private function loadPlugin(ProjectAnalyzer $projectAnalyzer, string $pluginClassName): PluginInterface

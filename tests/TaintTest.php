@@ -241,6 +241,60 @@ final class TaintTest extends TestCase
         );
     }
 
+    /**
+     * json_encode() removes the html taint only when its flags are known to escape <, > and &, and never the
+     * has_quotes one: the " delimiting a JSON string ends a double-quoted attribute, whatever the flags.
+     */
+    public function testJsonEncodeRemovesTheHtmlTaintOnlyWithItsHexFlags(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            namespace Foo;
+
+            function f(int $flags): void {
+                echo \json_encode($_GET["a"], \JSON_HEX_TAG | \JSON_HEX_APOS | \JSON_HEX_QUOT | \JSON_HEX_AMP);
+                echo \json_encode($_GET["b"], \JSON_THROW_ON_ERROR);
+                echo \json_encode($_GET["c"], \JSON_HEX_TAG | \JSON_HEX_APOS | \JSON_HEX_QUOT);
+                echo \json_encode($_GET["d"], $flags);
+                $args = [$_GET["e"], \JSON_HEX_TAG | \JSON_HEX_AMP];
+                echo \json_encode(...$args);
+                echo json_encode($_GET["f"], \JSON_HEX_TAG | \JSON_HEX_AMP);
+            }
+
+            /** @psalm-flow ($value) -> return */
+            function json_encode(string $value, int $flags = 0): string {
+                return $value;
+            }
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [5, 'TaintedTextWithQuotes'],
+                [6, 'TaintedHtml'],
+                [6, 'TaintedTextWithQuotes'],
+                [7, 'TaintedHtml'],
+                [7, 'TaintedTextWithQuotes'],
+                [8, 'TaintedHtml'],
+                [8, 'TaintedTextWithQuotes'],
+                [10, 'TaintedHtml'],
+                [10, 'TaintedTextWithQuotes'],
+                [11, 'TaintedHtml'],
+                [11, 'TaintedTextWithQuotes'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
     public function testTaintFlowThroughNestedSpecializedCallsAndStaticProperty(): void
     {
         $depth = 20;
@@ -2817,6 +2871,28 @@ final class TaintTest extends TestCase
                         $a = htmlentities((string) $_GET["bad"], \ENT_QUOTES);
                         echo $a;
                     }',
+            ],
+            'jsonEncodeWithHexTagAndAmpEscapesHtml' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink html $html */
+                    function html(string $html): void {}
+
+                    html(json_encode($_GET["x"], JSON_HEX_TAG | JSON_HEX_AMP | JSON_THROW_ON_ERROR));
+                    html(json_encode(["k" => $_GET["x"]], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
+                    html(json_encode(flags: JSON_HEX_TAG | JSON_HEX_AMP | JSON_THROW_ON_ERROR, value: $_GET["x"]));',
+            ],
+            'jsonEncodeQualifiedOrImportedWithHexTagAndAmpEscapesHtml' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    use function json_encode as encode;
+
+                    /** @psalm-taint-sink html $html */
+                    function html(string $html): void {}
+
+                    html(\json_encode($_GET["x"], \JSON_HEX_TAG | \JSON_HEX_AMP | \JSON_THROW_ON_ERROR));
+                    html(json_encode($_GET["x"], \JSON_HEX_TAG | \JSON_HEX_AMP | \JSON_THROW_ON_ERROR));
+                    html(encode($_GET["x"], \JSON_HEX_TAG | \JSON_HEX_AMP | \JSON_THROW_ON_ERROR));',
             ],
             'taintFilterVar' => [
                 'code' => '<?php
