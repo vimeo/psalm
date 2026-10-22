@@ -43,6 +43,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
 use function array_filter;
+use function array_pop;
 use function array_values;
 use function count;
 use function explode;
@@ -273,21 +274,34 @@ final class TaintStore
             return [$flow['store']];
         }
 
-        [, $property] = explode('::$', $flow['store'], 2);
+        $parts = explode('::$', $flow['store'], 2);
+        if (!isset($parts[1])) {
+            return [$flow['store']];
+        }
+
+        $property = $parts[1];
         $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
 
         if (!$is_write) {
             return [$class_storage->name . '::$' . $property];
         }
 
+        // the class and all its descendants (dependent_classlikes only lists the direct ones), with their ancestors
         $classes = [];
-        foreach ([strtolower($class_storage->name) => true, ...$class_storage->dependent_classlikes] as $class => $_) {
-            if (!$codebase->classlike_storage_provider->has($class)) {
+        $seen = [];
+        $pending = [strtolower($class_storage->name)];
+        while (($class = array_pop($pending)) !== null) {
+            if (isset($seen[$class]) || !$codebase->classlike_storage_provider->has($class)) {
                 continue;
             }
 
+            $seen[$class] = true;
             $storage = $codebase->classlike_storage_provider->get($class);
             $classes[$storage->name] = true;
+
+            foreach ($storage->dependent_classlikes as $dependent => $_) {
+                $pending[] = $dependent;
+            }
 
             foreach ([
                 ...$storage->parent_classes,

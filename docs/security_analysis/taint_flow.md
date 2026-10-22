@@ -145,11 +145,9 @@ echo Cache::get('title_1');   // no issue
 + A store is named like a static property, `Class::$name`. The class and the property need not exist; `self` names
   the class declaring the method. The methods of other classes (a wrapper, an extension) share a store by naming the
   same one.
-+ `static` names the class the method is called on, for stores each class has its own of, like the temporary
-  properties of the models of an ORM: `($value) -> static::$temp[$key]` and `static::$temp[$key] -> return`. What
-  is stored through a class is read through it, through the classes extending it, and through the classes and
-  interfaces any of them extends or implements, as an object of the class may be seen as any of them; it isn't read
-  through the other classes.
++ `static` names the class the method is called on, giving each class its own store, e.g. for the temporary
+  properties of ORM models: `($value) -> static::$temp[$key]`. What is stored through a class can be read through it,
+  its subclasses and their parents and interfaces, but not through unrelated classes.
 + `[*]` is any key: `($values) -> Store::$data[*]` for a method storing an array of keys and values, and
   `Store::$data[*] -> return` for one returning what is stored under any key. `[$keys[*]]` is each key of a list, as
   for `mGet(array $keys)`. In nested stores, like `Store::$data[$namespace][$key]`, only the first key tells the values

@@ -5852,6 +5852,33 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'lateBoundKeyedStoreWrittenThroughAParentIsReadThroughAnIndirectSubclass' => [
+                'code' => '<?php
+                    abstract class Model {
+                        /** @psalm-flow ($value) -> static::$temp[$key] */
+                        public function setTemp(string $key, string $value): void {}
+
+                        /** @psalm-flow static::$temp[$key] -> return */
+                        public function getTemp(string $key): string {
+                            return "";
+                        }
+                    }
+
+                    class Post extends Model {}
+
+                    class Article extends Post {}
+
+                    final class News extends Article {}
+
+                    function save(Model $model): void {
+                        $model->setTemp("k", (string) $_GET["x"]);
+                    }
+
+                    function show(News $news): void {
+                        echo $news->getTemp("k");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'lateBoundKeyedStoreWrittenThroughAClassIsReadThroughAnInterfaceOfASubclass' => [
                 'code' => '<?php
                     abstract class Model {
