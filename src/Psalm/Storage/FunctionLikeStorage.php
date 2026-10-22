@@ -261,6 +261,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * The flows of arguments into keyed stores: `@psalm-flow ($value) -> Store::$data[$key]`. `key` is the offset of
      * the parameter giving the key (a list of keys with `is_list`), null for any key; `params` are those whose
      * arguments are stored, `callable_params` those whose callables' results are (`($compute()) -> ...`).
+     * `is_late_bound` for a store of `static`, the store of the class the method is called on.
      *
      * @var list<array{
      *     store: string,
@@ -269,6 +270,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      *     params: list<int>,
      *     callable_params: list<int>,
      *     path_type: string,
+     *     is_late_bound: bool,
      * }>
      */
     public array $taint_store_writes = [];
@@ -276,7 +278,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     /**
      * The flows out of keyed stores into what the function-like returns: `@psalm-flow Store::$data[$key] -> return`
      *
-     * @var list<array{store: string, key: ?int, is_list: bool, path_type: string}>
+     * @var list<array{store: string, key: ?int, is_list: bool, path_type: string, is_late_bound: bool}>
      */
     public array $taint_store_reads = [];
 
