@@ -2884,6 +2884,9 @@ final class Codebase
     }
 
     /**
+     * Returns the sink, which the paths addTaintPath() adds to it lead the taints given to it to, or null without
+     * taint analysis
+     *
      * @param ?int $taints the taints the sink must not be given, those of user input (see getInputTaints()) if null
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
@@ -2891,9 +2894,9 @@ final class Codebase
         string $taint_id,
         CodeLocation $code_location,
         ?int $taints = null,
-    ): void {
+    ): ?DataFlowNode {
         if (!$this->taint_flow_graph) {
-            return;
+            return null;
         }
 
         $sink = DataFlowNode::getForTaint(
@@ -2903,6 +2906,96 @@ final class Codebase
         );
 
         $this->taint_flow_graph->addSink($sink);
+
+        return $sink;
+    }
+
+    /**
+     * Whether the taint analysis follows the flows of the statements of $source: not while they suppress
+     * TaintedInput, nor while Psalm analyzes them again only to collect what they mutate, nor without taint analysis.
+     * The methods adding paths for $source do nothing then.
+     *
+     * @psalm-mutation-free
+     */
+    public function tracksTaintFlow(StatementsSource $source): bool
+    {
+        return $this->getTaintFlowGraphOf($source) !== null;
+    }
+
+    /**
+     * A node of the taint graph for a value at $location, one per label and location, as Psalm makes for an
+     * assignment. Plugins connect it with addTaintPath(), and give it to the type of an expression with
+     * `$type->addParentNodes([$node->id => $node])` for what the expression evaluates to to come from it.
+     *
+     * With $value_type, what it holds flows into the node: from its parent nodes, or from those of the items of an
+     * array literal that has none of its own.
+     *
+     * @psalm-capabilities read-props|write-props
+     */
+    public function getTaintNode(
+        StatementsSource $source,
+        string $label,
+        CodeLocation $location,
+        ?Union $value_type = null,
+    ): DataFlowNode {
+        $node = DataFlowNode::getForAssignment($label, $location);
+
+        $graph = $this->getTaintFlowGraphOf($source);
+        if ($graph === null || $value_type === null) {
+            return $node;
+        }
+
+        if ($value_type->parent_nodes) {
+            $graph->addNode($node);
+            foreach ($value_type->parent_nodes as $parent_node) {
+                $graph->addPath($parent_node, $node, '=');
+            }
+        } elseif ($graph->addPathsFromNestedParentNodes($node, $value_type, $location)) {
+            $graph->addNode($node);
+        }
+
+        return $node;
+    }
+
+    /**
+     * The node of what a property, `Class::$name`, holds: assigning it leads there, and fetching it reads from there.
+     * The class and the property need not exist, for the fields a plugin knows of but the class doesn't declare.
+     *
+     * @psalm-pure
+     */
+    public static function getTaintPropertyNode(string $property_id): DataFlowNode
+    {
+        return DataFlowNode::getForPropertyFetch($property_id);
+    }
+
+    /**
+     * Adds a path of type $path_type from $from to $to (see getTaintNode(), getTaintPropertyNode() and addTaintSink()),
+     * adding the taints $added_taints to what flows along it and removing $removed_taints, into the taint graph the
+     * statements of $source add theirs to (none while tracksTaintFlow() is false), or into the codebase's for another
+     * source.
+     *
+     * Path types are those of Psalm's own paths: `=` for a plain copy, and for arrays `arrayvalue-assignment-'key'`
+     * (the value is put under the key), `arrayvalue-fetch-'key'` (only what is under the key is taken),
+     * `arrayvalue-assignment` and `arrayvalue-fetch` for any key.
+     *
+     * @psalm-capabilities read-props|write-props
+     */
+    public function addTaintPath(
+        StatementsSource $source,
+        DataFlowNode $from,
+        DataFlowNode $to,
+        string $path_type = '=',
+        int $added_taints = 0,
+        int $removed_taints = 0,
+    ): void {
+        $graph = $this->getTaintFlowGraphOf($source);
+        if ($graph === null) {
+            return;
+        }
+
+        $graph->addNode($from);
+        $graph->addNode($to);
+        $graph->addPath($from, $to, $path_type, $added_taints, $removed_taints);
     }
 
     /**
