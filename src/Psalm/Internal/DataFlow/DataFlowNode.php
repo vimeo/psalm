@@ -931,6 +931,31 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * The source of the taints a function-like returns under the keys $keys, outermost first, which leads into its
+     * return node $return_node (see FunctionCallReturnTypeFetcher::taintUsingStorage()). Its label and location, a
+     * pure function of its id, are those of the return node.
+     *
+     * @param non-empty-list<string> $keys
+     * @psalm-mutation-free
+     */
+    public static function getForReturnKey(self $return_node, array $keys, int $taints = 0): self
+    {
+        $suffix = '';
+        foreach ($keys as $key) {
+            $suffix .= "['" . $key . "']";
+        }
+
+        return new self(
+            $return_node->id . $suffix,
+            null,
+            null,
+            $return_node->label . $suffix,
+            $return_node->code_location,
+            $taints,
+        );
+    }
+
+    /**
      * A node identified only by its id, with no location and no taint state. Used by the
      * variable-use graph, whose nodes are never taint-reporting sites; a null location trivially
      * satisfies the id -> location invariant.

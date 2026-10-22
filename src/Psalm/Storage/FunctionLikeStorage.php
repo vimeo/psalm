@@ -229,6 +229,14 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public int $taint_source_types = 0;
 
+    /**
+     * The taints of the sources under keys of what the function-like returns, the keys outermost first:
+     * `@psalm-taint-source input return['key']`
+     *
+     * @var list<array{non-empty-list<string>, int}>
+     */
+    public array $taint_source_keys = [];
+
     public int $added_taints = 0;
 
     public int $removed_taints = 0;
@@ -269,6 +277,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * The flows of arguments into keyed stores: `@psalm-flow ($value) -> Store::$data[$key]`. `key` is the offset of
      * the parameter giving the key (a list of keys with `is_list`), null for any key; `params` are those whose
      * arguments are stored, `callable_params` those whose callables' results are (`($compute()) -> ...`).
+     * `is_late_bound` for a store of `static`, the store of the class the method is called on.
      *
      * @var list<array{
      *     store: string,
@@ -277,6 +286,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      *     params: list<int>,
      *     callable_params: list<int>,
      *     path_type: string,
+     *     is_late_bound: bool,
      * }>
      */
     public array $taint_store_writes = [];
@@ -284,9 +294,26 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     /**
      * The flows out of keyed stores into what the function-like returns: `@psalm-flow Store::$data[$key] -> return`
      *
-     * @var list<array{store: string, key: ?int, is_list: bool, path_type: string}>
+     * @var list<array{store: string, key: ?int, is_list: bool, path_type: string, is_late_bound: bool}>
      */
     public array $taint_store_reads = [];
+
+    /**
+     * The flows of arguments into a property of the object a method is called on:
+     * `@psalm-flow ($value) -> $this->$name`. `name` is the offset of the parameter giving the name of the property,
+     * null for any property; `params` are those whose arguments are set.
+     *
+     * @var list<array{name: ?int, params: list<int>, path_type: string}>
+     */
+    public array $taint_property_writes = [];
+
+    /**
+     * The flows out of a property of the object a method is called on into what it returns:
+     * `@psalm-flow $this->$name -> return`
+     *
+     * @var list<array{name: ?int, path_type: string}>
+     */
+    public array $taint_property_reads = [];
 
     public bool $allow_named_arg_calls = true;
 

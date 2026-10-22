@@ -455,6 +455,39 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'taintSourceUnderAKeyOfTheReturnOnly' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @psalm-taint-source input return[\'original\']
+                     * @return array{original: string, path: string}
+                     */
+                    function upload(): array {
+                        return ["original" => "a.txt", "path" => "/tmp/a"];
+                    }
+
+                    final class Uploader {
+                        /**
+                         * @psalm-taint-source input return["file"]["name"]
+                         * @return array{file: array{name: string, size: int}, path: string}
+                         */
+                        public function handle(): array {
+                            return ["file" => ["name" => "a.txt", "size" => 1], "path" => "/tmp/a"];
+                        }
+
+                        /**
+                         * @psalm-taint-source input return[0]
+                         * @return array{string, string}
+                         */
+                        public static function pair(): array {
+                            return ["a", "b"];
+                        }
+                    }
+
+                    echo upload()["path"];
+                    echo (new Uploader())->handle()["path"];
+                    echo (string) (new Uploader())->handle()["file"]["size"];
+                    echo Uploader::pair()[1];',
+            ],
             'specializeTheCallsOfAFunctionThatOnlyReadsSharedState' => [
                 'code' => '<?php // --taint-analysis
                     final class Phone {
@@ -4290,6 +4323,73 @@ final class TaintTest extends TestCase
                     (new Component("safe"))->show($input, 0);
                     Component::format($input, 1);',
             ],
+            'lateBoundKeyedStoreKeepsTheStoresOfUnrelatedClassesApart' => [
+                'code' => '<?php
+                    abstract class Model {
+                        /** @psalm-flow ($value) -> static::$temp[$key] */
+                        public function setTemp(string $key, string $value): void {}
+
+                        /** @psalm-flow static::$temp[$key] -> return */
+                        public function getTemp(string $key): string {
+                            return "";
+                        }
+                    }
+
+                    final class Article extends Model {}
+                    final class Comment extends Model {}
+
+                    function save(Article $article): void {
+                        $article->setTemp("k", (string) $_GET["x"]);
+                    }
+
+                    function show(Comment $comment): void {
+                        echo $comment->getTemp("k");
+                    }',
+            ],
+            'propertySetByNameDoesNotTaintTheOtherProperties' => [
+                'code' => '<?php
+                    final class Model {
+                        public string $title = "";
+                        public string $body = "";
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+                    }
+
+                    function save(Model $model): void {
+                        $model->set("title", (string) $_GET["x"]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->body;
+                        echo $model->get("body");
+                    }',
+            ],
+            'propertySetByNameOfAnObjectSpecializedStaysInIt' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class Model {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+                    }
+
+                    $tainted = new Model();
+                    $tainted->set("title", (string) $_GET["x"]);
+                    $other = new Model();
+                    $other->set("title", "safe");
+                    echo $other->get("title");
+                    echo $tainted->get("body");',
+            ],
         ];
     }
 
@@ -4300,6 +4400,73 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'taintSourceUnderAKeyOfTheReturnOfAFunction' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @psalm-taint-source input return[\'original\']
+                     * @return array{original: string, path: string}
+                     */
+                    function upload(): array {
+                        return ["original" => "a.txt", "path" => "/tmp/a"];
+                    }
+
+                    echo upload()["original"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSourceUnderNestedKeysOfTheReturnOfAMethod' => [
+                'code' => '<?php // --taint-analysis
+                    final class Uploader {
+                        /**
+                         * @psalm-taint-source input return["file"]["name"]
+                         * @return array{file: array{name: string, size: int}, path: string}
+                         */
+                        public function handle(): array {
+                            return ["file" => ["name" => "a.txt", "size" => 1], "path" => "/tmp/a"];
+                        }
+                    }
+
+                    $file = (new Uploader())->handle()["file"];
+                    echo $file["name"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSourceUnderAKeyOfTheReturnOfAStaticMethod' => [
+                'code' => '<?php // --taint-analysis
+                    final class Uploader {
+                        /**
+                         * @psalm-taint-source input return[0]
+                         * @return array{string, string}
+                         */
+                        public static function pair(): array {
+                            return ["a", "b"];
+                        }
+                    }
+
+                    echo Uploader::pair()[0];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSourceUnderAKeyOfTheReturnTaintsTheWholeArrayItIsIn' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @psalm-taint-source input return[\'original\']
+                     * @return array{original: string, path: string}
+                     */
+                    function upload(): array {
+                        return ["original" => "a.txt", "path" => "/tmp/a"];
+                    }
+
+                    echo implode(",", upload());',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSourceWithKeysOfTheReturnThatCantBeRead' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @psalm-taint-source input return[original]
+                     */
+                    function upload(): string {
+                        return "a.txt";
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
             'keysFetchInASpecializedCallWhereManyKeyedArraysConvergeTakesATaintedKey' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -5566,6 +5733,264 @@ final class TaintTest extends TestCase
                     function render(string $content): void {}',
                 'error_message' => 'must be a conditional',
             ],
+            'propertySetByNameIsReadByAFetchOfIt' => [
+                'code' => '<?php
+                    /** @property string $title */
+                    abstract class Model {
+                        abstract public function __get(string $name): mixed;
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        abstract public function set(string $name, string $value): void;
+                    }
+
+                    function save(Model $model): void {
+                        $model->set("title", (string) $_GET["x"]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->title;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyAssignedIsReturnedByAGetterByName' => [
+                'code' => '<?php
+                    final class Model {
+                        public string $title = "";
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+                    }
+
+                    function save(Model $model): void {
+                        $model->title = (string) $_GET["x"];
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->get("title");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertySetByNameThroughAParentClassIsReadThroughTheSubclassWithItsTag' => [
+                'code' => '<?php
+                    abstract class Model {
+                        abstract public function __get(string $name): mixed;
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        abstract public function set(string $name, string $value): void;
+                    }
+
+                    /** @property string $title */
+                    abstract class Article extends Model {}
+
+                    function save(Model $model): void {
+                        $model->set("title", (string) $_GET["x"]);
+                    }
+
+                    function show(Article $article): void {
+                        echo $article->title;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertySetThroughASubclassIsReturnedByAGetterOfTheParentClass' => [
+                'code' => '<?php
+                    class Model {
+                        public string $title = "";
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+                    }
+
+                    final class Article extends Model {}
+
+                    function save(Article $article): void {
+                        $article->title = (string) $_GET["x"];
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->get("title");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertySetUnderANameNotKnownIsEachProperty' => [
+                'code' => '<?php
+                    final class Model {
+                        public string $title = "";
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    function save(Model $model, string $name): void {
+                        $model->set($name, (string) $_GET["x"]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->title;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertySetUnderANameNotKnownIsReadByAGetterOfAnUndeclaredName' => [
+                'code' => '<?php
+                    final class Model {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+                    }
+
+                    function save(Model $model, string $name): void {
+                        $model->set($name, (string) $_GET["x"]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->get("anything");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertySetUnderAKnownStartIsThePropertiesStartingWithIt' => [
+                'code' => '<?php
+                    final class Model {
+                        public string $meta_title = "";
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    function save(Model $model, string $suffix): void {
+                        $model->set("meta_" . $suffix, (string) $_GET["x"]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->meta_title;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertiesAreAllReturnedByAGetterOfAny' => [
+                'code' => '<?php
+                    final class Model {
+                        public string $title = "";
+
+                        /**
+                         * @return array<string, string>
+                         * @psalm-flow $this->* -> return
+                         */
+                        public function toArray(): array {
+                            return [];
+                        }
+                    }
+
+                    function save(Model $model): void {
+                        $model->title = (string) $_GET["x"];
+                    }
+
+                    function show(Model $model): void {
+                        echo implode(",", $model->toArray());
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertySetByNameThroughParentIsReadByAFetchOfIt' => [
+                'code' => '<?php
+                    class Model {
+                        public string $title = "";
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    final class Article extends Model {
+                        public function save(): void {
+                            parent::set("title", (string) $_GET["x"]);
+                        }
+                    }
+
+                    function show(Article $article): void {
+                        echo $article->title;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertySetByNameThroughParentInASpecializedSubclassIsReadByAFetchOfIt' => [
+                'code' => '<?php // --taint-analysis
+                    class Model {
+                        public string $title = "";
+
+                        /**
+                         * @psalm-flow ($value) -> $this->$name
+                         * @psalm-capabilities write-this-props
+                         */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    /**
+                     * @psalm-taint-specialize
+                     * @psalm-suppress MutableDependency
+                     */
+                    final class Article extends Model {
+                        public function __construct(string $title) {
+                            parent::set("title", $title);
+                        }
+                    }
+
+                    $article = new Article((string) $_GET["x"]);
+                    echo $article->title;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertySetByNameOfAnObjectSpecializedIsReturnedByItsGetter' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class Model {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+                    }
+
+                    $model = new Model();
+                    $model->set("title", (string) $_GET["x"]);
+                    echo $model->get("title");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyFlowOfAFunction' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> $this->$name */
+                    function set(string $name, string $value): void {}',
+                'error_message' => 'names a property of $this',
+            ],
+            'propertyFlowOfAStaticMethod' => [
+                'code' => '<?php
+                    final class Model {
+                        /** @psalm-flow $this->$name -> return */
+                        public static function get(string $name): string {
+                            return "";
+                        }
+                    }',
+                'error_message' => 'names a property of $this',
+            ],
+            'propertyFlowNamedByAParameterThatDoesNotExist' => [
+                'code' => '<?php
+                    final class Model {
+                        /** @psalm-flow ($value) -> $this->$key */
+                        public function set(string $name, string $value): void {}
+                    }',
+                'error_message' => 'names $key, which is not a parameter',
+            ],
+            'propertyFlowFromWhatACallableReturns' => [
+                'code' => '<?php
+                    final class Model {
+                        /** @psalm-flow ($compute()) -> $this->$name */
+                        public function set(string $name, callable $compute): void {}
+                    }',
+                'error_message' => 'is neither',
+            ],
             'keyedStoreExactKey' => [
                 'code' => '<?php
                     /** @psalm-flow ($value) -> Store::$data[$key] */
@@ -5879,6 +6304,125 @@ final class TaintTest extends TestCase
 
                     store_set_many(["a" => (string) $_GET["x"]]);
                     echo store_get("b");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'lateBoundKeyedStoreWrittenThroughASubclassIsReadThroughItsParent' => [
+                'code' => '<?php
+                    abstract class Model {
+                        /** @psalm-flow ($value) -> static::$temp[$key] */
+                        public function setTemp(string $key, string $value): void {}
+
+                        /** @psalm-flow static::$temp[$key] -> return */
+                        public function getTemp(string $key): string {
+                            return "";
+                        }
+                    }
+
+                    final class Article extends Model {}
+
+                    function save(Article $article): void {
+                        $article->setTemp("k", (string) $_GET["x"]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->getTemp("k");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'lateBoundKeyedStoreWrittenThroughAParentIsReadThroughASubclass' => [
+                'code' => '<?php
+                    abstract class Model {
+                        /** @psalm-flow ($value) -> static::$temp[$key] */
+                        public function setTemp(string $key, string $value): void {}
+
+                        /** @psalm-flow static::$temp[$key] -> return */
+                        public function getTemp(string $key): string {
+                            return "";
+                        }
+                    }
+
+                    final class Article extends Model {}
+
+                    function save(Model $model): void {
+                        $model->setTemp("k", (string) $_GET["x"]);
+                    }
+
+                    function show(Article $article): void {
+                        echo $article->getTemp("k");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'lateBoundKeyedStoreWrittenThroughAParentIsReadThroughAnIndirectSubclass' => [
+                'code' => '<?php
+                    abstract class Model {
+                        /** @psalm-flow ($value) -> static::$temp[$key] */
+                        public function setTemp(string $key, string $value): void {}
+
+                        /** @psalm-flow static::$temp[$key] -> return */
+                        public function getTemp(string $key): string {
+                            return "";
+                        }
+                    }
+
+                    class Post extends Model {}
+
+                    class Article extends Post {}
+
+                    final class News extends Article {}
+
+                    function save(Model $model): void {
+                        $model->setTemp("k", (string) $_GET["x"]);
+                    }
+
+                    function show(News $news): void {
+                        echo $news->getTemp("k");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'lateBoundKeyedStoreWrittenThroughAClassIsReadThroughAnInterfaceOfASubclass' => [
+                'code' => '<?php
+                    abstract class Model {
+                        /** @psalm-flow ($value) -> static::$temp[$key] */
+                        public function setTemp(string $key, string $value): void {}
+
+                        /** @psalm-flow static::$temp[$key] -> return */
+                        public function getTemp(string $key): string {
+                            return "";
+                        }
+                    }
+
+                    interface Tagged {
+                        /** @psalm-flow static::$temp[$key] -> return */
+                        public function getTemp(string $key): string;
+                    }
+
+                    final class Article extends Model implements Tagged {}
+
+                    function save(Model $model): void {
+                        $model->setTemp("k", (string) $_GET["x"]);
+                    }
+
+                    function show(Tagged $tagged): void {
+                        echo $tagged->getTemp("k");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'lateBoundKeyedStoreOfStaticMethods' => [
+                'code' => '<?php
+                    abstract class Registry {
+                        /** @psalm-flow ($value) -> static::$data[$key] */
+                        public static function set(string $key, string $value): void {}
+
+                        /** @psalm-flow static::$data[$key] -> return */
+                        public static function get(string $key): string {
+                            return "";
+                        }
+                    }
+
+                    final class Settings extends Registry {}
+
+                    Settings::set("k", (string) $_GET["x"]);
+                    echo Registry::get("k");',
                 'error_message' => 'TaintedHtml',
             ],
             'keyedStoreOfMethods' => [

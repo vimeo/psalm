@@ -14,6 +14,7 @@ use function preg_match_all;
 use function preg_replace;
 use function preg_split;
 use function str_ends_with;
+use function str_replace;
 use function str_starts_with;
 use function substr;
 use function trim;
@@ -29,7 +30,10 @@ use function trim;
  *   TaintStore);
  * - `Store::$data[$key] -> return` (STORE_READ): a call returns what is stored under a key;
  * - `proxy function($a, $b)`, `proxy function($a) -> return` (PROXY): a call calls the function-like with what is given
- *   to the parameters, and returns what it returns with `-> return`.
+ *   to the parameters, and returns what it returns with `-> return`;
+ * - `($value) -> $this->$name` (PROPERTY_WRITE): a call of a method sets the property of the object it is called on
+ *   named by what is given to a parameter, `$this->*` any of them (see ReceiverPropertyTaints);
+ * - `$this->$name -> return` (PROPERTY_READ): a call of a method returns that property.
  *
  * Writing the arrow as `-(path-type)->` gives the kind of the path its taints take (`arg` otherwise). A key of a store
  * is a parameter (`$key`), `*` for any key, or `$keys[*]` for each key in a list; a store may be nested
@@ -46,18 +50,24 @@ final class TaintFlowAnnotation
     public const STORE_WRITE = 'store-write';
     public const STORE_READ = 'store-read';
     public const PROXY = 'proxy';
+    public const PROPERTY_WRITE = 'property-write';
+    public const PROPERTY_READ = 'property-read';
 
     private const STORE_REGEX = '/^([A-Za-z_\\\\][\w\\\\]*)::\$(\w+)\[(?:\*|\$(\w+)(\[\*\])?)\]((?:\[[^\]]*\])*)$/';
+
+    private const PROPERTY_REGEX = '/^\$this->(?:\*|\$(\w+))$/';
 
     private const PATH_TYPE_REGEX = '/-\(([a-z\-]+)\)->/';
 
     /**
-     * @param self::RETURN|self::STORE_WRITE|self::STORE_READ|self::PROXY $kind
+     * @param self::RETURN|self::STORE_WRITE|self::STORE_READ|self::PROXY|self::PROPERTY_WRITE|self::PROPERTY_READ $kind
      * @param list<non-empty-string> $sources the parameters the data comes from: `this` for the object the call is
      *                                        on, `name()` for what the callable given to a parameter returns
      * @param ?non-empty-string $store_class the class of the store, as written (STORE_WRITE and STORE_READ)
      * @param ?non-empty-string $store_property the property of the class naming the store
-     * @param ?non-empty-string $store_key the parameter the key of the store is given to, null for any key
+     * @param ?non-empty-string $store_key the parameter the key of the store is given to, null for any key; for
+     *                                     PROPERTY_WRITE and PROPERTY_READ, the one the name of the property is
+     *                                     given to, null for any property
      * @param list<string> $other_key_params the parameters the other keys of a nested store name, which don't tell
      *                                       its values apart
      * @param ?non-empty-string $proxy_function the function-like a PROXY flow calls
@@ -93,7 +103,11 @@ final class TaintFlowAnnotation
             $flow = (string) preg_replace(self::PATH_TYPE_REGEX, '->', $flow);
         }
 
-        $sides = array_map('trim', explode('->', $flow));
+        // the arrow of `$this->$name` is not one between the sides
+        $sides = array_map(
+            static fn(string $side): string => str_replace('$this>', '$this->', trim($side)),
+            explode('->', str_replace('$this->', '$this>', $flow)),
+        );
 
         if (str_starts_with($flow, 'proxy')) {
             if (count($sides) > 2
@@ -135,7 +149,17 @@ final class TaintFlowAnnotation
                 return new self(self::RETURN, $path_type, $sources);
             }
 
+            if (str_starts_with($target, '$this->')) {
+                return self::parseProperty($target, self::PROPERTY_WRITE, $path_type, $sources)
+                    ?? self::getMalformedMessage($annotation);
+            }
+
             return self::parseStore($target, self::STORE_WRITE, $path_type, $sources)
+                ?? self::getMalformedMessage($annotation);
+        }
+
+        if ($target === 'return' && str_starts_with($source, '$this->')) {
+            return self::parseProperty($source, self::PROPERTY_READ, $path_type, [])
                 ?? self::getMalformedMessage($annotation);
         }
 
@@ -235,12 +259,45 @@ final class TaintFlowAnnotation
     }
 
     /**
+     * @param self::PROPERTY_WRITE|self::PROPERTY_READ $kind
+     * @param list<non-empty-string> $sources
+     * @psalm-pure
+     */
+    private static function parseProperty(string $property, string $kind, string $path_type, array $sources): ?self
+    {
+        if (preg_match(self::PROPERTY_REGEX, $property, $matches) !== 1) {
+            return null;
+        }
+
+        // what the property is set to comes from the arguments
+        foreach ($sources as $source) {
+            if ($source === 'this' || str_ends_with($source, '()')) {
+                return null;
+            }
+        }
+
+        $name = $matches[1] ?? '';
+
+        return new self($kind, $path_type, $sources, store_key: $name === '' ? null : $name);
+    }
+
+    /**
+     * Whether the flow sets or returns a property of `$this`, which only a method that isn't static has
+     *
+     * @psalm-mutation-free
+     */
+    public function isOfProperty(): bool
+    {
+        return $this->kind === self::PROPERTY_WRITE || $this->kind === self::PROPERTY_READ;
+    }
+
+    /**
      * @return non-empty-string
      * @psalm-pure
      */
     private static function getMalformedMessage(string $annotation): string
     {
         return '@psalm-flow "' . trim($annotation) . '" is neither "(...) -> return", "(...) -> Store::$data[$key]",'
-            . ' "Store::$data[$key] -> return" nor "proxy ..."';
+            . ' "Store::$data[$key] -> return", "(...) -> $this->$name", "$this->$name -> return" nor "proxy ..."';
     }
 }

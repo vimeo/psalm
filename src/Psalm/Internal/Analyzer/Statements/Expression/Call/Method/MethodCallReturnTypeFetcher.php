@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -663,6 +664,19 @@ final class MethodCallReturnTypeFetcher
             $args,
             $cased_method_id,
             $node_location,
+        );
+
+        $return_type_candidate = ReceiverPropertyTaints::taintCall(
+            $statements_analyzer,
+            $taint_flow_graph,
+            $method_storage,
+            $args,
+            $method_id->fq_class_name,
+            $receiver_parent_nodes,
+            $var_id,
+            $context,
+            $node_location,
+            $return_type_candidate,
         );
 
         // what the plugins add to and remove from the result of this call, on a node of its own: the nodes the
