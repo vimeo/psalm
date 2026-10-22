@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
@@ -863,6 +864,17 @@ final class NewAnalyzer extends CallAnalyzer
 
         if ($method_storage && $method_storage->return_source_params !== []) {
             self::taintUsingConstructorFlows($statements_analyzer, $stmt, $method_storage, $method_source);
+        }
+
+        if ($method_storage && !$stmt->isFirstClassCallable()) {
+            ConditionalTaintSinks::taintCall(
+                $statements_analyzer,
+                $statements_analyzer->taint_flow_graph,
+                $method_storage,
+                $stmt->getArgs(),
+                $cased_constructor_id,
+                $code_location,
+            );
         }
 
         $parent_nodes = [$method_source->id => $method_source];

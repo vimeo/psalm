@@ -117,6 +117,13 @@ final class FunctionDocblockComment
      */
     public array $taint_sink_params = [];
 
+    /**
+     * `@psalm-taint-sink (<conditional>) $param`: the parameter and the conditional type of the taints it is a sink of
+     *
+     * @var list<array{name: string, type: string}>
+     */
+    public array $conditional_taint_sink_params = [];
+
     public int $taint_source_types = 0;
 
     /**

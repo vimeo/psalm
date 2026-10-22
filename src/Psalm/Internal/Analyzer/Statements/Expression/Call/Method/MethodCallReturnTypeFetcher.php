@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
@@ -653,6 +654,15 @@ final class MethodCallReturnTypeFetcher
             $cased_method_id,
             $method_id,
             $specialize_call ? $node_location : null,
+        );
+
+        ConditionalTaintSinks::taintCall(
+            $statements_analyzer,
+            $taint_flow_graph,
+            $method_storage,
+            $args,
+            $cased_method_id,
+            $node_location,
         );
 
         // what the plugins add to and remove from the result of this call, on a node of its own: the nodes the

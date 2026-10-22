@@ -767,6 +767,7 @@ final class PreloaderList {
         \Psalm\Internal\Codebase\ClassLikes::class,
         \Psalm\Internal\Codebase\CodeUseGraph::class,
         \Psalm\Internal\Codebase\CombinedFlowGraph::class,
+        \Psalm\Internal\Codebase\ConditionalTaintSinks::class,
         \Psalm\Internal\Codebase\ConstantTypeResolver::class,
         \Psalm\Internal\Codebase\DataFlowGraph::class,
         \Psalm\Internal\Codebase\Functions::class,

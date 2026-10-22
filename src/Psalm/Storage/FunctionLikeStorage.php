@@ -239,6 +239,14 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public array $conditionally_removed_taints = [];
 
     /**
+     * `@psalm-taint-sink (<conditional>) $param`: the offset of the parameter, and the conditional type of the taints
+     * it is a sink of, which each call resolves with its arguments
+     *
+     * @var list<array{param: int, type: Union}>
+     */
+    public array $conditional_taint_sinks = [];
+
+    /**
      * @var array<int, string>
      */
     public array $return_source_params = [];

@@ -215,6 +215,25 @@ final class FunctionLikeDocblockParser
 
         if (isset($parsed_docblock->tags['psalm-taint-sink'])) {
             foreach ($parsed_docblock->tags['psalm-taint-sink'] as $param) {
+                // a conditional type: the taints the parameter is a sink of depend on the arguments of the call
+                if (str_starts_with(trim($param), '(')) {
+                    $line_parts = CommentAnalyzer::splitDocLine(trim($param));
+
+                    if (isset($line_parts[1]) && str_starts_with($line_parts[1], '$')) {
+                        $info->conditional_taint_sink_params[] = [
+                            'name' => $line_parts[1],
+                            'type' => CommentAnalyzer::sanitizeDocblockType($line_parts[0]),
+                        ];
+                    } else {
+                        $info->docblock_issues[] = new InvalidDocblock(
+                            '@psalm-taint-sink expects 2 arguments in docblock for ' . $cased_function_id,
+                            $code_location,
+                        );
+                    }
+
+                    continue;
+                }
+
                 $param_parts = preg_split('/\s+/', trim($param));
                 if ($param_parts === false) {
                     throw new AssertionError(preg_last_error_msg());

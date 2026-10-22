@@ -4,9 +4,9 @@
 
 See [Custom taint sources](custom_taint_sources.md#taint-source-annotation).
 
-## `@psalm-taint-sink <taint-type> <param-name>`
+## `@psalm-taint-sink <taint-type #conditional> <param-name>`
 
-See [Custom taint sinks](custom_taint_sinks.md).
+See [Custom taint sinks](custom_taint_sinks.md) and [Conditional sinks](custom_taint_sinks.md#conditional-sinks).
 
 ## `@psalm-taint-escape <taint-type #conditional>`
 

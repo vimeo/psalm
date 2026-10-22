@@ -4263,6 +4263,33 @@ final class TaintTest extends TestCase
                         echo $identity->get($value);
                     }',
             ],
+            'conditionalSinkOfAnEscapingMode' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink ($mode is 0|1|2 ? null : \'html\') $content */
+                    function render(string $content, int $mode = 0): void {}
+
+                    final class Component {
+                        /**
+                         * @param array{render_way?: int, ...} $options
+                         * @psalm-taint-sink ($options is array{render_way?: 0|1|2, ...} ? null : \'html\') $content
+                         */
+                        public function __construct(string $content, array $options = []) {}
+
+                        /** @psalm-taint-sink ($mode is 0|1|2 ? null : \'html\') $content */
+                        public function show(string $content, int $mode): void {}
+
+                        /** @psalm-taint-sink ($mode is 0|1|2 ? null : \'html\') $content */
+                        public static function format(string $content, int $mode): void {}
+                    }
+
+                    $input = (string) $_GET["x"];
+                    render($input, 1);
+                    render($input);
+                    new Component($input, ["render_way" => 2, "class" => "title"]);
+                    new Component($input);
+                    (new Component("safe"))->show($input, 0);
+                    Component::format($input, 1);',
+            ],
         ];
     }
 
@@ -5467,6 +5494,77 @@ final class TaintTest extends TestCase
                         $values = [];
                     }',
                 'error_message' => 'TaintedHtml',
+            ],
+            'conditionalSinkOfARawMode' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink ($mode is 0|1|2 ? null : \'html\') $content */
+                    function render(string $content, int $mode = 0): void {}
+
+                    render((string) $_GET["x"], 3);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionalSinkOfAModeNotKnown' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink ($mode is 0|1|2 ? null : \'html\') $content */
+                    function render(string $content, int $mode = 0): void {}
+
+                    function show(int $mode): void {
+                        render((string) $_GET["x"], $mode);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionalSinkOfARawDefaultMode' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink ($mode is 0|1|2 ? null : \'html\') $content */
+                    function render(string $content, int $mode = 3): void {}
+
+                    render((string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionalSinkOfAMethod' => [
+                'code' => '<?php
+                    final class Component {
+                        /** @psalm-taint-sink ($mode is 0|1|2 ? null : \'html\') $content */
+                        public function show(string $content, int $mode): void {}
+                    }
+
+                    (new Component())->show((string) $_GET["x"], 3);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionalSinkOfAStaticMethod' => [
+                'code' => '<?php
+                    final class Component {
+                        /** @psalm-taint-sink ($mode is 0|1|2 ? null : \'html\') $content */
+                        public static function format(string $content, int $mode): void {}
+                    }
+
+                    Component::format((string) $_GET["x"], 3);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionalSinkOfAKeyOfTheOptionsOfAConstructor' => [
+                'code' => '<?php
+                    final class Component {
+                        /**
+                         * @param array{render_way?: int, ...} $options
+                         * @psalm-taint-sink ($options is array{render_way?: 0|1|2, ...} ? null : \'html\') $content
+                         */
+                        public function __construct(string $content, array $options = []) {}
+                    }
+
+                    new Component((string) $_GET["x"], ["render_way" => 3]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionalSinkOfAParameterThatDoesNotExist' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink ($mode is 0 ? null : \'html\') $text */
+                    function render(string $content, int $mode): void {}',
+                'error_message' => 'names $text, which is not a parameter',
+            ],
+            'conditionalSinkThatIsNotAConditional' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink (string) $content */
+                    function render(string $content): void {}',
+                'error_message' => 'must be a conditional',
             ],
             'keyedStoreExactKey' => [
                 'code' => '<?php
