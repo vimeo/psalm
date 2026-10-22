@@ -413,13 +413,13 @@ final class FunctionLikeDocblockScanner
                 $storage->removed_taints |= $t;
             }
         }
-        foreach ($docblock_info->conditionally_removed_taints as $removed_taint) {
-            $conditional = self::parseTaintConditional(
+        $invalid_annotations = [
+            ...$invalid_annotations,
+            ...self::handleTaintConditionals(
                 $codebase,
                 $stmt,
+                $docblock_info,
                 $aliases,
-                $removed_taint,
-                'Escaped taint',
                 $function_template_types,
                 $class_template_types,
                 $type_aliases,
@@ -428,48 +428,8 @@ final class FunctionLikeDocblockScanner
                 $cased_function_id,
                 $file_storage,
                 $file_scanner,
-            );
-
-            if ($conditional !== null) {
-                $storage->conditionally_removed_taints[] = $conditional;
-            }
-        }
-
-        foreach ($docblock_info->conditional_taint_sink_params as $sink_param) {
-            $sink_offset = null;
-            foreach ($storage->params as $i => $param_storage) {
-                if ('$' . $param_storage->name === $sink_param['name']) {
-                    $sink_offset = $i;
-                }
-            }
-
-            if ($sink_offset === null) {
-                $invalid_annotations[] = '@psalm-taint-sink names ' . $sink_param['name']
-                    . ', which is not a parameter';
-
-                continue;
-            }
-
-            $conditional = self::parseTaintConditional(
-                $codebase,
-                $stmt,
-                $aliases,
-                $sink_param['type'],
-                'The taint of a sink',
-                $function_template_types,
-                $class_template_types,
-                $type_aliases,
-                $storage,
-                $classlike_storage,
-                $cased_function_id,
-                $file_storage,
-                $file_scanner,
-            );
-
-            if ($conditional !== null) {
-                $storage->conditional_taint_sinks[] = ['param' => $sink_offset, 'type' => $conditional];
-            }
-        }
+            ),
+        ];
 
         self::handleTaintFlow($docblock_info, $storage, $aliases, $classlike_storage);
 
@@ -1454,6 +1414,92 @@ final class FunctionLikeDocblockScanner
     }
 
     /**
+     * Adds the conditional types of `@psalm-taint-escape (...)` and `@psalm-taint-sink (...) $param` to $storage, and
+     * returns what is wrong with the annotations
+     *
+     * @param array<string, TypeAlias> $type_aliases
+     * @param array<string, non-empty-array<string, Union>> $function_template_types
+     * @param array<string, non-empty-array<string, Union>> $class_template_types
+     * @return list<string>
+     */
+    private static function handleTaintConditionals(
+        Codebase $codebase,
+        PhpParser\Node\FunctionLike $stmt,
+        FunctionDocblockComment $docblock_info,
+        Aliases $aliases,
+        array $function_template_types,
+        array $class_template_types,
+        array $type_aliases,
+        FunctionLikeStorage $storage,
+        ?ClassLikeStorage $classlike_storage,
+        string $cased_function_id,
+        FileStorage $file_storage,
+        FileScanner $file_scanner,
+    ): array {
+        $invalid = [];
+
+        foreach ($docblock_info->conditionally_removed_taints as $removed_taint) {
+            $conditional = self::parseTaintConditional(
+                $codebase,
+                $stmt,
+                $aliases,
+                $removed_taint,
+                'Escaped taint',
+                $function_template_types,
+                $class_template_types,
+                $type_aliases,
+                $storage,
+                $classlike_storage,
+                $cased_function_id,
+                $file_storage,
+                $file_scanner,
+            );
+
+            if ($conditional !== null) {
+                $storage->conditionally_removed_taints[] = $conditional;
+            }
+        }
+
+        foreach ($docblock_info->conditional_taint_sink_params as $sink_param) {
+            $sink_offset = null;
+            foreach ($storage->params as $i => $param_storage) {
+                if ('$' . $param_storage->name === $sink_param['name']) {
+                    $sink_offset = $i;
+                }
+            }
+
+            if ($sink_offset === null) {
+                $invalid[] = '@psalm-taint-sink names ' . $sink_param['name']
+                    . ', which is not a parameter';
+
+                continue;
+            }
+
+            $conditional = self::parseTaintConditional(
+                $codebase,
+                $stmt,
+                $aliases,
+                $sink_param['type'],
+                'The taint of a sink',
+                $function_template_types,
+                $class_template_types,
+                $type_aliases,
+                $storage,
+                $classlike_storage,
+                $cased_function_id,
+                $file_storage,
+                $file_scanner,
+            );
+
+            if ($conditional !== null) {
+                $storage->conditional_taint_sinks[] = ['param' => $sink_offset, 'type' => $conditional];
+            }
+        }
+
+        return $invalid;
+    }
+
+    /**
      * The conditional type of the taints of `@psalm-taint-escape (...)` or `@psalm-taint-sink (...) $param`, whose
      * parameters it names become templates the calls resolve, or null when it isn't one (reported)
      *
@@ -1488,7 +1534,7 @@ final class FunctionLikeDocblockScanner
                 $function_template_types,
             );
 
-            $conditional = TypeParser::parseTokens(
+            $type = TypeParser::parseTokens(
                 array_values($fixed_type_tokens),
                 null,
                 $function_template_types + $class_template_types,
@@ -1496,15 +1542,13 @@ final class FunctionLikeDocblockScanner
             );
 
             /** @psalm-suppress UnusedMethodCall */
-            $removed_taint->queueClassLikesForScanning($codebase, $file_storage);
+            $type->queueClassLikesForScanning($codebase, $file_storage);
 
-            $removed_taint_single = $removed_taint->getSingleAtomic();
-
-            if (!$removed_taint_single instanceof TConditional) {
+            if (!$type->getSingleAtomic() instanceof TConditional) {
                 throw new TypeParseTreeException($what . ' must be a conditional');
             }
 
-            return $removed_taint;
+            return $type;
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
                 $e->getMessage() . ' in docblock for ' . $cased_function_id,

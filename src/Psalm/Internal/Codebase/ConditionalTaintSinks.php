@@ -103,7 +103,7 @@ final class ConditionalTaintSinks
      *
      * @param array<int, list<Arg>> $args_by_param
      * @return array<string, array<string, Union>>
-     * @psalm-capabilities read-props
+     * @psalm-external-mutation-free
      */
     private static function getParamBounds(
         StatementsAnalyzer $statements_analyzer,
