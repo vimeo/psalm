@@ -126,6 +126,9 @@ final class ClassLikeDocblockComment
     /** Whether the class has `@psalm-taint-specialize` */
     public bool $taint_specialize = false;
 
+    /** Whether the class has `@psalm-cli-only` */
+    public bool $cli_only = false;
+
     /**
      * @var array<int, string>
      */

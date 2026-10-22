@@ -90,6 +90,9 @@ final class FunctionDocblockComment
      */
     public bool $specialize_call = false;
 
+    /** Whether the function-like has `@psalm-cli-only` */
+    public bool $cli_only = false;
+
     /**
      * Represents the flow from function params to return type
      *

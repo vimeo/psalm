@@ -4263,6 +4263,30 @@ final class TaintTest extends TestCase
                         echo $identity->get($value);
                     }',
             ],
+            'cliOnlyCodePrintsToATerminal' => [
+                'code' => '<?php
+                    /** @psalm-cli-only */
+                    function import(): void {
+                        $file = (string) $_GET["file"];
+                        echo $file;
+                        print $file;
+                        printf("%s", $file);
+                        vprintf("%s", [$file]);
+                        var_dump($file);
+                        print_r($file);
+                        var_export($file, false);
+                        array_map(function (string $line): void {
+                            echo $line;
+                        }, [$file]);
+                    }
+
+                    /** @psalm-cli-only */
+                    final class ImportCommand {
+                        public function run(): void {
+                            echo (string) $_GET["file"];
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -5465,6 +5489,47 @@ final class TaintTest extends TestCase
                         $values[] = (string) $_GET["a"];
                         show();
                         $values = [];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'cliOnlyCodeReturnsWhatPrintRWouldPrint' => [
+                'code' => '<?php
+                    /** @psalm-cli-only */
+                    function dump(): string {
+                        return print_r((string) $_GET["x"], true);
+                    }
+
+                    echo dump();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'cliOnlyCodeStillPrintsSecretsToTheTerminal' => [
+                'code' => '<?php
+                    /** @psalm-taint-source system_secret */
+                    function systemSecret(): string { return ""; }
+
+                    /** @psalm-cli-only */
+                    function show(): void {
+                        echo systemSecret();
+                    }',
+                'error_message' => 'TaintedSystemSecret',
+            ],
+            'cliOnlyCodeKeepsTheTaintsOfItsValuesForTheOtherSinks' => [
+                'code' => '<?php
+                    /** @psalm-cli-only */
+                    function run(): void {
+                        exec((string) $_GET["cmd"]);
+                    }',
+                'error_message' => 'TaintedShell',
+            ],
+            'codeCalledFromCliOnlyCodeIsNotCliOnly' => [
+                'code' => '<?php
+                    function show(string $text): void {
+                        echo $text;
+                    }
+
+                    /** @psalm-cli-only */
+                    function run(): void {
+                        show((string) $_GET["x"]);
                     }',
                 'error_message' => 'TaintedHtml',
             ],

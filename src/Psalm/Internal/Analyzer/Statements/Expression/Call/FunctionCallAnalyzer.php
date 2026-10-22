@@ -23,6 +23,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -269,6 +270,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         // do this here to allow closure param checks
         if (!$is_first_class_callable && $function_call_info->function_params !== null) {
+            CliOutput::markPrintedArgs($statements_analyzer, $function_call_info->function_id, $stmt->getArgs());
+
             ArgumentsAnalyzer::checkArgumentsMatch(
                 $statements_analyzer,
                 $stmt->getArgs(),

@@ -765,6 +765,7 @@ final class PreloaderList {
         \Psalm\Internal\Codebase\AssertionsFromInheritanceResolver::class,
         \Psalm\Internal\Codebase\ClassConstantByWildcardResolver::class,
         \Psalm\Internal\Codebase\ClassLikes::class,
+        \Psalm\Internal\Codebase\CliOutput::class,
         \Psalm\Internal\Codebase\CodeUseGraph::class,
         \Psalm\Internal\Codebase\CombinedFlowGraph::class,
         \Psalm\Internal\Codebase\ConstantTypeResolver::class,

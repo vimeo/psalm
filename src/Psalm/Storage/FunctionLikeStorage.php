@@ -222,6 +222,12 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public bool $specialize_call = false;
 
     /**
+     * Whether the function-like only runs from the command line (`@psalm-cli-only`): what it prints goes to a
+     * terminal, not to an HTML response
+     */
+    public bool $cli_only = false;
+
+    /**
      * Whether the function-like is a builtin, declared by Psalm's stubs or built from the call map: it has no body,
      * so the taints of each of its calls flow as its declaration says (see TaintFlowGraph::isCallSpecialized()).
      */

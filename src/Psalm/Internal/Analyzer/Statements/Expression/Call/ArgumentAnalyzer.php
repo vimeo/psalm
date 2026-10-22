@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -1837,6 +1838,11 @@ final class ArgumentAnalyzer
 
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
         $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+        // printed by code only running from the command line: to a terminal
+        if ($expr->getAttribute(CliOutput::PRINTED_ATTRIBUTE) === true) {
+            $removed_taints |= CliOutput::HTML_TAINTS;
+        }
 
         if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
             $input_type = CastAnalyzer::castStringAttempt(
