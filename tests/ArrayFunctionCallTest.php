@@ -36,6 +36,33 @@ final class ArrayFunctionCallTest extends TestCase
                     '$e' => 'array<string, int<0, 10>|null>',
                 ],
             ],
+            'arrayFind' => [
+                'code' => '<?php
+                    /** @var list<int> $ints */
+                    $first = array_find($ints, static fn(int $i): bool => $i === 2);
+
+                    /** @var array<string, Exception> $exceptions */
+                    $found = array_find($exceptions, fn(Exception $e): bool => $e->getCode() === 1);
+
+                    $none = array_find([], static fn($v): bool => true);',
+                'assertions' => [
+                    '$first' => 'int|null',
+                    '$found' => 'Exception|null',
+                    '$none' => 'null',
+                ],
+            ],
+            'arrayFindNarrowsByCallback' => [
+                'code' => '<?php
+                    /** @var list<int|string> $mixed */
+                    $int = array_find($mixed, fn($v): bool => is_int($v));
+
+                    /** @var list<object> $objects */
+                    $exception = array_find($objects, fn($o): bool => $o instanceof RuntimeException);',
+                'assertions' => [
+                    '$int' => 'int|null',
+                    '$exception' => 'RuntimeException|null',
+                ],
+            ],
             'arrayFilterObject' => [
                 'code' => '<?php
                     $e = array_filter(
