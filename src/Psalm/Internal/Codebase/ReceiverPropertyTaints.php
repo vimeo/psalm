@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Psalm\Internal\Codebase;
 
 use PhpParser\Node\Arg;
+use PhpParser\Node\Expr\Variable;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -18,6 +20,7 @@ use Psalm\Type\Union;
 
 use function array_keys;
 use function count;
+use function is_string;
 use function str_starts_with;
 use function substr;
 
@@ -189,6 +192,22 @@ final class ReceiverPropertyTaints
         foreach ($storage->taint_property_writes as $index => $write) {
             $write_node = DataFlowNode::getForAssignment('$this->property write ' . $index, $call_location);
 
+            // `foreach ($values as $name => $value) $object->set($name, $value)`: each element of $values is set to
+            // the property of its key, as `($values) -> $this->{key}` sets them
+            $copied_array_nodes = $class_storage->specialize_instance
+                ? null
+                : self::getElementCopySource($statements_analyzer, $context, $args_by_param, $write);
+            if ($copied_array_nodes !== null) {
+                $graph->addNode($write_node);
+                foreach ($copied_array_nodes as $array_node) {
+                    $graph->addPath($array_node, $write_node, '=');
+                }
+
+                self::addKeyedWrite($codebase, $graph, $class_storage, $write_node);
+
+                continue;
+            }
+
             if (!self::addValuePaths(
                 $statements_analyzer,
                 $graph,
@@ -247,6 +266,67 @@ final class ReceiverPropertyTaints
         }
 
         return $return_type;
+    }
+
+    /**
+     * The parent nodes of the array whose elements the write of a property by name $write copies under their own key,
+     * if it does: the call is in the body of a foreach loop over the array, and given its key variable as the name and
+     * its value variable as the value, not reassigned since (see Context::$foreach_element_copies and
+     * ArrayAssignmentAnalyzer::getElementCopySource())
+     *
+     * @param array<int, list<Arg>>|null $args_by_param null when which arguments the parameters get is not known
+     * @param array{name: ?int, params: list<int>, path_type: string} $write
+     * @return array<string, DataFlowNode>|null
+     * @psalm-capabilities read-props
+     */
+    private static function getElementCopySource(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        ?array $args_by_param,
+        array $write,
+    ): ?array {
+        if ($write['name'] === null
+            || $args_by_param === null
+            || $write['path_type'] !== 'arg'
+            || count($write['params']) !== 1
+        ) {
+            return null;
+        }
+
+        $name_args = $args_by_param[$write['name']] ?? [];
+        $value_args = $args_by_param[$write['params'][0]] ?? [];
+        if (count($name_args) !== 1 || count($value_args) !== 1) {
+            return null;
+        }
+
+        $name = $name_args[0]->value;
+        $value = $value_args[0]->value;
+        if (!$name instanceof Variable
+            || !is_string($name->name)
+            || !$value instanceof Variable
+            || !is_string($value->name)
+            || !isset($context->foreach_element_copies['$' . $value->name])
+        ) {
+            return null;
+        }
+
+        [$key_var_id, $key_node_ids, $value_node_ids, $array_nodes] =
+            $context->foreach_element_copies['$' . $value->name];
+
+        $value_type = $statements_analyzer->node_data->getType($value);
+
+        // what the fetch of the element holds that the array doesn't (see ArrayAssignmentAnalyzer)
+        foreach ($value_type->parent_nodes ?? [] as $value_node) {
+            if ($statements_analyzer->taint_flow_graph?->isSource($value_node)) {
+                return null;
+            }
+        }
+
+        return $key_var_id === '$' . $name->name
+            && ArrayAssignmentAnalyzer::getValueNodeIds($statements_analyzer->node_data->getType($name)) === $key_node_ids
+            && ArrayAssignmentAnalyzer::getValueNodeIds($value_type) === $value_node_ids
+            ? $array_nodes
+            : null;
     }
 
     /**

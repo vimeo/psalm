@@ -4511,6 +4511,29 @@ final class TaintTest extends TestCase
                         echo $model->toArray()["body"];
                     }',
             ],
+            'propertiesSetByNameInACopyLoopKeepTheirKeys' => [
+                'code' => '<?php
+                    /**
+                     * @property string $label
+                     * @property string $size
+                     */
+                    final class Options {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    function copy(Options $options): void {
+                        foreach (["label" => (string) $_GET["x"], "size" => "m"] as $name => $value) {
+                            $options->set($name, $value);
+                        }
+
+                        echo $options->size;
+                    }',
+            ],
             'cliOnlyCodePrintsToATerminal' => [
                 'code' => '<?php
                     /** @psalm-cli-only */
@@ -6403,6 +6426,54 @@ final class TaintTest extends TestCase
                         public function setProperties(array $values): void {}
                     }',
                 'error_message' => 'is neither',
+            ],
+            'propertySetByNameInACopyLoop' => [
+                'code' => '<?php
+                    /**
+                     * @property string $label
+                     * @property string $size
+                     */
+                    final class Options {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    function copy(Options $options): void {
+                        foreach (["label" => (string) $_GET["x"], "size" => "m"] as $name => $value) {
+                            $options->set($name, $value);
+                        }
+
+                        echo $options->label;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertySetByNameInALoopOfAnotherValueMayBeAnyOfThem' => [
+                'code' => '<?php
+                    /**
+                     * @property string $label
+                     * @property string $size
+                     */
+                    final class Options {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    function copy(Options $options): void {
+                        foreach (["label" => (string) $_GET["x"], "size" => "m"] as $name => $value) {
+                            $options->set($name, trim($value));
+                        }
+
+                        echo $options->size;
+                    }',
+                'error_message' => 'TaintedHtml',
             ],
             'cliOnlyCodeReturnsWhatPrintRWouldPrint' => [
                 'code' => '<?php
