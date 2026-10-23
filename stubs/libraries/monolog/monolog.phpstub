@@ -1,0 +1,69 @@
+<?php
+
+// The taints monolog/monolog 3 passes along: the stream a StreamHandler writes to is a file sink, and the
+// address a SocketHandler connects to an SSRF sink. Loaded when the analysed code uses the package, refining its
+// classes (see Config::visitStubFiles()).
+
+namespace Monolog\Handler {
+use Monolog\Level;
+use Monolog\Utils;
+use Monolog\LogRecord;
+
+/**
+ * @author Jordi Boggiano <j.boggiano@seld.be>
+ */
+class StreamHandler extends AbstractProcessingHandler
+{
+    /**
+     * @param resource|string $stream         If a missing path can't be created, an UnexpectedValueException will be thrown on first write
+     * @param int|null        $filePermission Optional file permissions (default (0644) are only for owner read/write)
+     * @param bool            $useLocking     Try to lock log file before doing any writes
+     * @param string          $fileOpenMode   The fopen() mode used when opening a file, if $stream is a file path
+     *
+     * @throws \InvalidArgumentException If stream is not a resource or string
+     *
+     * @psalm-taint-sink file $stream
+     */
+    public function __construct($stream, int|string|Level $level = Level::Debug, bool $bubble = true, ?int $filePermission = null, bool $useLocking = false, string $fileOpenMode = 'a')
+    {
+    }
+}
+}
+
+namespace Monolog\Handler {
+use Monolog\Level;
+use Monolog\LogRecord;
+
+/**
+ * @author Pablo de Leon Belloc <pablolb@gmail.com>
+ * @see    http://php.net/manual/en/function.fsockopen.php
+ */
+class SocketHandler extends AbstractProcessingHandler
+{
+    /**
+     * @param string     $connectionString  Socket connection string
+     * @param bool       $persistent        Flag to enable/disable persistent connections
+     * @param float      $timeout           Socket timeout to wait until the request is being aborted
+     * @param float      $writingTimeout    Socket timeout to wait until the request should've been sent/written
+     * @param float|null $connectionTimeout Socket connect timeout to wait until the connection should've been
+     *                                      established
+     * @param int|null   $chunkSize         Sets the chunk size. Only has effect during connection in the writing cycle
+     *
+     * @throws \InvalidArgumentException If an invalid timeout value (less than 0) is passed.
+     *
+     * @psalm-taint-sink ssrf $connectionString
+     */
+    public function __construct(
+        string $connectionString,
+        $level = Level::Debug,
+        bool $bubble = true,
+        bool $persistent = false,
+        float $timeout = 0.0,
+        float $writingTimeout = 10.0,
+        ?float $connectionTimeout = null,
+        ?int $chunkSize = null
+    )
+    {
+    }
+}
+}
