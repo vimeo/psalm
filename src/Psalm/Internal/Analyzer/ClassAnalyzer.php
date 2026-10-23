@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
@@ -445,6 +446,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $this->parent_fq_class_name,
             $class->stmts,
         );
+
+        // before the methods it marks are analyzed
+        CliOutput::markCliOnlyCallees($codebase, $storage, $class);
 
         $constructor_analyzer = null;
         $member_stmts = [];

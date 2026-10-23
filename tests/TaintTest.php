@@ -4535,6 +4535,31 @@ final class TaintTest extends TestCase
                         }
                     }',
             ],
+            'cliOnlyCodeCallsPrivateMethodsPrintingToATerminal' => [
+                'code' => '<?php
+                    final class ImportCommand {
+                        /** @psalm-cli-only */
+                        public function run(): void {
+                            $this->report((string) $_GET["report"]);
+                        }
+
+                        private function report(string $file): void {
+                            echo $file;
+                            $this->line($file);
+                            array_map(function (string $line): void {
+                                self::write($line);
+                            }, [$file]);
+                        }
+
+                        protected function line(string $text): void {
+                            echo $text;
+                        }
+
+                        private static function write(string $text): void {
+                            echo $text;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -6432,6 +6457,97 @@ final class TaintTest extends TestCase
                         exec((string) $_GET["cmd"]);
                     }',
                 'error_message' => 'TaintedShell',
+            ],
+            'privateMethodAlsoCalledFromOtherCodeIsNotCliOnly' => [
+                'code' => '<?php
+                    final class Command {
+                        /** @psalm-cli-only */
+                        public function run(): void {
+                            $this->show((string) $_GET["x"]);
+                        }
+
+                        public function web(): void {
+                            $this->show("Hello");
+                        }
+
+                        private function show(string $text): void {
+                            echo $text;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'privateMethodNamedByACallableIsNotCliOnly' => [
+                'code' => '<?php
+                    final class Command {
+                        /** @psalm-cli-only */
+                        public function run(): void {
+                            $this->show((string) $_GET["x"]);
+                        }
+
+                        /** @return list<callable> */
+                        public function callbacks(): array {
+                            return [[$this, "show"]];
+                        }
+
+                        private function show(string $text): void {
+                            echo $text;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'protectedMethodOfAClassNotFinalIsNotCliOnly' => [
+                'code' => '<?php
+                    class Command {
+                        /** @psalm-cli-only */
+                        public function run(): void {
+                            $this->show((string) $_GET["x"]);
+                        }
+
+                        protected function show(string $text): void {
+                            echo $text;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'privateMethodOfAClassCallingMethodsByAComputedNameIsNotCliOnly' => [
+                'code' => '<?php
+                    final class Command {
+                        /** @psalm-cli-only */
+                        public function run(): void {
+                            $this->show((string) $_GET["x"]);
+                        }
+
+                        public function call(string $method): void {
+                            $this->$method("Hello");
+                        }
+
+                        private function show(string $text): void {
+                            echo $text;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'privateMethodCalledFromATraitIsNotCliOnly' => [
+                'code' => '<?php
+                    trait Greets {
+                        public function greet(): void {
+                            $this->show("Hello");
+                        }
+                    }
+
+                    final class Command {
+                        use Greets;
+
+                        /** @psalm-cli-only */
+                        public function run(): void {
+                            $this->show((string) $_GET["x"]);
+                        }
+
+                        private function show(string $text): void {
+                            echo $text;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
             ],
             'codeCalledFromCliOnlyCodeIsNotCliOnly' => [
                 'code' => '<?php
