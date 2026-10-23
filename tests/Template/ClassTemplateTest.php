@@ -57,6 +57,28 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'unboundTemplateOrNullIsMixed' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @var T|null */
+                        public $value = null;
+
+                        public function __construct() {}
+
+                        /** @return T|null */
+                        public function get() {
+                            return $this->value;
+                        }
+                    }
+
+                    $box = new Box();
+                    $value = $box->get();',
+                'assertions' => [
+                    '$value===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'templateIntersection' => [
                 'code' => '<?php
                     interface EntityInterface

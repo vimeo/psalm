@@ -152,6 +152,7 @@ final class TypeVariableTracker
         }
 
         $resolved_types = [];
+        $resolved_to_mixed = false;
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
             $resolved = null;
@@ -186,6 +187,10 @@ final class TypeVariableTracker
             }
 
             if ($resolved) {
+                if ($resolved->hasMixed()) {
+                    $resolved_to_mixed = true;
+                }
+
                 foreach ($resolved->getAtomicTypes() as $resolved_atomic_type) {
                     $resolved_types[] = $resolved_atomic_type;
                 }
@@ -194,7 +199,10 @@ final class TypeVariableTracker
             }
         }
 
-        return TypeCombiner::combine($resolved_types, $codebase);
+        // A variable that resolves to mixed absorbs the rest of the union, as a template
+        // param inferred as mixed does in TemplateInferredTypeReplacer: `TValue|null`
+        // with TValue unbound is mixed, not mixed|null
+        return TypeCombiner::combine($resolved_types, $codebase, false, !$resolved_to_mixed);
     }
 
     /**
