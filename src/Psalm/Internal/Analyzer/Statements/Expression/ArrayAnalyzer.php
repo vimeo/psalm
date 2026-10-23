@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\Codebase\NosqlEqualityOperand;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
@@ -531,6 +532,7 @@ final class ArrayAnalyzer
 
                         // what an item holds can't carry the taints its type can't (see Union::getTaintsToRemove())
                         $removed_taints |= $item_value_type->getTaintsToRemove($codebase->getInputTaints());
+                        $removed_taints |= NosqlEqualityOperand::getRemovedTaints($statements_analyzer, $item);
                     }
 
                     foreach ($item_value_type->parent_nodes as $parent_node) {
