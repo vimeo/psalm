@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests\Template;
 
 use Override;
+use Psalm\Config;
+use Psalm\Context;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -15,6 +17,38 @@ final class ClassTemplateTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testImportAliasNamedLikeClassTemplateInDocblockMethodParamDefault(): void
+    {
+        Config::getInstance()->add_param_default_to_docblock_type = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Vendor {
+                    class Defaults {
+                        public const NONE = null;
+                    }
+                }
+
+                namespace App\Ns {
+                    use Vendor\Defaults as TValue;
+
+                    /**
+                     * @template TValue
+                     * @method void label(string $label = TValue::NONE)
+                     */
+                    interface Box {}
+
+                    /** @param Box<int> $box */
+                    function f(Box $box): void {
+                        $box->label(null);
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 
     /**
      * @psalm-pure
@@ -3737,6 +3771,126 @@ final class ClassTemplateTest extends TestCase
                     foo($container->get());
                 ',
             ],
+            'templateOnDocblockMethodParamsGlobalNamespace' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue
+                     * @method $this plain(TValue $v)
+                     * @method $this through(callable(TValue): mixed $callback)
+                     * @method $this throughClosure(\Closure(TValue): mixed $callback)
+                     */
+                    interface I {}
+
+                    /** @param I<string> $p */
+                    function f(I $p): void {
+                        $p->plain("x");
+                        $p->through(fn (string $s): int => 1);
+                        $p->throughClosure(fn (string $s): int => 1);
+                    }
+                ',
+            ],
+            'templateOnDocblockMethodParamsNamespaced' => [
+                'code' => '<?php
+                    namespace App\Ns;
+
+                    /**
+                     * @template TValue
+                     * @method $this plain(TValue $v)
+                     * @method $this through(callable(TValue): mixed $callback)
+                     * @method $this throughClosure(\Closure(TValue): mixed $callback)
+                     * @method $this acceptNullable(?TValue $v = null)
+                     * @method $this afterComparison(bool $flag = 1 < 2, ?TValue $v = null)
+                     */
+                    interface I {}
+
+                    /** @param I<string> $p */
+                    function f(I $p): void {
+                        $p->plain("x");
+                        $p->through(fn (string $s): int => 1);
+                        $p->throughClosure(fn (string $s): int => 1);
+                        $p->acceptNullable(null);
+                        $p->afterComparison(true, "x");
+                    }
+                ',
+            ],
+            'classStringMapParamInDocblockMethodOfNamespacedClass' => [
+                'code' => '<?php
+                    namespace App\Ns;
+
+                    /**
+                     * @template T of \stdClass
+                     * @method void put(class-string-map<T, T> $map)
+                     */
+                    interface I {}
+
+                    /** @param I<\stdClass> $p */
+                    function f(I $p): void {
+                        echo $p::class;
+                    }
+                ',
+            ],
+            'explicitClassNamedLikeTemplateInDocblockMethodParam' => [
+                'code' => '<?php
+                    namespace App\Ns;
+
+                    class TValue {}
+
+                    /**
+                     * @template TValue
+                     * @method $this keep(\App\Ns\TValue $v)
+                     */
+                    interface I {}
+
+                    /** @param I<string> $p */
+                    function f(I $p): void {
+                        $p->keep(new TValue());
+                    }
+                ',
+            ],
+            'importAliasNamedLikeClassTemplateInDocblockMethodReturn' => [
+                'code' => '<?php
+                    namespace Vendor {
+                        class Thing {}
+                    }
+
+                    namespace App\Ns {
+                        use Vendor\Thing as TValue;
+
+                        /**
+                         * @template TValue
+                         * @method get(): TValue
+                         */
+                        interface Box {}
+
+                        /** @param Box<int> $box */
+                        function f(Box $box): \Vendor\Thing {
+                            return $box->get();
+                        }
+                    }
+                ',
+            ],
+            'classTemplateShadowsImportAliasInDocblockMethodParam' => [
+                'code' => '<?php
+                    namespace Vendor {
+                        class Thing {}
+                    }
+
+                    namespace App\Ns {
+                        use Vendor\Thing as TValue;
+
+                        /**
+                         * @template TValue
+                         * @method void put(TValue $v)
+                         */
+                        interface Box {}
+
+                        /** @param Box<int> $box */
+                        function f(Box $box): void {
+                            $box->put(1);
+                        }
+                    }
+                ',
+            ],
             'templateOnDocblockMethodOnInterface' => [
                 'code' => '<?php
                     /**
@@ -4390,6 +4544,40 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'templateInCallableParamOfDocblockMethodOfNamespacedClassRejectsOtherType' => [
+                'code' => '<?php
+                    namespace App\Ns;
+
+                    /**
+                     * @template TValue
+                     * @method $this through(callable(TValue): mixed $callback)
+                     */
+                    interface I {}
+
+                    /** @param I<string> $p */
+                    function f(I $p): void {
+                        $p->through(fn (int $i): int => $i);
+                    }
+                ',
+                'error_message' => 'Argument 1 of through expects callable[impure](string):mixed, but Closure[pure](int):int provided',
+            ],
+            'templateParamWithNullDefaultInDocblockMethodOfNamespacedClass' => [
+                'code' => '<?php
+                    namespace App\Ns;
+
+                    /**
+                     * @template TValue
+                     * @method $this accept(TValue $v = null)
+                     */
+                    interface I {}
+
+                    /** @param I<string> $p */
+                    function f(I $p): void {
+                        $p->accept(null);
+                    }
+                ',
+                'error_message' => 'NullArgument',
+            ],
             'restrictTemplateInputWithClassString' => [
                 'code' => '<?php
                     /** @template T as object */
