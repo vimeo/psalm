@@ -1,0 +1,9 @@
+<?php
+
+class StubRedeclaringASinkHolder
+{
+    /**
+     * @psalm-taint-sink html $html
+     */
+    public function __construct(string $html, string $query) {}
+}
