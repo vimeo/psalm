@@ -227,6 +227,54 @@ function array_key_last($array)
  *
  * @param TArray $array
  *
+ * @return (TArray is array<never, never> ? null : (TArray is non-empty-array ? value-of<TArray> : value-of<TArray>|null))
+ * @psalm-pure
+ */
+function array_first($array)
+{
+}
+
+/**
+ * @psalm-template TArray as array
+ *
+ * @param TArray $array
+ *
+ * @return (TArray is array<never, never> ? null : (TArray is non-empty-array ? value-of<TArray> : value-of<TArray>|null))
+ * @psalm-pure
+ */
+function array_last($array)
+{
+}
+
+/**
+ * @psalm-template TKey of array-key
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $array
+ * @param callable(TValue, TKey): bool $callback
+ * @psalm-pure
+ */
+function array_any(array $array, callable $callback): bool
+{
+}
+
+/**
+ * @psalm-template TKey of array-key
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $array
+ * @param callable(TValue, TKey): bool $callback
+ * @psalm-pure
+ */
+function array_all(array $array, callable $callback): bool
+{
+}
+
+/**
+ * @psalm-template TArray as array
+ *
+ * @param TArray $array
+ *
  * @return (TArray is non-empty-array ? non-empty-list<value-of<TArray>> : list<value-of<TArray>>)
  * @psalm-pure
  */
