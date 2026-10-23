@@ -295,6 +295,61 @@ final class TaintTest extends TestCase
         );
     }
 
+    /**
+     * What a plugin removes from one returned expression is not removed from the other returns of the function, nor
+     * from what its calls give.
+     */
+    public function testTaintRemovedFromOneReturnedExpressionOnly(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            function encodeOrRaw(string $s, bool $encode): string|false {
+                if ($encode) {
+                    return json_encode($s, JSON_HEX_TAG | JSON_HEX_AMP);
+                }
+                return $s;
+            }
+
+            final class A {
+                public function escapeOrRaw(string $s, bool $escape): string {
+                    if ($escape) {
+                        return htmlspecialchars($s, ENT_QUOTES);
+                    }
+                    return $s;
+                }
+
+                public function escape(string $s): string {
+                    return htmlspecialchars($s, ENT_QUOTES);
+                }
+            }
+
+            echo encodeOrRaw((string) $_GET["x"], false);
+            echo (new A)->escapeOrRaw((string) $_GET["x"], false);
+            echo (new A)->escape((string) $_GET["x"]);
+        ');
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [22, 'TaintedHtml'],
+                [22, 'TaintedTextWithQuotes'],
+                [23, 'TaintedHtml'],
+                [23, 'TaintedTextWithQuotes'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
     public function testTaintFlowThroughNestedSpecializedCallsAndStaticProperty(): void
     {
         $depth = 20;
