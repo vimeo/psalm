@@ -30,6 +30,8 @@ use Psalm\Storage\CapabilitiesParseException;
 use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Union;
 
+use function array_column;
+use function array_fill_keys;
 use function array_key_first;
 use function array_shift;
 use function count;
@@ -390,6 +392,9 @@ final class ClassLikeDocblockParser
                 $purity_template_map[$purity_template] = ['' => new Union([new TCapabilities(Capabilities::ALL)])];
             }
 
+            // the class's other templates, for its parameter types
+            $param_template_map = $purity_template_map + array_fill_keys(array_column($info->templates, 0), true);
+
             foreach ($parsed_docblock->combined_tags['method'] as $offset => $method_entry) {
                 $method_entry = (string) preg_replace('/[ \t]+/', ' ', trim($method_entry));
 
@@ -488,13 +493,20 @@ final class ClassLikeDocblockParser
                 }
 
                 try {
-                    $parse_tree_creator = new ParseTreeCreator(
-                        TypeTokenizer::getFullyQualifiedTokens(
-                            $method_entry,
-                            $aliases,
-                            $purity_template_map,
-                        ),
+                    $method_tokens = TypeTokenizer::getFullyQualifiedTokens(
+                        $method_entry,
+                        $aliases,
+                        $purity_template_map,
                     );
+
+                    if ($param_template_map !== $purity_template_map) {
+                        $method_tokens = self::keepTemplatesInParamTypes(
+                            $method_tokens,
+                            TypeTokenizer::getFullyQualifiedTokens($method_entry, $aliases, $param_template_map),
+                        );
+                    }
+
+                    $parse_tree_creator = new ParseTreeCreator($method_tokens);
 
                     $method_tree = $parse_tree_creator->create();
                 } catch (TypeParseTreeException $e) {
@@ -651,6 +663,43 @@ final class ClassLikeDocblockParser
         self::addMagicPropertyToInfo($comment, $info, $parsed_docblock->tags, 'psalm-property-write');
 
         return $info;
+    }
+
+    /**
+     * The tokens of a `@method` entry, with the templates of the class left unqualified in its parameter types:
+     * those are printed fully qualified into the docblock of a pseudo-method parsed in the class's template scope,
+     * where only an unqualified name is read back as the template. The defaults (PHP expressions) and the return
+     * type (printed against the namespace and the imports) keep their qualified names, as an unqualified template
+     * there would be read as a same-named import alias.
+     *
+     * @param list<array{0: string, 1: int, 2?: string}> $tokens
+     * @param list<array{0: string, 1: int, 2?: string}> $template_tokens the same entry, tokenized with the
+     *                                                                   class's templates in scope
+     * @return list<array{0: string, 1: int, 2?: string}>
+     * @psalm-pure
+     */
+    private static function keepTemplatesInParamTypes(array $tokens, array $template_tokens): array
+    {
+        $depth = 0;
+        $in_default = false;
+
+        foreach ($tokens as $i => [$token]) {
+            // in a default, `<` and `>` are operators
+            if ($token === '(' || $token === '{' || $token === '[' || ($token === '<' && !$in_default)) {
+                ++$depth;
+            } elseif ($token === ')' || $token === '}' || $token === ']' || ($token === '>' && !$in_default)) {
+                if (--$depth === 0) {
+                    // the end of the parameter list
+                    break;
+                }
+            } elseif ($depth === 1 && ($token === '=' || $token === ',')) {
+                $in_default = $token === '=';
+            } elseif ($depth > 0 && !$in_default) {
+                $tokens[$i] = $template_tokens[$i];
+            }
+        }
+
+        return $tokens;
     }
 
     /**
