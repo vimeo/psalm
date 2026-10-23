@@ -228,6 +228,12 @@ final class ClassLikeStorage implements HasAttributesInterface
     public bool $inherits_taint_specialize = false;
 
     /**
+     * The array property holding the properties of the objects of the class under their names, from
+     * `@psalm-taint-property-bag` on the class or a class it extends (see PropertyBagTaints)
+     */
+    public ?string $taint_property_bag = null;
+
+    /**
      * Whether the methods of the class only run from the command line (`@psalm-cli-only`): what they print goes to a
      * terminal, not to an HTML response
      */
