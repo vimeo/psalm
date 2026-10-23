@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\InternalTaintSourceMap;
 use Psalm\Internal\Codebase\TaintFlowGraph;
@@ -1687,6 +1688,15 @@ final class FunctionCallReturnTypeFetcher
                 $cased_function_id,
                 null,
                 $specialization_location,
+            );
+
+            ConditionalTaintSinks::taintCall(
+                $statements_analyzer,
+                $taint_flow_graph,
+                $function_storage,
+                $stmt->getArgs(),
+                $cased_function_id,
+                $node_location,
             );
         }
 
