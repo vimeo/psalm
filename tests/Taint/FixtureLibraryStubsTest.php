@@ -11,7 +11,7 @@ use function dirname;
 use const DIRECTORY_SEPARATOR;
 
 /**
- * The library stub of tests/fixtures/library_stubs, loaded because the code declares a class of it
+ * The library stubs of tests/fixtures/library_stubs, loaded because the code declares a class or a function of them
  */
 final class FixtureLibraryStubsTest extends LibraryStubsTestCase
 {
@@ -34,6 +34,11 @@ final class FixtureLibraryStubsTest extends LibraryStubsTestCase
                 public function head(string $url): void
                 {
                 }
+            }
+
+            function fetch(string $url): string
+            {
+                return "";
             }';
     }
 
@@ -60,6 +65,14 @@ final class FixtureLibraryStubsTest extends LibraryStubsTestCase
                     (new LibraryStub\Client())->get($url);
                     // a method the stub does not declare is still that of the class
                     (new LibraryStub\Client())->head($url);',
+                [
+                    'TaintedSSRF on line 3',
+                ],
+            ],
+            'stubbedFunctionSink' => [
+                '<?php
+                    $url = (string) $_GET["url"];
+                    LibraryStub\fetch($url);',
                 [
                     'TaintedSSRF on line 3',
                 ],

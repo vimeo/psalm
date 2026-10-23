@@ -1704,7 +1704,7 @@ final class StubTest extends TestCase
             . DIRECTORY_SEPARATOR . 'library_stubs';
     }
 
-    public function testLibraryStubIsNotLoadedWithoutItsClasses(): void
+    public function testLibraryStubIsNotLoadedWithoutItsClassesOrFunctions(): void
     {
         $config = $this->analyzeWithLibraryStubs(
             '<?php
@@ -1713,6 +1713,10 @@ final class StubTest extends TestCase
 
         $this->assertNotContains(
             self::getLibraryStubsDir() . DIRECTORY_SEPARATOR . 'library' . DIRECTORY_SEPARATOR . 'client.phpstub',
+            $config->internal_stubs,
+        );
+        $this->assertNotContains(
+            self::getLibraryStubsDir() . DIRECTORY_SEPARATOR . 'library' . DIRECTORY_SEPARATOR . 'functions.phpstub',
             $config->internal_stubs,
         );
     }

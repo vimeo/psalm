@@ -360,7 +360,7 @@ When `true`, Psalm will report class and interface methods that override a metho
   loadLibraryStubs="[bool]"
 >
 ```
-When `true`, Psalm loads the stubs it ships for the libraries your code uses (in `stubs/libraries`), which declare how their methods pass taints along. A stub is only loaded when the scan finds one of the classes it declares, and it only refines what it declares of them. Defaults to `true`.
+When `true`, Psalm loads the stubs it ships for the libraries your code uses (in `stubs/libraries`), which declare how their methods pass taints along. A stub is only loaded when the scan finds one of the classes it declares, or the scanned code (e.g. the files your autoloader includes) declares one of its functions, and it only refines what it declares of them. Defaults to `true`.
 
 #### phpVersion
 ```xml
