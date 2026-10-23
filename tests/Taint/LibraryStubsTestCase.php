@@ -13,8 +13,11 @@ use Psalm\Tests\TestCase;
 use function array_filter;
 use function array_map;
 use function array_values;
+use function getcwd;
 use function sort;
 use function str_starts_with;
+
+use const DIRECTORY_SEPARATOR;
 
 /**
  * Runs code using libraries Psalm ships stubs for (see stubs/libraries). The code of getLibraries() declares classes
@@ -54,7 +57,11 @@ abstract class LibraryStubsTestCase extends TestCase
         $this->testConfig->throw_exception = false;
         $this->testConfig->library_stubs_dir = static::getLibraryStubsDir();
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
-        $this->addFile(self::$src_dir_path . 'libraries.php', static::getLibraries());
+        // outside the project directories, as the libraries are: a stub doesn't override the classes of those
+        $this->addFile(
+            (string) getcwd() . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'libraries.php',
+            static::getLibraries(),
+        );
         $file_path = self::$src_dir_path . 'somefile.php';
         $this->addFile($file_path, $code);
         $this->project_analyzer->trackTaintedInputs();
