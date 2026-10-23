@@ -1361,6 +1361,116 @@ final class PluginTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testTaintReceiverNodeOfPlugin(): void
+    {
+        $this->analyzePageComponents(
+            '$other = new Greeting((string) ($_GET["name"] ?? ""));
+            (new Page())->add(new Greeting("world"));',
+            '(new Page())->add(new Greeting((string) ($_GET["name"] ?? "")));',
+        );
+    }
+
+    public function testTaintArgumentNodeOfPlugin(): void
+    {
+        $this->analyzePageComponents(
+            '(new Page())->add(new Heading(), "Home");',
+            '(new Page())->add(new Heading(), (string) ($_GET["title"] ?? ""));',
+        );
+    }
+
+    public function testTaintPropertyAssignmentOfPlugin(): void
+    {
+        $print_title = 'function printTitle(Page $page): void {
+                echo $page->getTitle();
+            }
+
+            $home = new HomePage();
+            ';
+
+        $this->analyzePageComponents(
+            $print_title . '$home->add(new Greeting("world"), "Home");
+            printTitle($home);',
+            $print_title . '$home->add(new Greeting("world"), (string) ($_GET["title"] ?? ""));
+            printTitle($home);',
+        );
+    }
+
+    /**
+     * Analyzes $clean_code, then expects TaintedHtml in $tainted_code, with the components of
+     * examples/plugins/TaintPageComponents.php
+     */
+    private function analyzePageComponents(string $clean_code, string $tainted_code): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="6"
+                    runTaintAnalysis="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <plugin filename="examples/plugins/TaintPageComponents.php" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $components = '<?php // --taint-analysis
+            namespace app;
+
+            abstract class Component {
+                abstract public function render(string $title): string;
+            }
+
+            /** @psalm-taint-specialize */
+            final class Greeting extends Component {
+                public function __construct(private string $name) {}
+
+                public function render(string $title): string {
+                    return "<p>Hello " . $this->name . "</p>";
+                }
+            }
+
+            final class Heading extends Component {
+                public function render(string $title): string {
+                    return "<h1>" . $title . "</h1>";
+                }
+            }
+
+            class Page {
+                protected string $title = "";
+
+                public function add(Component $component, string $title = ""): void {}
+
+                public function getTitle(): string {
+                    return $this->title;
+                }
+            }
+
+            final class HomePage extends Page {}
+            ';
+
+        $this->addFile($file_path, $components . $clean_code);
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context());
+
+        $this->addFile($file_path, $components . $tainted_code);
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/TaintedHtml/');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testRemoveTaints(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
