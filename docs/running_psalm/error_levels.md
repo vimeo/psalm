@@ -334,6 +334,7 @@ These issues become info (non-blocking) at level 8.
  - [NonVariableReferenceReturn](issues/NonVariableReferenceReturn.md)
  - [OverriddenMethodAccess](issues/OverriddenMethodAccess.md)
  - [ParamNameMismatch](issues/ParamNameMismatch.md)
+ - [PositionalArgumentNotAllowed](issues/PositionalArgumentNotAllowed.md)
  - [ReservedWord](issues/ReservedWord.md)
  - [UnhandledMatchCondition](issues/UnhandledMatchCondition.md)
  - [UninitializedProperty](issues/UninitializedProperty.md)

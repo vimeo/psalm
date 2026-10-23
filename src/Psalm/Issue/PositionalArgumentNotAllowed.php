@@ -1,0 +1,14 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Psalm\Issue;
+
+/**
+ * @api
+ */
+final class PositionalArgumentNotAllowed extends ArgumentIssue
+{
+    public const ERROR_LEVEL = 7;
+    public const SHORTCODE = 374;
+}
