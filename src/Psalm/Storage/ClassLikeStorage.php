@@ -228,6 +228,12 @@ final class ClassLikeStorage implements HasAttributesInterface
     public bool $inherits_taint_specialize = false;
 
     /**
+     * Whether the methods of the class only run from the command line (`@psalm-cli-only`): what they print goes to a
+     * terminal, not to an HTML response
+     */
+    public bool $cli_only = false;
+
+    /**
      * @var array<lowercase-string, MethodStorage>
      */
     public array $methods = [];

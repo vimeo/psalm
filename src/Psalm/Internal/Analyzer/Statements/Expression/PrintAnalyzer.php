@@ -10,6 +10,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\ImpureFunctionCall;
@@ -43,10 +44,11 @@ final class PrintAnalyzer
                 'print',
                 0,
                 $call_location,
-                TaintKind::INPUT_HTML
+                (TaintKind::INPUT_HTML
                     | TaintKind::INPUT_HAS_QUOTES
                     | TaintKind::USER_SECRET
-                    | TaintKind::SYSTEM_SECRET,
+                    | TaintKind::SYSTEM_SECRET)
+                & ~(CliOutput::isInCliOnlyCode($statements_analyzer) ? CliOutput::HTML_TAINTS : 0),
             );
 
             $statements_analyzer->taint_flow_graph->addSink($print_param_sink);

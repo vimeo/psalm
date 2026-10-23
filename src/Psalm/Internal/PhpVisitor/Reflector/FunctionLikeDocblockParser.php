@@ -163,6 +163,10 @@ final class FunctionLikeDocblockParser
 
         self::parseTaintTags($parsed_docblock, $info, $codebase, $code_location, $cased_function_id);
 
+        if (isset($parsed_docblock->tags['psalm-cli-only'])) {
+            $info->cli_only = true;
+        }
+
         if (isset($parsed_docblock->tags['global'])) {
             foreach ($parsed_docblock->tags['global'] as $offset => $global) {
                 $line_parts = CommentAnalyzer::splitDocLine($global);

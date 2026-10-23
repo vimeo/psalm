@@ -181,6 +181,8 @@ final class FunctionLikeDocblockScanner
             $storage->specialize_call = true;
         }
 
+        $storage->cli_only = $docblock_info->cli_only;
+
 
         // we make sure we only add ignore flag for internal stubs if the config is set to true
         if ($docblock_info->ignore_nullable_return

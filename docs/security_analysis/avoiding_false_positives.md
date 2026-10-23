@@ -99,6 +99,33 @@ echo processVar($_GET['text'], false); // detects tainted HTML
 echo processVar($_GET['text'], true); // considered secure
 ```
 
+## Output of command-line code
+
+What a script run from the command line prints goes to a terminal or a log, not to an HTML page. `@psalm-cli-only` on
+a function, a method or a class says that it only runs from the command line: what its code (and the closures in it)
+prints with `echo`, `print`, `printf()`, `vprintf()`, `var_dump()`, `debug_zval_dump()`, and `print_r()` and
+`var_export()` not returning it, isn't reported as `TaintedHtml`.
+
+```php
+<?php
+
+/**
+ * @psalm-cli-only
+ */
+final class ImportCommand
+{
+    public function run(): void
+    {
+        $file = (string) ($_SERVER['argv'][1] ?? '');
+        echo 'Importing ' . $file . "\n"; // not reported
+    }
+}
+```
+
+Printing a secret is still reported, and the values stay tainted for every other sink. The annotation only covers the
+code it is on: a method of another class, or a function, called from there is checked as usual, so annotate it too if
+it only runs from the command line.
+
 ## Sanitizing HTML user input
 
 Whenever possible, applications should be designed to accept & store user input as discrete text fields, rather than blocks of HTML.  This allows user input to be fully escaped via `htmlspecialchars` or `htmlentities`.  In cases where HTML user input is required (e.g. rich text editors like [TinyMCE](https://www.tiny.cloud/)), a library designed specifically to filter out risky HTML is highly recommended.  For example, [HTML Purifier](http://htmlpurifier.org/docs) could be used as follows:

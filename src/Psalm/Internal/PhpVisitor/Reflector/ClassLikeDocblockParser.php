@@ -341,6 +341,10 @@ final class ClassLikeDocblockParser
             $info->taint_specialize = true;
         }
 
+        if (isset($parsed_docblock->tags['psalm-cli-only'])) {
+            $info->cli_only = true;
+        }
+
         if (isset($parsed_docblock->tags['psalm-override-property-visibility'])) {
             $info->override_property_visibility = true;
         }

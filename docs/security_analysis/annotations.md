@@ -37,6 +37,10 @@ function getRequestPath(): string {}
 The taints the native types of a value can't hold are still removed from it: a `string` returned by
 `getRequestPath()` above can't be a NoSQL query.
 
+## `@psalm-cli-only`
+
+See [Output of command-line code](avoiding_false_positives.md#output-of-command-line-code).
+
 ## `@psalm-taint-specialize`
 
 See [Specializing taints in functions](avoiding_false_positives.md#specializing-taints-in-functions) and [Specializing taints in classes](avoiding_false_positives.md#specializing-taints-in-classes).
