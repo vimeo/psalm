@@ -150,13 +150,29 @@ final class Cache
             return null;
         }
 
-        $path = $this->dir . hash('xxh128', $key);
+        // saveItem() writes the hash to "$path.hash" as a length-prefixed
+        // hash followed by the key; "$path" holds the serialized item.
+        $path = $this->dir . hash('xxh128', $key) . '.hash';
 
-        if (!file_exists($path)) {
+        $fp = @fopen($path, 'r');
+        if ($fp === false) {
+            return null;
+        }
+        flock($fp, LOCK_SH);
+        $file_hash = stream_get_contents($fp);
+        flock($fp, LOCK_UN);
+        fclose($fp);
+
+        if ($file_hash === false || strlen($file_hash) < 4) {
+            return null;
+        }
+        $unpacked = unpack('V', $file_hash);
+        $hash_len = $unpacked === false ? null : ($unpacked[1] ?? null);
+        if (!is_int($hash_len) || substr($file_hash, 4 + $hash_len) !== $key) {
             return null;
         }
 
-        return Providers::safeFileGetContents($path);
+        return substr($file_hash, 4, $hash_len);
     }
 
     /** @return T */
@@ -259,6 +275,10 @@ final class Cache
             flock($f, LOCK_UN);
             fclose($f);
         }
-        $this->cache[$key] = [$hash, $item];
+        // Without a disk cache the array is the only copy. With one, keep it only if arrayCache is on,
+        // otherwise a cold run holds every parsed AST and storage object in memory for nothing.
+        if (!$this->persistent || $this->arrayCache) {
+            $this->cache[$key] = [$hash, $item];
+        }
     }
 }
