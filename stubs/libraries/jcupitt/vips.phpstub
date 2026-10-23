@@ -1,0 +1,49 @@
+<?php
+
+// The taints jcupitt/vips passes along: the files images are read from and written to are file sinks. Loaded
+// when the analysed code uses the package, refining its classes (see Config::visitStubFiles()).
+
+namespace Jcupitt\Vips {
+/**
+ * @category  Images
+ * @package   Jcupitt\Vips
+ * @author    John Cupitt <jcupitt@gmail.com>
+ * @copyright 2016 John Cupitt
+ * @license   https://opensource.org/licenses/MIT MIT
+ * @link      https://github.com/jcupitt/php-vips
+ */
+class Image extends ImageAutodoc implements \ArrayAccess
+{
+    /**
+     * @param string $name The file to open.
+     * @param array  $options  Any options to pass on to the load operation.
+     *
+     * @throws Exception
+     *
+     * @return Image A new Image.
+     *
+     * @psalm-taint-sink file $name
+     */
+    public static function newFromFile(
+        string $name,
+        array $options = []
+    ): Image
+    {
+    }
+
+    /**
+     * @param string $name The file to write the image to.
+     * @param array  $options  Any options to pass on to the selected save
+     *     operation.
+     *
+     * @throws Exception
+     *
+     * @return void
+     *
+     * @psalm-taint-sink file $name
+     */
+    public function writeToFile(string $name, array $options = []): void
+    {
+    }
+}
+}
