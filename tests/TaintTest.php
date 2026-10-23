@@ -4378,6 +4378,17 @@ final class TaintTest extends TestCase
                     (new Component("safe"))->show($input, 0);
                     Component::format($input, 1);',
             ],
+            'conditionalSinkOfAnEscapingModeOfACallable' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink ($mode is 0|1|2 ? null : \'html\') $content */
+                    function render(string $content, int $mode = 0): void {}
+
+                    $render = render(...);
+                    $input = (string) $_GET["x"];
+                    $render($input, 1);
+                    $render($input);
+                    call_user_func($render, $input, 2);',
+            ],
             'lateBoundKeyedStoreKeepsTheStoresOfUnrelatedClassesApart' => [
                 'code' => '<?php
                     abstract class Model {
@@ -5774,6 +5785,33 @@ final class TaintTest extends TestCase
                     }
 
                     new Component((string) $_GET["x"], ["render_way" => 3]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionalSinkOfAFirstClassCallable' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink ($mode is 0|1|2 ? null : \'html\') $content */
+                    function render(string $content, int $mode = 0): void {}
+
+                    $render = render(...);
+                    $render((string) $_GET["x"], 3);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionalSinkOfACallableGivenToCallUserFunc' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink ($mode is 0|1|2 ? null : \'html\') $content */
+                    function render(string $content, int $mode = 0): void {}
+
+                    $render = render(...);
+                    call_user_func($render, (string) $_GET["x"], 3);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionalSinkOfACallableGivenUnpackedArguments' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink ($mode is 0|1|2 ? null : \'html\') $content */
+                    function render(string $content, int $mode = 0): void {}
+
+                    $render = render(...);
+                    call_user_func_array($render, [(string) $_GET["x"], 0]);',
                 'error_message' => 'TaintedHtml',
             ],
             'conditionalSinkOfAParameterThatDoesNotExist' => [

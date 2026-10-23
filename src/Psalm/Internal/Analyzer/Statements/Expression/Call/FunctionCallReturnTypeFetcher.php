@@ -621,7 +621,9 @@ final class FunctionCallReturnTypeFetcher
      *    php://input source), argument-to-return flows (@psalm-flow) and the implicit
      *    param->return flow of an analyzed function body;
      *  - each argument is connected to the function's per-parameter node, which feeds an
-     *    analyzed body and registers any @psalm-taint-sink parameters as sinks.
+     *    analyzed body and registers any @psalm-taint-sink parameters as sinks;
+     *  - the arguments given to parameters with conditional sinks (`@psalm-taint-sink (<conditional>) $param`)
+     *    become sinks of the taints the conditional types resolve to with the arguments.
      *
      * @param non-empty-lowercase-string $callable_id
      */
@@ -706,6 +708,14 @@ final class FunctionCallReturnTypeFetcher
                     $stmt->getArgs(),
                     null,
                 );
+                ConditionalTaintSinks::taintCall(
+                    $statements_analyzer,
+                    $graph,
+                    $closure_storage,
+                    $stmt->getArgs(),
+                    $callable_id,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                );
             }
 
             $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
@@ -785,6 +795,8 @@ final class FunctionCallReturnTypeFetcher
             $args,
             $specialization_location,
         );
+
+        ConditionalTaintSinks::taintCall($statements_analyzer, $graph, $storage, $args, $callable_id, $node_location);
 
         $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
     }
