@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Type\Atomic;
 
 use Override;
+use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeVariableBounds;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
+use Psalm\Type\Union;
+
+use function array_slice;
 
 /**
  * Denotes a type variable: a placeholder (e.g. `` `_0 ``) minted for a class template
@@ -60,24 +64,159 @@ final class TTypeVariable extends Atomic
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
-        $bound = null;
+        // Bounds are rendered through the types they hold, which may (directly
+        // or through another variable) mention this variable again. A variable
+        // that is already being rendered further up the stack falls back to its
+        // name, so a cycle in the bounds cannot recurse forever.
+        /**
+         * @var array<string, true> $rendering
+         * @psalm-suppress ImpureStaticVariable only tracks the variables being
+         *      rendered on the current call stack
+         */
+        static $rendering = [];
 
-        if ($this->bounds) {
-            if ($this->bounds->lower_bounds) {
-                $bound = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-                    $this->bounds->lower_bounds,
-                    null,
-                )->getId($exact);
-            } elseif ($this->bounds->upper_bounds) {
-                $bound = $this->bounds->upper_bounds[0]->type->getId($exact);
-            }
-        }
-
-        if ($bound === null) {
+        if (!$this->bounds
+            || isset($rendering[$this->name])
+            || (!$this->bounds->lower_bounds && !$this->bounds->upper_bounds)
+        ) {
             return $this->name;
         }
 
+        $rendering[$this->name] = true;
+
+        try {
+            if ($this->bounds->lower_bounds) {
+                $bound = self::widenMixedToConstraint(
+                    TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                        $this->bounds->lower_bounds,
+                        null,
+                    ),
+                    $this->bounds,
+                )->getId($exact);
+            } else {
+                $bound = $this->bounds->upper_bounds[0]->type->getId($exact);
+            }
+        } finally {
+            unset($rendering[$this->name]);
+        }
+
         return $exact ? $this->name . ':' . $bound : $bound;
+    }
+
+    /**
+     * Resolves this variable to the most specific of its lower bounds, or to
+     * the first upper bound when nothing bound it from below.
+     *
+     * With $construction_site_only, only the bounds the constructor arguments
+     * implied are considered, and values that later flowed into the variable
+     * (e.g. through `$box->add($x)`) are ignored: they reconcile on their own.
+     * Without it, every value recorded so far counts, as a read of the value
+     * the variable stands for must account for all of them.
+     *
+     * Returns null when the variable was minted with no bounds at all and there
+     * is therefore nothing to resolve it to.
+     *
+     * @psalm-suppress ImpureMethodCall the bounds accumulate while the variable
+     *      flows through the function body; resolving reflects the bounds
+     *      recorded up to this point
+     */
+    public function getResolvedType(?Codebase $codebase, bool $construction_site_only = true): ?Union
+    {
+        if (!$this->bounds) {
+            return null;
+        }
+
+        $lower_bounds = $construction_site_only
+            ? array_slice(
+                $this->bounds->lower_bounds,
+                0,
+                $this->bounds->initial_lower_bound_count,
+            )
+            : $this->bounds->lower_bounds;
+
+        if ($lower_bounds) {
+            return self::widenMixedToConstraint(
+                TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                    $lower_bounds,
+                    $codebase,
+                ),
+                $this->bounds,
+            );
+        }
+
+        if ($this->bounds->upper_bounds) {
+            return $this->bounds->upper_bounds[0]->type;
+        }
+
+        return null;
+    }
+
+    /**
+     * A construction site whose arguments only bound the variable to `mixed`
+     * (e.g. `new Collection($untyped)`) tells nothing about the shape the
+     * variable stands for, so the declared constraint is the best knowledge
+     * available: a read of the variable resolves to it, exactly as a template
+     * inferred as `mixed` has always been replaced by its `as` type
+     * (TemplateInferredTypeReplacer). A constraint that is itself `mixed`
+     * adds nothing and the bound is kept.
+     *
+     * @psalm-mutation-free
+     */
+    public static function widenMixedToConstraint(Union $resolved, TypeVariableBounds $bounds): Union
+    {
+        if ($resolved->isMixed()
+            && $bounds->upper_bounds
+            && !$bounds->upper_bounds[0]->type->isMixed()
+        ) {
+            return $bounds->upper_bounds[0]->type;
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * Whether the construction site inferred `never` for this variable: it was
+     * minted for an empty construction (e.g. `new Collection([])`), so until
+     * something binds it from below it stands for no value at all.
+     */
+    public function isNeverBound(): bool
+    {
+        if (!$this->bounds || !$this->bounds->initial_lower_bound_count) {
+            return false;
+        }
+
+        // A bound may hold another variable (a template bound by an argument
+        // whose type carried one); such a bound is `never` when that variable
+        // is. Variables on the current call stack are not re-entered, so a
+        // cycle in the bounds cannot recurse forever.
+        /**
+         * @var array<string, true> $checking
+         * @psalm-suppress ImpureStaticVariable only tracks the variables being
+         *      checked on the current call stack
+         */
+        static $checking = [];
+
+        if (isset($checking[$this->name])) {
+            return false;
+        }
+
+        $checking[$this->name] = true;
+
+        try {
+            foreach (array_slice($this->bounds->lower_bounds, 0, $this->bounds->initial_lower_bound_count) as $bound) {
+                foreach ($bound->type->getAtomicTypes() as $atomic_type) {
+                    if (!$atomic_type instanceof TNever
+                        && !($atomic_type instanceof TTypeVariable && $atomic_type->isNeverBound())
+                    ) {
+                        return false;
+                    }
+                }
+            }
+        } finally {
+            unset($checking[$this->name]);
+        }
+
+        return true;
     }
 
     /**

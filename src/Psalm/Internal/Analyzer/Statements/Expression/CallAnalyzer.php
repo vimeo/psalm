@@ -762,7 +762,7 @@ abstract class CallAnalyzer
                 if (count($exploded) === 2) {
                     $failedMessage = AssertionFinder::isPropertyImmutableOnArgument(
                         $property,
-                        $statements_analyzer->getNodeTypeProvider(),
+                        $statements_analyzer->getNodeTypeProvider()->getType($arg_value),
                         $statements_analyzer->getCodebase()->classlike_storage_provider,
                         $arg_value,
                     );
@@ -1044,14 +1044,37 @@ abstract class CallAnalyzer
                                 = $template_result->upper_bounds_unintersectable_types;
                         }
 
-                        if (!UnionTypeComparator::isContainedBy(
+                        $is_contained_by = UnionTypeComparator::isContainedBy(
                             $statements_analyzer->getCodebase(),
                             $lower_bound_type,
                             $upper_bound_type,
                             false,
                             false,
                             $union_comparison_result,
-                        )) {
+                        );
+
+                        if ($is_contained_by
+                            && ($union_comparison_result->type_variable_lower_bounds
+                                || $union_comparison_result->type_variable_upper_bounds)
+                        ) {
+                            // the lower bound is a type variable (a class template
+                            // minted at a construction site): the containment held
+                            // by recording a bound on it, which reconciles against
+                            // the construction-site inference once the function-like
+                            // has been analyzed — as a requirement of this call
+                            foreach ($union_comparison_result->type_variable_upper_bounds as [$_, $variable_bound]) {
+                                $variable_bound->from_argument_requirement = true;
+                            }
+
+                            $statements_analyzer->type_variable_tracker->addBounds(
+                                $union_comparison_result->type_variable_lower_bounds,
+                                $union_comparison_result->type_variable_upper_bounds,
+                                $code_location,
+                                $statements_analyzer->getSuppressedIssues(),
+                            );
+                        }
+
+                        if (!$is_contained_by) {
                             if ($union_comparison_result->type_coerced) {
                                 if ($union_comparison_result->type_coerced_from_mixed) {
                                     IssueBuffer::maybeAdd(
