@@ -321,6 +321,20 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      */
     public array $taint_property_reads = [];
 
+    /**
+     * The flows of arrays given to a method into the properties of the object it is called on that their keys name:
+     * `@psalm-flow ($values) -> $this->{key}`. Each is the offsets of the parameters whose arguments are set.
+     *
+     * @var list<list<int>>
+     */
+    public array $taint_keyed_property_writes = [];
+
+    /**
+     * Whether a method returns the properties of the object it is called on under their names:
+     * `@psalm-flow $this->{key} -> return[key]`
+     */
+    public bool $taint_keyed_property_read = false;
+
     public bool $allow_named_arg_calls = true;
 
     /**
