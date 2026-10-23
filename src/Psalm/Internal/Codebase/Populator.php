@@ -1157,8 +1157,17 @@ final class Populator
                         ?? $implementing_class_storage->pseudo_methods[$implementing_method_id->method_name]
                         ?? $implementing_class_storage->pseudo_static_methods[$implementing_method_id->method_name];
 
-                    if (!$method->abstract
-                        || !empty($storage->methods[$implementing_method_id->method_name]->abstract)
+                    // A method that appears in an ancestor was inherited, not declared here: after a stub
+                    // re-opens the parent class we are repopulated and must take the parent's new declaration
+                    // instead of keeping the stale one (own and own-trait methods appear in this class).
+                    $is_stale_inheritance = !$parent_storage->is_trait
+                        && !$parent_storage->is_interface
+                        && isset($storage->appearing_method_ids[$aliased_method_name])
+                        && $storage->appearing_method_ids[$aliased_method_name]->fq_class_name !== $storage->name;
+
+                    if ((!$method->abstract
+                            || !empty($storage->methods[$implementing_method_id->method_name]->abstract))
+                        && !$is_stale_inheritance
                     ) {
                         continue;
                     }
