@@ -43,6 +43,7 @@ use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UnsafeGenericInstantiation;
 use Psalm\Issue\UnsafeInstantiation;
+use Psalm\Issue\UnusedMethodCall;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Capabilities;
@@ -337,6 +338,8 @@ final class NewAnalyzer extends CallAnalyzer
                     $can_extend,
                     $template_result,
                 );
+
+                self::checkUnusedThrowable($statements_analyzer, $codebase, $stmt, $context, $fq_class_name);
             } else {
                 ArgumentsAnalyzer::analyze(
                     $statements_analyzer,
@@ -366,6 +369,44 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * An exception that is created but never thrown, returned or otherwise used is a mistake
+     * (a missing `throw`), whatever its constructor does: it is reported like the unused return
+     * value of a pure call.
+     */
+    private static function checkUnusedThrowable(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr\New_ $stmt,
+        Context $context,
+        string $fq_class_name,
+    ): void {
+        if (!$codebase->find_unused_variables
+            || $context->collect_initializations
+            || $context->collect_mutations
+            || $context->insideUse()
+            || $context->inside_unset
+            || !$codebase->classImplements($fq_class_name, 'Throwable')
+        ) {
+            return;
+        }
+
+        $method_id = new MethodIdentifier($fq_class_name, '__construct');
+
+        $class_description = $stmt->class instanceof PhpParser\Node\Stmt\Class_
+            ? 'anonymous ' . ($stmt->class->extends ? $stmt->class->extends->toString() : 'class')
+            : $fq_class_name;
+
+        IssueBuffer::maybeAdd(
+            new UnusedMethodCall(
+                'The ' . $class_description . ' instance created here is never thrown or used',
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                (string) $method_id,
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
     }
 
     private static function analyzeNamedConstructor(
