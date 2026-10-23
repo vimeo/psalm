@@ -122,9 +122,13 @@ final class ImportCommand
 }
 ```
 
-Printing a secret is still reported, and the values stay tainted for every other sink. The annotation only covers the
-code it is on: a method of another class, or a function, called from there is checked as usual, so annotate it too if
-it only runs from the command line.
+Printing a secret is still reported, and the values stay tainted for every other sink. The annotation covers the code
+it is on, and the methods of its class that only that code calls: the private ones, and the protected ones of a final
+class that override none, called from methods with `@psalm-cli-only` (directly or through such methods) but not from
+the other methods of the class or of the traits it uses, nor named by a callable (`[$this, 'show']`, `'self::show'`).
+A class with code calling a method by a name computed at runtime (`$this->$name()`, `[$this, $name]`) outside
+`@psalm-cli-only` methods gets none. A method of another class, or a function, called from there is checked as usual,
+so annotate it too if it only runs from the command line.
 
 ## Sanitizing HTML user input
 
