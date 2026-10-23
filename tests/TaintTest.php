@@ -4376,7 +4376,13 @@ final class TaintTest extends TestCase
                     new Component($input, ["render_way" => 2, "class" => "title"]);
                     new Component($input);
                     (new Component("safe"))->show($input, 0);
-                    Component::format($input, 1);',
+                    Component::format($input, 1);
+                    $render = render(...);
+                    $render($input, 1);
+                    $closure =
+                        /** @psalm-taint-sink ($mode is 0|1|2 ? null : \'html\') $content */
+                        function (string $content, int $mode = 0): void {};
+                    $closure($input, 2);',
             ],
             'lateBoundKeyedStoreKeepsTheStoresOfUnrelatedClassesApart' => [
                 'code' => '<?php
@@ -5774,6 +5780,24 @@ final class TaintTest extends TestCase
                     }
 
                     new Component((string) $_GET["x"], ["render_way" => 3]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionalSinkOfAFirstClassCallable' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink ($mode is 0|1|2 ? null : \'html\') $content */
+                    function render(string $content, int $mode = 0): void {}
+
+                    $render = render(...);
+                    $render((string) $_GET["x"], 3);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionalSinkOfAClosure' => [
+                'code' => '<?php
+                    $render =
+                        /** @psalm-taint-sink ($mode is 0|1|2 ? null : \'html\') $content */
+                        function (string $content, int $mode = 0): void {};
+
+                    $render((string) $_GET["x"], 3);',
                 'error_message' => 'TaintedHtml',
             ],
             'conditionalSinkOfAParameterThatDoesNotExist' => [

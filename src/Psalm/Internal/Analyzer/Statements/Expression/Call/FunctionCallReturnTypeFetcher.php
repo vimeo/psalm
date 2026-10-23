@@ -697,6 +697,14 @@ final class FunctionCallReturnTypeFetcher
                     $stmt->getArgs(),
                     null,
                 );
+                ConditionalTaintSinks::taintCall(
+                    $statements_analyzer,
+                    $graph,
+                    $closure_storage,
+                    $stmt->getArgs(),
+                    $callable_id,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                );
                 self::taintCallableByRefParams(
                     $statements_analyzer,
                     $graph,
@@ -775,6 +783,8 @@ final class FunctionCallReturnTypeFetcher
             $args,
             $specialization_location,
         );
+
+        ConditionalTaintSinks::taintCall($statements_analyzer, $graph, $storage, $args, $callable_id, $node_location);
 
         self::taintCallableByRefParams(
             $statements_analyzer,
