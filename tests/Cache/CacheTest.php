@@ -146,6 +146,7 @@ final class CacheTest extends TestCase
         $in_memory = new ReflectionProperty(Cache::class, 'cache');
         self::assertSame($retained, $in_memory->getValue($cache) !== []);
         self::assertSame('item', $cache->getItem('key', 'hash'));
+        self::assertSame('hash', $cache->getHash('key'));
     }
 
     /**
