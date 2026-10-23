@@ -1,6 +1,7 @@
 <?php
 
-// The taints jcupitt/vips passes along: the files images are read from and written to are file sinks. Loaded
+// The taints jcupitt/vips passes along: the files images, sources and targets are read from and written to are file
+// sinks. Loaded
 // when the analysed code uses the package, refining its classes (see Config::visitStubFiles()).
 
 namespace Jcupitt\Vips {
@@ -14,6 +15,21 @@ namespace Jcupitt\Vips {
  */
 class Image extends ImageAutodoc implements \ArrayAccess
 {
+    /**
+     * Find the name of the load operation vips will use to load a file, for
+     * example "VipsForeignLoadJpegFile". You can use this to work out what
+     * options to pass to newFromFile().
+     *
+     * @param string $filename The file to test.
+     *
+     * @return string|null The name of the load operation, or null.
+     *
+     * @psalm-taint-sink file $filename
+     */
+    public static function findLoad(string $filename): ?string
+    {
+    }
+
     /**
      * @param string $name The file to open.
      * @param array  $options  Any options to pass on to the load operation.
@@ -43,6 +59,48 @@ class Image extends ImageAutodoc implements \ArrayAccess
      * @psalm-taint-sink file $name
      */
     public function writeToFile(string $name, array $options = []): void
+    {
+    }
+}
+}
+
+namespace Jcupitt\Vips {
+class Source extends Connection
+{
+    /**
+     * Make a new source from a filename. For example:
+     *
+     * ```php
+     * $source = Source::newFromFile("myfile.jpg");
+     * ```
+     *
+     * You can pass this source to (for example) @see Image::newFromSource()
+     * @throws Exception
+     *
+     * @psalm-taint-sink file $filename
+     */
+    public static function newFromFile(string $filename): self
+    {
+    }
+}
+}
+
+namespace Jcupitt\Vips {
+class Target extends Connection
+{
+    /**
+     * Make a new target to write to a filename. For example:
+     *
+     * ```php
+     * $target = Target::newToFile("myfile.jpg");
+     * ```
+     *
+     * You can pass this target to (for example) @see Image::writeToTarget()
+     * @throws Exception
+     *
+     * @psalm-taint-sink file $filename
+     */
+    public static function newToFile(string $filename): self
     {
     }
 }
