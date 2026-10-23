@@ -1338,6 +1338,61 @@ final class StubTest extends TestCase
         $this->project_analyzer->consolidateAnalyzedData();
     }
 
+    public function testStubbedTraitMethodOverrideAppliesToSubclasses(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $this->addFile(
+            (string) getcwd() . '/vendor/trait_provided_method.php',
+            '<?php
+                trait TraitWithMethod {
+                    /** @param string $x */
+                    public function m($x): void {}
+                }
+
+                class StubbedBase {
+                    use TraitWithMethod;
+                }
+
+                class StubbedChild extends StubbedBase {}
+
+                class StubbedGrandChild extends StubbedChild {}',
+        );
+
+        $this->addStubFile(
+            'trait_provided_method.phpstub',
+            '<?php
+                class StubbedBase {
+                    /** @param int $x */
+                    public function m($x): void {}
+                }',
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                (new StubbedBase())->m(1);
+                (new StubbedChild())->m(1);
+                (new StubbedGrandChild())->m(1);',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testStubOverridingMissingClass(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
