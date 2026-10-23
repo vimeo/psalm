@@ -1,0 +1,299 @@
+<?php
+
+// The taints phpoffice/phpspreadsheet 5 passes along: the files spreadsheets are read from and saved to are file
+// sinks, and the values of the cells read are input, as the spreadsheets read may come from anyone. Loaded when
+// the analysed code uses the package, refining its classes (see Config::visitStubFiles()).
+
+namespace PhpOffice\PhpSpreadsheet {
+use PhpOffice\PhpSpreadsheet\Reader\CsvNoEscape;
+use PhpOffice\PhpSpreadsheet\Reader\IReader2 as IReader;
+use PhpOffice\PhpSpreadsheet\Shared\File;
+use PhpOffice\PhpSpreadsheet\Writer\IWriter;
+
+abstract class IOFactory
+{
+    /**
+     * @param string $filename The name of the spreadsheet file
+     * @param int $flags the optional second parameter flags may be used to identify specific elements
+     *                       that should be loaded, but which won't be loaded by default, using these values:
+     *                            IReader::LOAD_WITH_CHARTS - Include any charts that are defined in the loaded file.
+     *                            IReader::READ_DATA_ONLY - Read cell values only, not formatting or merge structure.
+     *                            IReader::IGNORE_EMPTY_CELLS - Don't load empty cells into the model.
+     * @param string[] $readers An array of Readers to use to identify the file type. By default, load() will try
+     *                             all possible Readers until it finds a match; but this allows you to pass in a
+     *                             list of Readers so it will only try the subset that you specify here.
+     *                          Values in this list can be any of the constant values defined in the set
+     *                                 IOFactory::READER_*.
+     * @param array<string, class-string<IReader>> $mergeArray
+     *
+     * @psalm-taint-sink file $filename
+     */
+    public static function load(string $filename, int $flags = 0, ?array $readers = null, array $mergeArray = []): Spreadsheet
+    {
+    }
+
+    /**
+     * @param string[] $readers
+     * @param array<string, class-string<IReader>> $mergeArray
+     *
+     * @psalm-taint-sink file $filename
+     */
+    public static function identify(string $filename, ?array $readers = null, bool $fullClassName = false, array $mergeArray = []): string
+    {
+    }
+
+    /**
+     * @param string[] $readers An array of Readers to use to identify the file type. By default, load() will try
+     *                             all possible Readers until it finds a match; but this allows you to pass in a
+     *                             list of Readers so it will only try the subset that you specify here.
+     *                          Values in this list can be any of the constant values defined in the set
+     *                                 IOFactory::READER_*.
+     * @param array<string, class-string<IReader>> $mergeArray supplied readers will be merged with
+     *        default readers, allowing specification of a partial list.
+     *
+     * @throws Reader\Exception
+     *
+     * @psalm-taint-sink file $filename
+     */
+    public static function createReaderForFile(string $filename, ?array $readers = null, array $mergeArray = []): IReader
+    {
+    }
+}
+}
+
+namespace PhpOffice\PhpSpreadsheet\Reader {
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+
+interface IReader
+{
+    /**
+     * @param string $filename The name of the file to load
+     * @param int $flags Flags that can change the behaviour of the Writer:
+     *            self::LOAD_WITH_CHARTS    Load any charts that are defined (if the Reader supports Charts)
+     *            self::READ_DATA_ONLY      Read only data, not style or structure information, from the file
+     *            self::IGNORE_EMPTY_CELLS  Don't read empty cells (cells that contain a null value,
+     *                                      empty string, or a string containing only whitespace characters)
+     *            self::IGNORE_ROWS_WITH_NO_CELLS    Don't load any rows that contain no cells.
+     *            self::ALLOW_EXTERNAL_IMAGES    Attempt to fetch images stored outside the spreadsheet.
+     *            self::DONT_ALLOW_EXTERNAL_IMAGES    Don't attempt to fetch images stored outside the spreadsheet.
+     *            self::CREATE_BLANK_SHEET_IF_NONE_READ    If no sheets are read, create a blank one.
+     *
+     * @psalm-taint-sink file $filename
+     */
+    public function load(string $filename, int $flags = 0): Spreadsheet;
+}
+}
+
+namespace PhpOffice\PhpSpreadsheet\Reader {
+use PhpOffice\PhpSpreadsheet\Cell\IValueBinder;
+use PhpOffice\PhpSpreadsheet\Exception as PhpSpreadsheetException;
+use PhpOffice\PhpSpreadsheet\Reader\Exception as ReaderException;
+use PhpOffice\PhpSpreadsheet\Reader\Security\XmlScanner;
+use PhpOffice\PhpSpreadsheet\Shared\File;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+
+abstract class BaseReader implements IReader2
+{
+    /**
+     * @param int $flags the optional second parameter flags may be used to identify specific elements
+     *                       that should be loaded, but which won't be loaded by default, using these values:
+     *                            IReader::LOAD_WITH_CHARTS - Include any charts that are defined in the loaded file
+     *
+     * @psalm-taint-sink file $filename
+     */
+    public function load(string $filename, int $flags = 0): Spreadsheet
+    {
+    }
+}
+}
+
+namespace PhpOffice\PhpSpreadsheet\Writer {
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+
+interface IWriter
+{
+    /**
+     * @param resource|string $filename Name of the file to save
+     * @param int $flags Flags that can change the behaviour of the Writer:
+     *            self::SAVE_WITH_CHARTS                Save any charts that are defined (if the Writer supports Charts)
+     *            self::DISABLE_PRECALCULATE_FORMULAE   Don't Precalculate formulae before saving the file
+     *
+     * @throws Exception
+     *
+     * @psalm-taint-sink file $filename
+     */
+    public function save($filename, int $flags = 0): void;
+}
+}
+
+namespace PhpOffice\PhpSpreadsheet\Writer {
+use PhpOffice\PhpSpreadsheet\Calculation\Calculation;
+use PhpOffice\PhpSpreadsheet\Calculation\Functions;
+use PhpOffice\PhpSpreadsheet\HashTable;
+use PhpOffice\PhpSpreadsheet\RichText\RichText;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Borders;
+use PhpOffice\PhpSpreadsheet\Style\Conditional;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Font;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+use PhpOffice\PhpSpreadsheet\Worksheet\BaseDrawing;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing as WorksheetDrawing;
+use PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing;
+use PhpOffice\PhpSpreadsheet\Writer\Exception as WriterException;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx\Chart;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx\Comments;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx\ContentTypes;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx\DocProps;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx\Drawing;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx\Rels;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx\RelsRibbon;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx\RelsVBA;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx\RichDataDrawing;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx\StringTable;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx\Style;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx\Table;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx\Theme;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx\Workbook;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx\Worksheet;
+use ZipArchive;
+use ZipStream\Exception\OverflowException;
+use ZipStream\ZipStream;
+
+class Xlsx extends BaseWriter
+{
+    /**
+     * @param resource|string $filename
+     *
+     * @psalm-taint-sink file $filename
+     */
+    public function save($filename, int $flags = 0): void
+    {
+    }
+}
+}
+
+namespace PhpOffice\PhpSpreadsheet\Writer {
+use Composer\Pcre\Preg;
+use PhpOffice\PhpSpreadsheet\Calculation\Calculation;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+
+class Csv extends BaseWriter
+{
+    /**
+     * @param resource|string $filename
+     *
+     * @psalm-taint-sink file $filename
+     */
+    public function save($filename, int $flags = 0): void
+    {
+    }
+}
+}
+
+namespace PhpOffice\PhpSpreadsheet\Style {
+use PhpOffice\PhpSpreadsheet\RichText\RichText;
+
+class NumberFormat extends Supervisor
+{
+    /**
+     * @param null|bool|float|int|RichText|string $value Value to format
+     * @param string $format Format code: see = self::FORMAT_* for predefined values;
+     *                          or can be any valid MS Excel custom format string
+     * @param null|callable(string, string): string $callBack Callback function for additional formatting of string
+     * @param bool $lessFloatPrecision If true, unstyled floats will be converted to a more human-friendly but less computationally accurate value
+     *
+     * @return string Formatted string
+     *
+     * @psalm-taint-specialize
+     * @psalm-flow ($value, $format) -> return
+     */
+    public static function toFormattedString(mixed $value, string $format, ?callable $callBack = null, bool $lessFloatPrecision = false): string
+    {
+    }
+}
+}
+
+namespace PhpOffice\PhpSpreadsheet\Cell {
+/**
+ * The cells of the spreadsheets the code reads, which clients upload: their values are a taint source
+ */
+class Cell implements \Stringable
+{
+    /**
+     * @psalm-taint-source input
+     */
+    public function getValue(): mixed {}
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function getValueString(): string {}
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function getFormattedValue(): string {}
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function getCalculatedValue(bool $resetLog = true): mixed {}
+}
+}
+
+namespace PhpOffice\PhpSpreadsheet\Worksheet {
+/**
+ * The sheets of the spreadsheets the code reads, which clients upload: their values are a taint source
+ */
+class Worksheet
+{
+    /**
+     * @return mixed[][]
+     * @psalm-taint-source input
+     */
+    public function rangeToArray(
+        string $range,
+        mixed $nullValue = null,
+        bool $calculateFormulas = true,
+        bool $formatData = true,
+        bool $returnCellRef = false,
+        bool $ignoreHidden = false,
+        bool $reduceArrays = false,
+        bool $lessFloatPrecision = false,
+        bool $oldCalculatedValue = false,
+    ): array {}
+
+    /**
+     * @return mixed[][]
+     * @psalm-taint-source input
+     */
+    public function namedRangeToArray(
+        string $definedName,
+        mixed $nullValue = null,
+        bool $calculateFormulas = true,
+        bool $formatData = true,
+        bool $returnCellRef = false,
+        bool $ignoreHidden = false,
+        bool $reduceArrays = false,
+        bool $lessFloatPrecision = false,
+        bool $oldCalculatedValue = false,
+    ): array {}
+
+    /**
+     * @return mixed[][]
+     * @psalm-taint-source input
+     */
+    public function toArray(
+        mixed $nullValue = null,
+        bool $calculateFormulas = true,
+        bool $formatData = true,
+        bool $returnCellRef = false,
+        bool $ignoreHidden = false,
+        bool $reduceArrays = false,
+        bool $lessFloatPrecision = false,
+        bool $oldCalculatedValue = false,
+    ): array {}
+}
+}
