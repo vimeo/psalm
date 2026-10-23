@@ -1,0 +1,90 @@
+<?php
+
+// The taints webklex/php-imap passes along: whoever sent an email the code receives wrote its bodies, headers
+// and attachments, which are input. Loaded when the analysed code uses the package, refining its classes (see
+// Config::visitStubFiles()).
+
+namespace Webklex\PHPIMAP {
+/**
+ * An email the code receives: whoever sent it wrote its bodies and headers, a taint source
+ */
+class Message
+{
+    /**
+     * @psalm-taint-source input
+     */
+    public function get($name): mixed {}
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function getTextBody(): string {}
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function getHTMLBody(): string {}
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function getRawBody(): string {}
+}
+
+/**
+ * A header or attribute of an email the code receives (getSubject(), getFrom(), Header::get()...): a taint source
+ */
+class Attribute
+{
+    /**
+     * @psalm-taint-source input
+     */
+    public function __toString() {}
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function toString(): string {}
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function toArray(): array {}
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function get(int|string $key = 0): mixed {}
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function all(): array {}
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function first(): mixed {}
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function last(): mixed {}
+}
+
+/**
+ * An attachment of an email the code receives: its sender chose its name and content, a taint source
+ */
+class Attachment
+{
+    /**
+     * @psalm-taint-source input
+     */
+    public function getContent(): string {}
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function getName(): string {}
+}
+}

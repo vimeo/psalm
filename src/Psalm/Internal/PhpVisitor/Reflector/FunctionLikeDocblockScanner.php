@@ -16,6 +16,7 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
+use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowAnnotation;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Scanner\FileScanner;
@@ -400,6 +401,7 @@ final class FunctionLikeDocblockScanner
 
         // merge taints from doc block to storage, enforce uniqueness and having consecutive index keys
         $storage->taint_source_types |= $docblock_info->taint_source_types;
+        $storage->taint_source_keys = [...$storage->taint_source_keys, ...$docblock_info->taint_source_keys];
         $location = new CodeLocation($file_scanner, $stmt, null, true);
 
         foreach ($docblock_info->added_taints as $taint) {
@@ -415,12 +417,13 @@ final class FunctionLikeDocblockScanner
                 $storage->removed_taints |= $t;
             }
         }
-        foreach ($docblock_info->conditionally_removed_taints as $removed_taint) {
-            self::handleConditionallyRemovedTaint(
+        $invalid_annotations = [
+            ...$invalid_annotations,
+            ...self::handleTaintConditionals(
                 $codebase,
                 $stmt,
+                $docblock_info,
                 $aliases,
-                $removed_taint,
                 $function_template_types,
                 $class_template_types,
                 $type_aliases,
@@ -429,8 +432,8 @@ final class FunctionLikeDocblockScanner
                 $cased_function_id,
                 $file_storage,
                 $file_scanner,
-            );
-        }
+            ),
+        ];
 
         self::handleTaintFlow($docblock_info, $storage, $aliases, $classlike_storage);
 
@@ -449,8 +452,9 @@ final class FunctionLikeDocblockScanner
             }
         }
 
+        $has_this = $storage instanceof MethodStorage && !$storage->is_static;
         foreach ($docblock_info->flows as $flow) {
-            $invalid_flow = self::getInvalidFlow($flow, $param_names);
+            $invalid_flow = self::getInvalidFlow($flow, $param_names, $has_this);
             if ($invalid_flow !== null) {
                 $invalid_annotations[] = $invalid_flow;
             }
@@ -1366,7 +1370,14 @@ final class FunctionLikeDocblockScanner
                 continue;
             }
 
-            if ($flow->kind === TaintFlowAnnotation::STORE_WRITE || $flow->kind === TaintFlowAnnotation::STORE_READ) {
+            if ($flow->isOfProperty()) {
+                // one of a function-like without `$this` is reported by handleTaintAnnotations()
+                if ($storage instanceof MethodStorage && !$storage->is_static) {
+                    ReceiverPropertyTaints::addFlow($storage, $flow);
+                }
+            } elseif ($flow->kind === TaintFlowAnnotation::STORE_WRITE
+                || $flow->kind === TaintFlowAnnotation::STORE_READ
+            ) {
                 TaintStore::addFlow($storage, $flow, $aliases, $classlike_storage?->name);
             } elseif ($flow->kind === TaintFlowAnnotation::RETURN) {
                 foreach ($flow->sources as $source_param) {
@@ -1415,15 +1426,19 @@ final class FunctionLikeDocblockScanner
     }
 
     /**
+     * Adds the conditional types of `@psalm-taint-escape (...)` and `@psalm-taint-sink (...) $param` to $storage, and
+     * returns what is wrong with the annotations
+     *
      * @param array<string, TypeAlias> $type_aliases
      * @param array<string, non-empty-array<string, Union>> $function_template_types
      * @param array<string, non-empty-array<string, Union>> $class_template_types
+     * @return list<string>
      */
-    private static function handleConditionallyRemovedTaint(
+    private static function handleTaintConditionals(
         Codebase $codebase,
         PhpParser\Node\FunctionLike $stmt,
+        FunctionDocblockComment $docblock_info,
         Aliases $aliases,
-        string $removed_taint,
         array $function_template_types,
         array $class_template_types,
         array $type_aliases,
@@ -1432,10 +1447,96 @@ final class FunctionLikeDocblockScanner
         string $cased_function_id,
         FileStorage $file_storage,
         FileScanner $file_scanner,
-    ): void {
+    ): array {
+        $invalid = [];
+
+        foreach ($docblock_info->conditionally_removed_taints as $removed_taint) {
+            $conditional = self::parseTaintConditional(
+                $codebase,
+                $stmt,
+                $aliases,
+                $removed_taint,
+                'Escaped taint',
+                $function_template_types,
+                $class_template_types,
+                $type_aliases,
+                $storage,
+                $classlike_storage,
+                $cased_function_id,
+                $file_storage,
+                $file_scanner,
+            );
+
+            if ($conditional !== null) {
+                $storage->conditionally_removed_taints[] = $conditional;
+            }
+        }
+
+        foreach ($docblock_info->conditional_taint_sink_params as $sink_param) {
+            $sink_offset = null;
+            foreach ($storage->params as $i => $param_storage) {
+                if ('$' . $param_storage->name === $sink_param['name']) {
+                    $sink_offset = $i;
+                }
+            }
+
+            if ($sink_offset === null) {
+                $invalid[] = '@psalm-taint-sink names ' . $sink_param['name']
+                    . ', which is not a parameter';
+
+                continue;
+            }
+
+            $conditional = self::parseTaintConditional(
+                $codebase,
+                $stmt,
+                $aliases,
+                $sink_param['type'],
+                'The taint of a sink',
+                $function_template_types,
+                $class_template_types,
+                $type_aliases,
+                $storage,
+                $classlike_storage,
+                $cased_function_id,
+                $file_storage,
+                $file_scanner,
+            );
+
+            if ($conditional !== null) {
+                $storage->conditional_taint_sinks[] = ['param' => $sink_offset, 'type' => $conditional];
+            }
+        }
+
+        return $invalid;
+    }
+
+    /**
+     * The conditional type of the taints of `@psalm-taint-escape (...)` or `@psalm-taint-sink (...) $param`, whose
+     * parameters it names become templates the calls resolve, or null when it isn't one (reported)
+     *
+     * @param array<string, TypeAlias> $type_aliases
+     * @param array<string, non-empty-array<string, Union>> $function_template_types
+     * @param array<string, non-empty-array<string, Union>> $class_template_types
+     */
+    private static function parseTaintConditional(
+        Codebase $codebase,
+        PhpParser\Node\FunctionLike $stmt,
+        Aliases $aliases,
+        string $conditional,
+        string $what,
+        array $function_template_types,
+        array $class_template_types,
+        array $type_aliases,
+        FunctionLikeStorage $storage,
+        ?ClassLikeStorage $classlike_storage,
+        string $cased_function_id,
+        FileStorage $file_storage,
+        FileScanner $file_scanner,
+    ): ?Union {
         try {
             [$fixed_type_tokens, $function_template_types] = self::getConditionalSanitizedTypeTokens(
-                $removed_taint,
+                $conditional,
                 $aliases,
                 $function_template_types + $class_template_types,
                 $type_aliases,
@@ -1445,7 +1546,7 @@ final class FunctionLikeDocblockScanner
                 $function_template_types,
             );
 
-            $removed_taint = TypeParser::parseTokens(
+            $type = TypeParser::parseTokens(
                 array_values($fixed_type_tokens),
                 null,
                 $function_template_types + $class_template_types,
@@ -1453,36 +1554,40 @@ final class FunctionLikeDocblockScanner
             );
 
             /** @psalm-suppress UnusedMethodCall */
-            $removed_taint->queueClassLikesForScanning($codebase, $file_storage);
+            $type->queueClassLikesForScanning($codebase, $file_storage);
 
-            $removed_taint_single = $removed_taint->getSingleAtomic();
-
-            if (!$removed_taint_single instanceof TConditional) {
-                throw new TypeParseTreeException('Escaped taint must be a conditional');
+            if (!$type->getSingleAtomic() instanceof TConditional) {
+                throw new TypeParseTreeException($what . ' must be a conditional');
             }
 
-            $storage->conditionally_removed_taints[] = $removed_taint;
+            return $type;
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
                 $e->getMessage() . ' in docblock for ' . $cased_function_id,
                 new CodeLocation($file_scanner, $stmt, null, true),
             );
+
+            return null;
         }
     }
 
     /**
-     * What is wrong with the `@psalm-flow` annotation $flow: it is malformed (see TaintFlowAnnotation), or it names a
-     * parameter (`$name`) that isn't one of $param_names
+     * What is wrong with the `@psalm-flow` annotation $flow: it is malformed (see TaintFlowAnnotation), it names a
+     * parameter (`$name`) that isn't one of $param_names, or a property of `$this` in a function-like without it
      *
      * @param array<string, true> $param_names
      * @return non-empty-string|null
      * @psalm-pure
      */
-    private static function getInvalidFlow(string $flow, array $param_names): ?string
+    private static function getInvalidFlow(string $flow, array $param_names, bool $has_this): ?string
     {
         $parsed_flow = TaintFlowAnnotation::parse($flow);
         if (is_string($parsed_flow)) {
             return $parsed_flow;
+        }
+
+        if (!$has_this && $parsed_flow->isOfProperty()) {
+            return '@psalm-flow names a property of $this, which only a method that is not static has';
         }
 
         foreach ($parsed_flow->getParamNames() as $name) {

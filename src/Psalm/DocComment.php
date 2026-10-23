@@ -40,7 +40,7 @@ final class DocComment
         'taint-unescape', 'self-out', 'consistent-constructor', 'stub-override',
         'require-extends', 'require-implements', 'param-out', 'param-closure-this', 'ignore-var',
         'consistent-templates', 'if-this-is', 'this-out', 'check-type', 'check-type-exact',
-        'api', 'inheritors', 'mutable', 'impure',
+        'api', 'inheritors', 'mutable', 'impure', 'cli-only',
     ];
 
     /**

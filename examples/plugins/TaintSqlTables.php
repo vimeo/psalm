@@ -8,7 +8,6 @@ use Override;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Identifier;
 use Psalm\CodeLocation;
-use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Plugin\EventHandler\AfterExpressionAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\Type\Atomic\TNamedObject;
@@ -49,7 +48,7 @@ final class TaintSqlTables implements AfterExpressionAnalysisInterface
                 $source,
                 self::STORE,
                 $codebase->getTaintStoreNames($source, $args[0]->value),
-                DataFlowNode::getForAssignment('inserted row', $location),
+                $codebase->getTaintNode($source, 'inserted row', $location),
                 'arg',
                 $node_types->getType($args[1]->value),
             );
@@ -70,7 +69,7 @@ final class TaintSqlTables implements AfterExpressionAnalysisInterface
                 $tables = [[true, $matches[1]]];
             }
 
-            $read = DataFlowNode::getForAssignment('queried rows', $location);
+            $read = $codebase->getTaintNode($source, 'queried rows', $location);
             $codebase->addTaintStoreRead($source, self::STORE, $tables, $read);
             $node_types->setType($call, $type->addParentNodes([$read->id => $read]));
         }

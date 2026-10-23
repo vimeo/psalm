@@ -16,6 +16,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\ConditionalTaintSinks;
+use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -480,6 +482,13 @@ final class StaticCallAnalyzer extends CallAnalyzer
         }
 
         if ($method_storage) {
+            FunctionCallReturnTypeFetcher::addReturnKeySources(
+                $method_storage,
+                $taint_flow_graph,
+                $method_source,
+                $codebase->getInputTaints(),
+            );
+
             FunctionCallReturnTypeFetcher::taintUsingFlows(
                 $method_storage,
                 $taint_flow_graph,
@@ -515,6 +524,32 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $method_id,
                 $specialization_location,
             );
+
+            ConditionalTaintSinks::taintCall(
+                $statements_analyzer,
+                $taint_flow_graph,
+                $method_storage,
+                $stmt->getArgs(),
+                $cased_method_id,
+                $node_location,
+            );
+
+            // a method of `$this` called through its class or a parent class (`parent::set()`): the receiver is
+            // `$this`, of the class analyzed, whose properties may be kept per instance when its parent's aren't
+            if ($context !== null && !$method_storage->is_static && isset($context->vars_in_scope['$this'])) {
+                $return_type_candidate = ReceiverPropertyTaints::taintCall(
+                    $statements_analyzer,
+                    $taint_flow_graph,
+                    $method_storage,
+                    $stmt->getArgs(),
+                    $context->self ?? $method_id->fq_class_name,
+                    $context->vars_in_scope['$this']->parent_nodes,
+                    '$this',
+                    $context,
+                    $node_location,
+                    $return_type_candidate,
+                );
+            }
         }
     }
 }

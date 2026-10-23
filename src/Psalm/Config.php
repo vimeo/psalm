@@ -16,6 +16,11 @@ use InvalidArgumentException;
 use JsonException;
 use LogicException;
 use OutOfBoundsException;
+use PhpParser\Node\Stmt\ClassLike;
+use PhpParser\NodeFinder;
+use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor\NameResolver;
+use PhpParser\ParserFactory;
 use Psalm\CodeLocation\Raw;
 use Psalm\Config\IssueHandler;
 use Psalm\Config\ProjectFileFilter;
@@ -431,6 +436,21 @@ final class Config
     public bool $run_taint_analysis = true;
 
     public bool $use_phpstorm_meta_path = true;
+
+    /**
+     * Whether to load the stubs of the libraries the analysed code uses (see visitStubFiles())
+     */
+    public bool $load_library_stubs = true;
+
+    /**
+     * The directory of the library stubs, `<vendor>/<package>.phpstub`: by default Psalm's `stubs/libraries`
+     */
+    public ?string $library_stubs_dir = null;
+
+    /**
+     * @var array<string, array<string, list<string>>> the library stubs of each directory, with their class-likes
+     */
+    private static array $library_stubs = [];
 
     public bool $resolve_from_config_file = true;
 
@@ -1025,6 +1045,7 @@ final class Config
             'sealAllProperties' => 'seal_all_properties',
             'runTaintAnalysis' => 'run_taint_analysis',
             'usePhpStormMetaPath' => 'use_phpstorm_meta_path',
+            'loadLibraryStubs' => 'load_library_stubs',
             'allowInternalNamedArgumentsCalls' => 'allow_internal_named_arg_calls',
             'allowNamedArgumentCalls' => 'allow_named_arg_calls',
             'findUnusedPsalmSuppress' => 'find_unused_psalm_suppress',
@@ -2607,9 +2628,36 @@ final class Config
             $progress = new VoidProgress();
         }
 
+        $dir_lvl_2 = dirname(__DIR__, 2);
+
+        // the stubs of the libraries the scanned code uses: those declaring a class-like the scan found
+        $library_stubs = [];
+        $available_library_stubs = $this->load_library_stubs
+            ? self::getLibraryStubs(
+                $this->library_stubs_dir
+                    ?? $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'libraries',
+            )
+            : [];
+        foreach ($available_library_stubs as $library_stub => $classlikes) {
+            foreach ($classlikes as $classlike) {
+                if ($codebase->classlike_storage_provider->has($classlike)) {
+                    $library_stubs[] = $library_stub;
+                    // the real definitions of the others, which the stub then refines like a class the scan found
+                    foreach ($classlikes as $other_classlike) {
+                        $codebase->scanner->queueClassLikeForScanning($other_classlike, false, false);
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        if ($library_stubs !== []) {
+            $codebase->scanFiles();
+        }
+
         $codebase->register_stub_files = true;
 
-        $dir_lvl_2 = dirname(__DIR__, 2);
         $stubsDir = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR;
         $this->internal_stubs = [
             $stubsDir . 'CoreGenericFunctions.phpstub',
@@ -2659,6 +2707,8 @@ final class Config
             }
         }
 
+        $this->internal_stubs = [...$this->internal_stubs, ...$library_stubs];
+
         foreach ($this->internal_stubs as $stub_path) {
             if (!file_exists($stub_path)) {
                 throw new UnexpectedValueException('Cannot locate ' . $stub_path);
@@ -2707,6 +2757,53 @@ final class Config
         $codebase->register_stub_files = false;
 
         self::reportStubDocblockIssues($codebase, $user_stub_paths);
+    }
+
+    /**
+     * The library stubs of $dir, `<vendor>/<package>.phpstub`, with the class-likes each of them declares
+     *
+     * @return array<string, list<string>>
+     */
+    private static function getLibraryStubs(string $dir): array
+    {
+        if (array_key_exists($dir, self::$library_stubs)) {
+            return self::$library_stubs[$dir];
+        }
+
+        $parser = (new ParserFactory())->createForHostVersion();
+        $library_stubs = [];
+        // scandir() rather than glob(), which doesn't list the files of a phar
+        $vendors = is_dir($dir) ? scandir($dir) : false;
+        foreach ($vendors === false ? [] : $vendors as $vendor) {
+            $vendor_dir = $dir . DIRECTORY_SEPARATOR . $vendor;
+            if (str_starts_with($vendor, '.') || !is_dir($vendor_dir)) {
+                continue;
+            }
+
+            $files = scandir($vendor_dir);
+            foreach ($files === false ? [] : $files as $file) {
+                if (!str_ends_with($file, '.phpstub')) {
+                    continue;
+                }
+
+                $path = $vendor_dir . DIRECTORY_SEPARATOR . $file;
+                $stmts = (new NodeTraverser(new NameResolver()))->traverse(
+                    // without the lock safeFileGetContents() takes, which a file of a phar can't be given
+                    $parser->parse((string) file_get_contents($path)) ?? [],
+                );
+
+                $classlikes = [];
+                foreach ((new NodeFinder())->findInstanceOf($stmts, ClassLike::class) as $classlike) {
+                    if ($classlike->namespacedName !== null) {
+                        $classlikes[] = $classlike->namespacedName->toString();
+                    }
+                }
+
+                $library_stubs[$path] = $classlikes;
+            }
+        }
+
+        return self::$library_stubs[$dir] = $library_stubs;
     }
 
     /**
