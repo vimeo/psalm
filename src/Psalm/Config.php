@@ -2774,13 +2774,15 @@ final class Config
         $parser = (new ParserFactory())->createForHostVersion();
         $library_stubs = [];
         // scandir() rather than glob(), which doesn't list the files of a phar
-        foreach (is_dir($dir) ? scandir($dir) ?: [] : [] as $vendor) {
+        $vendors = is_dir($dir) ? scandir($dir) : false;
+        foreach ($vendors === false ? [] : $vendors as $vendor) {
             $vendor_dir = $dir . DIRECTORY_SEPARATOR . $vendor;
             if (str_starts_with($vendor, '.') || !is_dir($vendor_dir)) {
                 continue;
             }
 
-            foreach (scandir($vendor_dir) ?: [] as $file) {
+            $files = scandir($vendor_dir);
+            foreach ($files === false ? [] : $files as $file) {
                 if (!str_ends_with($file, '.phpstub')) {
                     continue;
                 }
