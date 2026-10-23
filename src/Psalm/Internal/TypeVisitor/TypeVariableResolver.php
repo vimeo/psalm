@@ -54,7 +54,8 @@ final class TypeVariableResolver extends MutableTypeVisitor
 
     /**
      * Resolves only the top-level type variables of a union — the shape a value
-     * that is itself a bare type variable stands for — while leaving variables
+     * that is itself a bare type variable stands for, including every value
+     * that flowed into it since its construction — while leaving variables
      * nested inside other atomics (e.g. `Box<`_0>`) untouched, so those can
      * still accumulate bounds. Returns the union unchanged when it has no
      * top-level variable to resolve.
@@ -63,7 +64,7 @@ final class TypeVariableResolver extends MutableTypeVisitor
      */
     public static function resolveTopLevel(Union $type, ?Codebase $codebase): Union
     {
-        $resolved_types = self::resolveAtomics($type->getAtomicTypes(), $codebase, false, false);
+        $resolved_types = self::resolveAtomics($type->getAtomicTypes(), $codebase, false, false, false);
 
         if ($resolved_types === null) {
             return $type;
@@ -86,6 +87,7 @@ final class TypeVariableResolver extends MutableTypeVisitor
      * @param non-empty-array<Atomic> $atomic_types
      * @param bool $only_never_bound resolve only variables minted for an empty construction
      * @param bool $keep_never_bound leave variables minted for an empty construction live
+     * @param bool $construction_site_only resolve through the construction-site bounds only
      * @param array<string, true> $unrolling the variables being unrolled further up the stack
      * @return non-empty-list<Atomic>|null
      * @psalm-external-mutation-free
@@ -95,6 +97,7 @@ final class TypeVariableResolver extends MutableTypeVisitor
         ?Codebase $codebase,
         bool $only_never_bound,
         bool $keep_never_bound,
+        bool $construction_site_only,
         array $unrolling = [],
     ): ?array {
         $resolved_types = [];
@@ -105,7 +108,7 @@ final class TypeVariableResolver extends MutableTypeVisitor
                 || isset($unrolling[$atomic_type->name])
                 || ($only_never_bound && !$atomic_type->isNeverBound())
                 || ($keep_never_bound && $atomic_type->isNeverBound())
-                || ($resolved = $atomic_type->getResolvedType($codebase)) === null
+                || ($resolved = $atomic_type->getResolvedType($codebase, $construction_site_only)) === null
             ) {
                 $resolved_types[] = $atomic_type;
                 continue;
@@ -121,6 +124,7 @@ final class TypeVariableResolver extends MutableTypeVisitor
                 $codebase,
                 $only_never_bound,
                 $keep_never_bound,
+                $construction_site_only,
                 $nested_unrolling,
             ) ?? array_values($resolved->getAtomicTypes());
 
@@ -196,6 +200,7 @@ final class TypeVariableResolver extends MutableTypeVisitor
             $this->codebase,
             $this->only_never_bound,
             $this->keep_never_bound,
+            true,
         );
 
         if ($resolved_types !== null) {

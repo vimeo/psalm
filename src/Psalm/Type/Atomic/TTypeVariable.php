@@ -104,46 +104,51 @@ final class TTypeVariable extends Atomic
     }
 
     /**
-     * Resolves this variable to the shape inferred at its construction site:
-     * the most specific of the bounds the constructor arguments implied, or the
-     * first upper bound when nothing bound it from below. Bounds recorded by
-     * later uses are ignored here — they reconcile on their own — so a read of
-     * the variable sees the same concrete shape its display renders through.
+     * Resolves this variable to the most specific of its lower bounds, or to
+     * the first upper bound when nothing bound it from below.
+     *
+     * With $construction_site_only, only the bounds the constructor arguments
+     * implied are considered, and values that later flowed into the variable
+     * (e.g. through `$box->add($x)`) are ignored: they reconcile on their own.
+     * Without it, every value recorded so far counts, as a read of the value
+     * the variable stands for must account for all of them.
      *
      * Returns null when the variable was minted with no bounds at all and there
      * is therefore nothing to resolve it to.
      *
      * @psalm-suppress ImpureMethodCall the bounds accumulate while the variable
-     *      flows through the function body; resolving always reflects the
-     *      construction-site inference recorded up front
+     *      flows through the function body; resolving reflects the bounds
+     *      recorded up to this point
      */
-    public function getResolvedType(?Codebase $codebase): ?Union
+    public function getResolvedType(?Codebase $codebase, bool $construction_site_only = true): ?Union
     {
         if (!$this->bounds) {
             return null;
         }
 
-        $initial_lower_bounds = array_slice(
-            $this->bounds->lower_bounds,
-            0,
-            $this->bounds->initial_lower_bound_count,
-        );
+        $lower_bounds = $construction_site_only
+            ? array_slice(
+                $this->bounds->lower_bounds,
+                0,
+                $this->bounds->initial_lower_bound_count,
+            )
+            : $this->bounds->lower_bounds;
 
-        if ($initial_lower_bounds) {
-            $resolved = self::widenMixedToConstraint(
+        if ($lower_bounds) {
+            return self::widenMixedToConstraint(
                 TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-                    $initial_lower_bounds,
+                    $lower_bounds,
                     $codebase,
                 ),
                 $this->bounds,
             );
-        } elseif ($this->bounds->upper_bounds) {
-            $resolved = $this->bounds->upper_bounds[0]->type;
-        } else {
-            return null;
         }
 
-        return $resolved;
+        if ($this->bounds->upper_bounds) {
+            return $this->bounds->upper_bounds[0]->type;
+        }
+
+        return null;
     }
 
     /**

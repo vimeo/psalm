@@ -1326,6 +1326,39 @@ final class TypeVariableTest extends TestCase
                 'error_message' => 'PropertyTypeCoercion - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:20:40 - Type Base should be a subtype of Child',
             ],
+            'readSitesSeeValuesAddedAfterConstruction' => [
+                // a value added after the construction is one the read may
+                // see, not only what the constructor arguments implied
+                'code' => '<?php
+                    final class A {
+                        public function onlyA(): int { return 1; }
+                    }
+                    final class B {}
+
+                    /** @template T */
+                    final class Coll {
+                        /** @param list<T> $items */
+                        public function __construct(private array $items) {}
+
+                        /** @param T $item */
+                        public function add($item): void { $this->items[] = $item; }
+
+                        /** @return list<T> */
+                        public function toList(): array { return $this->items; }
+                    }
+
+                    function f(): int {
+                        $c = new Coll([new A()]);
+                        $c->add(new B());
+                        $sum = 0;
+                        foreach ($c->toList() as $x) {
+                            $sum += $x->onlyA();
+                        }
+                        return $sum;
+                    }',
+                'error_message' => 'PossiblyUndefinedMethod - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:24:41 - Method B::onlyA does not exist',
+            ],
             'inhabitedVariableNotContainedByNeverReturn' => [
                 // returning `a<int>` where `@return a<never>` is declared must be
                 // rejected: an inhabited type variable is not a subtype of `never`
