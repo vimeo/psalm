@@ -60,4 +60,10 @@ See [Keyed stores](taint_flow.md#keyed-stores)
 
 ## `@psalm-flow ( <arg>, [ <arg>, ] ) -> $this-><name>` and `@psalm-flow $this-><name> -> return`
 
+`<name>` is a parameter giving the name of the property, like `$name`, or `*` for any property.
+See [Properties set and got by name](taint_flow.md#properties-set-and-got-by-name)
+
+## `@psalm-flow ( <arg>, [ <arg>, ] ) -> $this->{key}` and `@psalm-flow $this->{key} -> return[key]`
+
+Each property is set to, or returned under, its name as a key of the array.
 See [Properties set and got by name](taint_flow.md#properties-set-and-got-by-name)

@@ -4451,6 +4451,66 @@ final class TaintTest extends TestCase
                     echo $other->get("title");
                     echo $tainted->get("body");',
             ],
+            'propertiesSetByKeyDoNotTaintTheOtherProperties' => [
+                'code' => '<?php
+                    final class Model {
+                        public string $title = "";
+                        public string $body = "";
+
+                        /** @psalm-flow ($values) -> $this->{key} */
+                        public function setProperties(array $values): void {}
+
+                        /**
+                         * @return array<string, string>
+                         * @psalm-flow $this->{key} -> return[key]
+                         */
+                        public function toArray(): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+                    }
+
+                    function save(Model $model): void {
+                        $model->setProperties(["title" => (string) $_GET["x"], "body" => "safe"]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->body;
+                        echo $model->toArray()["body"];
+                        echo $model->get("body");
+                    }',
+            ],
+            'propertiesReturnedByKeyKeepTheOtherKeysApart' => [
+                'code' => '<?php
+                    final class Model {
+                        public string $title = "";
+                        public string $body = "";
+
+                        /** @psalm-flow ($values) -> $this->{key} */
+                        public function setProperties(array $values): void {}
+
+                        /**
+                         * @return array<string, string>
+                         * @psalm-flow $this->{key} -> return[key]
+                         */
+                        public function toArray(): array {
+                            return [];
+                        }
+                    }
+
+                    function save(Model $model): void {
+                        $model->title = (string) $_GET["x"];
+                        $model->setProperties(["undeclared" => (string) $_GET["x"]]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->toArray()["body"];
+                    }',
+            ],
             'cliOnlyCodePrintsToATerminal' => [
                 'code' => '<?php
                     /** @psalm-cli-only */
@@ -6091,6 +6151,256 @@ final class TaintTest extends TestCase
                     final class Model {
                         /** @psalm-flow ($compute()) -> $this->$name */
                         public function set(string $name, callable $compute): void {}
+                    }',
+                'error_message' => 'is neither',
+            ],
+            'propertySetByKeyIsReadByAFetchOfIt' => [
+                'code' => '<?php
+                    final class Model {
+                        public string $title = "";
+                        public string $body = "";
+
+                        /** @psalm-flow ($values) -> $this->{key} */
+                        public function setProperties(array $values): void {}
+
+                        /**
+                         * @return array<string, string>
+                         * @psalm-flow $this->{key} -> return[key]
+                         */
+                        public function toArray(): array {
+                            return [];
+                        }
+                    }
+
+                    function save(Model $model): void {
+                        $model->setProperties(["title" => (string) $_GET["x"], "body" => "safe"]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->title;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertiesSetFromAnArrayOfKeysNotKnownAreEachProperty' => [
+                'code' => '<?php
+                    final class Model {
+                        public string $title = "";
+                        public string $body = "";
+
+                        /** @psalm-flow ($values) -> $this->{key} */
+                        public function setProperties(array $values): void {}
+
+                        /**
+                         * @return array<string, string>
+                         * @psalm-flow $this->{key} -> return[key]
+                         */
+                        public function toArray(): array {
+                            return [];
+                        }
+                    }
+
+                    function save(Model $model): void {
+                        $model->setProperties($_GET);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->body;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyReturnedByKeyIsReadUnderItsKey' => [
+                'code' => '<?php
+                    final class Model {
+                        public string $title = "";
+                        public string $body = "";
+
+                        /** @psalm-flow ($values) -> $this->{key} */
+                        public function setProperties(array $values): void {}
+
+                        /**
+                         * @return array<string, string>
+                         * @psalm-flow $this->{key} -> return[key]
+                         */
+                        public function toArray(): array {
+                            return [];
+                        }
+                    }
+
+                    function save(Model $model): void {
+                        $model->title = (string) $_GET["x"];
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->toArray()["title"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertiesReturnedByKeyAreEachReadUnderAKeyNotKnown' => [
+                'code' => '<?php
+                    final class Model {
+                        public string $title = "";
+                        public string $body = "";
+
+                        /** @psalm-flow ($values) -> $this->{key} */
+                        public function setProperties(array $values): void {}
+
+                        /**
+                         * @return array<string, string>
+                         * @psalm-flow $this->{key} -> return[key]
+                         */
+                        public function toArray(): array {
+                            return [];
+                        }
+                    }
+
+                    function save(Model $model): void {
+                        $model->title = (string) $_GET["x"];
+                    }
+
+                    function show(Model $model, string $key): void {
+                        echo $model->toArray()[$key];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertySetByKeyNamingNoPropertyIsReturnedUnderIt' => [
+                'code' => '<?php
+                    final class Model {
+                        public string $title = "";
+                        public string $body = "";
+
+                        /** @psalm-flow ($values) -> $this->{key} */
+                        public function setProperties(array $values): void {}
+
+                        /**
+                         * @return array<string, string>
+                         * @psalm-flow $this->{key} -> return[key]
+                         */
+                        public function toArray(): array {
+                            return [];
+                        }
+                    }
+
+                    function save(Model $model): void {
+                        $model->setProperties(["undeclared" => (string) $_GET["x"]]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->toArray()["undeclared"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertySetByANameOfNoPropertyIsReturnedUnderIt' => [
+                'code' => '<?php
+                    final class Model {
+                        public string $title = "";
+                        public string $body = "";
+
+                        /** @psalm-flow ($values) -> $this->{key} */
+                        public function setProperties(array $values): void {}
+
+                        /**
+                         * @return array<string, string>
+                         * @psalm-flow $this->{key} -> return[key]
+                         */
+                        public function toArray(): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    function save(Model $model): void {
+                        $model->set("undeclared", (string) $_GET["x"]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->toArray()["undeclared"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertiesSetByKeyThroughAParentClassAreReadThroughTheSubclassWithItsTag' => [
+                'code' => '<?php
+                    abstract class Model {
+                        abstract public function __get(string $name): mixed;
+
+                        /** @psalm-flow ($values) -> $this->{key} */
+                        abstract public function setProperties(array $values): void;
+                    }
+
+                    /** @property string $title */
+                    abstract class Article extends Model {}
+
+                    function save(Model $model): void {
+                        $model->setProperties(["title" => (string) $_GET["x"]]);
+                    }
+
+                    function show(Article $article): void {
+                        echo $article->title;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertySetThroughASubclassIsReturnedByKeyByTheParentClass' => [
+                'code' => '<?php
+                    class Model {
+                        public string $title = "";
+
+                        /**
+                         * @return array<string, string>
+                         * @psalm-flow $this->{key} -> return[key]
+                         */
+                        public function toArray(): array {
+                            return [];
+                        }
+                    }
+
+                    final class Article extends Model {}
+
+                    function save(Article $article): void {
+                        $article->title = (string) $_GET["x"];
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->toArray()["title"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertiesReturnedByKeyOfAnObjectSpecialized' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class Model {
+                        /** @psalm-flow ($values) -> $this->{key} */
+                        public function setProperties(array $values): void {}
+
+                        /**
+                         * @return array<string, string>
+                         * @psalm-flow $this->{key} -> return[key]
+                         */
+                        public function toArray(): array {
+                            return [];
+                        }
+                    }
+
+                    $model = new Model();
+                    $model->setProperties(["title" => (string) $_GET["x"]]);
+                    echo $model->toArray()["title"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertiesReadByKeyIntoAReturnWithoutKey' => [
+                'code' => '<?php
+                    final class Model {
+                        /** @psalm-flow $this->{key} -> return */
+                        public function toArray(): array {
+                            return [];
+                        }
+                    }',
+                'error_message' => 'is neither',
+            ],
+            'propertiesSetByKeyWithAPathType' => [
+                'code' => '<?php
+                    final class Model {
+                        /** @psalm-flow ($values) -(arrayvalue-fetch)-> $this->{key} */
+                        public function setProperties(array $values): void {}
                     }',
                 'error_message' => 'is neither',
             ],

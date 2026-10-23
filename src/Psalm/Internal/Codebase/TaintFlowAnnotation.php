@@ -33,9 +33,13 @@ use function trim;
  *   to the parameters, and returns what it returns with `-> return`;
  * - `($value) -> $this->$name` (PROPERTY_WRITE): a call of a method sets the property of the object it is called on
  *   named by what is given to a parameter, `$this->*` any of them (see ReceiverPropertyTaints);
- * - `$this->$name -> return` (PROPERTY_READ): a call of a method returns that property.
+ * - `$this->$name -> return` (PROPERTY_READ): a call of a method returns that property;
+ * - `($values) -> $this->{key}` (PROPERTY_WRITE by key): a call sets each property to what is under its name in the
+ *   arrays given to the parameters;
+ * - `$this->{key} -> return[key]` (PROPERTY_READ by key): a call returns an array of the properties under their names.
  *
- * Writing the arrow as `-(path-type)->` gives the kind of the path its taints take (`arg` otherwise). A key of a store
+ * Writing the arrow as `-(path-type)->` gives the kind of the path its taints take (`arg` otherwise), except for the
+ * flows by key, whose paths are those of the keys. A key of a store
  * is a parameter (`$key`), `*` for any key, or `$keys[*]` for each key in a list; a store may be nested
  * (`Store::$data[$ns][$key]`), but only its first key tells its values apart.
  *
@@ -55,7 +59,7 @@ final class TaintFlowAnnotation
 
     private const STORE_REGEX = '/^([A-Za-z_\\\\][\w\\\\]*)::\$(\w+)\[(?:\*|\$(\w+)(\[\*\])?)\]((?:\[[^\]]*\])*)$/';
 
-    private const PROPERTY_REGEX = '/^\$this->(?:\*|\$(\w+))$/';
+    private const PROPERTY_REGEX = '/^\$this->(?:\*|\$(\w+)|(\{key\}))$/';
 
     private const PATH_TYPE_REGEX = '/-\(([a-z\-]+)\)->/';
 
@@ -71,6 +75,8 @@ final class TaintFlowAnnotation
      * @param list<string> $other_key_params the parameters the other keys of a nested store name, which don't tell
      *                                       its values apart
      * @param ?non-empty-string $proxy_function the function-like a PROXY flow calls
+     * @param bool $property_by_key whether a PROPERTY_WRITE sets the properties named by the keys of the arrays given
+     *                              to the parameters, or a PROPERTY_READ returns the properties under their names
      * @psalm-mutation-free
      */
     private function __construct(
@@ -84,6 +90,7 @@ final class TaintFlowAnnotation
         public readonly array $other_key_params = [],
         public readonly ?string $proxy_function = null,
         public readonly bool $proxy_returns = false,
+        public readonly bool $property_by_key = false,
     ) {
     }
 
@@ -98,8 +105,10 @@ final class TaintFlowAnnotation
         $flow = trim($annotation);
 
         $path_type = 'arg';
+        $has_path_type = false;
         if (preg_match(self::PATH_TYPE_REGEX, $flow, $matches) === 1 && isset($matches[1])) {
             $path_type = $matches[1];
+            $has_path_type = true;
             $flow = (string) preg_replace(self::PATH_TYPE_REGEX, '->', $flow);
         }
 
@@ -150,7 +159,7 @@ final class TaintFlowAnnotation
             }
 
             if (str_starts_with($target, '$this->')) {
-                return self::parseProperty($target, self::PROPERTY_WRITE, $path_type, $sources)
+                return self::parseProperty($target, self::PROPERTY_WRITE, $path_type, $has_path_type, $sources)
                     ?? self::getMalformedMessage($annotation);
             }
 
@@ -158,9 +167,15 @@ final class TaintFlowAnnotation
                 ?? self::getMalformedMessage($annotation);
         }
 
-        if ($target === 'return' && str_starts_with($source, '$this->')) {
-            return self::parseProperty($source, self::PROPERTY_READ, $path_type, [])
-                ?? self::getMalformedMessage($annotation);
+        if (($target === 'return' || $target === 'return[key]') && str_starts_with($source, '$this->')) {
+            return self::parseProperty(
+                $source,
+                self::PROPERTY_READ,
+                $path_type,
+                $has_path_type,
+                [],
+                $target === 'return[key]',
+            ) ?? self::getMalformedMessage($annotation);
         }
 
         if ($target === 'return') {
@@ -261,11 +276,24 @@ final class TaintFlowAnnotation
     /**
      * @param self::PROPERTY_WRITE|self::PROPERTY_READ $kind
      * @param list<non-empty-string> $sources
+     * @param bool $returns_by_key whether a PROPERTY_READ returns `return[key]`
      * @psalm-pure
      */
-    private static function parseProperty(string $property, string $kind, string $path_type, array $sources): ?self
-    {
+    private static function parseProperty(
+        string $property,
+        string $kind,
+        string $path_type,
+        bool $has_path_type,
+        array $sources,
+        bool $returns_by_key = false,
+    ): ?self {
         if (preg_match(self::PROPERTY_REGEX, $property, $matches) !== 1) {
+            return null;
+        }
+
+        // `$this->{key}` is read into `return[key]`, through the paths of the keys
+        $by_key = ($matches[2] ?? '') !== '';
+        if (($kind === self::PROPERTY_READ && $by_key !== $returns_by_key) || ($by_key && $has_path_type)) {
             return null;
         }
 
@@ -278,7 +306,13 @@ final class TaintFlowAnnotation
 
         $name = $matches[1] ?? '';
 
-        return new self($kind, $path_type, $sources, store_key: $name === '' ? null : $name);
+        return new self(
+            $kind,
+            $path_type,
+            $sources,
+            store_key: $name === '' ? null : $name,
+            property_by_key: $by_key,
+        );
     }
 
     /**
@@ -298,6 +332,7 @@ final class TaintFlowAnnotation
     private static function getMalformedMessage(string $annotation): string
     {
         return '@psalm-flow "' . trim($annotation) . '" is neither "(...) -> return", "(...) -> Store::$data[$key]",'
-            . ' "Store::$data[$key] -> return", "(...) -> $this->$name", "$this->$name -> return" nor "proxy ..."';
+            . ' "Store::$data[$key] -> return", "(...) -> $this->$name", "$this->$name -> return",'
+            . ' "(...) -> $this->{key}", "$this->{key} -> return[key]" nor "proxy ..."';
     }
 }
