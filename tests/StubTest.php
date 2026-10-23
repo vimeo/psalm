@@ -1731,7 +1731,9 @@ final class StubTest extends TestCase
                     }
                 }
 
-                (new Client())->get((string) $_GET["url"]);',
+                function f(string $url): void {
+                    (new Client())->get($url);
+                }',
             false,
         );
 
