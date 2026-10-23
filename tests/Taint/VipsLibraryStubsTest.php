@@ -34,6 +34,10 @@ final class VipsLibraryStubsTest extends LibraryStubsTestCase
 
                     public function offsetUnset(mixed $offset): void {}
                 }
+                abstract class VipsObject {}
+                abstract class Connection extends VipsObject {}
+                class Source extends Connection {}
+                class Target extends Connection {}
             }';
     }
 
@@ -53,6 +57,18 @@ final class VipsLibraryStubsTest extends LibraryStubsTestCase
                 [
                     'TaintedFile on line 2',
                     'TaintedFile on line 3',
+                ],
+            ],
+            'filesOfLoadersSourcesAndTargets' => [
+                '<?php
+                    Jcupitt\Vips\Image::findLoad((string) $_GET["in"]);
+                    Jcupitt\Vips\Source::newFromFile((string) $_GET["in"]);
+                    Jcupitt\Vips\Target::newToFile((string) $_GET["out"]);
+                    Jcupitt\Vips\Target::newToFile("/tmp/thumbnail.jpg");',
+                [
+                    'TaintedFile on line 2',
+                    'TaintedFile on line 3',
+                    'TaintedFile on line 4',
                 ],
             ],
         ];
