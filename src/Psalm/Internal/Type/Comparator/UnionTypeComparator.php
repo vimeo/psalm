@@ -616,7 +616,7 @@ final class UnionTypeComparator
      *     list<array{string, TemplateBound}>
      * }> $alternatives
      * @return array{list<array{string, TemplateBound}>, list<array{string, TemplateBound}>}
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function mergeAlternativeBounds(array $alternatives, Codebase $codebase): array
     {
@@ -716,7 +716,7 @@ final class UnionTypeComparator
 
     /**
      * @param list<TemplateBound> $bounds
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props
      */
     private static function getBoundsId(array $bounds): string
     {

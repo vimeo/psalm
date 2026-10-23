@@ -611,56 +611,14 @@ final class NewAnalyzer extends CallAnalyzer
                         if (!isset($unconstrainable_templates[$template_name])
                             && !$generic_param_type->hasMixed()
                         ) {
-                            $new_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-
-                            $lower_bounds = [];
-
-                            foreach ($template_result->lower_bounds[$template_name][$fq_class_name] as $arg_bound) {
-                                // the appearance depth is normalized: the inference is
-                                // lifted onto the variable itself, where it competes with
-                                // the (depth-0) bounds later code records
-                                $lower_bound = new TemplateBound(
-                                    $arg_bound->type,
-                                    0,
-                                    $arg_bound->arg_offset,
-                                    $arg_bound->equality_bound_classlike,
-                                    $new_location,
-                                );
-                                $lower_bound->from_constraint_fallback = $arg_bound->from_constraint_fallback;
-
-                                $lower_bounds[] = $lower_bound;
-                            }
-
-                            $upper_bounds = [new TemplateBound($constraint, 0, null, null, $new_location)];
-
-                            // A constructor argument that binds this template through a
-                            // `class-string<T>` position names the type exactly
-                            // (`new ReflectionClass(Foo::class)` reflects Foo, nothing
-                            // wider): the inferred bounds pin the variable's upper bounds
-                            // too, so a later conflicting use fails reconciliation.
-                            if ($method_storage
-                                && self::templateBoundThroughClassString($method_storage, $template_name)
-                            ) {
-                                foreach ($lower_bounds as $lower_bound) {
-                                    $upper_bounds[] = new TemplateBound(
-                                        $lower_bound->type,
-                                        0,
-                                        $lower_bound->arg_offset,
-                                        null,
-                                        $new_location,
-                                    );
-                                }
-                            }
-
-                            $type_variable_bounds = new TypeVariableBounds($lower_bounds, $upper_bounds);
-
-                            $type_variable_name = $statements_analyzer->type_variable_tracker->addVariable(
-                                $type_variable_bounds,
+                            $generic_param_type = self::mintTypeVariable(
+                                $statements_analyzer,
+                                $stmt,
+                                $template_result->lower_bounds[$template_name][$fq_class_name],
+                                $constraint,
+                                $method_storage
+                                    && self::templateBoundThroughClassString($method_storage, $template_name),
                             );
-
-                            $generic_param_type = new Union([
-                                new TTypeVariable($type_variable_name, $type_variable_bounds),
-                            ]);
                         }
                     } elseif (self::isGivenToBoundParentTemplate(
                         $fq_class_name,
@@ -804,6 +762,68 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         self::taintNewObject($statements_analyzer, $stmt, $method_id, $fq_class_name, $storage);
+    }
+
+    /**
+     * The type variable a template of a constructed class is carried as: the
+     * bounds the constructor arguments inferred are its lower bounds, and the
+     * template's declared constraint its upper bound.
+     *
+     * @param non-empty-list<TemplateBound> $arg_bounds
+     * @param bool $bound_through_class_string whether an argument binds the template through a
+     *     `class-string<T>` position
+     */
+    private static function mintTypeVariable(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\New_ $stmt,
+        array $arg_bounds,
+        Union $constraint,
+        bool $bound_through_class_string,
+    ): Union {
+        $new_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        $lower_bounds = [];
+
+        foreach ($arg_bounds as $arg_bound) {
+            // the appearance depth is normalized: the inference is
+            // lifted onto the variable itself, where it competes with
+            // the (depth-0) bounds later code records
+            $lower_bound = new TemplateBound(
+                $arg_bound->type,
+                0,
+                $arg_bound->arg_offset,
+                $arg_bound->equality_bound_classlike,
+                $new_location,
+            );
+            $lower_bound->from_constraint_fallback = $arg_bound->from_constraint_fallback;
+
+            $lower_bounds[] = $lower_bound;
+        }
+
+        $upper_bounds = [new TemplateBound($constraint, 0, null, null, $new_location)];
+
+        // A constructor argument that binds this template through a
+        // `class-string<T>` position names the type exactly
+        // (`new ReflectionClass(Foo::class)` reflects Foo, nothing
+        // wider): the inferred bounds pin the variable's upper bounds
+        // too, so a later conflicting use fails reconciliation.
+        if ($bound_through_class_string) {
+            foreach ($lower_bounds as $lower_bound) {
+                $upper_bounds[] = new TemplateBound(
+                    $lower_bound->type,
+                    0,
+                    $lower_bound->arg_offset,
+                    null,
+                    $new_location,
+                );
+            }
+        }
+
+        $type_variable_bounds = new TypeVariableBounds($lower_bounds, $upper_bounds);
+
+        $type_variable_name = $statements_analyzer->type_variable_tracker->addVariable($type_variable_bounds);
+
+        return new Union([new TTypeVariable($type_variable_name, $type_variable_bounds)]);
     }
 
     /**

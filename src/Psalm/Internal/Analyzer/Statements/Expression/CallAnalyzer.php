@@ -762,7 +762,7 @@ abstract class CallAnalyzer
                 if (count($exploded) === 2) {
                     $failedMessage = AssertionFinder::isPropertyImmutableOnArgument(
                         $property,
-                        $statements_analyzer->getNodeTypeProvider(),
+                        $statements_analyzer->getNodeTypeProvider()->getType($arg_value),
                         $statements_analyzer->getCodebase()->classlike_storage_provider,
                         $arg_value,
                     );
