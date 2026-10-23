@@ -9,6 +9,7 @@ use LogicException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\IntMask;
 use Psalm\Internal\Type\StringRefinement;
@@ -856,13 +857,16 @@ abstract class Type
 
             //if a type is contained by the other, the intersection is the narrowest type
             if (!$intersection_performed) {
+                $type_1_in_2_result = new TypeComparisonResult();
+                $type_2_in_1_result = new TypeComparisonResult();
+
                 $type_1_in_2 = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $type_1,
                     $type_2,
                     false,
                     false,
-                    null,
+                    $type_1_in_2_result,
                     $allow_interface_equality,
                     $allow_float_int_equality,
                 );
@@ -872,14 +876,14 @@ abstract class Type
                     $type_1,
                     false,
                     false,
-                    null,
+                    $type_2_in_1_result,
                     $allow_interface_equality,
                     $allow_float_int_equality,
                 );
-                if ($type_1_in_2) {
+                if ($type_1_in_2 && $type_1_in_2_result->to_string_cast !== true) {
                     $intersection_performed = true;
                     $combined_type = $type_1->getBuilder();
-                } elseif ($type_2_in_1) {
+                } elseif ($type_2_in_1 && $type_2_in_1_result->to_string_cast !== true) {
                     $intersection_performed = true;
                     $combined_type = $type_2->getBuilder();
                 }
@@ -975,6 +979,11 @@ abstract class Type
         }
 
         if (null === $intersection_atomic) {
+            // an object with __toString() is accepted where a string or scalar is expected,
+            // but no string or scalar is such an object
+            $type_2_in_1_result = new TypeComparisonResult();
+            $type_1_in_2_result = new TypeComparisonResult();
+
             try {
                 if (AtomicTypeComparator::isContainedBy(
                     $codebase,
@@ -982,7 +991,8 @@ abstract class Type
                     $type_1_atomic,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                )) {
+                    $type_2_in_1_result,
+                ) && $type_2_in_1_result->to_string_cast !== true) {
                     $intersection_atomic = $type_2_atomic;
                     $wider_type = $type_1_atomic;
                     $intersection_performed = true;
@@ -992,7 +1002,8 @@ abstract class Type
                     $type_2_atomic,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                )) {
+                    $type_1_in_2_result,
+                ) && $type_1_in_2_result->to_string_cast !== true) {
                     $intersection_atomic = $type_1_atomic;
                     $wider_type = $type_2_atomic;
                     $intersection_performed = true;
