@@ -39,7 +39,6 @@ use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Lz4Serializer;
 use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
 use Psalm\Internal\Provider\AddRemoveTaints\JsonEncodeTainter;
-use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Issue\ArgumentIssue;
 use Psalm\Issue\ClassConstantIssue;
@@ -2789,7 +2788,8 @@ final class Config
 
                 $path = $vendor_dir . DIRECTORY_SEPARATOR . $file;
                 $stmts = (new NodeTraverser(new NameResolver()))->traverse(
-                    $parser->parse(Providers::safeFileGetContents($path)) ?? [],
+                    // without the lock safeFileGetContents() takes, which a file of a phar can't be given
+                    $parser->parse((string) file_get_contents($path)) ?? [],
                 );
 
                 $classlikes = [];
