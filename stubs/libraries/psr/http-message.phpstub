@@ -1,0 +1,86 @@
+<?php
+
+// The taints psr/http-message passes along: a message, and its body, give what each of them holds, so a response a
+// client returns as input is input, and a message the code builds itself holds only what it was given. Loaded when
+// the analysed code uses the package, refining its interfaces (see Config::visitStubFiles()). The parameters are
+// typed as in version 2, and the returns as in version 1, so that implementations of either still match.
+
+namespace Psr\Http\Message
+{
+    interface MessageInterface
+    {
+        /**
+         * @return string[][]
+         *
+         * @psalm-taint-specialize
+         * @psalm-flow ($this) -> return
+         */
+        public function getHeaders();
+
+        /**
+         * @return string[]
+         *
+         * @psalm-taint-specialize
+         * @psalm-flow ($this) -> return
+         */
+        public function getHeader(string $name);
+
+        /**
+         * @return string
+         *
+         * @psalm-taint-specialize
+         * @psalm-flow ($this) -> return
+         */
+        public function getHeaderLine(string $name);
+
+        /**
+         * @return StreamInterface
+         *
+         * @psalm-taint-specialize
+         * @psalm-flow ($this) -> return
+         */
+        public function getBody();
+    }
+
+    interface ResponseInterface extends MessageInterface
+    {
+        /**
+         * @return string
+         *
+         * @psalm-taint-specialize
+         * @psalm-flow ($this) -> return
+         */
+        public function getReasonPhrase();
+    }
+
+    interface StreamInterface
+    {
+        /**
+         * @return string
+         *
+         * @psalm-taint-specialize
+         * @psalm-flow ($this) -> return
+         */
+        public function __toString();
+
+        /**
+         * @return string
+         *
+         * @throws \RuntimeException if an error occurs.
+         *
+         * @psalm-taint-specialize
+         * @psalm-flow ($this) -> return
+         */
+        public function read(int $length);
+
+        /**
+         * @return string
+         *
+         * @throws \RuntimeException if unable to read or an error occurs while reading.
+         *
+         * @psalm-taint-specialize
+         * @psalm-flow ($this) -> return
+         */
+        public function getContents();
+    }
+}
