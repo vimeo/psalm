@@ -904,6 +904,8 @@ final class Populator
 
         // the instances of a child class are instances of its parent class: their properties hold per-instance
         // taints in the methods of both, which may not change them once constructed (see ClassAnalyzer)
+        $storage->taint_property_bag ??= $parent_storage->taint_property_bag;
+
         if ($parent_storage->taint_specialize && !$storage->taint_specialize) {
             $storage->taint_specialize = true;
             $storage->inherits_taint_specialize = !$storage->specialize_instance;

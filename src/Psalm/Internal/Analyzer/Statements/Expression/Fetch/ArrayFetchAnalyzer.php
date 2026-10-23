@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\PropertyBagTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -705,6 +706,8 @@ final class ArrayFetchAnalyzer
         }
 
         self::taintSuperGlobalFetch($statements_analyzer, $var, $offset_type, $stmt_type);
+
+        PropertyBagTaints::taintFetch($statements_analyzer, $var, $offset_type, $stmt_type, $context);
     }
 
     /**

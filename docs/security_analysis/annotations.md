@@ -41,6 +41,11 @@ The taints the native types of a value can't hold are still removed from it: a `
 
 See [Output of command-line code](avoiding_false_positives.md#output-of-command-line-code).
 
+## `@psalm-taint-property-bag $<property>`
+
+On a class: the array property `$<property>` holds the properties of its objects under their names.
+See [Properties held in an array property](taint_flow.md#properties-held-in-an-array-property)
+
 ## `@psalm-taint-specialize`
 
 See [Specializing taints in functions](avoiding_false_positives.md#specializing-taints-in-functions) and [Specializing taints in classes](avoiding_false_positives.md#specializing-taints-in-classes).

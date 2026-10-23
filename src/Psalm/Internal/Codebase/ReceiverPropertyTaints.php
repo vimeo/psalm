@@ -250,6 +250,65 @@ final class ReceiverPropertyTaints
     }
 
     /**
+     * Sets the property $name of `$this`, in a method of $class, to what reaches $write_node, as `$this->name = $value`
+     * does through these flows
+     *
+     * @psalm-capabilities read-props|write-props
+     */
+    public static function addWriteOfThis(
+        Codebase $codebase,
+        TaintFlowGraph $graph,
+        string $class,
+        string $name,
+        DataFlowNode $write_node,
+        Context $context,
+        CodeLocation $location,
+    ): void {
+        if (!$codebase->classlike_storage_provider->has($class)) {
+            return;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($class);
+        $graph->addNode($write_node);
+
+        if ($class_storage->specialize_instance) {
+            self::addInstanceWrite($graph, $context, '$this', 'property bag write', [[true, $name]], $write_node, $location);
+        } else {
+            self::addWrite($codebase, $graph, $class_storage, [[true, $name]], $write_node);
+        }
+    }
+
+    /**
+     * Makes $fetch_node get the property $name of `$this`, in a method of $class, as `$this->name` does through these
+     * flows
+     *
+     * @psalm-capabilities read-props|write-props
+     */
+    public static function addReadOfThis(
+        Codebase $codebase,
+        TaintFlowGraph $graph,
+        string $class,
+        string $name,
+        DataFlowNode $fetch_node,
+        Context $context,
+    ): void {
+        if (!$codebase->classlike_storage_provider->has($class)) {
+            return;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($class);
+        $graph->addNode($fetch_node);
+
+        if ($class_storage->specialize_instance) {
+            foreach ($context->vars_in_scope['$this']->parent_nodes ?? [] as $parent_node) {
+                $graph->addPath($parent_node, $fetch_node, 'property-fetch-' . $name);
+            }
+        } else {
+            self::addRead($codebase, $graph, $class_storage, [[true, $name]], $fetch_node);
+        }
+    }
+
+    /**
      * Adds paths from the arguments given to the parameters at the offsets $params into $write_node, and $write_node
      * if there are any
      *
