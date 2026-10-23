@@ -1,0 +1,438 @@
+<?php
+
+// The taints mongodb/mongodb 2 passes along: the filters, updates, pipelines, bulk operations and commands its
+// Collection and Database methods send to the server are NoSQL sinks. Loaded when the analysed code uses the package,
+// refining its classes (see Config::visitStubFiles()): the methods keep the signatures and docblocks of
+// mongodb/mongodb 2.4.
+
+namespace MongoDB {
+use Countable;
+use Iterator;
+use MongoDB\BSON\Document;
+use MongoDB\BSON\PackedArray;
+use MongoDB\Builder\BuilderEncoder;
+use MongoDB\Builder\Pipeline;
+use MongoDB\Codec\DocumentCodec;
+use MongoDB\Codec\Encoder;
+use MongoDB\Driver\CursorInterface;
+use MongoDB\Driver\Exception\RuntimeException as DriverRuntimeException;
+use MongoDB\Driver\Manager;
+use MongoDB\Driver\ReadConcern;
+use MongoDB\Driver\ReadPreference;
+use MongoDB\Driver\WriteConcern;
+use MongoDB\Exception\InvalidArgumentException;
+use MongoDB\Exception\UnexpectedValueException;
+use MongoDB\Exception\UnsupportedException;
+use MongoDB\Model\BSONArray;
+use MongoDB\Model\BSONDocument;
+use MongoDB\Model\IndexInfo;
+use MongoDB\Operation\Aggregate;
+use MongoDB\Operation\BulkWrite;
+use MongoDB\Operation\Count;
+use MongoDB\Operation\CountDocuments;
+use MongoDB\Operation\CreateIndexes;
+use MongoDB\Operation\CreateSearchIndexes;
+use MongoDB\Operation\DeleteMany;
+use MongoDB\Operation\DeleteOne;
+use MongoDB\Operation\Distinct;
+use MongoDB\Operation\DropCollection;
+use MongoDB\Operation\DropEncryptedCollection;
+use MongoDB\Operation\DropIndexes;
+use MongoDB\Operation\DropSearchIndex;
+use MongoDB\Operation\EstimatedDocumentCount;
+use MongoDB\Operation\Explain;
+use MongoDB\Operation\Explainable;
+use MongoDB\Operation\Find;
+use MongoDB\Operation\FindOne;
+use MongoDB\Operation\FindOneAndDelete;
+use MongoDB\Operation\FindOneAndReplace;
+use MongoDB\Operation\FindOneAndUpdate;
+use MongoDB\Operation\InsertMany;
+use MongoDB\Operation\InsertOne;
+use MongoDB\Operation\ListIndexes;
+use MongoDB\Operation\ListSearchIndexes;
+use MongoDB\Operation\RenameCollection;
+use MongoDB\Operation\ReplaceOne;
+use MongoDB\Operation\UpdateMany;
+use MongoDB\Operation\UpdateOne;
+use MongoDB\Operation\UpdateSearchIndex;
+use MongoDB\Operation\Watch;
+use stdClass;
+use Stringable;
+
+/**
+ * @psalm-import-type OperationShape from BulkWrite
+ * @psalm-type SearchIndexShape = array{
+ *     analyzer?: string,
+ *     analyzers?: list<array{
+ *         name: string,
+ *         charFilters?: list<array{type: 'icuNormalize'|'persian'}|array{type: 'htmlStrip', ignoredTags?: list<string>}|array{type: 'mapping', mappings?: array<string, string>}>,
+ *         tokenizer: array{type: string},
+ *         tokenFilters?: list<array{type: string, ...}>,
+ *     }>,
+ *     searchAnalyzer?: string,
+ *     mappings: array{
+ *         dynamic?: bool,
+ *         fields?: array<string,
+ *             array{type: 'boolean'|'date'|'dateFacet'|'objectId'|'stringFacet'|'uuid'} |
+ *             array{type: 'autocomplete', analyzer?: string, maxGrams?: int, minGrams?: int, tokenization?: 'edgeGram'|'rightEdgeGram'|'nGram', foldDiacritics?: bool, similarity?: array{type: 'bm25'|'boolean'|'stableTfl'}} |
+ *             array{type: 'document'|'embeddedDocuments', dynamic?: bool, fields: array<string, array<mixed>>} |
+ *             array{type: 'geo', indexShapes?: bool} |
+ *             array{type: 'number'|'numberFacet', representation?: 'int64'|'double', indexIntegers?: bool, indexDoubles?: bool} |
+ *             array{type: 'token', normalizer?: 'lowercase'|'none'} |
+ *             array{type: 'string', analyzer?: string, searchAnalyzer?: string, indexOptions?: 'docs'|'freqs'|'positions'|'offsets', store?: bool, ignoreAbove?: int, multi?: array<string, array<string, mixed>>, norms?: 'include'|'omit', similarity?: array{type: 'bm25'|'boolean'|'stableTfl'}} |
+ *             list<array{type: string, ...}>
+ *         >,
+ *     },
+ *     storedSource?: bool|array{include: list<string>}|array{exclude: list<string>},
+ *     synonyms?: list<array{analyzer: string, name: string, source?: array{collection: string}}>,
+ * }
+ * @psalm-type VectorSearchIndexShape = array{
+ *     fields: list<
+ *         array{type: 'vector', path: string, numDimensions: int, similarity: 'euclidean'|'cosine'|'dotProduct', quantization?: 'none'|'scalar'|'binary', indexingMethod?: 'flat'|'hnsw', hnswOptions?: array{maxEdges?: int, numEdgeCandidates?: int}} |
+ *         array{type: 'autoEmbed', modality: 'text', path: string, model: string, numDimensions?: int, quantization?: 'float'|'scalar'|'binary'|'binaryNoRescore', similarity?: 'euclidean'|'cosine'|'dotProduct', indexingMethod?: 'flat'|'hnsw', hnswOptions?: array{maxEdges?: int, numEdgeCandidates?: int}} |
+ *         array{type: 'filter', path: string}
+ *     >,
+ *     storedSource?: bool|array{include: list<string>}|array{exclude: list<string>},
+ * }
+ * @psalm-type SearchIndexSpecShape = array{definition: SearchIndexShape|VectorSearchIndexShape|object, name?: string, type?: string}
+ */
+class Collection implements Stringable
+{
+    /**
+     * @see Aggregate::__construct() for supported options
+     * @param array|Pipeline $pipeline Aggregation pipeline
+     * @param array          $options  Command options
+     * @throws UnexpectedValueException if the command response was malformed
+     * @throws UnsupportedException if options are not supported by the selected server
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
+     *
+     * @psalm-taint-sink nosql $pipeline
+     */
+    public function aggregate(array|Pipeline $pipeline, array $options = []): CursorInterface
+    {
+    }
+
+    /**
+     * @param list<array{deleteMany: list<array|object>}|array{deleteOne: list<array|object>}|array{insertOne: list<array|object>}|array{replaceOne: list<array|object>}|array{updateMany: list<array|object>}|array{updateOne: list<array|object>}> $operations List of write operations
+     * @psalm-param list<OperationShape> $operations List of write operations
+     * @param array                                                                                                                                                                                                                                  $options    Command options
+     * @throws UnsupportedException if options are not supported by the selected server
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
+     * @see BulkWrite::__construct() for supported options
+     *
+     * @psalm-taint-sink nosql $operations
+     */
+    public function bulkWrite(array $operations, array $options = []): BulkWriteResult
+    {
+    }
+
+    /**
+     * @see Count::__construct() for supported options
+     * @param array|object $filter  Query by which to filter documents
+     * @param array        $options Command options
+     * @throws UnexpectedValueException if the command response was malformed
+     * @throws UnsupportedException if options are not supported by the selected server
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
+     *
+     * @deprecated 1.4
+     *
+     * @psalm-taint-sink nosql $filter
+     */
+    public function count(array|object $filter = [], array $options = []): int
+    {
+    }
+
+    /**
+     * @see CountDocuments::__construct() for supported options
+     * @param array|object $filter  Query by which to filter documents
+     * @param array        $options Command options
+     * @throws UnexpectedValueException if the command response was malformed
+     * @throws UnsupportedException if options are not supported by the selected server
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
+     *
+     * @psalm-taint-sink nosql $filter
+     */
+    public function countDocuments(array|object $filter = [], array $options = []): int
+    {
+    }
+
+    /**
+     * @see DeleteMany::__construct() for supported options
+     * @see https://mongodb.com/docs/manual/reference/command/delete/
+     * @param array|object $filter  Query by which to delete documents
+     * @param array        $options Command options
+     * @throws UnsupportedException if options are not supported by the selected server
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
+     *
+     * @psalm-taint-sink nosql $filter
+     */
+    public function deleteMany(array|object $filter, array $options = []): DeleteResult
+    {
+    }
+
+    /**
+     * @see DeleteOne::__construct() for supported options
+     * @see https://mongodb.com/docs/manual/reference/command/delete/
+     * @param array|object $filter  Query by which to delete documents
+     * @param array        $options Command options
+     * @throws UnsupportedException if options are not supported by the selected server
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
+     *
+     * @psalm-taint-sink nosql $filter
+     */
+    public function deleteOne(array|object $filter, array $options = []): DeleteResult
+    {
+    }
+
+    /**
+     * @see Distinct::__construct() for supported options
+     * @param string       $fieldName Field for which to return distinct values
+     * @param array|object $filter    Query by which to filter documents
+     * @param array        $options   Command options
+     * @throws UnexpectedValueException if the command response was malformed
+     * @throws UnsupportedException if options are not supported by the selected server
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
+     *
+     * @psalm-taint-sink nosql $filter
+     */
+    public function distinct(string $fieldName, array|object $filter = [], array $options = []): array
+    {
+    }
+
+    /**
+     * @see Find::__construct() for supported options
+     * @see https://mongodb.com/docs/manual/crud/#read-operations
+     * @param array|object $filter  Query by which to filter documents
+     * @param array        $options Additional options
+     * @throws UnsupportedException if options are not supported by the selected server
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
+     *
+     * @psalm-taint-sink nosql $filter
+     */
+    public function find(array|object $filter = [], array $options = []): CursorInterface
+    {
+    }
+
+    /**
+     * @see FindOne::__construct() for supported options
+     * @see https://mongodb.com/docs/manual/crud/#read-operations
+     * @param array|object $filter  Query by which to filter documents
+     * @param array        $options Additional options
+     * @throws UnsupportedException if options are not supported by the selected server
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
+     *
+     * @psalm-taint-sink nosql $filter
+     */
+    public function findOne(array|object $filter = [], array $options = []): array|object|null
+    {
+    }
+
+    /**
+     * @see FindOneAndDelete::__construct() for supported options
+     * @see https://mongodb.com/docs/manual/reference/command/findAndModify/
+     * @param array|object $filter  Query by which to filter documents
+     * @param array        $options Command options
+     * @throws UnexpectedValueException if the command response was malformed
+     * @throws UnsupportedException if options are not supported by the selected server
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
+     *
+     * @psalm-taint-sink nosql $filter
+     */
+    public function findOneAndDelete(array|object $filter, array $options = []): array|object|null
+    {
+    }
+
+    /**
+     * @see FindOneAndReplace::__construct() for supported options
+     * @see https://mongodb.com/docs/manual/reference/command/findAndModify/
+     * @param array|object $filter      Query by which to filter documents
+     * @param array|object $replacement Replacement document
+     * @param array        $options     Command options
+     * @throws UnexpectedValueException if the command response was malformed
+     * @throws UnsupportedException if options are not supported by the selected server
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
+     *
+     * @psalm-taint-sink nosql $filter
+     */
+    public function findOneAndReplace(array|object $filter, array|object $replacement, array $options = []): array|object|null
+    {
+    }
+
+    /**
+     * @see FindOneAndReplace::__construct() for supported options
+     * @see https://mongodb.com/docs/manual/reference/command/findAndModify/
+     * @param array|object $filter  Query by which to filter documents
+     * @param array|object $update  Update to apply to the matched document
+     * @param array        $options Command options
+     * @throws UnexpectedValueException if the command response was malformed
+     * @throws UnsupportedException if options are not supported by the selected server
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
+     *
+     * @psalm-taint-sink nosql $filter
+     * @psalm-taint-sink nosql $update
+     */
+    public function findOneAndUpdate(array|object $filter, array|object $update, array $options = []): array|object|null
+    {
+    }
+
+    /**
+     * @see ReplaceOne::__construct() for supported options
+     * @see https://mongodb.com/docs/manual/reference/command/update/
+     * @param array|object $filter      Query by which to filter documents
+     * @param array|object $replacement Replacement document
+     * @param array        $options     Command options
+     * @throws UnsupportedException if options are not supported by the selected server
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
+     *
+     * @psalm-taint-sink nosql $filter
+     */
+    public function replaceOne(array|object $filter, array|object $replacement, array $options = []): UpdateResult
+    {
+    }
+
+    /**
+     * @see UpdateMany::__construct() for supported options
+     * @see https://mongodb.com/docs/manual/reference/command/update/
+     * @param array|object $filter  Query by which to filter documents
+     * @param array|object $update  Update to apply to the matched documents
+     * @param array        $options Command options
+     * @throws UnsupportedException if options are not supported by the selected server
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
+     *
+     * @psalm-taint-sink nosql $filter
+     * @psalm-taint-sink nosql $update
+     */
+    public function updateMany(array|object $filter, array|object $update, array $options = []): UpdateResult
+    {
+    }
+
+    /**
+     * @see UpdateOne::__construct() for supported options
+     * @see https://mongodb.com/docs/manual/reference/command/update/
+     * @param array|object $filter  Query by which to filter documents
+     * @param array|object $update  Update to apply to the matched document
+     * @param array        $options Command options
+     * @throws UnsupportedException if options are not supported by the selected server
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
+     *
+     * @psalm-taint-sink nosql $filter
+     * @psalm-taint-sink nosql $update
+     */
+    public function updateOne(array|object $filter, array|object $update, array $options = []): UpdateResult
+    {
+    }
+
+    /**
+     * @see Watch::__construct() for supported options
+     * @param array|Pipeline $pipeline Aggregation pipeline
+     * @param array          $options  Command options
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     *
+     * @psalm-taint-sink nosql $pipeline
+     */
+    public function watch(array|Pipeline $pipeline = [], array $options = []): ChangeStream
+    {
+    }
+}
+}
+
+namespace MongoDB {
+use Iterator;
+use MongoDB\BSON\Document;
+use MongoDB\BSON\PackedArray;
+use MongoDB\Builder\BuilderEncoder;
+use MongoDB\Builder\Pipeline;
+use MongoDB\Codec\Encoder;
+use MongoDB\Driver\ClientEncryption;
+use MongoDB\Driver\CursorInterface;
+use MongoDB\Driver\Exception\RuntimeException as DriverRuntimeException;
+use MongoDB\Driver\Manager;
+use MongoDB\Driver\ReadConcern;
+use MongoDB\Driver\ReadPreference;
+use MongoDB\Driver\WriteConcern;
+use MongoDB\Exception\CreateEncryptedCollectionException;
+use MongoDB\Exception\InvalidArgumentException;
+use MongoDB\Exception\UnexpectedValueException;
+use MongoDB\Exception\UnsupportedException;
+use MongoDB\GridFS\Bucket;
+use MongoDB\Model\BSONArray;
+use MongoDB\Model\BSONDocument;
+use MongoDB\Model\CollectionInfo;
+use MongoDB\Operation\Aggregate;
+use MongoDB\Operation\CreateCollection;
+use MongoDB\Operation\CreateEncryptedCollection;
+use MongoDB\Operation\DatabaseCommand;
+use MongoDB\Operation\DropCollection;
+use MongoDB\Operation\DropDatabase;
+use MongoDB\Operation\DropEncryptedCollection;
+use MongoDB\Operation\ListCollectionNames;
+use MongoDB\Operation\ListCollections;
+use MongoDB\Operation\ModifyCollection;
+use MongoDB\Operation\RenameCollection;
+use MongoDB\Operation\Watch;
+use stdClass;
+use Stringable;
+use Throwable;
+
+/**
+ * @psalm-no-seal-properties
+ */
+class Database implements Stringable
+{
+    /**
+     * @see Aggregate::__construct() for supported options
+     * @param array|Pipeline $pipeline Aggregation pipeline
+     * @param array          $options  Command options
+     * @throws UnexpectedValueException if the command response was malformed
+     * @throws UnsupportedException if options are not supported by the selected server
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
+     *
+     * @psalm-taint-sink nosql $pipeline
+     */
+    public function aggregate(array|Pipeline $pipeline, array $options = []): CursorInterface
+    {
+    }
+
+    /**
+     * @see DatabaseCommand::__construct() for supported options
+     * @param array|object $command Command document
+     * @param array        $options Options for command execution
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
+     *
+     * @psalm-taint-sink nosql $command
+     */
+    public function command(array|object $command, array $options = []): CursorInterface
+    {
+    }
+
+    /**
+     * @see Watch::__construct() for supported options
+     * @param array|Pipeline $pipeline Aggregation pipeline
+     * @param array          $options  Command options
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     *
+     * @psalm-taint-sink nosql $pipeline
+     */
+    public function watch(array|Pipeline $pipeline = [], array $options = []): ChangeStream
+    {
+    }
+}
+}
