@@ -36,10 +36,15 @@ use function trim;
  * - `$this->$name -> return` (PROPERTY_READ): a call of a method returns that property;
  * - `($values) -> $this->{key}` (PROPERTY_WRITE by key): a call sets each property to what is under its name in the
  *   arrays given to the parameters;
- * - `$this->{key} -> return[key]` (PROPERTY_READ by key): a call returns an array of the properties under their names.
+ * - `$this->{key} -> return[key]` (PROPERTY_READ by key): a call returns an array of the properties under their names;
+ * - `($value) -> $this->data`, `($value) -> $this->data[$key]`, `($value) -> $this->data[*]` (PROPERTY_WRITE of a named
+ *   property): a call sets the property `data` of the object it is called on, or the element of that array property
+ *   under the key given to a parameter, or under any key;
+ * - `$this->data -> return`, `$this->data[$key] -> return`, `$this->data[*] -> return` (PROPERTY_READ of a named
+ *   property): a call returns that property, or its element under the key given to a parameter, or any of them.
  *
  * Writing the arrow as `-(path-type)->` gives the kind of the path its taints take (`arg` otherwise), except for the
- * flows by key, whose paths are those of the keys. A key of a store
+ * flows by key and those of elements, whose paths are those of the keys. A key of a store
  * is a parameter (`$key`), `*` for any key, or `$keys[*]` for each key in a list; a store may be nested
  * (`Store::$data[$ns][$key]`), but only its first key tells its values apart.
  *
@@ -59,7 +64,7 @@ final class TaintFlowAnnotation
 
     private const STORE_REGEX = '/^([A-Za-z_\\\\][\w\\\\]*)::\$(\w+)\[(?:\*|\$(\w+)(\[\*\])?)\]((?:\[[^\]]*\])*)$/';
 
-    private const PROPERTY_REGEX = '/^\$this->(?:\*|\$(\w+)|(\{key\}))$/';
+    private const PROPERTY_REGEX = '/^\$this->(?:\*|\$(\w+)|(\{key\})|([A-Za-z_]\w*)(?:\[(?:(\*)|\$(\w+))\])?)$/';
 
     private const PATH_TYPE_REGEX = '/-\(([a-z\-]+)\)->/';
 
@@ -77,6 +82,10 @@ final class TaintFlowAnnotation
      * @param ?non-empty-string $proxy_function the function-like a PROXY flow calls
      * @param bool $property_by_key whether a PROPERTY_WRITE sets the properties named by the keys of the arrays given
      *                              to the parameters, or a PROPERTY_READ returns the properties under their names
+     * @param ?non-empty-string $property the property a PROPERTY_WRITE or a PROPERTY_READ names (`$this->data`)
+     * @param ?non-empty-string $element_key the parameter the key of the element of $property is given to
+     *                                       (`$this->data[$key]`)
+     * @param bool $any_element whether the flow is of any element of $property (`$this->data[*]`)
      * @psalm-mutation-free
      */
     private function __construct(
@@ -91,6 +100,9 @@ final class TaintFlowAnnotation
         public readonly ?string $proxy_function = null,
         public readonly bool $proxy_returns = false,
         public readonly bool $property_by_key = false,
+        public readonly ?string $property = null,
+        public readonly ?string $element_key = null,
+        public readonly bool $any_element = false,
     ) {
     }
 
@@ -204,6 +216,10 @@ final class TaintFlowAnnotation
             $names[] = $this->store_key;
         }
 
+        if ($this->element_key !== null) {
+            $names[] = $this->element_key;
+        }
+
         return [...$names, ...$this->other_key_params];
     }
 
@@ -291,9 +307,15 @@ final class TaintFlowAnnotation
             return null;
         }
 
-        // `$this->{key}` is read into `return[key]`, through the paths of the keys
+        // `$this->{key}` is read into `return[key]`, through the paths of the keys, as the elements of a property are
         $by_key = ($matches[2] ?? '') !== '';
-        if (($kind === self::PROPERTY_READ && $by_key !== $returns_by_key) || ($by_key && $has_path_type)) {
+        $property_name = $matches[3] ?? '';
+        $any_element = ($matches[4] ?? '') !== '';
+        $element_key = $matches[5] ?? '';
+        $of_element = $any_element || $element_key !== '';
+        if (($kind === self::PROPERTY_READ && $by_key !== $returns_by_key)
+            || (($by_key || $of_element) && $has_path_type)
+        ) {
             return null;
         }
 
@@ -312,6 +334,9 @@ final class TaintFlowAnnotation
             $sources,
             store_key: $name === '' ? null : $name,
             property_by_key: $by_key,
+            property: $property_name === '' ? null : $property_name,
+            element_key: $element_key === '' ? null : $element_key,
+            any_element: $any_element,
         );
     }
 
@@ -333,6 +358,7 @@ final class TaintFlowAnnotation
     {
         return '@psalm-flow "' . trim($annotation) . '" is neither "(...) -> return", "(...) -> Store::$data[$key]",'
             . ' "Store::$data[$key] -> return", "(...) -> $this->$name", "$this->$name -> return",'
-            . ' "(...) -> $this->{key}", "$this->{key} -> return[key]" nor "proxy ..."';
+            . ' "(...) -> $this->{key}", "$this->{key} -> return[key]", "(...) -> $this->data[$key]",'
+            . ' "$this->data[$key] -> return" nor "proxy ..."';
     }
 }
