@@ -55,6 +55,23 @@ function getUser(): MongoDB\Driver\Query {
 }
 ```
 
+Or compare the field with `$eq`: MongoDB matches the operand as it is, so an array such as `["$ne" => null]` is a
+value the field must equal, not an operator. Psalm takes the `nosql` taint off the operand of the `$eq` of a field
+(a literal key not starting with `$`) at the top level of an array literal given to a `nosql` sink, unless a method the
+call may run instead (an override) doesn't take that parameter as a `nosql` sink. Inside `$expr` and in aggregation
+pipelines, `$eq` evaluates its operands, so they stay tainted there:
+
+```php
+<?php
+
+/** @psalm-taint-sink nosql $filter */
+function findUsers(array $filter): array {
+    return [];
+}
+
+findUsers(["username" => ['$eq' => $_GET["username"]]]);
+```
+
 Or route the filter through a sanitizer annotated with `@psalm-taint-escape nosql`:
 
 ```php

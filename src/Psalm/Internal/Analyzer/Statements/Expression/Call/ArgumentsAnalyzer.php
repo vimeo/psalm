@@ -23,6 +23,7 @@ use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\InternalTaintSourceMap;
+use Psalm\Internal\Codebase\NosqlEqualityOperand;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -153,6 +154,16 @@ final class ArgumentsAnalyzer
             }
 
             if ($function_params === null) {
+                if ($arg->value instanceof PhpParser\Node\Expr\Array_ && $statements_analyzer->taint_flow_graph) {
+                    NosqlEqualityOperand::markArgument(
+                        $statements_analyzer->getCodebase(),
+                        $method_id,
+                        null,
+                        null,
+                        $arg->value,
+                    );
+                }
+
                 if (self::evaluateArbitraryParam(
                     $statements_analyzer,
                     $arg,
@@ -181,6 +192,17 @@ final class ArgumentsAnalyzer
                 $param = $function_params[$argument_offset];
             } elseif ($last_param && $last_param->is_variadic) {
                 $param = $last_param;
+            }
+
+            // the operands of the `$eq` of the fields of a MongoDB filter literal
+            if ($arg->value instanceof PhpParser\Node\Expr\Array_ && $statements_analyzer->taint_flow_graph) {
+                NosqlEqualityOperand::markArgument(
+                    $statements_analyzer->getCodebase(),
+                    $method_id,
+                    $function_params,
+                    $param,
+                    $arg->value,
+                );
             }
 
             $by_ref = $param && $param->by_ref;
