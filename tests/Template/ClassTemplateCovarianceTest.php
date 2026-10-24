@@ -535,7 +535,7 @@ final class ClassTemplateCovarianceTest extends TestCase
 
                     run(new Container(new TypeA()));',
             ],
-            'inlineCovariantModifierIgnored' => [
+            'inlineCovariantModifierOnAnInvariantTemplate' => [
                 'code' => '<?php
                     /**
                      * @template-covariant T
@@ -546,15 +546,15 @@ final class ClassTemplateCovarianceTest extends TestCase
                     /**
                      * @template T of object
                      * @param class-string<T> $class
-                     * @return Container<covariant T, covariant string>
+                     * @return Container<T, covariant string>
                      */
                     function wrap(string $class): Container
                     {
-                        /** @var Container<covariant T, covariant string> */
+                        /** @var Container<T, covariant string> */
                         return new Container();
                     }',
             ],
-            'inlineContravariantModifierIgnored' => [
+            'inlineContravariantModifierOnAnInvariantTemplate' => [
                 'code' => '<?php
                     /**
                      * @template T
