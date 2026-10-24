@@ -245,16 +245,23 @@ final class CallSiteVarianceProjector
         if ($atomic instanceof TTemplateParam) {
             $projected = $this->projectTemplate($atomic, $polarity);
 
-            if (!$atomic->extra_types || $projected instanceof TTemplateParam) {
+            if (!$atomic->extra_types) {
                 return $projected;
             }
 
-            // `T&Countable` is what the argument is, and Countable
+            // `T&Countable` is what the argument is, and Countable; `U&Box<T>` projects Box<T> even if U stays
             $extras = $this->projectExtras($atomic->extra_types, $polarity);
 
-            return $extras === null
-                ? Type::getNever()
-                : $this->intersect($projected instanceof Union ? $projected : new Union([$projected]), $extras);
+            return match (true) {
+                $extras === null => Type::getNever(),
+                $projected instanceof TTemplateParam => $extras === $atomic->extra_types
+                    ? $projected
+                    : $projected->setIntersectionTypes($extras),
+                default => $this->intersect(
+                    $projected instanceof Union ? $projected : new Union([$projected]),
+                    $extras,
+                ),
+            };
         }
 
         if ($atomic instanceof TNamedObject && $atomic->extra_types) {
