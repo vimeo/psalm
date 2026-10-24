@@ -175,6 +175,8 @@ final class CallSiteVarianceProjector
             foreach ($bounds as $defining_class => $bound) {
                 $input = $this->projectUnion($bound, self::INPUT);
 
+                // seeded before the arguments are analyzed, so a closure given for `callable(U): void` is typed by
+                // it; no argument can be given to such a template, so none can contradict it
                 if ($input->isNever() && !$bound->isNever()) {
                     $template_result->lower_bounds[$template_name][$defining_class][] = new TemplateBound(
                         $this->projectUnion($bound, self::OUTPUT),
@@ -365,6 +367,7 @@ final class CallSiteVarianceProjector
     private function intersect(Union $union, array $extras): Union
     {
         $atomics = [];
+        $main = reset($extras);
 
         foreach ($union->getAtomicTypes() as $atomic) {
             if ($atomic instanceof TNamedObject
@@ -373,7 +376,7 @@ final class CallSiteVarianceProjector
                 || $atomic instanceof TObjectWithProperties
             ) {
                 $atomic = $atomic->setIntersectionTypes([...$atomic->extra_types, ...$extras]);
-            } elseif (($atomic instanceof TMixed || $atomic instanceof TObject) && ($main = reset($extras))) {
+            } elseif (($atomic instanceof TMixed || $atomic instanceof TObject) && $main) {
                 $atomic = $main->setIntersectionTypes([...$main->extra_types, ...array_slice($extras, 1)]);
             }
 
