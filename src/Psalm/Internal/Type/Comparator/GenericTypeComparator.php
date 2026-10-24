@@ -87,6 +87,14 @@ final class GenericTypeComparator
                 ? $container_type_part->type_param_variances[$i] ?? null
                 : null;
 
+            // a `covariant` the container class declares for the template anyway is no call-site variance
+            if ($container_variance === Variance::Covariant
+                && ($codebase->classlike_storage_provider->get($container_type_part->value)
+                    ->template_covariants[$i] ?? false)
+            ) {
+                $container_variance = null;
+            }
+
             if ($container_variance === Variance::Bivariant) {
                 continue;
             }
@@ -127,6 +135,18 @@ final class GenericTypeComparator
                 if ($container_param->hasTemplate()
                     || ($container_param->had_template && $container_param->isMixed())
                 ) {
+                    continue;
+                }
+
+                // a mixed argument, as of an untyped `Box`, is not known to fit
+                if ($input_param->isMixed() && !$container_param->isMixed()) {
+                    if ($atomic_comparison_result) {
+                        $atomic_comparison_result->type_coerced = true;
+                        $atomic_comparison_result->type_coerced_from_mixed = true;
+                    }
+
+                    $all_types_contain = false;
+
                     continue;
                 }
 

@@ -59,6 +59,8 @@ use function strtolower;
 use function substr;
 use function usort;
 
+use const ARRAY_FILTER_USE_BOTH;
+
 /**
  * @internal
  */
@@ -1399,6 +1401,7 @@ final class TemplateStandinTypeReplacer
         $container_type_params_covariant = $codebase->classlike_storage_provider->has($container_type_part->value)
             ? $codebase->classlike_storage_provider->get($container_type_part->value)->template_covariants
             : null;
+        $declared_covariants = $container_type_params_covariant ?? [];
 
         // `Box<covariant T>` reads the argument like a covariant template does
         if ($container_type_part instanceof TGenericObject) {
@@ -1526,9 +1529,17 @@ final class TemplateStandinTypeReplacer
             }
         }
 
+        // a `covariant` the container class declares for the template anyway is no call-site variance
         $container_call_site_variances = $container_type_part instanceof TGenericObject
             ? $container_type_part->type_param_variances
             : [];
+
+        foreach ($container_call_site_variances as $i => $container_variance) {
+            if ($container_variance === Variance::Covariant && ($declared_covariants[$i] ?? false)) {
+                unset($container_call_site_variances[$i]);
+            }
+        }
+
         $reads_as_bound = [];
 
         foreach ($input_variances as $i => $input_variance) {
