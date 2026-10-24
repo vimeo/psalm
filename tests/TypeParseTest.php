@@ -284,6 +284,18 @@ final class TypeParseTest extends TestCase
         Type::parseString('B<int|covariant string>');
     }
 
+    public function testCallSiteVarianceOnAParenthesizedArgument(): void
+    {
+        $this->assertSame('B<covariant A|C>', (string) Type::parseString('B<covariant (A|C)>'));
+        $this->assertSame('B<int, contravariant A|C>', (string) Type::parseString('B<int, contravariant (A|C)>'));
+    }
+
+    public function testCallSiteVarianceBeforeAStar(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('B<covariant *>');
+    }
+
     public function testStarOutsideGenericArgument(): void
     {
         $this->expectException(TypeParseTreeException::class);
