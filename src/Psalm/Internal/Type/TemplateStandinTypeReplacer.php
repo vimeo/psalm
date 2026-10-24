@@ -39,6 +39,7 @@ use Psalm\Type\Atomic\TTemplatePropertiesOf;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
+use Psalm\Type\Variance;
 
 use function array_fill;
 use function array_filter;
@@ -1388,6 +1389,15 @@ final class TemplateStandinTypeReplacer
         $container_type_params_covariant = $codebase->classlike_storage_provider->has($container_type_part->value)
             ? $codebase->classlike_storage_provider->get($container_type_part->value)->template_covariants
             : null;
+
+        // `Box<covariant T>` and `Box<*>` read the argument like a covariant template does
+        if ($container_type_part instanceof TGenericObject) {
+            foreach ($container_type_part->type_param_variances as $i => $variance) {
+                if ($variance !== Variance::Contravariant) {
+                    $container_type_params_covariant[$i] = true;
+                }
+            }
+        }
 
         if ($input_type_part->value !== $container_type_part->value
             && $input_class_storage
