@@ -127,6 +127,20 @@ final class CallSiteVarianceTest extends TestCase
              * @return U
              */
             public function packList($u) { return $u; }
+
+            /**
+             * @template U of T
+             * @param U $u
+             * @return list<U>
+             */
+            public function wrapBounded($u) { return [$u]; }
+
+            /**
+             * @template U of T
+             * @param callable(U): void $f
+             * @return U
+             */
+            public function each(callable $f) { throw new Exception(); }
         }
 ';
 
@@ -828,23 +842,79 @@ final class CallSiteVarianceTest extends TestCase
                         /** @psalm-check-type-exact $result = B&Countable */
                     }',
             ],
-            'projectionResultOfAMethodTemplateBoundedByANullableReceiverTemplate' => [
+            'projectionResultOfAMethodTemplateBoundedByANullableReceiverTemplateIsWhatTheProjectedBoundTakes' => [
                 'code' => '<?php' . self::HIERARCHY . self::BOUNDED_TEMPLATE_RBOX . '
                     /** @param RBox<covariant B> $box */
                     function test(RBox $box): void {
                         /** @psalm-suppress InvalidArgument */
                         $result = $box->packNullable(new B());
-                        /** @psalm-check-type-exact $result = B|null */
+                        /** @psalm-check-type-exact $result = null */
                     }',
             ],
-            'projectionResultOfAMethodTemplateBoundedByAListOfTheReceiverTemplate' => [
+            'projectionResultOfAMethodTemplateBoundedByAListOfTheReceiverTemplateIsWhatTheProjectedBoundTakes' => [
                 'code' => '<?php' . self::HIERARCHY . self::BOUNDED_TEMPLATE_RBOX . '
                     /** @param RBox<covariant B> $box */
                     function test(RBox $box): void {
                         /** @psalm-suppress InvalidArgument */
                         $result = $box->packList([new B()]);
-                        /** @psalm-check-type-exact $result = list<B> */
+                        /** @psalm-check-type-exact $result = array<never, never> */
                     }',
+            ],
+            'projectionKeepsTheArgumentsOfMethodTemplatesOnAContravariantReceiver' => [
+                'code' => '<?php' . self::HIERARCHY . self::BOUNDED_TEMPLATE_RBOX . '
+                    /** @param RBox<contravariant B> $box */
+                    function test(RBox $box): void {
+                        $bounded = $box->packBounded(new C());
+                        /** @psalm-check-type-exact $bounded = C */
+                        $nullable = $box->packNullable(null);
+                        /** @psalm-check-type-exact $nullable = null */
+                        $list = $box->packList([new C()]);
+                        /** @psalm-check-type-exact $list = list{C} */
+                        $wrapped = $box->wrapBounded(new C());
+                        /** @psalm-check-type-exact $wrapped = list<C> */
+                    }',
+            ],
+            'projectionTypesACallbackOfAMethodTemplateOnACovariantReceiver' => [
+                'code' => '<?php' . self::HIERARCHY . self::BOUNDED_TEMPLATE_RBOX . '
+                    /** @param RBox<covariant B> $box */
+                    function test(RBox $box): void {
+                        $untyped = $box->each(function ($x): void {
+                            /** @psalm-check-type-exact $x = B */
+                        });
+                        /** @psalm-check-type-exact $untyped = B */
+                        $typed = $box->each(function (B $_x): void {});
+                        /** @psalm-check-type-exact $typed = B */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingClosureParamType'],
+            ],
+            'projectionTypesACallbackOfAMethodTemplateOnAContravariantReceiver' => [
+                'code' => '<?php' . self::HIERARCHY . self::BOUNDED_TEMPLATE_RBOX . '
+                    /** @param RBox<contravariant B> $box */
+                    function test(RBox $box): void {
+                        $untyped = $box->each(function ($x): void {
+                            /** @psalm-check-type-exact $x = B */
+                        });
+                        /** @psalm-check-type-exact $untyped = B */
+                        $typed = $box->each(function (B $_x): void {});
+                        /** @psalm-check-type-exact $typed = B */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingClosureParamType'],
+            ],
+            'projectionTypesACallbackOfAMethodTemplateOnAStarReceiver' => [
+                'code' => '<?php' . self::HIERARCHY . self::BOUNDED_TEMPLATE_RBOX . '
+                    /** @param RBox<*> $box */
+                    function test(RBox $box): void {
+                        $untyped = $box->each(function ($x): void {
+                            /** @psalm-check-type-exact $x = A */
+                        });
+                        /** @psalm-check-type-exact $untyped = A */
+                        $typed = $box->each(function (A $_x): void {});
+                        /** @psalm-check-type-exact $typed = A */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingClosureParamType'],
             ],
             'foreachOverAStarTraversableAndAnIterableKeepsBothValues' => [
                 'code' => '<?php' . self::HIERARCHY . '
@@ -1377,7 +1447,7 @@ final class CallSiteVarianceTest extends TestCase
                 'code' => '<?php' . self::HIERARCHY . self::BOUNDED_TEMPLATE_RBOX . '
                     /** @param RBox<covariant B> $box */
                     function test(RBox $box): void { $box->packList([new B()]); }',
-                'error_message' => 'never',
+                'error_message' => 'expects array<never, never>, but list{B} provided',
             ],
             'contravariantContainerDoesNotTakeAMixedArgument' => [
                 'code' => '<?php' . self::HIERARCHY . '
