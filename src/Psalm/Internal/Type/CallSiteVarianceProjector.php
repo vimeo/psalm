@@ -12,13 +12,17 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
@@ -28,9 +32,12 @@ use function array_filter;
 use function array_flip;
 use function array_keys;
 use function array_map;
+use function array_slice;
 use function array_values;
 use function count;
 use function reset;
+
+use const ARRAY_FILTER_USE_BOTH;
 
 /**
  * Member projection of a receiver with call-site variance (`Box<covariant B>`, `Box<contravariant B>`, `Box<*>`):
@@ -85,6 +92,27 @@ final class CallSiteVarianceProjector
     }
 
     /**
+     * The call-site variances of a generic object, but for a `covariant` the class declares for the template
+     * anyway, which is no call-site variance.
+     *
+     * @return array<int, Variance>
+     * @psalm-capabilities read-props
+     */
+    public static function getCallSiteVariances(Codebase $codebase, TGenericObject $type): array
+    {
+        $covariants = $type->type_param_variances && $codebase->classlike_storage_provider->has($type->value)
+            ? $codebase->classlike_storage_provider->get($type->value)->template_covariants
+            : [];
+
+        return array_filter(
+            $type->type_param_variances,
+            static fn(Variance $variance, int $i): bool => $variance !== Variance::Covariant
+                || empty($covariants[$i]),
+            ARRAY_FILTER_USE_BOTH,
+        );
+    }
+
+    /**
      * The receiver as what it can be read as, without call-site variance.
      *
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
@@ -135,27 +163,31 @@ final class CallSiteVarianceProjector
     }
 
     /**
-     * The bounds of the templates of a member, which may mention the receiver's templates: what is given to a
-     * template is given to its bound, so they are in an input position.
+     * Projects the bounds of the templates of a member, which may mention the receiver's templates: what is given
+     * to a template is given to its bound, so they are in an input position.
      *
-     * A template whose bound nothing can be given to (`U of T` on a `Box<covariant B>`) never takes the arguments,
-     * so it is bound to its bound, read, for the result.
+     * A template whose bound this changes (`U of T` on a `Box<covariant B>`) is left bound to its bound, read, in
+     * the result, as the arguments are validated against the projected bound.
+     *
+     * @return array<string, array<string, Union>> that bound, by template
      */
-    public function projectTemplateResult(TemplateResult $template_result): void
+    public function projectTemplateResult(TemplateResult $template_result): array
     {
+        $read_bounds = [];
+
         foreach ($template_result->template_types as $template_name => $bounds) {
             foreach ($bounds as $defining_class => $bound) {
                 $input = $this->projectUnion($bound, self::INPUT);
 
-                if ($input->isNever() && !$bound->isNever()) {
-                    $template_result->lower_bounds[$template_name][$defining_class][] = new TemplateBound(
-                        $this->projectUnion($bound, self::OUTPUT),
-                    );
+                if ($input !== $bound) {
+                    $read_bounds[$template_name][$defining_class] = $this->projectUnion($bound, self::OUTPUT);
                 }
 
                 $template_result->template_types[$template_name][$defining_class] = $input;
             }
         }
+
+        return $read_bounds;
     }
 
     public function project(Union $type, bool $input): Union
@@ -215,7 +247,28 @@ final class CallSiteVarianceProjector
     private function projectAtomic(Atomic $atomic, int $polarity): Atomic|Union
     {
         if ($atomic instanceof TTemplateParam) {
-            return $this->projectTemplate($atomic, $polarity);
+            $projected = $this->projectTemplate($atomic, $polarity);
+
+            if (!$atomic->extra_types || $projected instanceof TTemplateParam) {
+                return $projected;
+            }
+
+            // `T&Countable` is what the argument is, and Countable
+            $extras = $this->projectExtras($atomic->extra_types, $polarity);
+
+            return $extras === null
+                ? Type::getNever()
+                : $this->intersect($projected instanceof Union ? $projected : new Union([$projected]), $extras);
+        }
+
+        if ($atomic instanceof TNamedObject && $atomic->extra_types) {
+            $extras = $this->projectExtras($atomic->extra_types, $polarity);
+
+            if ($extras === null) {
+                return Type::getNever();
+            }
+
+            $atomic = $atomic->setIntersectionTypes($extras);
         }
 
         if ($atomic instanceof TTemplateParamClass) {
@@ -267,6 +320,62 @@ final class CallSiteVarianceProjector
         }
 
         return $atomic;
+    }
+
+    /**
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extras
+     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject>|null
+     *         null if one of them can be nothing
+     */
+    private function projectExtras(array $extras, int $polarity): ?array
+    {
+        $projected = [];
+
+        foreach ($extras as $extra) {
+            $part = $this->projectAtomic($extra, $polarity);
+            $atomics = $part instanceof Union ? array_values($part->getAtomicTypes()) : [$part];
+
+            if ($atomics[0] instanceof TNever) {
+                return null;
+            }
+
+            $new_extra = count($atomics) === 1
+                && ($atomics[0] instanceof TNamedObject
+                    || $atomics[0] instanceof TTemplateParam
+                    || $atomics[0] instanceof TIterable
+                    || $atomics[0] instanceof TObjectWithProperties
+                    || $atomics[0] instanceof TCallableObject)
+                ? $atomics[0]
+                : $extra;
+            $projected[$new_extra->getKey()] = $new_extra;
+        }
+
+        return $projected;
+    }
+
+    /**
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extras
+     * @psalm-capabilities read-props
+     */
+    private function intersect(Union $union, array $extras): Union
+    {
+        $atomics = [];
+
+        foreach ($union->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TNever) {
+                $atomics[] = $atomic;
+            } elseif ($atomic instanceof TNamedObject || $atomic instanceof TTemplateParam) {
+                $atomics[] = $atomic->setIntersectionTypes([...$atomic->extra_types, ...$extras]);
+            } elseif ($atomic instanceof TMixed || $atomic instanceof TObject) {
+                $main = reset($extras);
+
+                if ($main !== false) {
+                    $atomics[] = $main->setIntersectionTypes([...$main->extra_types, ...array_slice($extras, 1)]);
+                }
+            }
+        }
+
+        return $atomics ? $union->setTypes($atomics) : Type::getNever();
     }
 
     private function projectTemplate(TTemplateParam $template, int $polarity): Atomic|Union
