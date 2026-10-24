@@ -312,9 +312,11 @@ abstract class CallAnalyzer
             $code_location,
         );
 
+        $read_bounds = [];
+
         if ($variance_projector) {
             $method_params = $variance_projector->projectParams($method_params);
-            $variance_projector->projectTemplateResult($template_result);
+            $read_bounds = $variance_projector->projectTemplateResult($template_result);
         }
 
         $fq_class_name = $method_id->fq_class_name;
@@ -381,6 +383,12 @@ abstract class CallAnalyzer
             $context,
         ) === false) {
             return false;
+        }
+
+        foreach ($read_bounds as $template_name => $bounds) {
+            foreach ($bounds as $defining_class => $bound) {
+                $template_result->lower_bounds[$template_name][$defining_class][] = new TemplateBound($bound);
+            }
         }
 
         if ($template_result->template_types) {

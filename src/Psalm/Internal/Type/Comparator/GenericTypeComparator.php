@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Type\CallSiteVarianceProjector;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
@@ -66,6 +67,10 @@ final class GenericTypeComparator
             $input_variances,
         );
 
+        $container_variances = $container_type_part instanceof TGenericObject
+            ? CallSiteVarianceProjector::getCallSiteVariances($codebase, $container_type_part)
+            : [];
+
         $atomic_comparison_result_type_params = null;
         if ($atomic_comparison_result) {
             if (!$atomic_comparison_result->replacement_atomic_type) {
@@ -83,17 +88,7 @@ final class GenericTypeComparator
 
             $container_param = $container_type_part->type_params[$i];
 
-            $container_variance = $container_type_part instanceof TGenericObject
-                ? $container_type_part->type_param_variances[$i] ?? null
-                : null;
-
-            // a `covariant` the container class declares for the template anyway is no call-site variance
-            if ($container_variance === Variance::Covariant
-                && ($codebase->classlike_storage_provider->get($container_type_part->value)
-                    ->template_covariants[$i] ?? false)
-            ) {
-                $container_variance = null;
-            }
+            $container_variance = $container_variances[$i] ?? null;
 
             if ($container_variance === Variance::Bivariant) {
                 continue;
@@ -138,8 +133,11 @@ final class GenericTypeComparator
                     continue;
                 }
 
-                // a mixed argument, as of an untyped `Box`, is not known to fit
-                if ($input_param->isMixed() && !$container_param->isMixed()) {
+                // a bare `Box` is not known to fit, while a `Box<mixed>` is explicit
+                if ($input_param->isMixed()
+                    && !$container_param->isMixed()
+                    && !$input_type_part instanceof TGenericObject
+                ) {
                     if ($atomic_comparison_result) {
                         $atomic_comparison_result->type_coerced = true;
                         $atomic_comparison_result->type_coerced_from_mixed = true;
