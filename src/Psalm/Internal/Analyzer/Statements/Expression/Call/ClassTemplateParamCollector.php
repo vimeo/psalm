@@ -263,7 +263,7 @@ final class ClassTemplateParamCollector
      * @param array<string, array<string, Union>> $e
      * @return non-empty-list<Atomic>
      */
-    private static function expandType(
+    public static function expandType(
         Codebase $codebase,
         Union $input_type_extends,
         array $e,
