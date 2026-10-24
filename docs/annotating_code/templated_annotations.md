@@ -500,7 +500,7 @@ Where Psalm doesn't project the template, it sees the argument as if it were inv
 - `key-of<T>`, `value-of<T>`, `T[K]` and conditional types on the template;
 - callable arrays (`[$box, 'pack']`), `ArrayAccess` writes (`$box[] = $x`), `@property` pseudo-property writes and by-reference property writes.
 
-A method template bounded by a template of the receiver (`@template U of T`) can only be given what its projected bound takes. When the projected bound takes nothing, as `U of T` on a `Box<covariant Animal>`, the result of the method is the bound as read (`Animal`). When it takes only part of the bound, the result is only what that part takes, as an argument rejected by the bound is not inferred: on a `Box<covariant Animal>`, a method with `@template U of T|null` returns `null`, and one with `@template U of list<T>` returns `array<never, never>`.
+A method template bounded by a template of the receiver (`@template U of T`) can only be given what its projected bound takes. When the projected bound takes nothing, as `U of T` on a `Box<covariant Animal>`, the result of the method is the bound as read (`Animal`). When it takes only part of the bound, a valid call keeps its exact result: on a `Box<covariant Animal>`, `packNullable(null)` with `@template U of T|null` returns `null`, and `packList([])` with `@template U of list<T>` returns `array<never, never>`. Precision is only lost on a call that is already rejected: passing an `Animal` to either method is reported, and its result is then `null` or `array<never, never>` rather than inferred from the argument.
 
 Call-site variance is applied to method calls, static invocations on an object, properties, first-class callables, `@method` and `@mixin` calls and `foreach`.
 
