@@ -487,9 +487,20 @@ A `Box<Dog>` is accepted where a `Box<covariant Animal>` is expected, but a `Box
 
 Psalm reports a `contravariant` argument for a `@template-covariant` template as [InvalidDocblock](../running_psalm/issues/InvalidDocblock.md), and a `covariant` one as [RedundantCallSiteVariance](../running_psalm/issues/RedundantCallSiteVariance.md).
 
-Two things differ from PHPStan: Psalm applies the variance to properties as well (writing to a property of a `Box<covariant T>` is an input), and a method returning `Box<T>` called on a `Box<covariant Animal>` returns a `Box<covariant Animal>` rather than a `Box<Animal>`, as the result is not known to hold an `Animal` exactly.
+Where Psalm differs from PHPStan:
 
-Where Psalm doesn't apply it: call-site variance is applied to method calls, properties, first-class callables, `@method` and `@mixin` calls and `foreach`. Callable arrays (`[$box, 'pack']`), `ArrayAccess` writes (`$box[] = $x`) and by-reference property writes see the argument as if it were invariant.
+- Properties are projected too: writing to a property of a `Box<covariant T>` is an input.
+- A method returning `Box<T>` called on a `Box<covariant Animal>` returns a `Box<covariant Animal>` rather than a `Box<Animal>`, as the result is not known to hold an `Animal` exactly.
+- In comparisons, a `covariant` argument for a `@template-covariant` template counts as no call-site variance, so `Box<covariant Animal>` and `Box<Animal>` are the same type there.
+- A `contravariant` or `*` argument is read as the bound of its template (`mixed` unless it has an `as`) where a covariant parameter is expected: a `Collection<*>` is accepted as an `iterable<mixed, mixed>`.
+
+Where Psalm doesn't project the template, it sees the argument as if it were invariant:
+
+- a parameter that is an invariant generic of the template (`copyFrom(Box<T> $other)` on a `Box<covariant Animal>` accepts a `Box<Animal>`, as in PHPStan);
+- `key-of<T>`, `value-of<T>`, `T[K]` and conditional types on the template;
+- callable arrays (`[$box, 'pack']`), `ArrayAccess` writes (`$box[] = $x`), `@property` pseudo-property writes and by-reference property writes.
+
+Call-site variance is applied to method calls, static invocations on an object, properties, first-class callables, `@method` and `@mixin` calls and `foreach`.
 
 ## Builtin templated classes and interfaces
 

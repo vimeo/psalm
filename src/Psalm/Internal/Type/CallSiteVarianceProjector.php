@@ -18,11 +18,13 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 use Psalm\Type\Variance;
 
+use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_search;
@@ -78,6 +80,8 @@ final class CallSiteVarianceProjector
 
     /**
      * The receiver as what it can be read as, without call-site variance.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function getReadView(): TGenericObject
     {
@@ -104,14 +108,13 @@ final class CallSiteVarianceProjector
             }
 
             $projected = clone $param;
-            // a by-reference parameter without an out type is both given and read
-            $projected->type = $param->type === null ? null : $this->projectUnion(
-                $param->type,
-                $param->by_ref && $param->out_type === null ? self::INVARIANT : self::INPUT,
-            );
-            $projected->out_type = $param->out_type === null
+            $projected->type = $param->type === null ? null : $this->projectUnion($param->type, self::INPUT);
+            // what a by-reference parameter is left holding is read, whether or not it has an out type
+            $out_type = $param->out_type ?? ($param->by_ref ? $param->type : null);
+            $projected_out_type = $out_type === null ? null : $this->projectUnion($out_type, self::OUTPUT);
+            $projected->out_type = $projected_out_type === $param->type && $param->out_type === null
                 ? null
-                : $this->projectUnion($param->out_type, self::OUTPUT);
+                : $projected_out_type;
             $params[$i] = $projected;
         }
 
@@ -147,10 +150,14 @@ final class CallSiteVarianceProjector
             }
         }
 
-        return $changed ? TypeCombiner::combine($atomics, $this->codebase)->setProperties([
-            'from_docblock' => $union->from_docblock,
-            'possibly_undefined' => $union->possibly_undefined,
-        ]) : $union;
+        if (!$changed) {
+            return $union;
+        }
+
+        // a template standing for `never` (nothing can be given) leaves the rest of the union
+        $non_never = array_filter($atomics, static fn(Atomic $atomic): bool => !$atomic instanceof TNever);
+
+        return $union->setTypes($non_never ?: [$atomics[0]]);
     }
 
     private function projectAtomic(Atomic $atomic, int $polarity): Atomic|Union
@@ -160,7 +167,8 @@ final class CallSiteVarianceProjector
         }
 
         if ($atomic instanceof TTemplateParamClass) {
-            $variance = $this->getVariance($atomic->param_name, $atomic->defining_class);
+            $template = $this->resolveReceiverTemplate($atomic->param_name, $atomic->defining_class);
+            $variance = $template === null ? null : $this->getVariance($template);
 
             if ($variance === null) {
                 return $atomic;
@@ -171,12 +179,17 @@ final class CallSiteVarianceProjector
             }
 
             if ($polarity === self::OUTPUT && $variance !== Variance::Covariant) {
-                $bound = $this->getBound($atomic->param_name)->getSingleAtomic();
+                $class_strings = [];
 
-                return new TClassString(
-                    $bound instanceof TNamedObject ? $bound->value : 'object',
-                    $bound instanceof TNamedObject ? $bound : null,
-                );
+                foreach ($this->getBound($template)->getAtomicTypes() as $bound) {
+                    if (!$bound instanceof TNamedObject) {
+                        return new Union([new TClassString()]);
+                    }
+
+                    $class_strings[] = new TClassString($bound->value, $bound);
+                }
+
+                return new Union($class_strings);
             }
 
             return $atomic;
@@ -199,7 +212,7 @@ final class CallSiteVarianceProjector
                 $atomic->properties,
             );
             $fallback_params = $atomic->fallback_params === null ? null : [
-                $atomic->fallback_params[0],
+                $this->projectUnion($atomic->fallback_params[0], $polarity),
                 $this->projectUnion($atomic->fallback_params[1], $polarity),
             ];
 
@@ -232,7 +245,7 @@ final class CallSiteVarianceProjector
     private function projectTemplate(TTemplateParam $template, int $polarity): Atomic|Union
     {
         if ($template->defining_class === $this->storage->name) {
-            $variance = $this->getVariance($template->param_name, $template->defining_class);
+            $variance = $this->getVariance($template->param_name);
             $offset = array_search($template->param_name, $this->template_names, true);
 
             if ($variance === null || $offset === false || !isset($this->receiver->type_params[$offset])) {
@@ -248,19 +261,13 @@ final class CallSiteVarianceProjector
         }
 
         // a template of an ancestor stands for what the receiver's `@extends` gives it
-        $extended = $this->storage->template_extended_params[$template->defining_class][$template->param_name] ?? null;
+        $expanded = $this->getAncestorArgument($template->param_name, $template->defining_class);
 
-        if ($extended !== null) {
-            $expanded = new Union(ClassTemplateParamCollector::expandType(
-                $this->codebase,
-                $extended,
-                $this->storage->template_extended_params ?? [],
-                $this->storage->name,
-                $this->storage->template_types,
-            ));
-
+        if ($expanded !== null) {
             foreach ($expanded->getTemplateTypes() as $nested) {
-                if ($this->getVariance($nested->param_name, $nested->defining_class) !== null) {
+                if ($nested->defining_class === $this->storage->name
+                    && $this->getVariance($nested->param_name) !== null
+                ) {
                     return $this->projectUnion($expanded, $polarity);
                 }
             }
@@ -268,10 +275,48 @@ final class CallSiteVarianceProjector
             return $template;
         }
 
-        // the bound of a template of the member may mention the receiver's
+        // the bound of a template of the member may mention the receiver's: nothing can be given to a template
+        // whose bound is `never`
         $as = $this->projectUnion($template->as, $polarity);
 
-        return $as === $template->as ? $template : $template->replaceAs($as);
+        return match (true) {
+            $as === $template->as => $template,
+            $polarity === self::INPUT && $as->isNever() => Type::getNever(),
+            default => $template->replaceAs($as),
+        };
+    }
+
+    /**
+     * What the receiver's `@extends` gives a template of an ancestor, in terms of the receiver's templates.
+     */
+    private function getAncestorArgument(string $template_name, string $defining_class): ?Union
+    {
+        $extended = $this->storage->template_extended_params[$defining_class][$template_name] ?? null;
+
+        return $extended === null ? null : new Union(ClassTemplateParamCollector::expandType(
+            $this->codebase,
+            $extended,
+            $this->storage->template_extended_params ?? [],
+            $this->storage->name,
+            $this->storage->template_types,
+        ));
+    }
+
+    /**
+     * The template of the receiver's class that a template stands for, if it is just that.
+     */
+    private function resolveReceiverTemplate(string $template_name, string $defining_class): ?string
+    {
+        if ($defining_class === $this->storage->name) {
+            return $template_name;
+        }
+
+        $argument = $this->getAncestorArgument($template_name, $defining_class);
+        $template = $argument?->isSingle() ? $argument->getSingleAtomic() : null;
+
+        return $template instanceof TTemplateParam && $template->defining_class === $this->storage->name
+            ? $template->param_name
+            : null;
     }
 
     private function projectGenericObject(TGenericObject $atomic, int $polarity): TGenericObject
@@ -298,9 +343,13 @@ final class CallSiteVarianceProjector
                 && $polarity === self::OUTPUT
                 && $param->isSingle()
                 && ($template = $param->getSingleAtomic()) instanceof TTemplateParam
+                && ($receiver_template = $this->resolveReceiverTemplate(
+                    $template->param_name,
+                    $template->defining_class,
+                )) !== null
             ) {
-                $carried = $this->getVariance($template->param_name, $template->defining_class);
-                $offset = array_search($template->param_name, $this->template_names, true);
+                $carried = $this->getVariance($receiver_template);
+                $offset = array_search($receiver_template, $this->template_names, true);
             }
 
             if ($carried !== null && $offset !== false && isset($this->receiver->type_params[$offset])) {
@@ -318,12 +367,8 @@ final class CallSiteVarianceProjector
     /**
      * @psalm-capabilities read-props
      */
-    private function getVariance(string $template_name, string $defining_class): ?Variance
+    private function getVariance(string $template_name): ?Variance
     {
-        if ($defining_class !== $this->storage->name) {
-            return null;
-        }
-
         $offset = array_search($template_name, $this->template_names, true);
 
         return $offset === false ? null : $this->receiver->type_param_variances[$offset] ?? null;
@@ -331,6 +376,8 @@ final class CallSiteVarianceProjector
 
     /**
      * The bound of a template of the receiver's class, in terms of the receiver's arguments.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private function getBound(?string $template_name): Union
     {

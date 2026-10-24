@@ -1555,6 +1555,8 @@ final class TemplateStandinTypeReplacer
                     $input_type_params[$i] = $read_params[$i] ?? $input_type_params[$i];
                     unset($input_variances[$i]);
                 }
+
+                $input_type_params = array_values($input_type_params);
             }
         }
 
