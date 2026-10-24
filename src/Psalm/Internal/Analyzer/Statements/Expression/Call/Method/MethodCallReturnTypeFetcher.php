@@ -85,9 +85,7 @@ final class MethodCallReturnTypeFetcher
                     $codebase,
                     $stmt,
                     new TClosure(
-                        $variance_projector
-                            ? $variance_projector->projectParams($method_storage->params)
-                            : $method_storage->params,
+                        $variance_projector?->projectParams($method_storage->params) ?? $method_storage->params,
                         $variance_projector && $method_storage->return_type
                             ? $variance_projector->project($method_storage->return_type, false)
                             : $method_storage->return_type,
@@ -165,9 +163,8 @@ final class MethodCallReturnTypeFetcher
             ) {
                 $return_type_candidate = $method_storage->return_type;
 
-                if ($variance_projector) {
-                    $return_type_candidate = $variance_projector->project($return_type_candidate, false);
-                }
+                $return_type_candidate = $variance_projector?->project($return_type_candidate, false)
+                    ?? $return_type_candidate;
 
                 $return_type_candidate = self::replaceTemplateTypes(
                     $return_type_candidate,
@@ -216,9 +213,8 @@ final class MethodCallReturnTypeFetcher
             );
 
             if ($return_type_candidate) {
-                if ($variance_projector) {
-                    $return_type_candidate = $variance_projector->project($return_type_candidate, false);
-                }
+                $return_type_candidate = $variance_projector?->project($return_type_candidate, false)
+                    ?? $return_type_candidate;
 
                 if ($template_result->lower_bounds) {
                     $return_type_candidate = TypeExpander::expandUnion(

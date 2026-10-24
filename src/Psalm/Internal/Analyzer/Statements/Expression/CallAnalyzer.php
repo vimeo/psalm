@@ -299,18 +299,7 @@ abstract class CallAnalyzer
 
         if ($variance_projector) {
             $method_params = $variance_projector->projectParams($method_params);
-
-            $unbindable_templates = $variance_projector->getUnbindableTemplates($template_result->template_types);
-
-            foreach ($unbindable_templates as $name => $bounds) {
-                foreach ($bounds as $defining_class => $bound) {
-                    $template_result->lower_bounds[$name][$defining_class][] = new TemplateBound($bound);
-                }
-            }
-
-            $template_result->template_types = $variance_projector->projectTemplateTypes(
-                $template_result->template_types,
-            );
+            $variance_projector->projectTemplateResult($template_result);
         }
 
         $fq_class_name = $method_id->fq_class_name;

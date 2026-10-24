@@ -509,9 +509,8 @@ final class TypeCombiner
         ) {
             $type_key = 'iterable';
             $combination->builtin_type_params['iterable'] = [Type::getMixed(), Type::getMixed()];
-        } elseif ($type instanceof TNamedObject
+        } elseif ($merges_by_class_name
             && $type->value === 'Traversable'
-            && !($type instanceof TGenericObject && $type->type_param_variances)
             && (isset($combination->builtin_type_params['iterable']) || isset($combination->value_types['iterable']))
         ) {
             $type_key = 'iterable';
