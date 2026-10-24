@@ -14,3 +14,7 @@ class Box {}
  */
 function takesBox(Box $box): void {}
 ```
+
+## Fixing
+
+Remove the `covariant` keyword: the template is covariant already. Builtin classes whose templates are covariant (`Iterator`, `Traversable`, `Generator`, …) trigger it as well. `ReflectionClass` is exempt, so that code written for several PHP versions can keep the annotation.
