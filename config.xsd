@@ -471,6 +471,7 @@
             <xs:element name="PropertyNotSetInConstructor" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="PropertyTypeCoercion" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="RawObjectIteration" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="RedundantCallSiteVariance" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantCast" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantCastGivenDocblockType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantCondition" type="IssueHandlerType" minOccurs="0" />
