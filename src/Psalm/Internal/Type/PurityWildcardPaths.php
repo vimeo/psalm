@@ -17,6 +17,7 @@ use Psalm\Internal\Type\ParseTree\NullableTree;
 use Psalm\Internal\Type\ParseTree\PurityTree;
 use Psalm\Internal\Type\ParseTree\UnionTree;
 use Psalm\Internal\Type\ParseTree\Value;
+use Psalm\Internal\Type\ParseTree\VarianceTree;
 
 use function array_fill_keys;
 use function array_keys;
@@ -142,6 +143,7 @@ final class PurityWildcardPaths
             || $node instanceof NullableTree
             || $node instanceof EncapsulationTree
             || $node instanceof IntersectionTree
+            || $node instanceof VarianceTree
         ) {
             foreach ($node->children as $child) {
                 if (!self::collectEdits($child, $steps, $wanted, $found, $edits)) {

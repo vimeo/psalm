@@ -417,7 +417,7 @@ final class TypeTokenizer
                 $string_type_token[0],
                 [
                     '<', '>', '|', '?', ',', '{', '}', ':', '::', '[', ']', '(', ')', '&', '=', '...', 'as', 'is',
-                    'is not', 'covariant', 'contravariant',
+                    'is not', 'covariant', 'contravariant', '*',
                 ],
                 true,
             )) {
