@@ -29,6 +29,7 @@ use function array_keys;
 use function array_map;
 use function array_search;
 use function array_values;
+use function count;
 use function reset;
 
 /**
@@ -121,6 +122,46 @@ final class CallSiteVarianceProjector
         return $params;
     }
 
+    /**
+     * The bounds of the templates of a member, which may mention the receiver's templates: what is given to a
+     * template is given to its bound, so they are in an input position.
+     *
+     * @param array<string, array<string, Union>> $template_types
+     * @return array<string, array<string, Union>>
+     */
+    public function projectTemplateTypes(array $template_types): array
+    {
+        foreach ($template_types as $template_name => $bounds) {
+            foreach ($bounds as $defining_class => $bound) {
+                $template_types[$template_name][$defining_class] = $this->projectUnion($bound, self::INPUT);
+            }
+        }
+
+        return $template_types;
+    }
+
+    /**
+     * What the templates of a member whose bound nothing can be given to (`U of T` on a `Box<covariant B>`) stand for
+     * in the result: as the arguments are never taken for them, they are bound to the bound, read.
+     *
+     * @param array<string, array<string, Union>> $template_types
+     * @return array<string, array<string, Union>>
+     */
+    public function getUnbindableTemplates(array $template_types): array
+    {
+        $unbindable = [];
+
+        foreach ($template_types as $template_name => $bounds) {
+            foreach ($bounds as $defining_class => $bound) {
+                if ($this->projectUnion($bound, self::INPUT)->isNever() && !$bound->isNever()) {
+                    $unbindable[$template_name][$defining_class] = $this->projectUnion($bound, self::OUTPUT);
+                }
+            }
+        }
+
+        return $unbindable;
+    }
+
     public function project(Union $type, bool $input): Union
     {
         return $this->projectUnion($type, $input ? self::INPUT : self::OUTPUT);
@@ -157,7 +198,22 @@ final class CallSiteVarianceProjector
         // a template standing for `never` (nothing can be given) leaves the rest of the union
         $non_never = array_filter($atomics, static fn(Atomic $atomic): bool => !$atomic instanceof TNever);
 
-        return $union->setTypes($non_never ?: [$atomics[0]]);
+        // atomics of one key (`array<int, Cat>` and `array<string, Animal>`) are combined, not overwritten
+        $by_key = [];
+
+        foreach ($non_never ?: [$atomics[0]] as $atomic) {
+            $by_key[$atomic->getKey()][] = $atomic;
+        }
+
+        $merged = [];
+
+        foreach ($by_key as $same_key) {
+            $merged = [...$merged, ...(count($same_key) === 1
+                ? $same_key
+                : array_values(TypeCombiner::combine($same_key, $this->codebase)->getAtomicTypes()))];
+        }
+
+        return $union->setTypes($merged)->setProperties(['from_docblock' => $union->from_docblock]);
     }
 
     private function projectAtomic(Atomic $atomic, int $polarity): Atomic|Union
@@ -275,8 +331,7 @@ final class CallSiteVarianceProjector
             return $template;
         }
 
-        // the bound of a template of the member may mention the receiver's: nothing can be given to a template
-        // whose bound is `never`
+        // nothing can be given to a template whose bound is `never`
         $as = $this->projectUnion($template->as, $polarity);
 
         return match (true) {
