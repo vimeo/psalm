@@ -123,8 +123,10 @@ final class GenericTypeComparator
             $param_comparison_result = new TypeComparisonResult();
 
             if ($container_variance === Variance::Contravariant) {
-                // like the invariant check below, templates are bound by the arguments, not compared
-                if ($container_param->hasTemplate() || $input_param->hasTemplate() || $container_param->had_template) {
+                // a template of the container that no argument has bound yet is bound by this one, not compared
+                if ($container_param->hasTemplate()
+                    || ($container_param->had_template && $container_param->isMixed())
+                ) {
                     continue;
                 }
 

@@ -1526,10 +1526,35 @@ final class TemplateStandinTypeReplacer
             }
         }
 
-        // a call-site variance the container class declares for the template anyway is no call-site variance
+        $container_call_site_variances = $container_type_part instanceof TGenericObject
+            ? $container_type_part->type_param_variances
+            : [];
+        $reads_as_bound = [];
+
         foreach ($input_variances as $i => $input_variance) {
-            if ($input_variance === Variance::Covariant && ($container_type_params_covariant[$i] ?? false)) {
+            if (!($container_type_params_covariant[$i] ?? false)) {
+                continue;
+            }
+
+            if ($input_variance === Variance::Covariant) {
+                // a call-site variance the container class declares for the template anyway is no call-site variance
                 unset($input_variances[$i]);
+            } elseif (!isset($container_call_site_variances[$i])) {
+                // a covariant container only reads what a `contravariant` or `*` argument can be read as
+                $reads_as_bound[] = $i;
+            }
+        }
+
+        if ($reads_as_bound && $input_type_part instanceof TGenericObject) {
+            $read_input = CallSiteVarianceProjector::create($codebase, $input_type_part)?->getReadView();
+
+            if ($read_input !== null) {
+                $read_params = self::getMappedGenericTypeParams($codebase, $read_input, $container_type_part);
+
+                foreach ($reads_as_bound as $i) {
+                    $input_type_params[$i] = $read_params[$i] ?? $input_type_params[$i];
+                    unset($input_variances[$i]);
+                }
             }
         }
 

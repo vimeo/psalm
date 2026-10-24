@@ -495,6 +495,32 @@ final class CallSiteVarianceTest extends TestCase
                         abstract public function anything(): Box;
                     }',
             ],
+            'covariantCollectionPassedToIterableParams' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /**
+                     * @template T
+                     * @implements IteratorAggregate<int, T>
+                     */
+                    abstract class Coll implements IteratorAggregate {}
+
+                    /** @param iterable<int, mixed> $_i */
+                    function takesIterable($_i): void {}
+
+                    /** @param Traversable<int, mixed> $_t */
+                    function takesTraversable($_t): void {}
+
+                    /**
+                     * @param Coll<*> $star
+                     * @param Coll<contravariant B> $contra
+                     */
+                    function test(Coll $star, Coll $contra): void {
+                        takesIterable($star);
+                        takesIterable($contra);
+                        takesTraversable($star);
+                        takesTraversable($contra);
+                        iterator_to_array($star);
+                    }',
+            ],
             'combinedCallSiteVariancesAreKeptApart' => [
                 'code' => '<?php' . self::HIERARCHY . '
                     /** @param Box<covariant A> $_box */
@@ -849,6 +875,46 @@ final class CallSiteVarianceTest extends TestCase
                     /** @param (covariant A) $_a */
                     function takes($_a): void {}',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'contravariantContainerRejectsAGenericInput' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /**
+                     * @template U
+                     * @param Box<U> $box
+                     */
+                    function test(Box $box): void { takes($box); }
+
+                    /** @param Box<contravariant A> $_box */
+                    function takes(Box $_box): void {}',
+                'error_message' => 'InvalidArgument',
+            ],
+            'contravariantContainerChecksAnArgumentInferredFromAnother' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /**
+                     * @template T
+                     * @param T $_x
+                     * @param Box<contravariant T> $_box
+                     */
+                    function feed($_x, Box $_box): void {}
+
+                    /** @param Box<B> $box */
+                    function test(Box $box): void { feed(new A(), $box); }',
+                'error_message' => 'Incompatible types found for T',
+            ],
+            'contravariantCollectionIsReadAsItsBound' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /**
+                     * @template T
+                     * @implements IteratorAggregate<int, T>
+                     */
+                    abstract class Coll implements IteratorAggregate {}
+
+                    /** @param Traversable<int, A> $_t */
+                    function takes($_t): void {}
+
+                    /** @param Coll<contravariant B> $coll */
+                    function test(Coll $coll): void { takes($coll); }',
+                'error_message' => 'MixedArgumentTypeCoercion',
             ],
             'combinedCallSiteVariancesAreNotMerged' => [
                 'code' => '<?php' . self::HIERARCHY . '
