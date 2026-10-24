@@ -163,31 +163,27 @@ final class CallSiteVarianceProjector
     }
 
     /**
-     * Projects the bounds of the templates of a member, which may mention the receiver's templates: what is given
-     * to a template is given to its bound, so they are in an input position.
+     * The bounds of the templates of a member, which may mention the receiver's templates: what is given to a
+     * template is given to its bound, so they are in an input position.
      *
-     * A template whose bound this changes (`U of T` on a `Box<covariant B>`) is left bound to its bound, read, in
-     * the result, as the arguments are validated against the projected bound.
-     *
-     * @return array<string, array<string, Union>> that bound, by template
+     * A template whose bound nothing can be given to (`U of T` on a `Box<covariant B>`) never takes the arguments,
+     * so it is bound to its bound, read, for the result.
      */
-    public function projectTemplateResult(TemplateResult $template_result): array
+    public function projectTemplateResult(TemplateResult $template_result): void
     {
-        $read_bounds = [];
-
         foreach ($template_result->template_types as $template_name => $bounds) {
             foreach ($bounds as $defining_class => $bound) {
                 $input = $this->projectUnion($bound, self::INPUT);
 
-                if ($input !== $bound) {
-                    $read_bounds[$template_name][$defining_class] = $this->projectUnion($bound, self::OUTPUT);
+                if ($input->isNever() && !$bound->isNever()) {
+                    $template_result->lower_bounds[$template_name][$defining_class][] = new TemplateBound(
+                        $this->projectUnion($bound, self::OUTPUT),
+                    );
                 }
 
                 $template_result->template_types[$template_name][$defining_class] = $input;
             }
         }
-
-        return $read_bounds;
     }
 
     public function project(Union $type, bool $input): Union

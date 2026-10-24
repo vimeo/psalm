@@ -500,6 +500,8 @@ Where Psalm doesn't project the template, it sees the argument as if it were inv
 - `key-of<T>`, `value-of<T>`, `T[K]` and conditional types on the template;
 - callable arrays (`[$box, 'pack']`), `ArrayAccess` writes (`$box[] = $x`), `@property` pseudo-property writes and by-reference property writes.
 
+A method template bounded by a template of the receiver (`@template U of T`) can only be given what its projected bound takes. When the projected bound takes nothing, as `U of T` on a `Box<covariant Animal>`, the result of the method is the bound as read (`Animal`). When it takes only part of the bound, the result is only what that part takes, as an argument rejected by the bound is not inferred: on a `Box<covariant Animal>`, a method with `@template U of T|null` returns `null`, and one with `@template U of list<T>` returns `array<never, never>`.
+
 Call-site variance is applied to method calls, static invocations on an object, properties, first-class callables, `@method` and `@mixin` calls and `foreach`.
 
 ## Builtin templated classes and interfaces
