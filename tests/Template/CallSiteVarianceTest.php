@@ -144,6 +144,52 @@ final class CallSiteVarianceTest extends TestCase
         }
 ';
 
+    private const INHERITED_TEMPLATE_BOX = '
+        /** @template T */
+        class IdBox
+        {
+            /**
+             * @template U of T
+             * @param U $u
+             * @return U
+             */
+            public function id($u) { return $u; }
+        }
+
+        /**
+         * @template T
+         * @extends IdBox<T>
+         */
+        class Sub extends IdBox {}
+
+        /**
+         * @template K
+         * @template V
+         * @extends IdBox<V>
+         */
+        class Two extends IdBox {}
+';
+
+    private const NULLABLE_TEMPLATE_BOX = '
+        /** @template T */
+        class SendBox
+        {
+            /**
+             * @template U of T|null
+             * @param U $value
+             * @param callable(U): void $consume
+             */
+            public function send($value, callable $consume): void {}
+
+            /**
+             * @template U of T|null
+             * @param U $u
+             * @return U
+             */
+            public function id($u) { return $u; }
+        }
+';
+
     private const INTERSECTION_BOX = '
         /** @template T */
         class XBox
@@ -1015,6 +1061,27 @@ final class CallSiteVarianceTest extends TestCase
                         /** @psalm-check-type-exact $result = B */
                     }',
             ],
+            'projectionResolvesTheResultOfAFailingWriteToAnInheritedMethodTemplate' => [
+                'code' => '<?php' . self::HIERARCHY . self::INHERITED_TEMPLATE_BOX . '
+                    /** @param Sub<covariant B> $sub */
+                    function test(Sub $sub): void {
+                        /** @psalm-suppress InvalidArgument */
+                        $result = $sub->id(new B());
+                        /** @psalm-check-type-exact $result = B */
+                    }
+
+                    /** @param Two<int, covariant B> $two */
+                    function testTwo(Two $two): void {
+                        /** @psalm-suppress InvalidArgument */
+                        $result = $two->id(new B());
+                        /** @psalm-check-type-exact $result = B */
+                    }',
+            ],
+            'projectionAcceptsTheResultOfANullArgumentToAMethodTemplateBoundedByANullableReceiverTemplate' => [
+                'code' => '<?php' . self::HIERARCHY . self::NULLABLE_TEMPLATE_BOX . '
+                    /** @param SendBox<covariant B> $box */
+                    function test(SendBox $box): null { return $box->id(null); }',
+            ],
             'projectionKeepsAlternativesOfOneKeyApart' => [
                 'code' => '<?php' . self::HIERARCHY . '
                     /** @template T of array<int, B> */
@@ -1516,6 +1583,24 @@ final class CallSiteVarianceTest extends TestCase
                     /** @param RBox<covariant B> $box */
                     function test(RBox $box): void { $box->packList([new B()]); }',
                 'error_message' => 'expects array<never, never>, but list{B} provided',
+            ],
+            'projectionRejectsAWriteToAnInheritedMethodTemplateBoundedByTheReceiverTemplate' => [
+                'code' => '<?php' . self::HIERARCHY . self::INHERITED_TEMPLATE_BOX . '
+                    /** @param Sub<covariant B> $sub */
+                    function test(Sub $sub): void { $sub->id(new B()); }',
+                'error_message' => 'expects never',
+            ],
+            'projectionRejectsAWriteToAnInheritedMethodTemplateOfTheSecondReceiverTemplate' => [
+                'code' => '<?php' . self::HIERARCHY . self::INHERITED_TEMPLATE_BOX . '
+                    /** @param Two<int, covariant B> $two */
+                    function test(Two $two): void { $two->id(new B()); }',
+                'error_message' => 'expects never',
+            ],
+            'projectionKeepsTheRelationOfAMethodTemplateBetweenArguments' => [
+                'code' => '<?php' . self::HIERARCHY . self::NULLABLE_TEMPLATE_BOX . '
+                    /** @param SendBox<covariant B> $box */
+                    function test(SendBox $box): void { $box->send(null, function (B $_b): void {}); }',
+                'error_message' => 'Argument 2 of SendBox::send expects callable[impure](null):void',
             ],
             'contravariantContainerDoesNotTakeAMixedArgument' => [
                 'code' => '<?php' . self::HIERARCHY . '
