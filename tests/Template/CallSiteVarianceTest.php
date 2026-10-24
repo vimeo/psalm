@@ -131,16 +131,6 @@ final class CallSiteVarianceTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['RedundantCallSiteVariance'],
             ],
-            'covariantInputToWildcardOfTraversable' => [
-                'code' => '<?php' . self::HIERARCHY . '
-                    /** @param Traversable<int, covariant A> $_t */
-                    function takes(Traversable $_t): void {}
-
-                    /** @param Traversable<int, B> $t */
-                    function test(Traversable $t): void {
-                        takes($t);
-                    }',
-            ],
             'covariantTemplateInferredFromSubtypeAndOtherArgument' => [
                 'code' => '<?php' . self::HIERARCHY . '
                     /**
@@ -448,8 +438,14 @@ final class CallSiteVarianceTest extends TestCase
             ],
             'projectionOfAForeachOverAContravariantIterator' => [
                 'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @param IteratorAggregate<int, contravariant B> $iterable */
-                    function test(IteratorAggregate $iterable): void {
+                    /**
+                     * @template T
+                     * @implements IteratorAggregate<int, T>
+                     */
+                    abstract class Collection implements IteratorAggregate {}
+
+                    /** @param Collection<contravariant B> $iterable */
+                    function test(Collection $iterable): void {
                         foreach ($iterable as $value) {
                             /** @psalm-check-type-exact $value = mixed */
                         }
@@ -459,11 +455,44 @@ final class CallSiteVarianceTest extends TestCase
             ],
             'projectionOfAForeachOverACovariantIterator' => [
                 'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @param Iterator<int, covariant B> $iterator */
-                    function test(Iterator $iterator): void {
+                    /**
+                     * @template T
+                     * @implements IteratorAggregate<int, T>
+                     */
+                    abstract class Collection implements IteratorAggregate {}
+
+                    /** @param Collection<covariant B> $iterator */
+                    function test(Collection $iterator): void {
                         foreach ($iterator as $value) {
                             /** @psalm-check-type-exact $value = B */
                         }
+                    }',
+            ],
+            'starAndExemptedCallSiteVariancesAreNotReported' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /** @template-covariant T of A */
+                    class BoundedReadOnlyBox {}
+
+                    /**
+                     * @param ReadOnlyBox<*> $_star
+                     * @param BoundedReadOnlyBox<*> $_bounded
+                     * @param ReflectionClass<covariant B> $_reflection
+                     */
+                    function takes(ReadOnlyBox $_star, BoundedReadOnlyBox $_bounded, ReflectionClass $_reflection): void {}',
+            ],
+            'callSiteVarianceFollowsPositionsInACovariantClass' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /** @template-covariant T */
+                    abstract class Source
+                    {
+                        /** @return Box<covariant T> */
+                        abstract public function boxes(): Box;
+
+                        /** @param Box<contravariant T> $box */
+                        abstract public function accept(Box $box): void;
+
+                        /** @return Box<*> */
+                        abstract public function anything(): Box;
                     }',
             ],
             'combinedCallSiteVariancesAreKeptApart' => [
@@ -749,6 +778,77 @@ final class CallSiteVarianceTest extends TestCase
                         $box->pack($b);
                     }',
                 'error_message' => 'InvalidArgument',
+            ],
+            'callSiteContravarianceOfACovariantTemplate' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /** @param ReadOnlyBox<contravariant A> $_box */
+                    function takes(ReadOnlyBox $_box): void {}',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'callSiteCovarianceOfACovariantTemplateIsRedundant' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /** @param ReadOnlyBox<covariant A> $_box */
+                    function takes(ReadOnlyBox $_box): void {}',
+                'error_message' => 'RedundantCallSiteVariance',
+            ],
+            'callSiteVarianceInExtends' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /**
+                     * @template T
+                     * @extends Box<covariant T>
+                     */
+                    class SubBox extends Box {}',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'callSiteVarianceInImplements' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /** @template T */
+                    interface BoxInterface {}
+
+                    /**
+                     * @template T
+                     * @implements BoxInterface<*>
+                     */
+                    class ImplBox implements BoxInterface {}',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'callSiteVarianceInUse' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /** @template T */
+                    trait BoxTrait {}
+
+                    /** @template T */
+                    class UsesBox {
+                        /** @use BoxTrait<contravariant T> */
+                        use BoxTrait;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'covariantTemplateInACovariantCallSiteParam' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /** @template-covariant T */
+                    abstract class Source
+                    {
+                        /** @param Box<covariant T> $box */
+                        abstract public function accept(Box $box): void;
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'covariantTemplateInAContravariantCallSiteReturn' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /** @template-covariant T */
+                    abstract class Source
+                    {
+                        /** @return Box<contravariant T> */
+                        abstract public function boxes(): Box;
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'callSiteVarianceOutsideAGenericArgument' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /** @param (covariant A) $_a */
+                    function takes($_a): void {}',
+                'error_message' => 'InvalidDocblock',
             ],
             'combinedCallSiteVariancesAreNotMerged' => [
                 'code' => '<?php' . self::HIERARCHY . '
