@@ -901,6 +901,145 @@ final class CallSiteVarianceTest extends TestCase
                         /** @psalm-check-type-exact $result = B */
                     }',
             ],
+            'covariantInsideAContainerOfADeclaredCovariantTemplateCountsAsAbsent' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /** @template-covariant T */
+                    class RO {}
+
+                    /**
+                     * @template T
+                     * @extends RO<T>
+                     */
+                    class RW extends RO {}
+
+                    /** @param RO<covariant mixed> $_ro */
+                    function takes(RO $_ro): void {}
+
+                    /** @param RW<contravariant B> $rw */
+                    function test(RW $rw): void { takes($rw); }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCallSiteVariance'],
+            ],
+            'starCollectionIsAcceptedByACovariantTraversableParam' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /**
+                     * @template T
+                     * @implements IteratorAggregate<int, T>
+                     */
+                    abstract class Coll implements IteratorAggregate {}
+
+                    /** @param Traversable<int, covariant mixed> $_t */
+                    function takes($_t): void {}
+
+                    /** @param Coll<*> $coll */
+                    function test(Coll $coll): void { takes($coll); }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCallSiteVariance'],
+            ],
+            'foreachOverAStarTraversableAndAnIterableKeepsBothValues' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /** @param Traversable<int, *>|iterable<int, B> $x */
+                    function test($x): void {
+                        foreach ($x as $value) {
+                            /** @psalm-check-type-exact $value = B|mixed */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'foreachOverAnIteratorWithAPuritySlotShiftsTheCallSiteVariance' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /** @param Iterator[pure]<covariant B> $x */
+                    function test(Iterator $x): void {
+                        foreach ($x as $value) {
+                            /** @psalm-check-type-exact $value = B */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCallSiteVariance'],
+            ],
+            'projectionResolvesTheResultOfAFailingWriteLikeAnInvariantReceiver' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @template T of A */
+                    class RBox
+                    {
+                        /** @return T */
+                        public function unpack() { throw new Exception(); }
+
+                        /**
+                         * @template U of T
+                         * @param U $u
+                         * @return U
+                         */
+                        public function packBounded($u) { return $u; }
+
+                        /**
+                         * @template U of T|null
+                         * @param U $u
+                         */
+                        public function packNullable($u): void {}
+
+                        /**
+                         * @template U of list<T>
+                         * @param U $u
+                         */
+                        public function packList($u): void {}
+
+                        /** @return T|array<string, A> */
+                        public function mixedResult() { throw new Exception(); }
+                    }
+
+                    /** @param RBox<covariant B> $box */
+                    function test(RBox $box): void {
+                        /** @psalm-suppress InvalidArgument */
+                        $result = $box->packBounded(new B());
+                        /** @psalm-check-type-exact $result = B */
+                    }',
+            ],
+            'projectionKeepsAlternativesOfOneKeyApart' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @template T of A */
+                    class RBox
+                    {
+                        /** @return T */
+                        public function unpack() { throw new Exception(); }
+
+                        /**
+                         * @template U of T
+                         * @param U $u
+                         * @return U
+                         */
+                        public function packBounded($u) { return $u; }
+
+                        /**
+                         * @template U of T|null
+                         * @param U $u
+                         */
+                        public function packNullable($u): void {}
+
+                        /**
+                         * @template U of list<T>
+                         * @param U $u
+                         */
+                        public function packList($u): void {}
+
+                        /** @return T|array<string, A> */
+                        public function mixedResult() { throw new Exception(); }
+                    }
+
+                    /** @template T of array<int, B> */
+                    class ArrBox
+                    {
+                        /** @return T|array<string, A> */
+                        public function get() { throw new Exception(); }
+                    }
+
+                    /** @param ArrBox<contravariant array<int, B>> $box */
+                    function test(ArrBox $box): void {
+                        $result = $box->get();
+                        /** @psalm-check-type-exact $result = array<int|string, A> */
+                    }',
+            ],
             'combinedCallSiteVariancesAreKeptApart' => [
                 'code' => '<?php' . self::HIERARCHY . '
                     /** @param Box<covariant A> $_box */
@@ -934,7 +1073,7 @@ final class CallSiteVarianceTest extends TestCase
                     function test(Box $box): void {
                         takes($box);
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'expects Box<A>, but Box<covariant A> provided',
             ],
             'invariantContainerRejectsStarInput' => [
                 'code' => '<?php' . self::HIERARCHY . '
@@ -945,7 +1084,7 @@ final class CallSiteVarianceTest extends TestCase
                     function test(Box $box): void {
                         takes($box);
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'expects Box<A>, but Box<*> provided',
             ],
             'covariantContainerRejectsContravariantInput' => [
                 'code' => '<?php' . self::HIERARCHY . '
@@ -956,7 +1095,7 @@ final class CallSiteVarianceTest extends TestCase
                     function test(Box $box): void {
                         takes($box);
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'expects Box<covariant A>, but Box<contravariant A> provided',
             ],
             'covariantContainerRejectsStarInput' => [
                 'code' => '<?php' . self::HIERARCHY . '
@@ -967,7 +1106,7 @@ final class CallSiteVarianceTest extends TestCase
                     function test(Box $box): void {
                         takes($box);
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'expects Box<covariant A>, but Box<*> provided',
             ],
             'covariantContainerRejectsSupertype' => [
                 'code' => '<?php' . self::HIERARCHY . '
@@ -989,7 +1128,7 @@ final class CallSiteVarianceTest extends TestCase
                     function test(Box $box): void {
                         takes($box);
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'expects Box<contravariant B>, but Box<C> provided',
             ],
             'contravariantContainerRejectsCovariantInput' => [
                 'code' => '<?php' . self::HIERARCHY . '
@@ -1000,7 +1139,7 @@ final class CallSiteVarianceTest extends TestCase
                     function test(Box $box): void {
                         takes($box);
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'expects Box<contravariant A>, but Box<covariant A> provided',
             ],
             'ancestorArgumentKeepsCallSiteVarianceAgainstInvariantContainer' => [
                 'code' => '<?php' . self::HIERARCHY . '
@@ -1017,7 +1156,7 @@ final class CallSiteVarianceTest extends TestCase
                     function test(SubBox $sub): void {
                         takes($sub);
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'expects Box<B>, but SubBox<covariant B> provided',
             ],
             'ancestorWithCompositeArgumentIsRejectedByAnInvariantContainer' => [
                 'code' => '<?php' . self::HIERARCHY . '
@@ -1034,7 +1173,7 @@ final class CallSiteVarianceTest extends TestCase
                     function test(ArraysBox $sub): void {
                         takes($sub);
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'expects Box<array<array-key, B>>, but ArraysBox<covariant B> provided',
             ],
             'covariantArgumentIsNotAnInvariantMethodTemplate' => [
                 'code' => '<?php' . self::HIERARCHY . '
@@ -1049,7 +1188,7 @@ final class CallSiteVarianceTest extends TestCase
                     function test(Box $box): void {
                         unbox($box);
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'but Box<covariant C> provided',
             ],
             'projectionCovariantRejectsAnyArgument' => [
                 'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
@@ -1266,7 +1405,7 @@ final class CallSiteVarianceTest extends TestCase
 
                     /** @param Box<contravariant A> $_box */
                     function takes(Box $_box): void {}',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'expects Box<contravariant A>, but Box<U',
             ],
             'contravariantContainerChecksAnArgumentInferredFromAnother' => [
                 'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
@@ -1734,7 +1873,117 @@ final class CallSiteVarianceTest extends TestCase
 
                     /** @param RBox<*> $box */
                     function test(RBox $box): void { takes($box); }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'but RBox<*> provided',
+            ],
+            'projectionRejectsAWriteToAMethodTemplateBoundedByANullableReceiverTemplate' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @template T of A */
+                    class RBox
+                    {
+                        /** @return T */
+                        public function unpack() { throw new Exception(); }
+
+                        /**
+                         * @template U of T
+                         * @param U $u
+                         * @return U
+                         */
+                        public function packBounded($u) { return $u; }
+
+                        /**
+                         * @template U of T|null
+                         * @param U $u
+                         */
+                        public function packNullable($u): void {}
+
+                        /**
+                         * @template U of list<T>
+                         * @param U $u
+                         */
+                        public function packList($u): void {}
+
+                        /** @return T|array<string, A> */
+                        public function mixedResult() { throw new Exception(); }
+                    }
+
+                    /** @param RBox<covariant B> $box */
+                    function test(RBox $box): void { $box->packNullable(new B()); }',
+                'error_message' => 'expects null',
+            ],
+            'projectionRejectsAWriteToAMethodTemplateBoundedByAListOfTheReceiverTemplate' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @template T of A */
+                    class RBox
+                    {
+                        /** @return T */
+                        public function unpack() { throw new Exception(); }
+
+                        /**
+                         * @template U of T
+                         * @param U $u
+                         * @return U
+                         */
+                        public function packBounded($u) { return $u; }
+
+                        /**
+                         * @template U of T|null
+                         * @param U $u
+                         */
+                        public function packNullable($u): void {}
+
+                        /**
+                         * @template U of list<T>
+                         * @param U $u
+                         */
+                        public function packList($u): void {}
+
+                        /** @return T|array<string, A> */
+                        public function mixedResult() { throw new Exception(); }
+                    }
+
+                    /** @param RBox<covariant B> $box */
+                    function test(RBox $box): void { $box->packList([new B()]); }',
+                'error_message' => 'never',
+            ],
+            'contravariantContainerDoesNotTakeAMixedArgument' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param Box<contravariant A> $_box */
+                    function takes(Box $_box): void {}
+
+                    function test(Box $box): void { takes($box); }',
+                'error_message' => 'MixedArgumentTypeCoercion',
+            ],
+            'chainedThisArgumentsKeepTheirResolvedBinding' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /**
+                     * @template T
+                     * @template S
+                     */
+                    class Container
+                    {
+                        /** @return S */
+                        public function second() { throw new Exception(); }
+
+                        public function containerOnly(): void {}
+                    }
+
+                    /** @template T */
+                    trait Maker
+                    {
+                        /** @return Container<T, covariant $this> */
+                        public function make() { throw new Exception(); }
+                    }
+
+                    /** @template T */
+                    class Plain
+                    {
+                        /** @use Maker<T> */
+                        use Maker;
+                    }
+
+                    /** @param Plain<B> $plain */
+                    function test(Plain $plain): void { $plain->make()->second()->containerOnly(); }',
+                'error_message' => 'UndefinedMethod',
             ],
             'combinedCallSiteVariancesAreNotMerged' => [
                 'code' => '<?php' . self::HIERARCHY . '
