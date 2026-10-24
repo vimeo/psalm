@@ -13,8 +13,11 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 use Psalm\Type\Variance;
 
+use function array_diff_key;
+use function assert;
 use function count;
 use function implode;
+use function ksort;
 use function strrpos;
 use function substr;
 
@@ -86,6 +89,11 @@ final class TGenericObject extends TNamedObject
         if ($this->type_param_variances === $type_param_variances) {
             return $this;
         }
+
+        assert(array_diff_key($type_param_variances, $this->type_params) === []);
+
+        // equals() compares the arrays strictly
+        ksort($type_param_variances);
 
         $cloned = clone $this;
         $cloned->type_param_variances = $type_param_variances;
@@ -161,7 +169,7 @@ final class TGenericObject extends TNamedObject
         }
 
         if (count($this->type_params) !== count($other_type->type_params)
-            || $this->type_param_variances != $other_type->type_param_variances
+            || $this->type_param_variances !== $other_type->type_param_variances
         ) {
             return false;
         }

@@ -811,6 +811,10 @@ final class TypeParser
             }
 
             if ($child_tree instanceof Value && $child_tree->value === '*') {
+                if ($variance !== null) {
+                    throw new TypeParseTreeException('A * is already a call-site variance');
+                }
+
                 $variance = Variance::Bivariant;
                 $tree_type = new Union([new TMixed(false, $from_docblock)]);
             } else {
