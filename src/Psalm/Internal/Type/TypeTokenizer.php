@@ -356,16 +356,24 @@ final class TypeTokenizer
      */
     public static function isVariancePrefix(array $type_tokens, int $i): bool
     {
-        return ($type_tokens[$i][0] === 'covariant' || $type_tokens[$i][0] === 'contravariant')
-            && isset($type_tokens[$i + 1])
-            && !in_array(
-                $type_tokens[$i + 1][0],
-                [
-                    '<', '>', '|', ',', '&', '[', ']', '(', ')', '{', '}', ':', '::', '=', '...', 'as', 'is', 'is not',
-                    'of',
-                ],
-                true,
-            );
+        if ($type_tokens[$i][0] !== 'covariant' && $type_tokens[$i][0] !== 'contravariant'
+            || !isset($type_tokens[$i + 1])
+        ) {
+            return false;
+        }
+
+        // `covariant (A|B)`, but not the method `covariant(...)`
+        if ($type_tokens[$i + 1][0] === '(') {
+            return isset($type_tokens[$i - 1]) && ($type_tokens[$i - 1][0] === '<' || $type_tokens[$i - 1][0] === ',');
+        }
+
+        return !in_array(
+            $type_tokens[$i + 1][0],
+            [
+                '<', '>', '|', ',', '&', '[', ']', ')', '{', '}', ':', '::', '=', '...', 'as', 'is', 'is not', 'of',
+            ],
+            true,
+        );
     }
 
     /**
