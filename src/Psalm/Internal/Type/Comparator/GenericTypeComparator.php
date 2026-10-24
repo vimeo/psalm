@@ -331,7 +331,8 @@ final class GenericTypeComparator
     }
 
     /**
-     * Whether an argument of the container is left to a template of an input without type params
+     * Whether an argument of the container is left to a template of an input without type params, or to a parent
+     * the input extends without naming its arguments
      *
      * @psalm-capabilities read-props
      */
@@ -341,20 +342,24 @@ final class GenericTypeComparator
         TGenericObject|TIterable $container,
         int $offset,
     ): bool {
-        if ($input instanceof TGenericObject) {
-            return false;
+        if (!$input instanceof TNamedObject) {
+            return true;
         }
 
-        if (!$input instanceof TNamedObject
-            || strtolower($input->value) === strtolower($container->value)
+        if (strtolower($input->value) === strtolower($container->value)
             || !$codebase->classlike_storage_provider->has($input->value)
         ) {
-            return true;
+            return !$input instanceof TGenericObject;
         }
 
         $extended = $codebase->classlike_storage_provider->get($input->value)
             ->template_extended_params[$container->value] ?? [];
+        $extended_param = array_values($extended)[$offset] ?? null;
 
-        return (array_values($extended)[$offset] ?? null)?->hasTemplate() ?? true;
+        if ($extended_param === null || !$extended_param->from_docblock) {
+            return true;
+        }
+
+        return !$input instanceof TGenericObject && $extended_param->hasTemplate();
     }
 }
