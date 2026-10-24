@@ -835,6 +835,16 @@ final class CallSiteVarianceTest extends TestCase
                         takesA($contravariant);
                     }',
             ],
+            'explicitMixedArgumentOfAParentFitsAContravariantContainer' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /** @extends Box<mixed> */
+                    class MixedBox extends Box {}
+
+                    /** @param Box<contravariant A> $_a */
+                    function takesA(Box $_a): void {}
+
+                    function test(MixedBox $box): void { takesA($box); }',
+            ],
             'projectionKeepsATemplateIntersectionConstraintOfAnArgument' => [
                 'code' => '<?php' . self::HIERARCHY . self::COUNTABLE_BOX . '
                     class CountableB extends B implements Countable
@@ -1508,6 +1518,20 @@ final class CallSiteVarianceTest extends TestCase
 
                     function test(Box $box): void { takes($box); }',
                 'error_message' => 'MixedArgumentTypeCoercion',
+            ],
+            'contravariantContainerDoesNotTakeASubclassLeavingTheTemplateUnbound' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /**
+                     * @template T
+                     * @extends Box<T>
+                     */
+                    class SubBox extends Box {}
+
+                    /** @param Box<contravariant A> $_box */
+                    function takes(Box $_box): void {}
+
+                    function test(SubBox $box): void { takes($box); }',
+                'error_message' => 'expects Box<contravariant A>, but SubBox provided',
             ],
             'chainedThisArgumentsKeepTheirResolvedBinding' => [
                 'code' => '<?php' . self::HIERARCHY . '
