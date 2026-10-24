@@ -58,6 +58,79 @@ final class CallSiteVarianceTest extends TestCase
         }
 ';
 
+    private const RBOX = '
+        /** @template T of A */
+        class RBox
+        {
+            /** @param T $x */
+            public function pack($x): void {}
+
+            /** @return T */
+            public function unpack() { throw new Exception(); }
+
+            /**
+             * @template U of T
+             * @param U $u
+             */
+            public function packBounded($u): void {}
+
+            /** @param T $x */
+            public function swap(&$x): void {}
+
+            /** @return RBox<T> */
+            public function me() { return $this; }
+
+            /** @return class-string<T> */
+            public function cls() { throw new Exception(); }
+
+            /** @param T $x */
+            public function __invoke($x): void {}
+
+            /** @param list<T> $xs */
+            public function packAll(array $xs): void {}
+
+            /** @return static */
+            public function selfReturn() { return $this; }
+        }
+
+        /**
+         * @template U of A
+         * @extends RBox<U>
+         */
+        class SubRBox extends RBox {}
+';
+
+    private const BOUNDED_TEMPLATE_RBOX = '
+        /** @template T of A */
+        class RBox
+        {
+            /** @return T */
+            public function unpack() { throw new Exception(); }
+
+            /**
+             * @template U of T
+             * @param U $u
+             * @return U
+             */
+            public function packBounded($u) { return $u; }
+
+            /**
+             * @template U of T|null
+             * @param U $u
+             */
+            public function packNullable($u): void {}
+
+            /**
+             * @template U of list<T>
+             * @param U $u
+             */
+            public function packList($u): void {}
+
+            /** @return T|array<string, A> */
+            public function mixedResult() { throw new Exception(); }
+        }
+';
+
     /**
      * @psalm-pure
      */
@@ -331,7 +404,7 @@ final class CallSiteVarianceTest extends TestCase
                     }',
             ],
             'projectionOfAPropertyRead' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                'code' => '<?php' . self::HIERARCHY . '
                     /** @template T */
                     class Holder {
                         /** @var T */
@@ -347,7 +420,7 @@ final class CallSiteVarianceTest extends TestCase
                     }',
             ],
             'projectionOfAPropertyWriteWithAContravariantArgument' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                'code' => '<?php' . self::HIERARCHY . '
                     /** @template T */
                     class Holder {
                         /** @var T */
@@ -372,7 +445,7 @@ final class CallSiteVarianceTest extends TestCase
                     }',
             ],
             'projectionOfAPseudoMethod' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                'code' => '<?php' . self::HIERARCHY . '
                     /**
                      * @template T
                      * @method T get()
@@ -437,7 +510,7 @@ final class CallSiteVarianceTest extends TestCase
                     }',
             ],
             'projectionOfAForeachOverAContravariantIterator' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                'code' => '<?php' . self::HIERARCHY . '
                     /**
                      * @template T
                      * @implements IteratorAggregate<int, T>
@@ -454,7 +527,7 @@ final class CallSiteVarianceTest extends TestCase
                 'ignored_issues' => ['MixedAssignment'],
             ],
             'projectionOfAForeachOverACovariantIterator' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                'code' => '<?php' . self::HIERARCHY . '
                     /**
                      * @template T
                      * @implements IteratorAggregate<int, T>
@@ -496,7 +569,7 @@ final class CallSiteVarianceTest extends TestCase
                     }',
             ],
             'covariantCollectionPassedToIterableParams' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                'code' => '<?php' . self::HIERARCHY . '
                     /**
                      * @template T
                      * @implements IteratorAggregate<int, T>
@@ -522,92 +595,12 @@ final class CallSiteVarianceTest extends TestCase
                     }',
             ],
             'projectionAcceptsASubtypeForAMethodTemplateBoundedByAContravariantArgument' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @template T of A */
-                    class RBox
-                    {
-                        /** @param T $x */
-                        public function pack($x): void {}
-
-                        /** @return T */
-                        public function unpack() { throw new Exception(); }
-
-                        /**
-                         * @template U of T
-                         * @param U $u
-                         */
-                        public function packBounded($u): void {}
-
-                        /** @param T $x */
-                        public function swap(&$x): void {}
-
-                        /** @return RBox<T> */
-                        public function me() { return $this; }
-
-                        /** @return class-string<T> */
-                        public function cls() { throw new Exception(); }
-
-                        /** @param T $x */
-                        public function __invoke($x): void {}
-
-                        /** @param list<T> $xs */
-                        public function packAll(array $xs): void {}
-
-                        /** @return static */
-                        public function selfReturn() { return $this; }
-                    }
-
-                    /**
-                     * @template U of A
-                     * @extends RBox<U>
-                     */
-                    class SubRBox extends RBox {}
-
+                'code' => '<?php' . self::HIERARCHY . self::RBOX . '
                     /** @param RBox<contravariant B> $box */
                     function test(RBox $box): void { $box->packBounded(new C()); }',
             ],
             'projectionReadsWhatAByReferenceParamIsLeftHoldingAsTheBound' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @template T of A */
-                    class RBox
-                    {
-                        /** @param T $x */
-                        public function pack($x): void {}
-
-                        /** @return T */
-                        public function unpack() { throw new Exception(); }
-
-                        /**
-                         * @template U of T
-                         * @param U $u
-                         */
-                        public function packBounded($u): void {}
-
-                        /** @param T $x */
-                        public function swap(&$x): void {}
-
-                        /** @return RBox<T> */
-                        public function me() { return $this; }
-
-                        /** @return class-string<T> */
-                        public function cls() { throw new Exception(); }
-
-                        /** @param T $x */
-                        public function __invoke($x): void {}
-
-                        /** @param list<T> $xs */
-                        public function packAll(array $xs): void {}
-
-                        /** @return static */
-                        public function selfReturn() { return $this; }
-                    }
-
-                    /**
-                     * @template U of A
-                     * @extends RBox<U>
-                     */
-                    class SubRBox extends RBox {}
-
+                'code' => '<?php' . self::HIERARCHY . self::RBOX . '
                     /** @param RBox<contravariant B> $box */
                     function test(RBox $box): void {
                         $b = new B();
@@ -616,47 +609,7 @@ final class CallSiteVarianceTest extends TestCase
                     }',
             ],
             'projectionThroughAnAncestorProjectsAClassString' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @template T of A */
-                    class RBox
-                    {
-                        /** @param T $x */
-                        public function pack($x): void {}
-
-                        /** @return T */
-                        public function unpack() { throw new Exception(); }
-
-                        /**
-                         * @template U of T
-                         * @param U $u
-                         */
-                        public function packBounded($u): void {}
-
-                        /** @param T $x */
-                        public function swap(&$x): void {}
-
-                        /** @return RBox<T> */
-                        public function me() { return $this; }
-
-                        /** @return class-string<T> */
-                        public function cls() { throw new Exception(); }
-
-                        /** @param T $x */
-                        public function __invoke($x): void {}
-
-                        /** @param list<T> $xs */
-                        public function packAll(array $xs): void {}
-
-                        /** @return static */
-                        public function selfReturn() { return $this; }
-                    }
-
-                    /**
-                     * @template U of A
-                     * @extends RBox<U>
-                     */
-                    class SubRBox extends RBox {}
-
+                'code' => '<?php' . self::HIERARCHY . self::RBOX . '
                     /** @param SubRBox<contravariant B> $box */
                     function test(SubRBox $box): void {
                         $class = $box->cls();
@@ -664,47 +617,7 @@ final class CallSiteVarianceTest extends TestCase
                     }',
             ],
             'projectionOfAStaticInvocationOnAnObject' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @template T of A */
-                    class RBox
-                    {
-                        /** @param T $x */
-                        public function pack($x): void {}
-
-                        /** @return T */
-                        public function unpack() { throw new Exception(); }
-
-                        /**
-                         * @template U of T
-                         * @param U $u
-                         */
-                        public function packBounded($u): void {}
-
-                        /** @param T $x */
-                        public function swap(&$x): void {}
-
-                        /** @return RBox<T> */
-                        public function me() { return $this; }
-
-                        /** @return class-string<T> */
-                        public function cls() { throw new Exception(); }
-
-                        /** @param T $x */
-                        public function __invoke($x): void {}
-
-                        /** @param list<T> $xs */
-                        public function packAll(array $xs): void {}
-
-                        /** @return static */
-                        public function selfReturn() { return $this; }
-                    }
-
-                    /**
-                     * @template U of A
-                     * @extends RBox<U>
-                     */
-                    class SubRBox extends RBox {}
-
+                'code' => '<?php' . self::HIERARCHY . self::RBOX . '
                     /** @param RBox<contravariant B> $box */
                     function test(RBox $box): void {
                         $result = $box::unpack();
@@ -747,47 +660,7 @@ final class CallSiteVarianceTest extends TestCase
                     }',
             ],
             'projectionOfAnInheritedPropertyRead' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @template T of A */
-                    class RBox
-                    {
-                        /** @param T $x */
-                        public function pack($x): void {}
-
-                        /** @return T */
-                        public function unpack() { throw new Exception(); }
-
-                        /**
-                         * @template U of T
-                         * @param U $u
-                         */
-                        public function packBounded($u): void {}
-
-                        /** @param T $x */
-                        public function swap(&$x): void {}
-
-                        /** @return RBox<T> */
-                        public function me() { return $this; }
-
-                        /** @return class-string<T> */
-                        public function cls() { throw new Exception(); }
-
-                        /** @param T $x */
-                        public function __invoke($x): void {}
-
-                        /** @param list<T> $xs */
-                        public function packAll(array $xs): void {}
-
-                        /** @return static */
-                        public function selfReturn() { return $this; }
-                    }
-
-                    /**
-                     * @template U of A
-                     * @extends RBox<U>
-                     */
-                    class SubRBox extends RBox {}
-
+                'code' => '<?php' . self::HIERARCHY . self::RBOX . '
                     /** @template T */
                     class PHolder
                     {
@@ -835,47 +708,7 @@ final class CallSiteVarianceTest extends TestCase
                     function test(Coll $coll): void { takes($coll->self()); }',
             ],
             'projectionAcceptsAnEmptyListWriteOnACovariantReceiver' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @template T of A */
-                    class RBox
-                    {
-                        /** @param T $x */
-                        public function pack($x): void {}
-
-                        /** @return T */
-                        public function unpack() { throw new Exception(); }
-
-                        /**
-                         * @template U of T
-                         * @param U $u
-                         */
-                        public function packBounded($u): void {}
-
-                        /** @param T $x */
-                        public function swap(&$x): void {}
-
-                        /** @return RBox<T> */
-                        public function me() { return $this; }
-
-                        /** @return class-string<T> */
-                        public function cls() { throw new Exception(); }
-
-                        /** @param T $x */
-                        public function __invoke($x): void {}
-
-                        /** @param list<T> $xs */
-                        public function packAll(array $xs): void {}
-
-                        /** @return static */
-                        public function selfReturn() { return $this; }
-                    }
-
-                    /**
-                     * @template U of A
-                     * @extends RBox<U>
-                     */
-                    class SubRBox extends RBox {}
-
+                'code' => '<?php' . self::HIERARCHY . self::RBOX . '
                     /** @param RBox<covariant B> $box */
                     function test(RBox $box): void { $box->packAll([]); }',
             ],
@@ -959,36 +792,7 @@ final class CallSiteVarianceTest extends TestCase
                 'ignored_issues' => ['RedundantCallSiteVariance'],
             ],
             'projectionResolvesTheResultOfAFailingWriteLikeAnInvariantReceiver' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @template T of A */
-                    class RBox
-                    {
-                        /** @return T */
-                        public function unpack() { throw new Exception(); }
-
-                        /**
-                         * @template U of T
-                         * @param U $u
-                         * @return U
-                         */
-                        public function packBounded($u) { return $u; }
-
-                        /**
-                         * @template U of T|null
-                         * @param U $u
-                         */
-                        public function packNullable($u): void {}
-
-                        /**
-                         * @template U of list<T>
-                         * @param U $u
-                         */
-                        public function packList($u): void {}
-
-                        /** @return T|array<string, A> */
-                        public function mixedResult() { throw new Exception(); }
-                    }
-
+                'code' => '<?php' . self::HIERARCHY . self::BOUNDED_TEMPLATE_RBOX . '
                     /** @param RBox<covariant B> $box */
                     function test(RBox $box): void {
                         /** @psalm-suppress InvalidArgument */
@@ -997,36 +801,7 @@ final class CallSiteVarianceTest extends TestCase
                     }',
             ],
             'projectionKeepsAlternativesOfOneKeyApart' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @template T of A */
-                    class RBox
-                    {
-                        /** @return T */
-                        public function unpack() { throw new Exception(); }
-
-                        /**
-                         * @template U of T
-                         * @param U $u
-                         * @return U
-                         */
-                        public function packBounded($u) { return $u; }
-
-                        /**
-                         * @template U of T|null
-                         * @param U $u
-                         */
-                        public function packNullable($u): void {}
-
-                        /**
-                         * @template U of list<T>
-                         * @param U $u
-                         */
-                        public function packList($u): void {}
-
-                        /** @return T|array<string, A> */
-                        public function mixedResult() { throw new Exception(); }
-                    }
-
+                'code' => '<?php' . self::HIERARCHY . '
                     /** @template T of array<int, B> */
                     class ArrBox
                     {
@@ -1261,7 +1036,7 @@ final class CallSiteVarianceTest extends TestCase
                 'error_message' => 'expects never',
             ],
             'projectionOfAPropertyWriteWithACovariantArgument' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                'code' => '<?php' . self::HIERARCHY . '
                     /** @template T */
                     class Holder {
                         /** @var T */
@@ -1286,7 +1061,7 @@ final class CallSiteVarianceTest extends TestCase
                 'error_message' => 'expects never',
             ],
             'projectionOfAPseudoMethodParam' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                'code' => '<?php' . self::HIERARCHY . '
                     /**
                      * @template T
                      * @method void put(T $x)
@@ -1396,7 +1171,7 @@ final class CallSiteVarianceTest extends TestCase
                 'error_message' => 'InvalidDocblock',
             ],
             'contravariantContainerRejectsAGenericInput' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                'code' => '<?php' . self::HIERARCHY . '
                     /**
                      * @template U
                      * @param Box<U> $box
@@ -1408,7 +1183,7 @@ final class CallSiteVarianceTest extends TestCase
                 'error_message' => 'expects Box<contravariant A>, but Box<U',
             ],
             'contravariantContainerChecksAnArgumentInferredFromAnother' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                'code' => '<?php' . self::HIERARCHY . '
                     /**
                      * @template T
                      * @param T $_x
@@ -1421,7 +1196,7 @@ final class CallSiteVarianceTest extends TestCase
                 'error_message' => 'Incompatible types found for T',
             ],
             'contravariantCollectionIsReadAsItsBound' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                'code' => '<?php' . self::HIERARCHY . '
                     /**
                      * @template T
                      * @implements IteratorAggregate<int, T>
@@ -1436,369 +1211,49 @@ final class CallSiteVarianceTest extends TestCase
                 'error_message' => 'MixedArgumentTypeCoercion',
             ],
             'projectionRejectsAWriteToAMethodTemplateBoundedByACovariantTemplate' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @template T of A */
-                    class RBox
-                    {
-                        /** @param T $x */
-                        public function pack($x): void {}
-
-                        /** @return T */
-                        public function unpack() { throw new Exception(); }
-
-                        /**
-                         * @template U of T
-                         * @param U $u
-                         */
-                        public function packBounded($u): void {}
-
-                        /** @param T $x */
-                        public function swap(&$x): void {}
-
-                        /** @return RBox<T> */
-                        public function me() { return $this; }
-
-                        /** @return class-string<T> */
-                        public function cls() { throw new Exception(); }
-
-                        /** @param T $x */
-                        public function __invoke($x): void {}
-
-                        /** @param list<T> $xs */
-                        public function packAll(array $xs): void {}
-
-                        /** @return static */
-                        public function selfReturn() { return $this; }
-                    }
-
-                    /**
-                     * @template U of A
-                     * @extends RBox<U>
-                     */
-                    class SubRBox extends RBox {}
-
+                'code' => '<?php' . self::HIERARCHY . self::RBOX . '
                     /** @param RBox<covariant B> $box */
                     function test(RBox $box): void { $box->packBounded(new B()); }',
                 'error_message' => 'expects never',
             ],
             'projectionRejectsAWriteToAMethodTemplateBoundedByAStarTemplate' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @template T of A */
-                    class RBox
-                    {
-                        /** @param T $x */
-                        public function pack($x): void {}
-
-                        /** @return T */
-                        public function unpack() { throw new Exception(); }
-
-                        /**
-                         * @template U of T
-                         * @param U $u
-                         */
-                        public function packBounded($u): void {}
-
-                        /** @param T $x */
-                        public function swap(&$x): void {}
-
-                        /** @return RBox<T> */
-                        public function me() { return $this; }
-
-                        /** @return class-string<T> */
-                        public function cls() { throw new Exception(); }
-
-                        /** @param T $x */
-                        public function __invoke($x): void {}
-
-                        /** @param list<T> $xs */
-                        public function packAll(array $xs): void {}
-
-                        /** @return static */
-                        public function selfReturn() { return $this; }
-                    }
-
-                    /**
-                     * @template U of A
-                     * @extends RBox<U>
-                     */
-                    class SubRBox extends RBox {}
-
+                'code' => '<?php' . self::HIERARCHY . self::RBOX . '
                     /** @param RBox<*> $box */
                     function test(RBox $box): void { $box->packBounded(new B()); }',
                 'error_message' => 'expects never',
             ],
             'projectionBoundsAMethodTemplateByAContravariantArgument' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @template T of A */
-                    class RBox
-                    {
-                        /** @param T $x */
-                        public function pack($x): void {}
-
-                        /** @return T */
-                        public function unpack() { throw new Exception(); }
-
-                        /**
-                         * @template U of T
-                         * @param U $u
-                         */
-                        public function packBounded($u): void {}
-
-                        /** @param T $x */
-                        public function swap(&$x): void {}
-
-                        /** @return RBox<T> */
-                        public function me() { return $this; }
-
-                        /** @return class-string<T> */
-                        public function cls() { throw new Exception(); }
-
-                        /** @param T $x */
-                        public function __invoke($x): void {}
-
-                        /** @param list<T> $xs */
-                        public function packAll(array $xs): void {}
-
-                        /** @return static */
-                        public function selfReturn() { return $this; }
-                    }
-
-                    /**
-                     * @template U of A
-                     * @extends RBox<U>
-                     */
-                    class SubRBox extends RBox {}
-
+                'code' => '<?php' . self::HIERARCHY . self::RBOX . '
                     /** @param RBox<contravariant B> $box */
                     function test(RBox $box): void { $box->packBounded(new A()); }',
                 'error_message' => 'ArgumentTypeCoercion',
             ],
             'projectionRejectsAByReferenceWriteOnACovariantReceiver' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @template T of A */
-                    class RBox
-                    {
-                        /** @param T $x */
-                        public function pack($x): void {}
-
-                        /** @return T */
-                        public function unpack() { throw new Exception(); }
-
-                        /**
-                         * @template U of T
-                         * @param U $u
-                         */
-                        public function packBounded($u): void {}
-
-                        /** @param T $x */
-                        public function swap(&$x): void {}
-
-                        /** @return RBox<T> */
-                        public function me() { return $this; }
-
-                        /** @return class-string<T> */
-                        public function cls() { throw new Exception(); }
-
-                        /** @param T $x */
-                        public function __invoke($x): void {}
-
-                        /** @param list<T> $xs */
-                        public function packAll(array $xs): void {}
-
-                        /** @return static */
-                        public function selfReturn() { return $this; }
-                    }
-
-                    /**
-                     * @template U of A
-                     * @extends RBox<U>
-                     */
-                    class SubRBox extends RBox {}
-
+                'code' => '<?php' . self::HIERARCHY . self::RBOX . '
                     /** @param RBox<covariant B> $box */
                     function test(RBox $box, B $b): void { $box->swap($b); }',
                 'error_message' => 'expects never',
             ],
             'projectionThroughAnAncestorKeepsTheVarianceOfAnInvariantResult' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @template T of A */
-                    class RBox
-                    {
-                        /** @param T $x */
-                        public function pack($x): void {}
-
-                        /** @return T */
-                        public function unpack() { throw new Exception(); }
-
-                        /**
-                         * @template U of T
-                         * @param U $u
-                         */
-                        public function packBounded($u): void {}
-
-                        /** @param T $x */
-                        public function swap(&$x): void {}
-
-                        /** @return RBox<T> */
-                        public function me() { return $this; }
-
-                        /** @return class-string<T> */
-                        public function cls() { throw new Exception(); }
-
-                        /** @param T $x */
-                        public function __invoke($x): void {}
-
-                        /** @param list<T> $xs */
-                        public function packAll(array $xs): void {}
-
-                        /** @return static */
-                        public function selfReturn() { return $this; }
-                    }
-
-                    /**
-                     * @template U of A
-                     * @extends RBox<U>
-                     */
-                    class SubRBox extends RBox {}
-
+                'code' => '<?php' . self::HIERARCHY . self::RBOX . '
                     /** @param SubRBox<covariant B> $box */
                     function test(SubRBox $box, B $b): void { $box->me()->pack($b); }',
                 'error_message' => 'expects never',
             ],
             'projectionRejectsAnInvokeOnACovariantReceiver' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @template T of A */
-                    class RBox
-                    {
-                        /** @param T $x */
-                        public function pack($x): void {}
-
-                        /** @return T */
-                        public function unpack() { throw new Exception(); }
-
-                        /**
-                         * @template U of T
-                         * @param U $u
-                         */
-                        public function packBounded($u): void {}
-
-                        /** @param T $x */
-                        public function swap(&$x): void {}
-
-                        /** @return RBox<T> */
-                        public function me() { return $this; }
-
-                        /** @return class-string<T> */
-                        public function cls() { throw new Exception(); }
-
-                        /** @param T $x */
-                        public function __invoke($x): void {}
-
-                        /** @param list<T> $xs */
-                        public function packAll(array $xs): void {}
-
-                        /** @return static */
-                        public function selfReturn() { return $this; }
-                    }
-
-                    /**
-                     * @template U of A
-                     * @extends RBox<U>
-                     */
-                    class SubRBox extends RBox {}
-
+                'code' => '<?php' . self::HIERARCHY . self::RBOX . '
                     /** @param RBox<covariant B> $box */
                     function test(RBox $box): void { $box(new B()); }',
                 'error_message' => 'expects never',
             ],
             'projectionRejectsAListWriteOnACovariantReceiver' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @template T of A */
-                    class RBox
-                    {
-                        /** @param T $x */
-                        public function pack($x): void {}
-
-                        /** @return T */
-                        public function unpack() { throw new Exception(); }
-
-                        /**
-                         * @template U of T
-                         * @param U $u
-                         */
-                        public function packBounded($u): void {}
-
-                        /** @param T $x */
-                        public function swap(&$x): void {}
-
-                        /** @return RBox<T> */
-                        public function me() { return $this; }
-
-                        /** @return class-string<T> */
-                        public function cls() { throw new Exception(); }
-
-                        /** @param T $x */
-                        public function __invoke($x): void {}
-
-                        /** @param list<T> $xs */
-                        public function packAll(array $xs): void {}
-
-                        /** @return static */
-                        public function selfReturn() { return $this; }
-                    }
-
-                    /**
-                     * @template U of A
-                     * @extends RBox<U>
-                     */
-                    class SubRBox extends RBox {}
-
+                'code' => '<?php' . self::HIERARCHY . self::RBOX . '
                     /** @param RBox<covariant B> $box */
                     function test(RBox $box): void { $box->packAll([new B()]); }',
                 'error_message' => 'never',
             ],
             'projectionRejectsAWriteOnAStaticResultOfACovariantReceiver' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @template T of A */
-                    class RBox
-                    {
-                        /** @param T $x */
-                        public function pack($x): void {}
-
-                        /** @return T */
-                        public function unpack() { throw new Exception(); }
-
-                        /**
-                         * @template U of T
-                         * @param U $u
-                         */
-                        public function packBounded($u): void {}
-
-                        /** @param T $x */
-                        public function swap(&$x): void {}
-
-                        /** @return RBox<T> */
-                        public function me() { return $this; }
-
-                        /** @return class-string<T> */
-                        public function cls() { throw new Exception(); }
-
-                        /** @param T $x */
-                        public function __invoke($x): void {}
-
-                        /** @param list<T> $xs */
-                        public function packAll(array $xs): void {}
-
-                        /** @return static */
-                        public function selfReturn() { return $this; }
-                    }
-
-                    /**
-                     * @template U of A
-                     * @extends RBox<U>
-                     */
-                    class SubRBox extends RBox {}
-
+                'code' => '<?php' . self::HIERARCHY . self::RBOX . '
                     /** @param RBox<covariant B> $box */
                     function test(RBox $box): void { $box->selfReturn()->pack(new B()); }',
                 'error_message' => 'expects never',
@@ -1824,47 +1279,7 @@ final class CallSiteVarianceTest extends TestCase
                 'error_message' => 'expects never',
             ],
             'starBoxIsNotAnArgumentOfACovariantParameterOfAMethodTemplate' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @template T of A */
-                    class RBox
-                    {
-                        /** @param T $x */
-                        public function pack($x): void {}
-
-                        /** @return T */
-                        public function unpack() { throw new Exception(); }
-
-                        /**
-                         * @template U of T
-                         * @param U $u
-                         */
-                        public function packBounded($u): void {}
-
-                        /** @param T $x */
-                        public function swap(&$x): void {}
-
-                        /** @return RBox<T> */
-                        public function me() { return $this; }
-
-                        /** @return class-string<T> */
-                        public function cls() { throw new Exception(); }
-
-                        /** @param T $x */
-                        public function __invoke($x): void {}
-
-                        /** @param list<T> $xs */
-                        public function packAll(array $xs): void {}
-
-                        /** @return static */
-                        public function selfReturn() { return $this; }
-                    }
-
-                    /**
-                     * @template U of A
-                     * @extends RBox<U>
-                     */
-                    class SubRBox extends RBox {}
-
+                'code' => '<?php' . self::HIERARCHY . self::RBOX . '
                     /**
                      * @template T of A
                      * @param RBox<covariant T> $_box
@@ -1876,77 +1291,19 @@ final class CallSiteVarianceTest extends TestCase
                 'error_message' => 'but RBox<*> provided',
             ],
             'projectionRejectsAWriteToAMethodTemplateBoundedByANullableReceiverTemplate' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @template T of A */
-                    class RBox
-                    {
-                        /** @return T */
-                        public function unpack() { throw new Exception(); }
-
-                        /**
-                         * @template U of T
-                         * @param U $u
-                         * @return U
-                         */
-                        public function packBounded($u) { return $u; }
-
-                        /**
-                         * @template U of T|null
-                         * @param U $u
-                         */
-                        public function packNullable($u): void {}
-
-                        /**
-                         * @template U of list<T>
-                         * @param U $u
-                         */
-                        public function packList($u): void {}
-
-                        /** @return T|array<string, A> */
-                        public function mixedResult() { throw new Exception(); }
-                    }
-
+                'code' => '<?php' . self::HIERARCHY . self::BOUNDED_TEMPLATE_RBOX . '
                     /** @param RBox<covariant B> $box */
                     function test(RBox $box): void { $box->packNullable(new B()); }',
                 'error_message' => 'expects null',
             ],
             'projectionRejectsAWriteToAMethodTemplateBoundedByAListOfTheReceiverTemplate' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
-                    /** @template T of A */
-                    class RBox
-                    {
-                        /** @return T */
-                        public function unpack() { throw new Exception(); }
-
-                        /**
-                         * @template U of T
-                         * @param U $u
-                         * @return U
-                         */
-                        public function packBounded($u) { return $u; }
-
-                        /**
-                         * @template U of T|null
-                         * @param U $u
-                         */
-                        public function packNullable($u): void {}
-
-                        /**
-                         * @template U of list<T>
-                         * @param U $u
-                         */
-                        public function packList($u): void {}
-
-                        /** @return T|array<string, A> */
-                        public function mixedResult() { throw new Exception(); }
-                    }
-
+                'code' => '<?php' . self::HIERARCHY . self::BOUNDED_TEMPLATE_RBOX . '
                     /** @param RBox<covariant B> $box */
                     function test(RBox $box): void { $box->packList([new B()]); }',
                 'error_message' => 'never',
             ],
             'contravariantContainerDoesNotTakeAMixedArgument' => [
-                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                'code' => '<?php' . self::HIERARCHY . '
                     /** @param Box<contravariant A> $_box */
                     function takes(Box $_box): void {}
 

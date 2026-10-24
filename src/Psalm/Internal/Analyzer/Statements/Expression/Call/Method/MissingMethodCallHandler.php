@@ -155,9 +155,8 @@ final class MissingMethodCallHandler
             );
 
             $variance_projector = CallSiteVarianceProjector::create($codebase, $lhs_type_part);
-            $pseudo_method_params = $variance_projector
-                ? $variance_projector->projectParams($pseudo_method_storage->params)
-                : $pseudo_method_storage->params;
+            $pseudo_method_params = $variance_projector?->projectParams($pseudo_method_storage->params)
+                ?? $pseudo_method_storage->params;
 
             // the pseudo-method's own templates are the purity templates of its `_` params
             $template_result = new TemplateResult(
@@ -206,9 +205,8 @@ final class MissingMethodCallHandler
 
             if ($pseudo_method_storage->return_type) {
                 $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
-                    $variance_projector
-                        ? $variance_projector->project($pseudo_method_storage->return_type, false)
-                        : $pseudo_method_storage->return_type,
+                    $variance_projector?->project($pseudo_method_storage->return_type, false)
+                        ?? $pseudo_method_storage->return_type,
                     $template_result,
                     $method_id,
                     count($stmt->getArgs()),
@@ -428,9 +426,8 @@ final class MissingMethodCallHandler
             );
 
             $variance_projector = CallSiteVarianceProjector::create($codebase, $lhs_type_part);
-            $pseudo_method_params = $variance_projector
-                ? $variance_projector->projectParams($pseudo_method_storage->params)
-                : $pseudo_method_storage->params;
+            $pseudo_method_params = $variance_projector?->projectParams($pseudo_method_storage->params)
+                ?? $pseudo_method_storage->params;
 
             if (ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
@@ -460,9 +457,8 @@ final class MissingMethodCallHandler
 
             if ($pseudo_method_storage->return_type) {
                 $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
-                    $variance_projector
-                        ? $variance_projector->project($pseudo_method_storage->return_type, false)
-                        : $pseudo_method_storage->return_type,
+                    $variance_projector?->project($pseudo_method_storage->return_type, false)
+                        ?? $pseudo_method_storage->return_type,
                     $template_result,
                     $method_id,
                     count($stmt->getArgs()),
