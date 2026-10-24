@@ -45,7 +45,7 @@ final class TGenericObject extends TNamedObject
      *
      * @var array<int, Variance>
      */
-    public array $type_param_variances;
+    public array $type_param_variances = [];
 
     /**
      * @param string                $value the name of the object
@@ -76,6 +76,21 @@ final class TGenericObject extends TNamedObject
             $extra_types,
             $from_docblock,
         );
+    }
+
+    /**
+     * @param array<int, Variance> $type_param_variances
+     */
+    public function setTypeParamVariances(array $type_param_variances): self
+    {
+        if ($this->type_param_variances === $type_param_variances) {
+            return $this;
+        }
+
+        $cloned = clone $this;
+        $cloned->type_param_variances = $type_param_variances;
+
+        return $cloned;
     }
 
     /**

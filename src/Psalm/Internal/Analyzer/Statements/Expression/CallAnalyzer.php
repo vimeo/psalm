@@ -20,6 +20,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\CallSiteVarianceProjector;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
@@ -287,6 +288,7 @@ abstract class CallAnalyzer
         Context $context,
         CodeLocation $code_location,
         StatementsAnalyzer $statements_analyzer,
+        ?CallSiteVarianceProjector $variance_projector = null,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -309,6 +311,10 @@ abstract class CallAnalyzer
             $context,
             $code_location,
         );
+
+        if ($variance_projector) {
+            $method_params = $variance_projector->projectParams($method_params);
+        }
 
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
