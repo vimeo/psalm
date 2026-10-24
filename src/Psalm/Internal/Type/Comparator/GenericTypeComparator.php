@@ -15,7 +15,9 @@ use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Variance;
 
 use function array_merge;
+use function array_values;
 use function count;
+use function strtolower;
 
 /**
  * @internal
@@ -133,10 +135,10 @@ final class GenericTypeComparator
                     continue;
                 }
 
-                // a bare `Box` is not known to fit, while a `Box<mixed>` is explicit
+                // a bare `Box` is not known to fit, while a `Box<mixed>` or a class extending it is explicit
                 if ($input_param->isMixed()
                     && !$container_param->isMixed()
-                    && !$input_type_part instanceof TGenericObject
+                    && self::leavesTemplateUnbound($codebase, $input_type_part, $container_type_part, $i)
                 ) {
                     if ($atomic_comparison_result) {
                         $atomic_comparison_result->type_coerced = true;
@@ -326,5 +328,33 @@ final class GenericTypeComparator
         for ($i = $first_mirror; $i < $lower_bounds_count; $i++) {
             $result->type_variable_lower_bounds[$i][1]->from_invariant_argument_mirror = true;
         }
+    }
+
+    /**
+     * Whether an argument of the container is left to a template of an input without type params
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function leavesTemplateUnbound(
+        Codebase $codebase,
+        TNamedObject|TIterable $input,
+        TGenericObject|TIterable $container,
+        int $offset,
+    ): bool {
+        if ($input instanceof TGenericObject) {
+            return false;
+        }
+
+        if (!$input instanceof TNamedObject
+            || strtolower($input->value) === strtolower($container->value)
+            || !$codebase->classlike_storage_provider->has($input->value)
+        ) {
+            return true;
+        }
+
+        $extended = $codebase->classlike_storage_provider->get($input->value)
+            ->template_extended_params[$container->value] ?? [];
+
+        return (array_values($extended)[$offset] ?? null)?->hasTemplate() ?? true;
     }
 }
