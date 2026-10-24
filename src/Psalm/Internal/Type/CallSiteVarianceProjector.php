@@ -59,6 +59,9 @@ final class CallSiteVarianceProjector
     ) {
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     public static function create(Codebase $codebase, ?Atomic $receiver): ?self
     {
         if (!$receiver instanceof TGenericObject
@@ -86,7 +89,7 @@ final class CallSiteVarianceProjector
             }
         }
 
-        return $this->receiver->setTypeParamVariances([])->setTypeParams($params);
+        return $this->receiver->setTypeParamVariances([])->setTypeParams(array_values($params));
     }
 
     /**
@@ -251,7 +254,7 @@ final class CallSiteVarianceProjector
             $expanded = new Union(ClassTemplateParamCollector::expandType(
                 $this->codebase,
                 $extended,
-                $this->storage->template_extended_params,
+                $this->storage->template_extended_params ?? [],
                 $this->storage->name,
                 $this->storage->template_types,
             ));
@@ -312,6 +315,9 @@ final class CallSiteVarianceProjector
         return $atomic->setTypeParams($params)->setTypeParamVariances($variances);
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     private function getVariance(string $template_name, string $defining_class): ?Variance
     {
         if ($defining_class !== $this->storage->name) {
