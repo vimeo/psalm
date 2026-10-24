@@ -1624,6 +1624,31 @@ final class CallSiteVarianceTest extends TestCase
                     function test(SubBox $box): void { takes($box); }',
                 'error_message' => 'expects Box<contravariant A>, but SubBox provided',
             ],
+            'contravariantContainerDoesNotTakeASubclassNotExtendingTheTemplate' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /** @template T */
+                    class NoExt extends Box {}
+
+                    /** @param Box<contravariant A> $_box */
+                    function takes(Box $_box): void {}
+
+                    function test(NoExt $box): void { takes($box); }',
+                'error_message' => 'MixedArgumentTypeCoercion',
+                'error_levels' => ['MissingTemplateParam'],
+            ],
+            'contravariantContainerDoesNotTakeAGenericSubclassNotExtendingTheTemplate' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /** @template T */
+                    class NoExt extends Box {}
+
+                    /** @param Box<contravariant A> $_box */
+                    function takes(Box $_box): void {}
+
+                    /** @param NoExt<A> $box */
+                    function test(NoExt $box): void { takes($box); }',
+                'error_message' => 'MixedArgumentTypeCoercion',
+                'error_levels' => ['MissingTemplateParam'],
+            ],
             'chainedThisArgumentsKeepTheirResolvedBinding' => [
                 'code' => '<?php' . self::HIERARCHY . '
                     /**
