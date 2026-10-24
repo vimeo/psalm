@@ -589,9 +589,8 @@ final class ExistingAtomicStaticCallAnalyzer
         );
 
         if ($return_type_candidate) {
-            if ($variance_projector) {
-                $return_type_candidate = $variance_projector->project($return_type_candidate, false);
-            }
+            $return_type_candidate = $variance_projector?->project($return_type_candidate, false)
+                ?? $return_type_candidate;
 
             if ($template_result->template_types) {
                 $bindable_template_types = $return_type_candidate->getTemplateTypes();

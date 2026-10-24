@@ -495,18 +495,16 @@ final class TypeChecker extends TypeVisitor
         array $expected_type_params,
     ): void {
         $template_name = array_keys($expected_type_params)[$offset] ?? null;
-        $argument = $variance === Variance::Bivariant
-            ? '*'
-            : $variance->value . ' ' . $atomic->type_params[$offset]->getId();
 
         // a type param the class has no template for is reported as too many
-        if ($template_name === null) {
+        if ($template_name === null
+            || $variance === Variance::Bivariant
+            || empty($class_storage->template_covariants[$offset])
+        ) {
             return;
         }
 
-        if (empty($class_storage->template_covariants[$offset]) || $variance === Variance::Bivariant) {
-            return;
-        }
+        $argument = $variance->value . ' ' . $atomic->type_params[$offset]->getId();
 
         if ($variance === Variance::Contravariant) {
             IssueBuffer::maybeAdd(

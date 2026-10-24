@@ -844,9 +844,8 @@ final class AtomicPropertyFetchAnalyzer
     ): Union {
         $variance_projector = CallSiteVarianceProjector::create($codebase, $lhs_type_part);
 
-        if ($variance_projector) {
-            $class_property_type = $variance_projector->project($class_property_type, $for_assignment);
-        }
+        $class_property_type = $variance_projector?->project($class_property_type, $for_assignment)
+            ?? $class_property_type;
 
         $template_types = CallAnalyzer::getTemplateTypesForCall(
             $codebase,
