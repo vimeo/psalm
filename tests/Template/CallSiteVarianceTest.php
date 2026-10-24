@@ -144,6 +144,18 @@ final class CallSiteVarianceTest extends TestCase
         }
 ';
 
+    private const INTERSECTION_BOX = '
+        /** @template T */
+        class XBox
+        {
+            /** @return T&Countable */
+            public function getCountable() { throw new Exception(); }
+
+            /** @param T&Countable $x */
+            public function packCountable($x): void {}
+        }
+';
+
     private const COUNTABLE_BOX = '
         /** @template T of A */
         class CBox
@@ -841,6 +853,46 @@ final class CallSiteVarianceTest extends TestCase
                         $result = $box->unpackCountable();
                         /** @psalm-check-type-exact $result = B&Countable */
                     }',
+            ],
+            'projectionReadsAnIterableIntersectedWithAnInterface' => [
+                'code' => '<?php' . self::HIERARCHY . self::INTERSECTION_BOX . '
+                    /** @template T of iterable<int, A> */
+                    class IBox
+                    {
+                        /** @return T&Countable */
+                        public function getCountable() { throw new Exception(); }
+                    }
+
+                    /**
+                     * @param IBox<contravariant iterable<int, B>> $bounded
+                     * @param XBox<covariant iterable<int>> $iterable
+                     * @param XBox<covariant array<int>> $array
+                     */
+                    function test(IBox $bounded, XBox $iterable, XBox $array): void {
+                        $bounded_result = $bounded->getCountable();
+                        /** @psalm-check-type-exact $bounded_result = iterable<int, A>&Countable */
+                        $iterable_result = $iterable->getCountable();
+                        /** @psalm-check-type-exact $iterable_result = iterable<mixed, int>&Countable */
+                        $array_result = $array->getCountable();
+                        /** @psalm-check-type-exact $array_result = array<array-key, int> */
+                    }',
+            ],
+            'projectionTakesAnIterableIntersectedWithAnInterface' => [
+                'code' => '<?php' . self::HIERARCHY . self::INTERSECTION_BOX . '
+                    interface I {}
+
+                    /** @implements IteratorAggregate<int, A> */
+                    final class CountableIterator implements IteratorAggregate, Countable
+                    {
+                        #[\\Override]
+                        public function getIterator(): Iterator { return new ArrayIterator([]); }
+
+                        #[\\Override]
+                        public function count(): int { return 0; }
+                    }
+
+                    /** @param XBox<contravariant I|iterable> $box */
+                    function test(XBox $box): void { $box->packCountable(new CountableIterator()); }',
             ],
             'projectionResultOfAMethodTemplateBoundedByANullableReceiverTemplateIsWhatTheProjectedBoundTakes' => [
                 'code' => '<?php' . self::HIERARCHY . self::BOUNDED_TEMPLATE_RBOX . '

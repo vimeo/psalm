@@ -358,20 +358,21 @@ final class CallSiteVarianceProjector
         $atomics = [];
 
         foreach ($union->getAtomicTypes() as $atomic) {
-            if ($atomic instanceof TNever) {
-                $atomics[] = $atomic;
-            } elseif ($atomic instanceof TNamedObject || $atomic instanceof TTemplateParam) {
-                $atomics[] = $atomic->setIntersectionTypes([...$atomic->extra_types, ...$extras]);
-            } elseif ($atomic instanceof TMixed || $atomic instanceof TObject) {
-                $main = reset($extras);
-
-                if ($main !== false) {
-                    $atomics[] = $main->setIntersectionTypes([...$main->extra_types, ...array_slice($extras, 1)]);
-                }
+            if ($atomic instanceof TNamedObject
+                || $atomic instanceof TTemplateParam
+                || $atomic instanceof TIterable
+                || $atomic instanceof TObjectWithProperties
+            ) {
+                $atomic = $atomic->setIntersectionTypes([...$atomic->extra_types, ...$extras]);
+            } elseif (($atomic instanceof TMixed || $atomic instanceof TObject) && ($main = reset($extras))) {
+                $atomic = $main->setIntersectionTypes([...$main->extra_types, ...array_slice($extras, 1)]);
             }
+
+            // as with an invariant receiver, what cannot be intersected (`array<int>&Countable`) is kept as is
+            $atomics[] = $atomic;
         }
 
-        return $atomics ? $union->setTypes($atomics) : Type::getNever();
+        return $union->setTypes($atomics);
     }
 
     private function projectTemplate(TTemplateParam $template, int $polarity): Atomic|Union
