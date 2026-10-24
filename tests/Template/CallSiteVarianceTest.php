@@ -26,6 +26,38 @@ final class CallSiteVarianceTest extends TestCase
         class ReadOnlyBox {}
     ';
 
+    private const PROJECTIONS = '
+        /** @template T */
+        interface PBox
+        {
+            /** @param T $item */
+            public function pack($item): void;
+
+            /** @return T */
+            public function unpack();
+
+            /** @return PBox<T> */
+            public function me();
+        }
+
+        /** @template T of A */
+        interface BoundedBox
+        {
+            /** @return T */
+            public function unpack();
+        }
+
+        /** @template T */
+        interface Mapped
+        {
+            /** @param callable(T): void $mapper */
+            public function mapIn(callable $mapper): void;
+
+            /** @param callable(): T $mapper */
+            public function mapOut(callable $mapper): void;
+        }
+';
+
     /**
      * @psalm-pure
      */
@@ -217,6 +249,223 @@ final class CallSiteVarianceTest extends TestCase
                         /** @psalm-check-type-exact $result = A */
                     }',
             ],
+            'projectionCovariantReadsTheArgument' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param PBox<covariant B> $box */
+                    function test(PBox $box): void {
+                        $result = $box->unpack();
+                        /** @psalm-check-type-exact $result = B */
+                    }',
+            ],
+            'projectionContravariantAcceptsTheArgumentAndReadsMixed' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param PBox<contravariant B> $box */
+                    function test(PBox $box, A $a, C $c): void {
+                        $box->pack($c);
+                        $result = $box->unpack();
+                        /** @psalm-check-type-exact $result = mixed */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'projectionContravariantReadsTheBound' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param BoundedBox<contravariant B> $box */
+                    function test(BoundedBox $box): void {
+                        $result = $box->unpack();
+                        /** @psalm-check-type-exact $result = A */
+                    }',
+            ],
+            'projectionStarReadsMixed' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param PBox<*> $box */
+                    function test(PBox $box): void {
+                        $result = $box->unpack();
+                        /** @psalm-check-type-exact $result = mixed */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'projectionCovariantCallbackParamIsTheArgument' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param Mapped<covariant B> $mapped */
+                    function test(Mapped $mapped): void {
+                        $mapped->mapIn(function ($foo) {
+                            /** @psalm-check-type-exact $foo = B */
+                        });
+                    }',
+            ],
+            'projectionContravariantCallbackParamIsMixed' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /**
+                     * @param Mapped<contravariant B> $contra
+                     * @param Mapped<*> $star
+                     */
+                    function test(Mapped $contra, Mapped $star): void {
+                        $contra->mapIn(function ($foo) {
+                            /** @psalm-check-type-exact $foo = mixed */
+                        });
+                        $star->mapIn(function ($foo) {
+                            /** @psalm-check-type-exact $foo = mixed */
+                        });
+                    }',
+            ],
+            'projectionContravariantCallbackReturnAcceptsSubtypes' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param Mapped<contravariant B> $mapped */
+                    function test(Mapped $mapped): void {
+                        $mapped->mapOut(fn() => new B());
+                        $mapped->mapOut(fn() => new C());
+                    }',
+            ],
+            'projectionKeepsCallSiteVarianceOfAnInvariantArgumentRead' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param PBox<covariant B> $box */
+                    function test(PBox $box, A $a): void {
+                        $self = $box->me();
+                        /** @psalm-check-type-exact $self = PBox<covariant B> */
+                    }',
+            ],
+            'projectionThroughAnAncestor' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /**
+                     * @template U
+                     * @implements PBox<U>
+                     */
+                    abstract class SubPBox implements PBox {}
+
+                    /** @param SubPBox<covariant B> $box */
+                    function test(SubPBox $box): void {
+                        $result = $box->unpack();
+                        /** @psalm-check-type-exact $result = B */
+                    }',
+            ],
+            'projectionOfAPropertyRead' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @template T */
+                    class Holder {
+                        /** @var T */
+                        public $value;
+                        /** @param T $value */
+                        public function __construct($value) { $this->value = $value; }
+                    }
+
+                    /** @param Holder<covariant B> $h */
+                    function test(Holder $h): void {
+                        $result = $h->value;
+                        /** @psalm-check-type-exact $result = B */
+                    }',
+            ],
+            'projectionOfAPropertyWriteWithAContravariantArgument' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @template T */
+                    class Holder {
+                        /** @var T */
+                        public $value;
+                        /** @param T $value */
+                        public function __construct($value) { $this->value = $value; }
+                    }
+
+                    /** @param Holder<contravariant B> $h */
+                    function test(Holder $h, C $c): void {
+                        $h->value = $c;
+                    }',
+            ],
+            'projectionOfAFirstClassCallable' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param PBox<covariant B> $box */
+                    function test(PBox $box): void {
+                        $unpack = $box->unpack(...);
+                        $pack = $box->pack(...);
+                        /** @psalm-check-type-exact $unpack = Closure():B */
+                        /** @psalm-check-type-exact $pack = Closure(never):void */
+                    }',
+            ],
+            'projectionOfAPseudoMethod' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /**
+                     * @template T
+                     * @method T get()
+                     */
+                    class Magic { public function __call(string $name, array $args) { return null; } }
+
+                    /** @param Magic<contravariant B> $magic */
+                    function test(Magic $magic): void {
+                        $result = $magic->get();
+                        /** @psalm-check-type-exact $result = mixed */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'projectionThroughAMixin' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /**
+                     * @template T
+                     * @mixin PBox<T>
+                     */
+                    class Wrapper {}
+
+                    /** @param Wrapper<covariant B> $w */
+                    function test(Wrapper $w): void {
+                        $result = $w->unpack();
+                        /** @psalm-check-type-exact $result = B */
+                    }',
+            ],
+            'projectionOnATemplateWithACallSiteVarianceBound' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /**
+                     * @template X of PBox<covariant B>
+                     * @param X $box
+                     */
+                    function test(PBox $box): void {
+                        $result = $box->unpack();
+                        /** @psalm-check-type-exact $result = B */
+                    }',
+            ],
+            'projectionOnAnIntersection' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param PBox<covariant B>&Countable $box */
+                    function test(PBox $box): void {
+                        $result = $box->unpack();
+                        /** @psalm-check-type-exact $result = B */
+                    }',
+            ],
+            'projectionOnAnInstanceofNarrowedReceiver' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /**
+                     * @template U
+                     * @implements PBox<U>
+                     */
+                    abstract class ImplBox implements PBox {}
+
+                    /** @param PBox<covariant B> $box */
+                    function test(PBox $box): void {
+                        if ($box instanceof ImplBox) {
+                            $result = $box->unpack();
+                            /** @psalm-check-type-exact $result = B */
+                        }
+                    }',
+            ],
+            'projectionOfAForeachOverAContravariantIterator' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param IteratorAggregate<int, contravariant B> $iterable */
+                    function test(IteratorAggregate $iterable): void {
+                        foreach ($iterable as $value) {
+                            /** @psalm-check-type-exact $value = mixed */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'projectionOfAForeachOverACovariantIterator' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param Iterator<int, covariant B> $iterator */
+                    function test(Iterator $iterator): void {
+                        foreach ($iterator as $value) {
+                            /** @psalm-check-type-exact $value = B */
+                        }
+                    }',
+            ],
             'combinedCallSiteVariancesAreKeptApart' => [
                 'code' => '<?php' . self::HIERARCHY . '
                     /** @param Box<covariant A> $_box */
@@ -364,6 +613,140 @@ final class CallSiteVarianceTest extends TestCase
                     /** @param Box<covariant C> $box */
                     function test(Box $box): void {
                         unbox($box);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'projectionCovariantRejectsAnyArgument' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param PBox<covariant B> $box */
+                    function test(PBox $box, B $b): void {
+                        $box->pack($b);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'projectionContravariantRejectsASupertypeOfTheArgument' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param PBox<contravariant B> $box */
+                    function test(PBox $box, A $a): void {
+                        $box->pack($a);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'projectionStarRejectsAnyArgument' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param PBox<*> $box */
+                    function test(PBox $box, A $a): void {
+                        $box->pack($a);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'projectionCovariantCallbackReturnIsNever' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param Mapped<covariant B> $mapped */
+                    function test(Mapped $mapped): void {
+                        $mapped->mapOut(fn() => new B());
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'projectionContravariantCallbackReturnRejectsASupertype' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param Mapped<contravariant B> $mapped */
+                    function test(Mapped $mapped): void {
+                        $mapped->mapOut(fn() => new A());
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'projectionStarCallbackReturnIsNever' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param Mapped<*> $mapped */
+                    function test(Mapped $mapped): void {
+                        $mapped->mapOut(fn() => new A());
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'projectionRejectsAWriteThroughTheReadValueOfACarriedArgument' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param PBox<covariant B> $box */
+                    function test(PBox $box, B $b): void {
+                        $box->me()->pack($b);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'projectionThroughAnAncestorRejectsAWrite' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /**
+                     * @template U
+                     * @implements PBox<U>
+                     */
+                    abstract class SubPBox implements PBox {}
+
+                    /** @param SubPBox<covariant B> $box */
+                    function test(SubPBox $box, B $b): void {
+                        $box->pack($b);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'projectionOfAPropertyWriteWithACovariantArgument' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @template T */
+                    class Holder {
+                        /** @var T */
+                        public $value;
+                        /** @param T $value */
+                        public function __construct($value) { $this->value = $value; }
+                    }
+
+                    /** @param Holder<covariant B> $h */
+                    function test(Holder $h, B $b): void {
+                        $h->value = $b;
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'projectionOfAFirstClassCallableTakesNever' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @param PBox<covariant B> $box */
+                    function test(PBox $box, B $b): void {
+                        $pack = $box->pack(...);
+                        $pack($b);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'projectionOfAPseudoMethodParam' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /**
+                     * @template T
+                     * @method void put(T $x)
+                     */
+                    class Magic { public function __call(string $name, array $args) {} }
+
+                    /** @param Magic<covariant B> $magic */
+                    function test(Magic $magic, B $b): void {
+                        $magic->put($b);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'projectionThroughAMixinRejectsAWrite' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /**
+                     * @template T
+                     * @mixin PBox<T>
+                     */
+                    class Wrapper {}
+
+                    /** @param Wrapper<covariant B> $w */
+                    function test(Wrapper $w, B $b): void {
+                        $w->pack($b);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'projectionOnATemplateWithACallSiteVarianceBoundRejectsAWrite' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /**
+                     * @template X of PBox<covariant B>
+                     * @param X $box
+                     */
+                    function test(PBox $box, B $b): void {
+                        $box->pack($b);
                     }',
                 'error_message' => 'InvalidArgument',
             ],

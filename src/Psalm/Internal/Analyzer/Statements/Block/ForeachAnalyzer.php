@@ -33,6 +33,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Internal\Type\CallSiteVarianceProjector;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -832,6 +833,11 @@ final class ForeachAnalyzer
         foreach ($iterator_type->getAtomicTypes() as $iterator_atomic_type) {
             if ($iterator_atomic_type instanceof TTemplateParam) {
                 $iterator_atomic_type = $iterator_atomic_type->as->getSingleAtomic();
+            }
+
+            if ($iterator_atomic_type instanceof TGenericObject) {
+                $iterator_atomic_type = CallSiteVarianceProjector::create($codebase, $iterator_atomic_type)
+                    ?->getReadView() ?? $iterator_atomic_type;
             }
 
             // if it's an empty array, we cannot iterate over it
