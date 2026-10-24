@@ -342,6 +342,8 @@ final class CallSiteVarianceProjector
                 return null;
             }
 
+            // an intersection cannot hold a union (`Countable&T` with `T of A|B` read as its bound), so such a
+            // member keeps its template unresolved, as it also does on an invariant receiver
             $new_extra = count($atomics) === 1
                 && ($atomics[0] instanceof TNamedObject
                     || $atomics[0] instanceof TTemplateParam
