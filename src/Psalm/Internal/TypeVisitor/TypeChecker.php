@@ -208,6 +208,8 @@ final class TypeChecker extends TypeVisitor
     /**
      * Turns an input position into an output one and the other way round. Neither is left alone, as is what is in
      * an invariant type param
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function flipPosition(): void
     {

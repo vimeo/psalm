@@ -351,7 +351,7 @@ final class TypeTokenizer
      * Whether the `covariant` or `contravariant` token at $i prefixes a generic argument. Followed by an operator
      * (or by nothing) it is a class name.
      *
-     * @param list<array{0: string, 1: int, 2?: string}> $type_tokens
+     * @param array<int, array{0: string, 1: int, 2?: string}> $type_tokens
      * @psalm-pure
      */
     public static function isVariancePrefix(array $type_tokens, int $i): bool
