@@ -434,6 +434,63 @@ class Collection {
 
 This is perfectly valid, and Psalm won't complain.
 
+## Call-site variance
+
+`@template-covariant` fixes the variance of a template for every use of the class. When a class is invariant but a function only reads from, or only writes to, it, a generic type argument can be given a variance at the place where the type is used. The syntax is the one of [PHPStan](https://phpstan.org/blog/guide-to-call-site-generic-variance):
+
+```php
+<?php
+class Animal {}
+class Dog extends Animal {}
+
+/**
+ * @template T
+ */
+class Box {
+    /** @param T $item */
+    public function pack($item): void {}
+
+    /** @return T */
+    public function unpack() {
+        throw new RuntimeException();
+    }
+}
+
+/** @param Box<covariant Animal> $box */
+function readFrom(Box $box): Animal {
+    // $box may be a Box<Dog>, so nothing can be put in
+    // $box->pack(new Dog());   // InvalidArgument: expects never
+    return $box->unpack();
+}
+
+/** @param Box<contravariant Dog> $box */
+function writeTo(Box $box): void {
+    // $box may be a Box<Animal>, so anything can be read from it only as mixed
+    $box->pack(new Dog());
+}
+
+/** @param Box<*> $box */
+function neither(Box $box): void {
+    // $box->pack(...) accepts nothing, and $box->unpack() returns mixed
+}
+
+readFrom(new Box());
+```
+
+- `Box<covariant T>` accepts a `Box<U>` for any subtype `U` of `T`. Methods and properties only give out `T`: where `T` is an input, the type is `never`.
+- `Box<contravariant T>` accepts a `Box<U>` for any supertype `U` of `T`. Methods and properties accept `T`, and give out the bound of the template (`mixed` unless it has an `as`).
+- `Box<*>` accepts any `Box`. It is both: nothing can be put in, and what comes out is the bound of the template.
+
+The variance applies to the whole argument (`Box<covariant int|string>`), and is only allowed on an argument of a generic class or interface. On `array`, `list`, `iterable`, `class-string` and the other builtin generic types it is accepted and ignored. A call-site variance is not allowed in `@extends`, `@implements` and `@use`.
+
+A `Box<Dog>` is accepted where a `Box<covariant Animal>` is expected, but a `Box<covariant Animal>` is not accepted where a `Box<Animal>` is expected.
+
+Psalm reports a `contravariant` argument for a `@template-covariant` template as [InvalidDocblock](../running_psalm/issues/InvalidDocblock.md), and a `covariant` one as [RedundantCallSiteVariance](../running_psalm/issues/RedundantCallSiteVariance.md).
+
+Two things differ from PHPStan: Psalm applies the variance to properties as well (writing to a property of a `Box<covariant T>` is an input), and a method returning `Box<T>` called on a `Box<covariant Animal>` returns a `Box<covariant Animal>` rather than a `Box<Animal>`, as the result is not known to hold an `Animal` exactly.
+
+Where Psalm doesn't apply it: call-site variance is applied to method calls, properties, first-class callables, `@method` and `@mixin` calls and `foreach`. Callable arrays (`[$box, 'pack']`), `ArrayAccess` writes (`$box[] = $x`) and by-reference property writes see the argument as if it were invariant.
+
 ## Builtin templated classes and interfaces
 
 Psalm has support for a number of builtin classes and interfaces that you can extend/implement in your own code.
