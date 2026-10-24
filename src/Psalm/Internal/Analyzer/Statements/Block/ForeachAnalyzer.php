@@ -1392,7 +1392,11 @@ final class ForeachAnalyzer
                     }
                 }
 
-                if (!$key_type && !$value_type) {
+                // a Traversable's own type params are added to what the other parts of a union gave
+                if ((!$key_type && !$value_type)
+                    || ($iterator_atomic_type instanceof TGenericObject
+                        && strtolower($iterator_atomic_type->value) === 'traversable')
+                ) {
                     self::getKeyValueParamsForTraversableObject(
                         $iterator_atomic_type,
                         $codebase,
