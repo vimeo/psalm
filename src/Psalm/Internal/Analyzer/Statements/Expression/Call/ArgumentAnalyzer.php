@@ -1836,6 +1836,7 @@ final class ArgumentAnalyzer
                                     $input_atomic_type->remapped_params,
                                     false,
                                     $input_atomic_type->extra_types,
+                                    type_param_variances: $input_atomic_type->type_param_variances,
                                 );
                             }
                         }
