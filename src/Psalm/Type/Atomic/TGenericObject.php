@@ -70,6 +70,9 @@ final class TGenericObject extends TNamedObject
             $value = substr($value, 1);
         }
 
+        // equals() compares the arrays strictly
+        ksort($type_param_variances);
+
         $this->type_params = $type_params;
         $this->type_param_variances = $type_param_variances;
         parent::__construct(
@@ -244,7 +247,7 @@ final class TGenericObject extends TNamedObject
             $this->is_static,
             $intersection ?? $this->extra_types,
             type_param_variances: $this->type_param_variances,
-        );
+        )->setIsStatic($this->is_static, $this->is_static_resolved);
     }
 
     /**
@@ -271,6 +274,6 @@ final class TGenericObject extends TNamedObject
             $this->is_static,
             $intersection ?? $this->extra_types,
             type_param_variances: $this->type_param_variances,
-        );
+        )->setIsStatic($this->is_static, $this->is_static_resolved);
     }
 }
