@@ -528,6 +528,31 @@ final class ClassTest extends TestCase
                         $a->foo();
                     }',
             ],
+            'classAliasParentDeclaredLater' => [
+                'code' => '<?php
+                    class Original {
+                        public const VERSION = 1;
+
+                        /** @var string */
+                        public $message = "";
+                    }
+
+                    final class Child extends Legacy {}
+
+                    class_alias(Original::class, "Legacy");',
+            ],
+            'classAliasParentDeclaredLaterIsParent' => [
+                'code' => '<?php
+                    class Original {}
+
+                    final class Child extends Legacy {}
+
+                    class_alias(Original::class, "Legacy");
+
+                    function action(Original $_o): void {}
+
+                    action(new Child());',
+            ],
             'resourceAndNumericSoftlyReserved' => [
                 'code' => '<?php
                     namespace {
