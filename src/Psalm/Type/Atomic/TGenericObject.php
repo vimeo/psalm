@@ -70,6 +70,9 @@ final class TGenericObject extends TNamedObject
             $value = substr($value, 1);
         }
 
+        // equals() compares the arrays strictly
+        ksort($type_param_variances);
+
         $this->type_params = $type_params;
         $this->type_param_variances = $type_param_variances;
         parent::__construct(

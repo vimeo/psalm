@@ -90,7 +90,9 @@ trait GenericTrait
                 $params[] = match ($variance) {
                     null => $to_string($type_param),
                     Variance::Bivariant => '*',
-                    default => $variance->value . ' ' . $to_string($type_param),
+                    default => $variance->value . ' ' . (count($type_param->getAtomicTypes()) > 1
+                        ? '(' . $to_string($type_param) . ')'
+                        : $to_string($type_param)),
                 };
             }
 
