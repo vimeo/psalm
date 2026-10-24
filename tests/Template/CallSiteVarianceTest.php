@@ -117,17 +117,37 @@ final class CallSiteVarianceTest extends TestCase
             /**
              * @template U of T|null
              * @param U $u
+             * @return U
              */
-            public function packNullable($u): void {}
+            public function packNullable($u) { return $u; }
 
             /**
              * @template U of list<T>
              * @param U $u
+             * @return U
              */
-            public function packList($u): void {}
+            public function packList($u) { return $u; }
+        }
+';
 
-            /** @return T|array<string, A> */
-            public function mixedResult() { throw new Exception(); }
+    private const COUNTABLE_BOX = '
+        /** @template T of A */
+        class CBox
+        {
+            /** @param T&Countable $x */
+            public function packCountable($x): void {}
+
+            /** @return T&Countable */
+            public function unpackCountable() { throw new Exception(); }
+
+            /** @param T $x */
+            public function pack($x): void {}
+
+            /** @return Countable&CBox<T> */
+            public function countableFirst() { throw new Exception(); }
+
+            /** @return CBox<T>&Countable */
+            public function countableLast() { throw new Exception(); }
         }
 ';
 
@@ -740,34 +760,91 @@ final class CallSiteVarianceTest extends TestCase
                     class RO {}
 
                     /**
-                     * @template T
+                     * @template T of A
                      * @extends RO<T>
                      */
                     class RW extends RO {}
 
-                    /** @param RO<covariant mixed> $_ro */
-                    function takes(RO $_ro): void {}
+                    /** @param RO<covariant A> $_ro */
+                    function takesCovariant(RO $_ro): void {}
+
+                    /** @param RO<A> $_ro */
+                    function takesPlain(RO $_ro): void {}
 
                     /** @param RW<contravariant B> $rw */
-                    function test(RW $rw): void { takes($rw); }',
+                    function test(RW $rw): void {
+                        takesPlain($rw);
+                        takesCovariant($rw);
+                    }',
                 'assertions' => [],
                 'ignored_issues' => ['RedundantCallSiteVariance'],
             ],
             'starCollectionIsAcceptedByACovariantTraversableParam' => [
                 'code' => '<?php' . self::HIERARCHY . '
                     /**
-                     * @template T
+                     * @template T of A
                      * @implements IteratorAggregate<int, T>
                      */
                     abstract class Coll implements IteratorAggregate {}
 
-                    /** @param Traversable<int, covariant mixed> $_t */
+                    /** @param Traversable<int, covariant A> $_t */
                     function takes($_t): void {}
 
                     /** @param Coll<*> $coll */
                     function test(Coll $coll): void { takes($coll); }',
                 'assertions' => [],
                 'ignored_issues' => ['RedundantCallSiteVariance'],
+            ],
+            'explicitMixedArgumentsFitAContravariantContainer' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /** @param Box<contravariant A> $_a */
+                    function takesA(Box $_a): void {}
+
+                    /**
+                     * @param Box<mixed> $mixed
+                     * @param Box<contravariant mixed> $contravariant
+                     */
+                    function test(Box $mixed, Box $contravariant): void {
+                        takesA($mixed);
+                        takesA($contravariant);
+                    }',
+            ],
+            'projectionKeepsATemplateIntersectionConstraintOfAnArgument' => [
+                'code' => '<?php' . self::HIERARCHY . self::COUNTABLE_BOX . '
+                    class CountableB extends B implements Countable
+                    {
+                        #[\\Override]
+                        public function count(): int { return 0; }
+                    }
+
+                    /** @param CBox<contravariant B> $box */
+                    function test(CBox $box): void { $box->packCountable(new CountableB()); }',
+            ],
+            'projectionReadsAnIntersectionMemberOfAResult' => [
+                'code' => '<?php' . self::HIERARCHY . self::COUNTABLE_BOX . '
+                    /** @param CBox<covariant B> $box */
+                    function test(CBox $box): void {
+                        $result = $box->unpackCountable();
+                        /** @psalm-check-type-exact $result = B&Countable */
+                    }',
+            ],
+            'projectionResultOfAMethodTemplateBoundedByANullableReceiverTemplate' => [
+                'code' => '<?php' . self::HIERARCHY . self::BOUNDED_TEMPLATE_RBOX . '
+                    /** @param RBox<covariant B> $box */
+                    function test(RBox $box): void {
+                        /** @psalm-suppress InvalidArgument */
+                        $result = $box->packNullable(new B());
+                        /** @psalm-check-type-exact $result = B|null */
+                    }',
+            ],
+            'projectionResultOfAMethodTemplateBoundedByAListOfTheReceiverTemplate' => [
+                'code' => '<?php' . self::HIERARCHY . self::BOUNDED_TEMPLATE_RBOX . '
+                    /** @param RBox<covariant B> $box */
+                    function test(RBox $box): void {
+                        /** @psalm-suppress InvalidArgument */
+                        $result = $box->packList([new B()]);
+                        /** @psalm-check-type-exact $result = list<B> */
+                    }',
             ],
             'foreachOverAStarTraversableAndAnIterableKeepsBothValues' => [
                 'code' => '<?php' . self::HIERARCHY . '
@@ -995,7 +1072,7 @@ final class CallSiteVarianceTest extends TestCase
                     function test(Mapped $mapped): void {
                         $mapped->mapOut(fn() => new B());
                     }',
-                'error_message' => 'never',
+                'error_message' => 'expects callable[impure]():never',
             ],
             'projectionContravariantCallbackReturnRejectsASupertype' => [
                 'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
@@ -1011,7 +1088,7 @@ final class CallSiteVarianceTest extends TestCase
                     function test(Mapped $mapped): void {
                         $mapped->mapOut(fn() => new A());
                     }',
-                'error_message' => 'never',
+                'error_message' => 'expects callable[impure]():never',
             ],
             'projectionRejectsAWriteThroughTheReadValueOfACarriedArgument' => [
                 'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
@@ -1250,7 +1327,7 @@ final class CallSiteVarianceTest extends TestCase
                 'code' => '<?php' . self::HIERARCHY . self::RBOX . '
                     /** @param RBox<covariant B> $box */
                     function test(RBox $box): void { $box->packAll([new B()]); }',
-                'error_message' => 'never',
+                'error_message' => 'expects array<never, never>, but list{B} provided',
             ],
             'projectionRejectsAWriteOnAStaticResultOfACovariantReceiver' => [
                 'code' => '<?php' . self::HIERARCHY . self::RBOX . '
@@ -1341,6 +1418,57 @@ final class CallSiteVarianceTest extends TestCase
                     /** @param Plain<B> $plain */
                     function test(Plain $plain): void { $plain->make()->second()->containerOnly(); }',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'projectionEnforcesATemplateIntersectionConstraintOfAnArgument' => [
+                'code' => '<?php' . self::HIERARCHY . self::COUNTABLE_BOX . '
+                    /** @param CBox<contravariant B> $box */
+                    function test(CBox $box): void { $box->packCountable(new B()); }',
+                'error_message' => 'expects B&Countable',
+            ],
+            'projectionRejectsAWriteThroughAnIntersectionMemberBeforeTheGeneric' => [
+                'code' => '<?php' . self::HIERARCHY . self::COUNTABLE_BOX . '
+                    /** @param CBox<covariant B> $box */
+                    function test(CBox $box): void { $box->countableFirst()->pack(new B()); }',
+                'error_message' => 'expects never',
+            ],
+            'projectionRejectsAWriteThroughAnIntersectionMemberAfterTheGeneric' => [
+                'code' => '<?php' . self::HIERARCHY . self::COUNTABLE_BOX . '
+                    /** @param CBox<covariant B> $box */
+                    function test(CBox $box): void { $box->countableLast()->pack(new B()); }',
+                'error_message' => 'expects never',
+            ],
+            'covariantContainerOfADeclaredCovariantTemplateStillReadsTheBound' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /** @template-covariant T */
+                    class RO {}
+
+                    /**
+                     * @template T of A
+                     * @extends RO<T>
+                     */
+                    class RW extends RO {}
+
+                    /** @param RO<B> $_ro */
+                    function takes(RO $_ro): void {}
+
+                    /** @param RW<contravariant B> $rw */
+                    function test(RW $rw): void { takes($rw); }',
+                'error_message' => 'expects RO<B>, but parent type RW<contravariant B> provided',
+            ],
+            'starCollectionIsReadAsItsBound' => [
+                'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
+                    /**
+                     * @template T of A
+                     * @implements IteratorAggregate<int, T>
+                     */
+                    abstract class Coll implements IteratorAggregate {}
+
+                    /** @param Traversable<int, B> $_t */
+                    function takes($_t): void {}
+
+                    /** @param Coll<*> $coll */
+                    function test(Coll $coll): void { takes($coll); }',
+                'error_message' => 'expects Traversable<int, B>, but parent type Coll<*> provided',
             ],
             'combinedCallSiteVariancesAreNotMerged' => [
                 'code' => '<?php' . self::HIERARCHY . '
