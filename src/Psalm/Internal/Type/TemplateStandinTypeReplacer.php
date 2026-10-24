@@ -43,6 +43,7 @@ use Psalm\Type\Variance;
 
 use function array_fill;
 use function array_filter;
+use function array_intersect_key;
 use function array_keys;
 use function array_merge;
 use function array_search;
@@ -1336,6 +1337,9 @@ final class TemplateStandinTypeReplacer
     /**
      * @param TGenericObject|TNamedObject|TIterable $input_type_part
      * @param TGenericObject|TIterable $container_type_part
+     * @param array<int, Variance>|null $input_variances filled with the call-site variances of the input that the
+     *        returned params carry. A param computed from several of the input's, or from one that has a call-site
+     *        variance in a nested position, carries Variance::Bivariant: it only fits a container `*`.
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      * @return list<Union>
      */
@@ -1344,7 +1348,13 @@ final class TemplateStandinTypeReplacer
         Atomic $input_type_part,
         Atomic $container_type_part,
         ?array &$container_type_params_covariant = null,
+        ?array &$input_variances = null,
     ): array {
+        $own_variances = $input_type_part instanceof TGenericObject ? $input_type_part->type_param_variances : [];
+        $input_variances = strtolower($input_type_part->value) === strtolower($container_type_part->value)
+            ? $own_variances
+            : [];
+
         if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
             $input_type_params = $input_type_part->type_params;
 
@@ -1390,10 +1400,10 @@ final class TemplateStandinTypeReplacer
             ? $codebase->classlike_storage_provider->get($container_type_part->value)->template_covariants
             : null;
 
-        // `Box<covariant T>` and `Box<*>` read the argument like a covariant template does
+        // `Box<covariant T>` reads the argument like a covariant template does
         if ($container_type_part instanceof TGenericObject) {
             foreach ($container_type_part->type_param_variances as $i => $variance) {
-                if ($variance !== Variance::Contravariant) {
+                if ($variance === Variance::Covariant) {
                     $container_type_params_covariant[$i] = true;
                 }
             }
@@ -1431,9 +1441,11 @@ final class TemplateStandinTypeReplacer
                 $params = $template_extends[$container_type_part_value];
 
                 $new_input_params = [];
+                $mapped_input_variances = [];
 
                 foreach ($params as $extended_input_param_type) {
                     $new_input_param = null;
+                    $used_offsets = [];
 
                     foreach ($extended_input_param_type->getAtomicTypes() as $extended_template) {
                         $extended_templates = $extended_template instanceof TTemplateParam
@@ -1463,6 +1475,7 @@ final class TemplateStandinTypeReplacer
                                     true,
                                 );
 
+                                $used_offsets[$old_params_offset] = true;
                                 $candidate_param_types[] = ($input_type_params[$old_params_offset] ?? Type::getMixed())
                                     ->setProperties(['from_template_default' => true]);
                             }
@@ -1482,10 +1495,41 @@ final class TemplateStandinTypeReplacer
                         $codebase,
                     );
 
+                    foreach ($extended_input_param_type->getTemplateTypes() as $nested_template) {
+                        $nested_offset = array_search(
+                            $nested_template->param_name,
+                            array_keys($input_class_storage->template_types ?? []),
+                            true,
+                        );
+
+                        if ($nested_offset !== false && $nested_template->defining_class === $input_class_storage->name) {
+                            $used_offsets[$nested_offset] = true;
+                        }
+                    }
+
+                    $affecting_variances = array_intersect_key($own_variances, $used_offsets);
+
+                    if ($affecting_variances) {
+                        $is_bare_template = count($used_offsets) === 1
+                            && $extended_input_param_type->isSingle()
+                            && $extended_input_param_type->getSingleAtomic() instanceof TTemplateParam;
+                        $mapped_input_variances[count($new_input_params)] = $is_bare_template
+                            ? reset($affecting_variances)
+                            : Variance::Bivariant;
+                    }
+
                     $new_input_params[] = $new_input_param;
                 }
 
                 $input_type_params = $new_input_params;
+                $input_variances = $mapped_input_variances;
+            }
+        }
+
+        // a call-site variance the container class declares for the template anyway is no call-site variance
+        foreach ($input_variances as $i => $input_variance) {
+            if ($input_variance === Variance::Covariant && ($container_type_params_covariant[$i] ?? false)) {
+                unset($input_variances[$i]);
             }
         }
 

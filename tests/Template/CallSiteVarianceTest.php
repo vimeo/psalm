@@ -155,6 +155,68 @@ final class CallSiteVarianceTest extends TestCase
                      */
                     function takes(NBox $_star, NBox $_named): void {}',
             ],
+            'ancestorArgumentKeepsCallSiteVariance' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /**
+                     * @template U
+                     * @extends Box<U>
+                     */
+                    class SubBox extends Box {}
+
+                    /** @param Box<covariant B> $_box */
+                    function takes(Box $_box): void {}
+
+                    /** @param SubBox<covariant B> $sub */
+                    function test(SubBox $sub): void {
+                        takes($sub);
+                    }',
+            ],
+            'ancestorWithCompositeArgumentFitsOnlyAStar' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /**
+                     * @template U
+                     * @extends Box<array<U>>
+                     */
+                    class ArraysBox extends Box {}
+
+                    /** @param Box<*> $_box */
+                    function takes(Box $_box): void {}
+
+                    /** @param ArraysBox<covariant B> $sub */
+                    function test(ArraysBox $sub): void {
+                        takes($sub);
+                    }',
+            ],
+            'covariantArgumentInferredIntoCovariantMethodTemplate' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /**
+                     * @template T
+                     * @param Box<covariant T> $_box
+                     * @return T
+                     */
+                    function unbox(Box $_box) { throw new Exception(); }
+
+                    /** @param Box<covariant C> $box */
+                    function test(Box $box): void {
+                        $result = unbox($box);
+                        /** @psalm-check-type-exact $result = C */
+                    }',
+            ],
+            'contravariantContainerInfersTheArgument' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /**
+                     * @template T
+                     * @param Box<contravariant T> $_box
+                     * @return T
+                     */
+                    function sink(Box $_box) { throw new Exception(); }
+
+                    /** @param Box<A> $box */
+                    function test(Box $box): void {
+                        $result = sink($box);
+                        /** @psalm-check-type-exact $result = A */
+                    }',
+            ],
             'combinedCallSiteVariancesAreKeptApart' => [
                 'code' => '<?php' . self::HIERARCHY . '
                     /** @param Box<covariant A> $_box */
@@ -243,7 +305,7 @@ final class CallSiteVarianceTest extends TestCase
                     function test(Box $box): void {
                         takes($box);
                     }',
-                'error_message' => 'ArgumentTypeCoercion',
+                'error_message' => 'InvalidArgument',
             ],
             'contravariantContainerRejectsCovariantInput' => [
                 'code' => '<?php' . self::HIERARCHY . '
@@ -253,6 +315,55 @@ final class CallSiteVarianceTest extends TestCase
                     /** @param Box<covariant A> $box */
                     function test(Box $box): void {
                         takes($box);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'ancestorArgumentKeepsCallSiteVarianceAgainstInvariantContainer' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /**
+                     * @template U
+                     * @extends Box<U>
+                     */
+                    class SubBox extends Box {}
+
+                    /** @param Box<B> $_box */
+                    function takes(Box $_box): void {}
+
+                    /** @param SubBox<covariant B> $sub */
+                    function test(SubBox $sub): void {
+                        takes($sub);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'ancestorWithCompositeArgumentIsRejectedByAnInvariantContainer' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /**
+                     * @template U
+                     * @extends Box<array<U>>
+                     */
+                    class ArraysBox extends Box {}
+
+                    /** @param Box<array<B>> $_box */
+                    function takes(Box $_box): void {}
+
+                    /** @param ArraysBox<covariant B> $sub */
+                    function test(ArraysBox $sub): void {
+                        takes($sub);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'covariantArgumentIsNotAnInvariantMethodTemplate' => [
+                'code' => '<?php' . self::HIERARCHY . '
+                    /**
+                     * @template T
+                     * @param Box<T> $_box
+                     * @return T
+                     */
+                    function unbox(Box $_box) { throw new Exception(); }
+
+                    /** @param Box<covariant C> $box */
+                    function test(Box $box): void {
+                        unbox($box);
                     }',
                 'error_message' => 'InvalidArgument',
             ],

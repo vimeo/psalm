@@ -10,14 +10,10 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Variance;
 
-use function array_keys;
 use function array_merge;
-use function array_search;
-use function array_values;
 use function count;
 
 /**
@@ -67,6 +63,7 @@ final class GenericTypeComparator
             $input_type_part,
             $container_type_part,
             $container_type_params_covariant,
+            $input_variances,
         );
 
         $atomic_comparison_result_type_params = null;
@@ -86,6 +83,28 @@ final class GenericTypeComparator
 
             $container_param = $container_type_part->type_params[$i];
 
+            $container_variance = $container_type_part instanceof TGenericObject
+                ? $container_type_part->type_param_variances[$i] ?? null
+                : null;
+
+            if ($container_variance === Variance::Bivariant) {
+                continue;
+            }
+
+            $input_variance = $input_variances[$i] ?? null;
+
+            // an input argument with a call-site variance only fits a container argument with the same one. This
+            // comes before the shortcut below, which only concerns what the argument holds
+            if ($input_variance !== null && $input_variance !== $container_variance) {
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->type_coerced = false;
+                }
+
+                $all_types_contain = false;
+
+                continue;
+            }
+
             // a param standing for `never` (an empty construction's type
             // variable included) is widened to the container's param: the
             // value is being handed to code that sees it as the wider type
@@ -101,39 +120,39 @@ final class GenericTypeComparator
                 continue;
             }
 
-            $container_variance = $container_type_part instanceof TGenericObject
-                ? $container_type_part->type_param_variances[$i] ?? null
-                : null;
-
-            if ($container_variance === Variance::Bivariant) {
-                continue;
-            }
-
-            $input_variance = $input_type_part instanceof TGenericObject
-                ? self::getInputVariance($codebase, $input_type_part, $container_type_part, $i)
-                : null;
-
-            // an input argument with a call-site variance only fits a container argument with the same one
-            if ($input_variance !== null && $input_variance !== $container_variance) {
-                if ($atomic_comparison_result) {
-                    $atomic_comparison_result->type_coerced = false;
-                }
-
-                $all_types_contain = false;
-
-                continue;
-            }
-
             $param_comparison_result = new TypeComparisonResult();
 
-            [$contained_param, $containing_param] = $container_variance === Variance::Contravariant
-                ? [$container_param, $input_param]
-                : [$input_param, $container_param];
+            if ($container_variance === Variance::Contravariant) {
+                // like the invariant check below, templates are bound by the arguments, not compared
+                if ($container_param->hasTemplate() || $input_param->hasTemplate() || $container_param->had_template) {
+                    continue;
+                }
 
-            if (!UnionTypeComparator::isContainedBy(
+                $lower_bounds_before = count($param_comparison_result->type_variable_lower_bounds);
+
+                $reverse_contained = UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $container_param,
+                    $input_param,
+                    $container_param->ignore_nullable_issues,
+                    $container_param->ignore_falsable_issues,
+                    $param_comparison_result,
+                    $allow_interface_equality,
+                );
+
+                self::markMirroredLowerBounds($param_comparison_result, $lower_bounds_before);
+
+                if (!$reverse_contained || $param_comparison_result->type_coerced) {
+                    $all_types_contain = false;
+
+                    if ($atomic_comparison_result) {
+                        $atomic_comparison_result->type_coerced = false;
+                    }
+                }
+            } elseif (!UnionTypeComparator::isContainedBy(
                 $codebase,
-                $contained_param,
-                $containing_param,
+                $input_param,
+                $container_param,
                 $input_param->ignore_nullable_issues,
                 $input_param->ignore_falsable_issues,
                 $param_comparison_result,
@@ -189,7 +208,6 @@ final class GenericTypeComparator
                     }
                 } else {
                     if (!($container_type_params_covariant[$i] ?? false)
-                        && $container_variance !== Variance::Contravariant
                         && !$container_param->had_template
                     ) {
                         $lower_bounds_before = count($param_comparison_result->type_variable_lower_bounds);
@@ -205,14 +223,7 @@ final class GenericTypeComparator
                             $allow_interface_equality,
                         );
 
-                        // lower bounds this reverse check recorded are mirrors
-                        // of the container param, not values the variable holds
-                        $lower_bounds_count = count($param_comparison_result->type_variable_lower_bounds);
-                        for ($mirror_i = $lower_bounds_before; $mirror_i < $lower_bounds_count; $mirror_i++) {
-                            $param_comparison_result
-                                ->type_variable_lower_bounds[$mirror_i][1]
-                                ->from_invariant_argument_mirror = true;
-                        }
+                        self::markMirroredLowerBounds($param_comparison_result, $lower_bounds_before);
 
                         if (!$reverse_contained || $param_comparison_result->type_coerced) {
                             if ($container_param->hasStaticObject()
@@ -285,60 +296,15 @@ final class GenericTypeComparator
     }
 
     /**
-     * The call-site variance of the input's argument that ends up as the container's argument at $offset.
-     * One equal to the variance the container class declares for the template is no call-site variance.
+     * Lower bounds a reverse ("basically the same") check recorded are mirrors of the container param, not values
+     * the variable holds
      */
-    private static function getInputVariance(
-        Codebase $codebase,
-        TGenericObject $input_type_part,
-        Atomic $container_type_part,
-        int $offset,
-    ): ?Variance {
-        if ($input_type_part->type_param_variances === []) {
-            return null;
+    private static function markMirroredLowerBounds(TypeComparisonResult $result, int $first_mirror): void
+    {
+        $lower_bounds_count = count($result->type_variable_lower_bounds);
+
+        for ($i = $first_mirror; $i < $lower_bounds_count; $i++) {
+            $result->type_variable_lower_bounds[$i][1]->from_invariant_argument_mirror = true;
         }
-
-        $input_offset = $offset;
-
-        if ($input_type_part->value !== $container_type_part->value) {
-            $input_storage = $codebase->classlike_storage_provider->has($input_type_part->value)
-                ? $codebase->classlike_storage_provider->get($input_type_part->value)
-                : null;
-
-            $extended_params = $input_storage?->template_extended_params[$container_type_part->value] ?? null;
-            $extended_param = $extended_params !== null ? array_values($extended_params)[$offset] ?? null : null;
-            $extended_atomic = $extended_param?->isSingle() ? $extended_param->getSingleAtomic() : null;
-
-            if (!$input_storage
-                || !$extended_atomic instanceof TTemplateParam
-                || $extended_atomic->defining_class !== $input_storage->name
-            ) {
-                return null;
-            }
-
-            $input_offset = array_search(
-                $extended_atomic->param_name,
-                array_keys($input_storage->template_types ?? []),
-                true,
-            );
-
-            if ($input_offset === false) {
-                return null;
-            }
-        }
-
-        $variance = $input_type_part->type_param_variances[$input_offset] ?? null;
-
-        if ($variance === Variance::Covariant
-            && $codebase->classlike_storage_provider->has($container_type_part->value)
-        ) {
-            $container_storage = $codebase->classlike_storage_provider->get($container_type_part->value);
-
-            if ($container_storage->template_covariants[$offset] ?? false) {
-                return null;
-            }
-        }
-
-        return $variance;
     }
 }
