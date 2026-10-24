@@ -52,11 +52,6 @@ final class ParseTreeCreator
         'impure-Closure',
     ];
 
-    /** Tokens that, following `covariant` or `contravariant`, make it a class name rather than a variance prefix. */
-    private const NOT_AN_ARGUMENT_START = [
-        '<', '>', '|', ',', '&', '[', ']', '(', ')', '{', '}', ':', '::', '=', '...', 'as', 'is', 'is not', 'of',
-    ];
-
     private ParseTree $parse_tree;
 
     private ParseTree $current_leaf;
@@ -925,11 +920,7 @@ final class ParseTreeCreator
      */
     private function handleVariance(array $type_token): void
     {
-        $next_token = $this->type_tokens[$this->t + 1] ?? null;
-
-        if ($next_token === null
-            || in_array($next_token[0], self::NOT_AN_ARGUMENT_START, true)
-        ) {
+        if (!TypeTokenizer::isVariancePrefix($this->type_tokens, $this->t)) {
             $this->handleValue($type_token);
 
             return;

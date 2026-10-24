@@ -140,6 +140,21 @@ final class CallSiteVarianceTest extends TestCase
                         /** @psalm-check-type-exact $result = C */
                     }',
             ],
+            'starAndClassNamedCovariantInNamespace' => [
+                'code' => '<?php
+                    namespace N;
+
+                    class covariant {}
+
+                    /** @template T */
+                    class NBox {}
+
+                    /**
+                     * @param NBox<*> $_star
+                     * @param NBox<covariant> $_named
+                     */
+                    function takes(NBox $_star, NBox $_named): void {}',
+            ],
             'combinedCallSiteVariancesAreKeptApart' => [
                 'code' => '<?php' . self::HIERARCHY . '
                     /** @param Box<covariant A> $_box */
