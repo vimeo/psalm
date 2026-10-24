@@ -1559,6 +1559,22 @@ final class CallSiteVarianceTest extends TestCase
                     function test(CBox $box): void { $box->countableLast()->pack(new B()); }',
                 'error_message' => 'expects never',
             ],
+            'projectionRejectsAWriteThroughAnIntersectionWithAnUnprojectedTemplate' => [
+                'code' => '<?php' . self::HIERARCHY . self::COUNTABLE_BOX . '
+                    /**
+                     * @template T of A
+                     * @template U of object
+                     */
+                    class Source
+                    {
+                        /** @return U&CBox<T> */
+                        public function get() { throw new Exception(); }
+                    }
+
+                    /** @param Source<covariant B, Countable> $source */
+                    function test(Source $source): void { $source->get()->pack(new B()); }',
+                'error_message' => 'expects never',
+            ],
             'covariantContainerOfADeclaredCovariantTemplateStillReadsTheBound' => [
                 'code' => '<?php' . self::HIERARCHY . self::PROJECTIONS . '
                     /** @template-covariant T */
