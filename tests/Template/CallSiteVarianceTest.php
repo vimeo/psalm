@@ -163,6 +163,9 @@ final class CallSiteVarianceTest extends TestCase
             /** @param T&Countable $x */
             public function packCountable($x): void {}
 
+            /** @param Countable&T $x */
+            public function packCountableFirst($x): void {}
+
             /** @return T&Countable */
             public function unpackCountable() { throw new Exception(); }
 
@@ -854,7 +857,10 @@ final class CallSiteVarianceTest extends TestCase
                     }
 
                     /** @param CBox<contravariant B> $box */
-                    function test(CBox $box): void { $box->packCountable(new CountableB()); }',
+                    function test(CBox $box): void {
+                        $box->packCountable(new CountableB());
+                        $box->packCountableFirst(new CountableB());
+                    }',
             ],
             'projectionReadsAnIntersectionMemberOfAResult' => [
                 'code' => '<?php' . self::HIERARCHY . self::COUNTABLE_BOX . '
@@ -1570,6 +1576,24 @@ final class CallSiteVarianceTest extends TestCase
                     /** @param CBox<contravariant B> $box */
                     function test(CBox $box): void { $box->packCountable(new B()); }',
                 'error_message' => 'expects B&Countable',
+            ],
+            'projectionEnforcesATemplateIntersectionConstraintWrittenAfterTheInterface' => [
+                'code' => '<?php' . self::HIERARCHY . self::COUNTABLE_BOX . '
+                    /** @param CBox<contravariant B> $box */
+                    function test(CBox $box): void { $box->packCountableFirst(new B()); }',
+                'error_message' => 'expects Countable&B',
+            ],
+            'projectionRejectsAWriteOfATemplateIntersectionWrittenAfterTheInterface' => [
+                'code' => '<?php' . self::HIERARCHY . self::COUNTABLE_BOX . '
+                    class CountableB extends B implements Countable
+                    {
+                        #[\\Override]
+                        public function count(): int { return 0; }
+                    }
+
+                    /** @param CBox<covariant B> $box */
+                    function test(CBox $box): void { $box->packCountableFirst(new CountableB()); }',
+                'error_message' => 'expects never',
             ],
             'projectionRejectsAWriteThroughAnIntersectionMemberBeforeTheGeneric' => [
                 'code' => '<?php' . self::HIERARCHY . self::COUNTABLE_BOX . '
