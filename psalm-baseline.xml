@@ -2874,6 +2874,14 @@
       <code><![CDATA[empty($normalizedEntry['type'])]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="tests/Internal/Provider/CountingParserCacheProvider.php">
+    <InvalidExtendClass>
+      <code><![CDATA[ParserCacheProvider]]></code>
+    </InvalidExtendClass>
+    <MethodSignatureMismatch>
+      <code><![CDATA[#[Override]]]></code>
+    </MethodSignatureMismatch>
+  </file>
   <file src="tests/Internal/Provider/FakeParserCacheProvider.php">
     <InvalidExtendClass>
       <code><![CDATA[ParserCacheProvider]]></code>
