@@ -41,12 +41,14 @@ final class MutationStatementsCacheTest extends TestCase
                 RecursiveIteratorIterator::CHILD_FIRST,
             );
 
+            // Best effort: ProjectAnalyzer::$instance keeps this test's Cache alive, and
+            // Cache holds its lock file open, which Windows refuses to delete.
             /** @var SplFileInfo $file */
             foreach ($files as $file) {
-                $file->isDir() ? rmdir($file->getPathname()) : unlink($file->getPathname());
+                $file->isDir() ? @rmdir($file->getPathname()) : @unlink($file->getPathname());
             }
 
-            rmdir($this->cache_dir);
+            @rmdir($this->cache_dir);
         }
     }
 
