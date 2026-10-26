@@ -1,6 +1,7 @@
 {
     "require": {
-        "infection/infection": "^0.35.8"
+        "infection/infection": "^0.35.8",
+        "phpunit/phpcov": "^13.2"
     },
     "config": {
         "allow-plugins": {
