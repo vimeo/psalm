@@ -1329,6 +1329,91 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$three' => 'float',
                 ],
             ],
+            'conditionalOnStringDoesNotMatchObjectWithToString' => [
+                'code' => '<?php
+                    final class H {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @param string|H $str
+                     * @return ($str is string ? string : H)
+                     */
+                    function strip($str) {
+                        return $str;
+                    }
+
+                    /** @param string|H $x */
+                    function f($x): void {
+                        $y = strip($x);
+                        if (!($y instanceof H)) {
+                            echo "not H";
+                        }
+                    }
+
+                    $a = strip(new H());
+                    $b = strip("a");',
+                'assertions' => [
+                    '$a' => 'H',
+                    '$b' => 'string',
+                ],
+            ],
+            'conditionalOnStringTypesDoesNotMatchObjectWithToString' => [
+                'code' => '<?php
+                    final class H {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @param non-empty-string|H $v
+                     * @return ($v is non-empty-string ? \'yes\' : \'no\')
+                     */
+                    function isNonEmptyString($v) {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @param scalar|H $v
+                     * @return ($v is scalar ? \'yes\' : \'no\')
+                     */
+                    function isScalar($v) {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return (T is string ? \'yes\' : \'no\')
+                     */
+                    function isStringTemplate($v) {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @param string|Stringable $v
+                     * @return ($v is string|Stringable ? \'yes\' : \'no\')
+                     */
+                    function isStringOrStringable($v) {
+                        throw new RuntimeException();
+                    }
+
+                    $nonEmptyString = isNonEmptyString(new H());
+                    $scalar = isScalar(new H());
+                    $template = isStringTemplate(new H());
+                    $stringable = isStringOrStringable(new H());',
+                'assertions' => [
+                    '$nonEmptyString===' => '\'no\'',
+                    '$scalar===' => '\'no\'',
+                    '$template===' => '\'no\'',
+                    '$stringable===' => '\'yes\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
