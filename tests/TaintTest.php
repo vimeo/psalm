@@ -4511,6 +4511,60 @@ final class TaintTest extends TestCase
                         echo $model->toArray()["body"];
                     }',
             ],
+            'propertyBagOfAnObjectTrackedPerInstanceKeepsObjectsApart' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-property-bag $properties
+                     * @psalm-taint-specialize
+                     */
+                    abstract class Bag {
+                        /** @var array<string, mixed> */
+                        protected array $properties = [];
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class Model extends Bag {
+                        public function __construct(string $title) {
+                            $this->properties["title"] = $title;
+                        }
+
+                        public function getTitle(): string {
+                            return (string) $this->properties["title"];
+                        }
+                    }
+
+                    $tainted = new Model((string) $_GET["x"]);
+                    $clean = new Model("safe");
+                    echo $clean->getTitle();',
+            ],
+            'propertyBagElementsUnderNestedIntKeysKeepTheirKeysApart' => [
+                'code' => '<?php
+                    /** @psalm-taint-property-bag $properties */
+                    abstract class Bag {
+                        /** @var array<string, mixed> */
+                        protected array $properties = [];
+
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @property list<string> $tags */
+                    final class Model extends Bag {
+                        public function setTags(string $tag): void {
+                            $this->properties["tags"][0] = $tag;
+                            $this->properties["tags"][1] = "safe";
+                        }
+                    }
+
+                    function save(Model $model): void {
+                        $model->setTags((string) $_GET["x"]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->tags[1];
+                    }',
+            ],
             'propertyBagElementsKeepTheOtherPropertiesApart' => [
                 'code' => '<?php
                     /** @psalm-taint-property-bag $properties */
@@ -6635,6 +6689,61 @@ final class TaintTest extends TestCase
 
                     function show(Model $model): void {
                         echo $model->getTitle();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyBagOfAnObjectTrackedPerInstance' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-property-bag $properties
+                     * @psalm-taint-specialize
+                     */
+                    abstract class Bag {
+                        /** @var array<string, mixed> */
+                        protected array $properties = [];
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class Model extends Bag {
+                        public function __construct(string $title) {
+                            $this->properties["title"] = $title;
+                        }
+
+                        public function getTitle(): string {
+                            return (string) $this->properties["title"];
+                        }
+                    }
+
+                    $model = new Model((string) $_GET["x"]);
+                    echo $model->getTitle();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyBagElementUnderANestedIntKey' => [
+                'code' => '<?php
+                    /** @psalm-taint-property-bag $properties */
+                    abstract class Bag {
+                        /** @var array<string, mixed> */
+                        protected array $properties = [];
+
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @property list<string> $tags */
+                    final class Model extends Bag {
+                        public function setTags(string $tag): void {
+                            $this->properties["tags"][0] = $tag;
+                            $this->properties["tags"][1] = "safe";
+                        }
+                    }
+
+                    function save(Model $model): void {
+                        $model->setTags((string) $_GET["x"]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->tags[0];
                     }',
                 'error_message' => 'TaintedHtml',
             ],
