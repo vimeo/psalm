@@ -126,7 +126,7 @@
         ],
         "mutation": [
             "Composer\\Config::disableProcessTimeout",
-            "@php vendor-bin/infection/vendor/infection/infection/bin/infection --git-diff-lines --git-diff-base=origin/master --min-msi=100 --threads=max"
+            "@php vendor-bin/infection/vendor/infection/infection/bin/infection --git-diff-lines --git-diff-base=origin/master --with-uncovered --min-msi=100 --threads=max"
         ],
         "verify-callmap": "@php phpunit tests/Internal/Codebase/InternalCallMapHandlerTest.php",
         "psalm": "@php ./psalm",

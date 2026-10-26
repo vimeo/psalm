@@ -1,0 +1,60 @@
+name: Mutation testing
+
+on: pull_request
+permissions:
+  contents: read
+
+jobs:
+  infection:
+    name: Mutation testing (changed lines)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.5'
+          ini-values: zend.assertions=1, assert.exception=1
+          tools: composer:v2
+          coverage: xdebug
+          extensions: none, curl, dom, filter, intl, json, libxml, mbstring, opcache, openssl, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
+        env:
+          fail-fast: true
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Get Composer Cache Directories
+        id: composer-cache
+        run: |
+          echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+          echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
+
+      - name: Generate composer.lock
+        run: composer update --no-install
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Cache composer cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
+        with:
+          path: |
+            ${{ steps.composer-cache.outputs.files_cache }}
+            ${{ steps.composer-cache.outputs.vcs_cache }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Run composer install
+        run: composer install -o
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Install Infection
+        run: composer bin infection install
+
+      - name: Run Infection on the changed lines
+        run: bin/ci/infection-github-actions.sh
+        env:
+          BASE_REF: ${{ github.base_ref }}
