@@ -15,6 +15,32 @@ Domain skills (load them before touching the area):
 - `pr-description`: the PR description format, and reformatting existing descriptions
 - `plugin-api-bc`: a failing BC check, the roave XML, and the psalm-plugin-api PR
 
+## Fixing bugs and writing features
+
+These come first, before every other rule here:
+
+1. **Fix the root cause.** Find why the bug happens and fix that, not the symptom or the
+   one input that showed it. If the same mistake exists elsewhere (sibling classes,
+   other call sites), fix it there too.
+2. **Think through every way the change could cause bugs**, in edge cases and ordinary
+   ones: other callers of the changed code, subclasses and overrides, both analysis
+   modes, other PHP versions, caching, ordering. Check each one by adding a test.
+3. **Add an explicit test case for each of those cases**, not only for the reported bug.
+4. **Get 100% mutation coverage of the modified and added code** with Infection
+   (`vendor-bin/infection`; first `composer bin infection install`). Infection needs a
+   coverage driver; load Xdebug for that run only if it isn't enabled:
+
+   ```sh
+   composer mutation -- --test-framework-options=--filter=UnionTest \
+       --initial-tests-php-options="-d zend_extension=xdebug.so -d xdebug.mode=coverage"
+   ```
+
+   `composer mutation` mutates only the lines changed against `origin/master` and fails
+   unless every mutant is killed. Restrict the tests to the test classes that cover the
+   change with `--filter` (a plain class name; escaped namespaces don't survive the
+   quoting). Every escaped mutant needs a new test or a simpler change. Running the
+   covering tests this way is the one exception to running only single test cases.
+
 ## Validating changes: CI, not local test runs
 
 - Never run the PHPUnit suite locally to validate a branch. That includes whole test
@@ -140,10 +166,12 @@ workaround explicitly in the report.
 
 ## Tests
 
-- **Tests must assert the change.** Every test case a PR adds or changes must fail on the
-  base branch and pass on the PR, because it checks the exact behaviour being fixed or
-  added. Prove it by running that single test case on both (see above). Ways a test
-  silently asserts nothing:
+- **Tests must assert the change.** Every test case a PR adds or changes for the bug or
+  feature itself must fail on the base branch and pass on the PR, because it checks the
+  exact behaviour being fixed or added. Prove it by running that single test case on
+  both (see above). Edge-case tests that guard the change may pass on the base, but each
+  must kill a mutant of the change (Infection confirms it). Ways a test silently asserts
+  nothing:
   - a valid-code case for a missed-issue fix (it passes on master too): use an invalid
     case asserting the issue;
   - an inferred-type fix without `'assertions' => ['$x' => 'expected type']` (key
@@ -183,6 +211,12 @@ workaround explicitly in the report.
 ## Code style
 
 - Match the surrounding code: comment density, naming, idiom.
+- Comments are concise and only explain what isn't obvious from the code:
+  - don't restate the code in prose;
+  - don't mention approaches that were tried, considered, replaced or removed, or
+    anything that only makes sense in the context of an agent's iteration history;
+  - prefer deleting an unnecessary comment over expanding or rewording it;
+  - document an idea once, where it naturally belongs.
 - Hot loops (`TaintFlowGraph::connectSinksAndSources()`, `TaintFlowResolution`): keep the
   branch structure inline and call `getChildNodes()` directly in each branch. Don't
   collect nodes into intermediate arrays (allocation per iteration), and avoid new
