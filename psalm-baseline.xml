@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@58c1f9195598dedff41e8c5f595e55158e36bfb9">
+<files psalm-version="dev-master@d8f4386a53514d98a4523a37a7a0f4cc3ced0309">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -3359,11 +3359,6 @@
                 )]]></code>
     </ImpureMethodCall>
   </file>
-  <file src="src/Psalm/Type/Atomic/TArray.php">
-    <ImmutableDependency>
-      <code><![CDATA[#[Override]]]></code>
-    </ImmutableDependency>
-  </file>
   <file src="src/Psalm/Type/Atomic/TCallable.php">
     <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
@@ -3411,9 +3406,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Type/Atomic/TClassStringMap.php">
-    <ImmutableDependency>
-      <code><![CDATA[#[Override]]]></code>
-    </ImmutableDependency>
     <ImplicitToStringCast>
       <code><![CDATA[$this->as_type]]></code>
     </ImplicitToStringCast>
@@ -3475,9 +3467,6 @@
     </ImmutableDependency>
   </file>
   <file src="src/Psalm/Type/Atomic/TGenericObject.php">
-    <ImmutableDependency>
-      <code><![CDATA[#[Override]]]></code>
-    </ImmutableDependency>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$intersection]]></code>
       <code><![CDATA[!$intersection]]></code>
@@ -3499,9 +3488,6 @@
     </ImmutableDependency>
   </file>
   <file src="src/Psalm/Type/Atomic/TIterable.php">
-    <ImmutableDependency>
-      <code><![CDATA[#[Override]]]></code>
-    </ImmutableDependency>
     <ImpureMethodCall>
       <code><![CDATA[TemplateInferredTypeReplacer::replace(
             $this->purity,
@@ -3537,7 +3523,6 @@
   </file>
   <file src="src/Psalm/Type/Atomic/TKeyedArray.php">
     <ImmutableDependency>
-      <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[#[Override]]]></code>
     </ImmutableDependency>
     <ImpureMethodCall>
@@ -3657,9 +3642,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Type/Atomic/TObjectWithProperties.php">
-    <ImmutableDependency>
-      <code><![CDATA[#[Override]]]></code>
-    </ImmutableDependency>
     <ImpureMethodCall>
       <code><![CDATA[TemplateInferredTypeReplacer::replace(
                 $property,
@@ -3704,9 +3686,6 @@
     </ImpureMethodCall>
   </file>
   <file src="src/Psalm/Type/Atomic/TTemplateParam.php">
-    <ImmutableDependency>
-      <code><![CDATA[#[Override]]]></code>
-    </ImmutableDependency>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$intersection]]></code>
     </RiskyTruthyFalsyComparison>

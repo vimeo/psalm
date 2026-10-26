@@ -105,6 +105,14 @@ class TNamedObject extends Atomic
         $cloned->is_static_resolved = $is_static;
         return $cloned;
     }
+
+    #[Override]
+    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
+    {
+        return $other_type::class === static::class
+            && $this->is_static === $other_type->is_static;
+    }
+
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
