@@ -192,9 +192,6 @@ workaround explicitly in the report.
 
 ## Debugging pitfalls
 
-- `Union::equals()` compares cached `id`s only when both sides have them. Calling
-  `getId()` in debug output populates the cache and changes results. Print ids only after
-  the comparison under investigation.
 - STDERR from analysis gets swallowed by `--output-format=compact`/grep. Debug with
   `file_put_contents('/path', ..., FILE_APPEND)`.
 - Empty Psalm output means it didn't run (wrong cwd, missing `vendor/`, crash), not
