@@ -36,13 +36,16 @@ These come first, before every other rule here:
    ```
 
    `composer mutation` mutates only the lines changed against `origin/master` and fails
-   unless every mutant is killed, uncovered ones included. The "Mutation testing" CI job
-   runs it on every PR that changes `src/`, against the coverage of the whole test suite
-   (collected in 8 chunks and merged). Locally, restrict it to the test classes that cover
-   the change. Restrict the tests to the test classes that cover the
-   change with `--filter` (a plain class name; escaped namespaces don't survive the
-   quoting). Every escaped mutant needs a new test or a simpler change. Running the
-   covering tests this way is the one exception to running only single test cases.
+   unless every mutant is killed, uncovered ones included. Restrict the tests to the test
+   classes that cover the change with `--filter` (a plain class name; escaped namespaces
+   don't survive the quoting). Every escaped mutant needs a new test or a simpler change.
+   Running the covering tests this way is the one exception to running only single test
+   cases.
+
+   The "Mutation testing" CI workflow mutates all of `src/` against the whole test suite
+   (coverage collected in 8 chunks, mutants in 16 shards) and fails when the MSI drops
+   below `minMsi` in `infection.json5`. Mutants whose covering tests exceed the timeout
+   are skipped and don't count. `minMsi` is raised gradually.
 
 ## Validating changes: CI, not local test runs
 

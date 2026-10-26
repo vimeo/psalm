@@ -22,6 +22,8 @@
         "configDir": "."
     },
     "timeout": 120,
+    // The MSI of the whole source tree the CI job requires: raised as tests improve.
+    "minMsi": 0,
     "tmpDir": "build/infection",
     "logs": {
         "text": "build/infection/infection.log",

@@ -6,10 +6,10 @@ permissions:
 
 jobs:
   changes:
-    name: Detect source changes
+    name: Detect code changes
     runs-on: ubuntu-latest
     outputs:
-      src: ${{ steps.changes.outputs.src }}
+      code: ${{ steps.changes.outputs.code }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
         with:
@@ -17,10 +17,10 @@ jobs:
 
       - id: changes
         run: |
-          if [ -n "$(git diff --name-only --diff-filter=AM "origin/$BASE_REF" -- src)" ]; then
-            echo "src=true" >> $GITHUB_OUTPUT
+          if [ -n "$(git diff --name-only "origin/$BASE_REF..." -- . ':!docs' ':!*.md')" ]; then
+            echo "code=true" >> $GITHUB_OUTPUT
           else
-            echo "src=false" >> $GITHUB_OUTPUT
+            echo "code=false" >> $GITHUB_OUTPUT
           fi
         env:
           BASE_REF: ${{ github.base_ref }}
@@ -28,7 +28,7 @@ jobs:
   coverage:
     name: "Coverage ${{ matrix.chunk }}/${{ matrix.count }}"
     needs: changes
-    if: needs.changes.outputs.src == 'true'
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
 
     strategy:
@@ -93,10 +93,21 @@ jobs:
           if-no-files-found: error
 
   infection:
-    name: Mutation testing (changed lines)
+    name: "Mutation testing ${{ matrix.shard }}/${{ matrix.count }}"
     needs: coverage
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 360
+
+    strategy:
+      fail-fast: false
+      matrix:
+        count: [16]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+
+    env:
+      SHARD_COUNT: "${{ matrix.count }}"
+      SHARD_NUMBER: "${{ matrix.shard }}"
+
     steps:
       - name: Set up PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
@@ -110,8 +121,6 @@ jobs:
           fail-fast: true
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
-        with:
-          fetch-depth: 0
 
       - name: Get Composer Cache Directories
         id: composer-cache
@@ -148,7 +157,34 @@ jobs:
           path: build
           merge-multiple: true
 
-      - name: Run Infection on the changed lines
+      - name: Run Infection on the files of the shard
         run: bin/ci/infection-github-actions.sh
-        env:
-          BASE_REF: ${{ github.base_ref }}
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mutation-summary-${{ matrix.shard }}
+          path: build/infection/summary-${{ matrix.shard }}.json
+          if-no-files-found: error
+
+  msi:
+    name: Mutation score
+    needs: infection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.5'
+          tools: none
+          coverage: none
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: mutation-summary-*
+          path: build/infection
+          merge-multiple: true
+
+      - name: Check the MSI of the whole source tree
+        run: php bin/ci/infection-msi.php build/infection/summary-*.json
