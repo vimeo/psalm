@@ -14,6 +14,7 @@
 /.gitattributes export-ignore
 /.github export-ignore
 /.gitignore export-ignore
+/infection.json5 export-ignore
 /keys.asc.gpg export-ignore
 /phpcs.xml export-ignore
 /phpunit.xml.dist export-ignore

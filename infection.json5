@@ -1,0 +1,33 @@
+{
+    "$schema": "vendor-bin/infection/vendor/infection/infection/resources/schema.json",
+    "source": {
+        "directories": ["src"],
+        // Same as the <exclude> of phpunit.xml.dist's <source>: code the unit tests don't cover.
+        "excludes": [
+            "Psalm/Issue",
+            "Psalm/Internal/Stubs",
+            "Psalm/Internal/LanguageServer",
+            "Psalm/Internal/ExecutionEnvironment",
+            "Psalm/SourceControl",
+            "Psalm/Plugin/Shepherd.php",
+            "Psalm/Internal/Fork/Pool.php",
+            "Psalm/Internal/Provider/ClassLikeStorageCacheProvider.php",
+            "Psalm/Internal/Provider/FileReferenceCacheProvider.php",
+            "Psalm/Internal/Provider/FileStorageCacheProvider.php",
+            "Psalm/Internal/Provider/ParserCacheProvider.php"
+        ]
+    },
+    "testFramework": "phpunit",
+    "phpUnit": {
+        "configDir": "."
+    },
+    "timeout": 120,
+    "tmpDir": "build/infection",
+    "logs": {
+        "text": "build/infection/infection.log",
+        "summary": "build/infection/summary.log"
+    },
+    "mutators": {
+        "@default": true
+    }
+}
