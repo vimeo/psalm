@@ -1,0 +1,10 @@
+{
+    "require": {
+        "infection/infection": "^0.35.8"
+    },
+    "config": {
+        "allow-plugins": {
+            "infection/extension-installer": true
+        }
+    }
+}
