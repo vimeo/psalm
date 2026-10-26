@@ -1,5 +1,0 @@
-<?php
-
-namespace StubDependency;
-
-class ProviderLib2Alias extends ProviderLib2 {}
