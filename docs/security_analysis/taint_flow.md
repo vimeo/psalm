@@ -219,7 +219,10 @@ function show(Model $model): void {
   `$model->toArray()['title']` are tainted. What is under a key the analysis doesn't know (an array whose keys aren't
   literals, or a key read with a variable) may be any property, and a key that names no property of the class is
   still returned under that key.
-+ When `$name` isn't a literal string, the call sets or returns every property it may name.
++ When `$name` isn't a literal string, the call sets or returns every property it may name. A copy loop,
+  `foreach ($values as $name => $value) { $model->set($name, $value); }`, sets each property to what is under its
+  name in `$values`, as `($values) -> $this->{key}` does, when `$name` and `$value` are still the key and the value of
+  the loop.
 + For a class with [`@psalm-taint-specialize`](avoiding_false_positives.md#specializing-taints-in-classes), properties
   are tracked per object.
 
