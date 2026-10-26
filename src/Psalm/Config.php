@@ -17,6 +17,7 @@ use JsonException;
 use LogicException;
 use OutOfBoundsException;
 use PhpParser\Node\Stmt\ClassLike;
+use PhpParser\Node\Stmt\Function_;
 use PhpParser\NodeFinder;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
@@ -64,6 +65,7 @@ use UnexpectedValueException;
 use XdgBaseDir\Xdg;
 use stdClass;
 
+use function array_any;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
@@ -448,7 +450,8 @@ final class Config
     public ?string $library_stubs_dir = null;
 
     /**
-     * @var array<string, array<string, list<string>>> the library stubs of each directory, with their class-likes
+     * @var array<string, array<string, array{list<string>, list<lowercase-string>}>> the library stubs of each
+     *     directory, with their class-likes and functions
      */
     private static array $library_stubs = [];
 
@@ -2630,7 +2633,8 @@ final class Config
 
         $dir_lvl_2 = dirname(__DIR__, 2);
 
-        // the stubs of the libraries the scanned code uses: those declaring a class-like the scan found
+        // the stubs of the libraries the scanned code uses: those declaring a class-like the scan found, or a
+        // function the scanned code declares (a library of functions only is loaded through its autoloaded files)
         $library_stubs = [];
         $available_library_stubs = $this->load_library_stubs
             ? self::getLibraryStubs(
@@ -2638,16 +2642,18 @@ final class Config
                     ?? $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'libraries',
             )
             : [];
-        foreach ($available_library_stubs as $library_stub => $classlikes) {
-            foreach ($classlikes as $classlike) {
-                if ($codebase->classlike_storage_provider->has($classlike)) {
-                    $library_stubs[] = $library_stub;
-                    // the real definitions of the others, which the stub then refines like a class the scan found
-                    foreach ($classlikes as $other_classlike) {
-                        $codebase->scanner->queueClassLikeForScanning($other_classlike, false, false);
-                    }
-
-                    break;
+        foreach ($available_library_stubs as $library_stub => [$classlikes, $functions]) {
+            if (array_any(
+                $classlikes,
+                static fn(string $classlike): bool => $codebase->classlike_storage_provider->has($classlike),
+            ) || array_any(
+                $functions,
+                static fn(string $function): bool => $codebase->functions->isDeclaredInCode($function),
+            )) {
+                $library_stubs[] = $library_stub;
+                // the real definitions of the class-likes, which the stub then refines like a class the scan found
+                foreach ($classlikes as $classlike) {
+                    $codebase->scanner->queueClassLikeForScanning($classlike, false, false);
                 }
             }
         }
@@ -2760,9 +2766,10 @@ final class Config
     }
 
     /**
-     * The library stubs of $dir, `<vendor>/<package>.phpstub`, with the class-likes each of them declares
+     * The library stubs of $dir, `<vendor>/<package>.phpstub`, with the class-likes and the functions each of them
+     * declares
      *
-     * @return array<string, list<string>>
+     * @return array<string, array{list<string>, list<lowercase-string>}>
      */
     private static function getLibraryStubs(string $dir): array
     {
@@ -2799,7 +2806,14 @@ final class Config
                     }
                 }
 
-                $library_stubs[$path] = $classlikes;
+                $functions = [];
+                foreach ((new NodeFinder())->findInstanceOf($stmts, Function_::class) as $function) {
+                    if ($function->namespacedName !== null) {
+                        $functions[] = strtolower($function->namespacedName->toString());
+                    }
+                }
+
+                $library_stubs[$path] = [$classlikes, $functions];
             }
         }
 

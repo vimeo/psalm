@@ -1,0 +1,8 @@
+<?php
+
+namespace LibraryStub;
+
+/**
+ * @psalm-taint-sink ssrf $url
+ */
+function fetch(string $url): string {}

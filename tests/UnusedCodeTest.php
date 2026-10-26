@@ -441,6 +441,29 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'usedExceptionsAreNotReported' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function used(bool $b): Exception {
+                        $e = new Exception("assigned");
+                        echo strlen($e->getMessage());
+                        echo strlen((new Exception("receiver"))->getMessage());
+                        if ($b) {
+                            throw new Exception("thrown");
+                        }
+                        $list = [new Exception("array")];
+                        echo count($list);
+                        return new Exception("returned");
+                    }
+
+                    /**
+                     * @return Generator<int, Exception, mixed, void>
+                     * @psalm-api
+                     */
+                    function gen(): Generator {
+                        yield new Exception("yielded");
+                    }',
+            ],
             'pureIteratorCursorMovesAreUsed' => [
                 'code' => '<?php
                     /**
@@ -2187,6 +2210,31 @@ final class UnusedCodeTest extends TestCase
                         $dt->modify("+1 day");
                     }',
                 'error_message' => 'UnusedMethodCall',
+            ],
+            'unusedNewException' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): void {
+                        new Exception("not thrown");
+                    }',
+                'error_message' => 'UnusedMethodCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:4:25 - The Exception instance created here is never thrown or used',
+            ],
+            'unusedNewExceptionWithImpureConstructor' => [
+                'code' => '<?php
+                    final class LoggedException extends RuntimeException {
+                        public function __construct(string $message) {
+                            echo $message;
+                            parent::__construct($message);
+                        }
+                    }
+
+                    /** @psalm-api */
+                    function f(): void {
+                        new LoggedException("not thrown");
+                    }',
+                'error_message' => 'UnusedMethodCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:11:25 - The LoggedException instance created here is never thrown or used',
             ],
             'unusedClassReferencesItself' => [
                 'code' => '<?php
