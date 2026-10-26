@@ -537,7 +537,16 @@ final class ReceiverPropertyTaints
         $graph->addNode($write_node);
 
         if ($class_storage->specialize_instance) {
-            self::addInstanceWrite($graph, $context, '$this', 'property bag write', [[true, $name]], $write_node, $location);
+            self::addInstanceWrite(
+                $graph,
+                $context,
+                '$this',
+                null,
+                'property bag write',
+                [[true, $name]],
+                $write_node,
+                $location,
+            );
         } else {
             self::addWrite($codebase, $graph, $class_storage, [[true, $name]], $write_node);
         }

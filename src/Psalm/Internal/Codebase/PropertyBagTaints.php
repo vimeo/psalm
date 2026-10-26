@@ -83,7 +83,7 @@ final class PropertyBagTaints
             return;
         }
 
-        // the keys under which the value goes into the property, the outermost first
+        // the keys under which the value goes into the property, the innermost first
         $inner_dims = [];
         $property_fetch = $stmt;
         while ($property_fetch->var instanceof ArrayDimFetch) {
@@ -104,10 +104,13 @@ final class PropertyBagTaints
 
         $value_nodes = $value_type->parent_nodes;
         foreach ($inner_dims as $offset => $dim) {
-            $dim_type = $dim ? $statements_analyzer->node_data->getType($dim) : null;
-            $key = $dim_type?->isSingleStringLiteral()
-                ? $dim_type->getSingleStringLiteral()->value
-                : ($dim_type?->isSingleIntLiteral() ? $dim_type->getSingleIntLiteral()->value : null);
+            $dim_type = $dim !== null ? $statements_analyzer->node_data->getType($dim) : null;
+            $key = null;
+            if ($dim_type !== null && $dim_type->isSingleStringLiteral()) {
+                $key = $dim_type->getSingleStringLiteral()->value;
+            } elseif ($dim_type !== null && $dim_type->isSingleIntLiteral()) {
+                $key = (string) $dim_type->getSingleIntLiteral()->value;
+            }
 
             $element_node = DataFlowNode::getForAssignment(
                 '$this->' . $name . ' in property bag element ' . $offset,
@@ -144,6 +147,8 @@ final class PropertyBagTaints
 
     /**
      * Whether $var is `$this->properties` in a method of a class whose property bag is `$properties`
+     *
+     * @psalm-capabilities read-props
      */
     private static function isPropertyBagOfThis(Codebase $codebase, Expr $var, Context $context): bool
     {
