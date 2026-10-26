@@ -37,9 +37,9 @@ These come first, before every other rule here:
 
    `composer mutation` mutates only the lines changed against `origin/master` and fails
    unless every mutant is killed, uncovered ones included. The "Mutation testing" CI job
-   runs the same on every PR, with only the test classes the PR adds or changes (Infection
-   can't run the whole suite in one process), so a PR that changes `src/` must add or
-   change the tests that kill its mutants. Restrict the tests to the test classes that cover the
+   runs it on every PR that changes `src/`, against the coverage of the whole test suite
+   (collected in 8 chunks and merged). Locally, restrict it to the test classes that cover
+   the change. Restrict the tests to the test classes that cover the
    change with `--filter` (a plain class name; escaped namespaces don't survive the
    quoting). Every escaped mutant needs a new test or a simpler change. Running the
    covering tests this way is the one exception to running only single test cases.
