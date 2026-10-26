@@ -56,6 +56,35 @@ final class TemplateBound
     public bool $from_argument_requirement = false;
 
     /**
+     * True for a lower bound that is only the template's own constraint,
+     * standing in for an argument that did not bind the template (it was
+     * rejected, and reported, as invalid): a placeholder shape, not a value
+     * the template is known to hold, so reconciliation does not check it.
+     */
+    public bool $from_constraint_fallback = false;
+
+    /**
+     * True for an upper bound imposed by a declared return type on a returned
+     * value.
+     */
+    public bool $from_return_requirement = false;
+
+    /**
+     * The id of the property (`Foo::$bar`) whose declared type imposed this
+     * upper bound on an assigned value; null for bounds recorded elsewhere.
+     */
+    public ?string $property_requirement_id = null;
+
+    /**
+     * The issues suppressed where this bound was recorded, when it constrains
+     * a type variable: an issue raised against the bound at reconciliation
+     * honours them like the eagerly reported issue would have.
+     *
+     * @var array<string>
+     */
+    public array $suppressed_issues = [];
+
+    /**
      * True for a bound merged from several arms of a union container that all
      * matched the same input (`Foo<`_0>` against `Foo<int>|Foo<string>`): the
      * arms are alternatives the value need only satisfy one of, so the merged

@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
+use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
@@ -43,6 +44,7 @@ use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UnsafeGenericInstantiation;
 use Psalm\Issue\UnsafeInstantiation;
+use Psalm\Issue\UnusedMethodCall;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Capabilities;
@@ -337,6 +339,8 @@ final class NewAnalyzer extends CallAnalyzer
                     $can_extend,
                     $template_result,
                 );
+
+                self::checkUnusedThrowable($statements_analyzer, $codebase, $stmt, $context, $fq_class_name);
             } else {
                 ArgumentsAnalyzer::analyze(
                     $statements_analyzer,
@@ -366,6 +370,44 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * An exception that is created but never thrown, returned or otherwise used is a mistake
+     * (a missing `throw`), whatever its constructor does: it is reported like the unused return
+     * value of a pure call.
+     */
+    private static function checkUnusedThrowable(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr\New_ $stmt,
+        Context $context,
+        string $fq_class_name,
+    ): void {
+        if (!$codebase->find_unused_variables
+            || $context->collect_initializations
+            || $context->collect_mutations
+            || $context->insideUse()
+            || $context->inside_unset
+            || !$codebase->classImplements($fq_class_name, 'Throwable')
+        ) {
+            return;
+        }
+
+        $method_id = new MethodIdentifier($fq_class_name, '__construct');
+
+        $class_description = $stmt->class instanceof PhpParser\Node\Stmt\Class_
+            ? 'anonymous ' . ($stmt->class->extends ? $stmt->class->extends->toString() : 'class')
+            : $fq_class_name;
+
+        IssueBuffer::maybeAdd(
+            new UnusedMethodCall(
+                'The ' . $class_description . ' instance created here is never thrown or used',
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                (string) $method_id,
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
     }
 
     private static function analyzeNamedConstructor(
@@ -602,54 +644,23 @@ final class NewAnalyzer extends CallAnalyzer
                         );
                         $unconstrainable_templates ??= self::getUnconstrainableTemplates($storage);
 
-                        if (!isset($unconstrainable_templates[$template_name])) {
-                            $new_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-
-                            $lower_bounds = [];
-
-                            foreach ($template_result->lower_bounds[$template_name][$fq_class_name] as $arg_bound) {
-                                // the appearance depth is normalized: the inference is
-                                // lifted onto the variable itself, where it competes with
-                                // the (depth-0) bounds later code records
-                                $lower_bounds[] = new TemplateBound(
-                                    $arg_bound->type,
-                                    0,
-                                    $arg_bound->arg_offset,
-                                    $arg_bound->equality_bound_classlike,
-                                    $new_location,
-                                );
-                            }
-
-                            $upper_bounds = [new TemplateBound($constraint, 0, null, null, $new_location)];
-
-                            // A constructor argument that binds this template through a
-                            // `class-string<T>` position names the type exactly
-                            // (`new ReflectionClass(Foo::class)` reflects Foo, nothing
-                            // wider): the inferred bounds pin the variable's upper bounds
-                            // too, so a later conflicting use fails reconciliation.
-                            if ($method_storage
-                                && self::templateBoundThroughClassString($method_storage, $template_name)
-                            ) {
-                                foreach ($lower_bounds as $lower_bound) {
-                                    $upper_bounds[] = new TemplateBound(
-                                        $lower_bound->type,
-                                        0,
-                                        $lower_bound->arg_offset,
-                                        null,
-                                        $new_location,
-                                    );
-                                }
-                            }
-
-                            $type_variable_bounds = new TypeVariableBounds($lower_bounds, $upper_bounds);
-
-                            $type_variable_name = $statements_analyzer->type_variable_tracker->addVariable(
-                                $type_variable_bounds,
+                        // An argument typed `mixed` binds the template to `mixed` from
+                        // below, which no later bound can narrow: the variable would
+                        // only ever resolve to `mixed` while the class template stays
+                        // opaque to reads (`class-string<T>` returns, `self<T&X>`
+                        // assertions, the constraint clamp on later calls). Keep the
+                        // plain parameter instead, as for an explicit `Foo<mixed>`.
+                        if (!isset($unconstrainable_templates[$template_name])
+                            && !$generic_param_type->hasMixed()
+                        ) {
+                            $generic_param_type = self::mintTypeVariable(
+                                $statements_analyzer,
+                                $stmt,
+                                $template_result->lower_bounds[$template_name][$fq_class_name],
+                                $constraint,
+                                $method_storage
+                                    && self::templateBoundThroughClassString($method_storage, $template_name),
                             );
-
-                            $generic_param_type = new Union([
-                                new TTypeVariable($type_variable_name, $type_variable_bounds),
-                            ]);
                         }
                     } elseif (self::isGivenToBoundParentTemplate(
                         $fq_class_name,
@@ -796,6 +807,68 @@ final class NewAnalyzer extends CallAnalyzer
     }
 
     /**
+     * The type variable a template of a constructed class is carried as: the
+     * bounds the constructor arguments inferred are its lower bounds, and the
+     * template's declared constraint its upper bound.
+     *
+     * @param non-empty-list<TemplateBound> $arg_bounds
+     * @param bool $bound_through_class_string whether an argument binds the template through a
+     *     `class-string<T>` position
+     */
+    private static function mintTypeVariable(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\New_ $stmt,
+        array $arg_bounds,
+        Union $constraint,
+        bool $bound_through_class_string,
+    ): Union {
+        $new_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        $lower_bounds = [];
+
+        foreach ($arg_bounds as $arg_bound) {
+            // the appearance depth is normalized: the inference is
+            // lifted onto the variable itself, where it competes with
+            // the (depth-0) bounds later code records
+            $lower_bound = new TemplateBound(
+                $arg_bound->type,
+                0,
+                $arg_bound->arg_offset,
+                $arg_bound->equality_bound_classlike,
+                $new_location,
+            );
+            $lower_bound->from_constraint_fallback = $arg_bound->from_constraint_fallback;
+
+            $lower_bounds[] = $lower_bound;
+        }
+
+        $upper_bounds = [new TemplateBound($constraint, 0, null, null, $new_location)];
+
+        // A constructor argument that binds this template through a
+        // `class-string<T>` position names the type exactly
+        // (`new ReflectionClass(Foo::class)` reflects Foo, nothing
+        // wider): the inferred bounds pin the variable's upper bounds
+        // too, so a later conflicting use fails reconciliation.
+        if ($bound_through_class_string) {
+            foreach ($lower_bounds as $lower_bound) {
+                $upper_bounds[] = new TemplateBound(
+                    $lower_bound->type,
+                    0,
+                    $lower_bound->arg_offset,
+                    null,
+                    $new_location,
+                );
+            }
+        }
+
+        $type_variable_bounds = new TypeVariableBounds($lower_bounds, $upper_bounds);
+
+        $type_variable_name = $statements_analyzer->type_variable_tracker->addVariable($type_variable_bounds);
+
+        return new Union([new TTypeVariable($type_variable_name, $type_variable_bounds)]);
+    }
+
+    /**
      * The new object takes its taints from what its constructor returns and leaves in it, and from what its
      * `@psalm-flow` annotations say its arguments flow into.
      */
@@ -905,6 +978,20 @@ final class NewAnalyzer extends CallAnalyzer
             $stmt_type->setParentNodes($parent_nodes),
             $code_location,
         );
+
+        // what the constructor's `@psalm-flow` annotations say it sets to the properties of the new object
+        if ($method_storage && !$stmt->isFirstClassCallable()) {
+            $stmt_type = ReceiverPropertyTaints::taintConstruction(
+                $statements_analyzer,
+                $statements_analyzer->taint_flow_graph,
+                $method_storage,
+                $stmt->getArgs(),
+                $fq_class_name,
+                $code_location,
+                $stmt_type,
+            );
+        }
+
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
     }
 

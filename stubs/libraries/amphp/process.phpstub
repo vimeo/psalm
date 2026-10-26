@@ -1,0 +1,34 @@
+<?php
+
+// The taints amphp/process 2 passes along: the command a process runs is a shell sink. Loaded when the analysed code
+// uses the package, refining its classes (see Config::visitStubFiles()).
+
+namespace Amp\Process {
+
+use Amp\Cancellation;
+
+final class Process
+{
+    /**
+     * @param string|list<string> $command Command to run.
+     * @param string|null $workingDirectory Working directory, or an empty string to use the working directory of the
+     *     parent.
+     * @param array<string, string> $environment Environment variables, or use an empty array to inherit from the
+     *     parent.
+     * @param array<string, bool> $options Options for {@see proc_open()}.
+     *
+     * @throws ProcessException If starting the process fails.
+     * @throws \Error If the arguments are invalid.
+     *
+     * @psalm-taint-sink shell $command
+     */
+    public static function start(
+        string|array $command,
+        ?string $workingDirectory = null,
+        array $environment = [],
+        array $options = [],
+        ?Cancellation $cancellation = null,
+    ): self {
+    }
+}
+}

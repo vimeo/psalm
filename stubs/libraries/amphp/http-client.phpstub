@@ -1,0 +1,106 @@
+<?php
+
+// The taints amphp/http-client 5 passes along: the URI a request is sent to is an SSRF sink, the path of a file a
+// form uploads a file sink, and what the server sends back, the headers and the body of a response, an input source.
+// Loaded when the analysed code uses the package, refining its classes (see Config::visitStubFiles()).
+//
+// The sources are declared on Response itself rather than on the amphp/http and amphp/byte-stream classes it inherits
+// from or returns, which also hold the messages and streams the code builds: the body is the payload getBody()
+// returns, whose content Payload's methods return (see byte-stream.phpstub).
+
+namespace Amp\Http\Client {
+
+use Amp\ByteStream\Payload;
+use Amp\Http\HttpMessage;
+use Amp\Http\HttpRequest;
+use Amp\Http\HttpResponse;
+use Psr\Http\Message\UriInterface;
+
+/**
+ * @psalm-import-type HeaderParamValueType from HttpMessage
+ * @psalm-import-type HeaderParamArrayType from HttpMessage
+ * @psalm-type ProtocolVersion = '1.0'|'1.1'|'2'
+ */
+final class Request extends HttpRequest
+{
+    /**
+     * @param non-empty-string $method
+     *
+     * @psalm-taint-sink ssrf $uri
+     */
+    public function __construct(UriInterface|string $uri, string $method = "GET", HttpContent|string $body = '')
+    {
+    }
+
+    /**
+     * @psalm-taint-sink ssrf $uri
+     */
+    public function setUri(UriInterface|string $uri): void
+    {
+    }
+}
+
+final class Form implements HttpContent
+{
+    /**
+     * @param string $path Local file path. Filename will be provided to the server.
+     * @throws HttpException
+     *
+     * @psalm-taint-sink file $path
+     */
+    public function addFile(string $name, string $path, ?string $contentType = null): void
+    {
+    }
+}
+
+/**
+ * @psalm-import-type HeaderParamValueType from HttpMessage
+ * @psalm-import-type HeaderParamArrayType from HttpMessage
+ * @psalm-type ProtocolVersion = '1.0'|'1.1'|'2'
+ */
+final class Response extends HttpResponse
+{
+    /**
+     * Returns the headers as a string-indexed array of arrays of strings or an empty array if no headers
+     * have been set.
+     *
+     * @return array<non-empty-string, list<string>>
+     *
+     * @psalm-taint-source input
+     */
+    public function getHeaders(): array
+    {
+    }
+
+    /**
+     * Returns the array of values for the given header or an empty array if the header does not exist.
+     *
+     * @return list<string>
+     *
+     * @psalm-taint-source input
+     */
+    public function getHeaderArray(string $name): array
+    {
+    }
+
+    /**
+     * Returns the value of the given header. If multiple headers are present for the named header, only the first
+     * header value will be returned. Use getHeaderArray() to return an array of all values for the particular header.
+     * Returns null if the header does not exist.
+     *
+     * @psalm-taint-source input
+     */
+    public function getHeader(string $name): ?string
+    {
+    }
+
+    /**
+     * Retrieve the response body.
+     *
+     * @psalm-taint-source input
+     */
+    public function getBody(): Payload
+    {
+    }
+}
+}

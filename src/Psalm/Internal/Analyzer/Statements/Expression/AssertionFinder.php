@@ -31,7 +31,6 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
-use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DocblockTypeContradiction;
@@ -1182,7 +1181,7 @@ final class AssertionFinder
                         if (count($exploded_id) === 2) {
                             $failedMessage = self::isPropertyImmutableOnArgument(
                                 $property,
-                                $source->getNodeTypeProvider(),
+                                $source->getNodeTypeProvider()->getType($arg_value),
                                 $source->getCodebase()->classlike_storage_provider,
                                 $arg_value,
                             );
@@ -1310,7 +1309,7 @@ final class AssertionFinder
                         if (count($exploded_id) === 2) {
                             $failedMessage = self::isPropertyImmutableOnArgument(
                                 $property,
-                                $source->getNodeTypeProvider(),
+                                $source->getNodeTypeProvider()->getType($arg_value),
                                 $source->getCodebase()->classlike_storage_provider,
                                 $arg_value,
                             );
@@ -4412,11 +4411,10 @@ final class AssertionFinder
      */
     public static function isPropertyImmutableOnArgument(
         string                       $property,
-        NodeDataProvider             $node_provider,
+        ?Union                       $type,
         ClassLikeStorageProvider     $class_provider,
         PhpParser\Node\Expr\Variable $arg_expr,
     ): ?string {
-        $type = $node_provider->getType($arg_expr);
         /** @var string $name */
         $name = $arg_expr->name;
 
