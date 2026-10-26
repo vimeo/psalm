@@ -206,7 +206,10 @@ final class ReceiverPropertyTaints
                 '$this->' . $read['property'] . ' fetch ' . $index,
                 $call_location,
             );
-            $read_node = DataFlowNode::getForAssignment('$this->' . $read['property'] . ' read ' . $index, $call_location);
+            $read_node = DataFlowNode::getForAssignment(
+                '$this->' . $read['property'] . ' read ' . $index,
+                $call_location,
+            );
 
             $graph->addNode($fetch_node);
             $graph->addNode($read_node);
@@ -350,7 +353,6 @@ final class ReceiverPropertyTaints
      *
      * @param array<array-key, Arg> $args
      * @param array<int, list<Arg>>|null $args_by_param null when which arguments the parameters get is not known
-     * @psalm-capabilities read-props|write-props
      */
     private static function taintWrites(
         StatementsAnalyzer $statements_analyzer,
