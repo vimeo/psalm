@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
+use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
@@ -977,6 +978,20 @@ final class NewAnalyzer extends CallAnalyzer
             $stmt_type->setParentNodes($parent_nodes),
             $code_location,
         );
+
+        // what the constructor's `@psalm-flow` annotations say it sets to the properties of the new object
+        if ($method_storage && !$stmt->isFirstClassCallable()) {
+            $stmt_type = ReceiverPropertyTaints::taintConstruction(
+                $statements_analyzer,
+                $statements_analyzer->taint_flow_graph,
+                $method_storage,
+                $stmt->getArgs(),
+                $fq_class_name,
+                $code_location,
+                $stmt_type,
+            );
+        }
+
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
     }
 

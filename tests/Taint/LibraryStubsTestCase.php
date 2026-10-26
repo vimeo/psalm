@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 
+use function array_any;
 use function array_filter;
 use function array_map;
 use function array_values;
@@ -21,8 +22,8 @@ use const DIRECTORY_SEPARATOR;
 
 /**
  * Runs code using libraries Psalm ships stubs for (see stubs/libraries). The code of getLibraries() declares classes
- * of the libraries, as their sources do, so that Psalm loads their stubs. Each case lists every taint issue it
- * reports, by line.
+ * of the libraries, as their sources do, so that Psalm loads their stubs. Each case lists every issue it reports
+ * whose type starts with one of getReportedIssueTypePrefixes() (by default the taint issues), by line.
  */
 abstract class LibraryStubsTestCase extends TestCase
 {
@@ -49,6 +50,17 @@ abstract class LibraryStubsTestCase extends TestCase
     }
 
     /**
+     * The prefixes of the types of the issues the cases list
+     *
+     * @return non-empty-list<string>
+     * @psalm-pure
+     */
+    protected static function getReportedIssueTypePrefixes(): array
+    {
+        return ['Tainted'];
+    }
+
+    /**
      * @param list<string> $expected_issues
      */
     #[DataProvider('providerTaints')]
@@ -68,15 +80,19 @@ abstract class LibraryStubsTestCase extends TestCase
 
         $this->analyzeFile($file_path, new Context(), false);
 
-        $taint_issues = array_values(array_filter(
+        $prefixes = static::getReportedIssueTypePrefixes();
+        $issues = array_values(array_filter(
             array_map(
                 static fn(IssueData $issue): string => $issue->type . ' on line ' . $issue->line_from,
                 IssueBuffer::getIssuesDataForFile($file_path),
             ),
-            static fn(string $issue): bool => str_starts_with($issue, 'Tainted'),
+            static fn(string $issue): bool => array_any(
+                $prefixes,
+                static fn(string $prefix): bool => str_starts_with($issue, $prefix),
+            ),
         ));
-        sort($taint_issues);
+        sort($issues);
 
-        self::assertSame($expected_issues, $taint_issues);
+        self::assertSame($expected_issues, $issues);
     }
 }
