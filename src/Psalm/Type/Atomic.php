@@ -859,7 +859,7 @@ abstract class Atomic implements TypeNode, Stringable
     }
 
     /**
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {

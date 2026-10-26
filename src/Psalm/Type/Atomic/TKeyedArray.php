@@ -204,7 +204,7 @@ final class TKeyedArray extends Atomic
         return $this->is_list
             && count($this->properties) === 1
             && $this->fallback_params
-            && $this->properties[0]->equals($this->fallback_params[1], true, true, false);
+            && $this->properties[0]->equals($this->fallback_params[1], false, false, false);
     }
 
     #[Override]
@@ -747,6 +747,10 @@ final class TKeyedArray extends Atomic
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         if ($other_type::class !== static::class) {
+            return false;
+        }
+
+        if ($this->is_list !== $other_type->is_list) {
             return false;
         }
 
