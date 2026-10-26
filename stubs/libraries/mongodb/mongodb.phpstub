@@ -1,7 +1,7 @@
 <?php
 
 // The taints mongodb/mongodb 2 passes along: the filters, updates, pipelines, bulk operations and commands its
-// Collection and Database methods send to the server are NoSQL sinks. Loaded when the analysed code uses the package,
+// Client, ClientBulkWrite, Collection, Database and GridFS Bucket methods send to the server are NoSQL sinks. Loaded when the analysed code uses the package,
 // refining its classes (see Config::visitStubFiles()): the methods keep the signatures and docblocks of
 // mongodb/mongodb 2.4.
 
@@ -432,6 +432,168 @@ class Database implements Stringable
      * @psalm-taint-sink nosql $pipeline
      */
     public function watch(array|Pipeline $pipeline = [], array $options = []): ChangeStream
+    {
+    }
+}
+}
+
+namespace MongoDB {
+use Iterator;
+use MongoDB\Builder\Pipeline;
+use MongoDB\Driver\BulkWriteCommand;
+use MongoDB\Driver\BulkWriteCommandResult;
+use MongoDB\Driver\ClientEncryption;
+use MongoDB\Driver\Exception\InvalidArgumentException as DriverInvalidArgumentException;
+use MongoDB\Driver\Exception\RuntimeException as DriverRuntimeException;
+use MongoDB\Driver\Manager;
+use MongoDB\Driver\Monitoring\Subscriber;
+use MongoDB\Driver\ReadConcern;
+use MongoDB\Driver\ReadPreference;
+use MongoDB\Driver\Session;
+use MongoDB\Driver\WriteConcern;
+use MongoDB\Exception\InvalidArgumentException;
+use MongoDB\Exception\UnexpectedValueException;
+use MongoDB\Exception\UnsupportedException;
+use MongoDB\Model\AutoEncryptionOptions;
+use MongoDB\Model\DatabaseInfo;
+use MongoDB\Model\DriverOptions;
+use MongoDB\Operation\ClientBulkWriteCommand;
+use MongoDB\Operation\DropDatabase;
+use MongoDB\Operation\ListDatabaseNames;
+use MongoDB\Operation\ListDatabases;
+use MongoDB\Operation\Watch;
+use stdClass;
+use Stringable;
+
+/**
+ * @psalm-import-type stage from Builder\Pipeline
+ * @psalm-no-seal-properties
+ */
+class Client implements Stringable
+{
+    /**
+     * Create a change stream for watching changes to the cluster.
+     *
+     * @see Watch::__construct() for supported options
+     * @psalm-param list<stage> $pipeline Aggregation pipeline
+     * @param array $options Command options
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     *
+     * @psalm-taint-sink nosql $pipeline
+     */
+    public function watch(array $pipeline = [], array $options = []): ChangeStream
+    {
+    }
+}
+}
+
+namespace MongoDB {
+use MongoDB\BSON\Document;
+use MongoDB\BSON\PackedArray;
+use MongoDB\Codec\DocumentCodec;
+use MongoDB\Codec\Encoder;
+use MongoDB\Driver\BulkWriteCommand;
+use MongoDB\Driver\Manager;
+use MongoDB\Exception\InvalidArgumentException;
+use stdClass;
+
+final class ClientBulkWrite
+{
+    /**
+     * @psalm-taint-sink nosql $filter
+     */
+    public function deleteMany(array|object $filter, array $options = []): self
+    {
+    }
+
+    /**
+     * @psalm-taint-sink nosql $filter
+     */
+    public function deleteOne(array|object $filter, array $options = []): self
+    {
+    }
+
+    /**
+     * @psalm-taint-sink nosql $filter
+     */
+    public function replaceOne(array|object $filter, array|object $replacement, array $options = []): self
+    {
+    }
+
+    /**
+     * @psalm-taint-sink nosql $filter
+     * @psalm-taint-sink nosql $update
+     */
+    public function updateMany(array|object $filter, array|object $update, array $options = []): self
+    {
+    }
+
+    /**
+     * @psalm-taint-sink nosql $filter
+     * @psalm-taint-sink nosql $update
+     */
+    public function updateOne(array|object $filter, array|object $update, array $options = []): self
+    {
+    }
+}
+}
+
+namespace MongoDB\GridFS {
+use MongoDB\BSON\Document;
+use MongoDB\Codec\DocumentCodec;
+use MongoDB\Collection;
+use MongoDB\Driver\CursorInterface;
+use MongoDB\Driver\Exception\RuntimeException as DriverRuntimeException;
+use MongoDB\Driver\Manager;
+use MongoDB\Driver\ReadConcern;
+use MongoDB\Driver\ReadPreference;
+use MongoDB\Driver\WriteConcern;
+use MongoDB\Exception\InvalidArgumentException;
+use MongoDB\Exception\UnsupportedException;
+use MongoDB\GridFS\Exception\CorruptFileException;
+use MongoDB\GridFS\Exception\FileNotFoundException;
+use MongoDB\GridFS\Exception\LogicException;
+use MongoDB\GridFS\Exception\StreamException;
+use MongoDB\Model\BSONArray;
+use MongoDB\Model\BSONDocument;
+
+/**
+ * Bucket provides a public API for interacting with the GridFS files and chunks
+ * collections.
+ */
+class Bucket
+{
+    /**
+     * Finds documents from the GridFS bucket's files collection matching the
+     * query.
+     *
+     * @see Find::__construct() for supported options
+     * @param array|object $filter  Query by which to filter documents
+     * @param array        $options Additional options
+     * @throws UnsupportedException if options are not supported by the selected server
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
+     *
+     * @psalm-taint-sink nosql $filter
+     */
+    public function find(array|object $filter = [], array $options = []): CursorInterface
+    {
+    }
+
+    /**
+     * Finds a single document from the GridFS bucket's files collection
+     * matching the query.
+     *
+     * @see FindOne::__construct() for supported options
+     * @param array|object $filter  Query by which to filter documents
+     * @param array        $options Additional options
+     * @throws UnsupportedException if options are not supported by the selected server
+     * @throws InvalidArgumentException for parameter/option parsing errors
+     * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
+     *
+     * @psalm-taint-sink nosql $filter
+     */
+    public function findOne(array|object $filter = [], array $options = []): array|object|null
     {
     }
 }

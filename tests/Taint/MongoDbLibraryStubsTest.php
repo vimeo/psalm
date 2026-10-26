@@ -20,8 +20,13 @@ final class MongoDbLibraryStubsTest extends LibraryStubsTestCase
     {
         return '<?php
             namespace MongoDB {
+                class Client {}
+                final class ClientBulkWrite {}
                 class Collection {}
                 class Database {}
+            }
+            namespace MongoDB\GridFS {
+                class Bucket {}
             }';
     }
 
@@ -54,6 +59,46 @@ final class MongoDbLibraryStubsTest extends LibraryStubsTestCase
                         $input = (array) $_GET["command"];
                         $database->command($input);
                         $database->aggregate($input);
+                    }',
+                [
+                    'TaintedNosql on line 4',
+                    'TaintedNosql on line 5',
+                ],
+            ],
+            'clientChangeStreams' => [
+                '<?php
+                    function watch(MongoDB\Client $client): void {
+                        $client->watch((array) $_GET["pipeline"]);
+                        $client->watch([[\'$match\' => ["operationType" => "insert"]]]);
+                    }',
+                ['TaintedNosql on line 3'],
+            ],
+            'clientBulkWriteFiltersAndUpdates' => [
+                '<?php
+                    function write(MongoDB\ClientBulkWrite $bulk): void {
+                        $input = (array) $_GET["filter"];
+                        $bulk->deleteMany($input);
+                        $bulk->deleteOne($input);
+                        $bulk->replaceOne($input, ["name" => "safe"]);
+                        $bulk->updateMany(["_id" => 1], $input);
+                        $bulk->updateOne($input, [\'$set\' => ["name" => "safe"]]);
+                        $bulk->replaceOne(["_id" => 1], $input);
+                    }',
+                [
+                    'TaintedNosql on line 4',
+                    'TaintedNosql on line 5',
+                    'TaintedNosql on line 6',
+                    'TaintedNosql on line 7',
+                    'TaintedNosql on line 8',
+                ],
+            ],
+            'gridFsFilters' => [
+                '<?php
+                    function files(MongoDB\GridFS\Bucket $bucket): void {
+                        $input = (array) $_GET["filter"];
+                        $bucket->find($input);
+                        $bucket->findOne($input);
+                        $bucket->find(["filename" => "safe"]);
                     }',
                 [
                     'TaintedNosql on line 4',
