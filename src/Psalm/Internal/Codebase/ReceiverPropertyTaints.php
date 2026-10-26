@@ -347,7 +347,6 @@ final class ReceiverPropertyTaints
      *
      * @param array<array-key, Arg> $args
      * @param array<int, list<Arg>>|null $args_by_param null when which arguments the parameters get is not known
-     * @psalm-capabilities read-props|write-props
      */
     private static function taintWrites(
         StatementsAnalyzer $statements_analyzer,
