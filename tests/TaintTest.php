@@ -4526,7 +4526,7 @@ final class TaintTest extends TestCase
                         public function set(string $name, string $value): void {}
                     }
 
-                    function copy(Options $options): void {
+                    function fillOptions(Options $options): void {
                         foreach (["label" => (string) $_GET["x"], "size" => "m"] as $name => $value) {
                             $options->set($name, $value);
                         }
@@ -6442,7 +6442,7 @@ final class TaintTest extends TestCase
                         public function set(string $name, string $value): void {}
                     }
 
-                    function copy(Options $options): void {
+                    function fillOptions(Options $options): void {
                         foreach (["label" => (string) $_GET["x"], "size" => "m"] as $name => $value) {
                             $options->set($name, $value);
                         }
@@ -6466,7 +6466,7 @@ final class TaintTest extends TestCase
                         public function set(string $name, string $value): void {}
                     }
 
-                    function copy(Options $options): void {
+                    function fillOptions(Options $options): void {
                         foreach (["label" => (string) $_GET["x"], "size" => "m"] as $name => $value) {
                             $options->set($name, trim($value));
                         }

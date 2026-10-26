@@ -322,8 +322,10 @@ final class ReceiverPropertyTaints
             }
         }
 
+        $name_type = $statements_analyzer->node_data->getType($name);
+
         return $key_var_id === '$' . $name->name
-            && ArrayAssignmentAnalyzer::getValueNodeIds($statements_analyzer->node_data->getType($name)) === $key_node_ids
+            && ArrayAssignmentAnalyzer::getValueNodeIds($name_type) === $key_node_ids
             && ArrayAssignmentAnalyzer::getValueNodeIds($value_type) === $value_node_ids
             ? $array_nodes
             : null;
