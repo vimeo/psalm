@@ -203,7 +203,10 @@ final class ReceiverPropertyTaints
                 '$this->' . $read['property'] . ' fetch ' . $index,
                 $call_location,
             );
-            $read_node = DataFlowNode::getForAssignment('$this->' . $read['property'] . ' read ' . $index, $call_location);
+            $read_node = DataFlowNode::getForAssignment(
+                '$this->' . $read['property'] . ' read ' . $index,
+                $call_location,
+            );
 
             $graph->addNode($fetch_node);
             $graph->addNode($read_node);
