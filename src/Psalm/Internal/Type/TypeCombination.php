@@ -17,6 +17,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
+use Psalm\Type\Variance;
 
 use function is_int;
 use function is_string;
@@ -40,6 +41,9 @@ final class TypeCombination
 
     /** @var array<string, non-empty-list<Union>> */
     public array $object_type_params = [];
+
+    /** @var array<string, array<int, Variance>> call-site variances by key of $object_type_params */
+    public array $object_type_param_variances = [];
 
     /** @var array<string, bool> */
     public array $object_static = [];

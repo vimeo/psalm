@@ -24,6 +24,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\CallSiteVarianceProjector;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -68,6 +69,7 @@ final class MethodCallReturnTypeFetcher
         array $args,
         AtomicMethodCallAnalysisResult $result,
         TemplateResult $template_result,
+        ?CallSiteVarianceProjector $variance_projector = null,
     ): Union {
         $call_map_id = $declaring_method_id ?? $method_id;
 
@@ -80,8 +82,10 @@ final class MethodCallReturnTypeFetcher
         if ($stmt->isFirstClassCallable()) {
             if ($method_storage) {
                 return new Union([new TClosure(
-                    $method_storage->params,
-                    $method_storage->return_type,
+                    $variance_projector?->projectParams($method_storage->params) ?? $method_storage->params,
+                    $variance_projector && $method_storage->return_type
+                        ? $variance_projector->project($method_storage->return_type, false)
+                        : $method_storage->return_type,
                     $method_storage->capabilities,
                 )]);
             }
@@ -147,6 +151,9 @@ final class MethodCallReturnTypeFetcher
             ) {
                 $return_type_candidate = $method_storage->return_type;
 
+                $return_type_candidate = $variance_projector?->project($return_type_candidate, false)
+                    ?? $return_type_candidate;
+
                 $return_type_candidate = self::replaceTemplateTypes(
                     $return_type_candidate,
                     $template_result,
@@ -194,6 +201,9 @@ final class MethodCallReturnTypeFetcher
             );
 
             if ($return_type_candidate) {
+                $return_type_candidate = $variance_projector?->project($return_type_candidate, false)
+                    ?? $return_type_candidate;
+
                 if ($template_result->lower_bounds) {
                     $return_type_candidate = TypeExpander::expandUnion(
                         $codebase,

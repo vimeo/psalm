@@ -434,6 +434,76 @@ class Collection {
 
 This is perfectly valid, and Psalm won't complain.
 
+## Call-site variance
+
+`@template-covariant` fixes the variance of a template for every use of the class. When a class is invariant but a function only reads from, or only writes to, it, a generic type argument can be given a variance at the place where the type is used. The syntax is the one of [PHPStan](https://phpstan.org/blog/guide-to-call-site-generic-variance):
+
+```php
+<?php
+class Animal {}
+class Dog extends Animal {}
+
+/**
+ * @template T
+ */
+class Box {
+    /** @param T $item */
+    public function pack($item): void {}
+
+    /** @return T */
+    public function unpack() {
+        throw new RuntimeException();
+    }
+}
+
+/** @param Box<covariant Animal> $box */
+function readFrom(Box $box): Animal {
+    // $box may be a Box<Dog>, so nothing can be put in
+    // $box->pack(new Dog());   // InvalidArgument: expects never
+    return $box->unpack();
+}
+
+/** @param Box<contravariant Dog> $box */
+function writeTo(Box $box): void {
+    // $box may be a Box<Animal>, so anything can be read from it only as mixed
+    $box->pack(new Dog());
+}
+
+/** @param Box<*> $box */
+function neither(Box $box): void {
+    // $box->pack(...) accepts nothing, and $box->unpack() returns mixed
+}
+
+readFrom(new Box());
+```
+
+- `Box<covariant T>` accepts a `Box<U>` for any subtype `U` of `T`. Methods and properties only give out `T`: where `T` is an input, the type is `never`.
+- `Box<contravariant T>` accepts a `Box<U>` for any supertype `U` of `T`. Methods and properties accept `T`, and give out the bound of the template (`mixed` unless it has an `as`).
+- `Box<*>` accepts any `Box`. It is both: nothing can be put in, and what comes out is the bound of the template.
+
+The variance applies to the whole argument (`Box<covariant int|string>`), and is only allowed on an argument of a generic class or interface. On `array`, `list`, `iterable`, `class-string` and the other builtin generic types it is accepted and ignored. A call-site variance is not allowed in `@extends`, `@implements` and `@use`.
+
+A `Box<Dog>` is accepted where a `Box<covariant Animal>` is expected, but a `Box<covariant Animal>` is not accepted where a `Box<Animal>` is expected.
+
+Psalm reports a `contravariant` argument for a `@template-covariant` template as [InvalidDocblock](../running_psalm/issues/InvalidDocblock.md), and a `covariant` one as [RedundantCallSiteVariance](../running_psalm/issues/RedundantCallSiteVariance.md).
+
+Where Psalm differs from PHPStan:
+
+- Properties are projected too: writing to a property of a `Box<covariant T>` is an input.
+- A method returning `Box<T>` called on a `Box<covariant Animal>` returns a `Box<covariant Animal>` rather than a `Box<Animal>`, as the result is not known to hold an `Animal` exactly.
+- In comparisons, a `covariant` argument for a `@template-covariant` template counts as no call-site variance, so `Box<covariant Animal>` and `Box<Animal>` are the same type there.
+- A `contravariant` or `*` argument is read as the bound of its template (`mixed` unless it has an `as`) where a covariant parameter is expected: a `Collection<*>` is accepted as an `iterable<mixed, mixed>`.
+
+Where Psalm doesn't project the template, it sees the argument as if it were invariant:
+
+- a parameter that is an invariant generic of the template (`copyFrom(Box<T> $other)` on a `Box<covariant Animal>` accepts a `Box<Animal>`, as in PHPStan);
+- `key-of<T>`, `value-of<T>`, `T[K]` and conditional types on the template;
+- callable arrays (`[$box, 'pack']`), `ArrayAccess` writes (`$box[] = $x`), `@property` pseudo-property writes and by-reference property writes.
+
+A method template bounded by a template of the receiver (`@template U of T`) can only be given what its projected bound takes. When the projected bound takes nothing, as `U of T` on a `Box<covariant Animal>`, the result of the method is the bound as read (`Animal`). When it takes only part of the bound, a valid call keeps its exact result: on a `Box<covariant Animal>`, `packNullable(null)` with `@template U of T|null` returns `null`, and `packList([])` with `@template U of list<T>` returns `array<never, never>`. Precision is only lost on a call that is already rejected: passing an `Animal` to either method is reported, and its result is then `null` or `array<never, never>` rather than inferred from the argument.
+
+Call-site variance is applied to method calls, static invocations on an object, properties, first-class callables, `@method` and `@mixin` calls and `foreach`.
+
 ## Builtin templated classes and interfaces
 
 Psalm has support for a number of builtin classes and interfaces that you can extend/implement in your own code.

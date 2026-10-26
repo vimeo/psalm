@@ -651,6 +651,7 @@ final class AssertionReconciler extends Reconciler
 
         $parent_template_names = array_keys($parent_storage->template_types);
         $type_params = [];
+        $type_param_variances = [];
 
         foreach (array_keys($child_storage->template_types) as $template_name) {
             $inferred = null;
@@ -669,6 +670,11 @@ final class AssertionReconciler extends Reconciler
                     && $extended_atomic->defining_class === $child_storage->name
                 ) {
                     $inferred = $parent->type_params[$offset];
+
+                    if (isset($parent->type_param_variances[$offset])) {
+                        $type_param_variances[count($type_params)] = $parent->type_param_variances[$offset];
+                    }
+
                     break;
                 }
             }
@@ -688,6 +694,7 @@ final class AssertionReconciler extends Reconciler
             $child->is_static,
             $child->extra_types,
             $child->from_docblock,
+            $type_param_variances,
         );
     }
 
@@ -1044,6 +1051,7 @@ final class AssertionReconciler extends Reconciler
             return new TGenericObject(
                 $type_2_atomic->value,
                 $type_1_atomic->type_params,
+                type_param_variances: $type_1_atomic->type_param_variances,
             );
         } elseif ($type_2_atomic instanceof TNamedObject
             && $type_1_atomic instanceof TTemplateParam

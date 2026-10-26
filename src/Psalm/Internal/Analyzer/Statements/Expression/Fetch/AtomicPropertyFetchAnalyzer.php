@@ -28,6 +28,7 @@ use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\CallSiteVarianceProjector;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
@@ -839,7 +840,13 @@ final class AtomicPropertyFetchAnalyzer
         TGenericObject $lhs_type_part,
         ClassLikeStorage $property_class_storage,
         ClassLikeStorage $property_declaring_class_storage,
+        bool $for_assignment = false,
     ): Union {
+        $variance_projector = CallSiteVarianceProjector::create($codebase, $lhs_type_part);
+
+        $class_property_type = $variance_projector?->project($class_property_type, $for_assignment)
+            ?? $class_property_type;
+
         $template_types = CallAnalyzer::getTemplateTypesForCall(
             $codebase,
             $property_declaring_class_storage,

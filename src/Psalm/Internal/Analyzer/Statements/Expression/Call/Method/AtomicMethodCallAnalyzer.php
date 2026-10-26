@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\CallSiteVarianceProjector;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImpureMethodCall;
@@ -913,10 +914,15 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $lhs_var_id === '$this',
                 );
 
-                $lhs_type_part = $mixin->replaceTemplateTypesWithArgTypes(
-                    new TemplateResult([], $mixin_class_template_params ?: []),
-                    $codebase,
-                );
+                // a mixin given the receiver's arguments keeps their call-site variance
+                $projected_mixin = CallSiteVarianceProjector::create($codebase, $lhs_type_part)
+                    ?->projectAtomicType($mixin);
+
+                $lhs_type_part = ($projected_mixin instanceof TGenericObject ? $projected_mixin : $mixin)
+                    ->replaceTemplateTypesWithArgTypes(
+                        new TemplateResult([], $mixin_class_template_params ?: []),
+                        $codebase,
+                    );
 
                 $lhs_type_expanded = TypeExpander::expandUnion(
                     $codebase,

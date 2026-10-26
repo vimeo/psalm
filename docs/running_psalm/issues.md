@@ -230,6 +230,7 @@
  - [PropertyNotSetInConstructor](issues/PropertyNotSetInConstructor.md)
  - [PropertyTypeCoercion](issues/PropertyTypeCoercion.md)
  - [RawObjectIteration](issues/RawObjectIteration.md)
+ - [RedundantCallSiteVariance](issues/RedundantCallSiteVariance.md)
  - [RedundantCast](issues/RedundantCast.md)
  - [RedundantCastGivenDocblockType](issues/RedundantCastGivenDocblockType.md)
  - [RedundantCondition](issues/RedundantCondition.md)

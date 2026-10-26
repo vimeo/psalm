@@ -25,6 +25,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\CallSiteVarianceProjector;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -197,6 +198,8 @@ final class ExistingAtomicStaticCallAnalyzer
             $template_result->lower_bounds += $inferred_template_result->lower_bounds;
         }
 
+        $variance_projector = CallSiteVarianceProjector::create($codebase, $lhs_type_part);
+
         if (CallAnalyzer::checkMethodArgs(
             $method_id,
             $args,
@@ -204,6 +207,7 @@ final class ExistingAtomicStaticCallAnalyzer
             $context,
             new CodeLocation($statements_analyzer->getSource(), $stmt),
             $statements_analyzer,
+            $variance_projector,
         ) === false) {
             return;
         }
@@ -265,6 +269,7 @@ final class ExistingAtomicStaticCallAnalyzer
                 $fq_class_name,
                 $class_storage,
                 $config,
+                $variance_projector,
             );
         }
 
@@ -573,6 +578,7 @@ final class ExistingAtomicStaticCallAnalyzer
         string $fq_class_name,
         ClassLikeStorage $class_storage,
         Config $config,
+        ?CallSiteVarianceProjector $variance_projector,
     ): ?Union {
         $return_type_candidate = $codebase->methods->getMethodReturnType(
             $codebase,
@@ -583,6 +589,9 @@ final class ExistingAtomicStaticCallAnalyzer
         );
 
         if ($return_type_candidate) {
+            $return_type_candidate = $variance_projector?->project($return_type_candidate, false)
+                ?? $return_type_candidate;
+
             if ($template_result->template_types) {
                 $bindable_template_types = $return_type_candidate->getTemplateTypes();
 

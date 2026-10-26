@@ -25,6 +25,8 @@ use Psalm\Internal\Type\ParseTree\TemplateAsTree;
 use Psalm\Internal\Type\ParseTree\TemplateIsTree;
 use Psalm\Internal\Type\ParseTree\UnionTree;
 use Psalm\Internal\Type\ParseTree\Value;
+use Psalm\Internal\Type\ParseTree\VarianceTree;
+use Psalm\Type\Variance;
 
 use function array_pop;
 use function count;
@@ -162,11 +164,7 @@ final class ParseTreeCreator
 
                 case 'covariant':
                 case 'contravariant':
-                    if ($this->t + 1 < $this->type_token_count
-                        && $this->type_tokens[$this->t + 1][0] === ' '
-                    ) {
-                        $this->t++;
-                    }
+                    $this->handleVariance($type_token);
                     break;
 
                 default:
@@ -912,6 +910,31 @@ final class ParseTreeCreator
                 }
             }
         }
+    }
+
+    /**
+     * `covariant` and `contravariant` prefix a whole generic type argument. Followed by an operator they
+     * are plain class names.
+     *
+     * @param array{0: string, 1: int, 2?: string} $type_token
+     */
+    private function handleVariance(array $type_token): void
+    {
+        if (!TypeTokenizer::isVariancePrefix($this->type_tokens, $this->t)) {
+            $this->handleValue($type_token);
+
+            return;
+        }
+
+        if (!$this->current_leaf instanceof GenericTree || $this->current_leaf->terminated) {
+            throw new TypeParseTreeException(
+                'Call-site variance "' . $type_token[0] . '" must prefix a generic type argument',
+            );
+        }
+
+        $variance_leaf = new VarianceTree(Variance::from($type_token[0]), $this->current_leaf);
+        $this->current_leaf->children[] = $variance_leaf;
+        $this->current_leaf = $variance_leaf;
     }
 
     /** @param array{0: string, 1: int, 2?: string} $type_token */

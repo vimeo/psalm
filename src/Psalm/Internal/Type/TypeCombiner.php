@@ -272,8 +272,8 @@ final class TypeCombiner
             }
         }
 
-        foreach ($combination->object_type_params as $generic_type => $generic_type_params) {
-            $generic_type = substr($generic_type, 0, strcspn($generic_type, '<['));
+        foreach ($combination->object_type_params as $generic_key => $generic_type_params) {
+            $generic_type = substr($generic_key, 0, strcspn($generic_key, '<['));
 
             /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
             $generic_object = new TGenericObject(
@@ -283,6 +283,7 @@ final class TypeCombiner
                 $combination->object_static[$generic_type] ?? false,
                 $combination->extra_types,
                 $from_docblock,
+                $combination->object_type_param_variances[$generic_key] ?? [],
             );
 
             $new_types[] = $generic_object;
@@ -495,6 +496,11 @@ final class TypeCombiner
             unset($combination->value_types['true']);
         }
 
+        // Traversable and Generator are merged by class name below; call-site variances keep them apart
+        $merges_by_class_name = !($type instanceof TGenericObject && $type->type_param_variances)
+            && $type instanceof TNamedObject
+            && ($type->value === 'Traversable' || $type->value === 'Generator');
+
         if ($type instanceof TArray && isset($combination->builtin_type_params['iterable'])) {
             $type_key = 'iterable';
         } elseif ($type instanceof TArray
@@ -503,7 +509,7 @@ final class TypeCombiner
         ) {
             $type_key = 'iterable';
             $combination->builtin_type_params['iterable'] = [Type::getMixed(), Type::getMixed()];
-        } elseif ($type instanceof TNamedObject
+        } elseif ($merges_by_class_name
             && $type->value === 'Traversable'
             && (isset($combination->builtin_type_params['iterable']) || isset($combination->value_types['iterable']))
         ) {
@@ -516,7 +522,7 @@ final class TypeCombiner
             if (!$type instanceof TGenericObject) {
                 $type = new TGenericObject($type->value, [Type::getMixed(), Type::getMixed()]);
             }
-        } elseif ($type instanceof TNamedObject && ($type->value === 'Traversable' || $type->value === 'Generator')) {
+        } elseif ($merges_by_class_name) {
             $type_key = $type->value;
         } else {
             $type_key = $type->getKey();
@@ -682,7 +688,7 @@ final class TypeCombiner
             return null;
         }
 
-        if (($type instanceof TGenericObject && ($type->value === 'Traversable' || $type->value === 'Generator'))
+        if (($type instanceof TGenericObject && $merges_by_class_name)
             || ($type instanceof TIterable && $type->has_docblock_params)
             || ($type instanceof TArray && $type_key === 'iterable')
         ) {
@@ -705,6 +711,10 @@ final class TypeCombiner
         }
 
         if ($type instanceof TGenericObject) {
+            if ($type->type_param_variances) {
+                $combination->object_type_param_variances[$type_key] = $type->type_param_variances;
+            }
+
             foreach ($type->type_params as $i => $type_param) {
                 /** @psalm-suppress PropertyTypeCoercion */
                 $combination->object_type_params[$type_key][$i] = Type::combineUnionTypes(

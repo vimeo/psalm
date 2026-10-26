@@ -15,11 +15,13 @@ use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Union;
+use Psalm\Type\Variance;
 use ReflectionFunction;
 
 use function function_exists;
@@ -191,24 +193,136 @@ final class TypeParseTest extends TestCase
         $this->assertSame('B<int>', (string) Type::parseString('B<int>'));
     }
 
-    public function testGenericWithInlineCovariant(): void
+    public function testGenericWithCallSiteCovariance(): void
     {
-        $this->assertSame('B<int>', (string) Type::parseString('B<covariant int>'));
+        $this->assertSame('B<covariant int>', (string) Type::parseString('B<covariant int>'));
     }
 
-    public function testGenericWithInlineContravariant(): void
+    public function testGenericWithCallSiteContravariance(): void
     {
-        $this->assertSame('B<int>', (string) Type::parseString('B<contravariant int>'));
+        $this->assertSame('B<contravariant int>', (string) Type::parseString('B<contravariant int>'));
     }
 
-    public function testGenericWithMultipleInlineVariance(): void
+    public function testGenericWithMultipleCallSiteVariance(): void
     {
-        $this->assertSame('B<int, string>', (string) Type::parseString('B<covariant int, contravariant string>'));
+        $this->assertSame(
+            'B<covariant int, contravariant string>',
+            (string) Type::parseString('B<covariant int, contravariant string>'),
+        );
     }
 
-    public function testGenericWithInlineVarianceAndUnion(): void
+    public function testGenericWithCallSiteVarianceAndUnion(): void
     {
-        $this->assertSame('B<int|string>', (string) Type::parseString('B<covariant int|string>'));
+        $this->assertSame('B<covariant (int|string)>', (string) Type::parseString('B<covariant int|string>'));
+        $this->assertSame(
+            'B<contravariant (int|string), covariant Foo<int>&Bar>',
+            (string) Type::parseString('B<contravariant int|string, covariant Foo<int>&Bar>'),
+        );
+    }
+
+    public function testGenericWithCallSiteVarianceOnNullable(): void
+    {
+        $this->assertSame('B<covariant (null|string)>', (string) Type::parseString('B<covariant ?string>'));
+    }
+
+    public function testGenericWithCallSiteVarianceOnNestedGeneric(): void
+    {
+        $this->assertSame('B<C<covariant int>>', (string) Type::parseString('B<C<covariant int>>'));
+        $this->assertSame(
+            'B<covariant C<contravariant int>, int>',
+            (string) Type::parseString('B<covariant C<contravariant int>, int>'),
+        );
+    }
+
+    public function testGenericWithStar(): void
+    {
+        $this->assertSame('B<*>', (string) Type::parseString('B<*>'));
+        $this->assertSame('B<int, *>', (string) Type::parseString('B<int, *>'));
+    }
+
+    public function testCallSiteVarianceMapsAreComparedInOrder(): void
+    {
+        $params = [Type::getInt(), Type::getString()];
+        $variances = [0 => Variance::Covariant, 1 => Variance::Bivariant];
+
+        $this->assertTrue((new TGenericObject('B', $params, false, false, [], false, $variances))->equals(
+            new TGenericObject('B', $params, false, false, [], false, [1 => Variance::Bivariant, 0 => Variance::Covariant]),
+            false,
+        ));
+    }
+
+    public function testCallSiteVarianceKeyAndEquality(): void
+    {
+        $invariant = Type::parseString('B<int>')->getSingleAtomic();
+        $covariant = Type::parseString('B<covariant int>')->getSingleAtomic();
+
+        $this->assertInstanceOf(TGenericObject::class, $covariant);
+        $this->assertSame([0 => Variance::Covariant], $covariant->type_param_variances);
+        $this->assertSame('B<covariant int>', $covariant->getKey());
+        $this->assertFalse($covariant->equals($invariant, false));
+        $this->assertTrue($covariant->equals(Type::parseString('B<covariant int>')->getSingleAtomic(), false));
+        $this->assertFalse($covariant->equals(Type::parseString('B<contravariant int>')->getSingleAtomic(), false));
+    }
+
+    public function testCallSiteVarianceOnThis(): void
+    {
+        $this->assertSame('B<int, covariant static>', (string) Type::parseString('B<int, covariant $this>'));
+    }
+
+    public function testCallSiteVarianceDroppedOnBuiltinTypes(): void
+    {
+        $this->assertSame('array<string, int>', (string) Type::parseString('array<string, covariant int>'));
+        $this->assertSame('list<int>', (string) Type::parseString('list<covariant int>'));
+        $this->assertSame('iterable<int, string>', (string) Type::parseString('iterable<int, contravariant string>'));
+        $this->assertSame('class-string<Foo>', (string) Type::parseString('class-string<covariant Foo>'));
+        $this->assertSame('array<array-key, mixed>', (string) Type::parseString('array<*>'));
+    }
+
+    public function testCallSiteVarianceShiftsWithImplicitKeyParam(): void
+    {
+        $this->assertSame('Traversable<mixed, covariant int>', (string) Type::parseString('Traversable<covariant int>'));
+    }
+
+    public function testCallSiteVarianceOutsideGenericArgument(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('covariant int');
+    }
+
+    public function testCallSiteVarianceInsideUnion(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('B<int|covariant string>');
+    }
+
+    public function testCallSiteVarianceOnAParenthesizedArgument(): void
+    {
+        $this->assertSame('B<covariant (A|C)>', (string) Type::parseString('B<covariant (A|C)>'));
+        $this->assertSame('B<int, contravariant (A|C)>', (string) Type::parseString('B<int, contravariant (A|C)>'));
+    }
+
+    public function testCallSiteVarianceInACallableParameter(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('Closure(covariant (A|B))');
+    }
+
+    public function testCallSiteVarianceBeforeAStar(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('B<covariant *>');
+    }
+
+    public function testStarOutsideGenericArgument(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('*');
+    }
+
+    public function testStarInsideUnion(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('B<int|*>');
     }
 
     public function testIntersection(): void

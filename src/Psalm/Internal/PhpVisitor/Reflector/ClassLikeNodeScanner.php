@@ -73,6 +73,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
+use Psalm\Type\Variance;
 use UnexpectedValueException;
 
 use function array_diff_key;
@@ -1249,6 +1250,8 @@ final class ClassLikeNodeScanner
                 return;
             }
 
+            $this->rejectCallSiteVariance($storage, $node, $atomic_type, 'extends');
+
             $generic_class_lc = strtolower($atomic_type->value);
 
             if (!isset($storage->parent_classes[$generic_class_lc])
@@ -1334,6 +1337,8 @@ final class ClassLikeNodeScanner
 
                 return;
             }
+
+            $this->rejectCallSiteVariance($storage, $node, $atomic_type, 'implements');
 
             $generic_class_lc = strtolower($atomic_type->value);
 
@@ -1421,6 +1426,8 @@ final class ClassLikeNodeScanner
                 return;
             }
 
+            $this->rejectCallSiteVariance($storage, $node, $atomic_type, 'use');
+
             $generic_class_lc = strtolower($atomic_type->value);
 
             if (!isset($storage->used_traits[$generic_class_lc])) {
@@ -1442,6 +1449,28 @@ final class ClassLikeNodeScanner
             }
 
             $storage->template_extended_offsets[$atomic_type->value] = $used_type_parameters;
+        }
+    }
+
+    /**
+     * The type arguments of an ancestor are given to the templates of the class: a call-site variance has no
+     * meaning there. Only those of the ancestor itself are checked, not those nested in them.
+     */
+    private function rejectCallSiteVariance(
+        ClassLikeStorage $storage,
+        PhpParser\Node\Stmt\ClassLike|PhpParser\Node\Stmt\TraitUse $node,
+        TGenericObject $atomic_type,
+        string $tag,
+    ): void {
+        foreach ($atomic_type->type_param_variances as $offset => $variance) {
+            $storage->docblock_issues[] = new InvalidDocblock(
+                'Call-site variance annotation of '
+                    . ($variance === Variance::Bivariant
+                        ? '*'
+                        : $variance->value . ' ' . $atomic_type->type_params[$offset]->getId())
+                    . ' in generic type ' . $atomic_type->getId() . ' in PHPDoc tag @' . $tag . ' is not allowed.',
+                new CodeLocation($this->file_scanner, $node, null, true),
+            );
         }
     }
 

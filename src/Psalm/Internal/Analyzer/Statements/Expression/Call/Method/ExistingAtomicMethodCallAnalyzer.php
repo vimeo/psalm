@@ -24,6 +24,7 @@ use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\CallSiteVarianceProjector;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -225,6 +226,8 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             }
         }
 
+        $variance_projector = CallSiteVarianceProjector::create($codebase, $lhs_type_part);
+
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
         try {
@@ -281,6 +284,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $context,
             new CodeLocation($source, $stmt_name),
             $statements_analyzer,
+            $variance_projector,
         ) === false) {
             return Type::getMixed();
         }
@@ -299,6 +303,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $args,
             $result,
             $template_result,
+            $variance_projector,
         );
 
         if ($method_storage?->has_yield && !$is_first_class_callable) {

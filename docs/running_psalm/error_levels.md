@@ -176,6 +176,7 @@ These issues become info (non-blocking) at level 3 and higher.
  - [PrivateFinalMethod](issues/PrivateFinalMethod.md)
  - [PropertyNotSetInConstructor](issues/PropertyNotSetInConstructor.md)
  - [RawObjectIteration](issues/RawObjectIteration.md)
+ - [RedundantCallSiteVariance](issues/RedundantCallSiteVariance.md)
  - [RedundantCastGivenDocblockType](issues/RedundantCastGivenDocblockType.md)
  - [RedundantConditionGivenDocblockType](issues/RedundantConditionGivenDocblockType.md)
  - [RedundantFunctionCallGivenDocblockType](issues/RedundantFunctionCallGivenDocblockType.md)

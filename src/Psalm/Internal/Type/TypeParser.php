@@ -29,6 +29,7 @@ use Psalm\Internal\Type\ParseTree\TemplateAsTree;
 use Psalm\Internal\Type\ParseTree\TemplateIsTree;
 use Psalm\Internal\Type\ParseTree\UnionTree;
 use Psalm\Internal\Type\ParseTree\Value;
+use Psalm\Internal\Type\ParseTree\VarianceTree;
 use Psalm\Internal\Type\PurityWildcard;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
@@ -90,9 +91,11 @@ use Psalm\Type\Atomic\TUnknownClassString;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
+use Psalm\Type\Variance;
 
 use function array_all;
 use function array_any;
+use function array_filter;
 use function array_key_exists;
 use function array_key_first;
 use function array_keys;
@@ -514,6 +517,10 @@ final class TypeParser
             throw new TypeParseTreeException('Invalid conditional, expected ? after is');
         }
 
+        if ($parse_tree instanceof VarianceTree) {
+            throw new TypeParseTreeException('Call-site variance must prefix a generic type argument');
+        }
+
         if (!$parse_tree instanceof Value) {
             throw new InvalidArgumentException('Unrecognised parse tree type ' . $parse_tree::class);
         }
@@ -791,16 +798,37 @@ final class TypeParser
         }
 
         $generic_params = [];
+        /** @var list<Variance|null> $variance_slots parallel to $generic_params */
+        $variance_slots = [];
 
         foreach ($parse_tree->children as $i => $child_tree) {
-            $tree_type = self::getTypeFromTree(
-                $child_tree,
-                $codebase,
-                null,
-                $template_type_map,
-                $type_aliases,
-                $from_docblock,
-            );
+            $variance = null;
+
+            if ($child_tree instanceof VarianceTree) {
+                $variance = $child_tree->variance;
+                $child_tree = $child_tree->children[0]
+                    ?? throw new TypeParseTreeException('Call-site variance without a type argument');
+            }
+
+            if ($child_tree instanceof Value && $child_tree->value === '*') {
+                if ($variance !== null) {
+                    throw new TypeParseTreeException('A * is already a call-site variance');
+                }
+
+                $variance = Variance::Bivariant;
+                $tree_type = new Union([new TMixed(false, $from_docblock)]);
+            } else {
+                $tree_type = self::getTypeFromTree(
+                    $child_tree,
+                    $codebase,
+                    null,
+                    $template_type_map,
+                    $type_aliases,
+                    $from_docblock,
+                );
+            }
+
+            $variance_slots[] = $variance;
 
             if ($generic_type === 'class-string-map'
                 && $i === 0
@@ -835,6 +863,7 @@ final class TypeParser
                 $generic_params,
                 $purity_params,
                 $from_docblock,
+                $variance_slots,
             );
         }
 
@@ -844,6 +873,7 @@ final class TypeParser
             && count($generic_params) === 1
         ) {
             array_unshift($generic_params, new Union([new TArrayKey($from_docblock)]));
+            array_unshift($variance_slots, null);
         } elseif (count($generic_params) === 1
             && in_array(
                 $generic_type_value,
@@ -852,9 +882,11 @@ final class TypeParser
             )
         ) {
             array_unshift($generic_params, new Union([new TMixed(false, $from_docblock)]));
+            array_unshift($variance_slots, null);
         } elseif ($generic_type_value === 'Generator') {
             if (count($generic_params) === 1) {
                 array_unshift($generic_params, new Union([new TMixed(false, $from_docblock)]));
+                array_unshift($variance_slots, null);
             }
 
             for ($i = 0, $l = 4 - count($generic_params); $i < $l; ++$i) {
@@ -1308,7 +1340,15 @@ final class TypeParser
             throw new TypeParseTreeException('Cannot create generic object with reserved word');
         }
 
-        return new TGenericObject($generic_type_value, $generic_params, false, false, [], $from_docblock);
+        return new TGenericObject(
+            $generic_type_value,
+            $generic_params,
+            false,
+            false,
+            [],
+            $from_docblock,
+            array_filter($variance_slots),
+        );
     }
 
     /**
@@ -1317,6 +1357,7 @@ final class TypeParser
      *
      * @param list<Union> $generic_params
      * @param non-empty-list<Union> $purity_params
+     * @param list<Variance|null> $variance_slots parallel to $generic_params
      * @throws TypeParseTreeException
      * @psalm-pure
      */
@@ -1325,6 +1366,7 @@ final class TypeParser
         array $generic_params,
         array $purity_params,
         bool $from_docblock,
+        array $variance_slots,
     ): TIterable|TGenericObject {
         if (isset(TypeTokenizer::PSALM_RESERVED_WORDS[$generic_type_value])
             && !in_array($generic_type_value, ['iterable', 'self', 'static'], true)
@@ -1360,6 +1402,7 @@ final class TypeParser
         ) {
             while (count($generic_params) < 2) {
                 array_unshift($generic_params, new Union([new TMixed(false, $from_docblock)]));
+                array_unshift($variance_slots, null);
             }
         }
 
@@ -1378,6 +1421,7 @@ final class TypeParser
             false,
             [],
             $from_docblock,
+            array_filter($variance_slots),
         );
     }
 

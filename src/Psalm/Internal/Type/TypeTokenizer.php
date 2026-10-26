@@ -348,6 +348,35 @@ final class TypeTokenizer
     }
 
     /**
+     * Whether the `covariant` or `contravariant` token at $i prefixes a generic argument. Followed by an operator
+     * (or by nothing) it is a class name.
+     *
+     * @param array<int, array{0: string, 1: int, 2?: string}> $type_tokens
+     * @psalm-pure
+     */
+    public static function isVariancePrefix(array $type_tokens, int $i): bool
+    {
+        if ($type_tokens[$i][0] !== 'covariant' && $type_tokens[$i][0] !== 'contravariant'
+            || !isset($type_tokens[$i + 1])
+        ) {
+            return false;
+        }
+
+        // `covariant (A|B)`, but not the method `covariant(...)`
+        if ($type_tokens[$i + 1][0] === '(') {
+            return isset($type_tokens[$i - 1]) && ($type_tokens[$i - 1][0] === '<' || $type_tokens[$i - 1][0] === ',');
+        }
+
+        return !in_array(
+            $type_tokens[$i + 1][0],
+            [
+                '<', '>', '|', ',', '&', '[', ']', ')', '{', '}', ':', '::', '=', '...', 'as', 'is', 'is not', 'of',
+            ],
+            true,
+        );
+    }
+
+    /**
      * Reads the `as`, `is`, `is not` or `of` keyword starting at $i.
      *
      * @return array{string, int} the keyword, and the offset of its last character
@@ -417,10 +446,14 @@ final class TypeTokenizer
                 $string_type_token[0],
                 [
                     '<', '>', '|', '?', ',', '{', '}', ':', '::', '[', ']', '(', ')', '&', '=', '...', 'as', 'is',
-                    'is not', 'covariant', 'contravariant',
+                    'is not', '*',
                 ],
                 true,
             )) {
+                continue;
+            }
+
+            if (self::isVariancePrefix($type_tokens, $i)) {
                 continue;
             }
 

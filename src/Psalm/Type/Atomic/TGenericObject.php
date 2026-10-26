@@ -11,9 +11,13 @@ use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
+use Psalm\Type\Variance;
 
+use function array_diff_key;
+use function assert;
 use function count;
 use function implode;
+use function ksort;
 use function strrpos;
 use function substr;
 
@@ -40,9 +44,17 @@ final class TGenericObject extends TNamedObject
     public array $type_params;
 
     /**
+     * Call-site variances (`Box<covariant T>`) by offset in `$type_params`; an invariant argument has no entry.
+     *
+     * @var array<int, Variance>
+     */
+    public array $type_param_variances = [];
+
+    /**
      * @param string                $value the name of the object
      * @param non-empty-list<Union> $type_params
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
+     * @param array<int, Variance> $type_param_variances
      */
     public function __construct(
         string $value,
@@ -52,12 +64,17 @@ final class TGenericObject extends TNamedObject
         bool $is_static = false,
         array $extra_types = [],
         bool $from_docblock = false,
+        array $type_param_variances = [],
     ) {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
         }
 
+        // equals() compares the arrays strictly
+        ksort($type_param_variances);
+
         $this->type_params = $type_params;
+        $this->type_param_variances = $type_param_variances;
         parent::__construct(
             $value,
             $is_static,
@@ -65,6 +82,26 @@ final class TGenericObject extends TNamedObject
             $extra_types,
             $from_docblock,
         );
+    }
+
+    /**
+     * @param array<int, Variance> $type_param_variances
+     */
+    public function setTypeParamVariances(array $type_param_variances): self
+    {
+        if ($this->type_param_variances === $type_param_variances) {
+            return $this;
+        }
+
+        assert(array_diff_key($type_param_variances, $this->type_params) === []);
+
+        // equals() compares the arrays strictly
+        ksort($type_param_variances);
+
+        $cloned = clone $this;
+        $cloned->type_param_variances = $type_param_variances;
+
+        return $cloned;
     }
 
     /**
@@ -84,6 +121,7 @@ final class TGenericObject extends TNamedObject
             $type_params,
             $purity_args,
             static fn(Union $type_param): string => $type_param->getKey(),
+            $this->type_param_variances,
         );
 
         $extra_types = '';
@@ -129,7 +167,9 @@ final class TGenericObject extends TNamedObject
             return false;
         }
 
-        if (count($this->type_params) !== count($other_type->type_params)) {
+        if (count($this->type_params) !== count($other_type->type_params)
+            || $this->type_param_variances !== $other_type->type_param_variances
+        ) {
             return false;
         }
 
@@ -200,13 +240,14 @@ final class TGenericObject extends TNamedObject
         if (!$types && !$intersection) {
             return $this;
         }
-        return new static(
+        return (new static(
             $this->value,
             $types ?? $this->type_params,
             $this->remapped_params,
             $this->is_static,
             $intersection ?? $this->extra_types,
-        );
+            type_param_variances: $this->type_param_variances,
+        ))->setIsStatic($this->is_static, $this->is_static_resolved);
     }
 
     /**
@@ -226,12 +267,13 @@ final class TGenericObject extends TNamedObject
         if (!$type_params && !$intersection) {
             return $this;
         }
-        return new static(
+        return (new static(
             $this->value,
             $type_params ?? $this->type_params,
             true,
             $this->is_static,
             $intersection ?? $this->extra_types,
-        );
+            type_param_variances: $this->type_param_variances,
+        ))->setIsStatic($this->is_static, $this->is_static_resolved);
     }
 }

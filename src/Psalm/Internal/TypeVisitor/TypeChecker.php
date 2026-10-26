@@ -26,12 +26,14 @@ use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MissingTemplateParam;
+use Psalm\Issue\RedundantCallSiteVariance;
 use Psalm\Issue\ReservedWord;
 use Psalm\Issue\TooManyTemplateParams;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type\Atomic;
@@ -46,6 +48,7 @@ use Psalm\Type\MutableUnion;
 use Psalm\Type\TypeNode;
 use Psalm\Type\TypeVisitor;
 use Psalm\Type\Union;
+use Psalm\Type\Variance;
 use ReflectionProperty;
 
 use function array_any;
@@ -118,19 +121,41 @@ final class TypeChecker extends TypeVisitor
                 // composes: a covariant type param is in the position of the type, an invariant one in neither
                 $outer_prevents_covariance = $this->prevent_template_covariance;
                 $outer_in_invariant_position = $this->in_invariant_position;
+                $outer_in_output_position = $this->in_output_position;
 
                 foreach ($type->extra_types as $extra_type) {
                     $this->traverse($extra_type);
                 }
 
                 foreach ($type->type_params as $i => $type_param) {
-                    $this->prevent_template_covariance = $prevents_covariance[$i] ?? $outer_prevents_covariance;
-                    $this->in_invariant_position = $outer_in_invariant_position || ($prevents_covariance[$i] ?? false);
+                    $this->prevent_template_covariance = $outer_prevents_covariance;
+                    $this->in_invariant_position = $outer_in_invariant_position;
+                    $this->in_output_position = $outer_in_output_position;
+
+                    switch ($prevents_covariance[$i] ?? GenericParamPosition::Same) {
+                        case GenericParamPosition::Invariant:
+                            $this->prevent_template_covariance = true;
+                            $this->in_invariant_position = true;
+                            break;
+
+                        case GenericParamPosition::None:
+                            $this->prevent_template_covariance = false;
+                            break;
+
+                        case GenericParamPosition::Opposite:
+                            $this->flipPosition();
+                            break;
+
+                        case GenericParamPosition::Same:
+                            break;
+                    }
+
                     $this->traverse($type_param);
                 }
 
                 $this->prevent_template_covariance = $outer_prevents_covariance;
                 $this->in_invariant_position = $outer_in_invariant_position;
+                $this->in_output_position = $outer_in_output_position;
 
                 /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
                 $type->checked = true;
@@ -170,15 +195,7 @@ final class TypeChecker extends TypeVisitor
         $outer_prevents_covariance = $this->prevent_template_covariance;
         $outer_in_output_position = $this->in_output_position;
 
-        if (!$this->in_invariant_position) {
-            if ($outer_prevents_covariance) {
-                $this->prevent_template_covariance = false;
-                $this->in_output_position = true;
-            } elseif ($outer_in_output_position) {
-                $this->prevent_template_covariance = true;
-                $this->in_output_position = false;
-            }
-        }
+        $this->flipPosition();
 
         $result = parent::traverse($node);
 
@@ -188,15 +205,35 @@ final class TypeChecker extends TypeVisitor
         return $result;
     }
 
+    /**
+     * Turns an input position into an output one and the other way round. Neither is left alone, as is what is in
+     * an invariant type param
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function flipPosition(): void
+    {
+        if ($this->in_invariant_position) {
+            return;
+        }
+
+        if ($this->prevent_template_covariance) {
+            $this->prevent_template_covariance = false;
+            $this->in_output_position = true;
+        } elseif ($this->in_output_position) {
+            $this->prevent_template_covariance = true;
+            $this->in_output_position = false;
+        }
+    }
+
     public function hasErrors(): bool
     {
         return $this->has_errors;
     }
 
     /**
-     * @return array<int, ?bool>|null whether each type param of a generic object is in a position where a covariant
-     *                                template is not allowed, null for one in the position of the generic object, or
-     *                                for all if its type params weren't checked
+     * @return array<int, GenericParamPosition>|null the position of each type param of a generic object, or of all
+     *                                                if its type params weren't checked
      */
     private function checkNamedObject(TNamedObject $atomic): ?array
     {
@@ -284,9 +321,7 @@ final class TypeChecker extends TypeVisitor
     }
 
     /**
-     * @return array<int, ?bool>|null whether each type param is in a position where a covariant template is not
-     *                                allowed, null for one in the position of the generic object (a covariant one),
-     *                                or for all for an unknown class
+     * @return array<int, GenericParamPosition>|null the position of each type param, or of all for an unknown class
      */
     private function checkGenericParams(TGenericObject $atomic): ?array
     {
@@ -362,10 +397,27 @@ final class TypeChecker extends TypeVisitor
       
         $prevents_covariance = [];
         foreach ($atomic->type_params as $i => $type_param) {
-            // a covariant type param is in the position of the type (null): an invariant one is in neither
-            $prevents_covariance[$i] = empty($expected_param_covariants[$i])
-                ? $this->source instanceof MethodAnalyzer && $this->source->getMethodName() !== '__construct'
-                : null;
+            $variance = $atomic->type_param_variances[$i] ?? null;
+
+            if ($variance !== null) {
+                $this->checkCallSiteVariance($atomic, $i, $variance, $class_storage, $expected_type_params);
+            }
+
+            // a covariant type param is in the position of the type: an invariant one is in neither
+            $prevents_covariance[$i] = match (true) {
+                $variance === Variance::Contravariant => GenericParamPosition::Opposite,
+                $variance === Variance::Bivariant => GenericParamPosition::None,
+                $variance === Variance::Covariant || !empty($expected_param_covariants[$i])
+                    => GenericParamPosition::Same,
+                $this->source instanceof MethodAnalyzer && $this->source->getMethodName() !== '__construct'
+                    => GenericParamPosition::Invariant,
+                default => GenericParamPosition::None,
+            };
+
+            // a `*` stands for any type, so it is not held to the bound of the template
+            if ($variance === Variance::Bivariant) {
+                continue;
+            }
 
             if (isset($expected_type_param_keys[$i])) {
                 $expected_template_name = $expected_type_param_keys[$i];
@@ -430,6 +482,52 @@ final class TypeChecker extends TypeVisitor
         }
 
         return $prevents_covariance;
+    }
+
+    /**
+     * @param array<string, non-empty-array<string, Union>> $expected_type_params
+     */
+    private function checkCallSiteVariance(
+        TGenericObject $atomic,
+        int $offset,
+        Variance $variance,
+        ClassLikeStorage $class_storage,
+        array $expected_type_params,
+    ): void {
+        $template_name = array_keys($expected_type_params)[$offset] ?? null;
+
+        // a type param the class has no template for is reported as too many
+        if ($template_name === null
+            || $variance === Variance::Bivariant
+            || empty($class_storage->template_covariants[$offset])
+        ) {
+            return;
+        }
+
+        $argument = $variance->value . ' ' . $atomic->type_params[$offset]->getId();
+
+        if ($variance === Variance::Contravariant) {
+            IssueBuffer::maybeAdd(
+                new InvalidDocblock(
+                    'Call-site variance of ' . $argument . ' in generic type ' . $atomic->getId()
+                        . ' is in conflict with covariant template type ' . $template_name
+                        . ' of class ' . $class_storage->name . '.',
+                    $this->code_location,
+                ),
+                $this->suppressed_issues,
+            );
+        } elseif (strtolower($class_storage->name) !== 'reflectionclass') {
+            // ReflectionClass<T> is covariant, and code written for several PHP versions needs the annotation
+            IssueBuffer::maybeAdd(
+                new RedundantCallSiteVariance(
+                    'Call-site variance of ' . $argument . ' in generic type ' . $atomic->getId()
+                        . ' is redundant, template type ' . $template_name
+                        . ' of class ' . $class_storage->name . ' has the same variance.',
+                    $this->code_location,
+                ),
+                $this->suppressed_issues,
+            );
+        }
     }
 
     public function checkScalarClassConstant(TClassConstant $atomic): void

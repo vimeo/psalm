@@ -575,6 +575,23 @@ final class TypeCombinationTest extends TestCase
                     'Foo<B>',
                 ],
             ],
+            'FooCallSiteVarianceKeptApart' => [
+                'Foo<*>|Foo<A>|Foo<contravariant A>|Foo<covariant A>',
+                [
+                    'Foo<A>',
+                    'Foo<covariant A>',
+                    'Foo<contravariant A>',
+                    'Foo<*>',
+                    'Foo<covariant A>',
+                ],
+            ],
+            'traversableWithCallSiteVarianceIsNotCoalescedIntoIterable' => [
+                'Traversable<int, *>|iterable<int, A>',
+                [
+                    'iterable<int, A>',
+                    'Traversable<int, *>',
+                ],
+            ],
             'traversableOfMixed' => [
                 'Traversable<mixed, mixed>',
                 [
