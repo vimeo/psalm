@@ -928,6 +928,7 @@ final class ClassLikeNodeScanner
             // the `@psalm-pure` and `@psalm-mutation-free` they spell
             $storage->taint_specialize = $docblock_info->taint_specialize;
             $storage->cli_only = $docblock_info->cli_only;
+            $storage->taint_property_bag = $docblock_info->taint_property_bag;
             $storage->specialize_instance = $docblock_info->taint_specialize
                 || ($docblock_info->has_mutations_annotation
                     && $deferred_capabilities === []

@@ -347,6 +347,17 @@ final class ClassLikeDocblockParser
             $info->cli_only = true;
         }
 
+        if (isset($parsed_docblock->tags['psalm-taint-property-bag'])) {
+            $property_bag = trim((string) reset($parsed_docblock->tags['psalm-taint-property-bag']));
+            if (preg_match('/^\$([A-Za-z_]\w*)$/', $property_bag, $matches) !== 1 || !isset($matches[1])) {
+                throw new IncorrectDocblockException(
+                    '@psalm-taint-property-bag "' . $property_bag . '" does not name a property, like $properties',
+                );
+            }
+
+            $info->taint_property_bag = $matches[1];
+        }
+
         if (isset($parsed_docblock->tags['psalm-override-property-visibility'])) {
             $info->override_property_visibility = true;
         }
