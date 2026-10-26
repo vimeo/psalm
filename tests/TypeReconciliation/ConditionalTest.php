@@ -3197,6 +3197,34 @@ final class ConditionalTest extends TestCase
                     }
                     ',
             ],
+            'ctypeDigitOnInterpolatedIntIsNotRedundant' => [
+                'code' => '<?php
+                    function positive(int $int): void {
+                        if (ctype_digit("$int")) {
+                            echo "non-negative";
+                        }
+                    }
+
+                    function negated(int $int): void {
+                        if (!ctype_digit("$int")) {
+                            throw new InvalidArgumentException("Bad id $int");
+                        }
+                    }
+                    ',
+            ],
+            'ctypeLowerOnLowercaseExpressionIsNotRedundant' => [
+                'code' => '<?php
+                    /** @param non-empty-lowercase-string $s */
+                    function positive(string $s): void {
+                        if (ctype_lower($s . "")) {
+                            echo "all letters";
+                        }
+                        if (!ctype_lower($s . "")) {
+                            echo "not all letters";
+                        }
+                    }
+                    ',
+            ],
             'SKIPPED-ctypeDigitNarrowsIntToARange' => [
                 'code' => '<?php
                     $int = rand(-1000, 1000);
