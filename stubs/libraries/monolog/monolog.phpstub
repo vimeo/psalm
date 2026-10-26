@@ -1,15 +1,436 @@
 <?php
 
-// The taints monolog/monolog 3 passes along: the stream a StreamHandler writes to is a file sink, and the
-// address a SocketHandler connects to an SSRF sink. Loaded when the analysed code uses the package, refining its
-// classes (see Config::visitStubFiles()).
+// The taints and the capabilities (see docs/annotating_code/purity_model.md) of monolog/monolog 3. Loaded
+// when the analysed code uses the package, refining its classes (see Config::visitStubFiles()): the methods declared
+// here keep the signatures and docblocks of monolog/monolog 3.10.
+//
+// The stream a StreamHandler writes to is a file sink, and the address a SocketHandler connects to an SSRF sink.
+//
+// Logging runs the handlers and processors the logger was given, which write files, sockets and buffers (io, the
+// handler objects), read the request, the process and the clock (read-globals, time) and may count in static state
+// (write-globals): every capability but write-refs.
+//
+// The handlers and formatters a logging setup builds only keep their settings when they are made and given a formatter
+// (write-this-props); a stream handler reads the memory limit and the working directory and sizes a given stream's
+// chunks, a socket handler reads the default socket timeout (read-globals, io).
+//
+// Getting or setting the formatter of any formattable handler may pass it on to the handlers a wrapper holds (a group,
+// buffer, filter or sampling handler: write-props), and a fingers-crossed handler first makes its nested handler
+// with the factory it was given, which may do anything but write the caller's references.
+//
+// A web processor reads the request's server data when made and when it runs (read-globals), and adds the extra
+// fields to the record it is given (write-props).
 
-namespace Monolog\Handler {
-use Monolog\Level;
-use Monolog\Utils;
-use Monolog\LogRecord;
+namespace Monolog {
+
+use Closure;
+use DateTimeZone;
+use Monolog\Handler\HandlerInterface;
+use Monolog\Processor\ProcessorInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
+use Stringable;
 
 /**
+ * Monolog log channel
+ *
+ * It contains a stack of Handlers and a stack of Processors,
+ * and uses them to store records that are added to it.
+ *
+ * @author Jordi Boggiano <j.boggiano@seld.be>
+ * @final
+ */
+class Logger implements LoggerInterface, ResettableInterface
+{
+    /**
+     * @param string             $name       The logging channel, a simple descriptive name that is attached to all log records
+     * @param list<HandlerInterface> $handlers   Optional stack of handlers, the first one in the array is called first, etc.
+     * @param callable[]         $processors Optional array of processors
+     * @param DateTimeZone|null  $timezone   Optional timezone, if not provided date_default_timezone_get() will be used
+     *
+     * @phpstan-param array<(callable(LogRecord): LogRecord)|ProcessorInterface> $processors
+     * @psalm-capabilities read-globals
+     */
+    public function __construct(string $name, array $handlers = [], array $processors = [], DateTimeZone|null $timezone = null)
+    {
+    }
+    /**
+     * @psalm-capabilities read-props
+     */
+    public function getName(): string
+    {
+    }
+    /**
+     * Return a new cloned instance with the name changed
+     *
+     * @return static
+     * @psalm-capabilities read-props
+     */
+    public function withName(string $name): self
+    {
+    }
+    /**
+     * Pushes a handler on to the stack.
+     *
+     * @return $this
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function pushHandler(HandlerInterface $handler): self
+    {
+    }
+    /**
+     * Pops a handler from the stack
+     *
+     * @throws \LogicException If empty handler stack
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function popHandler(): HandlerInterface
+    {
+    }
+    /**
+     * Set handlers, replacing all existing ones.
+     *
+     * If a map is passed, keys will be ignored.
+     *
+     * @param  list<HandlerInterface> $handlers
+     * @return $this
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function setHandlers(array $handlers): self
+    {
+    }
+    /**
+     * @return list<HandlerInterface>
+     * @psalm-capabilities read-props
+     */
+    public function getHandlers(): array
+    {
+    }
+    /**
+     * Adds a processor on to the stack.
+     *
+     * @phpstan-param ProcessorInterface|(callable(LogRecord): LogRecord) $callback
+     * @return $this
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function pushProcessor(ProcessorInterface|callable $callback): self
+    {
+    }
+    /**
+     * Removes the processor on top of the stack and returns it.
+     *
+     * @phpstan-return ProcessorInterface|(callable(LogRecord): LogRecord)
+     * @throws \LogicException If empty processor stack
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function popProcessor(): callable
+    {
+    }
+    /**
+     * @return callable[]
+     * @phpstan-return array<ProcessorInterface|(callable(LogRecord): LogRecord)>
+     * @psalm-capabilities read-props
+     */
+    public function getProcessors(): array
+    {
+    }
+    /**
+     * Control the use of microsecond resolution timestamps in the 'datetime'
+     * member of new records.
+     *
+     * As of PHP7.1 microseconds are always included by the engine, so
+     * there is no performance penalty and Monolog 2 enabled microseconds
+     * by default. This function lets you disable them though in case you want
+     * to suppress microseconds from the output.
+     *
+     * @param  bool  $micro True to use microtime() to create timestamps
+     * @return $this
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function useMicrosecondTimestamps(bool $micro): self
+    {
+    }
+    /**
+     * @return $this
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function useLoggingLoopDetection(bool $detectCycles): self
+    {
+    }
+    /**
+     * Adds a log record.
+     *
+     * @param  int                    $level    The logging level (a Monolog or RFC 5424 level)
+     * @param  string                 $message  The log message
+     * @param  mixed[]                $context  The log context
+     * @param  JsonSerializableDateTimeImmutable|null $datetime Optional log date to log into the past or future
+     *
+     * @return bool                   Whether the record has been processed
+     *
+     * @phpstan-param value-of<Level::VALUES>|Level $level
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function addRecord(int|Level $level, string $message, array $context = [], JsonSerializableDateTimeImmutable|null $datetime = null): bool
+    {
+    }
+    /**
+     * Ends a log cycle and frees all resources used by handlers.
+     *
+     * Closing a Handler means flushing all buffers and freeing any open resources/handles.
+     * Handlers that have been closed should be able to accept log records again and re-open
+     * themselves on demand, but this may not always be possible depending on implementation.
+     *
+     * This is useful at the end of a request and will be called automatically on every handler
+     * when they get destructed.
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function close(): void
+    {
+    }
+    /**
+     * Ends a log cycle and resets all handlers and processors to their initial state.
+     *
+     * Resetting a Handler or a Processor means flushing/cleaning all buffers, resetting internal
+     * state, and getting it back to a state in which it can receive log records again.
+     *
+     * This is useful in case you want to avoid logs leaking between two requests or jobs when you
+     * have a long running process like a worker or an application server serving multiple requests
+     * in one process.
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function reset(): void
+    {
+    }
+    /**
+     * Gets the name of the logging level as a string.
+     *
+     * This still returns a string instead of a Level for BC, but new code should not rely on this method.
+     *
+     * @throws \Psr\Log\InvalidArgumentException If level is not defined
+     *
+     * @phpstan-param  value-of<Level::VALUES>|Level $level
+     * @phpstan-return value-of<Level::NAMES>
+     *
+     * @deprecated Since 3.0, use {@see toMonologLevel} or {@see \Monolog\Level->getName()} instead
+     * @psalm-pure
+     */
+    public static function getLevelName(int|Level $level): string
+    {
+    }
+    /**
+     * Converts PSR-3 levels to Monolog ones if necessary
+     *
+     * @param  int|string|Level|LogLevel::*      $level Level number (monolog) or name (PSR-3)
+     * @throws \Psr\Log\InvalidArgumentException If level is not defined
+     *
+     * @phpstan-param value-of<Level::VALUES>|value-of<Level::NAMES>|Level|LogLevel::* $level
+     * @psalm-pure
+     */
+    public static function toMonologLevel(string|int|Level $level): Level
+    {
+    }
+    /**
+     * Checks whether the Logger has a handler that listens on the given level
+     *
+     * @phpstan-param value-of<Level::VALUES>|value-of<Level::NAMES>|Level|LogLevel::* $level
+     * @psalm-capabilities read-props
+     */
+    public function isHandling(int|string|Level $level): bool
+    {
+    }
+    /**
+     * Set a custom exception handler that will be called if adding a new record fails
+     *
+     * The Closure will receive an exception object and the record that failed to be logged
+     *
+     * @return $this
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function setExceptionHandler(Closure|null $callback): self
+    {
+    }
+    /**
+     * @psalm-capabilities read-props
+     */
+    public function getExceptionHandler(): Closure|null
+    {
+    }
+    /**
+     * Adds a log record at an arbitrary level.
+     *
+     * This method allows for compatibility with common interfaces.
+     *
+     * @param mixed             $level   The log level (a Monolog, PSR-3 or RFC 5424 level)
+     * @param string|Stringable $message The log message
+     * @param mixed[]           $context The log context
+     *
+     * @phpstan-param Level|LogLevel::* $level
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function log($level, string|\Stringable $message, array $context = []): void
+    {
+    }
+    /**
+     * Adds a log record at the DEBUG level.
+     *
+     * This method allows for compatibility with common interfaces.
+     *
+     * @param string|Stringable $message The log message
+     * @param mixed[]           $context The log context
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function debug(string|\Stringable $message, array $context = []): void
+    {
+    }
+    /**
+     * Adds a log record at the INFO level.
+     *
+     * This method allows for compatibility with common interfaces.
+     *
+     * @param string|Stringable $message The log message
+     * @param mixed[]           $context The log context
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function info(string|\Stringable $message, array $context = []): void
+    {
+    }
+    /**
+     * Adds a log record at the NOTICE level.
+     *
+     * This method allows for compatibility with common interfaces.
+     *
+     * @param string|Stringable $message The log message
+     * @param mixed[]           $context The log context
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function notice(string|\Stringable $message, array $context = []): void
+    {
+    }
+    /**
+     * Adds a log record at the WARNING level.
+     *
+     * This method allows for compatibility with common interfaces.
+     *
+     * @param string|Stringable $message The log message
+     * @param mixed[]           $context The log context
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function warning(string|\Stringable $message, array $context = []): void
+    {
+    }
+    /**
+     * Adds a log record at the ERROR level.
+     *
+     * This method allows for compatibility with common interfaces.
+     *
+     * @param string|Stringable $message The log message
+     * @param mixed[]           $context The log context
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function error(string|\Stringable $message, array $context = []): void
+    {
+    }
+    /**
+     * Adds a log record at the CRITICAL level.
+     *
+     * This method allows for compatibility with common interfaces.
+     *
+     * @param string|Stringable $message The log message
+     * @param mixed[]           $context The log context
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function critical(string|\Stringable $message, array $context = []): void
+    {
+    }
+    /**
+     * Adds a log record at the ALERT level.
+     *
+     * This method allows for compatibility with common interfaces.
+     *
+     * @param string|Stringable $message The log message
+     * @param mixed[]           $context The log context
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function alert(string|\Stringable $message, array $context = []): void
+    {
+    }
+    /**
+     * Adds a log record at the EMERGENCY level.
+     *
+     * This method allows for compatibility with common interfaces.
+     *
+     * @param string|Stringable $message The log message
+     * @param mixed[]           $context The log context
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function emergency(string|\Stringable $message, array $context = []): void
+    {
+    }
+    /**
+     * Sets the timezone to be used for the timestamp of log records.
+     *
+     * @return $this
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function setTimezone(DateTimeZone $tz): self
+    {
+    }
+    /**
+     * Returns the timezone to be used for the timestamp of log records.
+     * @psalm-capabilities read-props
+     */
+    public function getTimezone(): DateTimeZone
+    {
+    }
+    /**
+     * @return array<string, mixed>
+     * @psalm-capabilities read-props
+     */
+    public function __serialize(): array
+    {
+    }
+    /**
+     * @param array<string, mixed> $data
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function __unserialize(array $data): void
+    {
+    }
+}
+}
+
+namespace Monolog\Handler {
+
+use Monolog\Formatter\FormatterInterface;
+use Monolog\Formatter\LineFormatter;
+use Monolog\Level;
+use Monolog\ResettableInterface;
+use Psr\Log\LogLevel;
+
+/**
+ * Base Handler class providing basic level/bubble support
+ *
+ * @author Jordi Boggiano <j.boggiano@seld.be>
+ */
+abstract class AbstractHandler extends Handler implements ResettableInterface
+{
+    /**
+     * @param int|string|Level|LogLevel::* $level  The minimum logging level at which this handler will be triggered
+     * @param bool                         $bubble Whether the messages that are handled can bubble up the stack or not
+     *
+     * @phpstan-param value-of<Level::VALUES>|value-of<Level::NAMES>|Level|LogLevel::* $level
+     * @psalm-capabilities write-this-props
+     */
+    public function __construct(int|string|Level $level = Level::Debug, bool $bubble = true)
+    {
+    }
+}
+
+/**
+ * Stores to any stream resource
+ *
+ * Can be used to store into php://stderr, remote and local files, etc.
+ *
  * @author Jordi Boggiano <j.boggiano@seld.be>
  */
 class StreamHandler extends AbstractProcessingHandler
@@ -21,20 +442,17 @@ class StreamHandler extends AbstractProcessingHandler
      * @param string          $fileOpenMode   The fopen() mode used when opening a file, if $stream is a file path
      *
      * @throws \InvalidArgumentException If stream is not a resource or string
-     *
+     * @psalm-capabilities write-this-props|read-globals|io
      * @psalm-taint-sink file $stream
      */
     public function __construct($stream, int|string|Level $level = Level::Debug, bool $bubble = true, ?int $filePermission = null, bool $useLocking = false, string $fileOpenMode = 'a')
     {
     }
 }
-}
-
-namespace Monolog\Handler {
-use Monolog\Level;
-use Monolog\LogRecord;
 
 /**
+ * Stores to any socket - uses fsockopen() or pfsockopen().
+ *
  * @author Pablo de Leon Belloc <pablolb@gmail.com>
  * @see    http://php.net/manual/en/function.fsockopen.php
  */
@@ -50,19 +468,258 @@ class SocketHandler extends AbstractProcessingHandler
      * @param int|null   $chunkSize         Sets the chunk size. Only has effect during connection in the writing cycle
      *
      * @throws \InvalidArgumentException If an invalid timeout value (less than 0) is passed.
-     *
+     * @psalm-capabilities write-this-props|read-globals
      * @psalm-taint-sink ssrf $connectionString
      */
-    public function __construct(
-        string $connectionString,
-        $level = Level::Debug,
-        bool $bubble = true,
-        bool $persistent = false,
-        float $timeout = 0.0,
-        float $writingTimeout = 10.0,
-        ?float $connectionTimeout = null,
-        ?int $chunkSize = null
-    )
+    public function __construct(string $connectionString, $level = Level::Debug, bool $bubble = true, bool $persistent = false, float $timeout = 0.0, float $writingTimeout = 10.0, ?float $connectionTimeout = null, ?int $chunkSize = null)
+    {
+    }
+    /**
+     * Set socket connection to be persistent. It only has effect before the connection is initiated.
+     *
+     * @return $this
+     * @psalm-capabilities write-this-props
+     */
+    public function setPersistent(bool $persistent): self
+    {
+    }
+    /**
+     * Set connection timeout.  Only has effect before we connect.
+     *
+     * @see http://php.net/manual/en/function.fsockopen.php
+     * @return $this
+     * @psalm-capabilities write-this-props
+     */
+    public function setConnectionTimeout(float $seconds): self
+    {
+    }
+    /**
+     * Set write timeout. Only has effect before we connect.
+     *
+     * @see http://php.net/manual/en/function.stream-set-timeout.php
+     * @return $this
+     * @psalm-capabilities write-this-props
+     */
+    public function setTimeout(float $seconds): self
+    {
+    }
+    /**
+     * Set writing timeout. Only has effect during connection in the writing cycle.
+     *
+     * @param  float $seconds 0 for no timeout
+     * @return $this
+     * @psalm-capabilities write-this-props
+     */
+    public function setWritingTimeout(float $seconds): self
+    {
+    }
+    /**
+     * Set chunk size. Only has effect during connection in the writing cycle.
+     *
+     * @return $this
+     * @psalm-capabilities write-this-props
+     */
+    public function setChunkSize(int $bytes): self
+    {
+    }
+}
+
+/**
+ * Stores to PHP error_log() handler.
+ *
+ * @author Elan Ruusamäe <glen@delfi.ee>
+ */
+class ErrorLogHandler extends AbstractProcessingHandler
+{
+    /**
+     * @param 0|4 $messageType    Says where the error should go.
+     * @param bool $expandNewlines If set to true, newlines in the message will be expanded to be take multiple log entries
+     *
+     * @throws \InvalidArgumentException If an unsupported message type is set
+     * @psalm-capabilities write-this-props
+     */
+    public function __construct(int $messageType = self::OPERATING_SYSTEM, int|string|Level $level = Level::Debug, bool $bubble = true, bool $expandNewlines = false)
+    {
+    }
+}
+
+/**
+ * Forwards records to multiple handlers
+ *
+ * @author Lenar Lõhmus <lenar@city.ee>
+ */
+class GroupHandler extends Handler implements ProcessableHandlerInterface, ResettableInterface
+{
+    use ProcessableHandlerTrait;
+    /**
+     * @param HandlerInterface[] $handlers Array of Handlers.
+     * @param bool               $bubble   Whether the messages that are handled can bubble up the stack or not
+     *
+     * @throws \InvalidArgumentException if an unsupported handler is set
+     * @psalm-capabilities write-this-props
+     */
+    public function __construct(array $handlers, bool $bubble = true)
+    {
+    }
+}
+
+/**
+ * Interface to describe loggers that have a formatter
+ *
+ * @author Jordi Boggiano <j.boggiano@seld.be>
+ */
+interface FormattableHandlerInterface
+{
+    /**
+     * Sets the formatter.
+     *
+     * @return HandlerInterface self
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function setFormatter(FormatterInterface $formatter): HandlerInterface;
+    /**
+     * Gets the formatter.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function getFormatter(): FormatterInterface;
+}
+/**
+ * Helper trait for implementing FormattableInterface
+ *
+ * @author Jordi Boggiano <j.boggiano@seld.be>
+ */
+trait FormattableHandlerTrait
+{
+    /**
+     * @inheritDoc
+     * @psalm-capabilities write-this-props
+     */
+    public function setFormatter(FormatterInterface $formatter): HandlerInterface
+    {
+    }
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props|write-this-props|read-globals|io
+     */
+    public function getFormatter(): FormatterInterface
+    {
+    }
+    /**
+     * Gets the default formatter.
+     *
+     * Overwrite this if the LineFormatter is not a good default for your handler.
+     *
+     * The formatters the handlers make by default may read the host name (read-globals, io).
+     *
+     * @psalm-capabilities read-globals|io
+     */
+    protected function getDefaultFormatter(): FormatterInterface
+    {
+    }
+}
+}
+
+namespace Monolog\Formatter {
+
+use Closure;
+
+/**
+ * Normalizes incoming records to remove objects/resources so it's easier to dump to various targets
+ *
+ * @author Jordi Boggiano <j.boggiano@seld.be>
+ */
+class NormalizerFormatter implements FormatterInterface
+{
+    /**
+     * @param string|null $dateFormat The format of the timestamp: one supported by DateTime::format
+     * @psalm-capabilities write-this-props
+     */
+    public function __construct(?string $dateFormat = null)
+    {
+    }
+}
+
+/**
+ * Formats incoming records into a one-line string
+ *
+ * This is especially useful for logging to files
+ *
+ * @author Jordi Boggiano <j.boggiano@seld.be>
+ * @author Christophe Coevoet <stof@notk.org>
+ */
+class LineFormatter extends NormalizerFormatter
+{
+    /**
+     * @param string|null $format                The format of the message
+     * @param string|null $dateFormat            The format of the timestamp: one supported by DateTime::format
+     * @param bool        $allowInlineLineBreaks Whether to allow inline line breaks in log entries
+     * @psalm-capabilities write-this-props
+     */
+    public function __construct(?string $format = null, ?string $dateFormat = null, bool $allowInlineLineBreaks = false, bool $ignoreEmptyContextAndExtra = false, bool $includeStacktraces = false)
+    {
+    }
+    /**
+     * @return $this
+     * @psalm-capabilities write-this-props
+     */
+    public function includeStacktraces(bool $include = true, ?Closure $parser = null): self
+    {
+    }
+}
+
+/**
+ * Encodes whatever record data is passed to it as json
+ *
+ * This can be useful to log to databases or remote APIs
+ *
+ * @author Jordi Boggiano <j.boggiano@seld.be>
+ */
+class JsonFormatter extends NormalizerFormatter
+{
+    /**
+     * @param self::BATCH_MODE_* $batchMode
+     * @psalm-capabilities write-this-props
+     */
+    public function __construct(int $batchMode = self::BATCH_MODE_JSON, bool $appendNewline = true, bool $ignoreEmptyContextAndExtra = false, bool $includeStacktraces = false)
+    {
+    }
+}
+}
+
+namespace Monolog\Processor {
+
+use ArrayAccess;
+use Monolog\LogRecord;
+
+/**
+ * Injects url/method and remote IP of the current web request in all records
+ *
+ * It reads $_SERVER (by reference) unless given server data; a given ArrayAccess is taken to only read its
+ * offsets (read-props).
+ */
+class WebProcessor implements ProcessorInterface
+{
+    /**
+     * @param array<string, mixed>|ArrayAccess<string, mixed>|null $serverData  Array or object w/ ArrayAccess that provides access to the $_SERVER data
+     * @param array<string, string>|array<string>|null             $extraFields Field names and the related key inside $serverData to be added (or just a list of field names to use the default configured $serverData mapping). If not provided it defaults to: [url, ip, http_method, server, referrer] + unique_id if present in server data
+     * @psalm-capabilities read-props|write-this-props|read-globals
+     */
+    public function __construct(array|ArrayAccess|null $serverData = null, array|null $extraFields = null)
+    {
+    }
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props|write-props|read-globals
+     */
+    public function __invoke(LogRecord $record): LogRecord
+    {
+    }
+    /**
+     * @return $this
+     * @psalm-capabilities write-this-props
+     */
+    public function addExtraField(string $extraName, string $serverName): self
     {
     }
 }
