@@ -144,6 +144,7 @@ final class VariableFetchAnalyzer
                 if (!$context->hasVariable($var_name)) {
                     $context->vars_in_scope[$var_name] = Type::getMixed();
                     $context->vars_possibly_in_scope[$var_name] = true;
+                    $statements_analyzer->registerUndefinedVariableRead($var_name);
                     $statements_analyzer->node_data->setType($stmt, Type::getMixed());
                 } else {
                     $stmt_type = $context->vars_in_scope[$var_name];
@@ -292,6 +293,8 @@ final class VariableFetchAnalyzer
                         $exception,
                         $statements_analyzer->getSuppressedIssues(),
                     );
+
+                    $statements_analyzer->registerUndefinedVariableRead($var_name);
 
                     $type = Type::getMixed();
                     self::taintVariable($statements_analyzer, $context, $var_name, $type, $stmt);
