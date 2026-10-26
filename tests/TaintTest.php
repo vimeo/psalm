@@ -6531,6 +6531,27 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'propertyConstructedByNameInACopyLoopMayBeAnyOfThem' => [
+                'code' => '<?php
+                    /**
+                     * @property string $label
+                     * @property string $size
+                     */
+                    final class Options {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function __construct(string $name, string $value) {}
+
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    foreach (["label" => (string) $_GET["x"], "size" => "m"] as $name => $value) {
+                        $options = new Options($name, $value);
+                        echo $options->size;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'propertySetByNameInALoopOfAnotherValueMayBeAnyOfThem' => [
                 'code' => '<?php
                     /**

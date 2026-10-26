@@ -546,11 +546,12 @@ final class ReceiverPropertyTaints
      */
     private static function getElementCopySource(
         StatementsAnalyzer $statements_analyzer,
-        Context $context,
+        ?Context $context,
         ?array $args_by_param,
         array $write,
     ): ?array {
         if ($write['name'] === null
+            || $context === null
             || $args_by_param === null
             || $write['path_type'] !== 'arg'
             || count($write['params']) !== 1
