@@ -16,6 +16,7 @@ use function explode;
 use function max;
 use function mb_strcut;
 use function min;
+use function ord;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
@@ -23,6 +24,7 @@ use function str_replace;
 use function strlen;
 use function strpos;
 use function strrpos;
+use function substr;
 use function substr_count;
 use function trim;
 
@@ -228,7 +230,7 @@ class CodeLocation
         ) {
             $preview_lines = explode(
                 "\n",
-                mb_strcut(
+                self::cutAtCharBoundary(
                     $file_contents,
                     $this->preview_start,
                     $this->selection_start - $this->preview_start - 1,
@@ -270,7 +272,7 @@ class CodeLocation
                 default => throw new UnexpectedValueException('Unrecognised regex type ' . $this->regex_type),
             };
 
-            $preview_snippet = mb_strcut(
+            $preview_snippet = self::cutAtCharBoundary(
                 $file_contents,
                 $this->selection_start,
                 $this->selection_end - $this->selection_start,
@@ -315,7 +317,11 @@ class CodeLocation
             }
         }
 
-        $this->snippet = mb_strcut($file_contents, $this->preview_start, $this->preview_end - $this->preview_start);
+        $this->snippet = self::cutAtCharBoundary(
+            $file_contents,
+            $this->preview_start,
+            $this->preview_end - $this->preview_start,
+        );
         // text is within snippet. It's 50% faster to cut it from the snippet than from the full text
         $selection_length = $this->selection_end - $this->selection_start;
         $this->text = mb_strcut($this->snippet, $this->selection_start - $this->preview_start, $selection_length);
@@ -338,6 +344,33 @@ class CodeLocation
         }
 
         $this->end_line_number = $this->getLineNumber() + $newlines;
+    }
+
+    /**
+     * Cuts at most $length bytes from $start without ending inside a UTF-8 character: the
+     * result mb_strcut($string, $start, $length) gives for a $start on a character boundary.
+     *
+     * Every offset is a byte position, and a $start passed here is always a character boundary
+     * (a parser position, a line start or an ASCII match), so only the end needs moving: back
+     * over the continuation bytes (0b10xxxxxx) of a character the cut would split. The preview
+     * end can land inside a character, when a long line is cut at selection end + 50 bytes.
+     *
+     * mb_strcut() itself walks the string from its start, so its cost grows with $start, and
+     * cutting each location out of the whole file made analysis quadratic in the file's length.
+     * This costs O($length).
+     *
+     * @psalm-pure
+     */
+    private static function cutAtCharBoundary(string $string, int $start, int $length): string
+    {
+        $size = strlen($string);
+        $end = min($size, $start + $length);
+
+        while ($end < $size && (ord($string[$end]) & 0xC0) === 0x80) {
+            --$end;
+        }
+
+        return substr($string, $start, $end - $start);
     }
 
     /**

@@ -72,3 +72,9 @@ See [Properties set and got by name](taint_flow.md#properties-set-and-got-by-nam
 
 Each property is set to, or returned under, its name as a key of the array.
 See [Properties set and got by name](taint_flow.md#properties-set-and-got-by-name)
+
+## `@psalm-flow ( <arg>, [ <arg>, ] ) -> $this-><property>[<key>]` and `@psalm-flow $this-><property>[<key>] -> return`
+
+`<property>` is the name of the property, like `vars`. The optional `[<key>]` is the element of that array property
+under the key given to a parameter, like `[$name]`, or `[*]` for any element.
+See [A property and its elements](taint_flow.md#a-property-and-its-elements)

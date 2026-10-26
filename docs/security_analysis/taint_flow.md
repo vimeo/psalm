@@ -271,6 +271,53 @@ function show(Article $article): void {
 + An element under a key that isn't a literal, and the whole array, are only the array property: declare the flows
   of the methods setting and getting properties by name with `@psalm-flow`.
 
+### A property and its elements
+
+A method can also say which property it sets or returns by naming it, and which element of an array property by the
+parameter giving its key, for request objects and other containers holding their values in an array property:
+
+```php
+<?php // --taint-analysis
+abstract class Request
+{
+    /** @var array<string, string> */
+    protected array $vars = [];
+
+    /** @psalm-flow ($vars) -> $this->vars */
+    abstract public function __construct(array $vars);
+
+    /** @psalm-flow ($value) -> $this->vars[$name] */
+    abstract public function set(string $name, string $value): void;
+
+    /** @psalm-flow $this->vars[$name] -> return */
+    abstract public function get(string $name): string;
+
+    /** @psalm-flow $this->vars -> return */
+    abstract public function toArray(): array;
+}
+
+function save(Request $request): void {
+    $request->set('title', $_GET['title'] ?? '');
+}
+
+function show(Request $request): void {
+    echo $request->get('title');            // TaintedHtml
+    echo $request->get('body');             // no issue
+    echo $request->toArray()['title'];      // TaintedHtml
+}
+```
+
++ `($value) -> $this->vars` sets the property `vars`, like `$object->vars = $value`, and `$this->vars -> return`
+  returns it. The arrays set keep their keys.
++ `($value) -> $this->vars[$name]` sets the element of `vars` under the key given to `$name`, like
+  `$object->vars[$name] = $value`, and `$this->vars[$name] -> return` returns it. Keys are told apart as for
+  [keyed stores](#keyed-stores).
++ `$this->vars[*]` is any element: `($value) -> $this->vars[*]` for a method like `add()`, `$this->vars[*] -> return`
+  for one returning any of them.
++ The flows into the properties of a constructor set them on the object it constructs: `new Request(['title' =>
+  $_GET['title']])` taints `get('title')` of the requests. They also apply to `($values) -> $this->$name`,
+  `($values) -> $this->*` and `($values) -> $this->{key}`.
+
 ### Combined proxy & return value hint
 
 ```php
