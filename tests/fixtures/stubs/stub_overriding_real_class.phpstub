@@ -1,0 +1,12 @@
+<?php
+
+namespace StubDependency;
+
+class StubbedElsewhere
+{
+    public function fromStub(): void
+    {
+    }
+}
+
+class OnlyInRealFileAlias extends OnlyInRealFile {}

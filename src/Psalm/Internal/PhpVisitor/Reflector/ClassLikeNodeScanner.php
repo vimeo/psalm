@@ -151,6 +151,7 @@ final class ClassLikeNodeScanner
         $class_name = null;
 
         $is_classlike_overridden = false;
+        $is_overriding_stub = false;
 
         if ($node->name === null) {
             if (!$node instanceof PhpParser\Node\Stmt\Class_) {
@@ -214,6 +215,7 @@ final class ClassLikeNodeScanner
                     || $class_location->getHash() !== $duplicate_storage->location->getHash()
                 ) {
                     $is_classlike_overridden = true;
+                    $is_overriding_stub = $duplicate_storage->stubbed;
                     // we're overwriting some methods
                     $storage = $this->storage = $duplicate_storage;
                     $this->codebase->classlike_storage_provider->makeNew(strtolower($fq_classlike_name));
@@ -266,9 +268,9 @@ final class ClassLikeNodeScanner
         }
         $is_stub_file = $this->codebase->register_stub_files
             && $this->codebase->scanner->isStubFile($this->file_path);
-        // A real file scanned while registering stubs (a dependency of a stub) still defines real classes.
-        // A real file overriding a stub-defined class keeps the stub flags.
-        if ($is_stub_file || !$is_classlike_overridden) {
+        // Real files scanned during stub registration keep real-class flags;
+        // only a class a stub already defined keeps the stub flags.
+        if ($is_stub_file || !$is_overriding_stub) {
             $storage->user_defined = !$is_stub_file;
             $storage->stubbed = $is_stub_file;
         }

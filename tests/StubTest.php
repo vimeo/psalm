@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -16,6 +17,7 @@ use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Plugin\EventHandler\ClassFilePathProviderInterface;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function assert;
@@ -24,6 +26,7 @@ use function explode;
 use function getcwd;
 use function implode;
 use function reset;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function substr;
@@ -1552,5 +1555,84 @@ final class StubTest extends TestCase
 
         $this->expectExceptionMessage('UndefinedMagicMethod');
         $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testRealFileRescannedDuringStubRegistrationKeepsRealClassFlags(): void
+    {
+        $codebase = $this->getCodebaseWithStub('tests/fixtures/stubs/stub_depending_on_real_file.phpstub');
+
+        // the real file is already scanned (shallowly) like an extraFiles entry when the stub forces its deep scan
+        $codebase->scanner->addFileToShallowScan(dirname(__DIR__) . '/tests/fixtures/stub_dependency/Lib.php');
+        $codebase->scanFiles();
+        $codebase->config->visitStubFiles($codebase);
+
+        foreach (['StubDependency\Lib', 'StubDependency\Lib2'] as $class_name) {
+            $storage = $codebase->classlike_storage_provider->get($class_name);
+            $this->assertTrue($storage->user_defined, $class_name);
+            $this->assertFalse($storage->stubbed, $class_name);
+        }
+    }
+
+    public function testRealFileFirstScannedDuringStubRegistrationKeepsRealClassFlags(): void
+    {
+        $codebase = $this->getCodebaseWithStub('tests/fixtures/stubs/stub_depending_on_provided_file.phpstub');
+
+        $provider = new class implements ClassFilePathProviderInterface {
+            #[Override]
+            public static function getClassFilePath(string $class): ?string
+            {
+                return str_starts_with($class, 'StubDependency\ProviderLib')
+                    ? dirname(__DIR__) . '/tests/fixtures/stub_dependency/ProviderLib.php'
+                    : null;
+            }
+        };
+        $codebase->config->eventDispatcher->registerClass($provider::class);
+
+        $codebase->scanFiles();
+        $codebase->config->visitStubFiles($codebase);
+
+        foreach (['StubDependency\ProviderLib', 'StubDependency\ProviderLib2'] as $class_name) {
+            $storage = $codebase->classlike_storage_provider->get($class_name);
+            $this->assertTrue($storage->user_defined, $class_name);
+            $this->assertFalse($storage->stubbed, $class_name);
+        }
+    }
+
+    public function testRealFileRescannedDuringStubRegistrationKeepsStubFlagsOfStubDefinedClass(): void
+    {
+        $codebase = $this->getCodebaseWithStub('tests/fixtures/stubs/stub_overriding_real_class.phpstub');
+
+        $codebase->scanner->addFileToShallowScan(dirname(__DIR__) . '/tests/fixtures/stub_dependency/Mixed.php');
+        $codebase->scanFiles();
+        $codebase->config->visitStubFiles($codebase);
+
+        $stub_defined = $codebase->classlike_storage_provider->get('StubDependency\StubbedElsewhere');
+        $this->assertTrue($stub_defined->stubbed);
+        $this->assertFalse($stub_defined->user_defined);
+
+        $real_only = $codebase->classlike_storage_provider->get('StubDependency\OnlyInRealFile');
+        $this->assertFalse($real_only->stubbed);
+        $this->assertTrue($real_only->user_defined);
+    }
+
+    private function getCodebaseWithStub(string $stub_path): Codebase
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm errorLevel="1" sealAllMethods="true">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="' . $stub_path . '" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        return $this->project_analyzer->getCodebase();
     }
 }
