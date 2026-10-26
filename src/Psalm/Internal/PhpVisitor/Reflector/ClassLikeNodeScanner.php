@@ -264,8 +264,14 @@ final class ClassLikeNodeScanner
         if ($this->namespace_name) {
             $storage->namespace_name_location = new CodeLocation($this->file_scanner, $this->namespace_name);
         }
-        $storage->user_defined = !$this->codebase->register_stub_files;
-        $storage->stubbed = $this->codebase->register_stub_files;
+        $is_stub_file = $this->codebase->register_stub_files
+            && $this->codebase->scanner->isStubFile($this->file_path);
+        // A real file scanned while registering stubs (a dependency of a stub) still defines real classes.
+        // A real file overriding a stub-defined class keeps the stub flags.
+        if ($is_stub_file || !$is_classlike_overridden) {
+            $storage->user_defined = !$is_stub_file;
+            $storage->stubbed = $is_stub_file;
+        }
         $storage->aliases = $this->aliases;
 
         if ($node instanceof PhpParser\Node\Stmt\Class_) {

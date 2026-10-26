@@ -1510,4 +1510,47 @@ final class StubTest extends TestCase
         $this->expectExceptionMessage('TaintedHtml - src/somefile.php');
         $this->analyzeFile($file_path, new Context());
     }
+
+    /**
+     * A stub that extends a class from a real file forces a deep scan of that file during stub registration.
+     * Every class in that file, including those the stub never names, must stay user-defined.
+     */
+    public function testRealFileScannedForStubStaysUserDefined(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                    sealAllMethods="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/stub_depending_on_real_file.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function t(\StubDependency\Lib $l): void {
+                    $l->bogus();
+                }',
+        );
+        // the real file is already scanned (shallowly) like an extraFiles entry when the stub forces its deep scan
+        $this->project_analyzer->getCodebase()->scanner->addFileToShallowScan(
+            dirname(__DIR__) . '/tests/fixtures/stub_dependency/Lib.php',
+        );
+
+        $this->expectExceptionMessage('UndefinedMagicMethod');
+        $this->analyzeFile($file_path, new Context());
+    }
 }

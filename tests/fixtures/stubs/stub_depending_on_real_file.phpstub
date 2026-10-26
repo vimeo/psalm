@@ -1,0 +1,5 @@
+<?php
+
+namespace StubDependency;
+
+class Lib2Alias extends Lib2 {}
