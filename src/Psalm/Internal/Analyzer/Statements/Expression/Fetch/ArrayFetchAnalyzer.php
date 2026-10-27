@@ -114,7 +114,7 @@ final class ArrayFetchAnalyzer
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
     ): bool {
-        NullsafeChainState::None->markOn($stmt);
+        NullsafeChainState::reset($stmt);
 
         $extended_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
