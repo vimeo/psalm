@@ -188,6 +188,15 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
                 }
             }
 
+            if ($function_call_arg->value instanceof PhpParser\Node\Expr\CallLike
+                && $function_call_arg->value->isFirstClassCallable()
+            ) {
+                $mapping_function_ids = CallAnalyzer::getFunctionIdsFromFirstClassCallable(
+                    $statements_source,
+                    $function_call_arg->value,
+                );
+            }
+
             if ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_
                 || $function_call_arg->value instanceof PhpParser\Node\Expr\Array_
                 || $function_call_arg->value instanceof PhpParser\Node\Expr\BinaryOp\Concat
