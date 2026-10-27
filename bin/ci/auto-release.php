@@ -85,7 +85,13 @@ $getLastTag = static function (string $branch) use ($run, $version_pattern): ?st
 $dispatchBuilds = static function (
     string $tag,
     string $commit,
-) use ($api, $run, $repository, $dispatched_workflows, $dry_run): bool {
+) use (
+    $api,
+    $run,
+    $repository,
+    $dispatched_workflows,
+    $dry_run,
+): bool {
     $dispatched = true;
     foreach ($dispatched_workflows as $workflow) {
         // GitHub runs the workflow file of the dispatched ref, which may not exist or not be dispatchable there
