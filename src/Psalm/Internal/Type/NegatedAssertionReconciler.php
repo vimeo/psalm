@@ -27,9 +27,12 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Reconciler;
@@ -413,8 +416,15 @@ final class NegatedAssertionReconciler extends Reconciler
                     if ($existing_var_type->removeType($assertion_type->getKey())) {
                         $redundant = false;
                     }
-                } elseif ($assertion_type->value === "") {
-                    $existing_var_type->addType(new TNonEmptyString());
+                } elseif ($assertion_type->value === "" && $existing_var_type->hasType('string')) {
+                    $string_type = $existing_var_type->getAtomicTypes()['string'];
+                    if ($string_type::class === TString::class) {
+                        $existing_var_type->addType(new TNonEmptyString());
+                    } elseif ($string_type::class === TLowercaseString::class) {
+                        $existing_var_type->addType(new TNonEmptyLowercaseString());
+                    } elseif ($string_type::class === TNonspecificLiteralString::class) {
+                        $existing_var_type->addType(new TNonEmptyNonspecificLiteralString());
+                    }
                 }
             } elseif ($assertion_type::class === TLiteralString::class) {
                 $scalar_var_type = $assertion_type;
