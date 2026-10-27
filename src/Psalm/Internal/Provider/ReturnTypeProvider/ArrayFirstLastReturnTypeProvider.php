@@ -18,14 +18,15 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_reverse;
 use function array_shift;
 use function array_values;
 
 /**
  * array_first() and array_last() (PHP 8.5) return a value of the array, or null when it is empty.
  *
- * Like reset() and end(), the result is the value type of the array: which element comes first or last
- * is not inferred.
+ * For a list this is the type of its first or last element. A shape doesn't fix the order of its keys,
+ * so for other arrays it is their value type, as with reset() and end().
  *
  * @internal
  */
@@ -78,7 +79,15 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
                 $atomic_value_type = $atomic_type->type_params[1];
                 $possibly_empty = $possibly_empty || !$atomic_type instanceof TNonEmptyArray;
             } elseif ($atomic_type instanceof TKeyedArray) {
-                $atomic_value_type = $atomic_type->getGenericValueType();
+                if (!$atomic_type->is_list || !isset($atomic_type->properties[0])) {
+                    // a shape doesn't fix the order of its keys
+                    $atomic_value_type = $atomic_type->getGenericValueType();
+                } elseif ($event->getFunctionId() === 'array_first') {
+                    $atomic_value_type = $atomic_type->properties[0]->setPossiblyUndefined(false);
+                } else {
+                    $atomic_value_type = self::getLastListElementType($atomic_type);
+                }
+
                 $possibly_empty = $possibly_empty || !$atomic_type->isNonEmpty();
             } elseif ($atomic_type instanceof TNull || $atomic_type instanceof TFalse) {
                 // throws a TypeError, reported by the callmap signature
@@ -117,5 +126,21 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
         );
 
         return $value_type;
+    }
+
+    private static function getLastListElementType(TKeyedArray $list): Union
+    {
+        $last_type = $list->fallback_params[1] ?? Type::getNever();
+
+        // optional list elements follow the required ones: the last element is the last required one or any after it
+        foreach (array_reverse($list->properties) as $element_type) {
+            $last_type = Type::combineUnionTypes($element_type->setPossiblyUndefined(false), $last_type);
+
+            if (!$element_type->possibly_undefined) {
+                break;
+            }
+        }
+
+        return $last_type;
     }
 }

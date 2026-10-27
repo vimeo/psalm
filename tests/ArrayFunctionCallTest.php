@@ -2845,8 +2845,8 @@ final class ArrayFunctionCallTest extends TestCase
                     $optionalShape = array_last(getOptionalShape());
                     $unsealedShape = array_last(getUnsealedShape());
                     $optionalUnsealedList = array_first(getOptionalUnsealedList());
+                    $optionalUnsealedListLast = array_last(getOptionalUnsealedList());
                     $union = array_first(getUnion());
-                    $literal = array_last([1, "a"]);
                     $named = array_first(array: getNonEmptyList());',
                 'assertions' => [
                     '$empty===' => 'null',
@@ -2857,10 +2857,42 @@ final class ArrayFunctionCallTest extends TestCase
                     '$shape===' => 'int|string',
                     '$optionalShape===' => 'int|null|string',
                     '$unsealedShape===' => 'float|int',
-                    '$optionalUnsealedList===' => 'int|null|string',
+                    '$optionalUnsealedList===' => 'int|null',
+                    '$optionalUnsealedListLast===' => 'int|null|string',
                     '$union===' => 'int|null|string',
-                    '$literal===' => '\'a\'|1',
                     '$named===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstLastListElement' => [
+                'code' => '<?php
+                    /** @return list{int, string} */
+                    function getPair(): array { return [1, "a"]; }
+                    /** @return list{0: int, 1: string, 2?: float} */
+                    function getTriple(): array { return [1, "a"]; }
+                    /** @return list{int, ...<string>} */
+                    function getHeadAndTail(): array { return [1]; }
+                    /** @return array{0: int, a: string} */
+                    function getShapeWithKeyZero(): array { return [1, "a" => "b"]; }
+
+                    $pairFirst = array_first(getPair());
+                    $pairLast = array_last(getPair());
+                    $tripleLast = array_last(getTriple());
+                    $tailFirst = array_first(getHeadAndTail());
+                    $tailLast = array_last(getHeadAndTail());
+                    $literalFirst = array_first([1, "a"]);
+                    $literalLast = array_last([1, "a"]);
+                    $shapeFirst = array_first(getShapeWithKeyZero());',
+                'assertions' => [
+                    '$pairFirst===' => 'int',
+                    '$pairLast===' => 'string',
+                    '$tripleLast===' => 'float|string',
+                    '$tailFirst===' => 'int',
+                    '$tailLast===' => 'int|string',
+                    '$literalFirst===' => '1',
+                    '$literalLast===' => '\'a\'',
+                    '$shapeFirst===' => 'int|string',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.5',
