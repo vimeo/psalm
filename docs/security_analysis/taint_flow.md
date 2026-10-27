@@ -351,8 +351,19 @@ Plugins can add flows that annotations can't express with these `Codebase` metho
 + `getTaintPropertyNode('Class::$name')`: the node holding a property's value. The property doesn't need to be declared.
 + `addTaintSink($taint_id, $location, $taints)`: adds a sink and returns it.
 + `addTaintPath($source, $from, $to, $path_type = '=', $added_taints = 0, $removed_taints = 0)`: connects two nodes.
++ `addTaintPropertyAssignment($source, $value, 'Class::$name')`: assigns the node `$value` to an instance property
+  of an object of the class, as `$object->name = ` does: what the parent classes sharing the property and the
+  subclasses read of it gets the value too.
++ `getTaintReturnNode($source, $function, $call_location = null)`, `getTaintArgumentNode($source, $function, $offset,
+  $call_location = null)` and `getTaintReceiverNode($source, 'Class::method', $call_location)`: the nodes of what a
+  function (`'ns\f'`), a method (`'Class::method'`) or a closure (its `Closure`/`ArrowFunction` node) returns, of its
+  parameter at `$offset` and of the object it runs on, for a call the code doesn't show (e.g. a framework's). Given
+  the location of the call, these are the nodes of that call if Psalm tells its calls apart (see
+  `@psalm-taint-specialize`); the receiver node only exists then (null otherwise).
 + `tracksTaintFlow($source)`: false when taints aren't tracked there, e.g. when `TaintedInput` is suppressed. The
   methods above then add nothing.
 
 See [examples/plugins/TaintModelFields.php](https://github.com/vimeo/psalm/blob/master/examples/plugins/TaintModelFields.php),
-which tracks ORM model fields from `set()` to `get()`.
+which tracks ORM model fields from `set()` to `get()`, and
+[examples/plugins/TaintPageComponents.php](https://github.com/vimeo/psalm/blob/master/examples/plugins/TaintPageComponents.php),
+which outputs what the components of a page render, as a framework would.
