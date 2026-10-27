@@ -80,6 +80,14 @@ jobs:
           php-version: '8.1'
           coverage: none
 
+      # composer/semver matches the PHP version against the PIE packages' constraints
+      - name: Install dependencies
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+        run: |
+          composer update --no-install
+          composer install --no-dev
+
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
@@ -110,6 +118,8 @@ jobs:
           coverage: none
 
       - name: Install dependencies
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
         run: |
           composer update --no-install
           composer install -o
