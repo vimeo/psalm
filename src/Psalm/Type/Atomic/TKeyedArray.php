@@ -428,7 +428,7 @@ final class TKeyedArray extends Atomic
         $all_same = true;
 
         foreach ($this->properties as $property) {
-            if ($property->failed_reconciliation) {
+            if ($property->failed_reconciliation || $property->int_mask_bits !== null) {
                 return $this->foldPropertyTypes();
             }
 
@@ -451,7 +451,19 @@ final class TKeyedArray extends Atomic
         $parent_nodes = [];
         $had_template = $reference_free = $closure_state = true;
 
+        $leading_repeats = true;
+        $is_first_property = true;
+
         foreach ($this->properties as $property) {
+            // the fold returns the accumulator as is while the properties are the first one again
+            $leading_repeats = $leading_repeats && $property === $first_property;
+
+            if ($leading_repeats && !$is_first_property) {
+                continue;
+            }
+
+            $is_first_property = false;
+
             $combined_type->initialized = $combined_type->initialized && $property->initialized;
             $combined_type->from_docblock = $combined_type->from_docblock || $property->from_docblock;
             $combined_type->from_calculation = $combined_type->from_calculation || $property->from_calculation;
