@@ -3,6 +3,9 @@
 
 declare(strict_types=1);
 
+use Composer\Semver\Semver;
+use Composer\Semver\VersionParser;
+
 /**
  * Generates the stub Dockerfile for a single PHP version on the fly and builds &
  * pushes it, reusing a persistent buildx registry cache.
@@ -10,8 +13,9 @@ declare(strict_types=1);
  * The cache is invalidated (via the CACHEBUST build arg) whenever PHP itself or
  * the resolved version of ANY installed extension changes. To do that exactly,
  * the cache key folds in, per extension, the version from that extension's real
- * source (see SOURCES): the PHP base image for bundled extensions, PECL for PECL
- * extensions, and the upstream git commit for extensions installed from a branch.
+ * source (see SOURCES): the PHP base image for bundled extensions, Packagist for
+ * extensions installed with PIE, PECL for the other PECL extensions, and the
+ * upstream git commit for extensions installed from a branch.
  *
  * Usage:
  *   php build_docker.php <version>   build & push ghcr.io/$ACTOR/psalm:internal_stubs_<version>
@@ -65,12 +69,87 @@ const PINS = [
     '7.1' => ['grpc' => '1.84.0'],
 ];
 
+const PIE_VERSION = '1.5.3';
+
+/**
+ * PECL extensions installed with PIE, from Packagist, wherever their newest stable
+ * PIE release supports the PHP version (install-php-extensions installs them
+ * elsewhere): the PIE package, the Alpine packages it builds against, the
+ * configure options install-php-extensions would pass, and whether it is built in
+ * a layer of its own.
+ */
+const PIE_PACKAGES = [
+    'memcached' => [
+        'package' => 'php-memcached/php-memcached',
+        'apk' => ['libmemcached-dev', 'zlib-dev', 'cyrus-sasl-dev'],
+        'options' => ['--enable-memcached-igbinary', '--enable-memcached-json', '--enable-memcached-sasl', '--enable-memcached-session'],
+    ],
+    'grpc' => [
+        'package' => 'grpc/grpc-php-ext',
+        'apk' => ['zlib-dev', 'linux-headers'],
+        'options' => [],
+        'own_layer' => true,
+    ],
+    'swoole' => [
+        'package' => 'swoole/swoole',
+        'apk' => ['openssl-dev', 'curl-dev', 'postgresql-dev', 'linux-headers', 'c-ares-dev', 'brotli-dev', 'sqlite-dev', 'zstd-dev', 'ncurses-dev', 'libssh2-dev', 'liburing-dev'],
+        'options' => [
+            '--with-openssl-dir=yes', '--enable-mysqlnd', '--enable-swoole-curl', '--enable-cares', '--enable-brotli', '--enable-zstd',
+            '--enable-swoole-pgsql', '--enable-swoole-sqlite', '--enable-iouring', '--enable-uring-socket', '--with-swoole-ssh2=yes',
+        ],
+    ],
+    'amqp' => [
+        'package' => 'php-amqp/php-amqp',
+        'apk' => ['rabbitmq-c-dev'],
+        'options' => [],
+    ],
+    'apcu' => [
+        'package' => 'apcu/apcu',
+        'apk' => [],
+        'options' => [],
+    ],
+    'ds' => [
+        'package' => 'php-ds/ext-ds',
+        'apk' => [],
+        'options' => [],
+    ],
+    'ev' => [
+        'package' => 'osmanov/pecl-ev',
+        'apk' => [],
+        'options' => [],
+    ],
+    'redis' => [
+        'package' => 'phpredis/phpredis',
+        // the git sources lack the bundled liblzf of the PECL tarballs
+        'apk' => ['zstd-dev', 'lz4-dev', 'liblzf-dev'],
+        'options' => ['--enable-redis-igbinary', '--enable-redis-lzf', '--with-liblzf=yes', '--enable-redis-zstd', '--enable-redis-lz4', '--with-liblz4=yes'],
+    ],
+    'mongodb' => [
+        'package' => 'mongodb/mongodb-extension',
+        'apk' => ['openssl-dev', 'icu-dev', 'cyrus-sasl-dev', 'snappy-dev', 'zlib-dev', 'zstd-dev'],
+        'options' => [
+            '--with-mongodb-system-libs=no', '--with-mongodb-client-side-encryption=yes', '--with-mongodb-snappy=yes', '--with-mongodb-zlib=yes',
+            '--with-mongodb-zstd=yes', '--with-mongodb-sasl=yes', '--with-mongodb-ssl=yes', '--enable-mongodb-crypto-system-profile=yes',
+        ],
+    ],
+    'imagick' => [
+        'package' => 'imagick/imagick',
+        'apk' => ['imagemagick-dev'],
+        'options' => [],
+    ],
+    'uv' => [
+        'package' => 'amphp/uv',
+        'apk' => ['libuv-dev'],
+        'options' => [],
+    ],
+];
+
 /**
  * Where install-php-extensions gets each extension's version from, keyed by the
  * base extension name (without any "-<stability>" suffix). Used to build a cache
  * key that changes exactly when the installed version would change:
  *   'php'                  bundled with PHP itself -> tracked by the base image digest
- *   'pecl'                 resolved from PECL       -> newest release on PECL
+ *   'pecl'                 resolved from PECL       -> newest release on PECL of the wanted stability
  *   'git:<owner>/<repo>@<ref>'  installed from a git branch/tag with no version -> upstream commit
  */
 const SOURCES = [
@@ -185,11 +264,13 @@ function extensionVersion(string $extension, string $phpBaseDigest): string
             // pinned to a version
             return 'pecl@' . $suffix;
         }
-        $xml = fetch("https://pecl.php.net/rest/r/$base/allreleases.xml");
-        if (!preg_match('#<v>([^<]+)</v>#', $xml, $m)) {
-            fail("Could not parse a version for PECL extension '$base'.");
+        // The query string gets past the PECL CDN, which can serve these files days out of date.
+        $stability = $suffix === '' ? 'stable' : $suffix;
+        $resolved = trim(fetch("https://pecl.php.net/rest/r/$base/$stability.txt?" . time()));
+        if (!preg_match('/^\d[\w.]*$/', $resolved)) {
+            fail("Could not parse the $stability version of PECL extension '$base'.");
         }
-        return 'pecl@' . $m[1];
+        return 'pecl@' . $resolved;
     }
     if (preg_match('#^git:([^@]+)@(.+)$#', $source, $m)) {
         [, $repo, $ref] = $m;
@@ -223,25 +304,89 @@ function phpBaseDigest(string $version): string
     return $m[1];
 }
 
+/** The PHP version of the PHP base image for a version, e.g. 8.4.14. */
+function phpBaseVersion(string $version): string
+{
+    $config = imageConfig(phpBaseImage($version)) ?? [];
+    foreach ($config['Env'] ?? $config['env'] ?? [] as $env) {
+        if (is_string($env) && str_starts_with($env, 'PHP_VERSION=')) {
+            return substr($env, strlen('PHP_VERSION='));
+        }
+    }
+    fail('Could not determine the PHP version of ' . phpBaseImage($version) . '.');
+}
+
+/** Composer's stabilities, most stable first, under their Composer and PECL names. */
+const PIE_STABILITIES = ['stable' => 0, 'RC' => 1, 'beta' => 2, 'alpha' => 3, 'dev' => 4, 'devel' => 4];
+
+/**
+ * The extensions installed with PIE for a version, mapped to their Packagist
+ * version: those whose newest PIE release (stable, unless the extension asks for
+ * a less stable one) supports the PHP version. Older releases are left to
+ * install-php-extensions, which knows which of them build on the older base
+ * images (their Packagist constraints can be too loose).
+ *
+ * @return array<string, string>
+ */
+function pieInstalls(array $extensions, string $phpVersion): array
+{
+    require_once __DIR__ . '/../../vendor/autoload.php';
+
+    $installs = [];
+    foreach ($extensions as $extension) {
+        [$base, $suffix] = array_pad(explode('-', $extension, 2), 2, '');
+        if (!isset(PIE_PACKAGES[$base]) || preg_match('/^\d/', $suffix)) {
+            continue;
+        }
+        // the "-<stability>" suffix is the least stable release install-php-extensions would take
+        $minimumStability = PIE_STABILITIES[$suffix === '' ? 'stable' : $suffix] ?? PIE_STABILITIES['stable'];
+        $package = PIE_PACKAGES[$base]['package'];
+        $metadata = json_decode(fetch("https://repo.packagist.org/p2/$package.json"), true);
+        // newest first, minified: each release only lists the fields that differ from the previous one
+        $release = [];
+        foreach ($metadata['packages'][$package] ?? [] as $diff) {
+            $release = array_filter($diff + $release, static fn($value): bool => $value !== '__unset');
+            if (($release['type'] ?? '') !== 'php-ext'
+                || PIE_STABILITIES[VersionParser::parseStability($release['version'])] > $minimumStability
+            ) {
+                continue;
+            }
+            if (Semver::satisfies($phpVersion, $release['require']['php'] ?? '*')) {
+                // it ends up in the Dockerfile's shell commands
+                if (!preg_match('/^v?\d[\w.-]*$/', $release['version'])) {
+                    fail("Unexpected version '{$release['version']}' of PIE package '$package'.");
+                }
+                $installs[$extension] = $release['version'];
+            }
+            break;
+        }
+    }
+    return $installs;
+}
+
 /**
  * Resolve the cache-busting components for a version: the PHP base image digest,
  * the installer, and every extension's real version, as an ordered list of
  * "name=version" strings. The CACHEBUST key is a hash of exactly this list, so
  * the list also explains *why* the key (and thus the image) changed.
  *
+ * @param array<string, string> $pieInstalls
  * @return list<string>
  */
-function resolveComponents(string $version, array $extensions, string $phpBaseDigest): array
+function resolveComponents(string $version, array $extensions, array $pieInstalls, string $phpBaseDigest): array
 {
     $installerSha = hash('sha256', fetch(INSTALLER_URL));
 
     $components = [
         'php=' . $phpBaseDigest,
         'install-php-extensions=' . $installerSha,
+        'pie=' . PIE_VERSION,
     ];
     $versions = [];
     foreach ($extensions as $extension) {
-        $versions[$extension] = extensionVersion($extension, $phpBaseDigest);
+        $versions[$extension] = isset($pieInstalls[$extension])
+            ? 'pie@' . PIE_PACKAGES[explode('-', $extension, 2)[0]]['package'] . ':' . $pieInstalls[$extension]
+            : extensionVersion($extension, $phpBaseDigest);
     }
     ksort($versions);
     echo "Resolved versions for PHP $version:\n";
@@ -260,22 +405,24 @@ function cacheKeyFromComponents(array $components): string
     return hash('sha256', implode("\n", $components));
 }
 
-/** Build the cache-busting key for a version: PHP base image + every extension's real version. */
-function cacheKey(string $version, array $extensions, string $phpBaseDigest): string
+/**
+ * Build the cache-busting key for a version: PHP base image + every extension's real version.
+ *
+ * @param array<string, string> $pieInstalls
+ */
+function cacheKey(string $version, array $extensions, array $pieInstalls, string $phpBaseDigest): string
 {
-    return cacheKeyFromComponents(resolveComponents($version, $extensions, $phpBaseDigest));
+    return cacheKeyFromComponents(resolveComponents($version, $extensions, $pieInstalls, $phpBaseDigest));
 }
 
 const CACHE_KEY_LABEL = 'dev.psalm.stubs.cache-key';
 const COMPONENTS_LABEL = 'dev.psalm.stubs.components';
 
 /**
- * Read the labels of an image already in the registry, without pulling its
- * layers. Returns null when the image does not exist (or cannot be inspected).
- *
- * @return array<string, string>|null
+ * Read the config of an image in a registry, without pulling its layers.
+ * Returns null when the image does not exist (or cannot be inspected).
  */
-function imageLabels(string $image): ?array
+function imageConfig(string $image): ?array
 {
     $out = [];
     $exit = 0;
@@ -295,15 +442,29 @@ function imageLabels(string $image): ?array
     }
 
     // Single-platform images expose the config directly; multi-platform images
-    // expose a map of platform => config. Our stub images are single-platform,
-    // but handle both so the check never crashes.
+    // (like the PHP base images) expose a map of platform => config.
     $config = $data['config'] ?? null;
     if (!is_array($config)) {
         $entry = $data['linux/amd64'] ?? (reset($data) ?: null);
         $config = is_array($entry) ? ($entry['config'] ?? null) : null;
     }
+    return is_array($config) ? $config : [];
+}
 
-    $labels = is_array($config) ? ($config['Labels'] ?? $config['labels'] ?? []) : [];
+/**
+ * Read the labels of an image already in the registry, without pulling its
+ * layers. Returns null when the image does not exist (or cannot be inspected).
+ *
+ * @return array<string, string>|null
+ */
+function imageLabels(string $image): ?array
+{
+    $config = imageConfig($image);
+    if ($config === null) {
+        return null;
+    }
+
+    $labels = $config['Labels'] ?? $config['labels'] ?? [];
     if (!is_array($labels)) {
         return [];
     }
@@ -395,12 +556,39 @@ function explainRebuild(string $image, string $cacheKey, array $components): voi
     }
 }
 
-function generateDockerfile(string $version, array $extensions): string
+/**
+ * A RUN instruction installing extensions with PIE, or nothing.
+ *
+ * @param array<string, string> $pieInstalls
+ */
+function pieStep(array $pieInstalls, string $cflags): string
+{
+    if ($pieInstalls === []) {
+        return '';
+    }
+    $packages = [];
+    $commands = [];
+    foreach ($pieInstalls as $extension => $version) {
+        $pie = PIE_PACKAGES[explode('-', $extension, 2)[0]];
+        $packages = array_merge($packages, $pie['apk']);
+        $commands[] = "{$cflags}pie install --with-php-config=/usr/local/bin/php-config "
+            . implode(' ', [$pie['package'] . ':' . $version, ...$pie['options']]);
+    }
+    $pieVersion = PIE_VERSION;
+    return "\nRUN case \"\$(uname -m)\" in aarch64) arch=ARM64 ;; *) arch=X64 ;; esac && \\\n"
+        . "    curl -fsSL -o /usr/local/bin/pie https://github.com/php/pie/releases/download/$pieVersion/pie-Linux-\$arch && \\\n"
+        . "    chmod +x /usr/local/bin/pie && \\\n"
+        . '    apk add --no-cache $PHPIZE_DEPS libtool ' . implode(' ', array_unique($packages)) . " && \\\n    "
+        . implode(" && \\\n    ", $commands) . "\n";
+}
+
+/** @param array<string, string> $pieInstalls */
+function generateDockerfile(string $version, array $extensions, array $pieInstalls): string
 {
     $installerUrl = INSTALLER_URL;
     $baseImage = phpBaseImage($version);
 
-    $extensionList = implode(' ', $extensions);
+    $extensionList = implode(' ', array_diff($extensions, array_keys($pieInstalls)));
     // The base images of a version with no release come without pecl, and install-php-extensions
     // refuses a version it doesn't know yet: install PEAR, and let it treat the version like the
     // ones it supports (else it falls back to pickle, which doesn't run on the new version either).
@@ -419,10 +607,21 @@ function generateDockerfile(string $version, array $extensions): string
         ? ''
         : 'apk add --no-cache ' . implode(' ', $packages) . " && \\\n    ";
 
+    // grpc takes the longest to build by far: it gets a layer of its own, before everything
+    // else, which stays cached until the base image or the grpc version changes
+    $ownLayerInstalls = array_filter(
+        $pieInstalls,
+        static fn(string $extension): bool => PIE_PACKAGES[explode('-', $extension, 2)[0]]['own_layer'] ?? false,
+        ARRAY_FILTER_USE_KEY,
+    );
+    $ownLayerStep = pieStep($ownLayerInstalls, $cflags);
+    // after install-php-extensions, which installs igbinary for the memcached and redis serializers
+    $pieStep = pieStep(array_diff_key($pieInstalls, $ownLayerInstalls), $cflags);
+
     return <<<DOCKERFILE
         # Generated on the fly by bin/stubs/build_docker.php - do not commit.
         FROM $baseImage
-
+        {$ownLayerStep}
         ADD $installerUrl /usr/local/bin/
 
         RUN chmod +x /usr/local/bin/install-php-extensions{$supportStep}
@@ -433,7 +632,7 @@ function generateDockerfile(string $version, array $extensions): string
         ARG CACHEBUST
         RUN echo "cache key: \${CACHEBUST:-none}" && \\
             {$packageStep}{$cflags}install-php-extensions $extensionList
-
+        {$pieStep}
         RUN echo 'zend_extension=opcache' > /usr/local/etc/php/php.ini
         DOCKERFILE;
 }
@@ -473,7 +672,8 @@ if ($arg === '--dockerfile') {
     if (!in_array($version, VERSIONS, true)) {
         fail("Unsupported version '$version'.");
     }
-    echo generateDockerfile($version, extensionsFor($version)) . PHP_EOL;
+    $extensions = extensionsFor($version);
+    echo generateDockerfile($version, $extensions, pieInstalls($extensions, phpBaseVersion($version))) . PHP_EOL;
     exit(0);
 }
 
@@ -482,7 +682,9 @@ if ($arg === '--cache-key') {
     if (!in_array($version, VERSIONS, true)) {
         fail("Unsupported version '$version'.");
     }
-    echo 'CACHEBUST = ' . cacheKey($version, extensionsFor($version), phpBaseDigest($version)) . PHP_EOL;
+    $extensions = extensionsFor($version);
+    $pieInstalls = pieInstalls($extensions, phpBaseVersion($version));
+    echo 'CACHEBUST = ' . cacheKey($version, $extensions, $pieInstalls, phpBaseDigest($version)) . PHP_EOL;
     exit(0);
 }
 
@@ -498,7 +700,8 @@ if ($actor === false || $actor === '') {
 
 $extensions = extensionsFor($version);
 $phpBaseDigest = phpBaseDigest($version);
-$components = resolveComponents($version, $extensions, $phpBaseDigest);
+$pieInstalls = pieInstalls($extensions, phpBaseVersion($version));
+$components = resolveComponents($version, $extensions, $pieInstalls, $phpBaseDigest);
 $cacheKey = cacheKeyFromComponents($components);
 echo "CACHEBUST = $cacheKey\n";
 
@@ -522,7 +725,7 @@ $context = sys_get_temp_dir() . '/psalm-stub-' . $version . '-' . bin2hex(random
 if (!mkdir($context, 0o700, true) && !is_dir($context)) {
     fail("Could not create build context directory: $context");
 }
-file_put_contents("$context/Dockerfile", generateDockerfile($version, $extensions));
+file_put_contents("$context/Dockerfile", generateDockerfile($version, $extensions, $pieInstalls));
 
 // Explain, before building, whether this run rebuilds the image and why, by
 // diffing the resolved components against those labelled on the pushed image.

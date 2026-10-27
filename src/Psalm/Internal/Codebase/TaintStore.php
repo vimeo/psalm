@@ -530,7 +530,7 @@ final class TaintStore
         if ($expr instanceof Array_ && $expr->items !== []) {
             $start = null;
             foreach ($expr->items as $item) {
-                $item_start = $item === null || $item->unpack
+                $item_start = $item->unpack
                     ? null
                     : self::getKnownStart($statements_analyzer, $item->value);
                 if ($item_start === null) {
@@ -622,7 +622,7 @@ final class TaintStore
         if ($key_expr instanceof Array_) {
             $names = [];
             foreach ($key_expr->items as $item) {
-                if ($item === null || $item->unpack) {
+                if ($item->unpack) {
                     return [[false, '']];
                 }
 
@@ -877,7 +877,7 @@ final class TaintStore
         $separator = (string) self::getKnownStart($statements_analyzer, $args[0]->value);
         $start = '';
         foreach ($args[1]->value->items as $index => $item) {
-            if ($item === null || $item->unpack || $item->key !== null) {
+            if ($item->unpack || $item->key !== null) {
                 return $index === 0 ? null : $start;
             }
 

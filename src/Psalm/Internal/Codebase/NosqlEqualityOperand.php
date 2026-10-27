@@ -20,8 +20,9 @@ use function str_starts_with;
 
 /**
  * The operand of the `$eq` of a field in a MongoDB query filter, `['field' => ['$eq' => $value]]`, is no NoSQL
- * injection: MongoDB compares the field with it as it is, keys starting with `$` and regexes included. Elsewhere `$eq`
- * may take expressions: in `$expr` and in aggregation pipelines, `'$field'` is a field path and operators are evaluated.
+ * injection: MongoDB compares the field with it as it is, keys starting with `$` and regexes included. Elsewhere
+ * `$eq` may take expressions: in `$expr` and in aggregation pipelines, `'$field'` is a field path and operators are
+ * evaluated.
  *
  * So in an array literal given to a parameter that is a `nosql` sink, the operand of an `$eq` that is the value of a
  * field at its top level (a key of a literal string not starting with `$`, unlike `$expr`, `$where`, `$and`, `$or`,
@@ -44,7 +45,6 @@ final class NosqlEqualityOperand
      * (null if unknown) of $function_params
      *
      * @param array<int, FunctionLikeParameter>|null $function_params
-     * @psalm-capabilities read-props|write-props
      */
     public static function markArgument(
         Codebase $codebase,
@@ -78,8 +78,6 @@ final class NosqlEqualityOperand
 
     /**
      * The taints the value of $item loses on its way into its array: `nosql` for a marked operand of a field
-     *
-     * @psalm-mutation-free
      */
     public static function getRemovedTaints(StatementsAnalyzer $statements_analyzer, ArrayItem $item): int
     {

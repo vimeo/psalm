@@ -50,7 +50,7 @@ final class InstancePropertyFetchAnalyzer
         bool $in_assignment = false,
         bool $is_static_access = false,
     ): bool {
-        NullsafeChainState::None->markOn($stmt);
+        NullsafeChainState::reset($stmt);
 
         $was_inside_general_use = $context->inside_general_use;
         $context->inside_general_use = true;

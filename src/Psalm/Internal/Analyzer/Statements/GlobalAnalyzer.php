@@ -29,7 +29,6 @@ use function array_pop;
 use function explode;
 use function is_string;
 use function preg_match;
-use function strtolower;
 use function substr;
 
 /**
@@ -328,7 +327,7 @@ final class GlobalAnalyzer
 
         if (!isset($parts[1])) {
             try {
-                return $codebase->functions->getStorage($statements_analyzer, strtolower($function_like_id));
+                return $codebase->functions->getStorage($statements_analyzer, $function_like_id);
             } catch (UnexpectedValueException) {
                 return null;
             }
@@ -341,7 +340,7 @@ final class GlobalAnalyzer
         }
 
         $declaring_method_id = $codebase->methods->getDeclaringMethodId(
-            new MethodIdentifier($fq_class_name, strtolower($method_name)),
+            new MethodIdentifier($fq_class_name, $method_name),
         );
 
         return $declaring_method_id ? $codebase->methods->getStorage($declaring_method_id) : null;

@@ -2996,8 +2996,6 @@ final class Codebase
      * location of a call, the node of the call there if Psalm tells the calls of the function-like apart (see
      * `@psalm-taint-specialize`), which its arguments and object given at the same location flow into (see
      * getTaintArgumentNode() and getTaintReceiverNode()). Null if there is no such function-like.
-     *
-     * @psalm-capabilities read-props|write-props
      */
     public function getTaintReturnNode(
         StatementsSource $source,
@@ -3022,8 +3020,6 @@ final class Codebase
      * The taint node of the parameter at $offset (0 for the first) of $function, for a call at $call_location if
      * given (see getTaintReturnNode()): what flows into it is what the body gets in that parameter, and reaches its
      * sinks. Null if there is no such function-like or parameter.
-     *
-     * @psalm-capabilities read-props|write-props
      */
     public function getTaintArgumentNode(
         StatementsSource $source,
@@ -3056,8 +3052,6 @@ final class Codebase
      * the objects of the method apart (see `@psalm-taint-specialize`): what flows into it is the `$this` of the body
      * for that call, whose return node (see getTaintReturnNode()) then holds what this object gives it. Null for other
      * methods, whose body takes from what every object of the class holds.
-     *
-     * @psalm-capabilities read-props
      */
     public function getTaintReceiverNode(
         StatementsSource $source,
@@ -3085,8 +3079,6 @@ final class Codebase
      * Adds the paths of an assignment of $value to the instance property $property_id (`Class::$name`) of an object of
      * the class, as `$object->name = $value` does: what the class and the parent classes sharing the property read of
      * it gets the value, and so does what its subclasses read, as the object may be one of theirs.
-     *
-     * @psalm-capabilities read-props|write-props
      */
     public function addTaintPropertyAssignment(
         StatementsSource $source,
@@ -3123,7 +3115,6 @@ final class Codebase
      * The cased id the taint nodes of the body of $function are keyed by, and its storage (see getTaintReturnNode())
      *
      * @return array{string, FunctionLikeStorage}|null
-     * @psalm-capabilities read-props
      */
     private function getTaintBody(
         StatementsSource $source,
@@ -3159,10 +3150,15 @@ final class Codebase
                 ];
         }
 
+        $function_id = strtolower(ltrim($function, '\\'));
+        if (!$function_id) {
+            return null;
+        }
+
         try {
             $storage = $this->functions->getStorage(
                 null,
-                strtolower(ltrim($function, '\\')),
+                $function_id,
                 $source->getRootFilePath(),
                 $source->getFilePath(),
             );
@@ -3175,8 +3171,6 @@ final class Codebase
 
     /**
      * $call_location if the call there of the function-like of $storage has nodes of its own
-     *
-     * @psalm-capabilities read-props|write-props
      */
     private function getTaintSpecializationLocation(
         StatementsSource $source,

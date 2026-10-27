@@ -1,0 +1,10 @@
+<?php
+
+namespace StubDependency;
+
+class Lib2Alias extends Lib2 {}
+
+class StubbedElsewhere
+{
+    public function fromStub(): void {}
+}

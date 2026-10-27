@@ -7,17 +7,19 @@
  *
  * Run hourly by .github/workflows/auto-release.yml. For each branch:
  *  - the last release is the highest version tagged on the branch (master also contains the 6.x tags);
- *  - nothing happens if the branch has no commits since, or if a workflow run or a commit status of its head
- *    is still running, failed, or the unit tests haven't run yet. A failed check is reported as a warning, and
- *    fails the run once the head has been blocked for a day, so that the maintainers are notified;
+ *  - nothing happens if the branch has no commits since, or if a workflow run (on a push, or dispatched in its
+ *    stead) or a commit status of its head is still running, failed, or the unit tests haven't run yet. A failed
+ *    check is reported as a warning, and fails the run once the head has been blocked for a day, so that the
+ *    maintainers are notified;
  *  - the next version keeps the readiness of the last one: 7.0.0-alpha1 is followed by 7.0.0-alpha2, likewise
  *    for betas and release candidates, and a stable 7.0.0 by 7.1.0 if a feature or deprecation was merged, else
  *    by 7.0.1. A removal needs a new major version, which is left to the maintainers;
  *  - the release notes are the ones GitHub generates from the labels of the merged pull requests
  *    (.github/release.yml);
  *  - a release made with the workflow's token doesn't trigger other workflows, so the phar and docker builds
- *    are dispatched on the new tag, and dispatched again next hour on the last tag of each branch if they never
- *    ran (if dispatching failed).
+ *    and the announcement (announce-release.php) are dispatched on the new tag, and dispatched again next hour
+ *    on the last tag of each branch if they never ran (if dispatching failed). A workflow is only dispatched
+ *    on a tag whose version of it has a workflow_dispatch trigger, so not on releases made before it existed.
  *
  * Needs the GitHub CLI, authenticated (GH_TOKEN), and GITHUB_REPOSITORY (default: vimeo/psalm).
  */
@@ -26,7 +28,7 @@ declare(strict_types=1);
 
 $required_workflows = ['Run unit tests', 'Run unit tests on Windows'];
 $own_workflow = 'Automatic release';
-$dispatched_workflows = ['build-phar.yml', 'build-docker.yml'];
+$dispatched_workflows = ['build-phar.yml', 'build-docker.yml', 'announce-release.yml'];
 $version_pattern = '/^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)'
     . '(?:-(?<stage>alpha|beta|rc)(?<dot>\.?)(?<number>\d+))?$/';
 
@@ -78,11 +80,28 @@ $getLastTag = static function (string $branch) use ($run, $version_pattern): ?st
     return $tags[0] ?? null;
 };
 
-// dispatches the phar and docker builds of a release that have never run, also when dispatching them right after
+// dispatches the workflows of a release tagged at $commit that have never run, also when dispatching them right after
 // publishing it failed; returns whether they all ran or were dispatched
-$dispatchBuilds = static function (string $tag) use ($api, $run, $repository, $dispatched_workflows, $dry_run): bool {
+$dispatchBuilds = static function (
+    string $tag,
+    string $commit,
+) use (
+    $api,
+    $run,
+    $repository,
+    $dispatched_workflows,
+    $dry_run,
+): bool {
     $dispatched = true;
     foreach ($dispatched_workflows as $workflow) {
+        // GitHub runs the workflow file of the dispatched ref, which may not exist or not be dispatchable there
+        $path = ".github/workflows/$workflow";
+        if (trim($run(['git', 'ls-tree', '--name-only', $commit, $path])) === ''
+            || preg_match('/^\s*workflow_dispatch:/m', $run(['git', 'show', "$commit:$path"])) !== 1
+        ) {
+            continue;
+        }
+
         if ($api("actions/workflows/$workflow/runs?branch=" . rawurlencode($tag) . '&per_page=1')['total_count'] > 0) {
             continue;
         }
@@ -107,14 +126,17 @@ $dispatchBuilds = static function (string $tag) use ($api, $run, $repository, $d
 // or null if every workflow run and commit status of it passed
 /** @return ?array{bool, string} */
 $getChecksFailure = static function (string $sha) use ($api, $required_workflows, $own_workflow): ?array {
-    // the latest attempt of each workflow
+    // the latest attempt of each workflow, run on a push or dispatched in its stead: merges made with a workflow's
+    // token don't trigger pushes, so bin/ci/apply-queued-changes.php dispatches the push workflows after merging
     $latest = [];
-    foreach ($api("actions/runs?head_sha=$sha&event=push&per_page=100")['workflow_runs'] as $workflow_run) {
-        $name = $workflow_run['name'];
-        if ($name !== $own_workflow
-            && (!isset($latest[$name]) || $workflow_run['created_at'] > $latest[$name]['created_at'])
-        ) {
-            $latest[$name] = $workflow_run;
+    foreach (['push', 'workflow_dispatch'] as $event) {
+        foreach ($api("actions/runs?head_sha=$sha&event=$event&per_page=100")['workflow_runs'] as $workflow_run) {
+            $name = $workflow_run['name'];
+            if ($name !== $own_workflow
+                && (!isset($latest[$name]) || $workflow_run['created_at'] > $latest[$name]['created_at'])
+            ) {
+                $latest[$name] = $workflow_run;
+            }
         }
     }
 
@@ -187,7 +209,7 @@ foreach ($branches as $branch) {
         continue;
     }
 
-    $stuck = !$dispatchBuilds($last_tag) || $stuck;
+    $stuck = !$dispatchBuilds($last_tag, $last_tag) || $stuck;
 
     $unreleased = (int) trim($run(['git', 'rev-list', '--count', "$last_tag..$head"]));
     if ($unreleased === 0) {
@@ -250,7 +272,7 @@ foreach ($branches as $branch) {
         ...($isPrerelease($next) ? ['--prerelease'] : []),
     ]);
 
-    $stuck = !$dispatchBuilds($next) || $stuck;
+    $stuck = !$dispatchBuilds($next, $head) || $stuck;
 }
 
 exit($stuck ? 1 : 0);

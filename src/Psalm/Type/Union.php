@@ -296,11 +296,12 @@ final class Union implements TypeNode
     }
 
     /**
-     * @param array<string, DataFlowNode> $parent_nodes
+     * @param array<string, DataFlowNode>|list<DataFlowNode> $parent_nodes keyed by their ids, or a list of them
      * @return static
      */
     public function setParentNodes(array $parent_nodes, bool $propagate_changes = false): self
     {
+        $parent_nodes = self::keyParentNodes($parent_nodes);
         if ($parent_nodes === $this->parent_nodes) {
             return $this;
         }
@@ -312,7 +313,7 @@ final class Union implements TypeNode
 
 
     /**
-     * @param array<string, DataFlowNode> $parent_nodes
+     * @param array<string, DataFlowNode>|list<DataFlowNode> $parent_nodes keyed by their ids, or a list of them
      * @return static
      */
     public function addParentNodes(array $parent_nodes): self
@@ -320,13 +321,30 @@ final class Union implements TypeNode
         if (!$parent_nodes) {
             return $this;
         }
-        $parent_nodes = DataFlowNode::combineParentNodes($this->parent_nodes, $parent_nodes);
+        $parent_nodes = DataFlowNode::combineParentNodes($this->parent_nodes, self::keyParentNodes($parent_nodes));
         if ($parent_nodes === $this->parent_nodes) {
             return $this;
         }
         $cloned = clone $this;
         $cloned->parent_nodes = $parent_nodes;
         return $cloned;
+    }
+
+    /**
+     * The nodes keyed by their ids: plugins may give a list of nodes, whose ids are internal
+     *
+     * @param array<string, DataFlowNode>|list<DataFlowNode> $parent_nodes
+     * @return array<string, DataFlowNode>
+     * @psalm-capabilities read-props
+     */
+    private static function keyParentNodes(array $parent_nodes): array
+    {
+        $keyed = [];
+        foreach ($parent_nodes as $parent_node) {
+            $keyed[$parent_node->id] = $parent_node;
+        }
+
+        return $keyed;
     }
 
     /** @return static */

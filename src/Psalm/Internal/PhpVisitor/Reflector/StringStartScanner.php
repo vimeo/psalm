@@ -400,7 +400,7 @@ final class StringStartScanner
             ) {
                 $known[spl_object_id($assign->var)] = true;
                 foreach ($assign->expr->items as $item) {
-                    if ($item === null || $item->unpack) {
+                    if ($item->unpack) {
                         return null;
                     }
 

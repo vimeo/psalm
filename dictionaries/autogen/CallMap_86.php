@@ -21961,7 +21961,7 @@ return array (
   ),
   'imagickpixel::getcolorvaluequantum' => 
   array (
-    0 => '5',
+    0 => 'float',
     'color' => 'int',
   ),
   'imagickpixel::gethsl' => 
@@ -22015,7 +22015,7 @@ return array (
   array (
     0 => 'bool',
     'color' => 'int',
-    'value' => 'IMAGICK_QUANTUM_TYPE',
+    'value' => 'float',
   ),
   'imagickpixel::sethsl' => 
   array (
@@ -22027,7 +22027,7 @@ return array (
   'imagickpixel::setindex' => 
   array (
     0 => 'bool',
-    'index' => 'IMAGICK_QUANTUM_TYPE',
+    'index' => 'float',
   ),
   'imagickpixelexception::__construct' => 
   array (
