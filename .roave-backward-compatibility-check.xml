@@ -6,5 +6,7 @@
         <ignored-regex>#^\[BC\] CHANGED: Value of constant Psalm\\Issue\\IncompatibleTypeParameters::SHORTCODE changed from 362 to 368$#</ignored-regex>
         <!-- The list of the annotations Psalm recognises grows with each new annotation (@psalm-cli-only). -->
         <ignored-regex>#^\[BC\] CHANGED: Value of constant Psalm\\DocComment::PSALM_ANNOTATIONS changed from #</ignored-regex>
+        <!-- The list of the extensions Psalm has stubs for grows with each new stub (zstd). -->
+        <ignored-regex>#^\[BC\] CHANGED: Property Psalm\\Config\#\$php_extensions changed default value from #</ignored-regex>
     </baseline>
 </roave-bc-check>

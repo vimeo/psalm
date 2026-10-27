@@ -18,7 +18,8 @@
  *    (.github/release.yml);
  *  - a release made with the workflow's token doesn't trigger other workflows, so the phar and docker builds
  *    and the announcement (announce-release.php) are dispatched on the new tag, and dispatched again next hour
- *    on the last tag of each branch if they never ran (if dispatching failed).
+ *    on the last tag of each branch if they never ran (if dispatching failed). A workflow is only dispatched
+ *    on a tag whose version of it has a workflow_dispatch trigger, so not on releases made before it existed.
  *
  * Needs the GitHub CLI, authenticated (GH_TOKEN), and GITHUB_REPOSITORY (default: vimeo/psalm).
  */
@@ -79,11 +80,28 @@ $getLastTag = static function (string $branch) use ($run, $version_pattern): ?st
     return $tags[0] ?? null;
 };
 
-// dispatches the phar and docker builds of a release that have never run, also when dispatching them right after
+// dispatches the workflows of a release tagged at $commit that have never run, also when dispatching them right after
 // publishing it failed; returns whether they all ran or were dispatched
-$dispatchBuilds = static function (string $tag) use ($api, $run, $repository, $dispatched_workflows, $dry_run): bool {
+$dispatchBuilds = static function (
+    string $tag,
+    string $commit,
+) use (
+    $api,
+    $run,
+    $repository,
+    $dispatched_workflows,
+    $dry_run,
+): bool {
     $dispatched = true;
     foreach ($dispatched_workflows as $workflow) {
+        // GitHub runs the workflow file of the dispatched ref, which may not exist or not be dispatchable there
+        $path = ".github/workflows/$workflow";
+        if (trim($run(['git', 'ls-tree', '--name-only', $commit, $path])) === ''
+            || preg_match('/^\s*workflow_dispatch:/m', $run(['git', 'show', "$commit:$path"])) !== 1
+        ) {
+            continue;
+        }
+
         if ($api("actions/workflows/$workflow/runs?branch=" . rawurlencode($tag) . '&per_page=1')['total_count'] > 0) {
             continue;
         }
@@ -191,7 +209,7 @@ foreach ($branches as $branch) {
         continue;
     }
 
-    $stuck = !$dispatchBuilds($last_tag) || $stuck;
+    $stuck = !$dispatchBuilds($last_tag, $last_tag) || $stuck;
 
     $unreleased = (int) trim($run(['git', 'rev-list', '--count', "$last_tag..$head"]));
     if ($unreleased === 0) {
@@ -254,7 +272,7 @@ foreach ($branches as $branch) {
         ...($isPrerelease($next) ? ['--prerelease'] : []),
     ]);
 
-    $stuck = !$dispatchBuilds($next) || $stuck;
+    $stuck = !$dispatchBuilds($next, $head) || $stuck;
 }
 
 exit($stuck ? 1 : 0);

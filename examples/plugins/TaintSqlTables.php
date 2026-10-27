@@ -71,7 +71,7 @@ final class TaintSqlTables implements AfterExpressionAnalysisInterface
 
             $read = $codebase->getTaintNode($source, 'queried rows', $location);
             $codebase->addTaintStoreRead($source, self::STORE, $tables, $read);
-            $node_types->setType($call, $type->addParentNodes([$read->id => $read]));
+            $node_types->setType($call, $type->addParentNodes([$read]));
         }
 
         return null;
