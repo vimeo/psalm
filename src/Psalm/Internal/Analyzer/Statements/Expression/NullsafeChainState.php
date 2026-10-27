@@ -13,8 +13,10 @@ use PhpParser\Node\Expr;
  * without being reported as "possibly null" there, whereas a null that a later link returns itself
  * (`$a?->b->maybe()->c`) is a real bug that PHP fatals on.
  *
- * The state is recorded as a node attribute by the analyzers of chain nodes, and MUST be written on every analysis
- * because loops analyse the same nodes several times.
+ * The state is recorded as a node attribute by the analyzers of chain nodes, and MUST be refreshed on every analysis
+ * because loops analyse the same nodes several times. A node without the attribute reads as None, so nodes that no
+ * `?->` ever reached are left unmarked: writing None onto every call and fetch would dirty the AST pages that forked
+ * analysis workers share with the parent, copying them in each worker.
  *
  * @internal
  */
@@ -42,6 +44,16 @@ enum NullsafeChainState
     public function markOn(Expr $node): void
     {
         $node->setAttribute(self::ATTRIBUTE, $this);
+    }
+
+    /**
+     * Forgets the state that an earlier analysis of the node left behind, if any.
+     */
+    public static function reset(Expr $node): void
+    {
+        if ($node->hasAttribute(self::ATTRIBUTE)) {
+            self::None->markOn($node);
+        }
     }
 
     /**
