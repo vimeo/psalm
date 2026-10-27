@@ -1192,6 +1192,46 @@ final class ConfigTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testZstdExtensionStubDeclaresItsFunctions(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <enableExtensions>
+                        <extension name="zstd"/>
+                    </enableExtensions>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+        $config = $this->project_analyzer->getConfig();
+        $config->visitStubFiles($this->project_analyzer->getCodebase());
+        $this->assertContains((string) realpath('stubs/extensions/zstd.phpstub'), $config->internal_stubs);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @return string|false
+                 * @psalm-pure
+                 */
+                function roundTrip(string $data) {
+                    $compressed = zstd_compress($data, ZSTD_COMPRESS_LEVEL_DEFAULT);
+                    return $compressed === false ? false : Zstd\\uncompress($compressed);
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testValidThrowInvalidCatch(): void
     {
         $this->expectExceptionMessage('InvalidCatch');
