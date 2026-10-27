@@ -777,6 +777,7 @@ final class PreloaderList {
         \Psalm\Internal\Codebase\InternalTaintSourceMap::class,
         \Psalm\Internal\Codebase\Methods::class,
         \Psalm\Internal\Codebase\MutationLevelResolver::class,
+        \Psalm\Internal\Codebase\NosqlEqualityOperand::class,
         \Psalm\Internal\Codebase\Populator::class,
         \Psalm\Internal\Codebase\Properties::class,
         \Psalm\Internal\Codebase\PropertyBagTaints::class,
