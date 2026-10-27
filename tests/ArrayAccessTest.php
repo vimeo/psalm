@@ -479,6 +479,44 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetArrayAccessOffsetHasTheValueTypeOfTheObject' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @implements ArrayAccess<int, T>
+                     */
+                    abstract class Coll implements ArrayAccess {
+                        /** @return T|null */
+                        abstract public function offsetGet(mixed $offset): mixed;
+                    }
+
+                    /** @param ArrayAccess<string, stdClass> $a */
+                    function f(ArrayAccess $a): bool {
+                        return !empty($a["x"]);
+                    }
+
+                    /** @param ArrayObject<int, stdClass> $a */
+                    function h(ArrayObject $a): bool {
+                        return !empty($a[0]);
+                    }
+
+                    /** @param Coll<stdClass> $c */
+                    function i(Coll $c): bool {
+                        return !empty($c[0]);
+                    }
+
+                    function j(ArrayAccess $a): bool {
+                        return !empty($a[0]);
+                    }
+
+                    /** @param mixed $owner */
+                    function g($owner): bool {
+                        return empty($owner["type"]) || empty($owner["id"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'destructureArrayAccessObjectThatIsNotTraversable' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<int, string> */
@@ -1342,6 +1380,35 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'issetArrayAccessOffsetOfFalsyValueType' => [
+                'code' => '<?php
+                    /** @param ArrayAccess<string, int> $a */
+                    function f(ArrayAccess $a): bool {
+                        return !empty($a["x"]);
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33 - Operand of type int|null contains type int',
+            ],
+            'issetArrayAccessOffsetOfFalsyValueTypeOfParentTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @implements ArrayAccess<int, T>
+                     */
+                    abstract class Coll implements ArrayAccess {
+                        /** @return T|null */
+                        abstract public function offsetGet(mixed $offset): mixed;
+                    }
+
+                    /** @extends Coll<int> */
+                    abstract class IntColl extends Coll {}
+
+                    function f(IntColl $c): bool {
+                        return !empty($c[0]);
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:33 - Operand of type int|null contains type int',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'invalidArrayAccess' => [
                 'code' => '<?php
                     $a = 5;

@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
@@ -2312,6 +2313,23 @@ final class ArrayFetchAnalyzer
                             $get_method_id,
                             $self_class,
                         ) ?? Type::getMixed();
+
+                        // with the type arguments of the object, as a call would have
+                        $class_template_params = ClassTemplateParamCollector::collect(
+                            $codebase,
+                            $codebase->methods->getClassLikeStorageForMethod($get_method_id),
+                            $codebase->classlike_storage_provider->get($type->value),
+                            'offsetget',
+                            $type,
+                        );
+
+                        if ($class_template_params !== null) {
+                            $call_array_access_type = TemplateInferredTypeReplacer::replace(
+                                $call_array_access_type,
+                                new TemplateResult([], $class_template_params),
+                                $codebase,
+                            );
+                        }
                     }
                 } else {
                     $statements_analyzer->node_data = clone $statements_analyzer->node_data;
