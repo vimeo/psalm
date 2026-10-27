@@ -809,6 +809,7 @@
             <xs:enumeration value="simplexml"/>
             <xs:enumeration value="soap"/>
             <xs:enumeration value="xdebug"/>
+            <xs:enumeration value="zstd"/>
         </xs:restriction>
     </xs:simpleType>
 

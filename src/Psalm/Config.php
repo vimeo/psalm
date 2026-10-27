@@ -587,6 +587,7 @@ final class Config
         "simplexml" => null,
         "soap" => null,
         "xdebug" => null,
+        "zstd" => null,
     ];
 
     /**
