@@ -943,11 +943,15 @@ final class TypeExpander
 
         $class_storage = null;
         if ($codebase->classExists($return_type->classlike_type->value)) {
-            $class_storage = $codebase->classlike_storage_provider->get($return_type->classlike_type->value);
+            $class_storage = $codebase->classlike_storage_provider->get(
+                $codebase->classlikes->getUnAliasedName($return_type->classlike_type->value),
+            );
         } else {
             foreach ($return_type->classlike_type->extra_types as $type) {
                 if ($type instanceof TNamedObject && $codebase->classExists($type->value)) {
-                    $class_storage = $codebase->classlike_storage_provider->get($type->value);
+                    $class_storage = $codebase->classlike_storage_provider->get(
+                        $codebase->classlikes->getUnAliasedName($type->value),
+                    );
                     break;
                 }
             }

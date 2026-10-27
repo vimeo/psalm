@@ -65,17 +65,20 @@ final class AttributesAnalyzer
         $codebase = $source->getCodebase();
         $appearing_non_repeatable_attributes = [];
         foreach (self::iterateAttributeNodes($attribute_groups) as $attribute) {
-            $fq_attribute_name = $codebase->classlikes->getUnAliasedName(
-                $attribute->name instanceof FullyQualified
-                    ? (string) $attribute->name
-                    : ClassLikeAnalyzer::getFQCLNFromNameObject($attribute->name, $source->getAliases()),
-            );
+            if ($attribute->name instanceof FullyQualified) {
+                $fq_attribute_name = (string) $attribute->name;
+            } else {
+                $fq_attribute_name = ClassLikeAnalyzer::getFQCLNFromNameObject($attribute->name, $source->getAliases());
+            }
 
             $attribute_name = (string) $attribute->name;
             $attribute_name_location = new CodeLocation($source, $attribute->name);
 
+            // only the storage read resolves an alias: PHP checks repetition by the written name
             $attribute_class_storage = $codebase->classlikes->classExists($fq_attribute_name)
-                ? $codebase->classlike_storage_provider->get($fq_attribute_name)
+                ? $codebase->classlike_storage_provider->get(
+                    $codebase->classlikes->getUnAliasedName($fq_attribute_name),
+                )
                 : null;
 
             $attribute_class_flags = self::getAttributeClassFlags(
@@ -383,7 +386,9 @@ final class AttributesAnalyzer
             return;
         }
 
-        $class_storage = $codebase->classlike_storage_provider->get($class_string->value);
+        $class_storage = $codebase->classlike_storage_provider->get(
+            $codebase->classlikes->getUnAliasedName($class_string->value),
+        );
         $arg_location = new CodeLocation($statements_analyzer, $arg);
         $class_attribute_target = self::getAttributeClassFlags(
             $statements_analyzer,

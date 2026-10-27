@@ -563,7 +563,7 @@ final class ClassTest extends TestCase
                     final class Tag {}
                     class_alias(Tag::class, "TagAlias");
 
-                    #[TagAlias]
+                    #[Tag, TagAlias]
                     final class Tagged {}',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -584,6 +584,18 @@ final class ClassTest extends TestCase
                         public function __construct() {
                             $this->init();
                         }
+                    }',
+            ],
+            'classAliasPropertiesOf' => [
+                'code' => '<?php
+                    final class Row {
+                        public int $id = 1;
+                    }
+                    class_alias(Row::class, "RowAlias");
+
+                    /** @param properties-of<RowAlias> $p */
+                    function id(array $p): int {
+                        return $p["id"];
                     }',
             ],
             'classAliasImportType' => [
@@ -1607,6 +1619,18 @@ final class ClassTest extends TestCase
                     function f(string $v): void {}
                     f("c");',
                 'error_message' => 'expects \'a\'|\'b\', but \'c\' provided',
+            ],
+            'classAliasReflectionGetAttributes' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_METHOD)]
+                    final class Tag {}
+                    class_alias(Tag::class, "TagAlias");
+
+                    final class Tagged {}
+                    (new ReflectionClass(Tagged::class))->getAttributes("TagAlias");',
+                'error_message' => 'Attribute TagAlias cannot be used on a class',
+                'ignored_issues' => ['ArgumentTypeCoercion'],
+                'php_version' => '8.0',
             ],
             'classAliasCallableArray' => [
                 'code' => '<?php
