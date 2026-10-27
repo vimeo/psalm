@@ -623,7 +623,6 @@ abstract class CallAnalyzer
 
     /**
      * @return list<non-empty-string>
-     *
      * @psalm-pure
      */
     private static function getMethodIdsFromObjectType(Union $object_type, string $method_name): array
