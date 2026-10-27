@@ -70,7 +70,41 @@ function search(string $field): void {
 }
 ```
 
-This holds for a literal filter given to a `$filter` parameter that is a `nosql` sink of a function or method whose body Psalm doesn't analyze, as in a stub or in `vendor`, nor that of any override that may run instead: a body may put the filter anywhere, e.g. into `$expr`.
+Only a `$filter` sink whose body Psalm doesn't analyze (a stub, `vendor`, an interface) trusts `$eq`, since a body may put the filter anywhere, e.g. into `$expr`:
+
+```php
+<?php
+
+interface Collection {
+    /** @psalm-taint-sink nosql $filter */
+    public function find(array $filter): void;
+}
+
+interface Orders {
+    /** @psalm-taint-sink nosql $filter */
+    public function find(array $filter): void;
+}
+
+final class LoggedOrders implements Orders {
+    public function find(array $filter): void {}
+}
+
+interface Pipeline {
+    /** @psalm-taint-sink nosql $fields */
+    public function addFields(array $fields): void;
+}
+
+/** @psalm-taint-sink nosql $filter */
+function findUsers(array $filter): void {}
+
+function search(Collection $users, Orders $orders, Pipeline $pipeline): void {
+    $users->find(["username" => ['$eq' => $_GET["username"]]]);              // safe
+
+    findUsers(["username" => ['$eq' => $_GET["username"]]]);                 // TaintedNosql: Psalm analyzes its body
+    $orders->find(["username" => ['$eq' => $_GET["username"]]]);             // TaintedNosql: Psalm analyzes LoggedOrders::find()
+    $pipeline->addFields(["isAdmin" => ['$eq' => ['$role', $_GET["role"]]]]); // TaintedNosql: not a $filter
+}
+```
 
 Or route the filter through a sanitizer annotated with `@psalm-taint-escape nosql`:
 
