@@ -109,6 +109,7 @@ return [
     'ftok' => Capabilities::IO,
     'dir' => Capabilities::IO,
     'tempnam' => Capabilities::IO,
+    'tmpfile' => Capabilities::IO,
     'link' => Capabilities::IO,
     'lchown' => Capabilities::IO,
     'lchgrp' => Capabilities::IO,
