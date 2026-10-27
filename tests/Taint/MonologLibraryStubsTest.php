@@ -22,6 +22,39 @@ final class MonologLibraryStubsTest extends LibraryStubsTestCase
             namespace Psr\Log {
                 interface LoggerInterface {}
                 class LogLevel {}
+                trait LoggerTrait {
+                    public function emergency(string|\Stringable $message, array $context = []): void {
+                        $this->log(LogLevel::EMERGENCY, $message, $context);
+                    }
+                    public function alert(string|\Stringable $message, array $context = []): void {
+                        $this->log(LogLevel::ALERT, $message, $context);
+                    }
+                    public function critical(string|\Stringable $message, array $context = []): void {
+                        $this->log(LogLevel::CRITICAL, $message, $context);
+                    }
+                    public function error(string|\Stringable $message, array $context = []): void {
+                        $this->log(LogLevel::ERROR, $message, $context);
+                    }
+                    public function warning(string|\Stringable $message, array $context = []): void {
+                        $this->log(LogLevel::WARNING, $message, $context);
+                    }
+                    public function notice(string|\Stringable $message, array $context = []): void {
+                        $this->log(LogLevel::NOTICE, $message, $context);
+                    }
+                    public function info(string|\Stringable $message, array $context = []): void {
+                        $this->log(LogLevel::INFO, $message, $context);
+                    }
+                    public function debug(string|\Stringable $message, array $context = []): void {
+                        $this->log(LogLevel::DEBUG, $message, $context);
+                    }
+                    abstract public function log($level, string|\Stringable $message, array $context = []): void;
+                }
+                abstract class AbstractLogger implements LoggerInterface {
+                    use LoggerTrait;
+                }
+                class NullLogger extends AbstractLogger {
+                    public function log($level, string|\Stringable $message, array $context = []): void {}
+                }
             }
 
             namespace Monolog {
@@ -83,7 +116,7 @@ final class MonologLibraryStubsTest extends LibraryStubsTestCase
     #[Override]
     protected static function getReportedIssueTypePrefixes(): array
     {
-        return ['Tainted', 'Impure'];
+        return ['Tainted', 'Impure', 'ImmutableDependency'];
     }
 
     /**
@@ -143,6 +176,52 @@ final class MonologLibraryStubsTest extends LibraryStubsTestCase
                     }',
                 [
                     'ImpureMethodCall on line 4',
+                ],
+            ],
+            'psrLoggerImplementationCapabilities' => [
+                '<?php
+                    final class CountingLogger extends Psr\Log\AbstractLogger {
+                        public int $count = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function log($level, string|\Stringable $message, array $context = []): void {
+                            ++$this->count;
+                        }
+                    }
+
+                    final class CountingTraitLogger implements Psr\Log\LoggerInterface {
+                        use Psr\Log\LoggerTrait;
+
+                        public int $count = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function log($level, string|\Stringable $message, array $context = []): void {
+                            ++$this->count;
+                        }
+                    }
+
+                    final class SilentLogger extends Psr\Log\NullLogger {}
+
+                    final class UnannotatedLogger extends Psr\Log\AbstractLogger {
+                        public function log($level, string|\Stringable $message, array $context = []): void {}
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function logInfo(
+                        Psr\Log\AbstractLogger $logger,
+                        CountingTraitLogger $trait_logger,
+                        Psr\Log\NullLogger $null_logger
+                    ): void {
+                        $logger->info("message");
+                        $trait_logger->info("message");
+                        $null_logger->log("info", "message");
+                    }',
+                [
+                    'ImmutableDependency on line 24',
+                    'ImmutableDependency on line 25',
+                    'ImpureMethodCall on line 34',
+                    'ImpureMethodCall on line 35',
+                    'ImpureMethodCall on line 36',
                 ],
             ],
             'handlerSetupCapabilities' => [
