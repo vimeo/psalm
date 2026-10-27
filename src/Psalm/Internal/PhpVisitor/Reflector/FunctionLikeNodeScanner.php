@@ -158,6 +158,17 @@ final class FunctionLikeNodeScanner
         $has_optional_param = false;
 
         $existing_params = [];
+
+        // A stub redeclaring a method an earlier stub declared reuses its storage, and its parameters are built
+        // again from this declaration. The taint annotations of the earlier declaration still hold for the
+        // parameters this one redeclares, as its function-level ones do (the docblock scanner merges those).
+        $overridden_params = [];
+        if ($is_functionlike_override) {
+            foreach ($storage->params as $overridden_param) {
+                $overridden_params[$overridden_param->name] = $overridden_param;
+            }
+        }
+
         $storage->setParams([]);
 
         foreach ($stmt->getParams() as $param) {
@@ -173,6 +184,13 @@ final class FunctionLikeNodeScanner
             }
 
             $param_storage = $this->getTranslatedFunctionParam($param, $stmt, $fake_method, $fq_classlike_name);
+
+            if (isset($overridden_params[$param_storage->name])) {
+                $overridden_param = $overridden_params[$param_storage->name];
+                $param_storage->sinks = $overridden_param->sinks;
+                $param_storage->value_sinks = $overridden_param->value_sinks;
+                $param_storage->assert_untainted = $overridden_param->assert_untainted;
+            }
 
             foreach ($param->attrGroups as $attr_group) {
                 foreach ($attr_group->attrs as $attr) {
