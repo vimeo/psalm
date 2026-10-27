@@ -38,6 +38,7 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\InvalidPassByReference;
+use Psalm\Issue\PositionalArgumentNotAllowed;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
@@ -956,6 +957,19 @@ final class ArgumentsAnalyzer
             }
         }
 
+        if ($function_storage
+            && ($function_storage->args_by_name || $function_storage->optional_args_by_name)
+            && $codebase->analysis_php_version_id >= 8_00_00
+        ) {
+            self::checkPositionalArguments(
+                $statements_analyzer,
+                $args,
+                $function_params,
+                $function_storage->args_by_name,
+                $cased_method_id ?? (string) $method_id,
+            );
+        }
+
         if (($method_id === 'preg_match_all' || $method_id === 'preg_match') && count($args) > 3) {
             $args = array_reverse($args, true);
         }
@@ -1306,6 +1320,101 @@ final class ArgumentsAnalyzer
         );
 
         return null;
+    }
+
+    /**
+     * Reports the arguments passed by position where `@arguments-by-name` or `@optional-arguments-by-name`
+     * requires them to be passed by name
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     * @param array<int, FunctionLikeParameter> $function_params
+     */
+    private static function checkPositionalArguments(
+        StatementsAnalyzer $statements_analyzer,
+        array $args,
+        array $function_params,
+        bool $args_by_name,
+        string $cased_method_id,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        $position = 0;
+
+        foreach ($args as $arg) {
+            // virtual arguments are those of calls PHP makes itself, such as offsetGet() or __get()
+            if ($arg->name || $arg instanceof VirtualArg) {
+                return;
+            }
+
+            $count = 1;
+            $next_position_is_known = true;
+
+            // the integer keys of an unpacked array are passed by position, its string keys by name
+            if ($arg->unpack) {
+                $arg_type = $statements_analyzer->node_data->getType($arg->value);
+                $iterable_type = $arg_type && $arg_type->isSingle() ? $arg_type->getSingleAtomic() : null;
+
+                if ($iterable_type instanceof TKeyedArray
+                    && ($iterable_type->is_list || !$iterable_type->fallback_params)
+                ) {
+                    $count = 0;
+                    $next_position_is_known = !$iterable_type->fallback_params;
+
+                    foreach ($iterable_type->properties as $key => $property) {
+                        if (is_string($key)) {
+                            break;
+                        }
+
+                        $count++;
+
+                        if ($property->possibly_undefined) {
+                            $next_position_is_known = false;
+                            break;
+                        }
+                    }
+                } else {
+                    if ($iterable_type instanceof TKeyedArray) {
+                        $key_type = $iterable_type->getGenericKeyType();
+                    } elseif ($iterable_type instanceof TArray) {
+                        $key_type = $iterable_type->type_params[0];
+                    } elseif ($iterable_type && $iterable_type->isIterable($codebase)) {
+                        $key_type = $codebase->getKeyValueParamsForTraversableObject($iterable_type)[0];
+                    } else {
+                        return;
+                    }
+
+                    // the first value goes to the next parameter, the position of the others is not known
+                    if (!$key_type->isInt()) {
+                        return;
+                    }
+
+                    $next_position_is_known = false;
+                }
+            }
+
+            for ($i = 0; $i < $count; $i++) {
+                $param = $function_params[$position++] ?? null;
+
+                if (!$param || $param->is_variadic) {
+                    return;
+                }
+
+                if ($args_by_name || $param->is_optional) {
+                    IssueBuffer::maybeAdd(
+                        new PositionalArgumentNotAllowed(
+                            'Argument for ' . ($param->is_optional ? 'optional ' : '') . 'parameter $' . $param->name
+                                . ' of ' . $cased_method_id . ' must be passed by name',
+                            new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                            $cased_method_id,
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
+            }
+
+            if (!$next_position_is_known) {
+                return;
+            }
+        }
     }
 
     /**
