@@ -82,6 +82,8 @@ jobs:
 
       # composer/semver matches the PHP version against the PIE packages' constraints
       - name: Install dependencies
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
         run: |
           composer update --no-install
           composer install --no-dev
@@ -116,6 +118,8 @@ jobs:
           coverage: none
 
       - name: Install dependencies
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
         run: |
           composer update --no-install
           composer install -o
