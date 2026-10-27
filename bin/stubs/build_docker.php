@@ -45,6 +45,12 @@ const EXCLUDES = [
     '8.5' => ['zmq'],
 ];
 
+/** Extension versions pinned for specific versions, by base extension name. */
+const PINS = [
+    // grpc 1.85.0 needs GCC 10, newer than that of the Alpine 3.10 base image
+    '7.1' => ['grpc' => '1.84.0'],
+];
+
 /**
  * Where install-php-extensions gets each extension's version from, keyed by the
  * base extension name (without any "-<stability>" suffix). Used to build a cache
@@ -131,6 +137,11 @@ function extensionsFor(string $version): array
     $extensions = array_merge(EXTENSIONS, INCLUDES[$version] ?? []);
     $excluded = EXCLUDES[$version] ?? [];
     $extensions = array_values(array_filter($extensions, static fn(string $e): bool => !in_array($e, $excluded, true)));
+    $pins = PINS[$version] ?? [];
+    $extensions = array_map(
+        static fn(string $e): string => isset($pins[$e]) ? "$e-{$pins[$e]}" : $e,
+        $extensions,
+    );
 
     foreach ($extensions as $extension) {
         if (!preg_match('/^[A-Za-z0-9._-]+$/', $extension)) {
@@ -155,6 +166,11 @@ function extensionVersion(string $extension, string $phpBaseDigest): string
         return 'bundled@' . $phpBaseDigest;
     }
     if ($source === 'pecl') {
+        $suffix = explode('-', $extension, 2)[1] ?? '';
+        if (preg_match('/^\d/', $suffix)) {
+            // pinned to a version
+            return 'pecl@' . $suffix;
+        }
         $xml = fetch("https://pecl.php.net/rest/r/$base/allreleases.xml");
         if (!preg_match('#<v>([^<]+)</v>#', $xml, $m)) {
             fail("Could not parse a version for PECL extension '$base'.");
