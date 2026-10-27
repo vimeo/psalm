@@ -8,7 +8,8 @@ on:
   release:
     types:
       - published
-  # dispatched on the tags of the releases bin/ci/auto-release.php publishes, which don't trigger the release event
+  # dispatched on the tags of the releases bin/ci/auto-release.php publishes, which don't trigger the release event,
+  # and by bin/ci/apply-queued-changes.php after merging, which doesn't trigger pushes
   workflow_dispatch:
 
 permissions:
