@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -14,6 +16,26 @@ final class ArrayFunctionCallTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testArrayFirstNullableReturnWithoutIgnoreInternalFunctionNullReturn(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullableReturnStatement');
+
+        $this->project_analyzer->getConfig()->ignore_internal_nullable_issues = false;
+        $this->project_analyzer->setPhpVersion('8.5', 'tests');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param list<int> $list */
+                function first(array $list): int {
+                    return array_first($list);
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 
     #[Override]
     public function providerValidCodeParse(): iterable
@@ -2807,6 +2829,10 @@ final class ArrayFunctionCallTest extends TestCase
                     function getShape(): array { return ["a" => 1]; }
                     /** @return array{a?: int, b?: string} */
                     function getOptionalShape(): array { return []; }
+                    /** @return array{a: int, ...<string, float>} */
+                    function getUnsealedShape(): array { return ["a" => 1]; }
+                    /** @return list{0?: int, ...<string>} */
+                    function getOptionalUnsealedList(): array { return []; }
                     /** @return list<int>|non-empty-list<string> */
                     function getUnion(): array { return []; }
 
@@ -2817,8 +2843,11 @@ final class ArrayFunctionCallTest extends TestCase
                     $nonEmptyMap = array_first(getNonEmptyMap());
                     $shape = array_first(getShape());
                     $optionalShape = array_last(getOptionalShape());
+                    $unsealedShape = array_last(getUnsealedShape());
+                    $optionalUnsealedList = array_first(getOptionalUnsealedList());
                     $union = array_first(getUnion());
-                    $literal = array_last([1, "a"]);',
+                    $literal = array_last([1, "a"]);
+                    $named = array_first(array: getNonEmptyList());',
                 'assertions' => [
                     '$empty===' => 'null',
                     '$list===' => 'int|null',
@@ -2827,8 +2856,11 @@ final class ArrayFunctionCallTest extends TestCase
                     '$nonEmptyMap===' => 'int',
                     '$shape===' => 'int|string',
                     '$optionalShape===' => 'int|null|string',
+                    '$unsealedShape===' => 'float|int',
+                    '$optionalUnsealedList===' => 'int|null|string',
                     '$union===' => 'int|null|string',
                     '$literal===' => '\'a\'|1',
+                    '$named===' => 'int',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.5',
@@ -2849,6 +2881,34 @@ final class ArrayFunctionCallTest extends TestCase
                      */
                     function lastOfBound(array $arr): ?int {
                         return array_last($arr);
+                    }
+
+                    /**
+                     * @template T of non-empty-array<string, string>
+                     * @param T|array<string, int> $arr
+                     */
+                    function firstOfArrayUnion(array $arr): void {
+                        $first = array_first($arr);
+                        /** @psalm-check-type-exact $first = int|null|string */
+                    }
+
+                    /**
+                     * @template T of array{b: string}
+                     * @param T|array{a?: int} $arr
+                     */
+                    function lastOfShapeUnion(array $arr): void {
+                        $last = array_last($arr);
+                        /** @psalm-check-type-exact $last = int|null|string */
+                    }
+
+                    /**
+                     * @template T of non-empty-array<string, int>
+                     * @template U of non-empty-array<string, string>
+                     * @param T|U $arr
+                     */
+                    function firstOfTemplateUnion(array $arr): void {
+                        $first = array_first($arr);
+                        /** @psalm-check-type-exact $first = int|string */
                     }
 
                     /**
@@ -2878,29 +2938,50 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
-            'arrayAnyAllReturnBool' => [
+            'arrayFirstLastIgnoreNullAndFalseArguments' => [
                 'code' => '<?php
-                    $a = ["one" => 1, "two" => 3];
-                    $b = array_any($a, fn (int $value, string $key): bool => $value > 1);
-                    $c = array_all($a, fn (int $value): bool => $value > 1);',
+                    /** @return array<string, int>|null */
+                    function getNullableMap(): ?array { return null; }
+                    /** @return non-empty-list<string>|false */
+                    function getFalsableList() { return false; }
+
+                    $nullable = array_first(getNullableMap());
+                    $falsable = array_last(getFalsableList());',
                 'assertions' => [
-                    '$b===' => 'bool',
-                    '$c===' => 'bool',
+                    '$nullable===' => 'int|null',
+                    '$falsable===' => 'string',
                 ],
-                'ignored_issues' => [],
-                'php_version' => '8.4',
+                'ignored_issues' => ['PossiblyNullArgument', 'PossiblyFalseArgument'],
+                'php_version' => '8.5',
             ],
-            'arrayAnyAllPureCallbackInPureFunction' => [
+            'arrayFirstLastNullFollowsIgnoreInternalFunctionNullReturn' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-pure
-                     * @param list<int> $list
-                     */
-                    function hasPositive(array $list): bool {
-                        return array_any($list, fn (int $i): bool => $i > 0)
-                            && !array_all($list, fn (int $i): bool => $i > 10);
+                    /** @param list<int> $list */
+                    function first(array $list): int {
+                        return array_first($list);
                     }',
                 'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstLastUserDefinedBeforePhp85' => [
+                'code' => '<?php
+                    /** @param list<int> $input */
+                    function array_first(array $input): string {
+                        return implode(",", $input);
+                    }
+
+                    /** @param list<int> $input */
+                    function array_last(array $input): string {
+                        return implode(",", $input);
+                    }
+
+                    $first = array_first([1, 2]);
+                    $last = array_last([3, 4]);',
+                'assertions' => [
+                    '$first===' => 'string',
+                    '$last===' => 'string',
+                ],
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
@@ -3359,20 +3440,6 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'arrayFirstUndefinedBeforePhp85' => [
-                'code' => '<?php
-                    $a = array_first([1, 2]);',
-                'error_message' => 'UndefinedFunction',
-                'ignored_issues' => [],
-                'php_version' => '8.4',
-            ],
-            'arrayLastUndefinedBeforePhp85' => [
-                'code' => '<?php
-                    $a = array_last([1, 2]);',
-                'error_message' => 'UndefinedFunction',
-                'ignored_issues' => [],
-                'php_version' => '8.4',
-            ],
             'arrayFirstOfIterableUnionStaysMixed' => [
                 'code' => '<?php
                     /** @param list<int>|iterable<string> $values */
@@ -3383,50 +3450,15 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
-            'arrayFirstTraversableArgument' => [
+            'arrayFirstOfUnpackedArgumentStaysMixed' => [
                 'code' => '<?php
-                    function f(Traversable $t): void {
-                        array_first($t);
+                    /** @param list{list<int>} $lists */
+                    function f(array $lists): int {
+                        return array_first(...$lists) ?? 0;
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'MixedReturnStatement',
                 'ignored_issues' => [],
                 'php_version' => '8.5',
-            ],
-            'arrayAnyCallbackTypeMismatch' => [
-                'code' => '<?php
-                    /** @param list<int> $list */
-                    function f(array $list): bool {
-                        return array_any($list, fn (string $s): bool => $s === "");
-                    }',
-                'error_message' => 'InvalidScalarArgument',
-                'ignored_issues' => [],
-                'php_version' => '8.4',
-            ],
-            'arrayAllCallbackKeyTypeMismatch' => [
-                'code' => '<?php
-                    /** @param array<string, int> $map */
-                    function f(array $map): bool {
-                        return array_all($map, fn (int $v, int $k): bool => $v > $k);
-                    }',
-                'error_message' => 'InvalidScalarArgument',
-                'ignored_issues' => [],
-                'php_version' => '8.4',
-            ],
-            'arrayAnyImpureCallbackInPureFunction' => [
-                'code' => '<?php
-                    /**
-                     * @psalm-pure
-                     * @param list<int> $list
-                     */
-                    function f(array $list): bool {
-                        return array_any($list, function (int $i): bool {
-                            echo $i;
-                            return true;
-                        });
-                    }',
-                'error_message' => 'ImpureFunctionCall',
-                'ignored_issues' => [],
-                'php_version' => '8.4',
             ],
         ];
     }

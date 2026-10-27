@@ -50,19 +50,26 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
             return null;
         }
 
+        $codebase = $statements_source->getCodebase();
+
+        // before PHP 8.5, array_first() and array_last() can only be user-defined functions, e.g. polyfills
+        if ($codebase->analysis_php_version_id < 8_05_00) {
+            return null;
+        }
+
         $array_type = $statements_source->node_data->getType($array_arg->value);
 
         if (!$array_type) {
             return null;
         }
 
-        $atomic_types = array_values($array_type->getAtomicTypes());
+        $atomic_types = $array_type->getAtomicTypes();
         $value_type = null;
-        $has_array = false;
         $possibly_empty = false;
 
         while ($atomic_type = array_shift($atomic_types)) {
             if ($atomic_type instanceof TTemplateParam) {
+                // bound atomics share keys such as "array", so append them as a list
                 $atomic_types = [...$atomic_types, ...array_values($atomic_type->as->getAtomicTypes())];
                 continue;
             }
@@ -81,20 +88,19 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
                 return null;
             }
 
-            $has_array = true;
             $value_type = Type::combineUnionTypes($value_type, $atomic_value_type);
         }
 
-        if (!$has_array || !$value_type) {
+        if (!$value_type) {
             return null;
         }
 
         if ($value_type->isNever()) {
             $value_type = Type::getNull();
         } elseif ($possibly_empty) {
-            $value_type = $value_type->getBuilder()->addType(Type::getNull()->getSingleAtomic());
+            $value_type = $value_type->getBuilder()->addType(new TNull());
 
-            if ($statements_source->getCodebase()->config->ignore_internal_nullable_issues) {
+            if ($codebase->config->ignore_internal_nullable_issues) {
                 $value_type->ignore_nullable_issues = true;
             }
 
