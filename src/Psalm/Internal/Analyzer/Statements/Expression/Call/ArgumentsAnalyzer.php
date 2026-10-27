@@ -1884,7 +1884,8 @@ final class ArgumentsAnalyzer
         }
 
         $was_inside_by_ref_offset = $context->inside_by_ref_offset;
-        $context->inside_by_ref_offset = $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch;
+        $context->inside_by_ref_offset = $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
+            && self::phpTakesArgumentByReference($method_id, $argument_offset);
 
         try {
             if (($var_id && isset($context->vars_in_scope[$var_id]))
@@ -1997,6 +1998,34 @@ final class ArgumentsAnalyzer
         } finally {
             $context->inside_by_ref_offset = $was_inside_by_ref_offset;
         }
+    }
+
+    /**
+     * Whether PHP takes the argument by reference, creating the array offset passed as it: a stub may take by
+     * reference what PHP doesn't, as the one of fclose() does to close the resource it is given
+     */
+    private static function phpTakesArgumentByReference(?string $method_id, int $argument_offset): bool
+    {
+        $callables = $method_id === null ? null : InternalCallMapHandler::getCallablesFromCallMap($method_id);
+
+        if ($callables === null) {
+            return true;
+        }
+
+        foreach ($callables as $callable) {
+            $params = $callable->params ?? [];
+            $param = $params[$argument_offset] ?? null;
+
+            if ($param === null && $params !== [] && $params[count($params) - 1]->is_variadic) {
+                $param = $params[count($params) - 1];
+            }
+
+            if ($param !== null && $param->by_ref) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

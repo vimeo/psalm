@@ -118,6 +118,25 @@ final class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testOffsetPassedByReferenceOnlyByAStubIsStillChecked(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
+
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param array<int, resource> $pipes */
+                function f(array $pipes): void {
+                    fclose($pipes[1]);
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testDontEnsureArrayOffsetsExist(): void
     {
         Config::getInstance()->ensure_array_string_offsets_exist = false;
