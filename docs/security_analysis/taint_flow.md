@@ -347,7 +347,7 @@ Plugins can add flows that annotations can't express with these `Codebase` metho
 
 + `getTaintNode($source, $label, $location, $value_type = null)`: a node for a value at a location. The taints of
   `$value_type` flow into it. To make an expression carry what reaches the node, use
-  `$type->addParentNodes([$node->id => $node])`.
+  `$type->addParentNodes([$node])`.
 + `getTaintPropertyNode('Class::$name')`: the node holding a property's value. The property doesn't need to be declared.
 + `addTaintSink($taint_id, $location, $taints)`: adds a sink and returns it.
 + `addTaintPath($source, $from, $to, $path_type = '=', $added_taints = 0, $removed_taints = 0)`: connects two nodes.
