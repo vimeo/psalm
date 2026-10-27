@@ -19,9 +19,11 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type\Union;
 
 use function array_keys;
+use function array_pop;
 use function count;
 use function is_string;
 use function str_starts_with;
+use function strtolower;
 use function substr;
 
 /**
@@ -819,7 +821,7 @@ final class ReceiverPropertyTaints
 
         if ($other_names !== []) {
             $path_type = self::getOtherPropertiesPathType('assignment', $other_names);
-            foreach (self::getOtherPropertiesNodes($graph, [$class_storage, ...$ancestors]) as $other_properties_node) {
+            foreach (self::getOtherPropertiesNodes($graph, [$class_storage]) as $other_properties_node) {
                 $graph->addPath($write_node, $other_properties_node, $path_type);
             }
         }
@@ -851,7 +853,7 @@ final class ReceiverPropertyTaints
         }
 
         // the keys may name properties none of the classes has: the arrays are what they hold, under their names
-        foreach (self::getOtherPropertiesNodes($graph, [$class_storage, ...$ancestors]) as $other_properties_node) {
+        foreach (self::getOtherPropertiesNodes($graph, [$class_storage]) as $other_properties_node) {
             $graph->addPath($write_node, $other_properties_node, '=');
         }
     }
@@ -915,7 +917,10 @@ final class ReceiverPropertyTaints
         }
 
         $path_type = self::getOtherPropertiesPathType('fetch', $names);
-        foreach (self::getOtherPropertiesNodes($graph, [$class_storage, ...$ancestors]) as $other_properties_node) {
+        foreach (self::getOtherPropertiesNodes(
+            $graph,
+            self::getOtherPropertiesClasses($codebase, $class_storage, $ancestors),
+        ) as $other_properties_node) {
             $graph->addPath($other_properties_node, $fetch_node, $path_type);
         }
     }
@@ -945,7 +950,10 @@ final class ReceiverPropertyTaints
             );
         }
 
-        foreach (self::getOtherPropertiesNodes($graph, [$class_storage, ...$ancestors]) as $other_properties_node) {
+        foreach (self::getOtherPropertiesNodes(
+            $graph,
+            self::getOtherPropertiesClasses($codebase, $class_storage, $ancestors),
+        ) as $other_properties_node) {
             $graph->addPath($other_properties_node, $read_node, '=');
         }
     }
@@ -1123,6 +1131,40 @@ final class ReceiverPropertyTaints
         }
 
         return $ancestors;
+    }
+
+    /**
+     * The classes whose objects an object read through the class may be, or whose type a write of it may have been
+     * made through: the class, its ancestors and the classes extending or implementing it, at any depth. What is set
+     * under a name not known only goes to the class of the object written, so that it doesn't reach the objects of
+     * the other classes extending the same ancestor
+     *
+     * @param list<ClassLikeStorage> $ancestors
+     * @return list<ClassLikeStorage>
+     * @psalm-capabilities read-props
+     */
+    private static function getOtherPropertiesClasses(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        array $ancestors,
+    ): array {
+        $classes = [$class_storage, ...$ancestors];
+        $seen = [strtolower($class_storage->name) => true];
+        $queue = [$class_storage];
+        while (($storage = array_pop($queue)) !== null) {
+            foreach ($storage->dependent_classlikes as $dependent_classlike => $_) {
+                if (!isset($seen[$dependent_classlike])
+                    && $codebase->classlike_storage_provider->has($dependent_classlike)
+                ) {
+                    $seen[$dependent_classlike] = true;
+                    $descendant = $codebase->classlike_storage_provider->get($dependent_classlike);
+                    $classes[] = $descendant;
+                    $queue[] = $descendant;
+                }
+            }
+        }
+
+        return $classes;
     }
 
     /**

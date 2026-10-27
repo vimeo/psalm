@@ -4452,6 +4452,30 @@ final class TaintTest extends TestCase
                         echo $model->get("body");
                     }',
             ],
+            'propertySetUnderANameNotKnownStaysInTheClassOfTheObject' => [
+                'code' => '<?php
+                    abstract class Bag {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+                    }
+
+                    final class Query extends Bag {}
+
+                    final class Options extends Bag {}
+
+                    function save(Options $options, string $name): void {
+                        $options->set($name, (string) $_GET["x"]);
+                    }
+
+                    function show(Query $query): void {
+                        echo $query->get("other");
+                    }',
+            ],
             'propertySetByNameOfAnObjectSpecializedStaysInIt' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -6229,6 +6253,60 @@ final class TaintTest extends TestCase
 
                     function show(Model $model): void {
                         echo $model->get("anything");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertySetUnderANameNotKnownThroughAParentTypeIsReadThroughASubclass' => [
+                'code' => '<?php
+                    abstract class Bag {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+                    }
+
+                    final class Query extends Bag {}
+
+                    function save(Bag $bag, string $name): void {
+                        $bag->set($name, (string) $_GET["x"]);
+                    }
+
+                    function show(Query $query): void {
+                        echo $query->get("other");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertySetUnderANameNotKnownThroughASubclassIsReadThroughAnInterface' => [
+                'code' => '<?php
+                    interface PropertyObject {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void;
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string;
+                    }
+
+                    abstract class Bag implements PropertyObject {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+                    }
+
+                    final class Query extends Bag {}
+
+                    function save(Query $query, string $name): void {
+                        $query->set($name, (string) $_GET["x"]);
+                    }
+
+                    function show(PropertyObject $object): void {
+                        echo $object->get("other");
                     }',
                 'error_message' => 'TaintedHtml',
             ],
