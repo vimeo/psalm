@@ -65,11 +65,11 @@ final class AttributesAnalyzer
         $codebase = $source->getCodebase();
         $appearing_non_repeatable_attributes = [];
         foreach (self::iterateAttributeNodes($attribute_groups) as $attribute) {
-            if ($attribute->name instanceof FullyQualified) {
-                $fq_attribute_name = (string) $attribute->name;
-            } else {
-                $fq_attribute_name = ClassLikeAnalyzer::getFQCLNFromNameObject($attribute->name, $source->getAliases());
-            }
+            $fq_attribute_name = $codebase->classlikes->getUnAliasedName(
+                $attribute->name instanceof FullyQualified
+                    ? (string) $attribute->name
+                    : ClassLikeAnalyzer::getFQCLNFromNameObject($attribute->name, $source->getAliases()),
+            );
 
             $attribute_name = (string) $attribute->name;
             $attribute_name_location = new CodeLocation($source, $attribute->name);

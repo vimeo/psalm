@@ -273,11 +273,9 @@ final class TypeExpander
         }
 
         if ($return_type instanceof TTypeAlias) {
-            $declaring_fq_classlike_name = $return_type->declaring_fq_classlike_name;
-
-            if ($declaring_fq_classlike_name === 'self' && $self_class) {
-                $declaring_fq_classlike_name = $self_class;
-            }
+            $declaring_fq_classlike_name = $return_type->declaring_fq_classlike_name === 'self' && $self_class
+                ? $self_class
+                : $codebase->classlikes->getUnAliasedName($return_type->declaring_fq_classlike_name);
 
             if (!($evaluate_class_constants
                 && $codebase->classlikes->doesClassLikeExist(strtolower($declaring_fq_classlike_name))

@@ -528,6 +528,78 @@ final class ClassTest extends TestCase
                         $a->foo();
                     }',
             ],
+            'classAliasEnumCase' => [
+                'code' => '<?php
+                    enum Suit { case Hearts; }
+                    class_alias(Suit::class, "SuitAlias");
+
+                    function f(): Suit {
+                        return SuitAlias::Hearts;
+                    }
+
+                    /** @param SuitAlias::class $enum */
+                    function g(string $enum): Suit {
+                        return $enum::Hearts;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classAliasInterfaceConstant' => [
+                'code' => '<?php
+                    interface HasLabel {
+                        /** @var string */
+                        public const LABEL = "x";
+                    }
+                    class_alias(HasLabel::class, "LabelAlias");
+
+                    function f(): string {
+                        return LabelAlias::LABEL;
+                    }',
+            ],
+            'classAliasAttribute' => [
+                'code' => '<?php
+                    #[Attribute]
+                    final class Tag {}
+                    class_alias(Tag::class, "TagAlias");
+
+                    #[TagAlias]
+                    final class Tagged {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classAliasTraitInitializedInConstructor' => [
+                'code' => '<?php
+                    trait Greets {
+                        private string $greeting;
+                        private function init(): void {
+                            $this->greeting = "hi";
+                        }
+                    }
+                    class_alias(Greets::class, "GreetsAlias");
+
+                    final class Greeter {
+                        use GreetsAlias;
+                        public function __construct() {
+                            $this->init();
+                        }
+                    }',
+            ],
+            'classAliasImportType' => [
+                'code' => '<?php
+                    /** @psalm-type Row = array{id: int} */
+                    final class Rows {}
+                    class_alias(Rows::class, "RowsAlias");
+
+                    /** @psalm-import-type Row from RowsAlias */
+                    final class UsesRow {
+                        /** @param Row $r */
+                        public function id(array $r): int {
+                            return $r["id"];
+                        }
+                    }',
+            ],
             'resourceAndNumericSoftlyReserved' => [
                 'code' => '<?php
                     namespace {
@@ -1522,6 +1594,33 @@ final class ClassTest extends TestCase
                     PHP,
                 'error_message' => 'DuplicateProperty',
                 'ignored_issues' => [],
+            ],
+            'classAliasDocblockConstant' => [
+                'code' => '<?php
+                    final class Level {
+                        public const A = "a";
+                        public const B = "b";
+                    }
+                    class_alias(Level::class, "LevelAlias");
+
+                    /** @param LevelAlias::A|LevelAlias::B $v */
+                    function f(string $v): void {}
+                    f("c");',
+                'error_message' => 'expects \'a\'|\'b\', but \'c\' provided',
+            ],
+            'classAliasCallableArray' => [
+                'code' => '<?php
+                    final class Num {
+                        public static function twice(int $i): int {
+                            return $i * 2;
+                        }
+                    }
+                    class_alias(Num::class, "NumAlias");
+
+                    /** @param callable(string):int $f */
+                    function takeWrong(callable $f): void {}
+                    takeWrong(["NumAlias", "twice"]);',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }
