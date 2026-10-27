@@ -20,7 +20,6 @@ use Psalm\Issue\DuplicateArrayKey;
 use Psalm\Issue\InvalidArrayOffset;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\MixedArrayOffset;
-use Psalm\Issue\ParseError;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
@@ -78,17 +77,6 @@ final class ArrayAnalyzer
         $array_creation_info = new ArrayCreationInfo();
 
         foreach ($stmt->items as $item) {
-            if ($item === null) {
-                IssueBuffer::maybeAdd(
-                    new ParseError(
-                        'Array element cannot be empty',
-                        new CodeLocation($statements_analyzer, $stmt),
-                    ),
-                );
-
-                return false;
-            }
-
             self::analyzeArrayItem(
                 $statements_analyzer,
                 $context,

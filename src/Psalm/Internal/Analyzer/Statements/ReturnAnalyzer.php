@@ -563,7 +563,7 @@ final class ReturnAnalyzer
                                     foreach ($value_param->getAtomicTypes() as $local_array_type_part) {
                                         if ($local_array_type_part instanceof TClassString) {
                                             foreach ($stmt->expr->items as $item) {
-                                                if ($item && $item->value instanceof PhpParser\Node\Scalar\String_) {
+                                                if ($item->value instanceof PhpParser\Node\Scalar\String_) {
                                                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                                                         $statements_analyzer,
                                                         $item->value->value,
