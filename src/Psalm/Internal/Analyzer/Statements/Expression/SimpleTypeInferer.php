@@ -559,10 +559,6 @@ final class SimpleTypeInferer
         $array_creation_info = new ArrayCreationInfo();
 
         foreach ($stmt->items as $item) {
-            if ($item === null) {
-                continue;
-            }
-
             if (!self::handleArrayItem(
                 $codebase,
                 $nodes,

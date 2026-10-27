@@ -1534,7 +1534,7 @@ final class ArgumentAnalyzer
                 foreach ($param_type_part->type_params[1]->getAtomicTypes() as $param_array_type_part) {
                     if ($param_array_type_part instanceof TClassString) {
                         foreach ($input_expr->items as $item) {
-                            if ($item && $item->value instanceof PhpParser\Node\Scalar\String_) {
+                            if ($item->value instanceof PhpParser\Node\Scalar\String_) {
                                 if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                                     $statements_analyzer,
                                     $item->value->value,

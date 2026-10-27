@@ -10,6 +10,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
@@ -32,6 +33,8 @@ use function getcwd;
 use function microtime;
 use function ob_end_clean;
 use function ob_start;
+use function restore_error_handler;
+use function set_error_handler;
 use function sprintf;
 
 use const DIRECTORY_SEPARATOR;
@@ -1145,6 +1148,64 @@ final class PluginTest extends TestCase
         $this->analyzeFile($file_path, new Context());
 
         $this->assertSame(['b', 'array_map', 'fopen', 'a'], $plugin::$function_ids);
+    }
+
+    public function testTaintNodesOfEmptyFunctionId(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                ></psalm>',
+            ),
+        );
+
+        $plugin = new class implements AfterEveryFunctionCallAnalysisInterface {
+            /** @var list<?DataFlowNode> */
+            public static array $nodes = [];
+
+            /** @var list<string> */
+            public static array $errors = [];
+
+            #[Override]
+            public static function afterEveryFunctionCallAnalysis(AfterEveryFunctionCallAnalysisEvent $event): void
+            {
+                $source = $event->getStatementsSource();
+                $codebase = $event->getCodebase();
+                set_error_handler(static function (int $_errno, string $error): bool {
+                    self::$errors[] = $error;
+
+                    return true;
+                });
+
+                try {
+                    foreach (['', '\\'] as $function_id) {
+                        self::$nodes[] = $codebase->getTaintReturnNode($source, $function_id);
+                        self::$nodes[] = $codebase->getTaintArgumentNode($source, $function_id, 0);
+                    }
+                } finally {
+                    restore_error_handler();
+                }
+            }
+        };
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+        $this->project_analyzer->getCodebase()->config->eventDispatcher->after_every_function_checks[] = get_class($plugin);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+            strlen("a");',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $this->assertSame([null, null, null, null], $plugin::$nodes);
+        $this->assertSame([], $plugin::$errors);
     }
 
     public function testAddTaints(): void
