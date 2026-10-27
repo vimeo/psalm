@@ -3,6 +3,9 @@
 
 declare(strict_types=1);
 
+use Composer\Semver\Semver;
+use Composer\Semver\VersionParser;
+
 /**
  * Generates the stub Dockerfile for a single PHP version on the fly and builds &
  * pushes it, reusing a persistent buildx registry cache.
@@ -338,11 +341,11 @@ function pieInstalls(array $extensions, string $phpVersion): array
         foreach ($metadata['packages'][$package] ?? [] as $diff) {
             $release = array_filter($diff + $release, static fn($value): bool => $value !== '__unset');
             if (($release['type'] ?? '') !== 'php-ext'
-                || Composer\Semver\VersionParser::parseStability($release['version']) !== 'stable'
+                || VersionParser::parseStability($release['version']) !== 'stable'
             ) {
                 continue;
             }
-            if (Composer\Semver\Semver::satisfies($phpVersion, $release['require']['php'] ?? '*')) {
+            if (Semver::satisfies($phpVersion, $release['require']['php'] ?? '*')) {
                 $installs[$extension] = $release['version'];
             }
             break;
