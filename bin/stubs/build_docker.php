@@ -582,9 +582,7 @@ function generateDockerfile(string $version, array $extensions, array $pieInstal
                 . implode(' ', [$pie['package'] . ':' . $pieVersion, ...$pie['options']]);
         }
         $pieVersion = PIE_VERSION;
-        $pieStep = "\n# COMPOSER_AUTH lifts the GitHub API rate limit for PIE's downloads\n"
-            . "RUN --mount=type=secret,id=composer_auth,env=COMPOSER_AUTH \\\n"
-            . "    case \"\$(uname -m)\" in aarch64) arch=ARM64 ;; *) arch=X64 ;; esac && \\\n"
+        $pieStep = "\nRUN case \"\$(uname -m)\" in aarch64) arch=ARM64 ;; *) arch=X64 ;; esac && \\\n"
             . "    curl -fsSL -o /usr/local/bin/pie https://github.com/php/pie/releases/download/$pieVersion/pie-Linux-\$arch && \\\n"
             . "    chmod +x /usr/local/bin/pie && \\\n"
             . '    apk add --no-cache $PHPIZE_DEPS libtool ' . implode(' ', array_unique($piePackages)) . " && \\\n    "
@@ -720,10 +718,6 @@ $command = sprintf(
     escapeshellarg("type=registry,ref=$cacheRef"),
     escapeshellarg("type=registry,ref=$cacheRef,mode=max,image-manifest=true,oci-mediatypes=true,ignore-error=true"),
 );
-if (($token = getenv('GITHUB_TOKEN')) !== false && $token !== '') {
-    putenv('COMPOSER_AUTH=' . json_encode(['github-oauth' => ['github.com' => $token]]));
-    $command .= ' --secret id=composer_auth,env=COMPOSER_AUTH';
-}
 run($command);
 
 unlink("$context/Dockerfile");
