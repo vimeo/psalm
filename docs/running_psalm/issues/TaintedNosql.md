@@ -60,20 +60,17 @@ Or compare the field with `$eq`, which matches its operand as a value, never as 
 ```php
 <?php
 
-/** @psalm-taint-sink nosql $filter */
-function findUsers(array $filter): array {
-    return [];
-}
-
 function search(string $field): void {
-    findUsers(["username" => ['$eq' => $_GET["username"]]]);                // safe
+    new MongoDB\Driver\Query(["username" => ['$eq' => $_GET["username"]]]);                // safe
 
-    findUsers(['$expr' => ['$eq' => ['$username', $_GET["username"]]]]);    // TaintedNosql: $expr evaluates operands
-    findUsers(["username" => ['$not' => ['$eq' => $_GET["username"]]]]);    // TaintedNosql: not the field's own $eq
-    findUsers(["username" => ['$eq' => "admin", '$in' => $_GET["names"]]]); // TaintedNosql: from $in
-    findUsers([$field => ['$eq' => $_GET["username"]]]);                    // TaintedNosql: the field isn't a literal
+    new MongoDB\Driver\Query(['$expr' => ['$eq' => ['$username', $_GET["username"]]]]);    // TaintedNosql: $expr evaluates operands
+    new MongoDB\Driver\Query(["username" => ['$not' => ['$eq' => $_GET["username"]]]]);    // TaintedNosql: not the field's own $eq
+    new MongoDB\Driver\Query(["username" => ['$eq' => "admin", '$in' => $_GET["names"]]]); // TaintedNosql: from $in
+    new MongoDB\Driver\Query([$field => ['$eq' => $_GET["username"]]]);                    // TaintedNosql: the field isn't a literal
 }
 ```
+
+This holds for a literal filter given to a `$filter` parameter that is a `nosql` sink of a function or method whose body Psalm doesn't analyze, as in a stub or in `vendor`, nor that of any override that may run instead: a body may put the filter anywhere, e.g. into `$expr`.
 
 Or route the filter through a sanitizer annotated with `@psalm-taint-escape nosql`:
 

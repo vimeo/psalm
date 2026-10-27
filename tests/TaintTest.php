@@ -2596,13 +2596,10 @@ final class TaintTest extends TestCase
             ],
             'nosqlSinkNotTaintedByTheEqualityOperandOfAField' => [
                 'code' => '<?php
-                    final class Collection {
+                    interface Collection {
                         /** @psalm-taint-sink nosql $filter */
-                        public function find(array $filter): void {}
+                        public function find(array $filter): void;
                     }
-
-                    /** @psalm-taint-sink nosql $filter */
-                    function query(array $filter): void {}
 
                     final class Users {
                         private const NAME = "name";
@@ -2611,7 +2608,7 @@ final class TaintTest extends TestCase
                             // MongoDB compares the field with what $eq is given as it is, operators and regexes included
                             $users->find(["name" => [\'$eq\' => $_GET["name"]]]);
                             $users->find([self::NAME => [\'$eq\' => $_GET["name"]], "age" => [\'$gt\' => 18]]);
-                            query(["name" => [\'$eq\' => $_GET["name"]]]);
+                            new MongoDB\Driver\Query(["name" => [\'$eq\' => $_GET["name"]]]);
                         }
                     }',
             ],
@@ -6517,9 +6514,9 @@ final class TaintTest extends TestCase
             ],
             'nosqlSinkTaintedByAnEqualityOperandAnOverrideMayTakeAnywhere' => [
                 'code' => '<?php
-                    class Collection {
+                    abstract class Collection {
                         /** @psalm-taint-sink nosql $filter */
-                        public function find(array $filter): void {}
+                        abstract public function find(array $filter): void;
 
                         /** @psalm-taint-sink nosql $pipeline */
                         public function aggregate(array $pipeline): void {}
@@ -6534,6 +6531,49 @@ final class TaintTest extends TestCase
 
                     function search(Collection $users): void {
                         $users->find(["name" => [\'$eq\' => $_GET["name"]]]);
+                    }',
+                'error_message' => 'TaintedNosql',
+            ],
+            'nosqlSinkTaintedByAnEqualityOperandTheMethodMayTakeAnywhere' => [
+                'code' => '<?php
+                    final class Collection {
+                        /** @psalm-taint-sink nosql $filter */
+                        public function find(array $filter): void {
+                            $this->aggregate([[\'$match\' => [\'$expr\' => $filter]]]);
+                        }
+
+                        /** @psalm-taint-sink nosql $pipeline */
+                        public function aggregate(array $pipeline): void {}
+                    }
+
+                    function search(Collection $users): void {
+                        $users->find(["name" => [\'$eq\' => $_GET["name"]]]);
+                    }',
+                'error_message' => 'TaintedNosql',
+            ],
+            'nosqlSinkTaintedByAnEqualityOperandTheFunctionMayTakeAnywhere' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $pipeline */
+                    function aggregate(array $pipeline): void {}
+
+                    /** @psalm-taint-sink nosql $filter */
+                    function find(array $filter): void {
+                        aggregate([[\'$match\' => [\'$expr\' => $filter]]]);
+                    }
+
+                    find(["name" => [\'$eq\' => $_GET["name"]]]);',
+                'error_message' => 'TaintedNosql',
+            ],
+            'nosqlSinkTaintedByAnEqualityOperandOfAnExpression' => [
+                'code' => '<?php
+                    interface Pipeline {
+                        /** @psalm-taint-sink nosql $fields */
+                        public function addFields(array $fields): void;
+                    }
+
+                    function search(Pipeline $pipeline): void {
+                        // in $addFields, the operands of $eq are expressions
+                        $pipeline->addFields(["isAdmin" => [\'$eq\' => [\'$role\', $_GET["role"]]]]);
                     }',
                 'error_message' => 'TaintedNosql',
             ],

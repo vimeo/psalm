@@ -156,7 +156,7 @@ final class ArgumentsAnalyzer
             if ($function_params === null) {
                 if ($arg->value instanceof PhpParser\Node\Expr\Array_ && $statements_analyzer->taint_flow_graph) {
                     NosqlEqualityOperand::markArgument(
-                        $statements_analyzer->getCodebase(),
+                        $statements_analyzer,
                         $method_id,
                         null,
                         null,
@@ -197,7 +197,7 @@ final class ArgumentsAnalyzer
             // the operands of the `$eq` of the fields of a MongoDB filter literal
             if ($arg->value instanceof PhpParser\Node\Expr\Array_ && $statements_analyzer->taint_flow_graph) {
                 NosqlEqualityOperand::markArgument(
-                    $statements_analyzer->getCodebase(),
+                    $statements_analyzer,
                     $method_id,
                     $function_params,
                     $param,
