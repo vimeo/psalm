@@ -629,6 +629,30 @@ final class AttributeTest extends TestCase
                     trait Foo {}',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:23',
             ],
+            'missingAttributeOnNamespacedTrait' => [
+                'code' => '<?php
+                    namespace N;
+
+                    #[\Nope]
+                    trait T {}
+
+                    final class A {
+                        use T;
+                    }',
+                'error_message' => 'UndefinedAttributeClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:23',
+            ],
+            'namespacedTraitCannotBeAttributeClass' => [
+                'code' => '<?php
+                    namespace N {
+                        #[\Attribute]
+                        trait T {}
+                    }
+
+                    namespace {
+                        trait T {}
+                    }',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27',
+            ],
             'abstractClassCannotBeAttributeClass' => [
                 'code' => '<?php
                     #[Attribute]

@@ -1,0 +1,45 @@
+name: Announce release
+
+# Posts releases to Mastodon, X and Telegram; see bin/ci/announce-release.php for the secrets it needs.
+on:
+  release:
+    types:
+      - published
+  # dispatched on the tags of the releases bin/ci/auto-release.php publishes, which don't trigger the release event
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Announce the release even if it was published more than a day ago
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  announce:
+    if: github.repository == 'vimeo/psalm' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+
+      - name: Announce
+        run: php bin/ci/announce-release.php ${{ inputs.force && '--force' || '' }} "$TAG"
+        env:
+          TAG: ${{ github.ref_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MASTODON_URL: ${{ secrets.MASTODON_URL }}
+          MASTODON_TOKEN: ${{ secrets.MASTODON_TOKEN }}
+          PSALM_POST_TOKEN: ${{ secrets.PSALM_POST_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: '@psalmphp'

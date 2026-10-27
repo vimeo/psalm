@@ -17,8 +17,8 @@
  *  - the release notes are the ones GitHub generates from the labels of the merged pull requests
  *    (.github/release.yml);
  *  - a release made with the workflow's token doesn't trigger other workflows, so the phar and docker builds
- *    are dispatched on the new tag, and dispatched again next hour on the last tag of each branch if they never
- *    ran (if dispatching failed).
+ *    and the announcement (announce-release.php) are dispatched on the new tag, and dispatched again next hour
+ *    on the last tag of each branch if they never ran (if dispatching failed).
  *
  * Needs the GitHub CLI, authenticated (GH_TOKEN), and GITHUB_REPOSITORY (default: vimeo/psalm).
  */
@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 $required_workflows = ['Run unit tests', 'Run unit tests on Windows'];
 $own_workflow = 'Automatic release';
-$dispatched_workflows = ['build-phar.yml', 'build-docker.yml'];
+$dispatched_workflows = ['build-phar.yml', 'build-docker.yml', 'announce-release.yml'];
 $version_pattern = '/^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)'
     . '(?:-(?<stage>alpha|beta|rc)(?<dot>\.?)(?<number>\d+))?$/';
 

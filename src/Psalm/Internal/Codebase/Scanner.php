@@ -112,6 +112,11 @@ final class Scanner
     private array $deep_scanned_classlike_files = [];
 
     /**
+     * @var array<string, true>
+     */
+    private array $stub_files = [];
+
+    /**
      * @var array<string, string>
      */
     private array $files_to_scan = [];
@@ -229,6 +234,23 @@ final class Scanner
     {
         $this->files_to_scan[$file_path] = $file_path;
         $this->files_to_deep_scan[$file_path] = $file_path;
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function addStubFileToDeepScan(string $file_path): void
+    {
+        $this->stub_files[strtolower($file_path)] = true;
+        $this->addFileToDeepScan($file_path);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isStubFile(string $file_path): bool
+    {
+        return isset($this->stub_files[strtolower($file_path)]);
     }
 
     /**
