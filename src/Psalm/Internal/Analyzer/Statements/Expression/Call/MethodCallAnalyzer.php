@@ -61,7 +61,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
 
         $context->inside_call = true;
 
-        NullsafeChainState::None->markOn($stmt);
+        NullsafeChainState::reset($stmt);
 
         $existing_stmt_var_type = null;
 

@@ -228,7 +228,7 @@ final class IfAnalyzer
                 $if_scope,
                 $if_context,
                 $outer_context,
-                $new_assigned_var_ids,
+                array_merge($new_assigned_var_ids, $if_conditional_scope->assigned_in_conditional_var_ids),
                 $new_possibly_assigned_var_ids,
                 $if_scope->if_cond_changed_var_ids,
             );
@@ -451,11 +451,21 @@ final class IfAnalyzer
 
         $possibly_redefined_vars = $redefined_vars;
 
-        foreach ($possibly_redefined_vars as $var_id => $_) {
+        foreach ($possibly_redefined_vars as $var_id => $type) {
             if (!isset($possibly_assigned_var_ids[$var_id])
                 && isset($newly_reconciled_var_ids[$var_id])
             ) {
                 unset($possibly_redefined_vars[$var_id]);
+            } elseif (isset($outer_context->vars_in_scope[$var_id])
+                && $outer_context->vars_in_scope[$var_id]->hasMixed()
+                && !isset($assigned_var_ids[$var_id])
+                && !isset($possibly_assigned_var_ids[$var_id])
+                && UnionTypeComparator::isContainedBy($codebase, $type, $outer_context->vars_in_scope[$var_id])
+            ) {
+                // a mixed var that was only narrowed (never written) in this branch is still just mixed,
+                // merging the narrowed type back in would only produce a `mixed|Foo` union
+                $possibly_redefined_vars[$var_id] = $outer_context->vars_in_scope[$var_id]
+                    ->addParentNodes($type->parent_nodes);
             }
         }
 
