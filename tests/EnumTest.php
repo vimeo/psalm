@@ -628,6 +628,156 @@ final class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'valueAndNameOnUnionOfTwoEnums' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum E: string {
+                        case C0 = 'v0';
+                        case C1 = 'v1';
+                    }
+                    enum F: int {
+                        case C0 = 10;
+                        case X = 20;
+                    }
+
+                    /** @var E|F $x */
+                    $x = rand(0, 1) ? E::C0 : F::X;
+                    $value = $x->value;
+                    $name = $x->name;
+                    PHP,
+                'assertions' => [
+                    '$value===' => "'v0'|'v1'|10|20",
+                    '$name===' => "'C0'|'C1'|'X'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'valueAndNameOnUnionOfCasesOfTwoEnums' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum E: string {
+                        case C0 = 'v0';
+                        case C1 = 'v1';
+                    }
+                    enum F: int {
+                        case C0 = 10;
+                        case X = 20;
+                    }
+
+                    $y = rand(0, 1) ? E::C1 : F::X;
+                    $value = $y->value;
+                    $name = $y->name;
+
+                    $z = rand(0, 1) ? F::X : E::C1;
+                    $zValue = $z->value;
+                    $zName = $z->name;
+                    PHP,
+                'assertions' => [
+                    '$value===' => "'v1'|20",
+                    '$name===' => "'C1'|'X'",
+                    '$zValue===' => "'v1'|20",
+                    '$zName===' => "'C1'|'X'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'valueOnWholeEnumAndCaseOfAnotherEnum' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum E: string {
+                        case C0 = 'v0';
+                        case C1 = 'v1';
+                    }
+                    enum F: int {
+                        case C0 = 10;
+                        case X = 20;
+                    }
+
+                    /** @var E|F::X $x */
+                    $x = rand(0, 1) ? E::C0 : F::X;
+                    $value = $x->value;
+                    $name = $x->name;
+
+                    /** @var E::C1|F $y */
+                    $y = rand(0, 1) ? E::C1 : F::X;
+                    $yValue = $y->value;
+                    $yName = $y->name;
+                    PHP,
+                'assertions' => [
+                    '$value===' => "'v0'|'v1'|20",
+                    '$name===' => "'C0'|'C1'|'X'",
+                    '$yValue===' => "'v1'|10|20",
+                    '$yName===' => "'C0'|'C1'|'X'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'valueOnUnionOfEnumCaseAndObjectWithValueProperty' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum E: string {
+                        case C0 = 'v0';
+                        case C1 = 'v1';
+                    }
+                    class P {
+                        public function __construct(public int $value) {}
+                    }
+
+                    $x = rand(0, 1) ? E::C1 : new P(1);
+                    $value = $x->value;
+
+                    $y = rand(0, 1) ? new P(1) : E::C1;
+                    $yValue = $y->value;
+                    PHP,
+                'assertions' => [
+                    '$value===' => "'v1'|int",
+                    '$yValue===' => "'v1'|int",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'valueOnUnionOfEnumAndBackedEnumInterface' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum E: string {
+                        case C0 = 'v0';
+                        case C1 = 'v1';
+                    }
+
+                    function f(BackedEnum|E $a, E|BackedEnum $b): void {
+                        $_a = $a->value;
+                        /** @psalm-check-type-exact $_a = int|string */;
+                        $_b = $b->value;
+                        /** @psalm-check-type-exact $_b = int|string */;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'valueAndNameOnNullableUnionOfCasesOfTwoEnums' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum E: string {
+                        case C0 = 'v0';
+                        case C1 = 'v1';
+                    }
+                    enum F: int {
+                        case C0 = 10;
+                        case X = 20;
+                    }
+
+                    $y = rand(0, 1) ? E::C1 : (rand(0, 1) ? F::X : null);
+                    $value = $y?->value;
+                    $name = $y?->name;
+                    PHP,
+                'assertions' => [
+                    '$value===' => "'v1'|20|null",
+                    '$name===' => "'C1'|'X'|null",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'classStringAsBackedEnumValue' => [
                 'code' => <<<'PHP'
                     <?php
