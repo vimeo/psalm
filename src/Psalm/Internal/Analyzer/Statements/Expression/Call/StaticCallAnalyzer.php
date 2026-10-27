@@ -151,6 +151,30 @@ final class StaticCallAnalyzer extends CallAnalyzer
                                 );
                             }
                         }
+
+                        // the body of a constructor declared by a stub isn't the one that runs: the properties of its
+                        // class, and of the stubbed classes it extends, are taken as initialized by it
+                        $stubbed_class_storage = $construct_class_storage;
+                        while ($stubbed_class_storage->stubbed) {
+                            foreach ($stubbed_class_storage->properties as $property_name => $property_storage) {
+                                $context_type = $context->vars_in_scope['$this->' . $property_name] ?? null;
+                                if (!$property_storage->is_static && (!$context_type || !$context_type->initialized)) {
+                                    $context->vars_in_scope['$this->' . $property_name]
+                                        = ($property_storage->type ?? Type::getMixed())->setProperties([
+                                            'initialized_class' => $construct_fq_class_name,
+                                            'initialized' => true,
+                                        ]);
+                                }
+                            }
+
+                            if ($stubbed_class_storage->parent_class === null) {
+                                break;
+                            }
+
+                            $stubbed_class_storage = $codebase->classlike_storage_provider->get(
+                                $stubbed_class_storage->parent_class,
+                            );
+                        }
                     }
                 } elseif ($context->self) {
                     if ($stmt->class->getFirst() === 'static' && isset($context->vars_in_scope['$this'])) {
