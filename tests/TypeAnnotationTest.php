@@ -461,6 +461,34 @@ final class TypeAnnotationTest extends TestCase
                     class C implements A {}
                 ',
             ],
+            'importedTypeAliasAsBoundOfAUsedOrExtendedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-import-type Conf from Mapper
+                     * @template T of Conf
+                     */
+                    trait ConfTrait {
+                        /** @param T $conf */
+                        public function setConfig(array $conf): void {}
+                    }
+
+                    /**
+                     * @psalm-type Conf = array<string, array{a: int, b: string}>
+                     */
+                    final class Mapper {
+                        /** @use ConfTrait<Conf> */
+                        use ConfTrait;
+                    }
+
+                    /**
+                     * @psalm-import-type Conf from Mapper
+                     * @template T of Conf
+                     */
+                    abstract class ConfHolder {}
+
+                    /** @extends ConfHolder<array<string, array{a: int, b: string}>> */
+                    final class MapperConfHolder extends ConfHolder {}',
+            ],
             'importedTypeAliasAsTypeParameterForExtendedClass' => [
                 'code' => '<?php
                     namespace Bar;
