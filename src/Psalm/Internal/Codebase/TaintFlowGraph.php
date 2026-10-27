@@ -845,8 +845,9 @@ final class TaintFlowGraph extends DataFlowGraph
      * search for them goes backwards from those parent nodes, matching the calls it leaves through
      * their arguments with the ones it entered through their returns, as the resolution walk does,
      * until more than GENERATOR_SEND_CALL_CONTEXTS nestings reach a node: from there it matches any
-     * call, which may link a send to more generators but never to fewer. It stops at the first such
-     * return node of each path: a generator a generator yields is not linked, nor one from a
+     * call, as it does from a node already searched from that a link made during the search gives a
+     * predecessor. Either may link a send to more generators, never to fewer. It stops at the first
+     * such return node of each path: a generator a generator yields is not linked, nor one from a
      * function-like without a body (unknown origin).
      *
      * What is sent to the generator of a specialized call goes into its specialization, so that it only
@@ -893,9 +894,12 @@ final class TaintFlowGraph extends DataFlowGraph
                     );
 
                     foreach ($linked_ids as $linked_id) {
-                        // a node searched from matching any call skips what reaches it later: search the
-                        // predecessor it just got
-                        if (isset($widened[$linked_id])) {
+                        // A node already searched from skips the states that reach it later, so the
+                        // predecessor it just got would be missed. Search it again matching any call
+                        // rather than replaying every nesting it was reached with.
+                        if (isset($visited[$linked_id]) || isset($widened[$linked_id])) {
+                            $widened[$linked_id] = true;
+                            unset($visited[$linked_id]);
                             $queue[] = [$linked_id, null];
                         }
                     }
@@ -958,11 +962,11 @@ final class TaintFlowGraph extends DataFlowGraph
     /**
      * Links $send_node to what is sent to the generators of the function-like with the return node
      * $return_node_id, in the specialization $specialization_key if given, and returns the ids of the
-     * nodes that got a predecessor in $reverse.
+     * nodes that got a new predecessor in $reverse.
      *
      * @param array<string, array<string, true>> $reverse see getReverseEdges()
      * @param-out array<string, array<string, true>> $reverse
-     * @return non-empty-list<string>
+     * @return list<string>
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private function linkGeneratorSend(
@@ -973,24 +977,38 @@ final class TaintFlowGraph extends DataFlowGraph
     ): array {
         $sent_node = $this->generator_sent_nodes[$return_node_id];
         $linked_ids = [];
+        $sent_node_linked = false;
 
         if ($specialization_key !== null) {
-            $linked_ids[] = $sent_node->id;
+            $unspecialized_id = $sent_node->id;
 
             $sent_node = $sent_node->withSpecialization(
-                $sent_node->id . self::SPECIALIZATION_SEPARATOR . $specialization_key,
-                $sent_node->id,
+                $unspecialized_id . self::SPECIALIZATION_SEPARATOR . $specialization_key,
+                $unspecialized_id,
                 $specialization_key,
                 null,
             );
+
+            if (!isset($reverse[$unspecialized_id][$sent_node->id])) {
+                $linked_ids[] = $unspecialized_id;
+            }
+
+            $sent_node_linked = !isset($reverse[$sent_node->id][$unspecialized_id]);
 
             $this->addNode($sent_node);
             self::linkSpecialization($reverse, $sent_node->id);
         }
 
         $this->addPath($send_node, $sent_node, 'generator-send');
-        $reverse[$sent_node->id][$send_node->id] = true;
-        $linked_ids[] = $sent_node->id;
+
+        if (!isset($reverse[$sent_node->id][$send_node->id])) {
+            $reverse[$sent_node->id][$send_node->id] = true;
+            $sent_node_linked = true;
+        }
+
+        if ($sent_node_linked) {
+            $linked_ids[] = $sent_node->id;
+        }
 
         return $linked_ids;
     }
