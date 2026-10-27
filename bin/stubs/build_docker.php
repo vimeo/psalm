@@ -71,8 +71,9 @@ const PIE_VERSION = '1.5.3';
 /**
  * PECL extensions installed with PIE, from Packagist, wherever their newest stable
  * PIE release supports the PHP version (install-php-extensions installs them
- * elsewhere): the PIE package, the Alpine packages it builds against, and the
- * configure options install-php-extensions would pass.
+ * elsewhere): the PIE package, the Alpine packages it builds against, the
+ * configure options install-php-extensions would pass, and whether it is built in
+ * a layer of its own.
  */
 const PIE_PACKAGES = [
     'memcached' => [
@@ -84,6 +85,7 @@ const PIE_PACKAGES = [
         'package' => 'grpc/grpc-php-ext',
         'apk' => ['zlib-dev', 'linux-headers'],
         'options' => [],
+        'own_layer' => true,
     ],
     'swoole' => [
         'package' => 'swoole/swoole',
@@ -541,6 +543,32 @@ function explainRebuild(string $image, string $cacheKey, array $components): voi
     }
 }
 
+/**
+ * A RUN instruction installing extensions with PIE, or nothing.
+ *
+ * @param array<string, string> $pieInstalls
+ */
+function pieStep(array $pieInstalls, string $cflags): string
+{
+    if ($pieInstalls === []) {
+        return '';
+    }
+    $packages = [];
+    $commands = [];
+    foreach ($pieInstalls as $extension => $version) {
+        $pie = PIE_PACKAGES[explode('-', $extension, 2)[0]];
+        $packages = array_merge($packages, $pie['apk']);
+        $commands[] = "{$cflags}pie install --with-php-config=/usr/local/bin/php-config "
+            . implode(' ', [$pie['package'] . ':' . $version, ...$pie['options']]);
+    }
+    $pieVersion = PIE_VERSION;
+    return "\nRUN case \"\$(uname -m)\" in aarch64) arch=ARM64 ;; *) arch=X64 ;; esac && \\\n"
+        . "    curl -fsSL -o /usr/local/bin/pie https://github.com/php/pie/releases/download/$pieVersion/pie-Linux-\$arch && \\\n"
+        . "    chmod +x /usr/local/bin/pie && \\\n"
+        . '    apk add --no-cache $PHPIZE_DEPS libtool ' . implode(' ', array_unique($packages)) . " && \\\n    "
+        . implode(" && \\\n    ", $commands) . "\n";
+}
+
 /** @param array<string, string> $pieInstalls */
 function generateDockerfile(string $version, array $extensions, array $pieInstalls): string
 {
@@ -566,29 +594,21 @@ function generateDockerfile(string $version, array $extensions, array $pieInstal
         ? ''
         : 'apk add --no-cache ' . implode(' ', $packages) . " && \\\n    ";
 
+    // grpc takes the longest to build by far: it gets a layer of its own, before everything
+    // else, which stays cached until the base image or the grpc version changes
+    $ownLayerInstalls = array_filter(
+        $pieInstalls,
+        static fn(string $extension): bool => PIE_PACKAGES[explode('-', $extension, 2)[0]]['own_layer'] ?? false,
+        ARRAY_FILTER_USE_KEY,
+    );
+    $ownLayerStep = pieStep($ownLayerInstalls, $cflags);
     // after install-php-extensions, which installs igbinary for the memcached and redis serializers
-    $pieStep = '';
-    if ($pieInstalls !== []) {
-        $piePackages = [];
-        $pieCommands = [];
-        foreach ($pieInstalls as $extension => $pieVersion) {
-            $pie = PIE_PACKAGES[explode('-', $extension, 2)[0]];
-            $piePackages = array_merge($piePackages, $pie['apk']);
-            $pieCommands[] = "{$cflags}pie install --with-php-config=/usr/local/bin/php-config "
-                . implode(' ', [$pie['package'] . ':' . $pieVersion, ...$pie['options']]);
-        }
-        $pieVersion = PIE_VERSION;
-        $pieStep = "\nRUN case \"\$(uname -m)\" in aarch64) arch=ARM64 ;; *) arch=X64 ;; esac && \\\n"
-            . "    curl -fsSL -o /usr/local/bin/pie https://github.com/php/pie/releases/download/$pieVersion/pie-Linux-\$arch && \\\n"
-            . "    chmod +x /usr/local/bin/pie && \\\n"
-            . '    apk add --no-cache $PHPIZE_DEPS libtool ' . implode(' ', array_unique($piePackages)) . " && \\\n    "
-            . implode(" && \\\n    ", $pieCommands) . "\n";
-    }
+    $pieStep = pieStep(array_diff_key($pieInstalls, $ownLayerInstalls), $cflags);
 
     return <<<DOCKERFILE
         # Generated on the fly by bin/stubs/build_docker.php - do not commit.
         FROM $baseImage
-
+        {$ownLayerStep}
         ADD $installerUrl /usr/local/bin/
 
         RUN chmod +x /usr/local/bin/install-php-extensions{$supportStep}
