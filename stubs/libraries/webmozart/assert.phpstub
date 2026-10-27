@@ -1556,7 +1556,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -1573,7 +1573,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -1607,7 +1607,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<non-empty-string>
+     * @return ($value is list ? list<non-empty-string> : ($value is array ? array<non-empty-string> : iterable<non-empty-string>))
      *
      * @throws InvalidArgumentException
      *
@@ -1624,7 +1624,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<non-empty-string|null>
+     * @return ($value is list ? list<non-empty-string|null> : ($value is array ? array<non-empty-string|null> : iterable<non-empty-string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -1658,7 +1658,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<int>
+     * @return ($value is list ? list<int> : ($value is array ? array<int> : iterable<int>))
      *
      * @throws InvalidArgumentException
      *
@@ -1675,7 +1675,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<int|null>
+     * @return ($value is list ? list<int|null> : ($value is array ? array<int|null> : iterable<int|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -1709,7 +1709,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<numeric>
+     * @return ($value is list ? list<numeric> : ($value is array ? array<numeric> : iterable<numeric>))
      *
      * @throws InvalidArgumentException
      *
@@ -1726,7 +1726,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<numeric|null>
+     * @return ($value is list ? list<numeric|null> : ($value is array ? array<numeric|null> : iterable<numeric|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -1760,7 +1760,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<positive-int>
+     * @return ($value is list ? list<positive-int> : ($value is array ? array<positive-int> : iterable<positive-int>))
      *
      * @throws InvalidArgumentException
      *
@@ -1777,7 +1777,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<positive-int|null>
+     * @return ($value is list ? list<positive-int|null> : ($value is array ? array<positive-int|null> : iterable<positive-int|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -1811,7 +1811,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<non-negative-int>
+     * @return ($value is list ? list<non-negative-int> : ($value is array ? array<non-negative-int> : iterable<non-negative-int>))
      *
      * @throws InvalidArgumentException
      *
@@ -1828,7 +1828,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<non-negative-int|null>
+     * @return ($value is list ? list<non-negative-int|null> : ($value is array ? array<non-negative-int|null> : iterable<non-negative-int|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -1862,7 +1862,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<negative-int>
+     * @return ($value is list ? list<negative-int> : ($value is array ? array<negative-int> : iterable<negative-int>))
      *
      * @throws InvalidArgumentException
      *
@@ -1879,7 +1879,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<negative-int|null>
+     * @return ($value is list ? list<negative-int|null> : ($value is array ? array<negative-int|null> : iterable<negative-int|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -1913,7 +1913,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<float>
+     * @return ($value is list ? list<float> : ($value is array ? array<float> : iterable<float>))
      *
      * @throws InvalidArgumentException
      *
@@ -1930,7 +1930,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<float|null>
+     * @return ($value is list ? list<float|null> : ($value is array ? array<float|null> : iterable<float|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -1964,7 +1964,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<numeric>
+     * @return ($value is list ? list<numeric> : ($value is array ? array<numeric> : iterable<numeric>))
      *
      * @throws InvalidArgumentException
      *
@@ -1981,7 +1981,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<numeric|null>
+     * @return ($value is list ? list<numeric|null> : ($value is array ? array<numeric|null> : iterable<numeric|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -2015,7 +2015,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<positive-int|0>
+     * @return ($value is list ? list<positive-int|0> : ($value is array ? array<positive-int|0> : iterable<positive-int|0>))
      *
      * @throws InvalidArgumentException
      *
@@ -2032,7 +2032,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<positive-int|0|null>
+     * @return ($value is list ? list<positive-int|0|null> : ($value is array ? array<positive-int|0|null> : iterable<positive-int|0|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -2066,7 +2066,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<bool>
+     * @return ($value is list ? list<bool> : ($value is array ? array<bool> : iterable<bool>))
      *
      * @throws InvalidArgumentException
      *
@@ -2083,7 +2083,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<bool|null>
+     * @return ($value is list ? list<bool|null> : ($value is array ? array<bool|null> : iterable<bool|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -2117,7 +2117,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<scalar>
+     * @return ($value is list ? list<scalar> : ($value is array ? array<scalar> : iterable<scalar>))
      *
      * @throws InvalidArgumentException
      *
@@ -2134,7 +2134,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<scalar|null>
+     * @return ($value is list ? list<scalar|null> : ($value is array ? array<scalar|null> : iterable<scalar|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -2168,7 +2168,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<object>
+     * @return ($value is list ? list<object> : ($value is array ? array<object> : iterable<object>))
      *
      * @throws InvalidArgumentException
      *
@@ -2185,7 +2185,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<object|null>
+     * @return ($value is list ? list<object|null> : ($value is array ? array<object|null> : iterable<object|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -2219,7 +2219,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<object|class-string>
+     * @return ($value is list ? list<object|class-string> : ($value is array ? array<object|class-string> : iterable<object|class-string>))
      *
      * @throws InvalidArgumentException
      *
@@ -2236,7 +2236,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<object|class-string|null>
+     * @return ($value is list ? list<object|class-string|null> : ($value is array ? array<object|class-string|null> : iterable<object|class-string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -2274,7 +2274,7 @@ trait Mixin
      *
      * @see https://www.php.net/manual/en/function.get-resource-type.php
      *
-     * @return iterable<resource>
+     * @return ($value is list ? list<resource> : ($value is array ? array<resource> : iterable<resource>))
      *
      * @throws InvalidArgumentException
      *
@@ -2293,7 +2293,7 @@ trait Mixin
      *
      * @see https://www.php.net/manual/en/function.get-resource-type.php
      *
-     * @return iterable<resource|null>
+     * @return ($value is list ? list<resource|null> : ($value is array ? array<resource|null> : iterable<resource|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -2327,7 +2327,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<callable>
+     * @return ($value is list ? list<callable> : ($value is array ? array<callable> : iterable<callable>))
      *
      * @throws InvalidArgumentException
      *
@@ -2344,7 +2344,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<callable|null>
+     * @return ($value is list ? list<callable|null> : ($value is array ? array<callable|null> : iterable<callable|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -2378,7 +2378,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<array>
+     * @return ($value is list ? list<array> : ($value is array ? array<array> : iterable<array>))
      *
      * @throws InvalidArgumentException
      *
@@ -2395,7 +2395,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<array|null>
+     * @return ($value is list ? list<array|null> : ($value is array ? array<array|null> : iterable<array|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -2429,7 +2429,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<array|ArrayAccess>
+     * @return ($value is list ? list<array|ArrayAccess> : ($value is array ? array<array|ArrayAccess> : iterable<array|ArrayAccess>))
      *
      * @throws InvalidArgumentException
      *
@@ -2446,7 +2446,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<array|ArrayAccess|null>
+     * @return ($value is list ? list<array|ArrayAccess|null> : ($value is array ? array<array|ArrayAccess|null> : iterable<array|ArrayAccess|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -2480,7 +2480,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<countable>
+     * @return ($value is list ? list<countable> : ($value is array ? array<countable> : iterable<countable>))
      *
      * @throws InvalidArgumentException
      *
@@ -2497,7 +2497,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<countable|null>
+     * @return ($value is list ? list<countable|null> : ($value is array ? array<countable|null> : iterable<countable|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -2531,7 +2531,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<iterable>
+     * @return ($value is list ? list<iterable> : ($value is array ? array<iterable> : iterable<iterable>))
      *
      * @throws InvalidArgumentException
      *
@@ -2548,7 +2548,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<iterable|null>
+     * @return ($value is list ? list<iterable|null> : ($value is array ? array<iterable|null> : iterable<iterable|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -2586,7 +2586,7 @@ trait Mixin
      * @param class-string<T>          $class
      * @param string|callable():string $message
      *
-     * @return iterable<T>
+     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
      *
      * @throws InvalidArgumentException
      *
@@ -2605,7 +2605,7 @@ trait Mixin
      * @param class-string<T>          $class
      * @param string|callable():string $message
      *
-     * @return iterable<T>
+     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
      *
      * @throws InvalidArgumentException
      *
@@ -2638,7 +2638,7 @@ trait Mixin
      * @param class-string<T>          $class
      * @param string|callable():string $message
      *
-     * @return iterable<object>
+     * @return ($value is list ? list<object> : ($value is array ? array<object> : iterable<object>))
      *
      * @throws InvalidArgumentException
      *
@@ -2656,7 +2656,7 @@ trait Mixin
      * @param class-string<T>          $class
      * @param string|callable():string $message
      *
-     * @return iterable<object|null>
+     * @return ($value is list ? list<object|null> : ($value is array ? array<object|null> : iterable<object|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -2692,7 +2692,7 @@ trait Mixin
      * @param iterable<class-string<T>> $classes
      * @param string|callable():string  $message
      *
-     * @return iterable<T>
+     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
      *
      * @throws InvalidArgumentException
      *
@@ -2710,7 +2710,7 @@ trait Mixin
      * @param iterable<class-string<T>> $classes
      * @param string|callable():string  $message
      *
-     * @return iterable<T>
+     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
      *
      * @throws InvalidArgumentException
      *
@@ -2746,7 +2746,7 @@ trait Mixin
      * @param iterable<T>              $value
      * @param string|callable():string $message
      *
-     * @return iterable<T>
+     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
      *
      * @throws InvalidArgumentException
      *
@@ -2764,7 +2764,7 @@ trait Mixin
      * @param iterable<T>              $value
      * @param string|callable():string $message
      *
-     * @return iterable<T>
+     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
      *
      * @throws InvalidArgumentException
      *
@@ -2803,7 +2803,7 @@ trait Mixin
      * @param class-string<T>          $class
      * @param string|callable():string $message
      *
-     * @return iterable<T|class-string<T>>
+     * @return ($value is list ? list<T|class-string<T>> : ($value is array ? array<T|class-string<T>> : iterable<T|class-string<T>>))
      *
      * @throws InvalidArgumentException
      *
@@ -2822,7 +2822,7 @@ trait Mixin
      * @param class-string<T>          $class
      * @param string|callable():string $message
      *
-     * @return iterable<T|class-string<T>|null>
+     * @return ($value is list ? list<T|class-string<T>|null> : ($value is array ? array<T|class-string<T>|null> : iterable<T|class-string<T>|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -2858,7 +2858,7 @@ trait Mixin
      * @param iterable<T>              $value
      * @param string|callable():string $message
      *
-     * @return iterable<object|class-string>
+     * @return ($value is list ? list<object|class-string> : ($value is array ? array<object|class-string> : iterable<object|class-string>))
      *
      * @throws InvalidArgumentException
      *
@@ -2877,7 +2877,7 @@ trait Mixin
      * @param iterable<T>              $value
      * @param string|callable():string $message
      *
-     * @return iterable<object|class-string|null>
+     * @return ($value is list ? list<object|class-string|null> : ($value is array ? array<object|class-string|null> : iterable<object|class-string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -2917,7 +2917,7 @@ trait Mixin
      * @param array<class-string<T>>   $classes
      * @param string|callable():string $message
      *
-     * @return iterable<T>
+     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
      *
      * @throws InvalidArgumentException
      *
@@ -2937,7 +2937,7 @@ trait Mixin
      * @param array<class-string<T>>   $classes
      * @param string|callable():string $message
      *
-     * @return iterable<T>
+     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
      *
      * @throws InvalidArgumentException
      *
@@ -2971,7 +2971,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<empty>
+     * @return ($value is list ? list<empty> : ($value is array ? array<empty> : iterable<empty>))
      *
      * @throws InvalidArgumentException
      *
@@ -2988,7 +2988,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<empty|null>
+     * @return ($value is list ? list<empty|null> : ($value is array ? array<empty|null> : iterable<empty|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -3018,7 +3018,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3033,7 +3033,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3050,7 +3050,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<null>
+     * @return ($value is list ? list<null> : ($value is array ? array<null> : iterable<null>))
      *
      * @throws InvalidArgumentException
      *
@@ -3068,7 +3068,7 @@ trait Mixin
      * @param iterable<T|null>         $value
      * @param string|callable():string $message
      *
-     * @return iterable<T>
+     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
      *
      * @throws InvalidArgumentException
      *
@@ -3102,7 +3102,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<true>
+     * @return ($value is list ? list<true> : ($value is array ? array<true> : iterable<true>))
      *
      * @throws InvalidArgumentException
      *
@@ -3119,7 +3119,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<true|null>
+     * @return ($value is list ? list<true|null> : ($value is array ? array<true|null> : iterable<true|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -3153,7 +3153,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<false>
+     * @return ($value is list ? list<false> : ($value is array ? array<false> : iterable<false>))
      *
      * @throws InvalidArgumentException
      *
@@ -3170,7 +3170,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<false|null>
+     * @return ($value is list ? list<false|null> : ($value is array ? array<false|null> : iterable<false|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -3206,7 +3206,7 @@ trait Mixin
      * @param iterable<T|false>        $value
      * @param string|callable():string $message
      *
-     * @return iterable<T>
+     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
      *
      * @throws InvalidArgumentException
      *
@@ -3224,7 +3224,7 @@ trait Mixin
      * @param iterable<T|false|null>   $value
      * @param string|callable():string $message
      *
-     * @return iterable<T>
+     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
      *
      * @throws InvalidArgumentException
      *
@@ -3256,7 +3256,7 @@ trait Mixin
      * @param iterable<string>         $value
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -3272,7 +3272,7 @@ trait Mixin
      * @param iterable<string|null>    $value
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -3304,7 +3304,7 @@ trait Mixin
      * @param iterable<string>         $value
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -3320,7 +3320,7 @@ trait Mixin
      * @param iterable<string|null>    $value
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -3352,7 +3352,7 @@ trait Mixin
      * @param iterable<string>         $value
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -3368,7 +3368,7 @@ trait Mixin
      * @param iterable<string|null>    $value
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -3400,7 +3400,7 @@ trait Mixin
      * @param iterable<string>         $value
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -3416,7 +3416,7 @@ trait Mixin
      * @param iterable<string|null>    $value
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -3447,7 +3447,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<array>
+     * @return ($value is list ? list<array> : ($value is array ? array<array> : iterable<array>))
      *
      * @throws InvalidArgumentException
      *
@@ -3463,7 +3463,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<array|null>
+     * @return ($value is list ? list<array|null> : ($value is array ? array<array|null> : iterable<array|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -3491,7 +3491,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3505,7 +3505,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3533,7 +3533,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3547,7 +3547,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3578,7 +3578,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3593,7 +3593,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3623,7 +3623,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3638,7 +3638,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3668,7 +3668,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3683,7 +3683,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3713,7 +3713,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3728,7 +3728,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3758,7 +3758,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3773,7 +3773,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3803,7 +3803,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3818,7 +3818,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3848,7 +3848,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3863,7 +3863,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3893,7 +3893,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3908,7 +3908,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3938,7 +3938,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3953,7 +3953,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3983,7 +3983,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -3998,7 +3998,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -4028,7 +4028,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -4043,7 +4043,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable
+     * @return ($value is list ? list<mixed> : ($value is array ? array : iterable))
      *
      * @throws InvalidArgumentException
      *
@@ -4073,7 +4073,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4088,7 +4088,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4118,7 +4118,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4133,7 +4133,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4163,7 +4163,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4178,7 +4178,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4208,7 +4208,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4223,7 +4223,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4253,7 +4253,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4268,7 +4268,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4298,7 +4298,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4313,7 +4313,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4343,7 +4343,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4358,7 +4358,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4388,7 +4388,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4403,7 +4403,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4433,7 +4433,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4448,7 +4448,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4478,7 +4478,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4493,7 +4493,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4523,7 +4523,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4538,7 +4538,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4568,7 +4568,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4583,7 +4583,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4613,7 +4613,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4628,7 +4628,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4658,7 +4658,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4673,7 +4673,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4707,7 +4707,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<lowercase-string>
+     * @return ($value is list ? list<lowercase-string> : ($value is array ? array<lowercase-string> : iterable<lowercase-string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4724,7 +4724,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<lowercase-string|null>
+     * @return ($value is list ? list<lowercase-string|null> : ($value is array ? array<lowercase-string|null> : iterable<lowercase-string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4754,7 +4754,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4771,7 +4771,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4801,7 +4801,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4816,7 +4816,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4846,7 +4846,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4861,7 +4861,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4891,7 +4891,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4906,7 +4906,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4936,7 +4936,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4951,7 +4951,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -4978,7 +4978,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -4992,7 +4992,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -5020,7 +5020,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -5034,7 +5034,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -5062,7 +5062,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -5076,7 +5076,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -5104,7 +5104,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -5118,7 +5118,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -5146,7 +5146,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -5160,7 +5160,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -5192,7 +5192,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<class-string>
+     * @return ($value is list ? list<class-string> : ($value is array ? array<class-string> : iterable<class-string>))
      *
      * @throws InvalidArgumentException
      *
@@ -5208,7 +5208,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<class-string|null>
+     * @return ($value is list ? list<class-string|null> : ($value is array ? array<class-string|null> : iterable<class-string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -5247,7 +5247,7 @@ trait Mixin
      * @param class-string<ExpectedType> $class
      * @param string|callable():string   $message
      *
-     * @return iterable<class-string<ExpectedType>>
+     * @return ($value is list ? list<class-string<ExpectedType>> : ($value is array ? array<class-string<ExpectedType>> : iterable<class-string<ExpectedType>>))
      *
      * @throws InvalidArgumentException
      *
@@ -5266,7 +5266,7 @@ trait Mixin
      * @param class-string<ExpectedType> $class
      * @param string|callable():string   $message
      *
-     * @return iterable<class-string<ExpectedType>|null>
+     * @return ($value is list ? list<class-string<ExpectedType>|null> : ($value is array ? array<class-string<ExpectedType>|null> : iterable<class-string<ExpectedType>|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -5297,7 +5297,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<class-string>
+     * @return ($value is list ? list<class-string> : ($value is array ? array<class-string> : iterable<class-string>))
      *
      * @throws InvalidArgumentException
      *
@@ -5313,7 +5313,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<class-string|null>
+     * @return ($value is list ? list<class-string|null> : ($value is array ? array<class-string|null> : iterable<class-string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -5352,7 +5352,7 @@ trait Mixin
      * @param class-string<ExpectedType> $interface
      * @param string|callable():string   $message
      *
-     * @return iterable<class-string<ExpectedType>|ExpectedType>
+     * @return ($value is list ? list<class-string<ExpectedType>|ExpectedType> : ($value is array ? array<class-string<ExpectedType>|ExpectedType> : iterable<class-string<ExpectedType>|ExpectedType>))
      *
      * @throws InvalidArgumentException
      *
@@ -5371,7 +5371,7 @@ trait Mixin
      * @param class-string<ExpectedType> $interface
      * @param string|callable():string   $message
      *
-     * @return iterable<class-string<ExpectedType>|ExpectedType|null>
+     * @return ($value is list ? list<class-string<ExpectedType>|ExpectedType|null> : ($value is array ? array<class-string<ExpectedType>|ExpectedType|null> : iterable<class-string<ExpectedType>|ExpectedType|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -5403,7 +5403,7 @@ trait Mixin
      * @param iterable<string|object>  $classOrObject
      * @param string|callable():string $message
      *
-     * @return iterable<string|object>
+     * @return ($value is list ? list<string|object> : ($value is array ? array<string|object> : iterable<string|object>))
      *
      * @throws InvalidArgumentException
      *
@@ -5419,7 +5419,7 @@ trait Mixin
      * @param iterable<string|object|null> $classOrObject
      * @param string|callable():string     $message
      *
-     * @return iterable<string|object|null>
+     * @return ($value is list ? list<string|object|null> : ($value is array ? array<string|object|null> : iterable<string|object|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -5455,7 +5455,7 @@ trait Mixin
      * @param iterable<T>              $classOrObject
      * @param string|callable():string $message
      *
-     * @return iterable<T>
+     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
      *
      * @throws InvalidArgumentException
      *
@@ -5473,7 +5473,7 @@ trait Mixin
      * @param iterable<T>              $classOrObject
      * @param string|callable():string $message
      *
-     * @return iterable<T>
+     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
      *
      * @throws InvalidArgumentException
      *
@@ -5509,7 +5509,7 @@ trait Mixin
      * @param iterable<T>              $classOrObject
      * @param string|callable():string $message
      *
-     * @return iterable<T>
+     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
      *
      * @throws InvalidArgumentException
      *
@@ -5527,7 +5527,7 @@ trait Mixin
      * @param iterable<T>              $classOrObject
      * @param string|callable():string $message
      *
-     * @return iterable<T>
+     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
      *
      * @throws InvalidArgumentException
      *
@@ -5563,7 +5563,7 @@ trait Mixin
      * @param iterable<T>              $classOrObject
      * @param string|callable():string $message
      *
-     * @return iterable<T>
+     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
      *
      * @throws InvalidArgumentException
      *
@@ -5581,7 +5581,7 @@ trait Mixin
      * @param iterable<T>              $classOrObject
      * @param string|callable():string $message
      *
-     * @return iterable<T>
+     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
      *
      * @throws InvalidArgumentException
      *
@@ -5613,7 +5613,7 @@ trait Mixin
      * @param string|int               $key
      * @param string|callable():string $message
      *
-     * @return iterable<array>
+     * @return ($value is list ? list<array> : ($value is array ? array<array> : iterable<array>))
      *
      * @throws InvalidArgumentException
      *
@@ -5629,7 +5629,7 @@ trait Mixin
      * @param string|int               $key
      * @param string|callable():string $message
      *
-     * @return iterable<array|null>
+     * @return ($value is list ? list<array|null> : ($value is array ? array<array|null> : iterable<array|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -5661,7 +5661,7 @@ trait Mixin
      * @param string|int               $key
      * @param string|callable():string $message
      *
-     * @return iterable<array>
+     * @return ($value is list ? list<array> : ($value is array ? array<array> : iterable<array>))
      *
      * @throws InvalidArgumentException
      *
@@ -5677,7 +5677,7 @@ trait Mixin
      * @param string|int               $key
      * @param string|callable():string $message
      *
-     * @return iterable<array|null>
+     * @return ($value is list ? list<array|null> : ($value is array ? array<array|null> : iterable<array|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -5711,7 +5711,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<array-key>
+     * @return ($value is list ? list<array-key> : ($value is array ? array<array-key> : iterable<array-key>))
      *
      * @throws InvalidArgumentException
      *
@@ -5728,7 +5728,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<array-key|null>
+     * @return ($value is list ? list<array-key|null> : ($value is array ? array<array-key|null> : iterable<array-key|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -5755,7 +5755,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable<Countable|array>
+     * @return ($value is list ? list<Countable|array> : ($value is array ? array<Countable|array> : iterable<Countable|array>))
      *
      * @throws InvalidArgumentException
      *
@@ -5769,7 +5769,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable<Countable|array|null>
+     * @return ($value is list ? list<Countable|array|null> : ($value is array ? array<Countable|array|null> : iterable<Countable|array|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -5797,7 +5797,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable<Countable|array>
+     * @return ($value is list ? list<Countable|array> : ($value is array ? array<Countable|array> : iterable<Countable|array>))
      *
      * @throws InvalidArgumentException
      *
@@ -5811,7 +5811,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable<Countable|array|null>
+     * @return ($value is list ? list<Countable|array|null> : ($value is array ? array<Countable|array|null> : iterable<Countable|array|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -5839,7 +5839,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable<Countable|array>
+     * @return ($value is list ? list<Countable|array> : ($value is array ? array<Countable|array> : iterable<Countable|array>))
      *
      * @throws InvalidArgumentException
      *
@@ -5853,7 +5853,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable<Countable|array|null>
+     * @return ($value is list ? list<Countable|array|null> : ($value is array ? array<Countable|array|null> : iterable<Countable|array|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -5881,7 +5881,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable<Countable|array>
+     * @return ($value is list ? list<Countable|array> : ($value is array ? array<Countable|array> : iterable<Countable|array>))
      *
      * @throws InvalidArgumentException
      *
@@ -5895,7 +5895,7 @@ trait Mixin
     /**
      * @param string|callable():string $message
      *
-     * @return iterable<Countable|array|null>
+     * @return ($value is list ? list<Countable|array|null> : ($value is array ? array<Countable|array|null> : iterable<Countable|array|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -5930,7 +5930,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<list<mixed>>
+     * @return ($value is list ? list<list<mixed>> : ($value is array ? array<list<mixed>> : iterable<list<mixed>>))
      *
      * @throws InvalidArgumentException
      *
@@ -5947,7 +5947,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<list<mixed>|null>
+     * @return ($value is list ? list<list<mixed>|null> : ($value is array ? array<list<mixed>|null> : iterable<list<mixed>|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -5981,7 +5981,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<non-empty-list<mixed>>
+     * @return ($value is list ? list<non-empty-list<mixed>> : ($value is array ? array<non-empty-list<mixed>> : iterable<non-empty-list<mixed>>))
      *
      * @throws InvalidArgumentException
      *
@@ -5998,7 +5998,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<non-empty-list<mixed>|null>
+     * @return ($value is list ? list<non-empty-list<mixed>|null> : ($value is array ? array<non-empty-list<mixed>|null> : iterable<non-empty-list<mixed>|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -6036,7 +6036,7 @@ trait Mixin
      * @param iterable<mixed|array<array-key, T>> $array
      * @param string|callable():string            $message
      *
-     * @return iterable<array<string, T>>
+     * @return ($value is list ? list<array<string, T>> : ($value is array ? array<array<string, T>> : iterable<array<string, T>>))
      *
      * @throws InvalidArgumentException
      *
@@ -6055,7 +6055,7 @@ trait Mixin
      * @param iterable<mixed|array<array-key, T>|null> $array
      * @param string|callable():string                 $message
      *
-     * @return iterable<array<string, T>|null>
+     * @return ($value is list ? list<array<string, T>|null> : ($value is array ? array<array<string, T>|null> : iterable<array<string, T>|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -6084,7 +6084,7 @@ trait Mixin
      * @param iterable<callable>       $callable
      * @param string|callable():string $message
      *
-     * @return iterable<Closure|callable-string>
+     * @return ($value is list ? list<Closure|callable-string> : ($value is array ? array<Closure|callable-string> : iterable<Closure|callable-string>))
      *
      * @throws InvalidArgumentException
      *
@@ -6099,7 +6099,7 @@ trait Mixin
      * @param iterable<callable|null>  $callable
      * @param string|callable():string $message
      *
-     * @return iterable<Closure|callable-string|null>
+     * @return ($value is list ? list<Closure|callable-string|null> : ($value is array ? array<Closure|callable-string|null> : iterable<Closure|callable-string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -6129,7 +6129,7 @@ trait Mixin
      * @param iterable<callable>       $callable
      * @param string|callable():string $message
      *
-     * @return iterable<Closure|callable-string>
+     * @return ($value is list ? list<Closure|callable-string> : ($value is array ? array<Closure|callable-string> : iterable<Closure|callable-string>))
      *
      * @throws InvalidArgumentException
      *
@@ -6144,7 +6144,7 @@ trait Mixin
      * @param iterable<callable|null>  $callable
      * @param string|callable():string $message
      *
-     * @return iterable<Closure|callable-string|null>
+     * @return ($value is list ? list<Closure|callable-string|null> : ($value is array ? array<Closure|callable-string|null> : iterable<Closure|callable-string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -6181,7 +6181,7 @@ trait Mixin
      * @param iterable<array<string, T>> $array
      * @param string|callable():string   $message
      *
-     * @return iterable<non-empty-array<string, T>>
+     * @return ($value is list ? list<non-empty-array<string, T>> : ($value is array ? array<non-empty-array<string, T>> : iterable<non-empty-array<string, T>>))
      *
      * @throws InvalidArgumentException
      *
@@ -6200,7 +6200,7 @@ trait Mixin
      * @param iterable<array<string, T>|null> $array
      * @param string|callable():string        $message
      *
-     * @return iterable<non-empty-array<string, T>|null>
+     * @return ($value is list ? list<non-empty-array<string, T>|null> : ($value is array ? array<non-empty-array<string, T>|null> : iterable<non-empty-array<string, T>|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -6230,7 +6230,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string>
+     * @return ($value is list ? list<string> : ($value is array ? array<string> : iterable<string>))
      *
      * @throws InvalidArgumentException
      *
@@ -6245,7 +6245,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return iterable<string|null>
+     * @return ($value is list ? list<string|null> : ($value is array ? array<string|null> : iterable<string|null>))
      *
      * @throws InvalidArgumentException
      *
@@ -6280,7 +6280,7 @@ trait Mixin
      * @param class-string<Throwable>  $class
      * @param string|callable():string $message
      *
-     * @return iterable<T>
+     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
      *
      * @throws InvalidArgumentException
      *
@@ -6298,7 +6298,7 @@ trait Mixin
      * @param class-string<Throwable>  $class
      * @param string|callable():string $message
      *
-     * @return iterable<T>
+     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
      *
      * @throws InvalidArgumentException
      *
