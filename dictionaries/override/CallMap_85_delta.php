@@ -4663,7 +4663,7 @@ return array (
     array (
       0 => 'bool',
       'color' => 'int',
-      'value' => 'IMAGICK_QUANTUM_TYPE',
+      'value' => 'float',
     ),
     'imagickpixel::sethsl' => 
     array (
@@ -4675,7 +4675,7 @@ return array (
     'imagickpixel::setindex' => 
     array (
       0 => 'bool',
-      'index' => 'IMAGICK_QUANTUM_TYPE',
+      'index' => 'float',
     ),
     'imagickpixeliterator::clear' => 
     array (
