@@ -19,7 +19,9 @@
  * an entry applied twice (if reporting back failed) changes nothing the second time.
  *
  * Changes made with the workflow's token don't trigger other workflows, so after merging into a branch, the
- * workflows a push to it runs are dispatched on it; bin/ci/auto-release.php counts them as the checks of its head.
+ * workflows a push to it runs are dispatched on it, unless they already ran on its head (as they did if a run merged
+ * but failed to report it, which the next run sees as an already merged pull request); bin/ci/auto-release.php
+ * counts them as the checks of its head.
  *
  * Needs the GitHub CLI, authenticated (GH_TOKEN), GITHUB_REPOSITORY (default: vimeo/psalm), QUEUE_URL, QUEUE_TOKEN
  * and MERGE_METHOD (merge, squash or rebase; default: merge).
@@ -155,7 +157,8 @@ if (!is_array($queued) || ($queued['repo'] ?? null) !== $repository || !is_array
 }
 
 $results = [];
-// the branches merged into, by name
+// the branches merged into, by name, also by an earlier run whose results weren't reported: their push workflows
+// are dispatched if they haven't run on the head of the branch
 $merged_into = [];
 
 foreach (array_slice($queued['changes'], 0, $max_changes) as $change) {
@@ -260,7 +263,9 @@ foreach (array_slice($queued['changes'], 0, $max_changes) as $change) {
     }
 
     $merge_sha = $change['merge_sha'] ?? null;
-    if ($merge_sha !== null && !$merged) {
+    if ($merge_sha !== null && $merged) {
+        $merged_into[(string) $pr['base']['ref']] = true;
+    } elseif ($merge_sha !== null) {
         try {
             $problem = $pr === null ? "#$number is an issue" : null;
             // the release labels as they are now, after the changes above
@@ -317,25 +322,43 @@ if ($dry_run) {
     exit(0);
 }
 
-// reported before dispatching, which changes nothing queued
-if ($results !== []) {
-    $queue('POST', rtrim($queue_url, '/') . '/done', ['results' => $results]);
-}
-
+// dispatched before reporting: once reported, the merges leave the queue, and nothing would dispatch them again
 $dispatched = true;
 foreach (array_keys($merged_into) as $branch) {
     $workflows = in_array($branch, $release_branches, true)
         ? [...$push_workflows, ...$release_branch_workflows]
         : $push_workflows;
+    try {
+        $head = $api('GET', 'branches/' . rawurlencode($branch))['commit']['sha'];
+    } catch (RuntimeException $e) {
+        echo "::error::Cannot read $branch: {$e->getMessage()}" . PHP_EOL;
+        $dispatched = false;
+        continue;
+    }
+
     foreach ($workflows as $workflow) {
-        echo "Dispatching $workflow on $branch" . PHP_EOL;
         try {
+            foreach (['push', 'workflow_dispatch'] as $event) {
+                $runs = $api('GET', "actions/workflows/$workflow/runs?head_sha=$head&event=$event&per_page=1");
+                if ($runs['total_count'] > 0) {
+                    echo "$workflow already ran on $branch at $head" . PHP_EOL;
+                    continue 2;
+                }
+            }
+
+            echo "Dispatching $workflow on $branch at $head" . PHP_EOL;
             $gh(['workflow', 'run', $workflow, '--repo', $repository, '--ref', $branch]);
         } catch (RuntimeException $e) {
             echo "::error::Cannot dispatch $workflow on $branch: {$e->getMessage()}" . PHP_EOL;
             $dispatched = false;
         }
     }
+}
+
+// a failed dispatch fails the run, so that the maintainers are notified; the results are reported anyway, as the
+// changes were made
+if ($results !== []) {
+    $queue('POST', rtrim($queue_url, '/') . '/done', ['results' => $results]);
 }
 
 exit($dispatched ? 0 : 1);
