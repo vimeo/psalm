@@ -1444,13 +1444,40 @@ final class ArrayFunctionCallTest extends TestCase
                     $h = join(":", getStrings());',
                 'assertions' => [
                     '$a===' => 'literal-string',
-                    '$b===' => 'literal-string',
+                    '$b===' => 'non-empty-literal-string',
                     '$c===' => 'string',
                     '$d===' => 'string',
                     '$e===' => 'non-empty-string',
                     '$f===' => 'non-empty-string',
                     '$g===' => 'string',
                     '$h===' => 'string',
+                ],
+            ],
+            'implodeArrayShapeWithANonEmptyPiece' => [
+                'code' => '<?php
+                    /** @return list<string> */
+                    function getStrings(): array {
+                        return [];
+                    }
+                    function getString(): string {
+                        return "";
+                    }
+                    $s = getString();
+                    $a = implode("\n", ["Hello", ...getStrings()]);
+                    $b = implode($s, ["x", $s]);
+                    $c = implode(",", [$s, $s]);
+                    $d = implode("", [$s, $s]);
+                    $e = implode(",", ["", ""]);
+                    $f = implode(",", [$s]);
+                    $g = join(",", [$s, $s]);',
+                'assertions' => [
+                    '$a===' => 'non-empty-string',
+                    '$b===' => 'non-empty-string',
+                    '$c===' => 'non-empty-string',
+                    '$d===' => 'string',
+                    '$e===' => 'non-empty-literal-string',
+                    '$f===' => 'string',
+                    '$g===' => 'non-empty-string',
                 ],
             ],
             'key' => [
