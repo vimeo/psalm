@@ -108,11 +108,6 @@ const PIE_PACKAGES = [
         'apk' => [],
         'options' => [],
     ],
-    'event' => [
-        'package' => 'osmanov/pecl-event',
-        'apk' => ['openssl-dev', 'libevent-dev'],
-        'options' => ['--with-event-libevent-dir=/usr', '--with-event-pthreads', '--with-event-extra=yes', '--with-event-openssl', '--with-event-ns=no', '--with-openssl-dir=yes'],
-    ],
     'ev' => [
         'package' => 'osmanov/pecl-ev',
         'apk' => [],
@@ -120,8 +115,9 @@ const PIE_PACKAGES = [
     ],
     'redis' => [
         'package' => 'phpredis/phpredis',
-        'apk' => ['zstd-dev', 'lz4-dev'],
-        'options' => ['--enable-redis-igbinary', '--enable-redis-lzf', '--enable-redis-zstd', '--enable-redis-lz4', '--with-liblz4=yes'],
+        // the git sources lack the bundled liblzf of the PECL tarballs
+        'apk' => ['zstd-dev', 'lz4-dev', 'liblzf-dev'],
+        'options' => ['--enable-redis-igbinary', '--enable-redis-lzf', '--with-liblzf=yes', '--enable-redis-zstd', '--enable-redis-lz4', '--with-liblz4=yes'],
     ],
     'mongodb' => [
         'package' => 'mongodb/mongodb-extension',
