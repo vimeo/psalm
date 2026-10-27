@@ -879,6 +879,51 @@ final class ValueTest extends TestCase
                         }
                     }',
             ],
+            'notLiteralEmptyKeepsKindOfString' => [
+                'code' => '<?php
+                    function plain(): string { return "a"; }
+                    /** @return lowercase-string */
+                    function lowercase(): string { return "a"; }
+                    /** @return literal-string */
+                    function literal(): string { return "a"; }
+                    /** @return non-falsy-string */
+                    function nonFalsy(): string { return "a"; }
+                    /** @return numeric-string */
+                    function numeric(): string { return "1"; }
+                    /** @return class-string */
+                    function className(): string { return Exception::class; }
+                    /** @return lowercase-string|int */
+                    function lowercaseOrInt() { return 1; }
+
+                    $string = plain();
+                    $lowercase = lowercase();
+                    $literal = literal();
+                    $non_falsy = nonFalsy();
+                    $numeric = numeric();
+                    $class_name = className();
+                    $lowercase_or_int = lowercaseOrInt();
+
+                    if ($string === ""
+                        || $lowercase === ""
+                        || $literal === ""
+                        || $non_falsy === ""
+                        || $numeric === ""
+                        || $class_name === ""
+                        || $lowercase_or_int === ""
+                    ) {
+                        throw new RuntimeException();
+                    }',
+                'assertions' => [
+                    '$string===' => 'non-empty-string',
+                    '$lowercase===' => 'non-empty-lowercase-string',
+                    '$literal===' => 'non-empty-literal-string',
+                    '$non_falsy===' => 'non-falsy-string',
+                    '$numeric===' => 'numeric-string',
+                    '$class_name===' => 'class-string',
+                    '$lowercase_or_int===' => 'int|non-empty-lowercase-string',
+                ],
+                'ignored_issues' => ['DocblockTypeContradiction', 'TypeDoesNotContainType'],
+            ],
             'nonEmptyStringCanBeStringZero' => [
                 'code' => '<?php
                     /**
