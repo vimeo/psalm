@@ -8,6 +8,7 @@ use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -20,6 +21,9 @@ use Throwable;
 
 use function addslashes;
 use function array_key_first;
+use function array_merge;
+use function array_reverse;
+use function array_values;
 use function assert;
 use function count;
 use function implode;
@@ -408,13 +412,93 @@ final class TKeyedArray extends Atomic
         return Type::combineUnionTypes($this->fallback_params[0], $key_type);
     }
 
-    public function getGenericValueType(bool $possibly_undefined = false): Union
+    /**
+     * The union of the property types, as folding them with Type::combineUnionTypes() gives.
+     *
+     * The pairwise fold combines the growing accumulator again at every step, which is quadratic for shapes with
+     * thousands of entries such as E::cases(). Enum cases are combined in one go, as they do not depend on the order
+     * (literals do: the literal limit and their own from_docblock).
+     *
+     * @psalm-suppress ImpureMethodCall, ImpurePropertyAssignment, InaccessibleProperty We only change the new type
+     */
+    private function combinePropertyTypes(): Union
+    {
+        $first_property = $this->properties[array_key_first($this->properties)];
+        $atomic_type_groups = [];
+        $all_same = true;
+
+        foreach ($this->properties as $property) {
+            if ($property->failed_reconciliation) {
+                return $this->foldPropertyTypes();
+            }
+
+            foreach ($property->getAtomicTypes() as $atomic_type) {
+                if (!$atomic_type instanceof TEnumCase) {
+                    return $this->foldPropertyTypes();
+                }
+            }
+
+            $all_same = $all_same && $property === $first_property;
+            $atomic_type_groups[] = array_values($property->getAtomicTypes());
+        }
+
+        if ($all_same) {
+            return $first_property;
+        }
+
+        // the fold lists the atomic types of the last property first
+        $combined_type = TypeCombiner::combine(array_merge(...array_reverse($atomic_type_groups)));
+        $parent_nodes = [];
+        $had_template = $reference_free = $closure_state = true;
+
+        foreach ($this->properties as $property) {
+            $combined_type->initialized = $combined_type->initialized && $property->initialized;
+            $combined_type->from_docblock = $combined_type->from_docblock || $property->from_docblock;
+            $combined_type->from_calculation = $combined_type->from_calculation || $property->from_calculation;
+            $combined_type->ignore_nullable_issues = $combined_type->ignore_nullable_issues
+                || $property->ignore_nullable_issues;
+            $combined_type->ignore_falsable_issues = $combined_type->ignore_falsable_issues
+                || $property->ignore_falsable_issues;
+            $combined_type->explicit_never = $combined_type->explicit_never || $property->explicit_never;
+            $combined_type->from_global_state = $combined_type->from_global_state || $property->from_global_state;
+            $combined_type->possibly_undefined = $combined_type->possibly_undefined || $property->possibly_undefined;
+            $combined_type->possibly_undefined_from_try = $combined_type->possibly_undefined_from_try
+                || $property->possibly_undefined_from_try;
+            $combined_type->by_ref = $combined_type->by_ref || $property->by_ref;
+            $had_template = $had_template && $property->had_template;
+            $reference_free = $reference_free && $property->reference_free;
+            $closure_state = $closure_state && $property->closure_state;
+
+            if ($property->parent_nodes) {
+                $parent_nodes = DataFlowNode::combineParentNodes($property->parent_nodes, $parent_nodes);
+            }
+        }
+
+        $combined_type->had_template = $had_template;
+        $combined_type->reference_free = $reference_free;
+        $combined_type->closure_state = $closure_state;
+        $combined_type->parent_nodes = $parent_nodes;
+
+        return $combined_type;
+    }
+
+    /**
+     * @psalm-suppress ImpureMethodCall We only change the new type
+     */
+    private function foldPropertyTypes(): Union
     {
         $value_type = null;
 
         foreach ($this->properties as $property) {
             $value_type = Type::combineUnionTypes($property, $value_type);
         }
+
+        return $value_type;
+    }
+
+    public function getGenericValueType(bool $possibly_undefined = false): Union
+    {
+        $value_type = $this->combinePropertyTypes();
 
         return Type::combineUnionTypes(
             $this->fallback_params[1] ?? null,
@@ -433,7 +517,6 @@ final class TKeyedArray extends Atomic
     public function getGenericArrayType(?string $list_var_id = null): TArray
     {
         $key_types = [];
-        $value_type = null;
 
         $has_defined_keys = false;
 
@@ -449,12 +532,12 @@ final class TKeyedArray extends Atomic
                 $key_types[] = Type::getAtomicStringFromLiteral($key);
             }
 
-            $value_type = Type::combineUnionTypes($property, $value_type);
-
             if (!$property->possibly_undefined) {
                 $has_defined_keys = true;
             }
         }
+
+        $value_type = $this->combinePropertyTypes();
 
         if ($this->is_list) {
             if ($this->fallback_params !== null) {
