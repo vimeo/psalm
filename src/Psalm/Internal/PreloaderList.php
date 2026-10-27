@@ -968,6 +968,7 @@ final class PreloaderList {
         \Psalm\Internal\Provider\ReturnTypeProvider\TriggerErrorReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\VersionCompareReturnTypeProvider::class,
         \Psalm\Internal\Provider\StatementsProvider::class,
+        \Psalm\Internal\Provider\TypeVariableResolvingNodeTypeProvider::class,
         \Psalm\Internal\ReferenceConstraint::class,
         \Psalm\Internal\RuntimeCaches::class,
         \Psalm\Internal\Scanner\ClassLikeDocblockComment::class,
