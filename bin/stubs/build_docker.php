@@ -352,6 +352,10 @@ function pieInstalls(array $extensions, string $phpVersion): array
                 continue;
             }
             if (Semver::satisfies($phpVersion, $release['require']['php'] ?? '*')) {
+                // it ends up in the Dockerfile's shell commands
+                if (!preg_match('/^v?\d[\w.-]*$/', $release['version'])) {
+                    fail("Unexpected version '{$release['version']}' of PIE package '$package'.");
+                }
                 $installs[$extension] = $release['version'];
             }
             break;
