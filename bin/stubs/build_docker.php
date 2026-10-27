@@ -316,11 +316,15 @@ function phpBaseVersion(string $version): string
     fail('Could not determine the PHP version of ' . phpBaseImage($version) . '.');
 }
 
+/** Composer's stabilities, most stable first, under their Composer and PECL names. */
+const PIE_STABILITIES = ['stable' => 0, 'RC' => 1, 'beta' => 2, 'alpha' => 3, 'dev' => 4, 'devel' => 4];
+
 /**
  * The extensions installed with PIE for a version, mapped to their Packagist
- * version: those whose newest stable PIE release supports the PHP version. Older
- * releases are left to install-php-extensions, which knows which of them build
- * on the older base images (their Packagist constraints can be too loose).
+ * version: those whose newest PIE release (stable, unless the extension asks for
+ * a less stable one) supports the PHP version. Older releases are left to
+ * install-php-extensions, which knows which of them build on the older base
+ * images (their Packagist constraints can be too loose).
  *
  * @return array<string, string>
  */
@@ -334,6 +338,8 @@ function pieInstalls(array $extensions, string $phpVersion): array
         if (!isset(PIE_PACKAGES[$base]) || preg_match('/^\d/', $suffix)) {
             continue;
         }
+        // the "-<stability>" suffix is the least stable release install-php-extensions would take
+        $minimumStability = PIE_STABILITIES[$suffix === '' ? 'stable' : $suffix] ?? PIE_STABILITIES['stable'];
         $package = PIE_PACKAGES[$base]['package'];
         $metadata = json_decode(fetch("https://repo.packagist.org/p2/$package.json"), true);
         // newest first, minified: each release only lists the fields that differ from the previous one
@@ -341,7 +347,7 @@ function pieInstalls(array $extensions, string $phpVersion): array
         foreach ($metadata['packages'][$package] ?? [] as $diff) {
             $release = array_filter($diff + $release, static fn($value): bool => $value !== '__unset');
             if (($release['type'] ?? '') !== 'php-ext'
-                || VersionParser::parseStability($release['version']) !== 'stable'
+                || PIE_STABILITIES[VersionParser::parseStability($release['version'])] > $minimumStability
             ) {
                 continue;
             }
