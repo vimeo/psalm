@@ -1883,113 +1883,120 @@ final class ArgumentsAnalyzer
             }
         }
 
-        if (($var_id && isset($context->vars_in_scope[$var_id]))
-            || ($method_id
+        $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+        $context->inside_by_ref_offset = $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch;
+
+        try {
+            if (($var_id && isset($context->vars_in_scope[$var_id]))
+                || ($method_id
+                    && in_array(
+                        $method_id,
+                        $builtin_array_functions,
+                        true,
+                    ))
+            ) {
+                $was_inside_assignment = $context->inside_assignment;
+                $context->inside_assignment = true;
+
+                // if the variable is in scope, get or we're in a special array function,
+                // figure out its type before proceeding
+                if (ExpressionAnalyzer::analyze(
+                    $statements_analyzer,
+                    $arg->value,
+                    $context,
+                ) === false) {
+                    $context->inside_assignment = $was_inside_assignment;
+
+                    return false;
+                }
+
+                $context->inside_assignment = $was_inside_assignment;
+            }
+
+            // special handling for array sort
+            if ($argument_offset === 0
+                && $method_id
                 && in_array(
                     $method_id,
                     $builtin_array_functions,
                     true,
-                ))
-        ) {
-            $was_inside_assignment = $context->inside_assignment;
-            $context->inside_assignment = true;
-
-            // if the variable is in scope, get or we're in a special array function,
-            // figure out its type before proceeding
-            if (ExpressionAnalyzer::analyze(
-                $statements_analyzer,
-                $arg->value,
-                $context,
-            ) === false) {
-                $context->inside_assignment = $was_inside_assignment;
-
-                return false;
-            }
-
-            $context->inside_assignment = $was_inside_assignment;
-        }
-
-        // special handling for array sort
-        if ($argument_offset === 0
-            && $method_id
-            && in_array(
-                $method_id,
-                $builtin_array_functions,
-                true,
-            )
-        ) {
-            if (in_array($method_id, ['array_pop', 'array_shift'], true)) {
-                ArrayFunctionArgumentsAnalyzer::handleByRefArrayAdjustment(
-                    $statements_analyzer,
-                    $arg,
-                    $context,
-                    $method_id === 'array_shift',
-                );
-
-                return null;
-            }
-
-            // noops
-            if (in_array($method_id, ['reset', 'end', 'next', 'prev', 'ksort'], true)) {
-                return null;
-            }
-
-            if (($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
-                && $arg_value_type->hasArray()
+                )
             ) {
-                /**
-                 * @var TArray|TKeyedArray
-                 */
-                $array_type = $arg_value_type->getArray();
+                if (in_array($method_id, ['array_pop', 'array_shift'], true)) {
+                    ArrayFunctionArgumentsAnalyzer::handleByRefArrayAdjustment(
+                        $statements_analyzer,
+                        $arg,
+                        $context,
+                        $method_id === 'array_shift',
+                    );
 
-                if ($array_type instanceof TKeyedArray) {
-                    $array_type = $array_type->getGenericArrayType();
+                    return null;
                 }
 
-                $by_ref_type = new Union([$array_type]);
+                // noops
+                if (in_array($method_id, ['reset', 'end', 'next', 'prev', 'ksort'], true)) {
+                    return null;
+                }
 
-                AssignmentAnalyzer::assignByRefParam(
+                if (($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
+                    && $arg_value_type->hasArray()
+                ) {
+                    /**
+                     * @var TArray|TKeyedArray
+                     */
+                    $array_type = $arg_value_type->getArray();
+
+                    if ($array_type instanceof TKeyedArray) {
+                        $array_type = $array_type->getGenericArrayType();
+                    }
+
+                    $by_ref_type = new Union([$array_type]);
+
+                    AssignmentAnalyzer::assignByRefParam(
+                        $statements_analyzer,
+                        $arg->value,
+                        $by_ref_type,
+                        $by_ref_type,
+                        $context,
+                        false,
+                    );
+
+                    return null;
+                }
+            }
+
+            if ($method_id === 'socket_select') {
+                if (ExpressionAnalyzer::analyze(
                     $statements_analyzer,
                     $arg->value,
-                    $by_ref_type,
-                    $by_ref_type,
                     $context,
-                    false,
-                );
-
-                return null;
+                ) === false) {
+                    return false;
+                }
             }
+
+            if (!$arg->value instanceof PhpParser\Node\Expr\Variable) {
+                $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
+                if (!isset($suppressed_issues['EmptyArrayAccess'])) {
+                    $statements_analyzer->addSuppressedIssues(['EmptyArrayAccess']);
+                }
+
+                $v = ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context);
+
+                if (!isset($suppressed_issues['EmptyArrayAccess'])) {
+                    $statements_analyzer->removeSuppressedIssues(['EmptyArrayAccess']);
+                }
+
+                if ($v === false) {
+                    return false;
+                }
+            }
+
+            return null;
+        } finally {
+            $context->inside_by_ref_offset = $was_inside_by_ref_offset;
         }
-
-        if ($method_id === 'socket_select') {
-            if (ExpressionAnalyzer::analyze(
-                $statements_analyzer,
-                $arg->value,
-                $context,
-            ) === false) {
-                return false;
-            }
-        }
-
-        if (!$arg->value instanceof PhpParser\Node\Expr\Variable) {
-            $suppressed_issues = $statements_analyzer->getSuppressedIssues();
-
-            if (!isset($suppressed_issues['EmptyArrayAccess'])) {
-                $statements_analyzer->addSuppressedIssues(['EmptyArrayAccess']);
-            }
-
-            $v = ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context);
-
-            if (!isset($suppressed_issues['EmptyArrayAccess'])) {
-                $statements_analyzer->removeSuppressedIssues(['EmptyArrayAccess']);
-            }
-
-            if ($v === false) {
-                return false;
-            }
-        }
-
-        return null;
     }
 
     /**
