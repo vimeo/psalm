@@ -628,6 +628,35 @@ final class BinaryOperationTest extends TestCase
                         return 1 | 2 | 4 | (1 & 0);
                     }',
             ],
+            'bitwiseOperationsOfMasksInALoopStayMasks' => [
+                'code' => '<?php
+                    final class Flags {
+                        public const A = 1;
+                        public const B = 2;
+                        public const C = 4;
+                        public const D = 8;
+                    }
+
+                    /**
+                     * @param list<int-mask-of<Flags::*>> $masks
+                     * @return int-mask-of<Flags::*>
+                     */
+                    function combine(array $masks): int {
+                        $combined = 0;
+                        foreach ($masks as $mask) {
+                            if ($mask === 0) {
+                                $combined |= Flags::A | Flags::B;
+                                continue;
+                            }
+
+                            $combined |= $mask;
+                            $combined &= Flags::A | Flags::C | Flags::D;
+                            $combined ^= Flags::B;
+                        }
+
+                        return $combined;
+                    }',
+            ],
             'booleanXor' => [
                 'code' => '<?php
                     $a = 4 ^ 1;

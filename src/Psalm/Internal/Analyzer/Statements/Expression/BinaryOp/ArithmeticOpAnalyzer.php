@@ -192,6 +192,13 @@ final class ArithmeticOpAnalyzer
                 }
             }
 
+            $bitwise_result_type = self::getBitwiseResultOfNonNegativeLiterals($parent, $left_type, $right_type);
+            if ($bitwise_result_type !== null) {
+                $result_type = $bitwise_result_type;
+
+                return;
+            }
+
             $invalid_left_messages = [];
             $invalid_right_messages = [];
             $has_valid_left_operand = false;
@@ -1033,6 +1040,76 @@ final class ArithmeticOpAnalyzer
         }
 
         return $calculated_type;
+    }
+
+    /**
+     * The values `&`, `|` or `^` of non-negative literal ints can give: their bits are those of the operands, so
+     * unlike other arithmetic they can't grow from one pass of a loop to the next, and are computed in loops too
+     * (e.g. a capability mask built with `$mask |= ...` stays a mask). Null for other operations or operands, and
+     * for more values than a union keeps.
+     *
+     * @psalm-pure
+     */
+    private static function getBitwiseResultOfNonNegativeLiterals(
+        PhpParser\Node $parent,
+        Union $left_type,
+        Union $right_type,
+    ): ?Union {
+        if (!$parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr
+            && !$parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
+            && !$parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
+        ) {
+            return null;
+        }
+
+        $left_values = self::getNonNegativeLiteralInts($left_type);
+        $right_values = self::getNonNegativeLiteralInts($right_type);
+        if ($left_values === null || $right_values === null) {
+            return null;
+        }
+
+        $values = [];
+        foreach ($left_values as $left_value) {
+            foreach ($right_values as $right_value) {
+                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
+                    $values[$left_value | $right_value] = true;
+                } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
+                    $values[$left_value & $right_value] = true;
+                } else {
+                    $values[$left_value ^ $right_value] = true;
+                }
+            }
+        }
+
+        // as many literals as Type::combineUnionTypes() keeps: beyond that, the operation gives an int
+        if (count($values) > 500) {
+            return null;
+        }
+
+        $atomics = [];
+        foreach ($values as $value => $_) {
+            $atomics[] = new TLiteralInt($value);
+        }
+
+        return new Union($atomics);
+    }
+
+    /**
+     * @return non-empty-list<int<0, max>>|null
+     * @psalm-pure
+     */
+    private static function getNonNegativeLiteralInts(Union $type): ?array
+    {
+        $values = [];
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TLiteralInt || $atomic->value < 0) {
+                return null;
+            }
+
+            $values[] = $atomic->value;
+        }
+
+        return $values;
     }
 
     /**
