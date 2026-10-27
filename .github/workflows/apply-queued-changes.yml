@@ -1,0 +1,46 @@
+name: Apply queued changes
+
+# Closes, reopens, labels and merges the issues and pull requests the maintainers queued with their Telegram bot,
+# which has no access to this repository itself; see bin/ci/apply-queued-changes.php. Scheduled workflows only run
+# from the default branch.
+on:
+  schedule:
+    - cron: '53 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    if: github.repository == 'vimeo/psalm'
+    permissions:
+      contents: write # to merge pull requests
+      issues: write # to close, reopen and label issues and pull requests
+      pull-requests: write # to close, reopen and merge pull requests
+      actions: write # to dispatch on a branch merged into the workflows a push to it runs
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          extensions: curl
+          coverage: none
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+        with:
+          persist-credentials: false
+
+      - name: Apply queued changes
+        run: php bin/ci/apply-queued-changes.php
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QUEUE_URL: https://psalm-internal.daniil.it/queue
+          QUEUE_TOKEN: ${{ secrets.PSALM_INTERNAL_TOKEN }}
+          MERGE_METHOD: merge

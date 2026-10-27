@@ -51,7 +51,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
         Context $context,
         ?TemplateResult $template_result = null,
     ): bool {
-        NullsafeChainState::None->markOn($stmt);
+        NullsafeChainState::reset($stmt);
 
         $method_id = null;
 

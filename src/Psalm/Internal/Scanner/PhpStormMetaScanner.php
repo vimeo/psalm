@@ -51,9 +51,7 @@ final class PhpStormMetaScanner
             && $args[1]->value->getArgs()[0]->value instanceof PhpParser\Node\Expr\Array_
         ) {
             foreach ($args[1]->value->getArgs()[0]->value->items as $array_item) {
-                if ($array_item
-                    && $array_item->key instanceof PhpParser\Node\Scalar\String_
-                ) {
+                if ($array_item->key instanceof PhpParser\Node\Scalar\String_) {
                     if ($array_item->value instanceof PhpParser\Node\Expr\ClassConstFetch
                         && $array_item->value->class instanceof PhpParser\Node\Name\FullyQualified
                         && $array_item->value->name instanceof PhpParser\Node\Identifier
@@ -65,8 +63,7 @@ final class PhpStormMetaScanner
                     } elseif ($array_item->value instanceof PhpParser\Node\Scalar\String_) {
                         $map[$array_item->key->value] = $array_item->value->value;
                     }
-                } elseif ($array_item
-                    && $array_item->key instanceof PhpParser\Node\Expr\ClassConstFetch
+                } elseif ($array_item->key instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $array_item->key->class instanceof PhpParser\Node\Name\FullyQualified
                     && $array_item->key->name instanceof PhpParser\Node\Identifier
                 ) {

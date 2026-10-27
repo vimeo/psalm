@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Cache;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -20,9 +21,13 @@ use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
+use Psalm\Tests\TestConfig;
+use ReflectionProperty;
 
 use function microtime;
 use function str_replace;
+use function sys_get_temp_dir;
+use function uniqid;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -144,6 +149,33 @@ final class CacheTest extends TestCase
             $issues = self::normalizeIssueData(IssueBuffer::getIssuesData());
             self::assertSame($interaction['issues'] ?? [], $issues);
         }
+    }
+
+    #[DataProvider('provideSaveItemRetention')]
+    public function testSaveItemRetention(bool $persistent, bool $array_cache, bool $retained): void
+    {
+        $config = new TestConfig();
+        $config->cache_directory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'psalm-cache-test-' . uniqid('', true);
+        $config->array_cache = $array_cache;
+
+        /** @var Cache<string> $cache */
+        $cache = new Cache($config, 'test', [], $persistent);
+        $cache->saveItem('key', 'item', 'hash');
+
+        $in_memory = new ReflectionProperty(Cache::class, 'cache');
+        self::assertSame($retained, $in_memory->getValue($cache) !== []);
+        self::assertSame('item', $cache->getItem('key', 'hash'));
+    }
+
+    /**
+     * @return iterable<string, array{bool, bool, bool}>
+     * @psalm-pure
+     */
+    public static function provideSaveItemRetention(): iterable
+    {
+        yield 'persistent with array cache' => [true, true, true];
+        yield 'persistent without array cache' => [true, false, false];
+        yield 'not persistent without array cache' => [false, false, true];
     }
 
     /**
