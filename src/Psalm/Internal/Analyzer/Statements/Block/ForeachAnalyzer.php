@@ -38,6 +38,7 @@ use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidIterator;
@@ -1383,6 +1384,25 @@ final class ForeachAnalyzer
 
                     if ($iterator_key_type && !$iterator_key_type->isMixed()) {
                         $key_type = Type::combineUnionTypes($key_type, $iterator_key_type);
+                    }
+
+                    if (!$key_type && !$value_type) {
+                        self::getKeyValueParamsForTraversableObject(
+                            $iterator_atomic_type,
+                            $codebase,
+                            $key_type,
+                            $value_type,
+                        );
+
+                        // the params of an unbound iterator (`new AppendIterator()`) are type
+                        // variables: resolve them as current() and key() do, to mixed
+                        if ($key_type) {
+                            $key_type = TypeVariableTracker::resolveTypeVariables($key_type, $codebase);
+                        }
+
+                        if ($value_type) {
+                            $value_type = TypeVariableTracker::resolveTypeVariables($value_type, $codebase);
+                        }
                     }
                 }
 
