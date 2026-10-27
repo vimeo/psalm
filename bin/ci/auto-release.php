@@ -7,9 +7,10 @@
  *
  * Run hourly by .github/workflows/auto-release.yml. For each branch:
  *  - the last release is the highest version tagged on the branch (master also contains the 6.x tags);
- *  - nothing happens if the branch has no commits since, or if a workflow run or a commit status of its head
- *    is still running, failed, or the unit tests haven't run yet. A failed check is reported as a warning, and
- *    fails the run once the head has been blocked for a day, so that the maintainers are notified;
+ *  - nothing happens if the branch has no commits since, or if a workflow run (on a push, or dispatched in its
+ *    stead) or a commit status of its head is still running, failed, or the unit tests haven't run yet. A failed
+ *    check is reported as a warning, and fails the run once the head has been blocked for a day, so that the
+ *    maintainers are notified;
  *  - the next version keeps the readiness of the last one: 7.0.0-alpha1 is followed by 7.0.0-alpha2, likewise
  *    for betas and release candidates, and a stable 7.0.0 by 7.1.0 if a feature or deprecation was merged, else
  *    by 7.0.1. A removal needs a new major version, which is left to the maintainers;
@@ -107,14 +108,17 @@ $dispatchBuilds = static function (string $tag) use ($api, $run, $repository, $d
 // or null if every workflow run and commit status of it passed
 /** @return ?array{bool, string} */
 $getChecksFailure = static function (string $sha) use ($api, $required_workflows, $own_workflow): ?array {
-    // the latest attempt of each workflow
+    // the latest attempt of each workflow, run on a push or dispatched in its stead: merges made with a workflow's
+    // token don't trigger pushes, so bin/ci/apply-queued-changes.php dispatches the push workflows after merging
     $latest = [];
-    foreach ($api("actions/runs?head_sha=$sha&event=push&per_page=100")['workflow_runs'] as $workflow_run) {
-        $name = $workflow_run['name'];
-        if ($name !== $own_workflow
-            && (!isset($latest[$name]) || $workflow_run['created_at'] > $latest[$name]['created_at'])
-        ) {
-            $latest[$name] = $workflow_run;
+    foreach (['push', 'workflow_dispatch'] as $event) {
+        foreach ($api("actions/runs?head_sha=$sha&event=$event&per_page=100")['workflow_runs'] as $workflow_run) {
+            $name = $workflow_run['name'];
+            if ($name !== $own_workflow
+                && (!isset($latest[$name]) || $workflow_run['created_at'] > $latest[$name]['created_at'])
+            ) {
+                $latest[$name] = $workflow_run;
+            }
         }
     }
 

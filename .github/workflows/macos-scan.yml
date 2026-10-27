@@ -1,6 +1,10 @@
 name: Run Psalm (mac OS)
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  # dispatched by bin/ci/apply-queued-changes.php after merging, which doesn't trigger pushes
+  workflow_dispatch:
 
 permissions:
   contents: read

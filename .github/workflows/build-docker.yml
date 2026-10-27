@@ -11,7 +11,8 @@ on:
       - 6.x
     tags:
       - '*'
-  # dispatched on the tags of the releases bin/ci/auto-release.php publishes, which don't trigger tag pushes
+  # dispatched on the tags of the releases bin/ci/auto-release.php publishes, which don't trigger tag pushes, and
+  # by bin/ci/apply-queued-changes.php after merging, which doesn't trigger branch pushes either
   workflow_dispatch:
 
 permissions:

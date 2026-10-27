@@ -10,6 +10,8 @@ on:
   push:
     branches:
       - '**'
+  # dispatched by bin/ci/apply-queued-changes.php after merging, which doesn't trigger pushes
+  workflow_dispatch:
 
 permissions:
   contents: read
