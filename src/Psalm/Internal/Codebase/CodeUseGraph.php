@@ -13,7 +13,9 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 
 use function array_intersect_key;
+use function array_keys;
 use function array_pop;
+use function implode;
 use function md5;
 use function str_contains;
 use function strpos;
@@ -526,7 +528,10 @@ final class CodeUseGraph
             }
         }
 
-        $this->mutation_info = $other->mutation_info + $this->mutation_info;
+        foreach ($other->mutation_info as $node_id => $info) {
+            $this->addMutationInfo($node_id, $info);
+        }
+
         $this->mutation_levels = null;
     }
 
@@ -558,8 +563,50 @@ final class CodeUseGraph
      */
     public function addMutationInfo(string $node_id, array $info): void
     {
-        $this->mutation_info[$node_id] = $info;
-        $this->mutation_levels = null;
+        $existing = $this->mutation_info[$node_id] ?? null;
+
+        if ($existing === null || self::replacesMutationInfo($info, $existing)) {
+            $this->mutation_info[$node_id] = $info;
+            $this->mutation_levels = null;
+        }
+    }
+
+    /**
+     * Whether $info, of a function-like analysed more than once, replaces $existing, whatever the order the analyses
+     * came in (they come from any process of a parallel run). In decreasing precedence:
+     * - the analysis in the file declaring it: what it does there is not up to the including file;
+     * - the analysis when included, by the last including file in analysis order;
+     * - the analysis of its body for an object of an inheriting class, which has the callees of that class.
+     *
+     * @param MutationInfo $info
+     * @param MutationInfo $existing
+     * @psalm-pure
+     */
+    private static function replacesMutationInfo(array $info, array $existing): bool
+    {
+        // what a previous run found is not analysed again
+        if (!$info['fresh']) {
+            return false;
+        }
+
+        if (!$existing['fresh']) {
+            return true;
+        }
+
+        $precedence = static fn(array $info): int => $info['inherited']
+            ? 0
+            : ($info['root'] === $info['location']->file_path ? 2 : 1);
+
+        // a trait method is analysed once per class using it, with what that class has: of those, the same one
+        // has to win whichever is analysed first
+        $key = static fn(array $info): array => [
+            $precedence($info),
+            $info['root'],
+            $info['intrinsic'],
+            implode(',', array_keys($info['callees'])),
+        ];
+
+        return $key($info) >= $key($existing);
     }
 
     /**
