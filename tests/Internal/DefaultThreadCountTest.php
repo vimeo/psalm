@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Internal;
 
-use Fidry\CpuCoreCounter\CpuCoreCounter;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\Cli\DefaultThreadCount;
-
-use function max;
 
 final class DefaultThreadCountTest extends TestCase
 {
@@ -35,6 +32,8 @@ final class DefaultThreadCountTest extends TestCase
         yield 'open range' => [null, '0-'];
         yield 'negative' => [null, '-3'];
         yield 'inner whitespace' => [null, '0, 1'];
+        yield 'too many bounds' => [null, '0-1-2'];
+        yield 'bad range bound' => [null, '0-x'];
         yield 'newline inside list' => [null, "0-3\n,5"];
         yield 'trailing garbage after valid' => [null, "0-3\nfoo"];
     }
@@ -82,6 +81,8 @@ final class DefaultThreadCountTest extends TestCase
         yield 'apple silicon three levels' => [6, 'Darwin', [$sysctl => "3\n6\n"], []];
         yield 'intel mac, keys missing' => [null, 'Darwin', [$sysctl => ''], []];
         yield 'intel mac, only one key printed' => [null, 'Darwin', [$sysctl => "8\n"], []];
+        yield 'darwin bad first line' => [null, 'Darwin', [$sysctl => "x\n12\n"], []];
+        yield 'darwin bad second line' => [null, 'Darwin', [$sysctl => "2\ny\n"], []];
         yield 'darwin garbage output' => [null, 'Darwin', [$sysctl => "x\ny\n"], []];
         yield 'darwin extra output' => [null, 'Darwin', [$sysctl => "2\n12\n1\n"], []];
         yield 'darwin command fails' => [null, 'Darwin', [], []];
@@ -147,35 +148,40 @@ final class DefaultThreadCountTest extends TestCase
         );
     }
 
-    public function testGetUsesPerformanceCoresCappedByAllCores(): void
+    /**
+     * @return iterable<string,array{int,int,string,array<string,string>,array<string,string>}>
+     * @psalm-pure
+     */
+    public static function provideResolve(): iterable
     {
-        $all_cores = max(1, (new CpuCoreCounter())->getCountWithFallback(1));
+        $sysctl = '/usr/sbin/sysctl -n hw.nperflevels hw.perflevel0.logicalcpu 2>/dev/null';
+        $hybrid_sysfs = ['/sys/devices/cpu_core/cpus' => '0-15', '/sys/devices/cpu_atom/cpus' => '16-23'];
 
-        $hybrid = DefaultThreadCount::get(
-            static fn(string $command): ?string => "2\n" . ($all_cores + 100) . "\n",
-            static fn(string $path): ?string => null,
-            'Darwin',
-        );
-        $this->assertSame($all_cores, $hybrid);
-
-        if ($all_cores > 1) {
-            $fewer = DefaultThreadCount::get(
-                static fn(string $command): ?string => "2\n1\n",
-                static fn(string $path): ?string => null,
-                'Darwin',
-            );
-            $this->assertSame(1, $fewer);
-        }
+        yield 'apple silicon hybrid' => [12, 16, 'Darwin', [$sysctl => "2\n12\n"], []];
+        yield 'apple silicon, sysctl unavailable' => [16, 16, 'Darwin', [], []];
+        yield 'apple silicon, non-hybrid' => [8, 8, 'Darwin', [$sysctl => "1\n8\n"], []];
+        yield 'linux hybrid' => [16, 24, 'Linux', [], $hybrid_sysfs];
+        yield 'linux hybrid limited by affinity' => [4, 4, 'Linux', [], $hybrid_sysfs];
+        yield 'linux, sysfs unreadable' => [24, 24, 'Linux', [], []];
+        yield 'unknown os' => [6, 6, 'Windows', [$sysctl => "2\n12\n"], $hybrid_sysfs];
+        yield 'no cores detected' => [1, 0, 'Darwin', [$sysctl => "2\n12\n"], []];
     }
 
-    public function testGetFallsBackToAllCoresWhenReadersFail(): void
+    /**
+     * @param array<string,string> $commands
+     * @param array<string,string> $files
+     */
+    #[DataProvider('provideResolve')]
+    public function testResolve(int $expected, int $all_cores, string $os_family, array $commands, array $files): void
     {
-        $failing_command = static fn(string $command): ?string => null;
-        $failing_file = static fn(string $path): ?string => null;
-
         $this->assertSame(
-            max(1, (new CpuCoreCounter())->getCountWithFallback(1)),
-            DefaultThreadCount::get($failing_command, $failing_file, 'Darwin'),
+            $expected,
+            DefaultThreadCount::resolve(
+                $all_cores,
+                static fn(string $command): ?string => $commands[$command] ?? null,
+                static fn(string $path): ?string => $files[$path] ?? null,
+                $os_family,
+            ),
         );
     }
 }

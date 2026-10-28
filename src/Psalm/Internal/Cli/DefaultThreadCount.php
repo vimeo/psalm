@@ -7,14 +7,17 @@ namespace Psalm\Internal\Cli;
 use Closure;
 use Fidry\CpuCoreCounter\CpuCoreCounter;
 
+use function array_filter;
+use function array_map;
 use function count;
+use function ctype_digit;
 use function explode;
 use function file_get_contents;
 use function function_exists;
+use function intval;
 use function is_string;
 use function max;
 use function min;
-use function preg_match;
 use function shell_exec;
 use function trim;
 
@@ -32,24 +35,30 @@ use const PHP_OS_FAMILY;
 final class DefaultThreadCount
 {
     /**
-     * @param ?Closure(string): ?string $read_command runs a shell command, returns its stdout or null on failure
-     * @param ?Closure(string): ?string $read_file returns the contents of a file or null if it can't be read
      * @return int<1, max>
      */
-    public static function get(
-        ?Closure $read_command = null,
-        ?Closure $read_file = null,
-        ?string $os_family = null,
-    ): int {
-        $all_cores = max(1, (new CpuCoreCounter())->getCountWithFallback(1));
-
-        $performance_cores = self::getPerformanceCoreCount(
-            $read_command ?? self::shellCommandReader(),
-            $read_file ?? self::fileReader(),
-            $os_family ?? PHP_OS_FAMILY,
+    public static function get(): int
+    {
+        return self::resolve(
+            (new CpuCoreCounter())->getCountWithFallback(1),
+            self::shellCommandReader(),
+            self::fileReader(),
+            PHP_OS_FAMILY,
         );
+    }
 
-        return self::select($all_cores, $performance_cores);
+    /**
+     * @param Closure(string): ?string $read_command runs a shell command, returns its stdout or null on failure
+     * @param Closure(string): ?string $read_file returns the contents of a file or null if it can't be read
+     * @return int<1, max>
+     */
+    public static function resolve(
+        int $all_cores,
+        Closure $read_command,
+        Closure $read_file,
+        string $os_family,
+    ): int {
+        return self::select($all_cores, self::getPerformanceCoreCount($read_command, $read_file, $os_family));
     }
 
     /**
@@ -96,19 +105,16 @@ final class DefaultThreadCount
      */
     public static function parseCpuList(string $list): ?int
     {
-        $list = trim($list);
-        if ($list === '') {
-            return null;
-        }
-
         $count = 0;
-        foreach (explode(',', $list) as $part) {
-            if (preg_match('/^(\d+)(?:-(\d+))?$/D', $part, $matches) !== 1) {
+        foreach (explode(',', trim($list)) as $part) {
+            $bounds = explode('-', $part);
+            if (count($bounds) > 2 || $bounds !== array_filter($bounds, ctype_digit(...))) {
                 return null;
             }
 
-            $first = (int) $matches[1];
-            $last = isset($matches[2]) ? (int) $matches[2] : $first;
+            $bounds = array_map(intval(...), $bounds);
+            $first = $bounds[0];
+            $last = $bounds[1] ?? $first;
             if ($last < $first) {
                 return null;
             }
@@ -130,15 +136,14 @@ final class DefaultThreadCount
         }
 
         $lines = explode("\n", trim($output));
-        if (count($lines) !== 2
-            || preg_match('/^\d+$/D', $lines[0]) !== 1
-            || preg_match('/^\d+$/D', $lines[1]) !== 1
-        ) {
+        if (count($lines) !== 2 || $lines !== array_filter($lines, ctype_digit(...))) {
             return null;
         }
 
+        [$levels, $performance_cores] = array_map(intval(...), $lines);
+
         // perflevel0 is the highest-performance level; a single level means the CPU is not hybrid
-        return (int) $lines[0] > 1 ? (int) $lines[1] : null;
+        return $levels > 1 ? $performance_cores : null;
     }
 
     /**
