@@ -172,6 +172,7 @@ final class IncludeTest extends TestCase
 
     /**
      * @return array<string,array{files_to_check:list<string>}>
+     * @psalm-pure
      */
     public static function providerGlobalsWrittenThroughAnotherFunctionAreIndependentOfAnalysisOrder(): array
     {
