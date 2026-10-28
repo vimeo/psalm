@@ -10,6 +10,7 @@ use Symfony\Component\Process\Process;
 
 use function array_map;
 use function assert;
+use function dirname;
 use function explode;
 use function file_put_contents;
 use function glob;
@@ -59,10 +60,6 @@ final class ComposerAutoloaderMachineryTest extends TestCase
             <psalm errorLevel="1" runTaintAnalysis="false" resolveFromConfigFile="true"
                 xmlns="https://getpsalm.org/schema/config">
                 <projectFiles><directory name="src"/></projectFiles>
-                <issueHandlers>
-                    <UnusedClass errorLevel="suppress"/>
-                    <MissingPureAnnotation errorLevel="suppress"/>
-                </issueHandlers>
             </psalm>
             XML);
         file_put_contents($this->project_dir . '/src/helpers.php', <<<'PHP'
@@ -89,17 +86,30 @@ final class ComposerAutoloaderMachineryTest extends TestCase
                     return InstalledVersions::getVersion($package);
                 }
 
-                /** @return array<string, list<string>> */
+                /**
+                 * @return array<string, list<string>>
+                 * @psalm-pure
+                 */
                 public static function prefixes(ClassLoader $loader): array
                 {
                     return $loader->getPrefixesPsr4();
                 }
 
+                /** @psalm-pure */
                 public static function next(): int
                 {
                     return helper(1);
                 }
             }
+            PHP);
+
+        file_put_contents($this->project_dir . '/src/run.php', <<<'PHP'
+            <?php
+            namespace Acme;
+
+            use Composer\Autoload\ClassLoader;
+
+            echo Version::of('composer/composer') ?? '', Version::next(), count(Version::prefixes(new ClassLoader())), "\n";
             PHP);
 
         (new Process(['composer', 'dump-autoload', '--optimize', '--no-plugins'], $this->project_dir, null, null, 120))
@@ -127,6 +137,12 @@ final class ComposerAutoloaderMachineryTest extends TestCase
         self::assertNotContains($this->path('vendor/composer/autoload_files.php'), $registered);
         self::assertNotContains($this->path('vendor/composer/ClassLoader.php'), $registered);
         self::assertNotContains($this->path('vendor/composer/platform_check.php'), $registered);
+
+        // Psalm itself runs from a source checkout whose Composer autoloader is loaded in-process
+        $psalm_vendor = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR;
+        self::assertNotContains($psalm_vendor . 'autoload.php', $registered);
+        self::assertNotContains($psalm_vendor . 'composer' . DIRECTORY_SEPARATOR . 'autoload_real.php', $registered);
+        self::assertNotContains($psalm_vendor . 'composer' . DIRECTORY_SEPARATOR . 'installed.php', $registered);
     }
 
     /**
