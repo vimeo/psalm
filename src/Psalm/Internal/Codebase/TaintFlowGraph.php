@@ -1077,7 +1077,7 @@ final class TaintFlowGraph extends DataFlowGraph
         ksort($specialized_ids);
 
         foreach ($specialized_ids as $id => $_) {
-            self::linkSpecialization($reverse, (string) $id);
+            self::linkSpecialization($reverse, $id);
         }
 
         return $reverse;
