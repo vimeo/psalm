@@ -1260,6 +1260,17 @@ final class ClassLikeStringTest extends TestCase
                     }',
                 'error_message' => 'InvalidArrayOffset',
             ],
+            'traitStringIsNotClassStringOfClass' => [
+                'code' => '<?php
+                    /** @param class-string<Exception> $class */
+                    function takesExceptionClass(string $class): void {}
+
+                    /** @param trait-string $trait */
+                    function f(string $trait): void {
+                        takesExceptionClass($trait);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
         ];
     }
 }
