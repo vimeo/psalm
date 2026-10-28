@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
@@ -28,7 +29,7 @@ final class ScannerParallelTest extends TestCase
 
     private RecordingProgress $progress;
 
-    #[\Override]
+    #[Override]
     public function setUp(): void
     {
         parent::setUp();
@@ -186,8 +187,8 @@ final class ScannerParallelTest extends TestCase
         array $unresolved,
         ?bool $rescanned,
     ): void {
-        if (!extension_loaded('pcntl')) {
-            $this->markTestSkipped('Psalm scans in one process without pcntl');
+        if (!extension_loaded('pcntl') || !extension_loaded('posix')) {
+            $this->markTestSkipped('Psalm scans in one process without pcntl and posix');
         }
 
         $codebase = $this->project_analyzer->getCodebase();

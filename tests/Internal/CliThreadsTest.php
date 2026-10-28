@@ -20,8 +20,8 @@ final class CliThreadsTest extends TestCase
     {
         parent::setUp();
 
-        if (!extension_loaded('pcntl')) {
-            $this->markTestSkipped('getThreads() always returns 1 without pcntl');
+        if (!extension_loaded('pcntl') || !extension_loaded('posix')) {
+            $this->markTestSkipped('getThreads() always returns 1 without pcntl and posix');
         }
     }
 

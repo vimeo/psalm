@@ -6,9 +6,9 @@ namespace Psalm\Tests\EndToEnd;
 
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\TestCase;
 
-use function extension_loaded;
 use function file_put_contents;
 use function glob;
 use function is_dir;
@@ -31,6 +31,8 @@ use const DIRECTORY_SEPARATOR;
  * The files an autoloader includes are scanned by several processes (see ScannerParallelTest for the cases):
  * this runs it as a user does, to check that the scan of them is given the threads.
  */
+#[RequiresPhpExtension('pcntl')]
+#[RequiresPhpExtension('posix')]
 final class ParallelAutoloadScanTest extends TestCase
 {
     use PsalmRunnerTrait;
@@ -44,10 +46,6 @@ final class ParallelAutoloadScanTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
-        if (!extension_loaded('pcntl')) {
-            $this->markTestSkipped('Psalm scans in one process without pcntl');
-        }
 
         $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('ParallelAutoloadScanTest_');
         mkdir($dir);
@@ -77,7 +75,7 @@ final class ParallelAutoloadScanTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{array<int, string>, string, bool}>
+     * @return iterable<string, array{array<int, string>, non-empty-string, bool}>
      * @psalm-pure
      */
     public static function provideAutoloadFiles(): iterable
