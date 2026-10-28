@@ -50,6 +50,7 @@ use function array_pop;
 use function array_unshift;
 use function count;
 use function end;
+use function get_object_vars;
 use function implode;
 use function ksort;
 use function min;
@@ -177,6 +178,46 @@ final class TaintFlowGraph extends DataFlowGraph
      * @var array<string, true>
      */
     private array $despecialized_calls = [];
+
+    /**
+     * What a forked worker sends the parent (see ShutdownAnalyzerTask), which decodes the graphs of all the workers
+     * one after the other: edges of the same type, length and taints share one Path, because a Path is immutable and
+     * only a few thousand of the hundreds of thousands the graph holds differ. The serializer writes a shared object
+     * once and the parent builds it once.
+     *
+     * @return array<string, mixed>
+     * @psalm-mutation-free
+     */
+    public function __serialize(): array
+    {
+        $properties = get_object_vars($this);
+
+        $paths = [];
+        $forward_edges = [];
+
+        foreach ($this->forward_edges as $from_id => $edges) {
+            foreach ($edges as $to_id => $path) {
+                $forward_edges[$from_id][$to_id] = $paths[$path->type . '|' . $path->length . '|'
+                    . $path->added_taints . '|' . $path->removed_taints] ??= $path;
+            }
+        }
+
+        $properties['forward_edges'] = $forward_edges;
+
+        return $properties;
+    }
+
+    /**
+     * @param array<string, mixed> $properties
+     * @psalm-external-mutation-free
+     */
+    public function __unserialize(array $properties): void
+    {
+        /** @psalm-suppress MixedAssignment */
+        foreach ($properties as $name => $value) {
+            $this->$name = $value;
+        }
+    }
 
     /**
      * Whether the taint nodes of a call to $storage at $call_location are specialized to the call site,
