@@ -27,9 +27,11 @@ use const PHP_OS_FAMILY;
 /**
  * Picks the thread count used when the user did not ask for one.
  *
- * On hybrid CPUs (Apple Silicon, Intel Alder Lake and newer) the efficiency cores are not counted:
- * they are slower, so a worker that ends up on one of them drags out the tail of the run,
- * while the extra threads add CPU time without finishing earlier.
+ * On hybrid CPUs (Apple Silicon, Intel Alder Lake and newer) whose efficiency cores are a minority (fewer logical
+ * CPUs than the other cores) the efficiency cores are not counted: they are slower, so a worker that ends up on one
+ * of them drags out the tail of the run, while the extra threads add CPU time without finishing earlier.
+ * When efficiency cores are half or more of the CPUs (e.g. 4P+4E) they carry too much of the throughput to drop,
+ * so every core is counted.
  *
  * @internal
  */
@@ -38,12 +40,18 @@ final class DefaultThreadCount
     // Apple Silicon has at most three perf levels today; more than this and the topology is treated as unknown
     private const DARWIN_MAX_PERF_LEVELS = 4;
 
+    /** @var ?int<1, max> */
+    private static ?int $default = null;
+
     /**
+     * The topology does not change during a run, so it is detected once (scan and analysis both ask).
+     *
      * @return int<1, max>
+     * @psalm-impure
      */
     public static function get(): int
     {
-        return self::resolve(
+        return self::$default ??= self::resolve(
             (new CpuCoreCounter())->getCountWithFallback(1),
             self::shellCommandReader(),
             self::fileReader(),
@@ -166,7 +174,7 @@ final class DefaultThreadCount
             return null;
         }
 
-        $has_efficiency_level = false;
+        $efficiency_cores = 0;
         $cores = 0;
         for ($level = 0; $level < (int) $levels; $level++) {
             $name = $values["hw.perflevel$level.name"] ?? null;
@@ -176,13 +184,13 @@ final class DefaultThreadCount
             }
 
             if (strtolower($name) === 'efficiency') {
-                $has_efficiency_level = true;
+                $efficiency_cores += (int) $logical_cpus;
             } else {
                 $cores += (int) $logical_cpus;
             }
         }
 
-        return $has_efficiency_level ? $cores : null;
+        return self::dropMinorityEfficiencyCores($efficiency_cores, $cores);
     }
 
     /**
@@ -198,11 +206,22 @@ final class DefaultThreadCount
         }
 
         // cpu_core alone also exists on CPUs without efficiency cores; only a non-empty cpu_atom means hybrid
-        if (self::parseCpuList($efficiency) === null) {
+        $efficiency_cores = self::parseCpuList($efficiency);
+        $cores = self::parseCpuList($performance);
+        if ($efficiency_cores === null || $cores === null) {
             return null;
         }
 
-        return self::parseCpuList($performance);
+        return self::dropMinorityEfficiencyCores($efficiency_cores, $cores);
+    }
+
+    /**
+     * @return ?int the non-efficiency core count, or null if there are no efficiency cores or they are not a minority
+     * @psalm-pure
+     */
+    private static function dropMinorityEfficiencyCores(int $efficiency_cores, int $non_efficiency_cores): ?int
+    {
+        return $efficiency_cores > 0 && $efficiency_cores < $non_efficiency_cores ? $non_efficiency_cores : null;
     }
 
     /**

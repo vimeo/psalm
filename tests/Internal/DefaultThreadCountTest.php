@@ -143,9 +143,33 @@ final class DefaultThreadCountTest extends TestCase
             [],
         ];
         yield 'apple silicon only efficiency cores' => [
-            0,
+            null,
             'Darwin',
             [$sysctl => self::sysctlOutput([['Efficiency', 8]])],
+            [],
+        ];
+        yield 'apple silicon 4P+4E keeps all cores' => [
+            null,
+            'Darwin',
+            [$sysctl => self::sysctlOutput([['Performance', 4], ['Efficiency', 4]])],
+            [],
+        ];
+        yield 'apple silicon 4P+6E keeps all cores' => [
+            null,
+            'Darwin',
+            [$sysctl => self::sysctlOutput([['Performance', 4], ['Efficiency', 6]])],
+            [],
+        ];
+        yield 'apple silicon one efficiency core fewer than the rest' => [
+            5,
+            'Darwin',
+            [$sysctl => self::sysctlOutput([['Performance', 5], ['Efficiency', 4]])],
+            [],
+        ];
+        yield 'apple silicon zero-cpu efficiency level' => [
+            null,
+            'Darwin',
+            [$sysctl => self::sysctlOutput([['Performance', 8], ['Efficiency', 0]])],
             [],
         ];
         yield 'apple silicon more levels than queried' => [
@@ -195,6 +219,24 @@ final class DefaultThreadCountTest extends TestCase
             'Linux',
             [],
             ['/sys/devices/cpu_core/cpus' => "0-15\n", '/sys/devices/cpu_atom/cpus' => "16-23\n"],
+        ];
+        yield 'linux 2P(HT)+8E keeps all cores' => [
+            null,
+            'Linux',
+            [],
+            ['/sys/devices/cpu_core/cpus' => '0-3', '/sys/devices/cpu_atom/cpus' => '4-11'],
+        ];
+        yield 'linux 8P(HT)+16E keeps all cores' => [
+            null,
+            'Linux',
+            [],
+            ['/sys/devices/cpu_core/cpus' => '0-15', '/sys/devices/cpu_atom/cpus' => '16-31'],
+        ];
+        yield 'linux efficiency cores one fewer than the rest' => [
+            16,
+            'Linux',
+            [],
+            ['/sys/devices/cpu_core/cpus' => '0-15', '/sys/devices/cpu_atom/cpus' => '16-30'],
         ];
         yield 'linux cpu_core without cpu_atom' => [
             null,
@@ -265,6 +307,27 @@ final class DefaultThreadCountTest extends TestCase
 
         yield 'apple silicon hybrid' => [12, 16, 'Darwin', [$sysctl => $p_and_e], []];
         yield 'apple silicon without efficiency cores' => [18, 18, 'Darwin', [$sysctl => $super_and_p], []];
+        yield 'apple silicon 4P+4E' => [
+            8,
+            8,
+            'Darwin',
+            [$sysctl => self::sysctlOutput([['Performance', 4], ['Efficiency', 4]])],
+            [],
+        ];
+        yield 'apple silicon 4P+6E' => [
+            10,
+            10,
+            'Darwin',
+            [$sysctl => self::sysctlOutput([['Performance', 4], ['Efficiency', 6]])],
+            [],
+        ];
+        yield 'linux 2P(HT)+8E' => [
+            12,
+            12,
+            'Linux',
+            [],
+            ['/sys/devices/cpu_core/cpus' => '0-3', '/sys/devices/cpu_atom/cpus' => '4-11'],
+        ];
         yield 'apple silicon, sysctl unavailable' => [16, 16, 'Darwin', [], []];
         yield 'apple silicon, non-hybrid' => [8, 8, 'Darwin', [$sysctl => self::sysctlOutput([['Performance', 8]])], []];
         yield 'linux hybrid' => [16, 24, 'Linux', [], $hybrid_sysfs];
