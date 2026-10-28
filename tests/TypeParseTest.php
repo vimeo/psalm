@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use ArrayAccess;
+use Countable;
 use Override;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
@@ -21,7 +23,11 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Union;
 use ReflectionFunction;
+use ReflectionParameter;
+use Stringable;
+use Traversable;
 
+use function array_map;
 use function function_exists;
 use function mb_substr;
 use function print_r;
@@ -1753,6 +1759,33 @@ final class TypeParseTest extends TestCase
         $this->assertSame(
             'string',
             (string) Codebase::getPsalmTypeFromReflection($reflectionFunc->getReturnType()),
+        );
+    }
+
+    public function testReflectionIntersectionTypeParse(): void
+    {
+        $reflectionParams = (new ReflectionFunction(
+            /** @psalm-suppress UnusedClosureParam */
+            static fn(
+                Countable&Traversable $a,
+                (Countable&Traversable)|null $b,
+                (Countable&Traversable)|string $c,
+                (Countable&Traversable)|(ArrayAccess&Stringable) $d,
+            ): int => 1,
+        ))->getParameters();
+
+        $this->assertSame(
+            [
+                'Countable&Traversable',
+                'Countable&Traversable|null',
+                'Countable&Traversable|string',
+                'ArrayAccess&Stringable|Countable&Traversable',
+            ],
+            array_map(
+                static fn(ReflectionParameter $param): string =>
+                    Codebase::getPsalmTypeFromReflection($param->getType())->getId(),
+                $reflectionParams,
+            ),
         );
     }
 

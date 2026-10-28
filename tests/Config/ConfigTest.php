@@ -33,24 +33,39 @@ use Psalm\Tests\Config\Plugin\TestPluginIssueDefaultLevel;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
+use Throwable;
 
 use function array_map;
 use function dirname;
 use function error_get_last;
+use function file_put_contents;
 use function get_class;
 use function getcwd;
 use function implode;
 use function in_array;
 use function is_array;
+use function is_dir;
+use function json_encode;
+use function mkdir;
 use function preg_match;
 use function realpath;
+use function restore_error_handler;
+use function restore_exception_handler;
+use function rmdir;
+use function rsort;
 use function set_error_handler;
+use function set_exception_handler;
 use function sprintf;
+use function str_replace;
+use function substr;
 use function symlink;
+use function sys_get_temp_dir;
 use function uniqid;
 use function unlink;
 
 use const DIRECTORY_SEPARATOR;
+use const JSON_THROW_ON_ERROR;
+use const JSON_UNESCAPED_SLASHES;
 
 final class ConfigTest extends TestCase
 {
@@ -58,6 +73,9 @@ final class ConfigTest extends TestCase
 
     /** @var callable(int, string, string=, int=, array=):bool|null */
     protected $original_error_handler = null;
+
+    /** @var callable(Throwable):void|null */
+    protected $original_exception_handler = null;
 
     #[Override]
     public static function setUpBeforeClass(): void
@@ -77,7 +95,9 @@ final class ConfigTest extends TestCase
         RuntimeCaches::clearAll();
         $this->file_provider = new FakeFileProvider();
         $this->original_error_handler = set_error_handler(null);
-        set_error_handler($this->original_error_handler);
+        restore_error_handler();
+        $this->original_exception_handler = set_exception_handler(null);
+        restore_exception_handler();
     }
 
     private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
@@ -1395,7 +1415,17 @@ final class ConfigTest extends TestCase
     #[Override]
     public function tearDown(): void
     {
-        set_error_handler($this->original_error_handler);
+        // remove the error and exception handlers the test installed
+        while (($handler = set_error_handler(null)) !== $this->original_error_handler && $handler !== null) {
+            restore_error_handler();
+            restore_error_handler();
+        }
+        restore_error_handler();
+        while (($handler = set_exception_handler(null)) !== $this->original_exception_handler && $handler !== null) {
+            restore_exception_handler();
+            restore_exception_handler();
+        }
+        restore_exception_handler();
 
         parent::tearDown();
 
@@ -1873,6 +1903,234 @@ final class ConfigTest extends TestCase
         $root = __DIR__ . '/../fixtures/ComposerPhp64bitVersion';
         $cfg = Config::loadFromXML($root, "<?xml version=\"1.0\"?><psalm></psalm>");
         $this->assertSame('8.1', $cfg->getPhpVersion());
+    }
+
+    /**
+     * @return array<string, array{array<string, string>, string, list<string>}>
+     * @psalm-pure
+     */
+    public static function providerLibraryPlugins(): array
+    {
+        $webmozart_assert = '{"packages": [{"name": "webmozart/assert", "extra": {"psalm": {"pluginClass": '
+            . '"Webmozart\\\\Assert\\\\PsalmPlugin"}}}]}';
+
+        return [
+            'installedPackageDeclaringAPlugin' => [
+                ['vendor/composer/installed.json' => $webmozart_assert],
+                '<psalm></psalm>',
+                ['Webmozart\Assert\PsalmPlugin'],
+            ],
+            'customVendorDir' => [
+                [
+                    'composer.json' => '{"config": {"vendor-dir": "lib"}}',
+                    'lib/composer/installed.json' => $webmozart_assert,
+                ],
+                '<psalm></psalm>',
+                ['Webmozart\Assert\PsalmPlugin'],
+            ],
+            'absoluteVendorDir' => [
+                [
+                    'composer.json' => '{"config": {"vendor-dir": "%root%/lib"}}',
+                    'lib/composer/installed.json' => $webmozart_assert,
+                ],
+                '<psalm></psalm>',
+                ['Webmozart\Assert\PsalmPlugin'],
+            ],
+            'numericVendorDir' => [
+                [
+                    'composer.json' => '{"config": {"vendor-dir": 7}}',
+                    '7/composer/installed.json' => $webmozart_assert,
+                ],
+                '<psalm></psalm>',
+                ['Webmozart\Assert\PsalmPlugin'],
+            ],
+            'vendorDirOfOtherProject' => [
+                [
+                    'composer.json' => '{"config": {"vendor-dir": "lib"}}',
+                    'vendor/composer/installed.json' => $webmozart_assert,
+                ],
+                '<psalm></psalm>',
+                [],
+            ],
+            'alreadyEnabled' => [
+                ['vendor/composer/installed.json' => $webmozart_assert],
+                '<psalm><plugins><pluginClass class="\webmozart\assert\PsalmPlugin"/></plugins></psalm>',
+                ['\webmozart\assert\PsalmPlugin'],
+            ],
+            'otherPluginEnabled' => [
+                ['vendor/composer/installed.json' => $webmozart_assert],
+                '<psalm><plugins><pluginClass class="Psalm\PhpUnitPlugin\Plugin"/></plugins></psalm>',
+                ['Psalm\PhpUnitPlugin\Plugin', 'Webmozart\Assert\PsalmPlugin'],
+            ],
+            'disabled' => [
+                ['vendor/composer/installed.json' => $webmozart_assert],
+                '<psalm loadLibraryPlugins="false"></psalm>',
+                [],
+            ],
+            'packageVersionWithoutAPlugin' => [
+                ['vendor/composer/installed.json' => '{"packages": [{"name": "webmozart/assert"}]}'],
+                '<psalm></psalm>',
+                [],
+            ],
+            'otherPackageDeclaringAPlugin' => [
+                [
+                    'vendor/composer/installed.json' => '{"packages": [{"name": "psalm/plugin-phpunit", "extra": '
+                        . '{"psalm": {"pluginClass": "Psalm\\\\PhpUnitPlugin\\\\Plugin"}}}]}',
+                ],
+                '<psalm></psalm>',
+                [],
+            ],
+            'pluginClassNotAString' => [
+                [
+                    'vendor/composer/installed.json' => '{"packages": [{"name": "webmozart/assert", "extra": '
+                        . '{"psalm": {"pluginClass": 1}}}]}',
+                ],
+                '<psalm></psalm>',
+                [],
+            ],
+            'packageNotAnObject' => [
+                ['vendor/composer/installed.json' => '{"packages": [1]}'],
+                '<psalm></psalm>',
+                [],
+            ],
+            'packagesNotAList' => [
+                ['vendor/composer/installed.json' => '{"packages": 1}'],
+                '<psalm></psalm>',
+                [],
+            ],
+            'withoutPackages' => [
+                ['vendor/composer/installed.json' => '{}'],
+                '<psalm></psalm>',
+                [],
+            ],
+            'malformedInstalledJson' => [
+                ['vendor/composer/installed.json' => '{'],
+                '<psalm></psalm>',
+                [],
+            ],
+            'notInstalled' => [
+                [],
+                '<psalm></psalm>',
+                [],
+            ],
+            'requiredPhpUnit' => [
+                ['composer.json' => '{"require-dev": {"phpunit/phpunit": "^12"}}'],
+                '<psalm></psalm>',
+                ['Psalm\PhpUnitPlugin\Plugin'],
+            ],
+            'requiredMockery' => [
+                ['composer.json' => '{"require-dev": {"mockery/mockery": "^1"}}'],
+                '<psalm></psalm>',
+                ['Psalm\MockeryPlugin\Plugin'],
+            ],
+            'requiredSymfony' => [
+                ['composer.json' => '{"require": {"symfony/framework-bundle": "^7"}}'],
+                '<psalm></psalm>',
+                ['Psalm\SymfonyPsalmPlugin\Plugin'],
+            ],
+            'requiredLaravel' => [
+                ['composer.json' => '{"require": {"laravel/framework": "^12"}}'],
+                '<psalm></psalm>',
+                ['Psalm\LaravelPlugin\Plugin'],
+            ],
+            'requiredTestbench' => [
+                ['composer.json' => '{"require-dev": {"orchestra/testbench": "^11"}}'],
+                '<psalm></psalm>',
+                ['Psalm\LaravelPlugin\Plugin'],
+            ],
+            'requiredSabreEvent' => [
+                ['composer.json' => '{"require": {"sabre/event": "^5"}}'],
+                '<psalm></psalm>',
+                ['Psalm\SabreEventPlugin\Plugin'],
+            ],
+            'requiredLibrariesOfSeveralPlugins' => [
+                [
+                    'composer.json' => '{"require": {"laravel/framework": "^12", "psr/log": "^3"}, '
+                        . '"require-dev": {"phpunit/phpunit": "^12"}}',
+                    'vendor/composer/installed.json' => $webmozart_assert,
+                ],
+                '<psalm></psalm>',
+                ['Webmozart\Assert\PsalmPlugin', 'Psalm\LaravelPlugin\Plugin', 'Psalm\PhpUnitPlugin\Plugin'],
+            ],
+            'requiredLibraryInAnotherCase' => [
+                ['composer.json' => '{"require-dev": {"PHPUnit/PHPUnit": "^12"}}'],
+                '<psalm></psalm>',
+                ['Psalm\PhpUnitPlugin\Plugin'],
+            ],
+            'requiredLibraryInBothSections' => [
+                ['composer.json' => '{"require": {"sabre/event": "^5"}, "require-dev": {"sabre/event": "^5"}}'],
+                '<psalm></psalm>',
+                ['Psalm\SabreEventPlugin\Plugin'],
+            ],
+            'requiredLibraryOfAnEnabledPlugin' => [
+                ['composer.json' => '{"require-dev": {"phpunit/phpunit": "^12"}}'],
+                '<psalm><plugins><pluginClass class="\psalm\phpunitplugin\plugin"/></plugins></psalm>',
+                ['\psalm\phpunitplugin\plugin'],
+            ],
+            'requiredLibraryDisabled' => [
+                ['composer.json' => '{"require-dev": {"phpunit/phpunit": "^12"}}'],
+                '<psalm loadLibraryPlugins="false"></psalm>',
+                [],
+            ],
+            'requiredOtherLibraries' => [
+                ['composer.json' => '{"require": {"symfony/console": "^7", "doctrine/orm": "^3"}}'],
+                '<psalm></psalm>',
+                [],
+            ],
+        ];
+    }
+
+    /**
+     * @param array<string, string> $files
+     * @param list<string> $expected_plugin_classes
+     */
+    #[DataProvider('providerLibraryPlugins')]
+    public function testEnablesThePluginsOfInstalledLibraries(
+        array $files,
+        string $config_xml,
+        array $expected_plugin_classes,
+    ): void {
+        $root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-library-plugins-');
+        mkdir($root);
+        // the root inside a JSON string, whose backslashes on Windows need escaping
+        $json_root = substr(json_encode($root, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), 1, -1);
+        $dirs = [$root];
+        $paths = [];
+        foreach ($files as $path => $contents) {
+            $path = $root . DIRECTORY_SEPARATOR . $path;
+            for ($dir = dirname($path); !is_dir($dir); $dir = dirname($dir)) {
+                $dirs[] = $dir;
+            }
+            if (!is_dir(dirname($path))) {
+                mkdir(dirname($path), 0777, true);
+            }
+            file_put_contents($path, str_replace('%root%', $json_root, $contents));
+            $paths[] = $path;
+        }
+
+        try {
+            $config = Config::loadFromXML($root, '<?xml version="1.0"?>' . $config_xml);
+        } finally {
+            foreach ($paths as $path) {
+                unlink($path);
+            }
+            rsort($dirs);
+            foreach ($dirs as $dir) {
+                rmdir($dir);
+            }
+        }
+
+        $this->assertSame(
+            $expected_plugin_classes,
+            array_map(static fn(array $plugin): string => $plugin['class'], $config->getPluginClasses()),
+        );
+    }
+
+    public function testDisablesArrayCache(): void
+    {
+        $config = Config::loadFromXML(dirname(__DIR__, 2), '<?xml version="1.0"?><psalm arrayCache="false"></psalm>');
+
+        $this->assertFalse($config->array_cache);
     }
 
     public function testSetsUsePhpStormMetaPath(): void

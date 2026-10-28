@@ -6,7 +6,6 @@ namespace Psalm\Internal\Codebase;
 
 use Exception;
 use LibXMLError;
-use LogicException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -23,15 +22,11 @@ use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
 use ReflectionMethod;
-use ReflectionNamedType;
 use ReflectionParameter;
 use ReflectionType;
-use ReflectionUnionType;
 use UnexpectedValueException;
 
-use function array_map;
 use function array_merge;
-use function implode;
 use function strtolower;
 
 use const PHP_VERSION_ID;
@@ -442,26 +437,14 @@ final class Reflection
         return null;
     }
 
-    /** @psalm-suppress UnusedPsalmSuppress,UndefinedClass,TypeDoesNotContainType 7.4 has no ReflectionUnionType */
     public static function getPsalmTypeFromReflectionType(?ReflectionType $reflection_type = null): Union
     {
         if (!$reflection_type) {
             return Type::getMixed();
         }
 
-        if ($reflection_type instanceof ReflectionNamedType) {
-            $type = $reflection_type->getName();
-        } elseif ($reflection_type instanceof ReflectionUnionType) {
-            $type = implode(
-                '|',
-                array_map(
-                    static fn(ReflectionNamedType $reflection): string => $reflection->getName(),
-                    $reflection_type->getTypes(),
-                ),
-            );
-        } else {
-            throw new LogicException('Unexpected reflection class ' . $reflection_type::class . ' found.');
-        }
+        // as PHP writes it (?int, A|B, (A&B)|null), which Psalm parses
+        $type = (string) $reflection_type;
 
         if ($reflection_type->allowsNull()) {
             $type .= '|null';
