@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Tests\Cache;
 
 use Override;
-use PHPUnit\Framework\Attributes\After;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PhpParser\Node\Scalar\Int_;
 use PhpParser\Node\Scalar\String_;
@@ -46,7 +45,7 @@ use const E_WARNING;
 final class CacheTest extends TestCase
 {
     /** @var list<string> */
-    private array $cache_directories = [];
+    private static array $cache_directories = [];
 
     #[Override]
     public static function setUpBeforeClass(): void
@@ -77,11 +76,13 @@ final class CacheTest extends TestCase
         parent::tearDown();
     }
 
-    #[After]
-    public function removeCacheDirectories(): void
+    #[Override]
+    public static function tearDownAfterClass(): void
     {
-        (new Filesystem())->remove($this->cache_directories);
-        $this->cache_directories = [];
+        (new Filesystem())->remove(self::$cache_directories);
+        self::$cache_directories = [];
+
+        parent::tearDownAfterClass();
     }
 
     /**
@@ -357,7 +358,7 @@ final class CacheTest extends TestCase
         $config->array_cache = true;
         $config->compressor = $compressor;
         $config->use_igbinary = $use_igbinary;
-        $this->cache_directories[] = $config->cache_directory;
+        self::$cache_directories[] = $config->cache_directory;
 
         return $config;
     }
