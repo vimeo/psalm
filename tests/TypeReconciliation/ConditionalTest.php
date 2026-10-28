@@ -21,6 +21,16 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nonStrictConditionOnMixedOrNull' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $owners */
+                    function f(array $owners): bool {
+                        $owner = $owners["x"] ?? null;
+                        return !empty($owner);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'decimalIntStringReconciliation' => [
                 'code' => '<?php
                     /**

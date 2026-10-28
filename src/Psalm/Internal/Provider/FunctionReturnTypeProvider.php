@@ -34,6 +34,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\FirstArgStringReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\GetClassMethodsReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\GetObjectVarsReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\HexdecReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\ImplodeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\InArrayReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\IteratorToArrayReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MbInternalEncodingReturnTypeProvider;
@@ -106,6 +107,7 @@ final class FunctionReturnTypeProvider
         $this->registerClass(GetClassMethodsReturnTypeProvider::class);
         $this->registerClass(FirstArgStringReturnTypeProvider::class);
         $this->registerClass(HexdecReturnTypeProvider::class);
+        $this->registerClass(ImplodeReturnTypeProvider::class);
         $this->registerClass(MinMaxReturnTypeProvider::class);
         $this->registerClass(TriggerErrorReturnTypeProvider::class);
         $this->registerClass(RandReturnTypeProvider::class);

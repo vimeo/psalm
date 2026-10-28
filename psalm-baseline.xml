@@ -100,7 +100,6 @@
       <code><![CDATA[$this]]></code>
     </PropertyTypeCoercion>
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$composer_json]]></code>
       <code><![CDATA[!$config_path]]></code>
       <code><![CDATA[!$file_path]]></code>
       <code><![CDATA[!strpos($issue_type, 'Reference')]]></code>
@@ -1772,11 +1771,6 @@
       <code><![CDATA[assert(!empty($name_parts))]]></code>
     </RedundantCondition>
   </file>
-  <file src="src/Psalm/Internal/ExecutionEnvironment/BuildInfoCollector.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$this->readEnv['CI_PR_NUMBER']]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
   <file src="src/Psalm/Internal/ExecutionEnvironment/GitInfoCollector.php">
     <PossiblyUndefinedArrayOffset>
       <code><![CDATA[$url]]></code>
@@ -2509,11 +2503,6 @@
       <code><![CDATA[$file_name]]></code>
       <code><![CDATA[$input_variadic_param_idx]]></code>
       <code><![CDATA[$member_id]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
-  <file src="src/Psalm/Internal/Type/Comparator/GenericTypeComparator.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!($container_type_params_covariant[$i] ?? false)]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Type/Comparator/ObjectComparator.php">
@@ -3347,9 +3336,6 @@
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$this->type_params[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!($container_type_params_covariant[$offset] ?? true)]]></code>
-    </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Type/Atomic/HasIntersectionTrait.php">
     <ImpureMethodCall>
