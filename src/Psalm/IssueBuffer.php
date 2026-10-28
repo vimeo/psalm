@@ -269,7 +269,10 @@ final class IssueBuffer
 
         $is_tainted = str_starts_with($issue_type, 'Tainted');
 
-        if ($codebase->taint_flow_graph && !$is_tainted) {
+        // A taint analysis reports only Tainted* issues. In combined mode the parent also holds
+        // the taint graph while scanning, for the taint pass to start from, and keeps its other
+        // issues; the taint pass itself clears combined_taint_analysis, so it drops them.
+        if ($codebase->taint_flow_graph && !$is_tainted && !$codebase->combined_taint_analysis) {
             return false;
         }
 
@@ -524,6 +527,26 @@ final class IssueBuffer
                 if (!self::alreadyEmitted($emitted_key)) {
                     self::$issues_data[$file_path][] = $issue;
                 }
+            }
+        }
+    }
+
+    /**
+     * Adds the Tainted* issues found by the taint pass of a combined taint analysis run.
+     *
+     * They skip the duplicate check addIssues() does: that check is keyed on the issues
+     * this process emitted, which never include Tainted* ones, and the taint pass already
+     * kept or dropped duplicates the way a --taint-analysis run does. Like addIssues(), this
+     * leaves getErrorCount() alone; finish() counts from the issues themselves.
+     *
+     * @internal
+     * @param array<string, list<IssueData>> $issues_data
+     */
+    public static function addTaintAnalysisIssues(array $issues_data): void
+    {
+        foreach ($issues_data as $file_path => $file_issues) {
+            foreach ($file_issues as $issue) {
+                self::$issues_data[$file_path][] = $issue;
             }
         }
     }

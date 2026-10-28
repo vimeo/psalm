@@ -9,10 +9,12 @@ use Fidry\CpuCoreCounter\CpuCoreCounter;
 use Psalm\Config;
 use Psalm\Config\Creator;
 use Psalm\ErrorBaseline;
+use Psalm\Exception\CombinedTaintPassException;
 use Psalm\Exception\ConfigCreationException;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
+use Psalm\Internal\Codebase\CombinedTaintPass;
 use Psalm\Internal\Codebase\ReferenceMapGenerator;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
@@ -175,6 +177,8 @@ final class Psalm
         'pretty-print', // used for JSON reports
         'track-tainted-input',
         'taint-analysis',
+        'combined-taint-analysis',
+        'no-combined-taint-analysis',
         'security-analysis',
         'dump-taint-graph:',
         'find-unused-psalm-suppress',
@@ -266,7 +270,8 @@ final class Psalm
             $first_autoloader,
             $path_to_config,
             $output_format,
-            $run_taint_analysis,
+            // like --taint-analysis, the combined mode can run without a config file
+            $run_taint_analysis || isset($options['combined-taint-analysis']),
             $options,
         );
 
@@ -397,10 +402,18 @@ final class Psalm
             $config->addPluginPath($plugin_path);
         }
 
-        if ($paths_to_check === null) {
-            $project_analyzer->check($current_dir, $is_diff);
-        } elseif ($paths_to_check) {
-            $project_analyzer->checkPaths($paths_to_check);
+        try {
+            if ($paths_to_check === null) {
+                $project_analyzer->check($current_dir, $is_diff);
+            } elseif ($paths_to_check) {
+                $project_analyzer->checkPaths($paths_to_check);
+            }
+        } catch (CombinedTaintPassException $e) {
+            fwrite(
+                STDERR,
+                PHP_EOL . 'Psalm could not finish the combined taint analysis: ' . $e->getMessage() . PHP_EOL,
+            );
+            exit(1);
         }
 
         if ($find_references_to) {
@@ -1328,7 +1341,42 @@ final class Psalm
         $project_analyzer->getCodebase()->all_functions_global = $config->all_functions_global;
 
         if ($config->run_taint_analysis || $run_taint_analysis) {
+            if (isset($options['combined-taint-analysis'])) {
+                fwrite(STDERR, 'Note: --taint-analysis takes precedence; running taint analysis only.' . PHP_EOL);
+            }
             $project_analyzer->trackTaintedInputs();
+        } elseif (($config->run_combined_taint_analysis || isset($options['combined-taint-analysis']))
+            && !isset($options['no-combined-taint-analysis'])
+        ) {
+            $unsupported_reason = CombinedTaintPass::getUnsupportedReason();
+            if ($unsupported_reason !== null && isset($options['combined-taint-analysis'])) {
+                fwrite(
+                    STDERR,
+                    $unsupported_reason . PHP_EOL . 'Run without --combined-taint-analysis.' . PHP_EOL,
+                );
+                exit(1);
+            }
+
+            if ($unsupported_reason !== null) {
+                // From the config alone, so a shared psalm.xml still works on machines that can't
+                // fork (Windows, builds without pcntl). Say so, since the run has no taint issues.
+                fwrite(
+                    STDERR,
+                    'Warning: ' . $unsupported_reason . '. Running the normal analysis only, as without'
+                    . ' runCombinedTaintAnalysis; pass --no-combined-taint-analysis to silence this.' . PHP_EOL,
+                );
+            } else {
+                if (isset($options['dump-taint-graph'])) {
+                    fwrite(
+                        STDERR,
+                        '--dump-taint-graph requires --taint-analysis; it does not work with combined taint analysis'
+                        . PHP_EOL,
+                    );
+                    exit(1);
+                }
+
+                $project_analyzer->trackTaintedInputsWithOtherIssues();
+            }
         }
 
         if ($config->find_unused_psalm_suppress || isset($options['find-unused-psalm-suppress'])) {
@@ -1460,6 +1508,14 @@ final class Psalm
 
             --dump-taint-graph=OUTPUT_PATH
                 Output the taint graph using the DOT language – requires --taint-analysis
+
+            --combined-taint-analysis
+                Run taint analysis alongside the normal analysis, so a single run reports both
+                Tainted* issues and every other issue, with one baseline and one exit code.
+                Requires the pcntl and posix extensions
+
+            --no-combined-taint-analysis
+                Don't run combined taint analysis, even if runCombinedTaintAnalysis is set in the config
 
         Issue baselines:
             --set-baseline[=PATH]

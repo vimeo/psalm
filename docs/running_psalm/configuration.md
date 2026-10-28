@@ -403,6 +403,16 @@ When `true`, Psalm will treat all classes as if they had sealed properties, mean
 
 When `true`, Psalm will run [Taint Analysis](../security_analysis/index.md) on your codebase. This config is the same as if you were running Psalm with `--taint-analysis`.
 
+#### runCombinedTaintAnalysis
+
+```xml
+<psalm
+  runCombinedTaintAnalysis="[bool]"
+>
+```
+
+When `true`, Psalm will run [Taint Analysis](../security_analysis/index.md) alongside its normal analysis, so one run reports both `Tainted*` issues and all other issues, with one baseline and one exit code. This config is the same as if you were running Psalm with `--combined-taint-analysis`; `--no-combined-taint-analysis` turns it off for one run. `runTaintAnalysis` and `--taint-analysis` take precedence. Requires the `pcntl` and `posix` extensions. See [the known differences](../security_analysis/index.md#taint-analysis-alongside-normal-analysis) from running both analyses separately. Defaults to `false`.
+
 #### reportInfo
 
 ```xml
