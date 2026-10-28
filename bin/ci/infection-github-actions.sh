@@ -16,9 +16,8 @@ php bin/ci/merge-junit.php build/infection-coverage/junit.xml build/junit/*.juni
 # a mutant may allocate without end: without a memory limit for its tests, it exhausts the runner's memory
 export PSALM_TEST_MEMORY_LIMIT=4G
 
-# the minimum MSI is checked on the summaries of all the shards; two threads of at most 4G each stay within the
-# runner's memory
-vendor-bin/infection/vendor/infection/infection/bin/infection \
+# the minimum MSI is checked on the summaries of all the shards
+bin/ci/memory-capped.sh "$PWD/vendor-bin/infection/vendor/infection/infection/bin/infection" \
     --filter="$(cat build/infection-files.txt)" \
     --coverage=build/infection-coverage \
     --skip-initial-tests \

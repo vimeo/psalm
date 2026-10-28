@@ -19,7 +19,7 @@ php bin/ci/merge-junit.php build/infection-coverage/junit.xml build/junit/*.juni
 export PSALM_TEST_MEMORY_LIMIT=4G
 
 # every mutant of the changed lines must be killed, uncovered ones included
-vendor-bin/infection/vendor/infection/infection/bin/infection \
+bin/ci/memory-capped.sh "$PWD/vendor-bin/infection/vendor/infection/infection/bin/infection" \
     --git-diff-lines \
     --git-diff-base="origin/$BASE_REF" \
     --coverage=build/infection-coverage \

@@ -16,17 +16,26 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       code: ${{ steps.changes.outputs.code }}
+      setup: ${{ steps.changes.outputs.setup }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
         with:
           fetch-depth: 0
 
+      # setup: the pull request changes the mutation testing itself, which the whole source tree then tests
       - id: changes
         run: |
           if [ "$EVENT" != pull_request ] || [ -n "$(git diff --name-only "origin/$BASE_REF..." -- src)" ]; then
             echo "code=true" >> $GITHUB_OUTPUT
           else
             echo "code=false" >> $GITHUB_OUTPUT
+          fi
+          if [ "$EVENT" = pull_request ] && [ -n "$(git diff --name-only "origin/$BASE_REF..." -- \
+              .github/workflows/infection.yml 'bin/ci/*infection*' bin/ci/memory-capped.sh infection.json5 \
+              tests/autoload.php tests/BypassFinalsUnderlyingWrapper.php)" ]; then
+            echo "setup=true" >> $GITHUB_OUTPUT
+          else
+            echo "setup=false" >> $GITHUB_OUTPUT
           fi
         env:
           EVENT: ${{ github.event_name }}
@@ -35,7 +44,7 @@ jobs:
   coverage:
     name: "Coverage ${{ matrix.chunk }}/${{ matrix.count }}"
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: needs.changes.outputs.code == 'true' || needs.changes.outputs.setup == 'true'
     runs-on: ubuntu-latest
 
     strategy:
@@ -101,8 +110,8 @@ jobs:
 
   infection-pr:
     name: Mutation testing
-    needs: coverage
-    if: github.event_name == 'pull_request'
+    needs: [changes, coverage]
+    if: github.event_name == 'pull_request' && needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 120
 
@@ -165,8 +174,8 @@ jobs:
 
   infection:
     name: "Mutation testing ${{ matrix.shard }}/${{ matrix.count }}"
-    needs: coverage
-    if: github.event_name != 'pull_request'
+    needs: [changes, coverage]
+    if: github.event_name != 'pull_request' || needs.changes.outputs.setup == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 360
 
