@@ -433,6 +433,10 @@ final class CodeUseGraphTest extends TestCase
     /**
      * @param array<string, bool> $callees
      * @param CapabilitySet $intrinsic
+     * @param array<string, bool> $default_callees
+     * @param array<string, list<string>> $wildcards
+     * @param CapabilitySet $default_intrinsic
+     * @param CapabilitySet $allowed
      * @return MutationInfo
      */
     private static function mutationInfo(
@@ -442,6 +446,10 @@ final class CodeUseGraphTest extends TestCase
         int $intrinsic = Capabilities::NONE,
         array $callees = [],
         bool $fresh = true,
+        int $default_intrinsic = Capabilities::NONE,
+        array $default_callees = [],
+        array $wildcards = [],
+        int $allowed = Capabilities::NONE,
     ): array {
         $declaring_file = new class ('/src/Declaring.php', new Aliases()) implements FileSource {
             public function __construct(private string $path, private Aliases $aliases)
@@ -481,10 +489,10 @@ final class CodeUseGraphTest extends TestCase
 
         return [
             'intrinsic' => $intrinsic,
-            'allowed' => Capabilities::NONE,
+            'allowed' => $allowed,
             'callees' => $callees,
-            'default_intrinsic' => Capabilities::NONE,
-            'default_callees' => [],
+            'default_intrinsic' => $default_intrinsic,
+            'default_callees' => $default_callees,
             'location' => new CodeLocation($declaring_file, new String_('x')),
             'cased_name' => $name,
             'suppressed_issues' => [],
@@ -494,6 +502,7 @@ final class CodeUseGraphTest extends TestCase
             'root' => $root,
             'inherited' => $inherited,
             'report' => true,
+            'wildcards' => $wildcards,
         ];
     }
 
@@ -563,6 +572,14 @@ final class CodeUseGraphTest extends TestCase
             'long',
         ];
 
+        yield 'callees are compared whatever their order' => [
+            [
+                self::mutationInfo('ab', '/src/Root.php', true, Capabilities::IO, ['a' => false, 'b' => false]),
+                self::mutationInfo('ba', '/src/Root.php', true, Capabilities::IO, ['b' => false, 'a' => true]),
+            ],
+            'ba',
+        ];
+
         yield 'trait method analysed in three classes using it' => [
             [
                 self::mutationInfo('first', '/src/Declaring.php', true, Capabilities::READ_PROPS, ['m' => false]),
@@ -586,6 +603,47 @@ final class CodeUseGraphTest extends TestCase
                 self::mutationInfo('fresh', '/aaa/Root.php', false, Capabilities::NONE),
             ],
             'fresh',
+        ];
+    }
+
+    /**
+     * Candidates analysed for the same function-like in the same file, that only differ in what the level resolution
+     * reads besides the level and callees of the body, with the name of the one that has to win.
+     *
+     * @return iterable<string, array{list<MutationInfo>, string}>
+     */
+    public static function providerMutationInfoContent(): iterable
+    {
+        yield 'greater parameter default level among analyses with the same callees' => [
+            [
+                self::mutationInfo('low', '/src/Root.php', true, Capabilities::IO, ['a' => false]),
+                self::mutationInfo(
+                    'high',
+                    '/src/Root.php',
+                    true,
+                    Capabilities::IO,
+                    ['a' => false],
+                    true,
+                    Capabilities::READ_PROPS,
+                ),
+            ],
+            'high',
+        ];
+
+        yield 'parameter default callees among analyses with the same callees' => [
+            [
+                self::mutationInfo('x', '/src/Root.php', true, Capabilities::IO, [], true, 0, ['x' => false]),
+                self::mutationInfo('y', '/src/Root.php', true, Capabilities::IO, [], true, 0, ['y' => false]),
+            ],
+            'y',
+        ];
+
+        yield 'wildcards among analyses with the same levels and callees' => [
+            [
+                self::mutationInfo('a', '/src/Root.php', true, Capabilities::IO, [], true, 0, [], ['a' => ['$a']]),
+                self::mutationInfo('b', '/src/Root.php', true, Capabilities::IO, [], true, 0, [], ['b' => ['$b']]),
+            ],
+            'b',
         ];
     }
 
@@ -617,6 +675,7 @@ final class CodeUseGraphTest extends TestCase
      * @param list<MutationInfo> $infos
      */
     #[DataProvider('providerMutationInfoPrecedence')]
+    #[DataProvider('providerMutationInfoContent')]
     public function testMergingWorkerGraphsPicksTheSameMutationInfoInAnyOrder(array $infos, string $winner): void
     {
         $node_id = CodeUseGraph::functionLikeNode('a\\trait_::m');
@@ -644,17 +703,6 @@ final class CodeUseGraphTest extends TestCase
             $expected_levels ??= $merged->getMutationLevels();
             self::assertSame($expected_levels, $merged->getMutationLevels(), 'merged in order: ' . $order);
         }
-    }
-
-    public function testAnalysisWithEqualPrecedenceReplacesTheRecordedOne(): void
-    {
-        $graph = new CodeUseGraph();
-        $node_id = CodeUseGraph::functionLikeNode('a\\c::m');
-
-        $graph->addMutationInfo($node_id, self::mutationInfo('before', '/src/Root.php', true, Capabilities::IO));
-        $graph->addMutationInfo($node_id, self::mutationInfo('after', '/src/Root.php', true, Capabilities::IO));
-
-        self::assertSame('after', $graph->getMutationInfo()[$node_id]['cased_name']);
     }
 
     public function testStaleMutationInfoNeverReplacesFreshOne(): void
