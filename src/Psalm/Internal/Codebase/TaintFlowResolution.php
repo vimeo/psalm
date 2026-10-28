@@ -3810,12 +3810,6 @@ final class TaintFlowResolution
                 continue;
             }
 
-            $covered = $taint | match ($taint) {
-                TaintKind::INPUT_SSRF => TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH,
-                TaintKind::INPUT_URL_COMPONENT => TaintKind::INPUT_URL_PATH,
-                default => 0,
-            };
-
             $trace = $this->buildTrace($state, $link, $taint);
 
             if ($trace === []) {
@@ -3829,8 +3823,12 @@ final class TaintFlowResolution
                 continue;
             }
 
-            $this->reported_flows[$sink_id][$predecessor_id][$origin] = $reported | $covered;
-            $this->reported_sink_taints[$sink_id] = ($this->reported_sink_taints[$sink_id] ?? 0) | $covered;
+            $this->reported_flows[$sink_id][$predecessor_id][$origin] = $reported | $taint | match ($taint) {
+                TaintKind::INPUT_SSRF => TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH,
+                TaintKind::INPUT_URL_COMPONENT => TaintKind::INPUT_URL_PATH,
+                default => 0,
+            };
+            $this->reported_sink_taints[$sink_id] = ($this->reported_sink_taints[$sink_id] ?? 0) | $taint;
 
             $predecessor = null;
 
