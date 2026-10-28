@@ -106,6 +106,82 @@ final class IncludeTest extends TestCase
     }
 
     /**
+     * What `callWriter()` writes to the globals depends on `writeGlobal()`, which the file declaring `callWriter()`
+     * resolves to the declaration it includes, whichever file shadowing it is analyzed first.
+     *
+     * @param list<string> $files_to_check
+     */
+    #[DataProvider('providerGlobalsWrittenThroughAnotherFunctionAreIndependentOfAnalysisOrder')]
+    public function testGlobalsWrittenThroughAnotherFunctionAreIndependentOfAnalysisOrder(array $files_to_check): void
+    {
+        $dir = (string) getcwd() . DIRECTORY_SEPARATOR;
+
+        $files = [
+            $dir . 'writer.php' => '<?php
+                function writeGlobal(): void {
+                    global $x;
+                    $x = "written";
+                }',
+            $dir . 'caller.php' => '<?php
+                require_once "writer.php";
+
+                function callWriter(): void {
+                    writeGlobal();
+                }',
+            $dir . 'shadowing.php' => '<?php
+                require_once "caller.php";
+
+                function writeGlobal(): void {
+                }
+
+                $x = "safe";
+                callWriter();
+                /** @psalm-check-type-exact $x = mixed */;',
+            $dir . 'plain.php' => '<?php
+                require_once "caller.php";
+
+                $x = "safe";
+                callWriter();
+                /** @psalm-check-type-exact $x = mixed */;',
+        ];
+
+        $codebase = $this->project_analyzer->getCodebase();
+
+        foreach ($files as $file_path => $contents) {
+            $this->addFile($file_path, $contents);
+            $codebase->scanner->addFilesToShallowScan([$file_path => $file_path]);
+        }
+
+        foreach ($files_to_check as $file_name) {
+            $codebase->addFilesToAnalyze([$dir . $file_name => $dir . $file_name]);
+        }
+
+        $config = $codebase->config;
+        $config->skip_checks_on_unresolvable_includes = true;
+
+        $codebase->scanFiles();
+
+        foreach ($files_to_check as $file_name) {
+            $file_path = $dir . $file_name;
+            $file_analyzer = new FileAnalyzer($this->project_analyzer, $file_path, $config->shortenFileName($file_path));
+            $file_analyzer->analyze();
+        }
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * @return array<string,array{files_to_check:list<string>}>
+     */
+    public static function providerGlobalsWrittenThroughAnotherFunctionAreIndependentOfAnalysisOrder(): array
+    {
+        return [
+            'shadowingFileFirst' => ['files_to_check' => ['shadowing.php', 'plain.php']],
+            'shadowingFileLast' => ['files_to_check' => ['plain.php', 'shadowing.php']],
+        ];
+    }
+
+    /**
      * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>,hoist_constants?:bool,ignored_issues?:list<string>}>
      */
     public static function providerTestValidIncludes(): array
