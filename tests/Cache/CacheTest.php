@@ -191,7 +191,9 @@ final class CacheTest extends TestCase
         self::assertSame([], $in_memory->getValue($cache));
 
         self::assertSame('item a', $cache->getItem('a', 'hash a'));
-        self::assertSame(['a'], array_keys($in_memory->getValue($cache)));
+        $in_memory_entries = $in_memory->getValue($cache);
+        self::assertIsArray($in_memory_entries);
+        self::assertSame(['a'], array_keys($in_memory_entries));
         self::assertSame('item a', $cache->getItem('a', null));
     }
 
