@@ -92,8 +92,8 @@ final class AnalysisTimingsTest extends TestCase
 
     public function testParallelAnalysisRecordsTimingsAndPrunesDeletedFiles(): void
     {
-        if (!extension_loaded('pcntl')) {
-            $this->markTestSkipped('analysis is not parallel without pcntl');
+        if (!extension_loaded('pcntl') || !extension_loaded('posix')) {
+            $this->markTestSkipped('parallel analysis needs pcntl, and amphp tears its forked workers down with posix_kill');
         }
 
         $config = self::configWithCacheDirectory();
