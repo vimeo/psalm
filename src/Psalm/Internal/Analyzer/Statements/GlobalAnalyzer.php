@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements;
 
-use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -40,8 +39,10 @@ final class GlobalAnalyzer
     private const VARIABLE_ID_PATTERN = '/^\$[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/D';
 
     /**
+     * Per root and checked file path: the functions a function-like calls are resolved as the analyzed file sees them
+     *
      * @see getGlobalsWrittenBy()
-     * @var ?WeakMap<FunctionLikeStorage, array<string, bool>>
+     * @var ?WeakMap<FunctionLikeStorage, array<string, array<string, bool>>>
      */
     private static ?WeakMap $globals_written_by = null;
 
@@ -277,14 +278,15 @@ final class GlobalAnalyzer
         }
 
         if (self::$globals_written_by === null) {
-            /** @var WeakMap<FunctionLikeStorage, array<string, bool>> */
+            /** @var WeakMap<FunctionLikeStorage, array<string, array<string, bool>>> */
             self::$globals_written_by = new WeakMap();
         }
 
-        $memoized = self::$globals_written_by[$storage] ?? null;
+        $file_key = $statements_analyzer->getRootFilePath() . "\0" . $statements_analyzer->getFilePath();
+        $memoized_by_file = self::$globals_written_by[$storage] ?? [];
 
-        if ($memoized !== null) {
-            return $memoized;
+        if (isset($memoized_by_file[$file_key])) {
+            return $memoized_by_file[$file_key];
         }
 
         $codebase = $statements_analyzer->getCodebase();
@@ -298,12 +300,7 @@ final class GlobalAnalyzer
             $global_variables += $function_like_storage->global_variables;
 
             foreach ($function_like_storage->called_function_like_ids as $function_like_id => $_) {
-                $callee_storage = self::getCalleeStorage(
-                    $codebase,
-                    $statements_analyzer,
-                    $function_like_storage,
-                    $function_like_id,
-                );
+                $callee_storage = self::getCalleeStorage($codebase, $statements_analyzer, $function_like_id);
 
                 if ($callee_storage !== null && !isset($seen[$callee_storage])) {
                     $seen[$callee_storage] = true;
@@ -312,21 +309,18 @@ final class GlobalAnalyzer
             }
         }
 
-        self::$globals_written_by[$storage] = $global_variables;
+        $memoized_by_file[$file_key] = $global_variables;
+        self::$globals_written_by[$storage] = $memoized_by_file;
 
         return $global_variables;
     }
 
     /**
-     * A function is resolved as the file declaring the function-like calling it sees it, not as the file being
-     * analyzed does: what a function-like writes is memoized, so it can't depend on the file that asks first.
-     *
      * @param lowercase-string $function_like_id
      */
     private static function getCalleeStorage(
         Codebase $codebase,
         StatementsAnalyzer $statements_analyzer,
-        FunctionLikeStorage $caller_storage,
         string $function_like_id,
     ): ?FunctionLikeStorage {
         if ($function_like_id === '') {
@@ -336,13 +330,9 @@ final class GlobalAnalyzer
         $parts = explode('::', $function_like_id, 2);
 
         if (!isset($parts[1])) {
-            $caller_file_path = $caller_storage->location?->file_path;
-
             try {
-                return $caller_file_path !== null
-                    ? $codebase->functions->getStorage(null, $function_like_id, $caller_file_path, $caller_file_path)
-                    : $codebase->functions->getStorage($statements_analyzer, $function_like_id);
-            } catch (UnexpectedValueException | InvalidArgumentException) {
+                return $codebase->functions->getStorage($statements_analyzer, $function_like_id);
+            } catch (UnexpectedValueException) {
                 return null;
             }
         }
