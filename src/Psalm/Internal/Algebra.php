@@ -13,7 +13,6 @@ use UnexpectedValueException;
 use function array_filter;
 use function array_intersect_key;
 use function array_keys;
-use function array_merge;
 use function array_pop;
 use function array_values;
 use function assert;
@@ -273,10 +272,7 @@ final class Algebra
                                 if (!isset($new_possibilities[$var_id])) {
                                     $new_possibilities[$var_id] = $possibilities;
                                 } else {
-                                    $new_possibilities[$var_id] = array_merge(
-                                        $new_possibilities[$var_id],
-                                        $possibilities,
-                                    );
+                                    $new_possibilities[$var_id] += $possibilities;
                                 }
                             }
 
@@ -288,10 +284,7 @@ final class Algebra
                                 if (!isset($new_possibilities[$var_id])) {
                                     $new_possibilities[$var_id] = $possibilities;
                                 } else {
-                                    $new_possibilities[$var_id] = array_merge(
-                                        $new_possibilities[$var_id],
-                                        $possibilities,
-                                    );
+                                    $new_possibilities[$var_id] += $possibilities;
                                 }
                             }
 
@@ -637,7 +630,7 @@ final class Algebra
                     }
 
                     if (isset($possibilities[$var])) {
-                        $possibilities[$var] = array_merge($possibilities[$var], $possible_types);
+                        $possibilities[$var] += $possible_types;
                     } else {
                         $possibilities[$var] = $possible_types;
                     }
@@ -645,7 +638,7 @@ final class Algebra
 
                 foreach ($right_clause->possibilities as $var => $possible_types) {
                     if (isset($possibilities[$var])) {
-                        $possibilities[$var] = array_merge($possibilities[$var], $possible_types);
+                        $possibilities[$var] += $possible_types;
                     } else {
                         $possibilities[$var] = $possible_types;
                     }

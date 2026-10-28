@@ -301,7 +301,8 @@ final class AlgebraTest extends TestCase
         foreach ($clauses as $clause) {
             foreach ($clause->possibilities as $assertions) {
                 foreach ($assertions as $key => $assertion) {
-                    $this->assertSame((string) $assertion, $key);
+                    // PHP turns the numeric id of a literal int into an int key
+                    $this->assertSame((string) $assertion, (string) $key);
                 }
             }
         }
@@ -406,6 +407,18 @@ final class AlgebraTest extends TestCase
             false,
         ];
 
+        yield 'literal int assertions, keyed by the numeric id' => [
+            ['$a' => [new IsType(new TLiteralInt(0)), new IsType(new TLiteralInt(5))]],
+            ['$a' => [new IsType(new TLiteralInt(5))]],
+            true,
+        ];
+
+        yield 'literal int assertion, other value' => [
+            ['$a' => [new IsType(new TLiteralInt(0))]],
+            ['$a' => [new IsType(new TLiteralInt(5))]],
+            false,
+        ];
+
         yield 'same assertion, other variable' => [
             ['$a' => [new Truthy()]],
             ['$b' => [new Truthy()]],
@@ -457,6 +470,11 @@ final class AlgebraTest extends TestCase
         yield 'not identical' => [
             [['$a' => [new IsNotIdentical(new TLiteralInt(1))]]],
             ['$a is int(1)'],
+        ];
+
+        yield 'literal int' => [
+            [['$a' => [new IsType(new TLiteralInt(0))]]],
+            ['$a is not 0'],
         ];
 
         yield 'orred assertions of several kinds' => [
@@ -537,6 +555,14 @@ final class AlgebraTest extends TestCase
             ['$a is not int(1)', '$a is int(2)'],
         ];
 
+        yield 'literal int removes its negation' => [
+            [
+                ['$a' => [new IsType(new TLiteralInt(0))]],
+                ['$a' => [(new IsType(new TLiteralInt(0)))->getNegation(), new IsType(new TString())]],
+            ],
+            ['$a is 0', '$a is string'],
+        ];
+
         yield 'contradiction leaves nothing' => [
             [
                 ['$a' => [new Truthy()]],
@@ -552,6 +578,19 @@ final class AlgebraTest extends TestCase
             ],
             ['$a is not int(1)'],
         ];
+    }
+
+    public function testCombineOredClausesKeepsNumericKeys(): void
+    {
+        $clauses = Algebra::combineOredClauses(
+            [self::clause(['$a' => [new IsType(new TLiteralInt(5))]], 1)],
+            [self::clause(['$a' => [new IsType(new TLiteralInt(7)), new IsType(new TLiteralInt(5))]], 2)],
+            3,
+        );
+
+        $this->assertClausesAreKeyedByAssertionString($clauses);
+        $this->assertSame(['($a is 5) || ($a is 7)'], self::clauseStrings($clauses));
+        $this->assertTrue($clauses[0]->contains(self::clause(['$a' => [new IsType(new TLiteralInt(7))]])));
     }
 
     public function testFormulaOfUnknownExpressionIsKeyedByAssertionString(): void

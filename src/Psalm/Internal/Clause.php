@@ -124,7 +124,8 @@ final class Clause implements Stringable
     {
         foreach ($possibilities as $var_possibilities) {
             foreach ($var_possibilities as $key => $assertion) {
-                if ($key !== (string) $assertion) {
+                // PHP turns a numeric string key such as the id of a literal int (`0`) into an int
+                if ((string) $key !== (string) $assertion) {
                     return false;
                 }
             }
