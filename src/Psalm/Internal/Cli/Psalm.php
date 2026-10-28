@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Internal\Cli;
 
 use Composer\Autoload\ClassLoader;
-use Fidry\CpuCoreCounter\CpuCoreCounter;
 use Psalm\Config;
 use Psalm\Config\CiCreator;
 use Psalm\Config\Creator;
@@ -467,7 +466,7 @@ final class Psalm
             } elseif ($config->scan_threads) {
                 $threads = $config->scan_threads;
             } else {
-                $threads = max(1, (new CpuCoreCounter())->getCountWithFallback(1));
+                $threads = DefaultThreadCount::get();
             }
         } else {
             if (isset($options['threads'])) {
@@ -477,7 +476,7 @@ final class Psalm
             } elseif ($config->threads) {
                 $threads = $config->threads;
             } else {
-                $threads = max(1, (new CpuCoreCounter())->getCountWithFallback(1));
+                $threads = DefaultThreadCount::get();
             }
         }
         return $threads;
@@ -1498,6 +1497,7 @@ final class Psalm
 
             --threads=INT
                 If greater than one, Psalm will run the scan and analysis on multiple threads, speeding things up.
+                Defaults to the number of CPU cores (only the performance cores on hybrid CPUs).
 
             --scan-threads=INT
                 If greater than one, Psalm will run the scan on multiple threads, speeding things up (if specified, takes priority over the --threads flag).
