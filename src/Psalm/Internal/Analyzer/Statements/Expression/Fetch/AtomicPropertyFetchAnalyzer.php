@@ -30,6 +30,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImpurePropertyFetch;
 use Psalm\Issue\InternalClass;
@@ -265,8 +266,39 @@ final class AtomicPropertyFetchAnalyzer
         $get_method_id = new MethodIdentifier($fq_class_name, '__get');
 
         if (!$naive_property_exists) {
+            // Resolve explicit shape properties before consulting other class-like types.
+            // Keep final classes closed unless they provide a magic getter.
+            if ($intersection_types !== []
+                && (!$class_storage->final || $codebase->methods->methodExists($get_method_id))
+            ) {
+                foreach ($intersection_types as $intersection_type) {
+                    if (!$intersection_type instanceof TObjectWithProperties
+                        || !isset($intersection_type->properties[$prop_name])
+                    ) {
+                        continue;
+                    }
+
+                    self::analyze(
+                        $statements_analyzer,
+                        $stmt,
+                        $context,
+                        $in_assignment,
+                        $var_id,
+                        $stmt_var_id,
+                        $stmt_var_type,
+                        $intersection_type,
+                        $prop_name,
+                        $has_valid_fetch_type,
+                        $invalid_fetch_types,
+                        $is_static_access,
+                    );
+
+                    return;
+                }
+            }
+
             if ($class_storage->namedMixins) {
-                foreach ($class_storage->namedMixins as $mixin) {
+                foreach ($class_storage->getNamedMixinsForLookup() as $mixin) {
                     $new_property_id = $mixin->value . '::$' . $prop_name;
 
                     try {
@@ -414,6 +446,21 @@ final class AtomicPropertyFetchAnalyzer
             ) === false) {
                 return;
             }
+
+            // unsetting a property is a write, so the set visibility applies
+            if ($context->inside_unset
+                && ClassLikeAnalyzer::checkPropertyVisibility(
+                    $property_id,
+                    $context,
+                    $statements_analyzer,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $statements_analyzer->getSuppressedIssues(),
+                    true,
+                    true,
+                ) === false
+            ) {
+                return;
+            }
         }
 
         // FIXME: the following line look superfluous, but removing it makes
@@ -459,6 +506,29 @@ final class AtomicPropertyFetchAnalyzer
 
             $property_storage = $declaring_class_storage->properties[$prop_name];
 
+            // A property inherits the availability of its (native) declaring class unless it
+            // carries a later `@since` of its own, which then takes priority. Reported when the
+            // owning value came from e.g. a native factory return, so the class is never named in
+            // the analysed code and would otherwise go unchecked.
+            $property_since_id = $property_storage->since_php_version_id
+                ?? $declaring_class_storage->since_php_version_id;
+
+            if (!$declaring_class_storage->user_defined
+                && $property_since_id !== null
+                && ($codebase->getGuardedPhpVersionId($context) ?? $codebase->analysis_php_version_id)
+                    < $property_since_id
+                && !$codebase->isClassLikePolyfilled($declaring_class_storage->name)
+            ) {
+                IssueBuffer::maybeAdd(
+                    new UndefinedPropertyFetch(
+                        $property_id . ' ' . $codebase->getUnavailableSymbolMessageSuffix($property_since_id),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $property_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
             if ($context->self && !NamespaceAnalyzer::isWithinAny($context->self, $property_storage->internal)) {
                 IssueBuffer::maybeAdd(
                     new InternalProperty(
@@ -496,6 +566,13 @@ final class AtomicPropertyFetchAnalyzer
             $prop_name,
             $lhs_type_part,
         );
+
+        if (!$in_assignment) {
+            // reading a property through a type variable resolves it via its
+            // accumulated bounds (a concrete shape is required here); writes
+            // keep the variable so they record bounds instead
+            $class_property_type = TypeVariableTracker::resolveTypeVariables($class_property_type, $codebase);
+        }
 
         if (!$context->collect_mutations
             && !$context->collect_initializations
@@ -643,6 +720,11 @@ final class AtomicPropertyFetchAnalyzer
                                 $declaring_property_class,
                             ) : $class_storage,
                     );
+
+                    // reading a property through a type variable resolves it
+                    // via its accumulated bounds (a concrete shape is required
+                    // here)
+                    $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
                 }
 
                 self::processTaints(
@@ -1259,6 +1341,8 @@ final class AtomicPropertyFetchAnalyzer
                             $declaring_property_class,
                         ) : $class_storage,
                 );
+
+                $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
             }
 
             self::processTaints(

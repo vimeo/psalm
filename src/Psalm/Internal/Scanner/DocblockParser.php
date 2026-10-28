@@ -279,6 +279,16 @@ final class DocblockParser
                 + ($docblock->tags['phpstan-param-out'] ?? [])
                 + ($docblock->tags['psalm-param-out'] ?? []);
         }
+
+        if (isset($docblock->tags['param-closure-this'])
+            || isset($docblock->tags['psalm-param-closure-this'])
+            || isset($docblock->tags['phpstan-param-closure-this'])
+        ) {
+            $docblock->combined_tags['param-closure-this']
+                = ($docblock->tags['param-closure-this'] ?? [])
+                + ($docblock->tags['phpstan-param-closure-this'] ?? [])
+                + ($docblock->tags['psalm-param-closure-this'] ?? []);
+        }
     }
 
     /**

@@ -29,6 +29,7 @@ use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
 use function fwrite;
+use function getenv;
 use function implode;
 use function in_array;
 use function ini_set;
@@ -43,9 +44,11 @@ use function preg_split;
 use function realpath;
 use function str_starts_with;
 use function stream_get_meta_data;
+use function stream_isatty;
 use function stream_set_blocking;
 use function strlen;
 use function strpos;
+use function strtolower;
 use function substr;
 use function substr_replace;
 use function trim;
@@ -520,6 +523,92 @@ final class CliUtils
             || isset($_SERVER['CI'])
             || isset($_SERVER['GITHUB_WORKFLOW'])
             || isset($_SERVER['DRONE']);
+    }
+
+    /**
+     * Detects whether Psalm is being invoked by an AI coding agent.
+     *
+     * When an agent is driving the shell, `\r`-based progress bars and ANSI
+     * colors are pure token noise: the agent never renders them and just
+     * feeds the raw bytes back into its language model.
+     *
+     * The detection list is deliberately vendor-specific. The `AGENT`
+     * variable on its own is too generic to trust (it collides with shell
+     * rc files and unrelated tooling), so we only match it when paired
+     * with a known agent name.
+     */
+    public static function runningUnderAiAgent(): bool
+    {
+        // Vendor-specific presence markers. Each agent documents a variable
+        // it exports into every spawned subprocess.
+        $markers = [
+            'CLAUDECODE',            // Claude Code (Anthropic)
+            'CLAUDE_CODE',           // Claude Code (alternate)
+            'CURSOR_AGENT',          // Cursor Composer
+            'CURSOR_TRACE_ID',       // Cursor (older builds)
+            'GEMINI_CLI',            // Gemini CLI (Google)
+            'CODEX_SANDBOX',         // OpenAI Codex CLI (macOS sandbox marker)
+            'CODEX_THREAD_ID',       // OpenAI Codex CLI (cross-platform)
+            'AUGMENT_AGENT',         // Augment
+            'CLINE_ACTIVE',          // Cline
+            'OPENCODE_CLIENT',       // OpenCode (sst/opencode)
+            'OPENCODE',              // OpenCode (alternate)
+            'AMP_CURRENT_THREAD_ID', // Amp (Sourcegraph)
+            'TRAE_AI_SHELL_ID',      // TRAE AI
+            'COPILOT_CLI',           // GitHub Copilot CLI
+            'ANTIGRAVITY_AGENT',     // Google Antigravity
+            'PI_CODING_AGENT',       // Pi coding agent
+            'REPL_ID',               // Replit
+            'AI_AGENT',              // Vendor-neutral convention (@vercel/detect-agent).
+        ];
+        foreach ($markers as $var) {
+            if (self::envVarLooksTruthy($var)) {
+                return true;
+            }
+        }
+
+        // `AGENT=<name>` convention proposed in agentsmd.org/issue#136. Used
+        // by Goose. Value-gated so generic shell usage does not false-positive.
+        $agent = getenv('AGENT');
+        if (is_string($agent) && strtolower($agent) === 'goose') {
+            return true;
+        }
+
+        // Devin runs its agent in a sandbox that always contains this marker.
+        if (file_exists('/opt/.devin')) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static function envVarLooksTruthy(string $name): bool
+    {
+        $value = getenv($name);
+        return is_string($value)
+            && $value !== ''
+            && $value !== '0'
+            && $value !== 'false';
+    }
+
+    /**
+     * Returns whether the given stream is attached to an interactive terminal.
+     *
+     * @param resource $stream
+     */
+    public static function streamIsInteractive($stream): bool
+    {
+        return stream_isatty($stream);
+    }
+
+    /**
+     * Respects the https://no-color.org/ convention: ANSI colors are disabled
+     * when NO_COLOR is set to a non-empty value (any non-empty string counts).
+     */
+    public static function noColorRequested(): bool
+    {
+        $value = getenv('NO_COLOR');
+        return is_string($value) && $value !== '';
     }
 
     public static function checkRuntimeRequirements(): void

@@ -34,6 +34,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
@@ -73,6 +74,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff_key;
 use function array_merge;
 use function array_pop;
 use function array_shift;
@@ -80,14 +82,21 @@ use function array_values;
 use function assert;
 use function count;
 use function implode;
+use function is_array;
 use function ltrim;
+use function pathinfo;
 use function preg_match;
 use function preg_split;
+use function reset;
 use function sprintf;
+use function str_starts_with;
+use function strlen;
 use function strtolower;
+use function substr;
 use function trim;
 use function usort;
 
+use const PATHINFO_EXTENSION;
 use const PREG_SPLIT_DELIM_CAPTURE;
 use const PREG_SPLIT_NO_EMPTY;
 
@@ -142,6 +151,7 @@ final class ClassLikeNodeScanner
         $class_name = null;
 
         $is_classlike_overridden = false;
+        $is_overriding_stub = false;
 
         if ($node->name === null) {
             if (!$node instanceof PhpParser\Node\Stmt\Class_) {
@@ -173,9 +183,16 @@ final class ClassLikeNodeScanner
                 }
 
                 if (!$this->codebase->register_stub_files) {
-                    if (!$duplicate_storage->stmt_location
+                    // A native class stubbed with an `@since` newer than the analysed PHP version
+                    // is not available there, so a project definition is a polyfill: it replaces
+                    // the stub rather than duplicating it.
+                    $is_polyfill = $duplicate_storage->stubbed
+                        && $duplicate_storage->since_php_version_id !== null
+                        && $this->codebase->analysis_php_version_id < $duplicate_storage->since_php_version_id;
+
+                    if (!$is_polyfill && (!$duplicate_storage->stmt_location
                         || $duplicate_storage->stmt_location->file_path !== $this->file_path
-                        || $class_location->getHash() !== $duplicate_storage->stmt_location->getHash()
+                        || $class_location->getHash() !== $duplicate_storage->stmt_location->getHash())
                     ) {
                         IssueBuffer::maybeAdd(
                             new DuplicateClass(
@@ -198,6 +215,7 @@ final class ClassLikeNodeScanner
                     || $class_location->getHash() !== $duplicate_storage->location->getHash()
                 ) {
                     $is_classlike_overridden = true;
+                    $is_overriding_stub = $duplicate_storage->stubbed;
                     // we're overwriting some methods
                     $storage = $this->storage = $duplicate_storage;
                     $this->codebase->classlike_storage_provider->makeNew(strtolower($fq_classlike_name));
@@ -248,8 +266,14 @@ final class ClassLikeNodeScanner
         if ($this->namespace_name) {
             $storage->namespace_name_location = new CodeLocation($this->file_scanner, $this->namespace_name);
         }
-        $storage->user_defined = !$this->codebase->register_stub_files;
-        $storage->stubbed = $this->codebase->register_stub_files;
+        $is_stub_file = $this->codebase->register_stub_files
+            && $this->codebase->scanner->isStubFile($this->file_path);
+        // Real files scanned during stub registration keep real-class flags;
+        // only a class a stub already defined keeps the stub flags.
+        if ($is_stub_file || !$is_overriding_stub) {
+            $storage->user_defined = !$is_stub_file;
+            $storage->stubbed = $is_stub_file;
+        }
         $storage->aliases = $this->aliases;
 
         if ($node instanceof PhpParser\Node\Stmt\Class_) {
@@ -362,6 +386,18 @@ final class ClassLikeNodeScanner
                     $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
                     $name_location ?? $class_location,
                 );
+            }
+
+            // Keep the stubbed definition loaded on every version for analysis, but record the
+            // version that introduced the class (from an `@since x.y` tag in a stub file) so its
+            // use is reported as undefined when analysing an older PHP version without a polyfill.
+            if ($docblock_info
+                && $docblock_info->since_php_major_version
+                && $this->codebase->register_stub_files
+                && pathinfo($this->file_path, PATHINFO_EXTENSION) === 'phpstub'
+            ) {
+                $storage->since_php_version_id = $docblock_info->since_php_major_version * 10_000
+                    + $docblock_info->since_php_minor_version * 100;
             }
         }
 
@@ -569,6 +605,8 @@ final class ClassLikeNodeScanner
                         $this->aliases,
                         $this->class_template_types,
                         $this->type_aliases,
+                        $fq_classlike_name,
+                        $storage->parent_class,
                     );
 
                     try {
@@ -783,6 +821,21 @@ final class ClassLikeNodeScanner
                     || $attribute->fq_class_name === 'Deprecated'
                 ) {
                     $storage->deprecated = true;
+                }
+
+                if ($attribute->fq_class_name === 'Deprecated') {
+                    foreach ($attribute->args as $i => $arg) {
+                        if (($arg->name ?? ($i === 0 ? 'message' : null)) === 'message'
+                            && $arg->type instanceof Union
+                            && $arg->type->isSingleStringLiteral()
+                        ) {
+                            $message = $arg->type->getSingleStringLiteral()->value;
+
+                            if ($message !== '') {
+                                $storage->deprecated_message = $message;
+                            }
+                        }
+                    }
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\Internal' && !$storage->internal) {
@@ -1247,6 +1300,30 @@ final class ClassLikeNodeScanner
         $storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
     }
 
+    /**
+     * Parses a PHP-version `@since` tag (e.g. `@since 8.1`) from a stub member docblock into an
+     * `analysis_php_version_id`, or null when absent or not a PHP version. Restricted to stub
+     * files, since `@since` on project code usually means the project version, not the PHP one.
+     */
+    private function parseSincePhpVersionId(ParsedDocblock $comments): ?int
+    {
+        if (!isset($comments->tags['since'])
+            || pathinfo($this->file_path, PATHINFO_EXTENSION) !== 'phpstub'
+        ) {
+            return null;
+        }
+
+        $since = trim((string) reset($comments->tags['since']));
+
+        if (preg_match('/^([4578])\.(\d)(\.\d+)?(\s+PHP)?$/i', $since, $matches)
+            && isset($matches[1], $matches[2])
+        ) {
+            return (int) $matches[1] * 10_000 + (int) $matches[2] * 100;
+        }
+
+        return null;
+    }
+
     private function visitClassConstDeclaration(
         PhpParser\Node\Stmt\ClassConst $stmt,
         ClassLikeStorage $storage,
@@ -1266,14 +1343,18 @@ final class ClassLikeNodeScanner
         $var_comment = null;
         $deprecated = false;
         $description = null;
+        $since_php_version_id = null;
         $config = $this->config;
 
         if ($comment && $comment->getText() && ($config->use_docblock_types || $config->use_docblock_property_types)) {
-            $comments = DocComment::parsePreservingLength($comment);
+            // unknown @psalm- tags are reported by CommentAnalyzer::getTypeFromComment() below
+            $comments = DocComment::parsePreservingLength($comment, true);
 
             if (isset($comments->tags['deprecated'])) {
                 $deprecated = true;
             }
+
+            $since_php_version_id = $this->parseSincePhpVersionId($comments);
 
             $description = $comments->description;
 
@@ -1409,6 +1490,7 @@ final class ClassLikeNodeScanner
                 $attributes,
                 $suppressed_issues,
                 $description,
+                $since_php_version_id,
             );
 
             if ($this->codebase->analysis_php_version_id >= 8_03_00
@@ -1515,10 +1597,17 @@ final class ClassLikeNodeScanner
 
             $comment = $stmt->getDocComment();
             if ($comment) {
-                $comments = DocComment::parsePreservingLength($comment);
+                try {
+                    $comments = DocComment::parsePreservingLength($comment);
 
-                if (isset($comments->tags['deprecated'])) {
-                    $case->deprecated = true;
+                    if (isset($comments->tags['deprecated'])) {
+                        $case->deprecated = true;
+                    }
+                } catch (DocblockParseException $e) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        $e->getMessage(),
+                        $case_location,
+                    );
                 }
             }
             $storage->enum_cases[$stmt->name->name] = $case;
@@ -1668,6 +1757,9 @@ final class ClassLikeNodeScanner
             $property_storage->stmt_location = new CodeLocation($this->file_scanner, $stmt);
             $property_storage->has_default = (bool)$property->default;
             $property_storage->deprecated = $var_comment ? $var_comment->deprecated : false;
+            $property_storage->since_php_version_id = $comment
+                ? $this->parseSincePhpVersionId(DocComment::parsePreservingLength($comment, true))
+                : null;
             $property_storage->suppressed_issues = $var_comment ? $var_comment->suppressed_issues : [];
             $property_storage->internal = $var_comment ? $var_comment->psalm_internal : [];
             if (count($property_storage->internal) === 0 && $var_comment && $var_comment->internal) {
@@ -1758,20 +1850,21 @@ final class ClassLikeNodeScanner
                 $property_storage->type->queueClassLikesForScanning($this->codebase, $this->file_storage);
             }
 
-            if ($stmt->isPublic()) {
-                $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
-            } elseif ($stmt->isProtected()) {
-                $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PROTECTED;
-            } elseif ($stmt->isPrivate()) {
-                $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
-            }
-
             $property_id = $fq_classlike_name . '::$' . $property->name->name;
+
+            PropertyVisibilityResolver::resolve(
+                $this->codebase,
+                $storage,
+                $property_storage,
+                $stmt->flags,
+                new CodeLocation($this->file_scanner, $stmt, null, true),
+                $property_id,
+            );
 
             $storage->declaring_property_ids[$property->name->name] = $fq_classlike_name;
             $storage->appearing_property_ids[$property->name->name] = $property_id;
 
-            if ($property_is_initialized) {
+            if ($property_is_initialized || self::isVirtualProperty($stmt, $property->name->name)) {
                 $storage->initialized_properties[$property->name->name] = true;
             }
 
@@ -1862,6 +1955,72 @@ final class ClassLikeNodeScanner
                 }
             }
         }
+    }
+
+    /**
+     * A hooked property is virtual, and so has no value to initialize, when none of its hooks
+     * reads or writes `$this->propertyName` outside a nested function or class.
+     * A short `set => expr;` hook assigns to the property, so it makes the property backed.
+     */
+    private static function isVirtualProperty(PhpParser\Node\Stmt\Property $stmt, string $property_name): bool
+    {
+        if (!$stmt->hooks) {
+            return false;
+        }
+
+        foreach ($stmt->hooks as $hook) {
+            if ($hook->body instanceof PhpParser\Node\Expr && $hook->name->toLowerString() === 'set') {
+                return false;
+            }
+
+            if ($hook->body !== null && self::nodesUseProperty([$hook->body], $property_name)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param array<array-key, mixed> $nodes
+     */
+    private static function nodesUseProperty(array $nodes, string $property_name): bool
+    {
+        foreach ($nodes as $node) {
+            if (is_array($node)) {
+                if (self::nodesUseProperty($node, $property_name)) {
+                    return true;
+                }
+
+                continue;
+            }
+
+            if (!$node instanceof PhpParser\Node) {
+                continue;
+            }
+
+            if (($node instanceof PhpParser\Node\Expr\PropertyFetch
+                    || $node instanceof PhpParser\Node\Expr\NullsafePropertyFetch)
+                && $node->var instanceof PhpParser\Node\Expr\Variable
+                && $node->var->name === 'this'
+                && (($node->name instanceof Identifier && $node->name->name === $property_name)
+                    || ($node->name instanceof PhpParser\Node\Scalar\String_ && $node->name->value === $property_name))
+            ) {
+                return true;
+            }
+
+            if ($node instanceof PhpParser\Node\FunctionLike || $node instanceof PhpParser\Node\Stmt\ClassLike) {
+                continue;
+            }
+
+            foreach ($node->getSubNodeNames() as $sub_node_name) {
+                if (self::nodesUseProperty([$node->$sub_node_name], $property_name)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -1991,56 +2150,28 @@ final class ClassLikeNodeScanner
         ?array $type_aliases,
         ?string $self_fqcln,
     ): array {
-        $type_alias_tokens = [];
+        $declarations = [];
 
         foreach ($type_alias_comment_lines as $var_line) {
-            $var_line = trim($var_line);
+            $declaration = self::parseTypeAliasDeclarationLine($var_line);
 
-            if (!$var_line) {
-                continue;
+            if ($declaration !== null) {
+                // Last declaration wins; dedupe before ordering so an earlier
+                // declaration can't be reordered after the winner and overwrite it.
+                $declarations[$declaration[0]] = $declaration[1];
             }
+        }
 
-            $var_line_parts = preg_split('/( |=)/', $var_line, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+        $declarations = self::orderTypeAliasDeclarationsByDependency(
+            $declarations,
+            $aliases,
+            $type_aliases,
+            $self_fqcln,
+        );
 
-            if (!$var_line_parts) {
-                continue;
-            }
+        $type_alias_tokens = [];
 
-            $type_alias = array_shift($var_line_parts);
-
-            if (!isset($var_line_parts[0])) {
-                continue;
-            }
-
-            while (isset($var_line_parts[0]) && $var_line_parts[0] === ' ') {
-                array_shift($var_line_parts);
-            }
-
-            if (!isset($var_line_parts[0])) {
-                continue;
-            }
-
-            if ($var_line_parts[0] === '=') {
-                array_shift($var_line_parts);
-            }
-
-            if (!isset($var_line_parts[0])) {
-                continue;
-            }
-
-            while (isset($var_line_parts[0]) && $var_line_parts[0] === ' ') {
-                array_shift($var_line_parts);
-            }
-
-            $type_string = implode('', $var_line_parts);
-            $type_string = ltrim($type_string, "* \n\r");
-            try {
-                $type_string = CommentAnalyzer::splitDocLine($type_string)[0];
-            } catch (DocblockParseException $e) {
-                throw new DocblockParseException($type_string . ' is not a valid type: '.$e->getMessage());
-            }
-            $type_string = CommentAnalyzer::sanitizeDocblockType($type_string);
-
+        foreach ($declarations as $type_alias => $type_string) {
             try {
                 $type_tokens = TypeTokenizer::getFullyQualifiedTokens(
                     $type_string,
@@ -2057,5 +2188,170 @@ final class ClassLikeNodeScanner
         }
 
         return $type_alias_tokens;
+    }
+
+    /**
+     * @return array{0: string, 1: string}|null
+     * @throws DocblockParseException if there was a problem parsing the docblock
+     */
+    private static function parseTypeAliasDeclarationLine(string $var_line): ?array
+    {
+        $var_line = trim($var_line);
+
+        if (!$var_line) {
+            return null;
+        }
+
+        $var_line_parts = preg_split('/( |=)/', $var_line, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+
+        if (!$var_line_parts) {
+            return null;
+        }
+
+        $type_alias = array_shift($var_line_parts);
+
+        if (!isset($var_line_parts[0])) {
+            return null;
+        }
+
+        while (isset($var_line_parts[0]) && $var_line_parts[0] === ' ') {
+            array_shift($var_line_parts);
+        }
+
+        if (!isset($var_line_parts[0])) {
+            return null;
+        }
+
+        if ($var_line_parts[0] === '=') {
+            array_shift($var_line_parts);
+        }
+
+        if (!isset($var_line_parts[0])) {
+            return null;
+        }
+
+        while (isset($var_line_parts[0]) && $var_line_parts[0] === ' ') {
+            array_shift($var_line_parts);
+        }
+
+        $type_string = implode('', $var_line_parts);
+        $type_string = ltrim($type_string, "* \n\r");
+        try {
+            $type_string = CommentAnalyzer::splitDocLine($type_string)[0];
+        } catch (DocblockParseException $e) {
+            throw new DocblockParseException($type_string . ' is not a valid type: '.$e->getMessage());
+        }
+
+        return [$type_alias, CommentAnalyzer::sanitizeDocblockType($type_string)];
+    }
+
+    /**
+     * Marker spliced in place of a local alias reference by the placeholder pass in
+     * getLocalTypeAliasReferences(); never appears in real docblock type strings.
+     */
+    private const LOCAL_ALIAS_DEP_MARKER = "\0psalm-local-alias-dep\0";
+
+    /**
+     * Orders declarations so that each alias comes after the same-docblock aliases
+     * it references, keeping declaration order otherwise.
+     *
+     * @param  array<string, string> $declarations alias name => type string
+     * @param  array<string, TypeAlias>|null $type_aliases
+     * @return array<string, string>
+     */
+    private static function orderTypeAliasDeclarationsByDependency(
+        array $declarations,
+        Aliases $aliases,
+        ?array $type_aliases,
+        ?string $self_fqcln,
+    ): array {
+        // Names already resolvable through $type_aliases (imports, aliases from
+        // preceding comments) aren't dependencies: references to them keep binding
+        // to whatever was in scope at their textual position.
+        $placeholders = [];
+
+        foreach ($declarations as $name => $_) {
+            if (!isset($type_aliases[$name])) {
+                $placeholders[$name] = new InlineTypeAlias([[self::LOCAL_ALIAS_DEP_MARKER . $name, 0]]);
+            }
+        }
+
+        $dependencies = [];
+
+        foreach ($declarations as $name => $type_string) {
+            $dependencies[$name] = self::getLocalTypeAliasReferences(
+                $type_string,
+                $aliases,
+                $placeholders,
+                $type_aliases,
+                $self_fqcln,
+            );
+            // Self-references can't be ordered; they fail in the tokenization pass.
+            unset($dependencies[$name][$name]);
+        }
+
+        $ordered = [];
+
+        while ($declarations) {
+            $remaining_count = count($declarations);
+
+            foreach ($declarations as $name => $type_string) {
+                if (!array_diff_key($dependencies[$name], $ordered)) {
+                    $ordered[$name] = $type_string;
+                    unset($declarations[$name]);
+                }
+            }
+
+            if (count($declarations) === $remaining_count) {
+                // The rest contain or depend on a cycle: keep declaration order so
+                // they hit the existing undefined/invalid alias error.
+                return $ordered + $declarations;
+            }
+        }
+
+        return $ordered;
+    }
+
+    /**
+     * Returns the locally-declared aliases (represented by $placeholders) a type
+     * string binds to. Runs the real tokenizer substitution instead of copying its
+     * rules (keyed-array keys, `Name(` callables, `$param` suffixes, `::` constants):
+     * a placeholder's marker survives only where the alias would be spliced in.
+     *
+     * @param  array<string, InlineTypeAlias> $placeholders
+     * @param  array<string, TypeAlias>|null $type_aliases
+     * @return array<string, true>
+     */
+    private static function getLocalTypeAliasReferences(
+        string $type_string,
+        Aliases $aliases,
+        array $placeholders,
+        ?array $type_aliases,
+        ?string $self_fqcln,
+    ): array {
+        try {
+            // A malformed type is reported with its full message by the real
+            // tokenization pass; here it just has no detectable dependencies.
+            $type_tokens = TypeTokenizer::getFullyQualifiedTokens(
+                $type_string,
+                $aliases,
+                null,
+                $placeholders + $type_aliases,
+                $self_fqcln,
+            );
+        } catch (TypeParseTreeException) {
+            return [];
+        }
+
+        $referenced_names = [];
+        $marker_length = strlen(self::LOCAL_ALIAS_DEP_MARKER);
+
+        foreach ($type_tokens as $token) {
+            if (str_starts_with($token[0], self::LOCAL_ALIAS_DEP_MARKER)) {
+                $referenced_names[substr($token[0], $marker_length)] = true;
+            }
+        }
+
+        return $referenced_names;
     }
 }

@@ -273,11 +273,9 @@ final class TypeExpander
         }
 
         if ($return_type instanceof TTypeAlias) {
-            $declaring_fq_classlike_name = $return_type->declaring_fq_classlike_name;
-
-            if ($declaring_fq_classlike_name === 'self' && $self_class) {
-                $declaring_fq_classlike_name = $self_class;
-            }
+            $declaring_fq_classlike_name = $return_type->declaring_fq_classlike_name === 'self' && $self_class
+                ? $self_class
+                : $codebase->classlikes->getUnAliasedName($return_type->declaring_fq_classlike_name);
 
             if (!($evaluate_class_constants
                 && $codebase->classlikes->doesClassLikeExist(strtolower($declaring_fq_classlike_name))
@@ -655,6 +653,16 @@ final class TypeExpander
                     $return_type = $static_class_type;
                 }
             }
+        } elseif ($return_type->is_static
+            && !$return_type->is_static_resolved
+            && $return_type::class === TNamedObject::class
+            && $static_class_type instanceof TNamedObject
+            && $codebase->classExtends($static_class_type->value, $return_type->value)
+        ) {
+            // The called class already includes the declaring class's constraints.
+            $return_type = $static_class_type->setIntersectionTypes(
+                array_merge($return_type->extra_types, $static_class_type->extra_types),
+            )->setIsStatic(!$final, true);
         } elseif ($return_type->is_static && !$return_type->is_static_resolved
             && ($static_class_type instanceof TNamedObject
                 || $static_class_type instanceof TTemplateParam)
@@ -935,11 +943,15 @@ final class TypeExpander
 
         $class_storage = null;
         if ($codebase->classExists($return_type->classlike_type->value)) {
-            $class_storage = $codebase->classlike_storage_provider->get($return_type->classlike_type->value);
+            $class_storage = $codebase->classlike_storage_provider->get(
+                $codebase->classlikes->getUnAliasedName($return_type->classlike_type->value),
+            );
         } else {
             foreach ($return_type->classlike_type->extra_types as $type) {
                 if ($type instanceof TNamedObject && $codebase->classExists($type->value)) {
-                    $class_storage = $codebase->classlike_storage_provider->get($type->value);
+                    $class_storage = $codebase->classlike_storage_provider->get(
+                        $codebase->classlikes->getUnAliasedName($type->value),
+                    );
                     break;
                 }
             }

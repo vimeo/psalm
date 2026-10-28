@@ -106,7 +106,14 @@ final class ClassLikeStorageProvider
                 $duplicate_storage = self::$storage[$k];
                 $duplicate_location = $duplicate_storage->location ?? $duplicate_storage->stmt_location;
                 $location = $storage->location ?? $storage->stmt_location;
-                if ($duplicate_location !== null
+                // a project polyfill of a native class stubbed with a newer `@since` replaces the
+                // stub (the scanner only lets it through below that version)
+                $is_polyfill = $duplicate_storage->stubbed
+                    && $duplicate_storage->since_php_version_id !== null
+                    && $storage->user_defined;
+
+                if (!$is_polyfill
+                    && $duplicate_location !== null
                     && $location !== null
                     && $duplicate_location->getHash() !== $location->getHash()
                 ) {

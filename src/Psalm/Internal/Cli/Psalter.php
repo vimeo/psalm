@@ -23,6 +23,7 @@ use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
+use Psalm\Progress\LongProgress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
@@ -139,10 +140,14 @@ final class Psalter
                     Path to a psalm.xml configuration file. Run psalm --init to create one.
 
                 -m, --monochrome
-                    Enable monochrome output
+                    Enable monochrome output.
+                    Auto-enabled when NO_COLOR is set to a non-empty value or
+                    when an AI coding agent is driving the shell.
 
                 --no-progress
-                    Disable the progress indicator
+                    Disable the progress indicator.
+                    Auto-enabled when an AI coding agent is driving the shell
+                    (CI always keeps its phase breadcrumbs).
 
                 -r, --root
                     If running Psalm globally you'll need to specify a project root. Defaults to cwd
@@ -293,16 +298,26 @@ final class Psalter
         }
 
         $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
+        // CI takes precedence over AI detection: persistent CI logs still want
+        // per-phase breadcrumbs for humans reviewing the build.
+        $no_progress = isset($options['no-progress'])
+            || (!$in_ci && CliUtils::runningUnderAiAgent());
         if ($debug) {
             $progress = new DebugProgress();
-        } elseif (isset($options['no-progress'])) {
+        } elseif ($no_progress) {
             $progress = new VoidProgress();
+        } elseif ($in_ci || !CliUtils::streamIsInteractive(STDERR)) {
+            // Same rationale as in Psalm.php: a `\r`-based progress bar on a
+            // piped stderr just floods the log with every intermediate update.
+            $progress = new LongProgress(true, false, true);
         } else {
             $progress = new DefaultProgress();
         }
 
         $stdout_report_options = new ReportOptions();
-        $stdout_report_options->use_color = !array_key_exists('m', $options);
+        $stdout_report_options->use_color = !array_key_exists('m', $options)
+            && !CliUtils::noColorRequested()
+            && !CliUtils::runningUnderAiAgent();
 
         $project_analyzer = new ProjectAnalyzer(
             $config,

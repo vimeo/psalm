@@ -66,6 +66,7 @@ There are two main inspirations for Psalm:
     - [Typing in Psalm](annotating_code/typing_in_psalm.md)
     - [Supported Annotations](annotating_code/supported_annotations.md)
     - [Template Annotations](annotating_code/templated_annotations.md)
+    - [Type Variables](annotating_code/type_variables.md)
 - Manipulating code:
     - [Fixing code](manipulating_code/fixing.md)
     - [Refactoring code](manipulating_code/refactoring.md)

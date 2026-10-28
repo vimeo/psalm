@@ -17,6 +17,15 @@ final class ClassLikeDocblockComment
     public bool $deprecated = false;
 
     /**
+     * The PHP major/minor version that introduced this class, parsed from an `@since x.y` tag in a
+     * stub file. Zero when absent. Used to report the class as undefined when analysing an older
+     * PHP version without a polyfill.
+     */
+    public int $since_php_major_version = 0;
+
+    public int $since_php_minor_version = 0;
+
+    /**
      * Whether or not the class is internal
      */
     public bool $internal = false;

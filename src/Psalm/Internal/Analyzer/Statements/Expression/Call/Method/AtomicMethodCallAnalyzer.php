@@ -184,7 +184,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $context->self,
                 $context->calling_method_id,
                 $statements_analyzer->getSuppressedIssues(),
-                new ClassLikeNameOptions(true, false, true, true, $lhs_type_part->from_docblock),
+                new ClassLikeNameOptions(true, false, true, true, $lhs_type_part->from_docblock, context: $context),
                 $context->check_classes,
             );
         }
@@ -478,6 +478,15 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 
             return;
         }
+
+        MethodAnalyzer::checkMethodAvailability(
+            $codebase,
+            $method_id,
+            new CodeLocation($source, $stmt->name),
+            $statements_analyzer->getSuppressedIssues(),
+            false,
+            $context,
+        );
 
         $old_node_data = $statements_analyzer->node_data;
 
@@ -832,7 +841,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
     ): array {
         $naive_method_exists = false;
 
-        foreach ($class_storage->namedMixins as $mixin) {
+        foreach ($class_storage->getNamedMixinsForLookup() as $mixin) {
             if (!$class_storage->mixin_declaring_fqcln) {
                 continue;
             }

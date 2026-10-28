@@ -1523,6 +1523,28 @@ final class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
+            'unknownPsalmTagOnProperty' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @var string
+                         * @psalm-supress PropertyNotSetInConstructor
+                         */
+                        public $bar = "";
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'unknownPsalmTagOnClassConstant' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @var int
+                         * @psalm-supress PropertyNotSetInConstructor
+                         */
+                        public const BAR = 1;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
             'invalidReturnClassWithComma' => [
                 'code' => '<?php
                     interface I {

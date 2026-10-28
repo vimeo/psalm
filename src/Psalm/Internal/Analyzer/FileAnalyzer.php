@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer;
 
 use Override;
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
@@ -173,6 +174,14 @@ class FileAnalyzer extends SourceAnalyzer
         if ($leftover_stmts) {
             $statements_analyzer->analyze($leftover_stmts, $this->context, $global_context, true);
 
+            if ($statements_analyzer->owns_type_variable_tracker) {
+                $statements_analyzer->type_variable_tracker->reconcile(
+                    $this->codebase,
+                    new CodeLocation($this, $leftover_stmts[0]),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
             foreach ($leftover_stmts as $leftover_stmt) {
                 if ($leftover_stmt instanceof PhpParser\Node\Stmt\Return_) {
                     if ($leftover_stmt->expr) {
@@ -242,7 +251,9 @@ class FileAnalyzer extends SourceAnalyzer
                         continue;
                     }
 
-                    $referenced_class_storage = $codebase->classlike_storage_provider->get($fq_source_classlike);
+                    $referenced_class_storage = $codebase->classlike_storage_provider->get(
+                        $codebase->classlikes->getUnAliasedName($fq_source_classlike),
+                    );
                     if (!isset($referenced_class_storage->type_aliases[$alias->alias_name])) {
                         IssueBuffer::maybeAdd(
                             new InvalidTypeImport(
