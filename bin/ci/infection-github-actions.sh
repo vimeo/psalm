@@ -13,7 +13,10 @@ php -d memory_limit=-1 bin/ci/infection-shard-coverage.php \
 
 php bin/ci/merge-junit.php build/infection-coverage/junit.xml build/junit/*.junit.xml
 
-# the minimum MSI is checked on the summaries of all the shards; two threads, as more parallel test runs exhaust the
+# a mutant may allocate without end: without a memory limit for its tests, it exhausts the runner's memory
+export PSALM_TEST_MEMORY_LIMIT=4G
+
+# the minimum MSI is checked on the summaries of all the shards; two threads of at most 4G each stay within the
 # runner's memory
 vendor-bin/infection/vendor/infection/infection/bin/infection \
     --filter="$(cat build/infection-files.txt)" \

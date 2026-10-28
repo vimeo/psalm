@@ -26,6 +26,7 @@ use function count;
 use function define;
 use function defined;
 use function getcwd;
+use function getenv;
 use function ini_set;
 use function is_string;
 
@@ -45,7 +46,8 @@ abstract class AsyncTestCase extends BaseTestCase
     #[Override]
     public static function setUpBeforeClass(): void
     {
-        ini_set('memory_limit', '-1');
+        $memory_limit = getenv('PSALM_TEST_MEMORY_LIMIT');
+        ini_set('memory_limit', $memory_limit === false ? '-1' : $memory_limit);
 
         if (!defined('PSALM_VERSION')) {
             define('PSALM_VERSION', VersionUtils::getPsalmVersion());
