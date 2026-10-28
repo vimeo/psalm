@@ -30,6 +30,39 @@ final class CapabilitiesTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticReturnOfASubclassOfAPurityTemplatedClassIsTheCalledClass' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-purity-template P
+                     * @psalm-purity-template D
+                     */
+                    abstract class Base {
+                        final public static function create(): static {
+                            return new static();
+                        }
+
+                        final protected function __construct() {}
+                    }
+
+                    /**
+                     * @psalm-purity-template D
+                     * @extends Base[impure, D]
+                     */
+                    class Block extends Base {
+                        public function add(string $child): static {
+                            return $this;
+                        }
+                    }
+
+                    class Page extends Block {}
+
+                    final class AdminPage extends Page {}
+
+                    $page = AdminPage::create()->add("child");',
+                'assertions' => [
+                    '$page===' => 'AdminPage',
+                ],
+            ],
             'pureGeneratorWithoutReturn' => [
                 'code' => '<?php
                     /**

@@ -746,9 +746,11 @@ final class TypeExpander
         bool $final = false,
         bool &$expand_generic = false,
     ): TNamedObject|TTemplateParam {
+        // a static type is resolved to the called class below, with its own type arguments
         if ($expand_generic
             && $return_type::class === TNamedObject::class
             && !$return_type->extra_types
+            && !($return_type->is_static && !$return_type->is_static_resolved)
             && $codebase->classOrInterfaceExists($return_type->value)
         ) {
             $value = $codebase->classlikes->getUnAliasedName($return_type->value);
@@ -825,7 +827,8 @@ final class TypeExpander
             && !$return_type->is_static_resolved
             && $return_type::class === TNamedObject::class
             && $static_class_type instanceof TNamedObject
-            && $codebase->classExtends($static_class_type->value, $return_type->value)
+            && (strtolower($static_class_type->value) === strtolower($return_type->value)
+                || $codebase->classExtends($static_class_type->value, $return_type->value))
         ) {
             // The called class already includes the declaring class's constraints.
             $return_type = $static_class_type->setIntersectionTypes(
