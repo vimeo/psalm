@@ -5,7 +5,12 @@ declare(strict_types=1);
 namespace Psalm\Tests\Cache;
 
 use Override;
+use PHPUnit\Framework\Attributes\After;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PhpParser\Node\Scalar\Int_;
+use PhpParser\Node\Scalar\String_;
+use PhpParser\Node\Stmt\Echo_;
+use PhpParser\Node\Stmt\Return_;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -19,12 +24,15 @@ use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
+use Psalm\Storage\FileStorage;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use ReflectionProperty;
+use Symfony\Component\Filesystem\Filesystem;
 
 use function array_keys;
+use function extension_loaded;
 use function microtime;
 use function restore_error_handler;
 use function set_error_handler;
@@ -37,6 +45,9 @@ use const E_WARNING;
 
 final class CacheTest extends TestCase
 {
+    /** @var list<string> */
+    private array $cache_directories = [];
+
     #[Override]
     public static function setUpBeforeClass(): void
     {
@@ -64,6 +75,13 @@ final class CacheTest extends TestCase
         RuntimeCaches::clearAll();
 
         parent::tearDown();
+    }
+
+    #[After]
+    public function removeCacheDirectories(): void
+    {
+        (new Filesystem())->remove($this->cache_directories);
+        $this->cache_directories = [];
     }
 
     /**
@@ -158,8 +176,7 @@ final class CacheTest extends TestCase
     #[DataProvider('provideSaveItemRetention')]
     public function testSaveItemRetention(bool $persistent, bool $array_cache, bool $retained): void
     {
-        $config = new TestConfig();
-        $config->cache_directory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'psalm-cache-test-' . uniqid('', true);
+        $config = $this->createCacheConfig();
         $config->array_cache = $array_cache;
 
         /** @var Cache<string> $cache */
@@ -222,8 +239,102 @@ final class CacheTest extends TestCase
         self::assertSame('added item', $cache->getItem('added', 'added hash'));
     }
 
+    public function testNewerItemOnDiskIsUsedInsteadOfOutdatedConsolidatedEntry(): void
+    {
+        $cache = $this->openCacheWithOutdatedConsolidatedEntry($this->createCacheConfig());
+
+        self::assertSame('old hash', $cache->getHash('a'));
+        self::assertSame('new', $cache->getItem('a', 'new hash'));
+        self::assertSame('item b', $cache->getItem('b', 'hash b'));
+    }
+
+    public function testConsolidatingKeepsNewerItemOnDiskInsteadOfOutdatedConsolidatedEntry(): void
+    {
+        $config = $this->createCacheConfig();
+
+        $cache = $this->openCacheWithOutdatedConsolidatedEntry($config);
+        $cache->consolidate();
+        unset($cache);
+
+        $cache = $this->openCache($config);
+        self::assertSame('new hash', $cache->getHash('a'));
+        self::assertSame('new', $cache->getItem('a', 'new hash'));
+        self::assertNull($cache->getItem('a', 'old hash'));
+        self::assertSame('item b', $cache->getItem('b', 'hash b'));
+    }
+
     /**
-     * @return Cache<string>
+     * @param 'deflate'|'off' $compressor
+     */
+    #[DataProvider('provideCacheSerializers')]
+    public function testObjectPayloadsSurviveConsolidation(string $compressor, bool $use_igbinary): void
+    {
+        if ($use_igbinary && !extension_loaded('igbinary')) {
+            self::markTestSkipped('ext-igbinary is not loaded');
+        }
+
+        $config = $this->createCacheConfig($compressor, $use_igbinary);
+        $stmts = [new Echo_([new String_('hello')]), new Return_(new Int_(1))];
+        $storage = new FileStorage('/src/a.php');
+        $other_storage = new FileStorage('/src/b.php');
+
+        $cache = $this->openCache($config);
+        $cache->saveItem('stmts', $stmts, 'stmts hash');
+        $cache->saveItem('storage', $storage, 'storage hash');
+        $cache->consolidate();
+        unset($cache);
+
+        // 'storage' stays in the consolidated file untouched, 'stmts' goes through memory when it is used
+        $cache = $this->openCache($config);
+        self::assertEquals($stmts, $cache->getItem('stmts', 'stmts hash'));
+        $cache->saveItem('other', $other_storage, 'other hash');
+        $cache->consolidate();
+        unset($cache);
+
+        $cache = $this->openCache($config);
+        $restored_stmts = $cache->getItem('stmts', 'stmts hash');
+        self::assertEquals($stmts, $restored_stmts);
+        self::assertNotSame($stmts, $restored_stmts);
+        $restored_storage = $cache->getItem('storage', 'storage hash');
+        self::assertEquals($storage, $restored_storage);
+        self::assertNotSame($storage, $restored_storage);
+        self::assertEquals($other_storage, $cache->getItem('other', 'other hash'));
+    }
+
+    /**
+     * @return iterable<string, array{'deflate'|'off', bool}>
+     * @psalm-pure
+     */
+    public static function provideCacheSerializers(): iterable
+    {
+        yield 'native serializer' => ['off', false];
+        yield 'native serializer, deflate' => ['deflate', false];
+        yield 'igbinary' => ['off', true];
+        yield 'igbinary, deflate' => ['deflate', true];
+    }
+
+    /**
+     * @return Cache<array<array-key, mixed>|object|string>
+     */
+    private function openCacheWithOutdatedConsolidatedEntry(TestConfig $config): Cache
+    {
+        $cache = $this->openCache($config);
+        $cache->saveItem('a', 'old', 'old hash');
+        $cache->saveItem('b', 'item b', 'hash b');
+        $cache->consolidate();
+        unset($cache);
+
+        // this process still holds the old entry of 'a' when another one stores a newer item
+        $cache = $this->openCache($config);
+        $writer = $this->openCache($config);
+        $writer->saveItem('a', 'new', 'new hash');
+        unset($writer);
+
+        return $cache;
+    }
+
+    /**
+     * @return Cache<array<array-key, mixed>|object|string>
      */
     private function openCache(TestConfig $config): Cache
     {
@@ -236,11 +347,17 @@ final class CacheTest extends TestCase
         }
     }
 
-    private function createCacheConfig(): TestConfig
+    /**
+     * @param 'deflate'|'lz4'|'off' $compressor
+     */
+    private function createCacheConfig(string $compressor = 'off', bool $use_igbinary = false): TestConfig
     {
         $config = new TestConfig();
         $config->cache_directory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'psalm-cache-test-' . uniqid('', true);
         $config->array_cache = true;
+        $config->compressor = $compressor;
+        $config->use_igbinary = $use_igbinary;
+        $this->cache_directories[] = $config->cache_directory;
 
         return $config;
     }
