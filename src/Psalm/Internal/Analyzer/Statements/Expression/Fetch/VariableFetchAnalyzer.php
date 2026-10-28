@@ -41,7 +41,6 @@ use Psalm\Type\Union;
 
 use function in_array;
 use function is_string;
-use function time;
 
 /**
  * @internal
@@ -833,7 +832,7 @@ final class VariableFetchAnalyzer
             ], ['possibly_undefined' => true]);
 
             $request_time_helper = new Union([
-                new TIntRange(time(), null),
+                new TIntRange(1, null),
             ], ['possibly_undefined' => true]);
 
             $request_time_float_helper = new Union([
