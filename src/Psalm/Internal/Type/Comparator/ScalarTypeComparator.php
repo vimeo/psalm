@@ -434,7 +434,15 @@ final class ScalarTypeComparator
             );
         }
 
-        if ($container_type_part instanceof TString && $input_type_part instanceof TTraitString) {
+        // trait names are non-falsy; other string subtypes fall through to the generic string rules
+        if ($input_type_part instanceof TTraitString
+            && ($container_type_part::class === TNonEmptyString::class
+                || $container_type_part::class === TNonFalsyString::class
+                || ($container_type_part::class === TClassString::class
+                    && $container_type_part->as_type === null
+                    && !$container_type_part->is_interface
+                    && !$container_type_part->is_enum))
+        ) {
             return true;
         }
 
