@@ -1090,7 +1090,7 @@ final class Psalm
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
 
-        $progress->write(PHP_EOL."Running on PHP ".PHP_VERSION.', Psalm '.PSALM_VERSION.'.'.PHP_EOL);
+        $progress->write(PHP_EOL."Running on PHP ".PHP_VERSION.', Psalm '.PSALM_VERSION.'.'.PHP_EOL.PHP_EOL);
 
         $has_opcache = function_exists('opcache_get_status');
         $hasJit = $has_opcache && true === (opcache_get_status()['jit']['on'] ?? false);
@@ -1244,7 +1244,6 @@ final class Psalm
         ?array $paths_to_check,
     ): array {
         $issue_baseline = [];
-
 
         if (isset($options['use-baseline'])) {
             if (!is_string($options['use-baseline'])) {
