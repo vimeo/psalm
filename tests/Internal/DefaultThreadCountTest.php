@@ -8,8 +8,27 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\Cli\DefaultThreadCount;
 
+use function count;
+
 final class DefaultThreadCountTest extends TestCase
 {
+    private const SYSCTL = '/usr/sbin/sysctl hw.nperflevels hw.perflevel0.name hw.perflevel0.logicalcpu hw.perflevel1.name hw.perflevel1.logicalcpu hw.perflevel2.name hw.perflevel2.logicalcpu hw.perflevel3.name hw.perflevel3.logicalcpu 2>/dev/null || true';
+
+    /**
+     * Mimics `sysctl` output: one "key: value" line per existing key, nothing for missing levels.
+     *
+     * @param list<array{string,int}> $levels name and logical CPU count of each perf level
+     * @psalm-pure
+     */
+    private static function sysctlOutput(array $levels): string
+    {
+        $output = 'hw.nperflevels: ' . count($levels) . "\n";
+        foreach ($levels as $index => [$name, $cpus]) {
+            $output .= "hw.perflevel$index.name: $name\nhw.perflevel$index.logicalcpu: $cpus\n";
+        }
+
+        return $output;
+    }
     /**
      * @return iterable<string,array{?int,string}>
      * @psalm-pure
@@ -50,41 +69,120 @@ final class DefaultThreadCountTest extends TestCase
      */
     public static function provideSelection(): iterable
     {
-        yield 'hybrid uses performance cores' => [12, 16, 12];
+        yield 'hybrid skips efficiency cores' => [12, 16, 12];
         yield 'not hybrid' => [16, 16, null];
-        yield 'zero performance cores is ignored' => [16, 16, 0];
-        yield 'negative performance cores is ignored' => [16, 16, -1];
-        yield 'one performance core' => [1, 16, 1];
-        yield 'performance cores capped by affinity-limited total' => [4, 4, 12];
-        yield 'all cores performance' => [8, 8, 8];
+        yield 'zero non-efficiency cores is ignored' => [16, 16, 0];
+        yield 'negative non-efficiency cores is ignored' => [16, 16, -1];
+        yield 'one non-efficiency core' => [1, 16, 1];
+        yield 'non-efficiency cores capped by affinity-limited total' => [4, 4, 12];
+        yield 'all cores non-efficiency' => [8, 8, 8];
         yield 'no cores detected' => [1, 0, null];
         yield 'no cores detected, hybrid' => [1, 0, 12];
     }
 
     #[DataProvider('provideSelection')]
-    public function testSelect(int $expected, int $all_cores, ?int $performance_cores): void
+    public function testSelect(int $expected, int $all_cores, ?int $non_efficiency_cores): void
     {
-        $this->assertSame($expected, DefaultThreadCount::select($all_cores, $performance_cores));
+        $this->assertSame($expected, DefaultThreadCount::select($all_cores, $non_efficiency_cores));
     }
 
     /**
      * @return iterable<string,array{?int,string,array<string,string>,array<string,string>}>
      * @psalm-pure
      */
-    public static function providePerformanceCores(): iterable
+    public static function provideNonEfficiencyCores(): iterable
     {
-        $sysctl = '/usr/sbin/sysctl -n hw.nperflevels hw.perflevel0.logicalcpu 2>/dev/null';
+        $sysctl = self::SYSCTL;
 
-        yield 'apple silicon hybrid' => [12, 'Darwin', [$sysctl => "2\n12\n"], []];
-        yield 'apple silicon without newline' => [10, 'Darwin', [$sysctl => '2' . "\n" . '10'], []];
-        yield 'apple silicon single level' => [null, 'Darwin', [$sysctl => "1\n8\n"], []];
-        yield 'apple silicon three levels' => [6, 'Darwin', [$sysctl => "3\n6\n"], []];
+        yield 'apple silicon performance and efficiency' => [
+            12,
+            'Darwin',
+            [$sysctl => self::sysctlOutput([['Performance', 12], ['Efficiency', 4]])],
+            [],
+        ];
+        yield 'apple silicon super and performance, no efficiency cores' => [
+            null,
+            'Darwin',
+            [$sysctl => self::sysctlOutput([['Super', 6], ['Performance', 12]])],
+            [],
+        ];
+        yield 'apple silicon three levels, efficiency last' => [
+            10,
+            'Darwin',
+            [$sysctl => self::sysctlOutput([['Super', 4], ['Performance', 6], ['Efficiency', 4]])],
+            [],
+        ];
+        yield 'apple silicon efficiency name is case-insensitive' => [
+            12,
+            'Darwin',
+            [$sysctl => self::sysctlOutput([['Performance', 12], ['efficiency', 4]])],
+            [],
+        ];
+        yield 'apple silicon efficiency level listed first' => [
+            12,
+            'Darwin',
+            [$sysctl => self::sysctlOutput([['Efficiency', 4], ['Performance', 12]])],
+            [],
+        ];
+        yield 'apple silicon unknown names' => [
+            null,
+            'Darwin',
+            [$sysctl => self::sysctlOutput([['Foo', 6], ['Bar', 12]])],
+            [],
+        ];
+        yield 'apple silicon unknown names next to efficiency' => [
+            6,
+            'Darwin',
+            [$sysctl => self::sysctlOutput([['Foo', 6], ['Efficiency', 4]])],
+            [],
+        ];
+        yield 'apple silicon single level' => [
+            null,
+            'Darwin',
+            [$sysctl => self::sysctlOutput([['Performance', 8]])],
+            [],
+        ];
+        yield 'apple silicon only efficiency cores' => [
+            0,
+            'Darwin',
+            [$sysctl => self::sysctlOutput([['Efficiency', 8]])],
+            [],
+        ];
+        yield 'apple silicon more levels than queried' => [
+            null,
+            'Darwin',
+            [$sysctl => "hw.nperflevels: 5\nhw.perflevel0.name: Performance\nhw.perflevel0.logicalcpu: 12\n"],
+            [],
+        ];
+        yield 'apple silicon missing level name' => [
+            null,
+            'Darwin',
+            [$sysctl => "hw.nperflevels: 2\nhw.perflevel0.logicalcpu: 12\nhw.perflevel1.name: Efficiency\n"
+                . "hw.perflevel1.logicalcpu: 4\n"],
+            [],
+        ];
+        yield 'apple silicon missing level cpu count' => [
+            null,
+            'Darwin',
+            [$sysctl => "hw.nperflevels: 2\nhw.perflevel0.name: Performance\nhw.perflevel1.name: Efficiency\n"
+                . "hw.perflevel1.logicalcpu: 4\n"],
+            [],
+        ];
+        yield 'apple silicon non-numeric cpu count' => [
+            null,
+            'Darwin',
+            [$sysctl => "hw.nperflevels: 2\nhw.perflevel0.name: Performance\nhw.perflevel0.logicalcpu: x\n"
+                . "hw.perflevel1.name: Efficiency\nhw.perflevel1.logicalcpu: 4\n"],
+            [],
+        ];
+        yield 'apple silicon non-numeric level count' => [
+            null,
+            'Darwin',
+            [$sysctl => "hw.nperflevels: two\nhw.perflevel0.name: Performance\nhw.perflevel0.logicalcpu: 12\n"],
+            [],
+        ];
         yield 'intel mac, keys missing' => [null, 'Darwin', [$sysctl => ''], []];
-        yield 'intel mac, only one key printed' => [null, 'Darwin', [$sysctl => "8\n"], []];
-        yield 'darwin bad first line' => [null, 'Darwin', [$sysctl => "x\n12\n"], []];
-        yield 'darwin bad second line' => [null, 'Darwin', [$sysctl => "2\ny\n"], []];
         yield 'darwin garbage output' => [null, 'Darwin', [$sysctl => "x\ny\n"], []];
-        yield 'darwin extra output' => [null, 'Darwin', [$sysctl => "2\n12\n1\n"], []];
         yield 'darwin command fails' => [null, 'Darwin', [], []];
         yield 'darwin ignores sysfs' => [
             null,
@@ -122,11 +220,16 @@ final class DefaultThreadCountTest extends TestCase
             [],
             ['/sys/devices/cpu_core/cpus' => 'nope', '/sys/devices/cpu_atom/cpus' => '16-23'],
         ];
-        yield 'linux ignores sysctl' => [null, 'Linux', [$sysctl => "2\n12\n"], []];
+        yield 'linux ignores sysctl' => [
+            null,
+            'Linux',
+            [$sysctl => self::sysctlOutput([['Performance', 12], ['Efficiency', 4]])],
+            [],
+        ];
         yield 'other os' => [
             null,
             'Windows',
-            [$sysctl => "2\n12\n"],
+            [$sysctl => self::sysctlOutput([['Performance', 12], ['Efficiency', 4]])],
             ['/sys/devices/cpu_core/cpus' => '0-15', '/sys/devices/cpu_atom/cpus' => '16-23'],
         ];
     }
@@ -135,12 +238,12 @@ final class DefaultThreadCountTest extends TestCase
      * @param array<string,string> $commands
      * @param array<string,string> $files
      */
-    #[DataProvider('providePerformanceCores')]
-    public function testGetPerformanceCoreCount(?int $expected, string $os_family, array $commands, array $files): void
+    #[DataProvider('provideNonEfficiencyCores')]
+    public function testGetNonEfficiencyCoreCount(?int $expected, string $os_family, array $commands, array $files): void
     {
         $this->assertSame(
             $expected,
-            DefaultThreadCount::getPerformanceCoreCount(
+            DefaultThreadCount::getNonEfficiencyCoreCount(
                 static fn(string $command): ?string => $commands[$command] ?? null,
                 static fn(string $path): ?string => $files[$path] ?? null,
                 $os_family,
@@ -154,17 +257,21 @@ final class DefaultThreadCountTest extends TestCase
      */
     public static function provideResolve(): iterable
     {
-        $sysctl = '/usr/sbin/sysctl -n hw.nperflevels hw.perflevel0.logicalcpu 2>/dev/null';
+        $sysctl = self::SYSCTL;
         $hybrid_sysfs = ['/sys/devices/cpu_core/cpus' => '0-15', '/sys/devices/cpu_atom/cpus' => '16-23'];
 
-        yield 'apple silicon hybrid' => [12, 16, 'Darwin', [$sysctl => "2\n12\n"], []];
+        $p_and_e = self::sysctlOutput([['Performance', 12], ['Efficiency', 4]]);
+        $super_and_p = self::sysctlOutput([['Super', 6], ['Performance', 12]]);
+
+        yield 'apple silicon hybrid' => [12, 16, 'Darwin', [$sysctl => $p_and_e], []];
+        yield 'apple silicon without efficiency cores' => [18, 18, 'Darwin', [$sysctl => $super_and_p], []];
         yield 'apple silicon, sysctl unavailable' => [16, 16, 'Darwin', [], []];
-        yield 'apple silicon, non-hybrid' => [8, 8, 'Darwin', [$sysctl => "1\n8\n"], []];
+        yield 'apple silicon, non-hybrid' => [8, 8, 'Darwin', [$sysctl => self::sysctlOutput([['Performance', 8]])], []];
         yield 'linux hybrid' => [16, 24, 'Linux', [], $hybrid_sysfs];
         yield 'linux hybrid limited by affinity' => [4, 4, 'Linux', [], $hybrid_sysfs];
         yield 'linux, sysfs unreadable' => [24, 24, 'Linux', [], []];
-        yield 'unknown os' => [6, 6, 'Windows', [$sysctl => "2\n12\n"], $hybrid_sysfs];
-        yield 'no cores detected' => [1, 0, 'Darwin', [$sysctl => "2\n12\n"], []];
+        yield 'unknown os' => [6, 6, 'Windows', [$sysctl => $p_and_e], $hybrid_sysfs];
+        yield 'no cores detected' => [1, 0, 'Darwin', [$sysctl => $p_and_e], []];
     }
 
     /**

@@ -1497,7 +1497,7 @@ final class Psalm
 
             --threads=INT
                 If greater than one, Psalm will run the scan and analysis on multiple threads, speeding things up.
-                Defaults to the number of CPU cores (only the performance cores on hybrid CPUs).
+                Defaults to the number of CPU cores (efficiency cores are not counted on hybrid CPUs).
 
             --scan-threads=INT
                 If greater than one, Psalm will run the scan on multiple threads, speeding things up (if specified, takes priority over the --threads flag).

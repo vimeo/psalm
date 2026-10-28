@@ -19,6 +19,7 @@ use function implode;
 use function intval;
 use function max;
 use function min;
+use function strtolower;
 use function trim;
 
 use const PHP_OS_FAMILY;
@@ -26,14 +27,17 @@ use const PHP_OS_FAMILY;
 /**
  * Picks the thread count used when the user did not ask for one.
  *
- * On hybrid CPUs (Apple Silicon, Intel Alder Lake and newer) only the performance cores are counted:
- * the efficiency cores are slower, so a worker that ends up on one of them drags out the tail of the run,
+ * On hybrid CPUs (Apple Silicon, Intel Alder Lake and newer) the efficiency cores are not counted:
+ * they are slower, so a worker that ends up on one of them drags out the tail of the run,
  * while the extra threads add CPU time without finishing earlier.
  *
  * @internal
  */
 final class DefaultThreadCount
 {
+    // Apple Silicon has at most three perf levels today; more than this and the topology is treated as unknown
+    private const DARWIN_MAX_PERF_LEVELS = 4;
+
     /**
      * @return int<1, max>
      */
@@ -59,23 +63,23 @@ final class DefaultThreadCount
         Closure $read_file,
         string $os_family,
     ): int {
-        return self::select($all_cores, self::getPerformanceCoreCount($read_command, $read_file, $os_family));
+        return self::select($all_cores, self::getNonEfficiencyCoreCount($read_command, $read_file, $os_family));
     }
 
     /**
-     * @param ?int $performance_cores null when the CPU is not hybrid or the topology could not be read
+     * @param ?int $non_efficiency_cores null when the CPU is not hybrid or the topology could not be read
      * @return int<1, max>
      * @psalm-pure
      */
-    public static function select(int $all_cores, ?int $performance_cores): int
+    public static function select(int $all_cores, ?int $non_efficiency_cores): int
     {
         $all_cores = max(1, $all_cores);
 
-        if ($performance_cores === null || $performance_cores < 1) {
+        if ($non_efficiency_cores === null || $non_efficiency_cores < 1) {
             return $all_cores;
         }
 
-        return min($all_cores, $performance_cores);
+        return min($all_cores, $non_efficiency_cores);
     }
 
     /**
@@ -83,17 +87,17 @@ final class DefaultThreadCount
      * @param Closure(string): ?string $read_file
      * @psalm-impure
      */
-    public static function getPerformanceCoreCount(
+    public static function getNonEfficiencyCoreCount(
         Closure $read_command,
         Closure $read_file,
         string $os_family,
     ): ?int {
         if ($os_family === 'Darwin') {
-            return self::getDarwinPerformanceCoreCount($read_command);
+            return self::getDarwinNonEfficiencyCoreCount($read_command);
         }
 
         if ($os_family === 'Linux') {
-            return self::getLinuxPerformanceCoreCount($read_file);
+            return self::getLinuxNonEfficiencyCoreCount($read_file);
         }
 
         return null;
@@ -128,32 +132,64 @@ final class DefaultThreadCount
     }
 
     /**
+     * Sums the logical CPUs of every perf level that is not named "Efficiency". Apple Silicon names its levels
+     * (Performance/Efficiency, and "Super" on parts such as the M5 Pro that have no efficiency cores), so the
+     * number of levels alone does not tell whether a CPU is hybrid.
+     *
      * @param Closure(string): ?string $read_command
      * @psalm-impure
      */
-    private static function getDarwinPerformanceCoreCount(Closure $read_command): ?int
+    private static function getDarwinNonEfficiencyCoreCount(Closure $read_command): ?int
     {
-        $output = $read_command('/usr/sbin/sysctl -n hw.nperflevels hw.perflevel0.logicalcpu 2>/dev/null');
+        $keys = ['hw.nperflevels'];
+        for ($level = 0; $level < self::DARWIN_MAX_PERF_LEVELS; $level++) {
+            $keys[] = "hw.perflevel$level.name";
+            $keys[] = "hw.perflevel$level.logicalcpu";
+        }
+
+        // levels that do not exist make sysctl exit non-zero while the others are still printed
+        $output = $read_command('/usr/sbin/sysctl ' . implode(' ', $keys) . ' 2>/dev/null || true');
         if ($output === null) {
             return null;
         }
 
-        $lines = explode("\n", trim($output));
-        if (count($lines) !== 2 || $lines !== array_filter($lines, ctype_digit(...))) {
+        $values = [];
+        foreach (explode("\n", trim($output)) as $line) {
+            $parts = explode(': ', $line, 2);
+            if (count($parts) === 2) {
+                $values[$parts[0]] = $parts[1];
+            }
+        }
+
+        $levels = $values['hw.nperflevels'] ?? null;
+        if ($levels === null || !ctype_digit($levels) || (int) $levels > self::DARWIN_MAX_PERF_LEVELS) {
             return null;
         }
 
-        [$levels, $performance_cores] = array_map(intval(...), $lines);
+        $has_efficiency_level = false;
+        $cores = 0;
+        for ($level = 0; $level < (int) $levels; $level++) {
+            $name = $values["hw.perflevel$level.name"] ?? null;
+            $logical_cpus = $values["hw.perflevel$level.logicalcpu"] ?? null;
+            if ($name === null || $logical_cpus === null || !ctype_digit($logical_cpus)) {
+                return null;
+            }
 
-        // perflevel0 is the highest-performance level; a single level means the CPU is not hybrid
-        return $levels > 1 ? $performance_cores : null;
+            if (strtolower($name) === 'efficiency') {
+                $has_efficiency_level = true;
+            } else {
+                $cores += (int) $logical_cpus;
+            }
+        }
+
+        return $has_efficiency_level ? $cores : null;
     }
 
     /**
      * @param Closure(string): ?string $read_file
      * @psalm-impure
      */
-    private static function getLinuxPerformanceCoreCount(Closure $read_file): ?int
+    private static function getLinuxNonEfficiencyCoreCount(Closure $read_file): ?int
     {
         $performance = $read_file('/sys/devices/cpu_core/cpus');
         $efficiency = $read_file('/sys/devices/cpu_atom/cpus');
