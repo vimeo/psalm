@@ -998,6 +998,19 @@ final class AttributeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'delayedTargetValidationPolyfillBelowPhp85' => [
+                'code' => '<?php
+                    #[Attribute]
+                    final class DelayedTargetValidation {}
+
+                    #[\DelayedTargetValidation]
+                    #[\Override]
+                    final class Delayed {}
+                ',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:23 - Attribute Override cannot be used on a class',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 }

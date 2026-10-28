@@ -67,8 +67,9 @@ final class AttributesAnalyzer
         $has_delayed_target_validation = false;
         foreach (self::iterateAttributeNodes($attribute_groups) as $attribute) {
             if (strtolower(self::getFqAttributeName($source, $attribute)) === 'delayedtargetvalidation') {
-                // PHP defers the target check of every internal attribute (even #[\Attribute]) to runtime.
-                $has_delayed_target_validation = true;
+                // PHP 8.5 defers the target check of every internal attribute (even #[\Attribute]) to runtime;
+                // older versions still check it at compile time, even with a polyfilled DelayedTargetValidation.
+                $has_delayed_target_validation = $codebase->analysis_php_version_id >= 8_05_00;
                 break;
             }
         }
