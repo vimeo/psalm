@@ -38798,7 +38798,7 @@ return array (
   ),
   'imagickpixel::getcolorvaluequantum' => 
   array (
-    0 => '5',
+    0 => 'float',
     'color' => 'int',
   ),
   'imagickpixel::gethsl' => 
@@ -38852,7 +38852,7 @@ return array (
   array (
     0 => 'bool',
     'color' => 'int',
-    'value' => 'IMAGICK_QUANTUM_TYPE',
+    'value' => 'float',
   ),
   'imagickpixel::sethsl' => 
   array (
@@ -38864,7 +38864,7 @@ return array (
   'imagickpixel::setindex' => 
   array (
     0 => 'bool',
-    'index' => 'IMAGICK_QUANTUM_TYPE',
+    'index' => 'float',
   ),
   'imagickpixelexception::__construct' => 
   array (
@@ -86646,6 +86646,120 @@ return array (
   array (
     0 => 'string',
   ),
+  'swoole\\coroutine\\http2\\multiplexclient::__construct' => 
+  array (
+    0 => 'void',
+    'host' => 'string',
+    'port=' => 'int',
+    'open_ssl=' => 'bool',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::close' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::closestreamchannel' => 
+  array (
+    0 => 'void',
+    'streamId' => 'int',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::connect' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::ensureheartbeatchecker' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::ensurerecvloop' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::flushstreamchannels' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::goaway' => 
+  array (
+    0 => 'bool',
+    'error_code=' => 'int',
+    'debug_data=' => 'string',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::interruptiblesleep' => 
+  array (
+    0 => 'void',
+    'seconds' => 'float',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::isstreamexist' => 
+  array (
+    0 => 'bool',
+    'stream_id' => 'int',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::openstreamchannel' => 
+  array (
+    0 => 'Swoole\\Coroutine\\Channel',
+    'streamId' => 'int',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::ping' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::read' => 
+  array (
+    0 => 'Swoole\\Http2\\Response|false',
+    'timeout=' => 'float',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::reconnect' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::recv' => 
+  array (
+    0 => 'Swoole\\Http2\\Response|false',
+    'timeout=' => 'float',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::recvloop' => 
+  array (
+    0 => 'void',
+    'token' => 'object',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::request' => 
+  array (
+    0 => 'Swoole\\Http2\\Response|false',
+    'request' => 'Swoole\\Http2\\Request',
+    'timeout=' => 'float',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::send' => 
+  array (
+    0 => 'false|int',
+    'request' => 'Swoole\\Http2\\Request',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::set' => 
+  array (
+    0 => 'bool',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::seterror' => 
+  array (
+    0 => 'void',
+    'errCode' => 'int',
+    'errMsg' => 'string',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::stats' => 
+  array (
+    0 => 'array<array-key, mixed>|int',
+    'key=' => 'string',
+  ),
+  'swoole\\coroutine\\http2\\multiplexclient::write' => 
+  array (
+    0 => 'bool',
+    'stream_id' => 'int',
+    'data' => 'mixed',
+    'end_stream=' => 'bool',
+  ),
   'swoole\\coroutine\\http\\client::__construct' => 
   array (
     0 => 'void',
@@ -87661,6 +87775,12 @@ return array (
     0 => 'bool',
     'headerName' => 'string',
   ),
+  'swoole\\curl\\handler::invokeprereqfunction' => 
+  array (
+    0 => 'bool',
+    'proxyIp' => 'null|string',
+    'proxyPort' => 'int|null',
+  ),
   'swoole\\curl\\handler::isavailable' => 
   array (
     0 => 'bool',
@@ -87918,6 +88038,10 @@ return array (
   array (
     0 => 'int',
   ),
+  'swoole\\database\\mysqliproxy::intransaction' => 
+  array (
+    0 => 'bool',
+  ),
   'swoole\\database\\mysqliproxy::options' => 
   array (
     0 => 'bool',
@@ -87925,6 +88049,10 @@ return array (
     'value' => 'mixed',
   ),
   'swoole\\database\\mysqliproxy::reconnect' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\database\\mysqliproxy::reset' => 
   array (
     0 => 'void',
   ),
@@ -88219,11 +88347,27 @@ return array (
   array (
     0 => 'int',
   ),
+  'swoole\\database\\pdoproxy::hasopentransaction' => 
+  array (
+    0 => 'bool',
+  ),
   'swoole\\database\\pdoproxy::intransaction' => 
   array (
     0 => 'bool',
   ),
+  'swoole\\database\\pdoproxy::islost' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\database\\pdoproxy::markaslost' => 
+  array (
+    0 => 'void',
+  ),
   'swoole\\database\\pdoproxy::reconnect' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\database\\pdoproxy::recordtransactionstate' => 
   array (
     0 => 'void',
   ),
@@ -88308,6 +88452,11 @@ return array (
     'value' => 'mixed',
     'data_type=' => 'mixed',
   ),
+  'swoole\\database\\pdostatementproxy::parameterkey' => 
+  array (
+    0 => 'int|string',
+    'param' => 'int|string',
+  ),
   'swoole\\database\\pdostatementproxy::setattribute' => 
   array (
     0 => 'bool',
@@ -88322,7 +88471,7 @@ return array (
   ),
   'swoole\\database\\redisconfig::getauth' => 
   array (
-    0 => 'string',
+    0 => 'array<array-key, mixed>|string',
   ),
   'swoole\\database\\redisconfig::getdbindex' => 
   array (
@@ -88364,7 +88513,7 @@ return array (
   'swoole\\database\\redisconfig::withauth' => 
   array (
     0 => 'self',
-    'auth' => 'string',
+    'auth' => 'array<array-key, mixed>|string',
   ),
   'swoole\\database\\redisconfig::withdbindex' => 
   array (
@@ -89680,6 +89829,13 @@ return array (
   array (
     0 => 'static',
     'binaryData' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\params::unpacklength' => 
+  array (
+    0 => 'int',
+    'binaryData' => 'string',
+    'contentLength' => 'int',
+    '&offset' => 'int',
   ),
   'swoole\\fastcgi\\record\\params::unpackpayload' => 
   array (
@@ -91871,6 +92027,11 @@ return array (
     0 => 'mixed',
     '...args=' => 'mixed',
   ),
+  'swoole\\remoteobject::__isset' => 
+  array (
+    0 => 'bool',
+    'property' => 'string',
+  ),
   'swoole\\remoteobject::__serialize' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -91889,6 +92050,11 @@ return array (
   array (
     0 => 'void',
     'data' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject::__unset' => 
+  array (
+    0 => 'void',
+    'property' => 'string',
   ),
   'swoole\\remoteobject::call' => 
   array (
@@ -92064,6 +92230,11 @@ return array (
   array (
     0 => 'void',
   ),
+  'swoole\\remoteobject\\exception::fromresponse' => 
+  array (
+    0 => 'self',
+    'response' => 'array<array-key, mixed>',
+  ),
   'swoole\\remoteobject\\exception::getcode' => 
   array (
     0 => 'mixed',
@@ -92083,6 +92254,14 @@ return array (
   'swoole\\remoteobject\\exception::getprevious' => 
   array (
     0 => 'Throwable|null',
+  ),
+  'swoole\\remoteobject\\exception::getremoteclass' => 
+  array (
+    0 => 'null|string',
+  ),
+  'swoole\\remoteobject\\exception::getremotecode' => 
+  array (
+    0 => 'int|null|string',
   ),
   'swoole\\remoteobject\\exception::gettrace' => 
   array (
@@ -92110,6 +92289,11 @@ return array (
     'ctx' => 'Swoole\\RemoteObject\\Context',
   ),
   'swoole\\remoteobject\\server::_destroy' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_isset_property' => 
   array (
     0 => 'void',
     'ctx' => 'Swoole\\RemoteObject\\Context',
@@ -92150,6 +92334,11 @@ return array (
     'ctx' => 'Swoole\\RemoteObject\\Context',
   ),
   'swoole\\remoteobject\\server::_to_string' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_unset_property' => 
   array (
     0 => 'void',
     'ctx' => 'Swoole\\RemoteObject\\Context',
@@ -93836,6 +94025,10 @@ return array (
   'swoole_get_default_remote_object_client' => 
   array (
     0 => 'Swoole\\RemoteObject\\Client',
+  ),
+  'swoole_get_default_remote_object_server_dir' => 
+  array (
+    0 => 'string',
   ),
   'swoole_get_local_ip' => 
   array (
