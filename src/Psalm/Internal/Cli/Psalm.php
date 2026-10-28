@@ -452,8 +452,8 @@ final class Psalm
         if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
             // No support desired for Windows at the moment
             return 1;
-        } elseif (!extension_loaded('pcntl')) {
-            // Psalm requires pcntl for multi-threads support
+        } elseif (!extension_loaded('pcntl') || !extension_loaded('posix')) {
+            // Psalm requires pcntl and posix for multi-threads support
             return 1;
         }
 
