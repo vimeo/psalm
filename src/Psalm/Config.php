@@ -607,6 +607,7 @@ final class Config
         "ibm_db2" => null,
         "mongodb" => null,
         "mysqli" => null,
+        "newrelic" => null,
         "pdo" => null,
         "random" => null,
         "rdkafka" => null,

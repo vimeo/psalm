@@ -314,14 +314,6 @@ return [
     'zip_entry_open' => Capabilities::IO,
     'zip_entry_read' => Capabilities::IO,
     'zip_entry_close' => Capabilities::IO,
-    // newrelic
-    'newrelic_start_transaction' => Capabilities::IO,
-    'newrelic_name_transaction' => Capabilities::IO,
-    'newrelic_add_custom_parameter' => Capabilities::IO,
-    'newrelic_add_custom_tracer' => Capabilities::IO,
-    'newrelic_background_job' => Capabilities::IO,
-    'newrelic_end_transaction' => Capabilities::IO,
-    'newrelic_set_appname' => Capabilities::IO,
     // execution
     'shell_exec' => Capabilities::IO,
     'exec' => Capabilities::IO,

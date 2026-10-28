@@ -1,0 +1,182 @@
+<?php
+
+/**
+ * New Relic PHP agent API.
+ *
+ * Parameter names, optionality and by-ref-ness follow the arginfo of the agent:
+ * @see https://github.com/newrelic/newrelic-php-agent/blob/main/agent/php_newrelic.c
+ * and its implementation:
+ * @see https://github.com/newrelic/newrelic-php-agent/blob/main/agent/php_api.c
+ * @see https://github.com/newrelic/newrelic-php-agent/blob/main/agent/php_api_distributed_trace.c
+ * @see https://github.com/newrelic/newrelic-php-agent/blob/main/agent/php_api_datastore.c
+ */
+
+namespace {
+    /** @psalm-capabilities io */
+    function newrelic_accept_distributed_trace_headers(array $headers, string $transport_type = 'HTTP'): bool {}
+
+    /**
+     * @deprecated Use newrelic_accept_distributed_trace_headers()
+     * @psalm-capabilities io
+     */
+    function newrelic_accept_distributed_trace_payload(string $payload, string $transport_type = 'HTTP'): bool {}
+
+    /**
+     * @deprecated Use newrelic_accept_distributed_trace_headers()
+     * @psalm-capabilities io
+     */
+    function newrelic_accept_distributed_trace_payload_httpsafe(string $payload, string $transport_type = 'HTTP'): bool {}
+
+    /**
+     * @param scalar|null $value
+     * @psalm-capabilities io
+     */
+    function newrelic_add_custom_parameter(string $parameter, $value): bool {}
+
+    /**
+     * @param scalar|null $value
+     * @psalm-capabilities io
+     */
+    function newrelic_add_custom_span_parameter(string $key, $value): bool {}
+
+    /** @psalm-capabilities io */
+    function newrelic_add_custom_tracer(string $functionname): bool {}
+
+    /** @psalm-capabilities io */
+    function newrelic_background_job(bool $background = true): void {}
+
+    /** @psalm-capabilities io */
+    function newrelic_capture_params(bool $enable = true): void {}
+
+    /**
+     * @deprecated Use newrelic_accept_distributed_trace_headers() and newrelic_insert_distributed_trace_headers()
+     * @psalm-capabilities io
+     */
+    function newrelic_create_distributed_trace_payload(): \newrelic\DistributedTracePayload {}
+
+    /** @psalm-capabilities io */
+    function newrelic_custom_metric(string $metric, float $value): bool {}
+
+    /**
+     * @return true|null
+     * @psalm-capabilities io
+     */
+    function newrelic_disable_autorum() {}
+
+    /**
+     * @deprecated Use newrelic_capture_params()
+     * @psalm-capabilities io
+     */
+    function newrelic_enable_params(bool $enable = true): void {}
+
+    /** @psalm-capabilities io */
+    function newrelic_end_of_transaction(): void {}
+
+    /** @psalm-capabilities io */
+    function newrelic_end_transaction(bool $ignore = false): bool {}
+
+    /** @psalm-capabilities io */
+    function newrelic_get_browser_timing_footer(bool $with_tags = true): string {}
+
+    /** @psalm-capabilities io */
+    function newrelic_get_browser_timing_header(bool $with_tags = true): string {}
+
+    /**
+     * @return array<string, string>
+     * @psalm-capabilities io
+     */
+    function newrelic_get_linking_metadata(): array {}
+
+    /**
+     * @return array{span_id?: string, trace_id?: string}
+     * @psalm-capabilities io
+     */
+    function newrelic_get_trace_metadata(): array {}
+
+    /** @psalm-capabilities io */
+    function newrelic_ignore_apdex(): void {}
+
+    /** @psalm-capabilities io */
+    function newrelic_ignore_transaction(): void {}
+
+    /** @psalm-capabilities io|write-refs */
+    function newrelic_insert_distributed_trace_headers(array &$headers): bool {}
+
+    /** @psalm-capabilities io */
+    function newrelic_is_sampled(): bool {}
+
+    /** @psalm-capabilities io */
+    function newrelic_name_transaction(string $name): bool {}
+
+    /**
+     * Forms: ($exception), ($errstr), ($ignored, $exception) and ($errno, $errstr, $fname, $line_nr[, $ctx]).
+     * The first parameter is the exception, the message or the error number, and the second one is the message
+     * (4 or 5 arguments) or the exception (2 arguments); the agent ignores the other parameters.
+     *
+     * Not pure: it may run the callback of newrelic_set_error_group_callback().
+     *
+     * @param Throwable|string|int $exception
+     * @param Throwable|string|null $errstr
+     * @param mixed $ctx
+     */
+    function newrelic_notice_error($exception, $errstr = null, ?string $fname = null, ?int $line_nr = null, $ctx = null): void {}
+
+    /**
+     * @param array<string, scalar|null> $parameters
+     * @psalm-capabilities io
+     */
+    function newrelic_record_custom_event(string $event_type, array $parameters): void {}
+
+    /**
+     * @template T
+     * @psalm-purity-template P
+     *
+     * @param callable[P](): T $callback
+     * @param array{
+     *     product: string,
+     *     collection?: scalar|null,
+     *     databaseName?: scalar|null,
+     *     host?: scalar|null,
+     *     inputQuery?: scalar|null,
+     *     inputQueryLabel?: scalar|null,
+     *     operation?: scalar|null,
+     *     portPathOrId?: scalar|null,
+     *     query?: scalar|null,
+     *     ...<array-key, mixed>
+     * } $parameters
+     * @return T
+     *
+     * @psalm-capabilities io
+     * @psalm-purity-from-template P
+     */
+    function newrelic_record_datastore_segment(callable $callback, array $parameters) {}
+
+    /** @psalm-capabilities io */
+    function newrelic_set_appname(string $appname, string $license_key = '', bool $xmit = false): bool {}
+
+    /**
+     * @param callable(array<string, mixed>, array<string, mixed>): string $callback
+     * @psalm-capabilities io
+     */
+    function newrelic_set_error_group_callback(callable $callback): bool {}
+
+    /** @psalm-capabilities io */
+    function newrelic_set_user_attributes(string $user, string $account, string $product): bool {}
+
+    /** @psalm-capabilities io */
+    function newrelic_set_user_id(string $uuid): bool {}
+
+    /** @psalm-capabilities io */
+    function newrelic_start_transaction(string $appname, string $license_key = ''): bool {}
+}
+
+namespace newrelic {
+    class DistributedTracePayload
+    {
+        /** @psalm-capabilities read-props */
+        public function text(): string {}
+
+        /** @psalm-capabilities read-props */
+        public function httpSafe(): string {}
+    }
+}

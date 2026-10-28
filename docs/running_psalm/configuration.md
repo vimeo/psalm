@@ -692,10 +692,11 @@ Optional. Same format as `<projectFiles>`. Directories Psalm should load but not
 Optional. A list of extensions to search over. See [Checking non-PHP files](checking_non_php_files.md) to understand how to extend this.
 
 #### &lt;enableExtensions&gt;
-Optional. A list of extensions to enable. By default, only extensions required by your composer.json will be enabled.
+Optional. A list of extensions to enable. By default, only extensions required by your composer.json will be enabled (`"ext-newrelic": "*"` in `require` enables the same stubs as `<extension name="newrelic"/>`).
 ```xml
 <enableExtensions>
   <extension name="decimal"/>
+  <extension name="newrelic"/>
   <extension name="pdo"/>
 </enableExtensions>
 ```

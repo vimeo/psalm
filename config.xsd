@@ -803,6 +803,7 @@
             <xs:enumeration value="memcached"/>
             <xs:enumeration value="mongodb"/>
             <xs:enumeration value="mysqli"/>
+            <xs:enumeration value="newrelic"/>
             <xs:enumeration value="pdo"/>
             <xs:enumeration value="random"/>
             <xs:enumeration value="rdkafka"/>
