@@ -6,14 +6,12 @@ namespace Psalm\Tests\Internal\Codebase;
 
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Psalm\Internal\Codebase\Scanner;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Tests\TestCase;
-use ReflectionMethod;
 
 use function array_keys;
 use function array_map;
@@ -131,6 +129,7 @@ class COnly {}',
 
     /**
      * @return iterable<string, array{list<string>, list<string>, string, string, list<string>, list<string>}>
+     * @psalm-pure
      */
     public static function providerMerge(): iterable
     {
@@ -222,7 +221,7 @@ class COnly {}',
 
     public function testTheSameClassOutsideTheScannedFilesInSeveralProcessesIsAddedOnceInStableOrder(): void
     {
-        [$file_storage, $storages] = $this->scanAlone($this->dir . 'x.php', '<?php class Zed {} class Alpha {}');
+        [, $storages] = $this->scanAlone($this->dir . 'x.php', '<?php class Zed {} class Alpha {}');
 
         // the file is not among the ones scanned: the processes loaded it for another reason
         $copy_storages = ['alpha' => clone $storages['alpha'], 'zed' => clone $storages['zed']];
@@ -241,7 +240,7 @@ class COnly {}',
     /**
      * Scans a file as a process that has seen nothing else would: its storages, then forgotten.
      *
-     * @return array{FileStorage, array<lowercase-string, ClassLikeStorage>}
+     * @return array{FileStorage, array<string, ClassLikeStorage>}
      */
     private function scanAlone(string $file_path, string $contents): array
     {
@@ -262,8 +261,9 @@ class COnly {}',
     }
 
     /**
-     * @param list<array{FileStorage, array<lowercase-string, ClassLikeStorage>}> $scanned the files of a process
+     * @param list<array{FileStorage, array<string, ClassLikeStorage>}> $scanned the files of a process
      * @return array{file_storage: array<lowercase-string, FileStorage>, classlike_storage: array<string, ClassLikeStorage>}
+     * @psalm-capabilities read-props
      */
     private function poolData(array $scanned): array
     {
@@ -283,10 +283,6 @@ class COnly {}',
      */
     private function merge(array $pool_results, array $files_to_scan): void
     {
-        (new ReflectionMethod(Scanner::class, 'addScannedStorages'))->invoke(
-            $this->project_analyzer->getCodebase()->scanner,
-            $pool_results,
-            $files_to_scan,
-        );
+        $this->project_analyzer->getCodebase()->scanner->addScannedStorages($pool_results, $files_to_scan);
     }
 }

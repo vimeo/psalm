@@ -506,7 +506,10 @@ final class Scanner
 
             foreach ($forked_pool_data as $pool_data) {
                 $pool_data = $pool_data->await();
-                $pool_results[] = $pool_data;
+                $pool_results[] = [
+                    'file_storage' => $pool_data['file_storage'],
+                    'classlike_storage' => $pool_data['classlike_storage'],
+                ];
 
                 IssueBuffer::addIssues($pool_data['issues']);
 
@@ -563,10 +566,13 @@ final class Scanner
      * storages are added in the order of $files_to_scan, and of a class declared by several files the first
      * declaration wins, as when a single process scans the files in that order.
      *
-     * @param list<PoolData> $pool_results
+     * @param list<array{
+     *     file_storage: array<lowercase-string, FileStorage>,
+     *     classlike_storage: array<string, ClassLikeStorage>,
+     * }> $pool_results
      * @param array<string, string> $files_to_scan
      */
-    private function addScannedStorages(array $pool_results, array $files_to_scan): void
+    public function addScannedStorages(array $pool_results, array $files_to_scan): void
     {
         $file_order = [];
 
@@ -578,6 +584,8 @@ final class Scanner
 
         $scanned_file_storages = [];
         $other_file_storages = [];
+
+        /** @var array<string, non-empty-list<array{int, int, ClassLikeStorage}>> $classlike_candidates */
         $classlike_candidates = [];
 
         foreach ($pool_results as $pool_data) {
@@ -622,11 +630,16 @@ final class Scanner
             }
         }
 
+        /** @var list<array{int, int, string, ClassLikeStorage}> $winners */
         $winners = [];
 
         foreach ($classlike_candidates as $fq_classlike_name_lc => $candidates) {
             usort(
                 $candidates,
+                /**
+                 * @param array{int, int, ClassLikeStorage} $a
+                 * @param array{int, int, ClassLikeStorage} $b
+                 */
                 static fn(array $a, array $b): int => [$a[0], $a[1]] <=> [$b[0], $b[1]],
             );
 
@@ -666,6 +679,10 @@ final class Scanner
 
         usort(
             $winners,
+            /**
+             * @param array{int, int, string, ClassLikeStorage} $a
+             * @param array{int, int, string, ClassLikeStorage} $b
+             */
             static fn(array $a, array $b): int => [$a[0], $a[1], $a[2]] <=> [$b[0], $b[1], $b[2]],
         );
 
