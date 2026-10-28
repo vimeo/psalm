@@ -4,14 +4,22 @@ declare(strict_types=1);
 
 namespace Psalm\Internal;
 
+use Composer\Autoload\ClassLoader;
+
 use function array_diff;
+use function array_keys;
 use function array_unique;
 use function array_values;
 use function basename;
+use function class_exists;
 use function dirname;
+use function file_get_contents;
 use function get_included_files;
 use function in_array;
+use function is_file;
+use function method_exists;
 use function preg_grep;
+use function str_contains;
 use function str_starts_with;
 
 use const DIRECTORY_SEPARATOR;
@@ -78,15 +86,20 @@ final class IncludeCollector
      * and the machinery of the Composer autoloader (`vendor/autoload.php`, `vendor/composer/autoload_*.php`, ...).
      *
      * @return list<string>
-     * @psalm-mutation-free
      */
     public function getFilteredIncludedFiles(): array
     {
         $included_files = preg_grep('@^phar://@', $this->getIncludedFiles(), PREG_GREP_INVERT);
 
         $composer_dirs = [];
+        if (class_exists(ClassLoader::class, false) && method_exists(ClassLoader::class, 'getRegisteredLoaders')) {
+            foreach (array_keys(ClassLoader::getRegisteredLoaders()) as $vendor_dir) {
+                $composer_dirs[] = $vendor_dir . DIRECTORY_SEPARATOR . 'composer';
+            }
+        }
+
         foreach ($included_files as $file) {
-            if (in_array(basename($file), ['autoload_real.php', 'autoload_files.php'], true)) {
+            if (basename($file) === 'autoload_real.php' && self::isComposerGeneratedDirectory(dirname($file))) {
                 $composer_dirs[] = dirname($file);
             }
         }
@@ -114,5 +127,20 @@ final class IncludeCollector
         }
 
         return $filtered_files;
+    }
+
+    /**
+     * Composer copies `ClassLoader.php` next to a generated `autoload_real.php`,
+     * which declares a `ComposerAutoloaderInit<hash>` class.
+     */
+    private static function isComposerGeneratedDirectory(string $dir): bool
+    {
+        if (!is_file($dir . DIRECTORY_SEPARATOR . 'ClassLoader.php')) {
+            return false;
+        }
+
+        $autoload_real = file_get_contents($dir . DIRECTORY_SEPARATOR . 'autoload_real.php');
+
+        return $autoload_real !== false && str_contains($autoload_real, 'class ComposerAutoloaderInit');
     }
 }

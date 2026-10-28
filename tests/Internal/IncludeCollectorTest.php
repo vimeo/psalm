@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Internal;
 
+use Composer\Autoload\ClassLoader;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\IncludeCollector;
@@ -18,6 +19,7 @@ use function get_included_files;
 use function glob;
 use function is_dir;
 use function is_file;
+use function md5;
 use function mkdir;
 use function realpath;
 use function rmdir;
@@ -75,9 +77,8 @@ final class IncludeCollectorTest extends TestCase
         ];
         $machinery = [
             $this->createFile('vendor/autoload.php'),
-            $this->createFile('vendor/composer/autoload_real.php'),
+            ...$this->createComposerIdentity('vendor/composer'),
             $this->createFile('vendor/composer/platform_check.php'),
-            $this->createFile('vendor/composer/ClassLoader.php'),
             $this->createFile('vendor/composer/autoload_static.php'),
             $this->createFile('vendor/composer/autoload_classmap.php'),
             $this->createFile('vendor/composer/autoload_namespaces.php'),
@@ -119,7 +120,7 @@ final class IncludeCollectorTest extends TestCase
     {
         $machinery = [
             $this->createFile('deps/autoload.php'),
-            $this->createFile('deps/composer/autoload_real.php'),
+            ...$this->createComposerIdentity('deps/composer'),
             $this->createFile('deps/composer/autoload_static.php'),
             $this->createFile('deps/composer/installed.php'),
         ];
@@ -131,6 +132,73 @@ final class IncludeCollectorTest extends TestCase
         });
 
         self::assertSame([$kept], $collector->getFilteredIncludedFiles());
+    }
+
+    public function testApplicationOwnedAutoloadFilesAreKept(): void
+    {
+        $expected = [
+            $this->createFile('lib/autoload.php'),
+            $this->createFile('lib/autoload_files.php', "function psalm_include_collector_helper(): void {}\n"),
+            $this->createFile('lib/autoload_static.php'),
+            $this->createFile('lib/installed.php'),
+            // a ClassLoader of its own does not make the directory Composer's
+            $this->createFile('lib/ClassLoader.php'),
+            $this->createFile('lib/autoload_real.php'),
+        ];
+
+        $collector = new IncludeCollector();
+        $collector->runAndCollect(static function () use ($expected): void {
+            self::includeFiles(...$expected);
+        });
+
+        self::assertSame($expected, $collector->getFilteredIncludedFiles());
+    }
+
+    public function testApplicationOwnedFilesBesideComposerDirectoryAreKept(): void
+    {
+        $machinery = [
+            $this->createFile('vendor/autoload.php'),
+            ...$this->createComposerIdentity('vendor/composer'),
+            $this->createFile('vendor/composer/autoload_files.php'),
+        ];
+        $expected = [
+            $this->createFile('lib/autoload_files.php'),
+            $this->createFile('lib/installed.php'),
+        ];
+
+        $collector = new IncludeCollector();
+        $collector->runAndCollect(static function () use ($machinery, $expected): void {
+            self::includeFiles(...$machinery, ...$expected);
+        });
+
+        self::assertSame($expected, $collector->getFilteredIncludedFiles());
+    }
+
+    public function testDirectoryOfRegisteredComposerLoaderIsFiltered(): void
+    {
+        $vendor_dir = $this->root . DIRECTORY_SEPARATOR . 'registered';
+        $machinery = [
+            $this->createFile('registered/autoload.php'),
+            $this->createFile('registered/composer/autoload_static.php'),
+            $this->createFile('registered/composer/installed.php'),
+        ];
+        $kept = $this->createFile('src/helpers.php');
+
+        $loader = new ClassLoader($vendor_dir);
+        $loader->register();
+
+        try {
+            $collector = new IncludeCollector();
+            $collector->runAndCollect(static function () use ($machinery, $kept): void {
+                self::includeFiles(...$machinery, ...[$kept]);
+            });
+
+            $filtered = $collector->getFilteredIncludedFiles();
+        } finally {
+            $loader->unregister();
+        }
+
+        self::assertSame([$kept], $filtered);
     }
 
     public function testPsalmSourceFilesAreFiltered(): void
@@ -182,7 +250,7 @@ final class IncludeCollectorTest extends TestCase
         return str_replace('/', DIRECTORY_SEPARATOR, $path);
     }
 
-    private function createFile(string $relative_path): string
+    private function createFile(string $relative_path, string $contents = ''): string
     {
         $path = self::normalizePath($this->root . '/' . $relative_path);
         $dir = dirname($path);
@@ -195,9 +263,25 @@ final class IncludeCollectorTest extends TestCase
             mkdir($dir, 0777, true);
         }
 
-        file_put_contents($path, "<?php\n");
+        file_put_contents($path, "<?php\n" . $contents);
         $this->created_files[] = $path;
 
         return $path;
+    }
+
+    /**
+     * Creates the two files that identify a directory generated by Composer.
+     *
+     * @return list<string>
+     */
+    private function createComposerIdentity(string $composer_dir): array
+    {
+        return [
+            $this->createFile($composer_dir . '/ClassLoader.php'),
+            $this->createFile(
+                $composer_dir . '/autoload_real.php',
+                'class ComposerAutoloaderInit' . md5(uniqid('', true)) . " {}\n",
+            ),
+        ];
     }
 }
