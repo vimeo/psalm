@@ -106,50 +106,25 @@ final class IncludeTest extends TestCase
     }
 
     /**
-     * What `callWriter()` writes to the globals depends on `writeGlobal()`, which the file declaring `callWriter()`
-     * resolves to the declaration it includes, whichever file shadowing it is analyzed first.
+     * What `callWriter()` writes to the globals depends on the file analyzing its call: each resolves `writeGlobal()`
+     * as it sees it (a declaration of its own, or one it includes, even through another file), whichever file is
+     * analyzed first.
      *
+     * @param array<string, string> $files
      * @param list<string> $files_to_check
      */
     #[DataProvider('providerGlobalsWrittenThroughAnotherFunctionAreIndependentOfAnalysisOrder')]
-    public function testGlobalsWrittenThroughAnotherFunctionAreIndependentOfAnalysisOrder(array $files_to_check): void
-    {
+    public function testGlobalsWrittenThroughAnotherFunctionAreIndependentOfAnalysisOrder(
+        array $files,
+        array $files_to_check,
+    ): void {
         $dir = (string) getcwd() . DIRECTORY_SEPARATOR;
-
-        $files = [
-            $dir . 'writer.php' => '<?php
-                function writeGlobal(): void {
-                    global $x;
-                    $x = "written";
-                }',
-            $dir . 'caller.php' => '<?php
-                require_once "writer.php";
-
-                function callWriter(): void {
-                    writeGlobal();
-                }',
-            $dir . 'shadowing.php' => '<?php
-                require_once "caller.php";
-
-                function writeGlobal(): void {
-                }
-
-                $x = "safe";
-                callWriter();
-                /** @psalm-check-type-exact $x = mixed */;',
-            $dir . 'plain.php' => '<?php
-                require_once "caller.php";
-
-                $x = "safe";
-                callWriter();
-                /** @psalm-check-type-exact $x = mixed */;',
-        ];
 
         $codebase = $this->project_analyzer->getCodebase();
 
-        foreach ($files as $file_path => $contents) {
-            $this->addFile($file_path, $contents);
-            $codebase->scanner->addFilesToShallowScan([$file_path => $file_path]);
+        foreach ($files as $file_name => $contents) {
+            $this->addFile($dir . $file_name, $contents);
+            $codebase->scanner->addFilesToShallowScan([$dir . $file_name => $dir . $file_name]);
         }
 
         foreach ($files_to_check as $file_name) {
@@ -171,14 +146,86 @@ final class IncludeTest extends TestCase
     }
 
     /**
-     * @return array<string,array{files_to_check:list<string>}>
+     * @return array<string,array{files:array<string,string>,files_to_check:list<string>}>
      * @psalm-pure
      */
     public static function providerGlobalsWrittenThroughAnotherFunctionAreIndependentOfAnalysisOrder(): array
     {
+        $shadowing_files = [
+            'writer.php' => '<?php
+                function writeGlobal(): void {
+                    global $x;
+                    $x = "written";
+                }',
+            'caller.php' => '<?php
+                require_once "writer.php";
+
+                function callWriter(): void {
+                    writeGlobal();
+                }',
+            'shadowing.php' => '<?php
+                require_once "caller.php";
+
+                function writeGlobal(): void {
+                }
+
+                $x = "safe";
+                callWriter();
+                /** @psalm-check-type-exact $x = \'safe\' */;',
+            'plain.php' => '<?php
+                require_once "caller.php";
+
+                $x = "safe";
+                callWriter();
+                /** @psalm-check-type-exact $x = mixed */;',
+        ];
+
+        $reverse_files = [
+            'helpers.php' => '<?php
+                function writeGlobal(): void {
+                    global $x;
+                    $x = "written";
+                }',
+            'lib.php' => '<?php
+                function callWriter(): void {
+                    writeGlobal();
+                }',
+            'entry.php' => '<?php
+                require_once "helpers.php";
+                require_once "lib.php";
+
+                $x = "safe";
+                callWriter();
+                /** @psalm-check-type-exact $x = mixed */;',
+            'noop_helpers.php' => '<?php
+                function writeGlobal(): void {
+                }',
+            'other_entry.php' => '<?php
+                require_once "noop_helpers.php";
+                require_once "lib.php";
+
+                $x = "safe";
+                callWriter();
+                /** @psalm-check-type-exact $x = \'safe\' */;',
+        ];
+
         return [
-            'shadowingFileFirst' => ['files_to_check' => ['shadowing.php', 'plain.php']],
-            'shadowingFileLast' => ['files_to_check' => ['plain.php', 'shadowing.php']],
+            'shadowingFileFirst' => [
+                'files' => $shadowing_files,
+                'files_to_check' => ['shadowing.php', 'plain.php'],
+            ],
+            'shadowingFileLast' => [
+                'files' => $shadowing_files,
+                'files_to_check' => ['plain.php', 'shadowing.php'],
+            ],
+            'calleeVisibleOnlyThroughRootFirst' => [
+                'files' => $reverse_files,
+                'files_to_check' => ['entry.php', 'other_entry.php'],
+            ],
+            'calleeVisibleOnlyThroughRootLast' => [
+                'files' => $reverse_files,
+                'files_to_check' => ['other_entry.php', 'entry.php'],
+            ],
         ];
     }
 
