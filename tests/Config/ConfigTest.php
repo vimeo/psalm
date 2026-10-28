@@ -37,16 +37,23 @@ use Psalm\Tests\TestConfig;
 use function array_map;
 use function dirname;
 use function error_get_last;
+use function file_put_contents;
 use function get_class;
 use function getcwd;
 use function implode;
 use function in_array;
 use function is_array;
+use function is_dir;
+use function mkdir;
 use function preg_match;
 use function realpath;
+use function rmdir;
+use function rsort;
 use function set_error_handler;
 use function sprintf;
+use function str_replace;
 use function symlink;
+use function sys_get_temp_dir;
 use function uniqid;
 use function unlink;
 
@@ -1873,6 +1880,153 @@ final class ConfigTest extends TestCase
         $root = __DIR__ . '/../fixtures/ComposerPhp64bitVersion';
         $cfg = Config::loadFromXML($root, "<?xml version=\"1.0\"?><psalm></psalm>");
         $this->assertSame('8.1', $cfg->getPhpVersion());
+    }
+
+    /**
+     * @return array<string, array{array<string, string>, string, list<string>}>
+     * @psalm-pure
+     */
+    public static function providerLibraryPlugins(): array
+    {
+        $webmozart_assert = '{"packages": [{"name": "webmozart/assert", "extra": {"psalm": {"pluginClass": '
+            . '"Webmozart\\\\Assert\\\\PsalmPlugin"}}}]}';
+
+        return [
+            'installedPackageDeclaringAPlugin' => [
+                ['vendor/composer/installed.json' => $webmozart_assert],
+                '<psalm></psalm>',
+                ['Webmozart\Assert\PsalmPlugin'],
+            ],
+            'customVendorDir' => [
+                [
+                    'composer.json' => '{"config": {"vendor-dir": "lib"}}',
+                    'lib/composer/installed.json' => $webmozart_assert,
+                ],
+                '<psalm></psalm>',
+                ['Webmozart\Assert\PsalmPlugin'],
+            ],
+            'absoluteVendorDir' => [
+                [
+                    'composer.json' => '{"config": {"vendor-dir": "%root%/lib"}}',
+                    'lib/composer/installed.json' => $webmozart_assert,
+                ],
+                '<psalm></psalm>',
+                ['Webmozart\Assert\PsalmPlugin'],
+            ],
+            'vendorDirOfOtherProject' => [
+                [
+                    'composer.json' => '{"config": {"vendor-dir": "lib"}}',
+                    'vendor/composer/installed.json' => $webmozart_assert,
+                ],
+                '<psalm></psalm>',
+                [],
+            ],
+            'alreadyEnabled' => [
+                ['vendor/composer/installed.json' => $webmozart_assert],
+                '<psalm><plugins><pluginClass class="\webmozart\assert\PsalmPlugin"/></plugins></psalm>',
+                ['\webmozart\assert\PsalmPlugin'],
+            ],
+            'otherPluginEnabled' => [
+                ['vendor/composer/installed.json' => $webmozart_assert],
+                '<psalm><plugins><pluginClass class="Psalm\PhpUnitPlugin\Plugin"/></plugins></psalm>',
+                ['Psalm\PhpUnitPlugin\Plugin', 'Webmozart\Assert\PsalmPlugin'],
+            ],
+            'disabled' => [
+                ['vendor/composer/installed.json' => $webmozart_assert],
+                '<psalm loadLibraryPlugins="false"></psalm>',
+                [],
+            ],
+            'packageVersionWithoutAPlugin' => [
+                ['vendor/composer/installed.json' => '{"packages": [{"name": "webmozart/assert"}]}'],
+                '<psalm></psalm>',
+                [],
+            ],
+            'otherPackageDeclaringAPlugin' => [
+                [
+                    'vendor/composer/installed.json' => '{"packages": [{"name": "psalm/plugin-phpunit", "extra": '
+                        . '{"psalm": {"pluginClass": "Psalm\\\\PhpUnitPlugin\\\\Plugin"}}}]}',
+                ],
+                '<psalm></psalm>',
+                [],
+            ],
+            'pluginClassNotAString' => [
+                [
+                    'vendor/composer/installed.json' => '{"packages": [{"name": "webmozart/assert", "extra": '
+                        . '{"psalm": {"pluginClass": 1}}}]}',
+                ],
+                '<psalm></psalm>',
+                [],
+            ],
+            'packageNotAnObject' => [
+                ['vendor/composer/installed.json' => '{"packages": [1]}'],
+                '<psalm></psalm>',
+                [],
+            ],
+            'packagesNotAList' => [
+                ['vendor/composer/installed.json' => '{"packages": 1}'],
+                '<psalm></psalm>',
+                [],
+            ],
+            'withoutPackages' => [
+                ['vendor/composer/installed.json' => '{}'],
+                '<psalm></psalm>',
+                [],
+            ],
+            'malformedInstalledJson' => [
+                ['vendor/composer/installed.json' => '{'],
+                '<psalm></psalm>',
+                [],
+            ],
+            'notInstalled' => [
+                [],
+                '<psalm></psalm>',
+                [],
+            ],
+        ];
+    }
+
+    /**
+     * @param array<string, string> $files
+     * @param list<string> $expected_plugin_classes
+     */
+    #[DataProvider('providerLibraryPlugins')]
+    public function testEnablesThePluginsOfInstalledLibraries(
+        array $files,
+        string $config_xml,
+        array $expected_plugin_classes,
+    ): void {
+        $root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-library-plugins-');
+        mkdir($root);
+        $dirs = [$root];
+        $paths = [];
+        foreach ($files as $path => $contents) {
+            $path = $root . DIRECTORY_SEPARATOR . $path;
+            for ($dir = dirname($path); !is_dir($dir); $dir = dirname($dir)) {
+                $dirs[] = $dir;
+            }
+            if (!is_dir(dirname($path))) {
+                mkdir(dirname($path), 0777, true);
+            }
+            file_put_contents($path, str_replace('%root%', $root, $contents));
+            $paths[] = $path;
+        }
+
+        try {
+            $config = Config::loadFromXML($root, '<?xml version="1.0"?>' . $config_xml);
+        } finally {
+            foreach ($paths as $path) {
+                unlink($path);
+            }
+            rsort($dirs);
+            foreach ($dirs as $dir) {
+                rmdir($dir);
+            }
+        }
+
+        $this->assertSame(
+            $expected_plugin_classes,
+            array_map(static fn(array $plugin): string => $plugin['class'], $config->getPluginClasses()),
+        );
     }
 
     public function testSetsUsePhpStormMetaPath(): void

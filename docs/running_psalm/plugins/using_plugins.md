@@ -24,6 +24,8 @@ To disable a plugin, run `vendor/bin/psalm-plugin disable plugin-vendor/plugin-p
 
 `vendor/bin/psalm-plugin show` will show you a list of all local plugins (enabled and disabled).
 
+The plugin of `webmozart/assert` is enabled whenever the package is installed; set [`loadLibraryPlugins="false"`](../configuration.md#loadlibraryplugins) to turn that off.
+
 ## Using your own plugins
 
 Is there no plugin for your favourite framework / library yet? Create it! It's as easy as forking a repository, tweaking some docblocks and publishing the package to Packagist.

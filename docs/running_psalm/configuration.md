@@ -362,6 +362,14 @@ When `true`, Psalm will report class and interface methods that override a metho
 ```
 When `true`, Psalm loads the stubs it ships for the libraries your code uses (in `stubs/libraries`), which declare how their methods pass taints along and what they may do (their [capabilities](../annotating_code/purity_model.md)). A stub is only loaded when the scan finds one of the classes it declares, or the scanned code (e.g. the files your autoloader includes) declares one of its functions, and it only refines what it declares of them. Defaults to `true`.
 
+#### loadLibraryPlugins
+```xml
+<psalm
+  loadLibraryPlugins="[bool]"
+>
+```
+When `true`, Psalm enables the plugins some libraries ship when they are installed (in `vendor/composer/installed.json`), without listing them in [`<plugins>`](plugins/using_plugins.md): those of `webmozart/assert` (2.4 and later). Defaults to `true`.
+
 #### phpVersion
 ```xml
 <psalm

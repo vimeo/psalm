@@ -66,6 +66,7 @@ use XdgBaseDir\Xdg;
 use stdClass;
 
 use function array_any;
+use function array_filter;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
@@ -169,6 +170,13 @@ final class Config
     final public const REPORT_INFO = 'info';
     final public const REPORT_ERROR = 'error';
     final public const REPORT_SUPPRESS = 'suppress';
+
+    /**
+     * The packages whose Psalm plugin is enabled when they are installed (see loadLibraryPlugins)
+     */
+    private const LIBRARY_PLUGIN_PACKAGES = [
+        'webmozart/assert',
+    ];
 
     /**
      * @var array<string>
@@ -443,6 +451,11 @@ final class Config
      * Whether to load the stubs of the libraries the analysed code uses (see visitStubFiles())
      */
     public bool $load_library_stubs = true;
+
+    /**
+     * Whether to enable the plugins the installed packages of LIBRARY_PLUGIN_PACKAGES ship
+     */
+    public bool $load_library_plugins = true;
 
     /**
      * The directory of the library stubs, `<vendor>/<package>.phpstub`: by default Psalm's `stubs/libraries`
@@ -1050,6 +1063,7 @@ final class Config
             'runTaintAnalysis' => 'run_taint_analysis',
             'usePhpStormMetaPath' => 'use_phpstorm_meta_path',
             'loadLibraryStubs' => 'load_library_stubs',
+            'loadLibraryPlugins' => 'load_library_plugins',
             'allowInternalNamedArgumentsCalls' => 'allow_internal_named_arg_calls',
             'allowNamedArgumentCalls' => 'allow_named_arg_calls',
             'findUnusedPsalmSuppress' => 'find_unused_psalm_suppress',
@@ -1498,6 +1512,23 @@ final class Config
                     }
 
                     $config->addPluginClass((string) $plugin_class_name, $plugin_config);
+                }
+            }
+        }
+
+        if ($config->load_library_plugins) {
+            $vendor_dir = $composer_json['config']['vendor-dir'] ?? 'vendor';
+            foreach (self::getLibraryPluginClasses(
+                Path::isAbsolute((string) $vendor_dir)
+                    ? (string) $vendor_dir
+                    : $config->base_dir . DIRECTORY_SEPARATOR . (string) $vendor_dir,
+            ) as $plugin_class_name) {
+                if (!array_any(
+                    $config->plugin_classes,
+                    static fn(array $plugin): bool =>
+                        strtolower(ltrim($plugin['class'], '\\')) === strtolower($plugin_class_name),
+                )) {
+                    $config->addPluginClass($plugin_class_name);
                 }
             }
         }
@@ -2764,6 +2795,38 @@ final class Config
         $codebase->register_stub_files = false;
 
         self::reportStubDocblockIssues($codebase, $user_stub_paths);
+    }
+
+    /**
+     * The plugin classes the packages of LIBRARY_PLUGIN_PACKAGES installed in $vendor_dir declare
+     *
+     * @return list<string>
+     */
+    private static function getLibraryPluginClasses(string $vendor_dir): array
+    {
+        $installed_path = $vendor_dir . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'installed.json';
+        if (!is_file($installed_path)) {
+            return [];
+        }
+
+        $installed = json_decode((string) file_get_contents($installed_path), true);
+        if (!is_array($installed) || !isset($installed['packages']) || !is_array($installed['packages'])) {
+            return [];
+        }
+
+        $plugin_classes = [];
+        foreach (array_filter($installed['packages'], 'is_array') as $package) {
+            if (isset($package['name'], $package['extra']['psalm']['pluginClass'])
+                && in_array($package['name'], self::LIBRARY_PLUGIN_PACKAGES, true)
+                && is_array($package['extra'])
+                && is_array($package['extra']['psalm'])
+                && is_string($package['extra']['psalm']['pluginClass'])
+            ) {
+                $plugin_classes[] = $package['extra']['psalm']['pluginClass'];
+            }
+        }
+
+        return $plugin_classes;
     }
 
     /**
