@@ -54,8 +54,6 @@
       <code><![CDATA[self::$stubbed_constants]]></code>
       <code><![CDATA[self::$stubbed_constants]]></code>
       <code><![CDATA[self::$stubbed_constants]]></code>
-      <code><![CDATA[self::$stubbed_constants]]></code>
-      <code><![CDATA[self::$stubbed_constants]]></code>
     </ImpureStaticProperty>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$function_name]]></code>

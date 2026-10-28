@@ -41,6 +41,7 @@ use function enum_exists;
 use function error_reporting;
 use function explode;
 use function file_exists;
+use function in_array;
 use function interface_exists;
 use function ltrim;
 use function min;
@@ -92,6 +93,8 @@ use const PHP_EOL;
  *     taint_data: ?TaintFlowGraph,
  *     global_constants: array<string, Union>,
  *     unresolved_global_constants: array<string, UnresolvedConstantComponent>,
+ *     global_constant_definitions: array<string, array<string, true>>,
+ *     unresolved_global_constant_definitions: array<string, list<UnresolvedConstantComponent>>,
  *     missed_global_constants: array<string, true>,
  *     files_to_cache: list<string>,
  *     global_functions: array<lowercase-string, FunctionStorage>
@@ -633,42 +636,44 @@ final class Scanner
 
     /**
      * Whether a file scanned by one of the processes would have got another result if the files were scanned
-     * one after another: it looked up a global constant that a file of another process defines, or two
-     * processes define the same constant differently, the later of the files being the one that counts.
+     * one after another: it looked up a global constant that a file of another process defines, or the processes
+     * define the same constant differently at any point, so that what a file read depends on which of them came
+     * first.
      *
      * @param array<array-key, PoolData> $forked_pool_data
      * @psalm-pure
      */
     private static function dependsOnScanOrder(array $forked_pool_data): bool
     {
-        /** @var array<string, array{array-key, Union}> $types */
-        $types = [];
-        /** @var array<string, array{array-key, UnresolvedConstantComponent}> $unresolved */
-        $unresolved = [];
         /** @var array<string, array<array-key, true>> $definers the processes that define each constant */
         $definers = [];
+        /** @var array<string, array<string, true>> $type_ids */
+        $type_ids = [];
+        /** @var array<string, list<UnresolvedConstantComponent>> $unresolved */
+        $unresolved = [];
 
         foreach ($forked_pool_data as $process => $pool_data) {
-            foreach ($pool_data['global_constants'] as $const_id => $type) {
-                if (isset($types[$const_id]) && $types[$const_id][0] !== $process
-                    && $types[$const_id][1]->getId() !== $type->getId()
-                ) {
-                    return true;
-                }
-
-                $types[$const_id] = [$process, $type];
+            foreach ($pool_data['global_constant_definitions'] as $const_id => $ids) {
                 $definers[$const_id][$process] = true;
+                $type_ids[$const_id] = ($type_ids[$const_id] ?? []) + $ids;
             }
 
-            foreach ($pool_data['unresolved_global_constants'] as $const_id => $value) {
-                if (isset($unresolved[$const_id]) && $unresolved[$const_id][0] !== $process
-                    && $unresolved[$const_id][1] != $value
-                ) {
-                    return true;
-                }
-
-                $unresolved[$const_id] = [$process, $value];
+            foreach ($pool_data['unresolved_global_constant_definitions'] as $const_id => $values) {
                 $definers[$const_id][$process] = true;
+
+                foreach ($values as $value) {
+                    if (!in_array($value, $unresolved[$const_id] ?? [], false)) {
+                        $unresolved[$const_id][] = $value;
+                    }
+                }
+            }
+        }
+
+        foreach ($definers as $const_id => $processes) {
+            if (count($processes) > 1
+                && (count($type_ids[$const_id] ?? []) > 1 || count($unresolved[$const_id] ?? []) > 1)
+            ) {
+                return true;
             }
         }
 
@@ -701,17 +706,22 @@ final class Scanner
 
     /**
      * Like on a fresh scan (see FunctionLikeNodeScanner), a polyfill of a native function the analysed version
-     * predates doesn't replace the native signature, and a function that is global already is left alone.
+     * predates doesn't replace the native signature, and a function that is global already is left alone unless
+     * all functions are global.
      */
     private function registerGlobalFunctions(FileStorage $file_storage): void
     {
         $functions = $this->codebase->functions;
 
-        foreach ($file_storage->first_declared_functions as $function_id => $function_storage) {
+        foreach ($file_storage->first_declared_functions as $function_id => $first_declaration) {
             if (($this->codebase->all_functions_global || !$functions->hasStubbedFunction($function_id))
                 && InternalCallMapHandler::getIntroducingPhpVersionId($function_id) === null
             ) {
-                $functions->addGlobalFunction($function_id, $function_storage);
+                // where every function is global the last declaration replaces the ones before it
+                $functions->addGlobalFunction(
+                    $function_id,
+                    $this->codebase->all_functions_global ? $file_storage->functions[$function_id] : $first_declaration,
+                );
             }
         }
     }

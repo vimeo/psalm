@@ -13,11 +13,11 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Scanner\UnresolvedConstant\ClassConstant;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\Progress\RecordingProgress;
-use Psalm\Type;
 use ReflectionMethod;
 use Symfony\Component\Filesystem\Filesystem;
 
 use function array_fill_keys;
+use function array_map;
 use function define;
 use function defined;
 use function extension_loaded;
@@ -238,36 +238,70 @@ final class ScannerParallelTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{array<array-key, list<string>>, array<array-key, list<string>>, bool}>
+     * @return iterable<string, array{
+     *     array<array-key, array<string, list<string>>>,
+     *     array<array-key, list<string>>,
+     *     bool,
+     * }>
      * @psalm-pure
      */
     public static function provideProcessesDefiningAndLookingUpConstants(): iterable
     {
-        yield 'a process looks up a constant only it defines' => [[0 => ['X']], [0 => ['X']], false];
+        yield 'a process looks up a constant only it defines' => [[0 => ['X' => ['int']]], [0 => ['X']], false];
 
-        yield 'a constant nobody defines' => [[0 => ['Y']], [0 => ['Y']], false];
+        yield 'a constant nobody defines' => [[0 => ['X' => ['int']]], [0 => ['Y']], false];
 
-        yield 'a process looks up a constant another one defines' => [[0 => ['X'], 1 => []], [1 => ['X']], true];
+        yield 'a process looks up a constant another one defines' => [
+            [0 => ['X' => ['int']], 1 => []],
+            [1 => ['X']],
+            true,
+        ];
 
         yield 'a constant two processes define the same, one of them looks it up' => [
-            [0 => ['X'], 1 => ['X']],
+            [0 => ['X' => ['int']], 1 => ['X' => ['int']]],
             [1 => ['X']],
             true,
         ];
 
         yield 'a constant two processes define the same, the first looks it up' => [
-            [0 => ['X'], 1 => ['X']],
+            [0 => ['X' => ['int']], 1 => ['X' => ['int']]],
             [0 => ['X']],
             true,
+        ];
+
+        yield 'a constant two processes define the same' => [
+            [0 => ['X' => ['int']], 1 => ['X' => ['int']]],
+            [],
+            false,
+        ];
+
+        yield 'a constant two processes define differently' => [
+            [0 => ['X' => ['int']], 1 => ['X' => ['string']]],
+            [],
+            true,
+        ];
+
+        // serial order: "first", "second", read by the first process, "first"
+        yield 'a constant two processes define differently on the way to the same one' => [
+            [0 => ['X' => ['non-empty-string']], 1 => ['X' => ['int', 'non-empty-string']]],
+            [],
+            true,
+        ];
+
+        yield 'a constant a process defines differently over time' => [
+            [0 => ['X' => ['int', 'string']]],
+            [],
+            false,
         ];
     }
 
     /**
-     * @param array<array-key, list<string>> $defined the constants each process defines, as `int`
+     * @param array<array-key, array<string, list<string>>> $defined the ids of the types each process gives its
+     *        constants
      * @param array<array-key, list<string>> $looked_up the constants each process looks up without knowing them
      */
     #[DataProvider('provideProcessesDefiningAndLookingUpConstants')]
-    public function testDependsOnScanOrderWhenAnotherProcessDefinesALookedUpConstant(
+    public function testDependsOnScanOrderWhenTheProcessesDisagreeOnAConstant(
         array $defined,
         array $looked_up,
         bool $expected,
@@ -275,16 +309,64 @@ final class ScannerParallelTest extends TestCase
         $pool_data = [];
         foreach ($defined + $looked_up as $process => $_) {
             $pool_data[$process] = [
-                'global_constants' => array_fill_keys($defined[$process] ?? [], Type::getInt()),
-                'unresolved_global_constants' => [],
+                'global_constant_definitions' => array_map(
+                    static fn(array $ids): array => array_fill_keys($ids, true),
+                    $defined[$process] ?? [],
+                ),
+                'unresolved_global_constant_definitions' => [],
                 'missed_global_constants' => array_fill_keys($looked_up[$process] ?? [], true),
             ];
         }
 
-        $this->assertSame(
-            $expected,
-            (new ReflectionMethod(Scanner::class, 'dependsOnScanOrder'))->invoke(null, $pool_data),
+        $this->assertSame($expected, $this->dependsOnScanOrder($pool_data));
+    }
+
+    public function testDependsOnScanOrderWhenTheProcessesDisagreeOnAnUnresolvedConstant(): void
+    {
+        $hearts = new ClassConstant('Suit', 'Hearts');
+        $spades = new ClassConstant('Suit', 'Spades');
+
+        $pool_data = static fn(array $first, array $second): array => [
+            [
+                'global_constant_definitions' => [],
+                'unresolved_global_constant_definitions' => ['CASE_A' => $first],
+                'missed_global_constants' => [],
+            ],
+            [
+                'global_constant_definitions' => [],
+                'unresolved_global_constant_definitions' => ['CASE_A' => $second],
+                'missed_global_constants' => [],
+            ],
+        ];
+
+        $this->assertFalse($this->dependsOnScanOrder($pool_data([$hearts], [new ClassConstant('Suit', 'Hearts')])));
+        $this->assertTrue($this->dependsOnScanOrder($pool_data([$hearts], [$spades])));
+        // both end up with Hearts, but one of them had Spades on the way
+        $this->assertTrue($this->dependsOnScanOrder($pool_data([$hearts], [$spades, $hearts])));
+    }
+
+    public function testTheLastDeclarationOfAFunctionCountsWhereAllFunctionsAreGlobal(): void
+    {
+        $this->scanAutoloadedFiles(
+            [
+                1 => '<?php if (!function_exists("dup")) { function dup(): int { return 1; } }'
+                    . ' if (!function_exists("dup")) { function dup(): string { return ""; } }',
+            ],
+            true,
         );
+
+        $this->assertSame(
+            'string',
+            $this->project_analyzer->getCodebase()->functions->getAllStubbedFunctions()['dup']->return_type?->getId(),
+        );
+    }
+
+    /**
+     * @param array<array-key, array<string, mixed>> $pool_data
+     */
+    private function dependsOnScanOrder(array $pool_data): bool
+    {
+        return (bool) (new ReflectionMethod(Scanner::class, 'dependsOnScanOrder'))->invoke(null, $pool_data);
     }
 
     public function testTheStorageOfAllFilesIsCachedOnceTheScanIsAccepted(): void
@@ -364,6 +446,28 @@ final class ScannerParallelTest extends TestCase
         $this->assertSame(['UNKNOWN' => true], $codebase->getMissedGlobalConstants());
     }
 
+    public function testScanRecordsEveryDefinitionOfAConstant(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $this->file_provider->registerFile(
+            '/autoload/a.php',
+            '<?php define("X", "first"); define("X", "second"); define("X", "first");'
+            . ' const CASE_A = Suit::Hearts; const CASE_A = Suit::Spades; const CASE_A = Suit::Hearts;',
+        );
+        $codebase->scanner->addFileToDeepScan('/autoload/a.php');
+
+        $codebase->register_autoload_files = true;
+        $codebase->scanner->scanFiles($codebase->classlikes);
+        $codebase->register_autoload_files = false;
+
+        $this->assertSame(["'first'" => true, "'second'" => true], $codebase->getGlobalConstantDefinitions()['X']);
+        $this->assertEquals(
+            [new ClassConstant('Suit', 'Hearts'), new ClassConstant('Suit', 'Spades')],
+            $codebase->getUnresolvedGlobalConstantDefinitions()['CASE_A'],
+        );
+    }
+
     public function testScanOfProjectFilesDoesNotRecordConstants(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
@@ -373,6 +477,8 @@ final class ScannerParallelTest extends TestCase
         $codebase->scanner->scanFiles($codebase->classlikes);
 
         $this->assertSame([], $codebase->getMissedGlobalConstants());
+        $this->assertSame([], $codebase->getGlobalConstantDefinitions());
+        $this->assertSame([], $codebase->getUnresolvedGlobalConstantDefinitions());
     }
 
     public function testInternalConstantsAreNotTheOnesCodeDefined(): void
@@ -391,8 +497,9 @@ final class ScannerParallelTest extends TestCase
 
     /**
      * @param array<int, string> $files the contents of the autoloaded files by position, the others declare a function
+     * @param bool $all_functions_global whether the functions of the files are global for the analysis
      */
-    private function scanAutoloadedFiles(array $files): void
+    private function scanAutoloadedFiles(array $files, bool $all_functions_global = false): void
     {
         $this->requireForking();
 
@@ -408,8 +515,10 @@ final class ScannerParallelTest extends TestCase
         }
 
         $codebase->register_autoload_files = true;
+        $codebase->all_functions_global = $all_functions_global;
         $codebase->scanner->scanFiles($codebase->classlikes, 3);
         $codebase->register_autoload_files = false;
+        $codebase->all_functions_global = false;
     }
 
     private function requireForking(): void
