@@ -68,6 +68,13 @@ final class TypeChecker extends TypeVisitor
     private bool $has_errors = false;
 
     /**
+     * The types this run marked as checked
+     *
+     * @var list<Atomic|Union|MutableUnion>
+     */
+    private array $checked_types = [];
+
+    /**
      * Whether the node being visited is in an invariant type param of a generic object, where entering a
      * callable's parameter types doesn't change the position
      */
@@ -132,8 +139,7 @@ final class TypeChecker extends TypeVisitor
                 $this->prevent_template_covariance = $outer_prevents_covariance;
                 $this->in_invariant_position = $outer_in_invariant_position;
 
-                /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
-                $type->checked = true;
+                $this->markChecked($type);
 
                 return self::DONT_TRAVERSE_CHILDREN;
             }
@@ -149,8 +155,7 @@ final class TypeChecker extends TypeVisitor
             $this->checkIntersection($type);
         }
 
-        /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
-        $type->checked = true;
+        $this->markChecked($type);
 
         return null;
     }
@@ -188,9 +193,36 @@ final class TypeChecker extends TypeVisitor
         return $result;
     }
 
-    public function hasErrors(): bool
+    /**
+     * @param non-empty-array<TypeNode> $types
+     * @return bool whether the types are fine. A type that failed the check stays unchecked, so that checking it
+     *              again reports the same errors, instead of accepting it because an earlier analysis (of the same
+     *              method in the context of another file) found them
+     * @psalm-external-mutation-free
+     */
+    public function check(array $types): bool
     {
-        return $this->has_errors;
+        $this->traverseArray($types);
+
+        if (!$this->has_errors) {
+            return true;
+        }
+
+        foreach ($this->checked_types as $type) {
+            /** @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment Cache, doesn't affect anything else */
+            $type->checked = false;
+        }
+
+        $this->checked_types = [];
+
+        return false;
+    }
+
+    private function markChecked(Atomic|Union|MutableUnion $type): void
+    {
+        /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
+        $type->checked = true;
+        $this->checked_types[] = $type;
     }
 
     /**
