@@ -12,6 +12,7 @@ use Composer\Semver\VersionParser;
 use DOMAttr;
 use DOMDocument;
 use DOMElement;
+use Generator;
 use InvalidArgumentException;
 use JsonException;
 use LogicException;
@@ -66,7 +67,7 @@ use XdgBaseDir\Xdg;
 use stdClass;
 
 use function array_any;
-use function array_filter;
+use function array_column;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
@@ -1529,12 +1530,10 @@ final class Config
         }
 
         if ($config->load_library_plugins) {
-            $vendor_dir = $composer_json['config']['vendor-dir'] ?? 'vendor';
-            $library_plugin_classes = self::getLibraryPluginClasses(
-                Path::isAbsolute((string) $vendor_dir)
-                    ? (string) $vendor_dir
-                    : $config->base_dir . DIRECTORY_SEPARATOR . (string) $vendor_dir,
-            );
+            $vendor_dir = (string) ($composer_json['config']['vendor-dir'] ?? 'vendor');
+            $library_plugin_classes = [...self::getLibraryPluginClasses(
+                Path::isAbsolute($vendor_dir) ? $vendor_dir : $config->base_dir . DIRECTORY_SEPARATOR . $vendor_dir,
+            )];
 
             foreach (['require', 'require-dev'] as $section) {
                 foreach ($composer_json[$section] ?? [] as $package => $_) {
@@ -2823,33 +2822,30 @@ final class Config
     /**
      * The plugin classes the packages of LIBRARY_PLUGIN_PACKAGES installed in $vendor_dir declare
      *
-     * @return list<string>
+     * @return Generator<int, string>
      */
-    private static function getLibraryPluginClasses(string $vendor_dir): array
+    private static function getLibraryPluginClasses(string $vendor_dir): Generator
     {
         $installed_path = $vendor_dir . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'installed.json';
         if (!is_file($installed_path)) {
-            return [];
+            return;
         }
 
         $installed = json_decode((string) file_get_contents($installed_path), true);
         if (!is_array($installed) || !isset($installed['packages']) || !is_array($installed['packages'])) {
-            return [];
+            return;
         }
 
-        $plugin_classes = [];
-        foreach (array_filter($installed['packages'], 'is_array') as $package) {
-            if (isset($package['name'], $package['extra']['psalm']['pluginClass'])
-                && in_array($package['name'], self::LIBRARY_PLUGIN_PACKAGES, true)
-                && is_array($package['extra'])
-                && is_array($package['extra']['psalm'])
-                && is_string($package['extra']['psalm']['pluginClass'])
+        $extras = array_column($installed['packages'], 'extra', 'name');
+        foreach (self::LIBRARY_PLUGIN_PACKAGES as $package) {
+            if (isset($extras[$package]['psalm']['pluginClass'])
+                && is_array($extras[$package])
+                && is_array($extras[$package]['psalm'])
+                && is_string($extras[$package]['psalm']['pluginClass'])
             ) {
-                $plugin_classes[] = $package['extra']['psalm']['pluginClass'];
+                yield $extras[$package]['psalm']['pluginClass'];
             }
         }
-
-        return $plugin_classes;
     }
 
     /**

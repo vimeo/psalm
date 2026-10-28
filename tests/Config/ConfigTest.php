@@ -1932,6 +1932,14 @@ final class ConfigTest extends TestCase
                 '<psalm></psalm>',
                 ['Webmozart\Assert\PsalmPlugin'],
             ],
+            'numericVendorDir' => [
+                [
+                    'composer.json' => '{"config": {"vendor-dir": 7}}',
+                    '7/composer/installed.json' => $webmozart_assert,
+                ],
+                '<psalm></psalm>',
+                ['Webmozart\Assert\PsalmPlugin'],
+            ],
             'vendorDirOfOtherProject' => [
                 [
                     'composer.json' => '{"config": {"vendor-dir": "lib"}}',
@@ -2105,6 +2113,13 @@ final class ConfigTest extends TestCase
             $expected_plugin_classes,
             array_map(static fn(array $plugin): string => $plugin['class'], $config->getPluginClasses()),
         );
+    }
+
+    public function testDisablesArrayCache(): void
+    {
+        $config = Config::loadFromXML(dirname(__DIR__, 2), '<?xml version="1.0"?><psalm arrayCache="false"></psalm>');
+
+        $this->assertFalse($config->array_cache);
     }
 
     public function testSetsUsePhpStormMetaPath(): void

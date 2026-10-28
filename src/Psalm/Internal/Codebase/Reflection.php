@@ -6,7 +6,6 @@ namespace Psalm\Internal\Codebase;
 
 use Exception;
 use LibXMLError;
-use LogicException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -22,17 +21,12 @@ use Psalm\Type\Union;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
-use ReflectionIntersectionType;
 use ReflectionMethod;
-use ReflectionNamedType;
 use ReflectionParameter;
 use ReflectionType;
-use ReflectionUnionType;
 use UnexpectedValueException;
 
-use function array_map;
 use function array_merge;
-use function implode;
 use function strtolower;
 
 use const PHP_VERSION_ID;
@@ -443,52 +437,20 @@ final class Reflection
         return null;
     }
 
-    /** @psalm-suppress UnusedPsalmSuppress,UndefinedClass,TypeDoesNotContainType 7.4 has no ReflectionUnionType */
     public static function getPsalmTypeFromReflectionType(?ReflectionType $reflection_type = null): Union
     {
         if (!$reflection_type) {
             return Type::getMixed();
         }
 
-        $type = self::getTypeStringFromReflectionType($reflection_type);
+        // as PHP writes it (?int, A|B, (A&B)|null), which Psalm parses
+        $type = (string) $reflection_type;
 
         if ($reflection_type->allowsNull()) {
             $type .= '|null';
         }
 
         return Type::parseString($type);
-    }
-
-    private static function getTypeStringFromReflectionType(ReflectionType $reflection_type): string
-    {
-        if ($reflection_type instanceof ReflectionNamedType) {
-            return $reflection_type->getName();
-        }
-
-        if ($reflection_type instanceof ReflectionUnionType) {
-            // the intersections of a DNF type
-            return implode(
-                '|',
-                array_map(
-                    static fn(ReflectionType $reflection): string => $reflection instanceof ReflectionIntersectionType
-                        ? '(' . self::getTypeStringFromReflectionType($reflection) . ')'
-                        : self::getTypeStringFromReflectionType($reflection),
-                    $reflection_type->getTypes(),
-                ),
-            );
-        }
-
-        if ($reflection_type instanceof ReflectionIntersectionType) {
-            return implode(
-                '&',
-                array_map(
-                    static fn(ReflectionType $reflection): string => self::getTypeStringFromReflectionType($reflection),
-                    $reflection_type->getTypes(),
-                ),
-            );
-        }
-
-        throw new LogicException('Unexpected reflection class ' . $reflection_type::class . ' found.');
     }
 
     private function registerInheritedMethods(
