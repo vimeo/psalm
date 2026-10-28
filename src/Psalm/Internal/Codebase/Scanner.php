@@ -503,12 +503,26 @@ final class Scanner
             $forked_pool_data = $pool->runAll(new ShutdownScannerTask);
 
             $pool_results = [];
+            $scanned_files_before = $this->scanned_files;
 
             foreach ($forked_pool_data as $pool_data) {
                 $pool_data = $pool_data->await();
+
+                // a process that did not scan a file carries along what the codebase knew of it before the fork
+                $scanned_by_process = [];
+                // the scanned files of the thread data
+                $process_scanned_files = $pool_data['scanner_data'][7];
+
+                foreach ($files_to_scan as $file_path => $_) {
+                    if (($process_scanned_files[$file_path] ?? null) !== ($scanned_files_before[$file_path] ?? null)) {
+                        $scanned_by_process[strtolower($file_path)] = true;
+                    }
+                }
+
                 $pool_results[] = [
                     'file_storage' => $pool_data['file_storage'],
                     'classlike_storage' => $pool_data['classlike_storage'],
+                    'scanned_files' => $scanned_by_process,
                 ];
 
                 IssueBuffer::addIssues($pool_data['issues']);
@@ -564,11 +578,13 @@ final class Scanner
     /**
      * Adds the storages of the files a pool scanned. Each process scanned the files it happened to take, so the
      * storages are added in the order of $files_to_scan, and of a class declared by several files the first
-     * declaration wins, as when a single process scans the files in that order.
+     * declaration wins, as when a single process scans the files in that order. Of a file, and of what is declared
+     * in it, only the process that scanned it counts: the others carry along what the codebase knew before the fork.
      *
      * @param list<array{
      *     file_storage: array<lowercase-string, FileStorage>,
      *     classlike_storage: array<string, ClassLikeStorage>,
+     *     scanned_files: array<lowercase-string, true>,
      * }> $pool_results
      * @param array<string, string> $files_to_scan
      */
@@ -584,6 +600,7 @@ final class Scanner
 
         $scanned_file_storages = [];
         $other_file_storages = [];
+        $carried_issues = [];
 
         /** @var array<string, non-empty-list<array{int, int, ClassLikeStorage}>> $classlike_candidates */
         $classlike_candidates = [];
@@ -591,7 +608,9 @@ final class Scanner
         foreach ($pool_results as $pool_data) {
             foreach ($pool_data['file_storage'] as $file_path_lc => $file_storage) {
                 if (isset($file_order[$file_path_lc])) {
-                    $scanned_file_storages[$file_path_lc] = $file_storage;
+                    if (isset($pool_data['scanned_files'][$file_path_lc])) {
+                        $scanned_file_storages[$file_path_lc] = $file_storage;
+                    }
                 } elseif (!$this->file_storage_provider->has($file_path_lc)) {
                     $other_file_storages[$file_path_lc] = $file_storage;
                 }
@@ -601,12 +620,22 @@ final class Scanner
 
             foreach ($pool_data['classlike_storage'] as $fq_classlike_name_lc => $classlike_storage) {
                 $location = $classlike_storage->location ?? $classlike_storage->stmt_location;
-                $order = $location !== null ? ($file_order[strtolower($location->file_path)] ?? null) : null;
+                $order = null;
+                $scanned_by_process = false;
 
-                if ($order === null && $classlike_storage_provider->has($fq_classlike_name_lc)) {
-                    // known already: the process only carries it along
+                if ($location !== null) {
+                    $file_path_lc = strtolower($location->file_path);
+                    $order = $file_order[$file_path_lc] ?? null;
+                    $scanned_by_process = isset($pool_data['scanned_files'][$file_path_lc]);
+                }
+
+                if ($order === null
+                    ? $classlike_storage_provider->has($fq_classlike_name_lc)
+                    : !$scanned_by_process
+                ) {
+                    // known already, or scanned by another process: the process only carries it along
                     if ($classlike_storage->has_visitor_issues) {
-                        $classlike_storage_provider->get($fq_classlike_name_lc)->has_visitor_issues = true;
+                        $carried_issues[$fq_classlike_name_lc] = true;
                     }
 
                     continue;
@@ -632,6 +661,8 @@ final class Scanner
 
         /** @var list<array{int, int, string, ClassLikeStorage}> $winners */
         $winners = [];
+        /** @var array<string, array{ClassLikeStorage, string}> $redeclared the winner and its file */
+        $redeclared = [];
 
         foreach ($classlike_candidates as $fq_classlike_name_lc => $candidates) {
             usort(
@@ -666,7 +697,7 @@ final class Scanner
                 );
 
                 $winner->has_visitor_issues = true;
-                $this->classlike_files[$fq_classlike_name_lc] = $winner_location->file_path;
+                $redeclared[$fq_classlike_name_lc] = [$winner, $winner_location->file_path];
 
                 $duplicate_file_storage = $file_storages[strtolower($duplicate_location->file_path)] ?? null;
 
@@ -694,6 +725,19 @@ final class Scanner
 
         $this->file_storage_provider->addMore($file_storages + $other_file_storages);
         $classlike_storage_provider->addMore($classlike_storages);
+
+        foreach ($redeclared as $fq_classlike_name_lc => [$winner, $winner_file_path]) {
+            // if the codebase kept a storage it had instead of the winner, its file stays
+            if ($classlike_storage_provider->get($fq_classlike_name_lc) === $winner) {
+                $this->classlike_files[$fq_classlike_name_lc] = $winner_file_path;
+            }
+        }
+
+        foreach ($carried_issues as $fq_classlike_name_lc => $_) {
+            if ($classlike_storage_provider->has($fq_classlike_name_lc)) {
+                $classlike_storage_provider->get($fq_classlike_name_lc)->has_visitor_issues = true;
+            }
+        }
     }
 
     private function convertClassesToFilePaths(ClassLikes $classlikes): void

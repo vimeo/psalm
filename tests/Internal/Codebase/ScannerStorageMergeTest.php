@@ -209,6 +209,7 @@ class COnly {}',
         $this->merge([[
             'file_storage' => [$known_file => $copy_file_storage],
             'classlike_storage' => $copy_storages,
+            'scanned_files' => [],
         ]], []);
 
         self::assertSame($known_storages['known'], ClassLikeStorageProvider::getAll()['known']);
@@ -227,14 +228,92 @@ class COnly {}',
         $copy_storages = ['alpha' => clone $storages['alpha'], 'zed' => clone $storages['zed']];
 
         $this->merge([
-            ['file_storage' => [], 'classlike_storage' => $storages],
-            ['file_storage' => [], 'classlike_storage' => $copy_storages],
+            ['file_storage' => [], 'classlike_storage' => $storages, 'scanned_files' => []],
+            ['file_storage' => [], 'classlike_storage' => $copy_storages, 'scanned_files' => []],
         ], []);
 
         $classlikes = ClassLikeStorageProvider::getAll();
         self::assertSame(['alpha', 'zed'], array_keys($classlikes));
         self::assertSame($storages['alpha'], $classlikes['alpha']);
         self::assertSame([], IssueBuffer::getIssuesData());
+    }
+
+    public function testTheFileOfARedeclaredClassIsKeptWhenTheCodebaseKeepsItsOwnStorage(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $a = $this->scanAlone($this->dir . 'a.php', '<?php class Foo {}');
+        $b = $this->scanAlone($this->dir . 'b.php', '<?php class Foo {}');
+        // the codebase has Foo from a file outside the batch (e.g. one autoloaded)
+        [$known_file_storage, $known_storages] = $this->scanAlone($this->dir . 'known.php', '<?php class Foo {}');
+
+        $codebase->classlike_storage_provider->addMore($known_storages);
+        $codebase->file_storage_provider->addMore([strtolower($known_file_storage->file_path) => $known_file_storage]);
+
+        $this->merge(
+            [$this->poolData([$a]), $this->poolData([$b])],
+            [$this->dir . 'a.php' => $this->dir . 'a.php', $this->dir . 'b.php' => $this->dir . 'b.php'],
+        );
+
+        self::assertSame($known_storages['foo'], ClassLikeStorageProvider::getAll()['foo']);
+        self::assertSame($this->dir . 'known.php', $codebase->scanner->getClassLikeFilePath('foo'));
+    }
+
+    /**
+     * @param list<string> $arrival the processes, in the order they finished in
+     */
+    #[DataProvider('providerArrival')]
+    public function testOnlyTheProcessThatScannedAFileAgainCountsNotOnesCarryingItsOldStorage(array $arrival): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $file = strtolower($this->dir . 'a.php');
+
+        [$known_file_storage, $known_storages] = $this->scanAlone($this->dir . 'a.php', '<?php class AOnly {}');
+        $codebase->classlike_storage_provider->addMore($known_storages);
+        $codebase->file_storage_provider->addMore([$file => $known_file_storage]);
+
+        // the file was scanned shallowly, then deeply by w1, while w2 scanned another file and flagged the class
+        $deep_file_storage = clone $known_file_storage;
+        $deep_file_storage->deep_scan = true;
+        $deep_storages = ['aonly' => clone $known_storages['aonly']];
+        $deep_storages['aonly']->final = true;
+
+        $old_file_storage = clone $known_file_storage;
+        $old_storages = ['aonly' => clone $known_storages['aonly']];
+        $old_storages['aonly']->has_visitor_issues = true;
+
+        $processes = [
+            'w1' => [
+                'file_storage' => [$file => $deep_file_storage],
+                'classlike_storage' => $deep_storages,
+                'scanned_files' => [$file => true],
+            ],
+            'w2' => [
+                'file_storage' => [$file => $old_file_storage],
+                'classlike_storage' => $old_storages,
+                'scanned_files' => [],
+            ],
+        ];
+
+        $this->merge(
+            array_map(static fn(string $process): array => $processes[$process], $arrival),
+            [$this->dir . 'a.php' => $this->dir . 'a.php'],
+        );
+
+        self::assertSame($deep_file_storage, FileStorageProvider::getAll()[$file]);
+        self::assertSame($deep_storages['aonly'], ClassLikeStorageProvider::getAll()['aonly']);
+        self::assertTrue(ClassLikeStorageProvider::getAll()['aonly']->has_visitor_issues);
+        self::assertSame([], IssueBuffer::getIssuesData());
+    }
+
+    /**
+     * @return iterable<string, array{list<string>}>
+     * @psalm-pure
+     */
+    public static function providerArrival(): iterable
+    {
+        yield 'process that scanned the file finishes first' => [['w1', 'w2']];
+        yield 'process that scanned the file finishes last' => [['w2', 'w1']];
     }
 
     /**
@@ -262,15 +341,20 @@ class COnly {}',
 
     /**
      * @param list<array{FileStorage, array<string, ClassLikeStorage>}> $scanned the files of a process
-     * @return array{file_storage: array<lowercase-string, FileStorage>, classlike_storage: array<string, ClassLikeStorage>}
+     * @return array{
+     *     file_storage: array<lowercase-string, FileStorage>,
+     *     classlike_storage: array<string, ClassLikeStorage>,
+     *     scanned_files: array<lowercase-string, true>,
+     * }
      * @psalm-capabilities read-props
      */
     private function poolData(array $scanned): array
     {
-        $data = ['file_storage' => [], 'classlike_storage' => []];
+        $data = ['file_storage' => [], 'classlike_storage' => [], 'scanned_files' => []];
 
         foreach ($scanned as [$file_storage, $classlike_storages]) {
             $data['file_storage'][strtolower($file_storage->file_path)] = $file_storage;
+            $data['scanned_files'][strtolower($file_storage->file_path)] = true;
             $data['classlike_storage'] += $classlike_storages;
         }
 
@@ -278,7 +362,11 @@ class COnly {}',
     }
 
     /**
-     * @param list<array{file_storage: array<lowercase-string, FileStorage>, classlike_storage: array<string, ClassLikeStorage>}> $pool_results
+     * @param list<array{
+     *     file_storage: array<lowercase-string, FileStorage>,
+     *     classlike_storage: array<string, ClassLikeStorage>,
+     *     scanned_files: array<lowercase-string, true>,
+     * }> $pool_results
      * @param array<string, string> $files_to_scan
      */
     private function merge(array $pool_results, array $files_to_scan): void
