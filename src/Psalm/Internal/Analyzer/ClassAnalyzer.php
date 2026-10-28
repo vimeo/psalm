@@ -1491,7 +1491,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             if ($trait_storage->deprecated) {
                 IssueBuffer::maybeAdd(
                     new DeprecatedTrait(
-                        'Trait ' . $fq_trait_name . ' is deprecated',
+                        'Trait ' . $fq_trait_name . ' is deprecated'
+                            . ($trait_storage->deprecated_message !== null
+                                ? ', ' . $trait_storage->deprecated_message
+                                : ''),
                         new CodeLocation($previous_trait_analyzer ?? $this, $trait_name),
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
