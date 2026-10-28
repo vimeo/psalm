@@ -33,6 +33,7 @@ use Psalm\Tests\Config\Plugin\TestPluginIssueDefaultLevel;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
+use Throwable;
 
 use function array_map;
 use function dirname;
@@ -47,9 +48,12 @@ use function is_dir;
 use function mkdir;
 use function preg_match;
 use function realpath;
+use function restore_error_handler;
+use function restore_exception_handler;
 use function rmdir;
 use function rsort;
 use function set_error_handler;
+use function set_exception_handler;
 use function sprintf;
 use function str_replace;
 use function symlink;
@@ -65,6 +69,9 @@ final class ConfigTest extends TestCase
 
     /** @var callable(int, string, string=, int=, array=):bool|null */
     protected $original_error_handler = null;
+
+    /** @var callable(Throwable):void|null */
+    protected $original_exception_handler = null;
 
     #[Override]
     public static function setUpBeforeClass(): void
@@ -84,7 +91,9 @@ final class ConfigTest extends TestCase
         RuntimeCaches::clearAll();
         $this->file_provider = new FakeFileProvider();
         $this->original_error_handler = set_error_handler(null);
-        set_error_handler($this->original_error_handler);
+        restore_error_handler();
+        $this->original_exception_handler = set_exception_handler(null);
+        restore_exception_handler();
     }
 
     private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
@@ -1402,7 +1411,17 @@ final class ConfigTest extends TestCase
     #[Override]
     public function tearDown(): void
     {
-        set_error_handler($this->original_error_handler);
+        // remove the error and exception handlers the test installed
+        while (($handler = set_error_handler(null)) !== $this->original_error_handler && $handler !== null) {
+            restore_error_handler();
+            restore_error_handler();
+        }
+        restore_error_handler();
+        while (($handler = set_exception_handler(null)) !== $this->original_exception_handler && $handler !== null) {
+            restore_exception_handler();
+            restore_exception_handler();
+        }
+        restore_exception_handler();
 
         parent::tearDown();
 
