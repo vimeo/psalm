@@ -19,9 +19,9 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
-use Psalm\Tests\Internal\LiteralFileSource;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use ReflectionClass;
+use ReflectionProperty;
 
 use function count;
 use function extension_loaded;
@@ -148,9 +148,11 @@ final class CodeLocationTest extends BaseTestCase
     }
 
     /**
-     * The same round trip through the serializers a worker's result goes through, for every kind of location. They
-     * come from a file source with a literal path: a path from the file analyzer would be flagged as user input
-     * reaching unserialize() by Psalm's own taint analysis.
+     * The same round trip through the serializers a worker's result goes through, for every kind of location.
+     *
+     * CodeLocation and DocblockTypeLocation get their properties set directly rather than through their
+     * constructors: those read the path of a FileSource, which Psalm's own taint analysis treats as user input,
+     * so a location they built would be reported as user input reaching unserialize().
      */
     #[DataProvider('provideSerializers')]
     public function testLocationsSurviveEncodingAndDecoding(bool $igbinary): void
@@ -162,22 +164,40 @@ final class CodeLocationTest extends BaseTestCase
         $contents = "<?php\n// Grüße\n\$a = 'x' . \$b;\n";
         $this->file_provider->registerFile(self::FILE, $contents);
 
-        $source = new LiteralFileSource(self::FILE);
-
         $start = strlen("<?php\n// Grüße\n\$a = ");
-        $previous_node = new String_('x', ['startFilePos' => $start, 'endFilePos' => $start + 2, 'startLine' => 3]);
-        $previous = new CodeLocation($source, $previous_node);
-        $node = new String_('x', ['startFilePos' => $start + 6, 'endFilePos' => $start + 7, 'startLine' => 3]);
+        $previous = new Raw($contents, self::FILE, self::FILE, $start, $start + 2);
+        $properties = [
+            'file_path' => self::FILE,
+            'file_name' => self::FILE,
+            'raw_line_number' => 3,
+            'raw_file_start' => $start + 6,
+            'raw_file_end' => $start + 7,
+            'file_start' => $start + 6,
+            'file_end' => $start + 7,
+            'single_line' => true,
+            'preview_start' => $start + 6,
+            'docblock_line_number' => 7,
+        ];
 
-        $fresh = new CodeLocation($source, $node, $previous, true, null, null, 7);
-        $computed = new CodeLocation($source, $node, $previous, true, null, null, 7);
-        $this->assertSame('$a = \'x\' . $b;', $computed->getSnippet());
+        $fresh = $this->createLocation(CodeLocation::class, $properties + ['previous_location' => $previous]);
+        // what calculateRealLocation() sets, which calling it on the location would taint
+        $computed = $this->createLocation(CodeLocation::class, $properties + [
+            'previous_location' => $previous,
+            'have_recalculated' => true,
+            'end_line_number' => 7,
+            'preview_end' => 31,
+            'selection_start' => 28,
+            'selection_end' => 30,
+            'column_from' => 12,
+            'column_to' => 14,
+            'snippet' => '$a = \'x\' . $b;',
+        ]);
 
         $locations = [
             'fresh' => $fresh,
             'computed' => $computed,
             'raw' => new Raw($contents, self::FILE, self::FILE, $start, $start + 2),
-            'docblock type' => new DocblockTypeLocation($source, $start, $start + 3, 3),
+            'docblock type' => $this->createLocation(DocblockTypeLocation::class, $properties),
             'parse error' => new ParseErrorLocation(
                 new Error('syntax error', ['startFilePos' => $start, 'endFilePos' => $start + 2]),
                 $contents,
@@ -295,5 +315,22 @@ final class CodeLocationTest extends BaseTestCase
         ]);
 
         return new CodeLocation($this->file_analyzer, $node, null, false, $regex_type);
+    }
+
+    /**
+     * @template T of CodeLocation
+     * @param class-string<T> $class
+     * @param array<string, bool|int|string|CodeLocation|null> $properties
+     * @return T
+     */
+    private function createLocation(string $class, array $properties): CodeLocation
+    {
+        $location = (new ReflectionClass($class))->newInstanceWithoutConstructor();
+
+        foreach ($properties as $name => $value) {
+            (new ReflectionProperty(CodeLocation::class, $name))->setValue($location, $value);
+        }
+
+        return $location;
     }
 }
