@@ -12,6 +12,8 @@ use Psalm\IssueBuffer;
 
 use function sort;
 
+use const DIRECTORY_SEPARATOR;
+
 final class MutationInfoAnalysisOrderTest extends TestCase
 {
     /**
@@ -92,8 +94,8 @@ final class MutationInfoAnalysisOrderTest extends TestCase
         // Base::run() and Base::value() call, or are called by, what any child may override: nothing to annotate
         self::assertSame(
             [
-                'MissingPureAnnotation - src/Child.php - value must be marked @psalm-pure to aid security analysis,'
-                    . ' run with --alter --issues=MissingPureAnnotation to fix this',
+                'MissingPureAnnotation - src' . DIRECTORY_SEPARATOR . 'Child.php - value must be marked @psalm-pure'
+                    . ' to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this',
             ],
             $messages,
         );
