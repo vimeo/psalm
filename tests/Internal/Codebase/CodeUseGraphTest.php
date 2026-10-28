@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Tests\Internal\Codebase;
 
 use Closure;
-use PhpParser\Node\Scalar\String_;
+use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PhpParser\Node\Scalar\String_;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\FileSource;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Codebase\MutationLevelResolver;
 use Psalm\Storage\Capabilities;
 use Psalm\Tests\TestCase;
 
@@ -18,6 +20,10 @@ use function array_keys;
 use function array_slice;
 use function count;
 
+/**
+ * @psalm-import-type MutationInfo from MutationLevelResolver
+ * @psalm-import-type CapabilitySet from Capabilities
+ */
 final class CodeUseGraphTest extends TestCase
 {
     /**
@@ -122,12 +128,8 @@ final class CodeUseGraphTest extends TestCase
 
     /**
      * @param array<string, bool> $callees
-     * @return array{
-     *     intrinsic: int, allowed: int, callees: array<string, bool>, default_intrinsic: int,
-     *     default_callees: array<string, bool>, location: CodeLocation, cased_name: string,
-     *     suppressed_issues: array<int, string>, class: ?string, start: int, fresh: bool, root: string,
-     *     inherited: bool, report: bool
-     * }
+     * @param CapabilitySet $intrinsic
+     * @return MutationInfo
      */
     private static function mutationInfo(
         string $name,
@@ -137,34 +139,39 @@ final class CodeUseGraphTest extends TestCase
         array $callees = [],
         bool $fresh = true,
     ): array {
-        $declaring_file = new class ('/src/Declaring.php') implements FileSource {
-            public function __construct(private readonly string $path)
+        $declaring_file = new class ('/src/Declaring.php', new Aliases()) implements FileSource {
+            public function __construct(private string $path, private Aliases $aliases)
             {
             }
 
+            #[Override]
             public function getFileName(): string
             {
                 return $this->path;
             }
 
+            #[Override]
             public function getFilePath(): string
             {
                 return $this->path;
             }
 
+            #[Override]
             public function getRootFileName(): string
             {
                 return $this->path;
             }
 
+            #[Override]
             public function getRootFilePath(): string
             {
                 return $this->path;
             }
 
+            #[Override]
             public function getAliases(): Aliases
             {
-                return new Aliases();
+                return $this->aliases;
             }
         };
 
@@ -190,7 +197,7 @@ final class CodeUseGraphTest extends TestCase
      * Candidates analysed for the same function-like declared in /src/Declaring.php, with the name of the one that
      * has to win. The merge has to give the same result for every order the workers' graphs are merged in.
      *
-     * @return iterable<string, array{list<array<string, mixed>>, string}>
+     * @return iterable<string, array{list<MutationInfo>, string}>
      */
     public static function providerMutationInfoPrecedence(): iterable
     {
@@ -279,8 +286,8 @@ final class CodeUseGraphTest extends TestCase
     }
 
     /**
-     * @param list<array<string, mixed>> $infos
-     * @return list<list<array<string, mixed>>>
+     * @param list<MutationInfo> $infos
+     * @return list<list<MutationInfo>>
      * @psalm-pure
      */
     private static function permutations(array $infos): array
@@ -303,12 +310,12 @@ final class CodeUseGraphTest extends TestCase
     }
 
     /**
-     * @param list<array<string, mixed>> $infos
+     * @param list<MutationInfo> $infos
      */
     #[DataProvider('providerMutationInfoPrecedence')]
     public function testMergingWorkerGraphsPicksTheSameMutationInfoInAnyOrder(array $infos, string $winner): void
     {
-        $node_id = CodeUseGraph::functionLikeNode('a\\Trait_::m');
+        $node_id = CodeUseGraph::functionLikeNode('a\\trait_::m');
 
         $expected_levels = null;
 

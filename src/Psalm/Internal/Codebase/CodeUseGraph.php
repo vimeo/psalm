@@ -593,20 +593,29 @@ final class CodeUseGraph
             return true;
         }
 
-        $precedence = static fn(array $info): int => $info['inherited']
+        return self::precedenceKey($info) >= self::precedenceKey($existing);
+    }
+
+    /**
+     * A trait method is analysed once per class using it, with what that class has: of those, the same one
+     * has to win whichever is analysed first.
+     *
+     * @param MutationInfo $info
+     * @return array{int, string, CapabilitySet, string}
+     * @psalm-pure
+     */
+    private static function precedenceKey(array $info): array
+    {
+        $precedence = $info['inherited']
             ? 0
             : ($info['root'] === $info['location']->file_path ? 2 : 1);
 
-        // a trait method is analysed once per class using it, with what that class has: of those, the same one
-        // has to win whichever is analysed first
-        $key = static fn(array $info): array => [
-            $precedence($info),
+        return [
+            $precedence,
             $info['root'],
             $info['intrinsic'],
             implode(',', array_keys($info['callees'])),
         ];
-
-        return $key($info) >= $key($existing);
     }
 
     /**
