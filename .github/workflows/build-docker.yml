@@ -11,6 +11,8 @@ on:
       - 6.x
     tags:
       - '*'
+  # dispatched on the tags of the releases bin/ci/auto-release.php publishes, which don't trigger tag pushes
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -28,7 +30,7 @@ jobs:
         with:
           cancel_others: true
           skip_after_successful_duplicate: false
-          do_not_skip: '["release"]'
+          do_not_skip: '["release", "workflow_dispatch"]'
           # list files that may affect or are included into the built phar
           paths: '[".github/**", "bin/**", "assets/**", "build/**", "dictionaries/**", "src/**", "stubs/**", "psalm", "psalm-language-server", "psalm-plugin", "psalm-refactor", "psalm-review", "psalter", "box.json.dist", "composer.json", "config.xsd", "keys.asc.gpg", "scoper.inc.php"]'
 

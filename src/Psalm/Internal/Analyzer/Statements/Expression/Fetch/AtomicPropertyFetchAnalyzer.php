@@ -266,6 +266,37 @@ final class AtomicPropertyFetchAnalyzer
         $get_method_id = new MethodIdentifier($fq_class_name, '__get');
 
         if (!$naive_property_exists) {
+            // Resolve explicit shape properties before consulting other class-like types.
+            // Keep final classes closed unless they provide a magic getter.
+            if ($intersection_types !== []
+                && (!$class_storage->final || $codebase->methods->methodExists($get_method_id))
+            ) {
+                foreach ($intersection_types as $intersection_type) {
+                    if (!$intersection_type instanceof TObjectWithProperties
+                        || !isset($intersection_type->properties[$prop_name])
+                    ) {
+                        continue;
+                    }
+
+                    self::analyze(
+                        $statements_analyzer,
+                        $stmt,
+                        $context,
+                        $in_assignment,
+                        $var_id,
+                        $stmt_var_id,
+                        $stmt_var_type,
+                        $intersection_type,
+                        $prop_name,
+                        $has_valid_fetch_type,
+                        $invalid_fetch_types,
+                        $is_static_access,
+                    );
+
+                    return;
+                }
+            }
+
             if ($class_storage->namedMixins) {
                 foreach ($class_storage->getNamedMixinsForLookup() as $mixin) {
                     $new_property_id = $mixin->value . '::$' . $prop_name;

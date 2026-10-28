@@ -73,6 +73,8 @@ use const PHP_EOL;
  *         array<string, bool>,
  *         array<lowercase-string, bool>,
  *         array<string, bool>,
+ *         array<string, bool>,
+ *         array<lowercase-string, string>,
  *         array<string, bool>
  *     },
  *     scanner_data: ThreadData,
@@ -106,6 +108,11 @@ final class Scanner
      * @var array<string, bool>
      */
     private array $deep_scanned_classlike_files = [];
+
+    /**
+     * @var array<string, true>
+     */
+    private array $stub_files = [];
 
     /**
      * @var array<string, string>
@@ -207,6 +214,17 @@ final class Scanner
     {
         $this->files_to_scan[$file_path] = $file_path;
         $this->files_to_deep_scan[$file_path] = $file_path;
+    }
+
+    public function addStubFileToDeepScan(string $file_path): void
+    {
+        $this->stub_files[strtolower($file_path)] = true;
+        $this->addFileToDeepScan($file_path);
+    }
+
+    public function isStubFile(string $file_path): bool
+    {
+        return isset($this->stub_files[strtolower($file_path)]);
     }
 
     public function removeFile(string $file_path): void
