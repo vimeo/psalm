@@ -529,7 +529,8 @@ final class Algebra
                                         break;
                                     }
 
-                                    if ($ak !== $impossible_type_string && $bk !== $impossible_type_string) {
+                                    // loose: PHP turns the numeric key of a literal int into an int
+                                    if ($ak != $impossible_type_string && $bk != $impossible_type_string) {
                                         continue;
                                     }
 

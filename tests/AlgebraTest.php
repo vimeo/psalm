@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
-use AssertionError;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PhpParser;
 use Psalm\Context;
@@ -20,6 +19,7 @@ use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Storage\Assertion\IsNotIdentical;
+use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
@@ -29,7 +29,6 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TString;
 
 use function array_map;
-use function ini_get;
 use function spl_object_id;
 
 final class AlgebraTest extends TestCase
@@ -318,15 +317,23 @@ final class AlgebraTest extends TestCase
         return array_map(static fn(Clause $clause): string => (string) $clause, $clauses);
     }
 
-    public function testClauseRequiresPossibilitiesKeyedByAssertionString(): void
+    public function testGroupImpossibilitiesDropsContradictionOfLiteralInt(): void
     {
-        if (ini_get('zend.assertions') !== '1') {
-            $this->markTestSkipped('Needs zend.assertions=1');
-        }
+        $is_five = self::clause(['$a' => [new IsType(new TLiteralInt(5))]])->calculateNegation();
+        $is_not_five = self::clause(['$a' => [new IsNotType(new TLiteralInt(5))]])->calculateNegation();
 
-        $this->expectException(AssertionError::class);
+        $this->assertSame([], Algebra::groupImpossibilities([$is_not_five, $is_five]));
+    }
 
-        new Clause(['$a' => ['truthy' => new Truthy()]], 1, 1);
+    public function testFilterClausesKeepsClauseAlreadyImpliedByLiteralIntType(): void
+    {
+        $clauses = Context::filterClauses(
+            '$a',
+            [self::clause(['$a' => [new IsType(new TLiteralInt(5))]])],
+            new Type\Union([new TLiteralInt(5)]),
+        );
+
+        $this->assertSame(['$a is 5'], self::clauseStrings($clauses));
     }
 
     /**

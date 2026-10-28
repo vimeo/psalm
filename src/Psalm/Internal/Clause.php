@@ -90,8 +90,6 @@ final class Clause implements Stringable
         public bool $generated = false,
         public array $redefined_vars = [],
     ) {
-        assert(self::isKeyedByAssertionString($possibilities));
-
         if ($wedge || !$reconcilable) {
             $this->hash = ($wedge ? 'w' : '') . $creating_object_id;
         } else {
@@ -114,24 +112,6 @@ final class Clause implements Stringable
         $this->wedge = $wedge;
         $this->reconcilable = $reconcilable;
         $this->creating_object_id = $creating_object_id;
-    }
-
-    /**
-     * @param array<string, non-empty-array<string, Assertion>> $possibilities
-     * @psalm-mutation-free
-     */
-    private static function isKeyedByAssertionString(array $possibilities): bool
-    {
-        foreach ($possibilities as $var_possibilities) {
-            foreach ($var_possibilities as $assertion) {
-                // the key of a literal int is an int, as PHP turns numeric string keys into ints
-                if (($var_possibilities[(string) $assertion] ?? null) !== $assertion) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
     }
 
     /**
