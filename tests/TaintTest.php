@@ -8728,7 +8728,7 @@ final class TaintTest extends TestCase
                         $r4 = array_map("strval", is_array($a["k4"] ?? null) ? $a["k4"] : []);
                         $r5 = array_map("strval", is_array($a["k5"] ?? null) ? $a["k5"] : []);
                         $r6 = array_map("strval", is_array($a["k6"] ?? null) ? $a["k6"] : []);
-                        echo $r1[0], $r6[0];
+                        echo $r6[0];
                     }
 
                     f($_GET);',

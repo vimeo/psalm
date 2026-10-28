@@ -20,6 +20,7 @@ use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
+use function substr_compare;
 
 /**
  * A node in the data-flow / taint graph.
@@ -610,48 +611,44 @@ final class DataFlowNode implements Stringable
      */
     public static function getForKeyRemoval(self $node, self $removal): self
     {
-        $id = $node->id;
+        $prefix = self::KEY_REMOVED . strlen($removal->label) . ':' . $removal->label;
+        $prefix_length = strlen($prefix);
+        $offset = 0;
 
-        do {
-            [$label, $id] = self::getKeyRemovalParts($id);
-
-            if ($label === $removal->label) {
+        while (($base_offset = self::getKeyRemovalBaseOffset($node->id, $offset)) !== null) {
+            if (substr_compare($node->id, $prefix, $offset, $prefix_length) === 0) {
                 return $node;
             }
-        } while ($id !== null);
+
+            $offset = $base_offset;
+        }
 
         // $removal's location is a function of its id, so of this id too: see the class invariant
         return self::make(
-            self::KEY_REMOVED
-                . strlen($removal->label) . ':' . $removal->label
-                . strlen($removal->id) . ':' . $removal->id
-                . $node->id,
+            $prefix . strlen($removal->id) . ':' . $removal->id . $node->id,
             $removal->label,
             $removal->code_location,
         );
     }
 
     /**
-     * The label of the removal and the id of the node the key is removed from, of the node of id $id if it is
-     * one of getForKeyRemoval(), else nulls
+     * The offset in $id of the id of the node the key is removed from, if $id has the id of a node of
+     * getForKeyRemoval() at $offset, else null
      *
-     * @return array{?string, ?string}
      * @psalm-pure
      */
-    private static function getKeyRemovalParts(string $id): array
+    private static function getKeyRemovalBaseOffset(string $id, int $offset): ?int
     {
-        if (!str_starts_with($id, self::KEY_REMOVED)) {
-            return [null, null];
+        if (substr_compare($id, self::KEY_REMOVED, $offset, strlen(self::KEY_REMOVED)) !== 0) {
+            return null;
         }
 
-        $offset = strlen(self::KEY_REMOVED);
+        $offset += strlen(self::KEY_REMOVED);
         $colon = (int) strpos($id, ':', $offset);
-        $label = substr($id, $colon + 1, (int) substr($id, $offset));
-
-        $offset = $colon + 1 + strlen($label);
+        $offset = $colon + 1 + (int) substr($id, $offset, $colon - $offset);
         $colon = (int) strpos($id, ':', $offset);
 
-        return [$label, substr($id, $colon + 1 + (int) substr($id, $offset))];
+        return $colon + 1 + (int) substr($id, $offset, $colon - $offset);
     }
 
     /**
@@ -677,13 +674,15 @@ final class DataFlowNode implements Stringable
             $base_id = $parent_node_id;
 
             while (true) {
-                $base_id = str_starts_with($base_id, self::NARROWED_TO_SCALAR)
-                    ? substr($base_id, strlen(self::NARROWED_TO_SCALAR))
-                    : self::getKeyRemovalParts($base_id)[1];
+                $offset = str_starts_with($base_id, self::NARROWED_TO_SCALAR)
+                    ? strlen(self::NARROWED_TO_SCALAR)
+                    : self::getKeyRemovalBaseOffset($base_id, 0);
 
-                if ($base_id === null) {
+                if ($offset === null) {
                     break;
                 }
+
+                $base_id = substr($base_id, $offset);
 
                 if (isset($parent_nodes[$base_id])) {
                     unset($parent_nodes[$parent_node_id]);

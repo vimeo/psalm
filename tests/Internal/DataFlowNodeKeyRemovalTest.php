@@ -57,6 +57,10 @@ final class DataFlowNodeKeyRemovalTest extends TestCase
         self::assertNotSame($removed, DataFlowNode::getForKeyRemoval($removed, self::assignment('$a without \'xy\'', 6)));
         self::assertNotSame($removed, DataFlowNode::getForKeyRemoval($removed, self::assignment('$a without \'\'', 6)));
         self::assertNotSame($removed, DataFlowNode::getForKeyRemoval($removed, self::assignment('$b without \'x\'', 6)));
+
+        $other = DataFlowNode::getForKeyRemoval(self::assignment('$a', 1), self::assignment('k1', 3));
+
+        self::assertNotSame($other, DataFlowNode::getForKeyRemoval($other, self::assignment('k2', 6)));
     }
 
     public function testAKeyIsRemovedFromANodeThatIsOnlyNamedAfterTheRemoval(): void
@@ -138,6 +142,30 @@ final class DataFlowNodeKeyRemovalTest extends TestCase
         self::assertSame(
             [$removed->id => $removed, $other_removed->id => $other_removed],
             DataFlowNode::combineParentNodes([$removed->id => $removed], [$other_removed->id => $other_removed]),
+        );
+    }
+
+    public function testNodesRemovingAKeyAreMergedAwayThroughNodesNarrowingToAScalar(): void
+    {
+        $array = self::assignment('$a', 1);
+        $removed = DataFlowNode::getForKeyRemoval($array, self::assignment('$a without \'x\'', 3));
+        $narrowed_removed = DataFlowNode::getForNarrowingToScalar($removed);
+        $removed_narrowed = DataFlowNode::getForKeyRemoval(
+            DataFlowNode::getForNarrowingToScalar($array),
+            self::assignment('$a without \'y\'', 6),
+        );
+
+        self::assertSame(
+            [$array->id => $array],
+            DataFlowNode::combineParentNodes([$narrowed_removed->id => $narrowed_removed], [$array->id => $array]),
+        );
+        self::assertSame(
+            [$array->id => $array],
+            DataFlowNode::combineParentNodes([$removed_narrowed->id => $removed_narrowed], [$array->id => $array]),
+        );
+        self::assertSame(
+            [$removed->id => $removed],
+            DataFlowNode::combineParentNodes([$narrowed_removed->id => $narrowed_removed], [$removed->id => $removed]),
         );
     }
 }
