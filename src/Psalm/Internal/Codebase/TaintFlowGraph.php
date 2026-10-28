@@ -50,7 +50,6 @@ use function array_pop;
 use function array_unshift;
 use function count;
 use function end;
-use function get_object_vars;
 use function implode;
 use function ksort;
 use function min;
@@ -185,38 +184,95 @@ final class TaintFlowGraph extends DataFlowGraph
      * only a few thousand of the hundreds of thousands the graph holds differ. The serializer writes a shared object
      * once and the parent builds it once.
      *
-     * @return array<string, mixed>
+     * @return array{
+     *     forward_edges: array<string, array<string, Path>>,
+     *     sources: array<string, DataFlowNode>,
+     *     nodes: array<string, DataFlowNode>,
+     *     sinks: array<string, DataFlowNode>,
+     *     specializations: array<string, array<string, string>>,
+     *     specialized_calls: array<string, true>,
+     *     generator_sent_nodes: array<string, DataFlowNode>,
+     *     generator_sends: array<string, array<string, true>>,
+     *     output_streams: array<string, true>,
+     *     shared_state: array<string, true>,
+     *     string_starts: array<string, string>,
+     *     empty_arrays: array<string, true>,
+     *     empty_dispatches: array<string, true>,
+     *     speculative_calls: array<string, array<string, true>>,
+     *     despecialized_calls: array<string, true>,
+     * }
      * @psalm-mutation-free
      */
     public function __serialize(): array
     {
-        $properties = get_object_vars($this);
-
+        /** @var array<string, array<int, array<int, array<int, Path>>>> $paths */
         $paths = [];
+        /** @var array<string, array<string, Path>> $forward_edges */
         $forward_edges = [];
 
         foreach ($this->forward_edges as $from_id => $edges) {
             foreach ($edges as $to_id => $path) {
-                $forward_edges[$from_id][$to_id] = $paths[$path->type . '|' . $path->length . '|'
-                    . $path->added_taints . '|' . $path->removed_taints] ??= $path;
+                $forward_edges[$from_id][$to_id] = $paths[$path->type][$path->length][$path->added_taints]
+                    [$path->removed_taints] ??= $path;
             }
         }
 
-        $properties['forward_edges'] = $forward_edges;
-
-        return $properties;
+        return [
+            'forward_edges' => $forward_edges,
+            'sources' => $this->sources,
+            'nodes' => $this->nodes,
+            'sinks' => $this->sinks,
+            'specializations' => $this->specializations,
+            'specialized_calls' => $this->specialized_calls,
+            'generator_sent_nodes' => $this->generator_sent_nodes,
+            'generator_sends' => $this->generator_sends,
+            'output_streams' => $this->output_streams,
+            'shared_state' => $this->shared_state,
+            'string_starts' => $this->string_starts,
+            'empty_arrays' => $this->empty_arrays,
+            'empty_dispatches' => $this->empty_dispatches,
+            'speculative_calls' => $this->speculative_calls,
+            'despecialized_calls' => $this->despecialized_calls,
+        ];
     }
 
     /**
-     * @param array<string, mixed> $properties
+     * @param array{
+     *     forward_edges: array<string, array<string, Path>>,
+     *     sources: array<string, DataFlowNode>,
+     *     nodes: array<string, DataFlowNode>,
+     *     sinks: array<string, DataFlowNode>,
+     *     specializations: array<string, array<string, string>>,
+     *     specialized_calls: array<string, true>,
+     *     generator_sent_nodes: array<string, DataFlowNode>,
+     *     generator_sends: array<string, array<string, true>>,
+     *     output_streams: array<string, true>,
+     *     shared_state: array<string, true>,
+     *     string_starts: array<string, string>,
+     *     empty_arrays: array<string, true>,
+     *     empty_dispatches: array<string, true>,
+     *     speculative_calls: array<string, array<string, true>>,
+     *     despecialized_calls: array<string, true>,
+     * } $properties
      * @psalm-external-mutation-free
      */
     public function __unserialize(array $properties): void
     {
-        /** @psalm-suppress MixedAssignment */
-        foreach ($properties as $name => $value) {
-            $this->$name = $value;
-        }
+        $this->forward_edges = $properties['forward_edges'];
+        $this->sources = $properties['sources'];
+        $this->nodes = $properties['nodes'];
+        $this->sinks = $properties['sinks'];
+        $this->specializations = $properties['specializations'];
+        $this->specialized_calls = $properties['specialized_calls'];
+        $this->generator_sent_nodes = $properties['generator_sent_nodes'];
+        $this->generator_sends = $properties['generator_sends'];
+        $this->output_streams = $properties['output_streams'];
+        $this->shared_state = $properties['shared_state'];
+        $this->string_starts = $properties['string_starts'];
+        $this->empty_arrays = $properties['empty_arrays'];
+        $this->empty_dispatches = $properties['empty_dispatches'];
+        $this->speculative_calls = $properties['speculative_calls'];
+        $this->despecialized_calls = $properties['despecialized_calls'];
     }
 
     /**
