@@ -294,6 +294,16 @@ final class ClassLikeStringTest extends TestCase
 
                     takesTrait(MyTrait::class);',
             ],
+            'literalClassStringOfTraitIsClassUsesKey' => [
+                'code' => '<?php
+                    trait MyTrait {}
+
+                    function usesMyTrait(object $o): bool {
+                        $traits = class_uses($o);
+
+                        return $traits !== false && $traits[MyTrait::class] === MyTrait::class;
+                    }',
+            ],
             'refineStringToClassString' => [
                 'code' => '<?php
                     class A {}
@@ -1060,6 +1070,62 @@ final class ClassLikeStringTest extends TestCase
                         return $s;
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalClassStringOfClassIsNotTraitString' => [
+                'code' => '<?php
+                    final class SomeClass {}
+
+                    /** @param trait-string $t */
+                    function takesTrait(string $t): void {}
+
+                    takesTrait(SomeClass::class);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'literalClassStringOfInterfaceIsNotTraitString' => [
+                'code' => '<?php
+                    interface SomeInterface {}
+
+                    /** @param trait-string $t */
+                    function takesTrait(string $t): void {}
+
+                    takesTrait(SomeInterface::class);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'literalClassStringOfEnumIsNotTraitString' => [
+                'code' => '<?php
+                    enum SomeEnum {}
+
+                    /** @param trait-string $t */
+                    function takesTrait(string $t): void {}
+
+                    takesTrait(SomeEnum::class);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'literalClassStringOfTraitOrClassIsPossiblyNotTraitString' => [
+                'code' => '<?php
+                    trait MyTrait {}
+                    final class SomeClass {}
+
+                    /** @param trait-string $t */
+                    function takesTrait(string $t): void {}
+
+                    function f(bool $b): void {
+                        takesTrait($b ? MyTrait::class : SomeClass::class);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'literalClassStringOfClassIsNotClassUsesKey' => [
+                'code' => '<?php
+                    final class SomeClass {}
+
+                    function usesSomeClass(object $o): bool {
+                        $traits = class_uses($o);
+
+                        return $traits !== false && $traits[SomeClass::class] === SomeClass::class;
+                    }',
+                'error_message' => 'InvalidArrayOffset',
             ],
         ];
     }
