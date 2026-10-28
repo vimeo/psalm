@@ -51,6 +51,8 @@ use function implode;
  *     class: ?string,
  *     start: int,
  *     fresh: bool,
+ *     root: string,
+ *     inherited: bool,
  *     report: bool,
  *     wildcards?: array<string, list<string>>
  * }
