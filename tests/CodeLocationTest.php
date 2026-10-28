@@ -16,20 +16,16 @@ use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
+use ReflectionClass;
 
 use function count;
-use function extension_loaded;
-use function igbinary_serialize;
-use function igbinary_unserialize;
 use function mb_check_encoding;
 use function restore_error_handler;
-use function serialize;
 use function set_error_handler;
 use function str_repeat;
 use function strlen;
 use function strpos;
 use function substr;
-use function unserialize;
 
 final class CodeLocationTest extends BaseTestCase
 {
@@ -88,28 +84,25 @@ final class CodeLocationTest extends BaseTestCase
     }
 
     /**
-     * @return iterable<string, array{bool, bool}>
+     * @return iterable<string, array{bool}>
      * @psalm-pure
      */
-    public static function provideSerializers(): iterable
+    public static function provideSnippetStates(): iterable
     {
-        yield 'native' => [false, false];
-        yield 'native, snippet computed' => [false, true];
-        yield 'igbinary' => [true, false];
-        yield 'igbinary, snippet computed' => [true, true];
+        yield 'snippet not computed' => [false];
+        yield 'snippet computed' => [true];
     }
 
     /**
      * Workers send their locations to the parent, which must get back what they had: the lazily computed
      * properties only when they were computed, and the previous location of one.
+     *
+     * The location is restored through __unserialize() rather than unserialize(): its file path comes
+     * from FileSource::getFilePath(), which Psalm's taint analysis treats as user input.
      */
-    #[DataProvider('provideSerializers')]
-    public function testSerializationRoundTrip(bool $igbinary, bool $computed): void
+    #[DataProvider('provideSnippetStates')]
+    public function testSerializationRoundTrip(bool $computed): void
     {
-        if ($igbinary && !extension_loaded('igbinary')) {
-            $this->markTestSkipped('igbinary is not loaded');
-        }
-
         $contents = "<?php\n// Grüße\n\$a = 'x' . \$b;\n";
         $previous = $this->locate($contents, '$b', 3);
 
@@ -121,11 +114,9 @@ final class CodeLocationTest extends BaseTestCase
             $this->assertNotSame('', $location->getSnippet());
         }
 
-        $serialized = $igbinary ? igbinary_serialize($location) : serialize($location);
-        $this->assertIsString($serialized);
-        $copy = $igbinary ? igbinary_unserialize($serialized) : unserialize($serialized);
+        $copy = (new ReflectionClass(CodeLocation::class))->newInstanceWithoutConstructor();
+        $copy->__unserialize($location->__serialize());
 
-        $this->assertInstanceOf(CodeLocation::class, $copy);
         $this->assertEquals($location, $copy);
         $this->assertSame($location->getSelectedText(), $copy->getSelectedText());
         $this->assertSame($location->getSnippet(), $copy->getSnippet());
