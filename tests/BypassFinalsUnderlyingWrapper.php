@@ -18,6 +18,7 @@ use function stream_wrapper_unregister;
  * as PHP's stream wrapper protocol requires.
  *
  * @internal
+ * @psalm-api
  */
 // phpcs:disable PSR1.Methods.CamelCapsMethodName.NotCamelCaps
 final class BypassFinalsUnderlyingWrapper
