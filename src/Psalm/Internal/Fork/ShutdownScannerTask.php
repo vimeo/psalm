@@ -55,6 +55,7 @@ final class ShutdownScannerTask implements Task
                 InitScannerTask::$inherited_unresolved_constants,
             ),
             'missed_global_constants' => $codebase->getMissedGlobalConstants(),
+            'files_to_cache' => $codebase->scanner->getFilesToCache(),
             // the parent registers the functions of autoloaded files from their file storage, see Scanner
             'global_functions' => $codebase->register_autoload_files
                 ? []

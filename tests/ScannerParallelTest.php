@@ -7,16 +7,24 @@ namespace Psalm\Tests;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Codebase\Scanner;
+use Psalm\Internal\Provider\FileStorageCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Scanner\UnresolvedConstant\ClassConstant;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\Progress\RecordingProgress;
+use Psalm\Type;
+use ReflectionMethod;
+use Symfony\Component\Filesystem\Filesystem;
 
+use function array_fill_keys;
 use function define;
 use function defined;
 use function extension_loaded;
 use function in_array;
 use function sprintf;
+use function sys_get_temp_dir;
+use function uniqid;
 
 /**
  * The files an autoloader includes are scanned by several processes, which can't follow the order of the files:
@@ -70,6 +78,17 @@ final class ScannerParallelTest extends TestCase
             false,
         ];
 
+        yield 'the first declaration of a function in a file counts' => [
+            [
+                1 => '<?php if (!function_exists("dup")) { function dup(): int { return 1; } }'
+                    . ' if (!function_exists("dup")) { function dup(): string { return ""; } }',
+            ],
+            [],
+            ['dup' => 'int'],
+            [],
+            false,
+        ];
+
         yield 'a function an earlier file declared is left alone' => [
             [
                 1 => '<?php function dup(): int { return 1; }',
@@ -109,16 +128,15 @@ final class ScannerParallelTest extends TestCase
             null,
         ];
 
+        // every file but the first one looks BASE up, so a process other than the one that scans the first file does
+        $derived = [1 => '<?php define("BASE", (/** @var non-empty-string */ "abc"));'];
+        for ($i = 2; $i <= self::FILES; $i++) {
+            $derived[$i] = sprintf('<?php define("DERIVED_%d", BASE);', $i);
+        }
+
         yield 'a constant defined from the type of a constant of another file' => [
-            [
-                1 => '<?php define("BASE", (/** @var non-empty-string */ "abc"));',
-                2 => '<?php define("DERIVED", BASE);',
-                3 => '<?php define("DERIVED_3", BASE);',
-                4 => '<?php define("DERIVED_4", BASE);',
-                5 => '<?php define("DERIVED_5", BASE);',
-                6 => '<?php define("DERIVED_6", BASE);',
-            ],
-            ['BASE' => 'non-empty-string', 'DERIVED' => 'non-empty-string', 'DERIVED_6' => 'non-empty-string'],
+            $derived,
+            ['BASE' => 'non-empty-string', 'DERIVED_2' => 'non-empty-string', 'DERIVED_70' => 'non-empty-string'],
             [],
             [],
             true,
@@ -187,24 +205,9 @@ final class ScannerParallelTest extends TestCase
         array $unresolved,
         ?bool $rescanned,
     ): void {
-        if (!extension_loaded('pcntl') || !extension_loaded('posix')) {
-            $this->markTestSkipped('Psalm scans in one process without pcntl and posix');
-        }
+        $this->scanAutoloadedFiles($files);
 
         $codebase = $this->project_analyzer->getCodebase();
-
-        for ($i = 1; $i <= self::FILES; $i++) {
-            $path = sprintf('/autoload/f%02d.php', $i);
-            $this->file_provider->registerFile(
-                $path,
-                $files[$i] ?? sprintf('<?php function filler%d(): int { return %d; }', $i, $i),
-            );
-            $codebase->scanner->addFileToDeepScan($path);
-        }
-
-        $codebase->register_autoload_files = true;
-        $codebase->scanner->scanFiles($codebase->classlikes, 3);
-        $codebase->register_autoload_files = false;
 
         $this->assertTrue(in_array('Forking process for scanning' . "\n", $this->progress->debug_messages, true));
 
@@ -234,6 +237,114 @@ final class ScannerParallelTest extends TestCase
         }
     }
 
+    /**
+     * @return iterable<string, array{array<array-key, list<string>>, array<array-key, list<string>>, bool}>
+     * @psalm-pure
+     */
+    public static function provideProcessesDefiningAndLookingUpConstants(): iterable
+    {
+        yield 'a process looks up a constant only it defines' => [[0 => ['X']], [0 => ['X']], false];
+
+        yield 'a constant nobody defines' => [[0 => ['Y']], [0 => ['Y']], false];
+
+        yield 'a process looks up a constant another one defines' => [[0 => ['X'], 1 => []], [1 => ['X']], true];
+
+        yield 'a constant two processes define the same, one of them looks it up' => [
+            [0 => ['X'], 1 => ['X']],
+            [1 => ['X']],
+            true,
+        ];
+
+        yield 'a constant two processes define the same, the first looks it up' => [
+            [0 => ['X'], 1 => ['X']],
+            [0 => ['X']],
+            true,
+        ];
+    }
+
+    /**
+     * @param array<array-key, list<string>> $defined the constants each process defines, as `int`
+     * @param array<array-key, list<string>> $looked_up the constants each process looks up without knowing them
+     */
+    #[DataProvider('provideProcessesDefiningAndLookingUpConstants')]
+    public function testDependsOnScanOrderWhenAnotherProcessDefinesALookedUpConstant(
+        array $defined,
+        array $looked_up,
+        bool $expected,
+    ): void {
+        $pool_data = [];
+        foreach ($defined + $looked_up as $process => $_) {
+            $pool_data[$process] = [
+                'global_constants' => array_fill_keys($defined[$process] ?? [], Type::getInt()),
+                'unresolved_global_constants' => [],
+                'missed_global_constants' => array_fill_keys($looked_up[$process] ?? [], true),
+            ];
+        }
+
+        $this->assertSame(
+            $expected,
+            (new ReflectionMethod(Scanner::class, 'dependsOnScanOrder'))->invoke(null, $pool_data),
+        );
+    }
+
+    public function testTheStorageOfAllFilesIsCachedOnceTheScanIsAccepted(): void
+    {
+        $cache_directory = sys_get_temp_dir() . '/' . uniqid('ScannerParallelTest_');
+        $this->testConfig->cache_directory = $cache_directory;
+
+        try {
+            $this->project_analyzer = new ProjectAnalyzer(
+                $this->testConfig,
+                new Providers(
+                    $this->file_provider,
+                    new FakeParserCacheProvider(),
+                    new FileStorageCacheProvider($this->testConfig, '', true),
+                ),
+                null,
+                [],
+                1,
+                3,
+                $this->progress,
+            );
+
+            // a constant that nothing defines
+            $files = [2 => '<?php define("A", UNKNOWN);'];
+            $this->scanAutoloadedFiles($files);
+
+            $this->assertFalse(
+                in_array('Scanning the files again, one after another' . "\n", $this->progress->debug_messages, true),
+            );
+
+            $cache = $this->project_analyzer->getCodebase()->file_storage_provider->cache;
+            $this->assertNotNull($cache);
+
+            for ($i = 1; $i <= self::FILES; $i++) {
+                $path = sprintf('/autoload/f%02d.php', $i);
+                $this->assertNotNull(
+                    $cache->getLatestFromCache($path, $this->file_provider->getContents($path)),
+                    $path,
+                );
+            }
+        } finally {
+            (new Filesystem())->remove($cache_directory);
+        }
+    }
+
+    public function testClosuresAreNotGlobalFunctions(): void
+    {
+        $this->scanAutoloadedFiles([
+            1 => '<?php function named(): int { return 1; } $closure = function (): int { return 2; };'
+                . ' $arrow = fn(): int => 3;',
+        ]);
+
+        $functions = $this->project_analyzer->getCodebase()->functions->getAllStubbedFunctions();
+
+        $this->assertArrayHasKey('named', $functions);
+        foreach ($functions as $function_id => $function) {
+            $this->assertNotNull($function->cased_name, $function_id);
+        }
+    }
+
     public function testScanRecordsTheConstantsItDoesNotKnowYet(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
@@ -249,7 +360,6 @@ final class ScannerParallelTest extends TestCase
         $codebase->register_autoload_files = false;
 
         $this->assertSame(['UNKNOWN' => true], $codebase->getMissedGlobalConstants());
-        $this->assertSame(1, $codebase->getMissedGlobalConstantLookups());
     }
 
     public function testScanOfProjectFilesDoesNotRecordConstants(): void
@@ -261,7 +371,6 @@ final class ScannerParallelTest extends TestCase
         $codebase->scanner->scanFiles($codebase->classlikes);
 
         $this->assertSame([], $codebase->getMissedGlobalConstants());
-        $this->assertSame(0, $codebase->getMissedGlobalConstantLookups());
     }
 
     public function testInternalConstantsAreNotTheOnesCodeDefined(): void
@@ -276,5 +385,30 @@ final class ScannerParallelTest extends TestCase
         $this->assertTrue($config->isInternalConstant('E_ALL'));
         $this->assertFalse($config->isInternalConstant('PSALM_TEST_USER_CONSTANT'));
         $this->assertFalse($config->isInternalConstant('PSALM_TEST_NO_SUCH_CONSTANT'));
+    }
+
+    /**
+     * @param array<int, string> $files the contents of the autoloaded files by position, the others declare a function
+     */
+    private function scanAutoloadedFiles(array $files): void
+    {
+        if (!extension_loaded('pcntl') || !extension_loaded('posix')) {
+            $this->markTestSkipped('Psalm scans in one process without pcntl and posix');
+        }
+
+        $codebase = $this->project_analyzer->getCodebase();
+
+        for ($i = 1; $i <= self::FILES; $i++) {
+            $path = sprintf('/autoload/f%02d.php', $i);
+            $this->file_provider->registerFile(
+                $path,
+                $files[$i] ?? sprintf('<?php function filler%d(): int { return %d; }', $i, $i),
+            );
+            $codebase->scanner->addFileToDeepScan($path);
+        }
+
+        $codebase->register_autoload_files = true;
+        $codebase->scanner->scanFiles($codebase->classlikes, 3);
+        $codebase->register_autoload_files = false;
     }
 }

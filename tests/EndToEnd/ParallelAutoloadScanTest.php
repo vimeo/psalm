@@ -8,12 +8,16 @@ use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Filesystem\Filesystem;
 
+use function array_map;
 use function file_put_contents;
 use function glob;
+use function implode;
 use function is_dir;
 use function mkdir;
 use function preg_match_all;
+use function range;
 use function realpath;
 use function rmdir;
 use function sprintf;
@@ -68,6 +72,8 @@ final class ParallelAutoloadScanTest extends TestCase
             }
         }
 
+        (new Filesystem())->remove($this->dir . '/cache');
+
         unlink($this->dir . DIRECTORY_SEPARATOR . 'psalm.xml');
         rmdir($this->dir);
 
@@ -89,16 +95,15 @@ final class ParallelAutoloadScanTest extends TestCase
             false,
         ];
 
+        // every file but the first one looks BASE up, so a process other than the one that scans the first file does
+        $derived = [1 => '<?php define("BASE", (/** @var non-empty-string */ "abc"));'];
+        for ($i = 2; $i <= self::FILES; $i++) {
+            $derived[$i] = sprintf('<?php define("DERIVED_%d", BASE);', $i);
+        }
+
         yield 'a constant defined from the type of a constant of another file' => [
-            [
-                1 => '<?php define("BASE", (/** @var non-empty-string */ "abc"));',
-                2 => '<?php define("DERIVED", BASE);',
-                3 => '<?php define("DERIVED_3", BASE);',
-                4 => '<?php define("DERIVED_4", BASE);',
-                5 => '<?php define("DERIVED_5", BASE);',
-                6 => '<?php define("DERIVED_6", BASE);',
-            ],
-            '$base = BASE; $derived = DERIVED; $derived_6 = DERIVED_6;',
+            $derived,
+            '$base = BASE; $derived = DERIVED_2; $derived_last = DERIVED_70;',
             true,
         ];
     }
@@ -132,6 +137,42 @@ final class ParallelAutoloadScanTest extends TestCase
     }
 
     /**
+     * A process that scanned a file against a constant another process redefines must not leave the file in the
+     * cache for the scan in one process that follows.
+     */
+    public function testRescanDoesNotUseTheCacheOfTheProcesses(): void
+    {
+        $this->writeProject(
+            [
+                1 => '<?php if (!defined("X")) { define("X", (/** @var non-empty-string */ "a")); }',
+                // slow, so that the process that scans it is not given the file that reads X
+                2 => '<?php ' . implode(
+                    ' ',
+                    array_map(
+                        static fn(int $i): string => sprintf('function slow%d(): int { return %d; }', $i, $i),
+                        range(1, 3000),
+                    ),
+                ) . ' if (!defined("X")) { define("X", (/** @var int */ 1)); }',
+                4 => '<?php define("DERIVED", X);',
+            ],
+            '$derived = DERIVED;',
+        );
+
+        $serial = $this->runPsalm(['--no-cache', '--threads=1'], $this->dir, true);
+
+        $expected = self::getTraces($serial['STDOUT']);
+        $this->assertSame(['$derived: int'], $expected);
+
+        // the first run writes the cache, the second reads it
+        $cold = $this->runPsalm(['--threads=4', '--debug'], $this->dir, true);
+        $this->assertStringContainsString('Scanning the files again', $cold['STDERR']);
+        $this->assertSame($expected, self::getTraces($cold['STDOUT']));
+
+        $warm = $this->runPsalm(['--threads=4'], $this->dir, true);
+        $this->assertSame($expected, self::getTraces($warm['STDOUT']));
+    }
+
+    /**
      * @param array<int, string> $files
      */
     private function writeProject(array $files, string $code): void
@@ -151,7 +192,7 @@ final class ParallelAutoloadScanTest extends TestCase
         file_put_contents($this->dir . '/vendor/autoload.php', $autoload);
 
         $traced = '';
-        foreach (['dup', 'base', 'derived', 'derived_6'] as $name) {
+        foreach (['dup', 'base', 'derived', 'derived_last'] as $name) {
             if (str_contains($code, '$' . $name . ' ')) {
                 $traced .= ($traced === '' ? '' : ', ') . '$' . $name;
             }
@@ -166,7 +207,7 @@ final class ParallelAutoloadScanTest extends TestCase
             $this->dir . '/psalm.xml',
             '<?xml version="1.0"?>
 <psalm errorLevel="1" findUnusedCode="false" resolveFromConfigFile="true" autoloader="vendor/autoload.php"'
-            . ' xmlns="https://getpsalm.org/schema/config">
+            . ' cacheDirectory="cache" xmlns="https://getpsalm.org/schema/config">
     <projectFiles><directory name="src"/></projectFiles>
 </psalm>
 ',
