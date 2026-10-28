@@ -44,6 +44,7 @@ final class ShutdownAnalyzerTask implements Task
             'file_manipulations'                         => FileManipulationBuffer::getAll(),
             'mixed_counts'                               => $analyzer->getMixedCounts(),
             'function_timings'                           => $analyzer->getFunctionTimings(),
+            'file_timings'                               => $analyzer->getFileTimings(),
             'analyzed_methods'                           => $analyzer->getAnalyzedMethods(),
             'file_maps'                                  => $analyzer->getFileMaps(),
             'possible_method_param_types'                => $analyzer->getPossibleMethodParamTypes(),

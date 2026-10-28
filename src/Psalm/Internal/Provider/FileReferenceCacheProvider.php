@@ -29,6 +29,7 @@ final class FileReferenceCacheProvider
     private const UNKNOWN_MEMBER_CACHE_NAME = 'unknown_member_references';
     private const METHOD_PARAM_USE_CACHE_NAME = 'method_param_uses';
     private const CODE_USE_GRAPH_CACHE_NAME = 'code_use_graph';
+    private const ANALYSIS_TIMINGS_CACHE_NAME = 'analysis_timings';
     /** @var Cache<array> */
     private readonly Cache $cache;
 
@@ -188,5 +189,26 @@ final class FileReferenceCacheProvider
     public function setTypeCoverage(array $mixed_counts): void
     {
         $this->cache->saveItem(self::TYPE_COVERAGE_CACHE_NAME, $mixed_counts);
+    }
+
+    /**
+     * Seconds each file took to analyse in earlier runs, used to schedule the slowest files first.
+     *
+     * @return array<string, float>
+     */
+    public function getCachedAnalysisTimings(): array
+    {
+        /** @var array<string, float>|null $cache_item */
+        $cache_item = $this->cache->getItem(self::ANALYSIS_TIMINGS_CACHE_NAME);
+
+        return $cache_item ?? [];
+    }
+
+    /**
+     * @param array<string, float> $timings
+     */
+    public function setCachedAnalysisTimings(array $timings): void
+    {
+        $this->cache->saveItem(self::ANALYSIS_TIMINGS_CACHE_NAME, $timings);
     }
 }
