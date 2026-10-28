@@ -14,7 +14,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Stringable;
 
-use function array_diff;
+use function array_diff_key;
 use function array_keys;
 use function assert;
 use function count;
@@ -47,6 +47,9 @@ final class Clause implements Stringable
      * representing the formula
      *
      * !$a || $b || $c !== null || is_string($d) || is_int($d)
+     *
+     * Every assertion is keyed by its string form, which is how clauses are compared
+     * (see {@see Clause::contains()} and {@see Algebra::simplifyCNF()}).
      *
      * @var array<string, non-empty-array<string, Assertion>>
      */
@@ -87,6 +90,8 @@ final class Clause implements Stringable
         public bool $generated = false,
         public array $redefined_vars = [],
     ) {
+        assert(self::isKeyedByAssertionString($possibilities));
+
         if ($wedge || !$reconcilable) {
             $this->hash = ($wedge ? 'w' : '') . $creating_object_id;
         } else {
@@ -112,6 +117,23 @@ final class Clause implements Stringable
     }
 
     /**
+     * @param array<string, non-empty-array<string, Assertion>> $possibilities
+     * @psalm-mutation-free
+     */
+    private static function isKeyedByAssertionString(array $possibilities): bool
+    {
+        foreach ($possibilities as $var_possibilities) {
+            foreach ($var_possibilities as $key => $assertion) {
+                if ($key !== (string) $assertion) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * @psalm-mutation-free
      */
     public function contains(Clause $other_clause): bool
@@ -127,7 +149,7 @@ final class Clause implements Stringable
         }
 
         foreach ($other_clause->possibilities as $var => $possible_types) {
-            if (count(array_diff($possible_types, $this->possibilities[$var]))) {
+            if (array_diff_key($possible_types, $this->possibilities[$var])) {
                 return false;
             }
         }
