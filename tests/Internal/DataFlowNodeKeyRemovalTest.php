@@ -10,6 +10,9 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 
 final class DataFlowNodeKeyRemovalTest extends TestCase
 {
+    /**
+     * @psalm-pure
+     */
     private static function assignment(string $var_id, int $start): DataFlowNode
     {
         return DataFlowNode::getForAssignment($var_id, new Raw('<?php // code', 'file.php', 'file.php', $start, $start + 2));
