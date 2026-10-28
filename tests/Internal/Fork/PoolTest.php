@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Internal\Fork;
 
-use Amp\Cancellation;
-use Amp\Parallel\Worker\Task;
-use Amp\Sync\Channel;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\Fork\Pool;
@@ -16,24 +13,21 @@ use function Amp\Future\await;
 use function array_unique;
 use function extension_loaded;
 use function file_exists;
-use function getmypid;
 use function sys_get_temp_dir;
 use function tempnam;
-use function touch;
 use function unlink;
-use function usleep;
 
 final class PoolTest extends TestCase
 {
-    public static string $marker;
+    public static string $marker = '';
 
     #[Override]
     protected function setUp(): void
     {
         parent::setUp();
 
-        if (!extension_loaded('pcntl')) {
-            $this->markTestSkipped('The pool forks its workers');
+        if (!extension_loaded('pcntl') || !extension_loaded('posix')) {
+            $this->markTestSkipped('The pool forks its workers, which needs pcntl and posix');
         }
 
         $marker = tempnam(sys_get_temp_dir(), 'psalm-pool-test');
@@ -97,56 +91,5 @@ final class PoolTest extends TestCase
             $final_pids []= $future->await();
         }
         $this->assertCount(3, array_unique($final_pids));
-    }
-}
-
-/**
- * @implements Task<null, void, void>
- */
-final class PoolTestNoopTask implements Task
-{
-    #[Override]
-    public function run(Channel $channel, Cancellation $cancellation): mixed
-    {
-        return null;
-    }
-}
-
-/**
- * @implements Task<string, void, void>
- */
-final class PoolTestMainTask implements Task
-{
-    public function __construct(private readonly string $file)
-    {
-    }
-
-    #[Override]
-    public function run(Channel $channel, Cancellation $cancellation): string
-    {
-        if ($this->file === 'slow') {
-            // 20s at most, so that a missing final task fails the test instead of hanging it
-            for ($i = 0; $i < 2000 && !file_exists(PoolTest::$marker); $i++) {
-                usleep(10_000);
-            }
-
-            return file_exists(PoolTest::$marker) ? 'slow' : 'timeout';
-        }
-
-        return $this->file;
-    }
-}
-
-/**
- * @implements Task<int, void, void>
- */
-final class PoolTestFinalTask implements Task
-{
-    #[Override]
-    public function run(Channel $channel, Cancellation $cancellation): int
-    {
-        touch(PoolTest::$marker);
-
-        return (int) getmypid();
     }
 }
