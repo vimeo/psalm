@@ -120,8 +120,9 @@ final class Pool
 
     /**
      * Like {@see run()} followed by {@see runAll()}, except that each worker is given $final_task as soon as it has
-     * nothing left to do, instead of once the slowest worker is done. The parent can then receive and merge the
-     * results of the workers that finished early while the others are still busy.
+     * nothing left to do, instead of once the slowest worker is done. The results of the workers that finished early
+     * are therefore received and decoded while the others are still busy. This still returns only once every main
+     * task has finished, so merging the results is left to the caller and starts after the slowest worker is done.
      *
      * @template TResult
      * @template TReceive
