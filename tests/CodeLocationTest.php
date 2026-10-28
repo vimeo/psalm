@@ -17,13 +17,19 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
+use function count;
+use function extension_loaded;
+use function igbinary_serialize;
+use function igbinary_unserialize;
 use function mb_check_encoding;
 use function restore_error_handler;
+use function serialize;
 use function set_error_handler;
 use function str_repeat;
 use function strlen;
 use function strpos;
 use function substr;
+use function unserialize;
 
 final class CodeLocationTest extends BaseTestCase
 {
@@ -79,6 +85,65 @@ final class CodeLocationTest extends BaseTestCase
 
         $this->assertSame($expected, $location->getSnippet());
         $this->assertSame('$a', $location->getSelectedText());
+    }
+
+    /**
+     * @return iterable<string, array{bool, bool}>
+     * @psalm-pure
+     */
+    public static function provideSerializers(): iterable
+    {
+        yield 'native' => [false, false];
+        yield 'native, snippet computed' => [false, true];
+        yield 'igbinary' => [true, false];
+        yield 'igbinary, snippet computed' => [true, true];
+    }
+
+    /**
+     * Workers send their locations to the parent, which must get back what they had: the lazily computed
+     * properties only when they were computed, and the previous location of one.
+     */
+    #[DataProvider('provideSerializers')]
+    public function testSerializationRoundTrip(bool $igbinary, bool $computed): void
+    {
+        if ($igbinary && !extension_loaded('igbinary')) {
+            $this->markTestSkipped('igbinary is not loaded');
+        }
+
+        $contents = "<?php\n// Grüße\n\$a = 'x' . \$b;\n";
+        $previous = $this->locate($contents, '$b', 3);
+
+        $start = strlen("<?php\n// Grüße\n\$a = ");
+        $node = new String_('x', ['startFilePos' => $start, 'endFilePos' => $start + 2, 'startLine' => 3]);
+        $location = new CodeLocation($this->file_analyzer, $node, $previous, true, null, null, 7);
+
+        if ($computed) {
+            $this->assertNotSame('', $location->getSnippet());
+        }
+
+        $serialized = $igbinary ? igbinary_serialize($location) : serialize($location);
+        $this->assertIsString($serialized);
+        $copy = $igbinary ? igbinary_unserialize($serialized) : unserialize($serialized);
+
+        $this->assertInstanceOf(CodeLocation::class, $copy);
+        $this->assertEquals($location, $copy);
+        $this->assertSame($location->getSelectedText(), $copy->getSelectedText());
+        $this->assertSame($location->getSnippet(), $copy->getSnippet());
+        $this->assertSame($location->getLineNumber(), $copy->getLineNumber());
+        $this->assertSame($location->getEndLineNumber(), $copy->getEndLineNumber());
+        $this->assertSame($location->getSelectionBounds(), $copy->getSelectionBounds());
+        $this->assertSame($location->getColumn(), $copy->getColumn());
+        $this->assertEquals($previous, $copy->previous_location);
+    }
+
+    public function testLocationNotAskedForItsSnippetSerializesWithoutTheComputedProperties(): void
+    {
+        $location = $this->locate("<?php\n\$a = 1;\n", '$a', 2);
+        $fresh_property_count = count($location->__serialize());
+
+        $this->assertSame('$a = 1;', $location->getSnippet());
+
+        $this->assertLessThan(count($location->__serialize()), $fresh_property_count);
     }
 
     public function testSnippetOfASelectionEndingTheFile(): void
