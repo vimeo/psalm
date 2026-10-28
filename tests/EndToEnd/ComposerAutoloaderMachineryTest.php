@@ -17,12 +17,14 @@ use function is_dir;
 use function mkdir;
 use function realpath;
 use function rmdir;
+use function str_replace;
 use function str_starts_with;
 use function sys_get_temp_dir;
 use function tempnam;
 use function trim;
 use function unlink;
 
+use const DIRECTORY_SEPARATOR;
 use const GLOB_BRACE;
 
 /**
@@ -117,14 +119,24 @@ final class ComposerAutoloaderMachineryTest extends TestCase
         self::assertStringContainsString('No errors found!', $result['STDOUT']);
 
         $registered = $this->registeredAutoloadFiles($result['STDERR']);
-        self::assertContains($this->project_dir . '/src/helpers.php', $registered);
+        self::assertContains($this->path('src/helpers.php'), $registered);
 
-        self::assertNotContains($this->project_dir . '/vendor/autoload.php', $registered);
-        self::assertNotContains($this->project_dir . '/vendor/composer/autoload_real.php', $registered);
-        self::assertNotContains($this->project_dir . '/vendor/composer/autoload_static.php', $registered);
-        self::assertNotContains($this->project_dir . '/vendor/composer/autoload_files.php', $registered);
-        self::assertNotContains($this->project_dir . '/vendor/composer/ClassLoader.php', $registered);
-        self::assertNotContains($this->project_dir . '/vendor/composer/platform_check.php', $registered);
+        self::assertNotContains($this->path('vendor/autoload.php'), $registered);
+        self::assertNotContains($this->path('vendor/composer/autoload_real.php'), $registered);
+        self::assertNotContains($this->path('vendor/composer/autoload_static.php'), $registered);
+        self::assertNotContains($this->path('vendor/composer/autoload_files.php'), $registered);
+        self::assertNotContains($this->path('vendor/composer/ClassLoader.php'), $registered);
+        self::assertNotContains($this->path('vendor/composer/platform_check.php'), $registered);
+    }
+
+    /**
+     * Psalm reports included files with the native directory separator
+     *
+     * @psalm-capabilities read-props
+     */
+    private function path(string $relative_path): string
+    {
+        return $this->project_dir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative_path);
     }
 
     /**

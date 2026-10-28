@@ -10,16 +10,20 @@ use Psalm\Internal\IncludeCollector;
 
 use function array_diff;
 use function array_keys;
+use function array_map;
+use function array_values;
 use function dirname;
 use function file_put_contents;
 use function get_included_files;
 use function glob;
 use function is_dir;
+use function is_file;
 use function mkdir;
 use function realpath;
 use function rmdir;
 use function rsort;
 use function sort;
+use function str_replace;
 use function sys_get_temp_dir;
 use function uniqid;
 use function unlink;
@@ -132,18 +136,21 @@ final class IncludeCollectorTest extends TestCase
     public function testPsalmSourceFilesAreFiltered(): void
     {
         $psalm_dir = dirname(__DIR__, 2) . '/src/Psalm';
-        $loaded = get_included_files();
+
+        $issue_files = glob($psalm_dir . '/Issue/*.php');
+        self::assertNotFalse($issue_files);
 
         // an issue class that no other test has autoloaded yet: it only declares a class
-        $psalm_file = null;
-        foreach (array_diff((array) glob($psalm_dir . '/Issue/*.php'), $loaded) as $candidate) {
-            $psalm_file = $candidate;
-            break;
-        }
+        $candidates = array_values(array_diff(
+            array_map(self::normalizePath(...), $issue_files),
+            get_included_files(),
+        ));
 
-        if ($psalm_file === null) {
+        if ($candidates === []) {
             self::markTestSkipped('All Psalm issue classes were already loaded');
         }
+
+        $psalm_file = $candidates[0];
 
         $kept = $this->createFile('src/helpers.php');
 
@@ -156,19 +163,28 @@ final class IncludeCollectorTest extends TestCase
         self::assertSame([$kept], $collector->getFilteredIncludedFiles());
     }
 
-    /**
-     * @psalm-suppress UnresolvableInclude
-     */
     private static function includeFiles(string ...$files): void
     {
         foreach ($files as $file) {
-            require_once $file;
+            if (is_file($file)) {
+                require_once $file;
+            }
         }
+    }
+
+    /**
+     * get_included_files() reports paths with the native directory separator
+     *
+     * @psalm-pure
+     */
+    private static function normalizePath(string $path): string
+    {
+        return str_replace('/', DIRECTORY_SEPARATOR, $path);
     }
 
     private function createFile(string $relative_path): string
     {
-        $path = $this->root . '/' . $relative_path;
+        $path = self::normalizePath($this->root . '/' . $relative_path);
         $dir = dirname($path);
 
         if (!is_dir($dir)) {
