@@ -7865,6 +7865,23 @@ final class TaintTest extends TestCase
                     echo $tainted->current();',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintWhatIsSentToAGeneratorSentToItselfThroughAnotherGenerator' => [
+                'code' => '<?php // --taint-analysis
+                    function receiver(): Generator {
+                        $received = yield 1;
+                        echo $received;
+                    }
+
+                    function relay(): Generator {
+                        $sent = yield 1;
+                        $own = relay();
+                        /** @var Generator $target */
+                        $target = rand() ? $sent : $own;
+                        // what is sent here reaches `$sent`, so it may be a generator too: the one of `receiver()`
+                        $target->send(rand() ? receiver() : (string) $_GET["value"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintWhatAGeneratorYields' => [
                 'code' => '<?php // --taint-analysis
                     /** @return Generator<int, string> */
