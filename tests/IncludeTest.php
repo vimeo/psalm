@@ -1022,24 +1022,21 @@ final class IncludeTest extends TestCase
     }
 
     /**
-     * A method whose parameter type names an unknown class is not analyzed, and it must not be the first analysis
+     * A method whose signature type names an unknown class is not analyzed, and it must not be the first analysis
      * of it only: a class analyzed again (when another file includes it) has to be skipped the same way, or the
      * issues depend on which files a process analyzed before.
      */
-    public function testMethodWithUnknownParamClassIsSkippedWhenAnalyzedAgain(): void
+    #[DataProvider('providerMethodWithUnknownClassInType')]
+    public function testMethodWithUnknownClassInTypeIsSkippedWhenAnalyzedAgain(string $method_header, string $return): void
     {
-        $codebase = $this->project_analyzer->getCodebase();
-        $config = $codebase->config;
-        $config->throw_exception = false;
-
         $class_file = (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php';
         $includer_file = (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php';
 
         $this->addFile($class_file, '<?php
             class Foo {
-                /** @param Unknown $a */
-                public function bar($a): void {
+                ' . $method_header . ' {
                     missing_function();
+                    ' . $return . '
                 }
             }
         ');
@@ -1047,25 +1044,111 @@ final class IncludeTest extends TestCase
             require_once __DIR__ . "/file1.php";
         ');
 
-        foreach ([$class_file, $includer_file] as $file_path) {
+        $this->assertSame(
+            ['UndefinedDocblockClass@3'],
+            $this->analyzeFilesInOrder([$class_file, $includer_file]),
+        );
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     * @psalm-pure
+     */
+    public static function providerMethodWithUnknownClassInType(): array
+    {
+        return [
+            'paramType' => ['/** @param Unknown $a */ public function bar($a): void', ''],
+            'returnType' => ['/** @return list<Unknown> */ public function bar(): array', 'return [];'],
+        ];
+    }
+
+    /**
+     * A type that is declared outside the project is checked at the call, and the call reports its unknown class
+     * every time: it must not depend on whether an earlier call (or file, or worker process) checked it first.
+     */
+    public function testUnknownClassInExternalReturnTypeIsReportedAtEveryCall(): void
+    {
+        $library_file = (string) getcwd() . DIRECTORY_SEPARATOR . 'library.php';
+        $first_caller = (string) getcwd() . DIRECTORY_SEPARATOR . 'first_caller.php';
+        $second_caller = (string) getcwd() . DIRECTORY_SEPARATOR . 'second_caller.php';
+
+        $this->addFile($library_file, '<?php
+            class Library {
+                /** @return Unknown */
+                public static function staticMethod() { return 1; }
+
+                /** @return Unknown */
+                public function method() { return 1; }
+            }
+
+            /** @return Unknown */
+            function func() { return 1; }
+        ');
+        $this->addFile($first_caller, '<?php
+            function first(Library $library): void {
+                Library::staticMethod();
+                Library::staticMethod();
+                $library->method();
+                $library->method();
+                func();
+                func();
+            }
+        ');
+        $this->addFile($second_caller, '<?php
+            function second(Library $library): void {
+                Library::staticMethod();
+                $library->method();
+                func();
+            }
+        ');
+
+        $this->project_analyzer->getCodebase()->scanner->addFilesToDeepScan([$library_file => $library_file]);
+
+        $this->assertSame(
+            [
+                'UndefinedDocblockClass@3',
+                'UndefinedDocblockClass@4',
+                'UndefinedDocblockClass@5',
+                'UndefinedDocblockClass@6',
+                'UndefinedDocblockClass@7',
+                'UndefinedDocblockClass@8',
+                'UndefinedDocblockClass@3',
+                'UndefinedDocblockClass@4',
+                'UndefinedDocblockClass@5',
+            ],
+            $this->analyzeFilesInOrder([$first_caller, $second_caller]),
+        );
+    }
+
+    /**
+     * @param list<string> $file_paths
+     * @return list<string> the issues of the analysis, as "type@line" in the order of the files
+     */
+    private function analyzeFilesInOrder(array $file_paths): array
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        foreach ($file_paths as $file_path) {
             $codebase->scanner->addFilesToDeepScan([$file_path => $file_path]);
             $codebase->addFilesToAnalyze([$file_path => $file_path]);
         }
 
         $codebase->scanFiles();
 
-        foreach ([$class_file, $includer_file] as $file_path) {
+        foreach ($file_paths as $file_path) {
             (new FileAnalyzer($this->project_analyzer, $file_path, $config->shortenFileName($file_path)))->analyze();
         }
 
-        $issue_types = [];
+        $issues = [];
 
-        foreach (IssueBuffer::getIssuesData() as $file_issues) {
-            foreach ($file_issues as $issue) {
-                $issue_types[$issue->type] = true;
+        foreach ($file_paths as $file_path) {
+            foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+                $issues[] = $issue->type . '@' . $issue->line_from;
             }
         }
 
-        $this->assertSame(['UndefinedDocblockClass' => true], $issue_types);
+        return $issues;
     }
 }

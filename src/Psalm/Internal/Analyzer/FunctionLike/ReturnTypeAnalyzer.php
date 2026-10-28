@@ -1105,11 +1105,7 @@ final class ReturnTypeAnalyzer
             $function_like_analyzer instanceof MethodAnalyzer,
         );
 
-        $checker->traverseArray($type->getAtomicTypes());
-
-        if ($checker->hasErrors()) {
-            $checker->forgetChecked();
-
+        if (!$checker->check($type->getAtomicTypes())) {
             return false;
         }
 

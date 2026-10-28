@@ -193,25 +193,29 @@ final class TypeChecker extends TypeVisitor
         return $result;
     }
 
-    public function hasErrors(): bool
-    {
-        return $this->has_errors;
-    }
-
     /**
-     * A type that failed the check has to stay unchecked: checking it again reports the same errors, instead of
-     * accepting it because some earlier analysis (of the same method in the context of another file) found them
-     *
+     * @param non-empty-array<TypeNode> $types
+     * @return bool whether the types are fine. A type that failed the check stays unchecked, so that checking it
+     *              again reports the same errors, instead of accepting it because an earlier analysis (of the same
+     *              method in the context of another file) found them
      * @psalm-external-mutation-free
      */
-    public function forgetChecked(): void
+    public function check(array $types): bool
     {
+        $this->traverseArray($types);
+
+        if (!$this->has_errors) {
+            return true;
+        }
+
         foreach ($this->checked_types as $type) {
             /** @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment Cache, doesn't affect anything else */
             $type->checked = false;
         }
 
         $this->checked_types = [];
+
+        return false;
     }
 
     private function markChecked(Atomic|Union|MutableUnion $type): void
