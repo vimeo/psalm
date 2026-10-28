@@ -450,11 +450,8 @@ final class ScalarTypeComparator
             return false;
         }
 
-        if ($container_type_part instanceof TTraitString
-            && $input_type_part instanceof TLiteralClassString
-            && $codebase->classlikes->traitExists($input_type_part->value)
-        ) {
-            return true;
+        if ($container_type_part instanceof TTraitString && $input_type_part instanceof TLiteralClassString) {
+            return $codebase->classlikes->traitExists($input_type_part->value);
         }
 
         if (($input_type_part instanceof TClassString
