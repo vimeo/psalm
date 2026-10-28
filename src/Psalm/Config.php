@@ -12,6 +12,7 @@ use Composer\Semver\VersionParser;
 use DOMAttr;
 use DOMDocument;
 use DOMElement;
+use Generator;
 use InvalidArgumentException;
 use JsonException;
 use LogicException;
@@ -66,6 +67,7 @@ use XdgBaseDir\Xdg;
 use stdClass;
 
 use function array_any;
+use function array_column;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
@@ -169,6 +171,25 @@ final class Config
     final public const REPORT_INFO = 'info';
     final public const REPORT_ERROR = 'error';
     final public const REPORT_SUPPRESS = 'suppress';
+
+    /**
+     * The packages whose Psalm plugin is enabled when they are installed (see loadLibraryPlugins)
+     */
+    private const LIBRARY_PLUGIN_PACKAGES = [
+        'webmozart/assert',
+    ];
+
+    /**
+     * The first-party plugins, which Psalm requires, enabled when composer.json requires their library (see
+     * loadLibraryPlugins): library => plugin class
+     */
+    private const FIRST_PARTY_PLUGINS = [
+        'phpunit/phpunit' => 'Psalm\PhpUnitPlugin\Plugin',
+        'mockery/mockery' => 'Psalm\MockeryPlugin\Plugin',
+        'symfony/framework-bundle' => 'Psalm\SymfonyPsalmPlugin\Plugin',
+        'laravel/framework' => 'Psalm\LaravelPlugin\Plugin',
+        'sabre/event' => 'Psalm\SabreEventPlugin\Plugin',
+    ];
 
     /**
      * @var array<string>
@@ -443,6 +464,11 @@ final class Config
      * Whether to load the stubs of the libraries the analysed code uses (see visitStubFiles())
      */
     public bool $load_library_stubs = true;
+
+    /**
+     * Whether to enable the plugins the installed packages of LIBRARY_PLUGIN_PACKAGES ship
+     */
+    public bool $load_library_plugins = true;
 
     /**
      * The directory of the library stubs, `<vendor>/<package>.phpstub`: by default Psalm's `stubs/libraries`
@@ -1050,6 +1076,7 @@ final class Config
             'runTaintAnalysis' => 'run_taint_analysis',
             'usePhpStormMetaPath' => 'use_phpstorm_meta_path',
             'loadLibraryStubs' => 'load_library_stubs',
+            'loadLibraryPlugins' => 'load_library_plugins',
             'allowInternalNamedArgumentsCalls' => 'allow_internal_named_arg_calls',
             'allowNamedArgumentCalls' => 'allow_named_arg_calls',
             'findUnusedPsalmSuppress' => 'find_unused_psalm_suppress',
@@ -1498,6 +1525,32 @@ final class Config
                     }
 
                     $config->addPluginClass((string) $plugin_class_name, $plugin_config);
+                }
+            }
+        }
+
+        if ($config->load_library_plugins) {
+            $vendor_dir = (string) ($composer_json['config']['vendor-dir'] ?? 'vendor');
+            $library_plugin_classes = [...self::getLibraryPluginClasses(
+                Path::isAbsolute($vendor_dir) ? $vendor_dir : $config->base_dir . DIRECTORY_SEPARATOR . $vendor_dir,
+            )];
+
+            foreach (['require', 'require-dev'] as $section) {
+                foreach ($composer_json[$section] ?? [] as $package => $_) {
+                    $plugin_class_name = self::FIRST_PARTY_PLUGINS[strtolower((string) $package)] ?? null;
+                    if ($plugin_class_name !== null) {
+                        $library_plugin_classes[] = $plugin_class_name;
+                    }
+                }
+            }
+
+            foreach ($library_plugin_classes as $plugin_class_name) {
+                if (!array_any(
+                    $config->plugin_classes,
+                    static fn(array $plugin): bool =>
+                        strtolower(ltrim($plugin['class'], '\\')) === strtolower($plugin_class_name),
+                )) {
+                    $config->addPluginClass($plugin_class_name);
                 }
             }
         }
@@ -2764,6 +2817,35 @@ final class Config
         $codebase->register_stub_files = false;
 
         self::reportStubDocblockIssues($codebase, $user_stub_paths);
+    }
+
+    /**
+     * The plugin classes the packages of LIBRARY_PLUGIN_PACKAGES installed in $vendor_dir declare
+     *
+     * @return Generator<int, string>
+     */
+    private static function getLibraryPluginClasses(string $vendor_dir): Generator
+    {
+        $installed_path = $vendor_dir . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'installed.json';
+        if (!is_file($installed_path)) {
+            return;
+        }
+
+        $installed = json_decode((string) file_get_contents($installed_path), true);
+        if (!is_array($installed) || !isset($installed['packages']) || !is_array($installed['packages'])) {
+            return;
+        }
+
+        $extras = array_column($installed['packages'], 'extra', 'name');
+        foreach (self::LIBRARY_PLUGIN_PACKAGES as $package) {
+            if (isset($extras[$package]['psalm']['pluginClass'])
+                && is_array($extras[$package])
+                && is_array($extras[$package]['psalm'])
+                && is_string($extras[$package]['psalm']['pluginClass'])
+            ) {
+                yield $extras[$package]['psalm']['pluginClass'];
+            }
+        }
     }
 
     /**

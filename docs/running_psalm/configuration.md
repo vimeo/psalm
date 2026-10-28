@@ -362,6 +362,25 @@ When `true`, Psalm will report class and interface methods that override a metho
 ```
 When `true`, Psalm loads the stubs it ships for the libraries your code uses (in `stubs/libraries`), which declare how their methods pass taints along and what they may do (their [capabilities](../annotating_code/purity_model.md)). A stub is only loaded when the scan finds one of the classes it declares, or the scanned code (e.g. the files your autoloader includes) declares one of its functions, and it only refines what it declares of them. Defaults to `true`.
 
+#### loadLibraryPlugins
+```xml
+<psalm
+  loadLibraryPlugins="[bool]"
+>
+```
+When `true`, Psalm enables these plugins without listing them in [`<plugins>`](plugins/using_plugins.md). Defaults to `true`.
+
+| Plugin | Enabled when |
+|---|---|
+| `psalm/plugin-phpunit` | `composer.json` requires `phpunit/phpunit` |
+| `psalm/plugin-mockery` | `composer.json` requires `mockery/mockery` |
+| `psalm/plugin-symfony` | `composer.json` requires `symfony/framework-bundle` |
+| `psalm/plugin-laravel` | `composer.json` requires `laravel/framework` |
+| `psalm/plugin-sabre-event` | `composer.json` requires `sabre/event` |
+| the plugin of `webmozart/assert` (2.4 and later) | `webmozart/assert` is installed |
+
+Psalm itself requires the `psalm/*` plugins, so they don't need installing.
+
 #### phpVersion
 ```xml
 <psalm
