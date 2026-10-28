@@ -13,6 +13,8 @@ use Psalm\IssueBuffer;
 use Psalm\Type\TaintKind;
 
 use function array_reverse;
+use function implode;
+use function json_decode;
 use function json_encode;
 use function sort;
 use function str_starts_with;
@@ -197,6 +199,42 @@ final class TaintFlowGraphTest extends TestCase
                 ),
             );
         }
+    }
+
+    /**
+     * The search for the generators what is sent can come from tells apart the calls it enters a body through
+     * only up to a bound, then matches any call from there: what reaches a node through more calls than that
+     * must still be searched on, or the generators behind the excess calls are never linked to the send.
+     */
+    public function testSendIsLinkedToTheGeneratorsOfMoreCallsThanTheSearchTellsApart(): void
+    {
+        $count = 17;
+        $code = '<?php
+            /** @psalm-taint-specialize */
+            function keep(Generator $values): Generator {
+                return $values;
+            }
+        ';
+        $calls = [];
+
+        for ($i = 0; $i < $count; $i++) {
+            $code .= "function values$i(): Generator { echo (yield 0); }\n";
+            $calls[] = "keep(values$i())";
+        }
+
+        $code .= '$pool = [' . implode(', ', $calls) . '];
+            $pool[rand(0, ' . ($count - 1) . ')]->send((string) $_GET["value"]);';
+
+        $lines = [];
+
+        foreach ($this->analyzeWithMergeOrder(['Sends.php' => $code], false) as $issue) {
+            /** @var array{string, string, int, ...} $issue_data */
+            $issue_data = json_decode($issue, true, flags: JSON_THROW_ON_ERROR);
+            $lines[$issue_data[2]] = true;
+        }
+
+        // one echo of a sent value per generator function, each on its own line
+        $this->assertCount($count, $lines);
     }
 
     /**
