@@ -950,6 +950,7 @@ final class PreloaderList {
         \Psalm\Internal\Provider\ReturnTypeProvider\GetObjectVarsReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\HexdecReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ImagickPixelColorReturnTypeProvider::class,
+        \Psalm\Internal\Provider\ReturnTypeProvider\ImplodeReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\InArrayReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\IteratorToArrayReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\MbInternalEncodingReturnTypeProvider::class,
