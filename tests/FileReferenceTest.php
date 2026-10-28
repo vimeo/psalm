@@ -7,6 +7,7 @@ namespace Psalm\Tests;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -165,7 +166,9 @@ final class FileReferenceTest extends TestCase
 
         self::assertArrayHasKey('b::foo', $cache->getAnalyzedMethodCache()[$file_path] ?? []);
         self::assertNotSame([], $cache->getFileMapCache()[$file_path] ?? []);
-        self::assertSame('InvalidReturnStatement', $cache->getCachedIssues()[$file_path][0]->type ?? null);
+        $issue = $cache->getCachedIssues()[$file_path][0] ?? null;
+        self::assertInstanceOf(IssueData::class, $issue);
+        self::assertSame('InvalidReturnStatement', $issue->type);
         self::assertSame([$file_path], $cache->getCachedFileReferences()[$file_path]['i'] ?? null);
     }
 
