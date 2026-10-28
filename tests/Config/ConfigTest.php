@@ -2033,6 +2033,11 @@ final class ConfigTest extends TestCase
                 '<psalm></psalm>',
                 ['Psalm\LaravelPlugin\Plugin'],
             ],
+            'requiredTestbench' => [
+                ['composer.json' => '{"require-dev": {"orchestra/testbench": "^11"}}'],
+                '<psalm></psalm>',
+                ['Psalm\LaravelPlugin\Plugin'],
+            ],
             'requiredSabreEvent' => [
                 ['composer.json' => '{"require": {"sabre/event": "^5"}}'],
                 '<psalm></psalm>',
