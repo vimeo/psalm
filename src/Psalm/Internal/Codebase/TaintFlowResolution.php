@@ -185,6 +185,15 @@ final class TaintFlowResolution
     private const WIDENING_STATES = 16;
 
     /**
+     * How many states a node must have for the flows reaching it in more to forget all their open assignments, not
+     * only those below their innermost one (see widenOpenAssignments()). Widened flows are still told apart by the
+     * key of their innermost open array assignment: a node of the code that handles a render array of any keys (a
+     * Drupal `$form`, passed through many functions) is reached with each of them, in each of the contexts reaching
+     * it. Past those, a fetch takes the flows of a node whatever the key it was assigned under.
+     */
+    private const FORGETTING_STATES = 64;
+
+    /**
      * How many filters an entry has at most (see getFilter()): each fact a filter knows about the calls entering
      * it can be combined with the others, in a filter of the filter, so they grow with the product of the keys
      * fetched at each depth (a constructor of a value object reading every property of its arguments, ...). Past
@@ -388,9 +397,10 @@ final class TaintFlowResolution
     private array $open_assignment_truncations = [];
 
     /**
-     * Open assignments key => the open assignments widened (see widenOpenAssignments())
+     * Open assignments key => the open assignments widened to the innermost $depth ones of each expression type
+     * (see widenOpenAssignments())
      *
-     * @var array<int, int>
+     * @var array<int, array<int, int>>
      */
     private array $open_assignment_widenings = [];
 
@@ -1746,15 +1756,19 @@ final class TaintFlowResolution
     /**
      * The open assignments $open_assignments of a flow reaching a node with WIDENING_STATES states: only their
      * innermost open assignment of each expression type, and none of those of the call entering their context
-     * known. A fetch only ignores an open assignment the flow knows, so forgetting some only lets the flow go
-     * on through more fetches.
+     * known; of a flow reaching a node with FORGETTING_STATES states ($depth 0): none at all. A fetch only ignores
+     * an open assignment the flow knows, so forgetting some only lets the flow go on through more fetches.
+     *
+     * Nor does a widened flow know its element slot: without it, an assignment of the element of a loop under its
+     * key (see applyPathType()) is one under a key not known, which every fetch takes. The slots of a node's flows
+     * would otherwise multiply with their innermost open assignment, by the loops of the code they go through.
      *
      * @psalm-external-mutation-free
      */
-    private function widenOpenAssignments(int $open_assignments): int
+    private function widenOpenAssignments(int $open_assignments, int $depth): int
     {
-        if (isset($this->open_assignment_widenings[$open_assignments])) {
-            return $this->open_assignment_widenings[$open_assignments];
+        if (isset($this->open_assignment_widenings[$depth][$open_assignments])) {
+            return $this->open_assignment_widenings[$depth][$open_assignments];
         }
 
         [$made, $closed] = $this->open_assignments[$open_assignments];
@@ -1762,18 +1776,19 @@ final class TaintFlowResolution
         foreach (self::FAMILIES as $family => $_) {
             $made[$family] ??= [];
             $closed[$family] ??= self::NO_CALL;
-            self::capOpenAssignments($made, $closed, $family, 1);
+            self::capOpenAssignments($made, $closed, $family, $depth);
 
             if ($closed[$family] !== self::NO_CALL) {
                 $closed[$family] = self::FORGOTTEN;
             }
         }
 
-        // the slot is that of the innermost ones
-        return $this->open_assignment_widenings[$open_assignments] = $this->internOpenAssignments(
+        $slot = $this->open_assignment_slots[$open_assignments];
+
+        return $this->open_assignment_widenings[$depth][$open_assignments] = $this->internOpenAssignments(
             $made,
             $closed,
-            $this->open_assignment_slots[$open_assignments],
+            $slot >= 0 ? self::NO_SLOT : $slot,
         );
     }
 
@@ -1874,10 +1889,14 @@ final class TaintFlowResolution
 
         $copied_position = $this->copied_position;
 
-        if (isset($this->state_ids[$node_id])
-            && count($this->state_ids[$node_id]) >= self::WIDENING_STATES
-        ) {
-            $open_assignments = $this->widenOpenAssignments($open_assignments);
+        if (isset($this->state_ids[$node_id])) {
+            $node_states = count($this->state_ids[$node_id]);
+
+            if ($node_states >= self::FORGETTING_STATES) {
+                $open_assignments = $this->widenOpenAssignments($open_assignments, 0);
+            } elseif ($node_states >= self::WIDENING_STATES) {
+                $open_assignments = $this->widenOpenAssignments($open_assignments, 1);
+            }
         }
 
         $key = (($context + 1) << 32) | $open_assignments;

@@ -8925,6 +8925,27 @@ final class TaintTest extends TestCase
                     exec(keep(["k20" => $t20])["k20"]);',
                 'error_message' => 'TaintedShell',
             ],
+            'taintFlowReachingANodeWithManyKeysOfAnArrayPutBackUnderEachInALoop' => [
+                // the arrays of the flows reaching render() are made of more keys than a node can hold states for,
+                // even widened to their innermost key and element slot: the flow of the last one must still be found
+                'code' => '<?php // --taint-analysis
+                    function render(array $form): array {
+                        foreach ($form as $key => $element) {
+                            $form[$key] = $element;
+                        }
+
+                        return $form;
+                    }
+
+                    $form = [];
+' . implode('', array_map(
+                    static fn(int $i): string => 'if (rand(0, 1)) { $form = ["k' . $i . '" => (string) $_GET["q"]]; }' . "\n",
+                    range(1, 100),
+                )) . '
+                    $form = render($form);
+                    echo $form["k100"];',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintArrayItemWrittenByAForeachByReferenceBeforeABreak' => [
                 'code' => '<?php // --taint-analysis
                     $values = ["key" => ""];
