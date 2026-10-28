@@ -948,7 +948,8 @@ final class Psalm
         }
 
         echo 'Created psalm.xml with errorLevel ' . $init_level
-            . ' (picked from the issues found; 1 is the strictest, 8 the most lenient)' . "\n"
+            . ($issues_by_file ? ' (picked from the issues found' : ' (no issues found')
+            . '; 1 is the strictest, 8 the most lenient)' . "\n"
             . 'Run Psalm again to analyze the project' . "\n";
         exit(0);
     }
