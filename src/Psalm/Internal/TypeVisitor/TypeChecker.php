@@ -201,11 +201,13 @@ final class TypeChecker extends TypeVisitor
     /**
      * A type that failed the check has to stay unchecked: checking it again reports the same errors, instead of
      * accepting it because some earlier analysis (of the same method in the context of another file) found them
+     *
+     * @psalm-external-mutation-free
      */
     public function forgetChecked(): void
     {
         foreach ($this->checked_types as $type) {
-            /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
+            /** @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment Cache, doesn't affect anything else */
             $type->checked = false;
         }
 
