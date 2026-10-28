@@ -6,6 +6,8 @@ namespace Psalm\Internal\Cli;
 
 use Closure;
 use Fidry\CpuCoreCounter\CpuCoreCounter;
+use Psalm\Internal\ExecutionEnvironment\SystemCommandExecutor;
+use RuntimeException;
 
 use function array_filter;
 use function array_map;
@@ -13,12 +15,10 @@ use function count;
 use function ctype_digit;
 use function explode;
 use function file_get_contents;
-use function function_exists;
+use function implode;
 use function intval;
-use function is_string;
 use function max;
 use function min;
-use function shell_exec;
 use function trim;
 
 use const PHP_OS_FAMILY;
@@ -51,6 +51,7 @@ final class DefaultThreadCount
      * @param Closure(string): ?string $read_command runs a shell command, returns its stdout or null on failure
      * @param Closure(string): ?string $read_file returns the contents of a file or null if it can't be read
      * @return int<1, max>
+     * @psalm-impure
      */
     public static function resolve(
         int $all_cores,
@@ -80,6 +81,7 @@ final class DefaultThreadCount
     /**
      * @param Closure(string): ?string $read_command
      * @param Closure(string): ?string $read_file
+     * @psalm-impure
      */
     public static function getPerformanceCoreCount(
         Closure $read_command,
@@ -100,7 +102,7 @@ final class DefaultThreadCount
     /**
      * Counts the CPUs in a kernel cpu list such as `0-7,16,18-19`.
      *
-     * @return ?int<1, max> null if the list is empty or malformed
+     * @return ?int null if the list is empty or malformed
      * @psalm-pure
      */
     public static function parseCpuList(string $list): ?int
@@ -127,6 +129,7 @@ final class DefaultThreadCount
 
     /**
      * @param Closure(string): ?string $read_command
+     * @psalm-impure
      */
     private static function getDarwinPerformanceCoreCount(Closure $read_command): ?int
     {
@@ -148,6 +151,7 @@ final class DefaultThreadCount
 
     /**
      * @param Closure(string): ?string $read_file
+     * @psalm-impure
      */
     private static function getLinuxPerformanceCoreCount(Closure $read_file): ?int
     {
@@ -171,13 +175,11 @@ final class DefaultThreadCount
     private static function shellCommandReader(): Closure
     {
         return static function (string $command): ?string {
-            if (!function_exists('shell_exec')) {
+            try {
+                return implode("\n", (new SystemCommandExecutor())->execute($command));
+            } catch (RuntimeException) {
                 return null;
             }
-
-            $output = @shell_exec($command);
-
-            return is_string($output) ? $output : null;
         };
     }
 
