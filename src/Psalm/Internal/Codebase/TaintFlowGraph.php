@@ -53,6 +53,7 @@ use function end;
 use function implode;
 use function ksort;
 use function min;
+use function str_contains;
 use function strcmp;
 use function strlen;
 use function strpos;
@@ -883,6 +884,11 @@ final class TaintFlowGraph extends DataFlowGraph
             while ($queue) {
                 [$id, $calls] = array_pop($queue);
 
+                if ($calls !== null && isset($widened[$id])) {
+                    // searched from matching any call, which includes this nesting
+                    continue;
+                }
+
                 [$unspecialized_id, $specialization_key] = self::splitSpecializedId($id);
 
                 if (isset($this->generator_sent_nodes[$unspecialized_id])) {
@@ -1043,21 +1049,35 @@ final class TaintFlowGraph extends DataFlowGraph
     private function getReverseEdges(): array
     {
         $reverse = [];
+        $specialized_ids = [];
 
         foreach ($this->forward_edges as $from_id => $destinations) {
-            self::linkSpecialization($reverse, $from_id);
+            if (str_contains($from_id, self::SPECIALIZATION_SEPARATOR)) {
+                $specialized_ids[$from_id] = true;
+            }
 
             foreach ($destinations as $to_id => $_) {
                 $reverse[$to_id][$from_id] = true;
-                self::linkSpecialization($reverse, $to_id);
+
+                if (str_contains($to_id, self::SPECIALIZATION_SEPARATOR)) {
+                    $specialized_ids[$to_id] = true;
+                }
             }
         }
 
         foreach ($this->nodes as $node) {
             if ($node->unspecialized_id !== null) {
-                $reverse[$node->id][$node->unspecialized_id] = true;
-                $reverse[$node->unspecialized_id][$node->id] = true;
+                $specialized_ids[$node->id] = true;
             }
+        }
+
+        // the order of the destinations of a node and of the nodes depends on the order the graphs of the forked
+        // workers are merged in, and the search in linkGeneratorSends() keeps the first nestings of calls that
+        // reach a node
+        ksort($specialized_ids);
+
+        foreach ($specialized_ids as $id => $_) {
+            self::linkSpecialization($reverse, (string) $id);
         }
 
         return $reverse;
