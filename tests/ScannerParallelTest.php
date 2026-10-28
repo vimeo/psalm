@@ -289,6 +289,8 @@ final class ScannerParallelTest extends TestCase
 
     public function testTheStorageOfAllFilesIsCachedOnceTheScanIsAccepted(): void
     {
+        $this->requireForking();
+
         $cache_directory = sys_get_temp_dir() . '/' . uniqid('ScannerParallelTest_');
         $this->testConfig->cache_directory = $cache_directory;
 
@@ -392,9 +394,7 @@ final class ScannerParallelTest extends TestCase
      */
     private function scanAutoloadedFiles(array $files): void
     {
-        if (!extension_loaded('pcntl') || !extension_loaded('posix')) {
-            $this->markTestSkipped('Psalm scans in one process without pcntl and posix');
-        }
+        $this->requireForking();
 
         $codebase = $this->project_analyzer->getCodebase();
 
@@ -410,5 +410,12 @@ final class ScannerParallelTest extends TestCase
         $codebase->register_autoload_files = true;
         $codebase->scanner->scanFiles($codebase->classlikes, 3);
         $codebase->register_autoload_files = false;
+    }
+
+    private function requireForking(): void
+    {
+        if (!extension_loaded('pcntl') || !extension_loaded('posix')) {
+            $this->markTestSkipped('Psalm scans in one process without pcntl and posix');
+        }
     }
 }
