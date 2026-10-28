@@ -53,6 +53,8 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     /**
      * The literal message of a native #[\Deprecated] attribute, if any.
+     *
+     * @var non-empty-string|null
      */
     public ?string $deprecated_message = null;
 

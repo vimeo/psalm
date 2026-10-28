@@ -829,7 +829,11 @@ final class ClassLikeNodeScanner
                             && $arg->type instanceof Union
                             && $arg->type->isSingleStringLiteral()
                         ) {
-                            $storage->deprecated_message = $arg->type->getSingleStringLiteral()->value;
+                            $message = $arg->type->getSingleStringLiteral()->value;
+
+                            if ($message !== '') {
+                                $storage->deprecated_message = $message;
+                            }
                         }
                     }
                 }
