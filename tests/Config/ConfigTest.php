@@ -1982,6 +1982,65 @@ final class ConfigTest extends TestCase
                 '<psalm></psalm>',
                 [],
             ],
+            'requiredPhpUnit' => [
+                ['composer.json' => '{"require-dev": {"phpunit/phpunit": "^12"}}'],
+                '<psalm></psalm>',
+                ['Psalm\PhpUnitPlugin\Plugin'],
+            ],
+            'requiredMockery' => [
+                ['composer.json' => '{"require-dev": {"mockery/mockery": "^1"}}'],
+                '<psalm></psalm>',
+                ['Psalm\MockeryPlugin\Plugin'],
+            ],
+            'requiredSymfony' => [
+                ['composer.json' => '{"require": {"symfony/framework-bundle": "^7"}}'],
+                '<psalm></psalm>',
+                ['Psalm\SymfonyPsalmPlugin\Plugin'],
+            ],
+            'requiredLaravel' => [
+                ['composer.json' => '{"require": {"laravel/framework": "^12"}}'],
+                '<psalm></psalm>',
+                ['Psalm\LaravelPlugin\Plugin'],
+            ],
+            'requiredSabreEvent' => [
+                ['composer.json' => '{"require": {"sabre/event": "^5"}}'],
+                '<psalm></psalm>',
+                ['Psalm\SabreEventPlugin\Plugin'],
+            ],
+            'requiredLibrariesOfSeveralPlugins' => [
+                [
+                    'composer.json' => '{"require": {"laravel/framework": "^12", "psr/log": "^3"}, '
+                        . '"require-dev": {"phpunit/phpunit": "^12"}}',
+                    'vendor/composer/installed.json' => $webmozart_assert,
+                ],
+                '<psalm></psalm>',
+                ['Webmozart\Assert\PsalmPlugin', 'Psalm\LaravelPlugin\Plugin', 'Psalm\PhpUnitPlugin\Plugin'],
+            ],
+            'requiredLibraryInAnotherCase' => [
+                ['composer.json' => '{"require-dev": {"PHPUnit/PHPUnit": "^12"}}'],
+                '<psalm></psalm>',
+                ['Psalm\PhpUnitPlugin\Plugin'],
+            ],
+            'requiredLibraryInBothSections' => [
+                ['composer.json' => '{"require": {"sabre/event": "^5"}, "require-dev": {"sabre/event": "^5"}}'],
+                '<psalm></psalm>',
+                ['Psalm\SabreEventPlugin\Plugin'],
+            ],
+            'requiredLibraryOfAnEnabledPlugin' => [
+                ['composer.json' => '{"require-dev": {"phpunit/phpunit": "^12"}}'],
+                '<psalm><plugins><pluginClass class="\psalm\phpunitplugin\plugin"/></plugins></psalm>',
+                ['\psalm\phpunitplugin\plugin'],
+            ],
+            'requiredLibraryDisabled' => [
+                ['composer.json' => '{"require-dev": {"phpunit/phpunit": "^12"}}'],
+                '<psalm loadLibraryPlugins="false"></psalm>',
+                [],
+            ],
+            'requiredOtherLibraries' => [
+                ['composer.json' => '{"require": {"symfony/console": "^7", "doctrine/orm": "^3"}}'],
+                '<psalm></psalm>',
+                [],
+            ],
         ];
     }
 

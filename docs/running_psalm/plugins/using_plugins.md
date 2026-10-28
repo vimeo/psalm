@@ -24,7 +24,7 @@ To disable a plugin, run `vendor/bin/psalm-plugin disable plugin-vendor/plugin-p
 
 `vendor/bin/psalm-plugin show` will show you a list of all local plugins (enabled and disabled).
 
-The plugin of `webmozart/assert` is enabled whenever the package is installed; set [`loadLibraryPlugins="false"`](../configuration.md#loadlibraryplugins) to turn that off.
+Psalm ships with the PHPUnit, Mockery, Symfony, Laravel and sabre/event plugins, and enables each when `composer.json` requires its library, like the plugin of `webmozart/assert` when that is installed: see [`loadLibraryPlugins`](../configuration.md#loadlibraryplugins).
 
 ## Using your own plugins
 

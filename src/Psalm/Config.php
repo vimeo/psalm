@@ -179,6 +179,18 @@ final class Config
     ];
 
     /**
+     * The first-party plugins, which Psalm requires, enabled when composer.json requires their library (see
+     * loadLibraryPlugins): library => plugin class
+     */
+    private const FIRST_PARTY_PLUGINS = [
+        'phpunit/phpunit' => 'Psalm\PhpUnitPlugin\Plugin',
+        'mockery/mockery' => 'Psalm\MockeryPlugin\Plugin',
+        'symfony/framework-bundle' => 'Psalm\SymfonyPsalmPlugin\Plugin',
+        'laravel/framework' => 'Psalm\LaravelPlugin\Plugin',
+        'sabre/event' => 'Psalm\SabreEventPlugin\Plugin',
+    ];
+
+    /**
      * @var array<string>
      */
     public static array $ERROR_LEVELS = [
@@ -1518,11 +1530,22 @@ final class Config
 
         if ($config->load_library_plugins) {
             $vendor_dir = $composer_json['config']['vendor-dir'] ?? 'vendor';
-            foreach (self::getLibraryPluginClasses(
+            $library_plugin_classes = self::getLibraryPluginClasses(
                 Path::isAbsolute((string) $vendor_dir)
                     ? (string) $vendor_dir
                     : $config->base_dir . DIRECTORY_SEPARATOR . (string) $vendor_dir,
-            ) as $plugin_class_name) {
+            );
+
+            foreach (['require', 'require-dev'] as $section) {
+                foreach ($composer_json[$section] ?? [] as $package => $_) {
+                    $plugin_class_name = self::FIRST_PARTY_PLUGINS[strtolower((string) $package)] ?? null;
+                    if ($plugin_class_name !== null) {
+                        $library_plugin_classes[] = $plugin_class_name;
+                    }
+                }
+            }
+
+            foreach ($library_plugin_classes as $plugin_class_name) {
                 if (!array_any(
                     $config->plugin_classes,
                     static fn(array $plugin): bool =>

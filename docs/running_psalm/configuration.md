@@ -368,7 +368,18 @@ When `true`, Psalm loads the stubs it ships for the libraries your code uses (in
   loadLibraryPlugins="[bool]"
 >
 ```
-When `true`, Psalm enables the plugins some libraries ship when they are installed (in `vendor/composer/installed.json`), without listing them in [`<plugins>`](plugins/using_plugins.md): those of `webmozart/assert` (2.4 and later). Defaults to `true`.
+When `true`, Psalm enables these plugins without listing them in [`<plugins>`](plugins/using_plugins.md). Defaults to `true`.
+
+| Plugin | Enabled when |
+|---|---|
+| `psalm/plugin-phpunit` | `composer.json` requires `phpunit/phpunit` |
+| `psalm/plugin-mockery` | `composer.json` requires `mockery/mockery` |
+| `psalm/plugin-symfony` | `composer.json` requires `symfony/framework-bundle` |
+| `psalm/plugin-laravel` | `composer.json` requires `laravel/framework` |
+| `psalm/plugin-sabre-event` | `composer.json` requires `sabre/event` |
+| the plugin of `webmozart/assert` (2.4 and later) | `webmozart/assert` is installed |
+
+Psalm itself requires the `psalm/*` plugins, so they don't need installing.
 
 #### phpVersion
 ```xml
