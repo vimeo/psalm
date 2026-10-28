@@ -24,12 +24,16 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use ReflectionProperty;
 
+use function array_keys;
 use function microtime;
+use function restore_error_handler;
+use function set_error_handler;
 use function str_replace;
 use function sys_get_temp_dir;
 use function uniqid;
 
 use const DIRECTORY_SEPARATOR;
+use const E_WARNING;
 
 final class CacheTest extends TestCase
 {
@@ -165,6 +169,78 @@ final class CacheTest extends TestCase
         $in_memory = new ReflectionProperty(Cache::class, 'cache');
         self::assertSame($retained, $in_memory->getValue($cache) !== []);
         self::assertSame('item', $cache->getItem('key', 'hash'));
+    }
+
+    public function testConsolidatedEntriesAreOnlyUnserializedWhenUsed(): void
+    {
+        $config = $this->createCacheConfig();
+
+        $cache = $this->openCache($config);
+        $cache->saveItem('a', 'item a', 'hash a');
+        $cache->saveItem('b', 'item b', 'hash b');
+        $cache->consolidate();
+        unset($cache);
+
+        $cache = $this->openCache($config);
+        $in_memory = new ReflectionProperty(Cache::class, 'cache');
+        self::assertSame([], $in_memory->getValue($cache));
+
+        self::assertSame('hash b', $cache->getHash('b'));
+        self::assertNull($cache->getHash('missing'));
+        self::assertNull($cache->getItem('a', 'stale hash'));
+        self::assertSame([], $in_memory->getValue($cache));
+
+        self::assertSame('item a', $cache->getItem('a', 'hash a'));
+        self::assertSame(['a'], array_keys($in_memory->getValue($cache)));
+        self::assertSame('item a', $cache->getItem('a', null));
+    }
+
+    public function testConsolidatingAgainKeepsEntriesNobodyUsed(): void
+    {
+        $config = $this->createCacheConfig();
+
+        $cache = $this->openCache($config);
+        $cache->saveItem('used', 'old', 'old hash');
+        $cache->saveItem('unused', 'item', 'hash');
+        $cache->consolidate();
+        unset($cache);
+
+        $cache = $this->openCache($config);
+        // the hash is unchanged, so this must not replace the consolidated item
+        $cache->saveItem('unused', 'ignored', 'hash');
+        $cache->saveItem('used', 'new', 'new hash');
+        $cache->saveItem('added', 'added item', 'added hash');
+        $cache->consolidate();
+        unset($cache);
+
+        $cache = $this->openCache($config);
+        self::assertSame('item', $cache->getItem('unused', 'hash'));
+        self::assertSame('new', $cache->getItem('used', 'new hash'));
+        self::assertNull($cache->getItem('used', 'old hash'));
+        self::assertSame('added item', $cache->getItem('added', 'added hash'));
+    }
+
+    /**
+     * @return Cache<string>
+     */
+    private function openCache(TestConfig $config): Cache
+    {
+        // Cache creates its directory unless it exists, which PHPUnit would report as a warning
+        set_error_handler(static fn(): bool => true, E_WARNING);
+        try {
+            return new Cache($config, 'test', [], true);
+        } finally {
+            restore_error_handler();
+        }
+    }
+
+    private function createCacheConfig(): TestConfig
+    {
+        $config = new TestConfig();
+        $config->cache_directory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'psalm-cache-test-' . uniqid('', true);
+        $config->array_cache = true;
+
+        return $config;
     }
 
     /**
