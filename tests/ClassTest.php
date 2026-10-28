@@ -533,15 +533,39 @@ final class ClassTest extends TestCase
                     enum Suit { case Hearts; }
                     class_alias(Suit::class, "SuitAlias");
 
-                    function f(): Suit {
-                        return SuitAlias::Hearts;
-                    }
+                    $case = SuitAlias::Hearts;',
+                'assertions' => [
+                    '$case===' => 'enum(Suit::Hearts)',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classAliasEnumCaseThroughClassString' => [
+                'code' => '<?php
+                    enum Suit { case Hearts; }
+                    class_alias(Suit::class, "SuitAlias");
 
                     /** @param SuitAlias::class $enum */
-                    function g(string $enum): Suit {
+                    function hearts(string $enum): Suit {
                         return $enum::Hearts;
                     }',
                 'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classAliasClassLiteralKeepsAliasSpelling' => [
+                'code' => '<?php
+                    enum Suit {}
+                    class_alias(Suit::class, "SuitAlias");
+                    interface HasLabel {}
+                    class_alias(HasLabel::class, "LabelAlias");
+
+                    $enum = SuitAlias::class;
+                    $interface = LabelAlias::class;',
+                'assertions' => [
+                    '$enum===' => 'SuitAlias::class',
+                    '$interface===' => 'LabelAlias::class',
+                ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
@@ -607,6 +631,20 @@ final class ClassTest extends TestCase
                     /** @psalm-import-type Row from RowsAlias */
                     final class UsesRow {
                         /** @param Row $r */
+                        public function id(array $r): int {
+                            return $r["id"];
+                        }
+                    }',
+            ],
+            'classAliasImportTypeInIntersection' => [
+                'code' => '<?php
+                    /** @psalm-type Row = array{id: int} */
+                    final class Rows {}
+                    class_alias(Rows::class, "RowsAlias");
+
+                    /** @psalm-import-type Row from RowsAlias */
+                    final class UsesRow {
+                        /** @param Row&array{name: string} $r */
                         public function id(array $r): int {
                             return $r["id"];
                         }
@@ -1606,6 +1644,18 @@ final class ClassTest extends TestCase
                     PHP,
                 'error_message' => 'DuplicateProperty',
                 'ignored_issues' => [],
+            ],
+            'classAliasRepeatedNonRepeatableAttribute' => [
+                'code' => '<?php
+                    #[Attribute]
+                    final class Tag {}
+                    class_alias(Tag::class, "TagAlias");
+
+                    #[TagAlias, TagAlias]
+                    final class Tagged {}',
+                'error_message' => 'Attribute TagAlias is not repeatable',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'classAliasDocblockConstant' => [
                 'code' => '<?php
