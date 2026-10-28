@@ -45,7 +45,7 @@ final class InitScannerTask implements Task
         $codebase->scanner->isForked();
         self::$inherited_constants = $codebase->getAllStubbedConstants();
         self::$inherited_unresolved_constants = $codebase->getAllUnresolvedGlobalConstants();
-        $codebase->resetMissedGlobalConstants();
+        $codebase->resetGlobalConstantRecords();
         FileStorageProvider::deleteAll();
         ClassLikeStorageProvider::deleteAll();
 
