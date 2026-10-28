@@ -30,12 +30,14 @@ use function is_dir;
 use function is_int;
 use function mkdir;
 use function pack;
+use function serialize;
 use function stream_get_contents;
 use function strlen;
 use function substr;
 use function substr_compare;
 use function unlink;
 use function unpack;
+use function unserialize;
 use function usleep;
 
 use const DIRECTORY_SEPARATOR;
@@ -116,9 +118,12 @@ final class Cache
         $this->lock = $lock;
 
         if (file_exists($this->dir.'consolidated') && $this->arrayCache) {
+            // The entries are already serialized (and compressed) by $this->serializer, so the file around them is
+            // plain: running the whole blob through the compressor again would cost time and save nothing.
             /** @var array<string, list{string, string}> */
-            $this->consolidated = $this->serializer->unserialize(
+            $this->consolidated = unserialize(
                 Providers::safeFileGetContents($this->dir.'consolidated'),
+                ['allowed_classes' => false],
             );
         }
     }
@@ -138,9 +143,15 @@ final class Cache
                 $hashLen = unpack('V', $key)[1];
                 $hash = substr($key, 4, $hashLen);
                 $key = substr($key, 4+$hashLen);
-                Assert::notNull($this->getItem($key, $hash));
+                $path = substr($f->getPathname(), 0, -5);
+                // The file holds exactly what $this->serializer->serialize() returned for the item,
+                // which is also how consolidated entries are stored: no need to unserialize and serialize again.
+                $serialized = file_get_contents($path);
+                Assert::notFalse($serialized);
+                unset($this->cache[$key]);
+                $this->consolidated[$key] = [$hash, $serialized];
                 unlink($f->getPathname());
-                unlink(substr($f->getPathname(), 0, -5));
+                unlink($path);
             }
         }
         $entries = $this->consolidated;
@@ -148,7 +159,7 @@ final class Cache
             $entries[$key] = [$hash, $this->serializer->serialize($item)];
         }
 
-        file_put_contents($this->dir . 'consolidated', $this->serializer->serialize($entries), LOCK_EX);
+        file_put_contents($this->dir . 'consolidated', serialize($entries), LOCK_EX);
         flock($this->lock, LOCK_UN);
         flock($this->lock, LOCK_SH);
     }
