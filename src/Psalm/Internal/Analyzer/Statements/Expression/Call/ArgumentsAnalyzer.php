@@ -23,6 +23,7 @@ use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\InternalTaintSourceMap;
+use Psalm\Internal\Codebase\NosqlEqualityOperand;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -153,6 +154,16 @@ final class ArgumentsAnalyzer
             }
 
             if ($function_params === null) {
+                if ($arg->value instanceof PhpParser\Node\Expr\Array_ && $statements_analyzer->taint_flow_graph) {
+                    NosqlEqualityOperand::markArgument(
+                        $statements_analyzer->getCodebase(),
+                        $method_id,
+                        null,
+                        null,
+                        $arg->value,
+                    );
+                }
+
                 if (self::evaluateArbitraryParam(
                     $statements_analyzer,
                     $arg,
@@ -181,6 +192,17 @@ final class ArgumentsAnalyzer
                 $param = $function_params[$argument_offset];
             } elseif ($last_param && $last_param->is_variadic) {
                 $param = $last_param;
+            }
+
+            // the operands of the `$eq` of the fields of a MongoDB filter literal
+            if ($arg->value instanceof PhpParser\Node\Expr\Array_ && $statements_analyzer->taint_flow_graph) {
+                NosqlEqualityOperand::markArgument(
+                    $statements_analyzer->getCodebase(),
+                    $method_id,
+                    $function_params,
+                    $param,
+                    $arg->value,
+                );
             }
 
             $by_ref = $param && $param->by_ref;
@@ -1861,113 +1883,149 @@ final class ArgumentsAnalyzer
             }
         }
 
-        if (($var_id && isset($context->vars_in_scope[$var_id]))
-            || ($method_id
+        $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+        $context->inside_by_ref_offset = $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
+            && self::phpTakesArgumentByReference($method_id, $argument_offset);
+
+        try {
+            if (($var_id && isset($context->vars_in_scope[$var_id]))
+                || ($method_id
+                    && in_array(
+                        $method_id,
+                        $builtin_array_functions,
+                        true,
+                    ))
+            ) {
+                $was_inside_assignment = $context->inside_assignment;
+                $context->inside_assignment = true;
+
+                // if the variable is in scope, get or we're in a special array function,
+                // figure out its type before proceeding
+                if (ExpressionAnalyzer::analyze(
+                    $statements_analyzer,
+                    $arg->value,
+                    $context,
+                ) === false) {
+                    $context->inside_assignment = $was_inside_assignment;
+
+                    return false;
+                }
+
+                $context->inside_assignment = $was_inside_assignment;
+            }
+
+            // special handling for array sort
+            if ($argument_offset === 0
+                && $method_id
                 && in_array(
                     $method_id,
                     $builtin_array_functions,
                     true,
-                ))
-        ) {
-            $was_inside_assignment = $context->inside_assignment;
-            $context->inside_assignment = true;
-
-            // if the variable is in scope, get or we're in a special array function,
-            // figure out its type before proceeding
-            if (ExpressionAnalyzer::analyze(
-                $statements_analyzer,
-                $arg->value,
-                $context,
-            ) === false) {
-                $context->inside_assignment = $was_inside_assignment;
-
-                return false;
-            }
-
-            $context->inside_assignment = $was_inside_assignment;
-        }
-
-        // special handling for array sort
-        if ($argument_offset === 0
-            && $method_id
-            && in_array(
-                $method_id,
-                $builtin_array_functions,
-                true,
-            )
-        ) {
-            if (in_array($method_id, ['array_pop', 'array_shift'], true)) {
-                ArrayFunctionArgumentsAnalyzer::handleByRefArrayAdjustment(
-                    $statements_analyzer,
-                    $arg,
-                    $context,
-                    $method_id === 'array_shift',
-                );
-
-                return null;
-            }
-
-            // noops
-            if (in_array($method_id, ['reset', 'end', 'next', 'prev', 'ksort'], true)) {
-                return null;
-            }
-
-            if (($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
-                && $arg_value_type->hasArray()
+                )
             ) {
-                /**
-                 * @var TArray|TKeyedArray
-                 */
-                $array_type = $arg_value_type->getArray();
+                if (in_array($method_id, ['array_pop', 'array_shift'], true)) {
+                    ArrayFunctionArgumentsAnalyzer::handleByRefArrayAdjustment(
+                        $statements_analyzer,
+                        $arg,
+                        $context,
+                        $method_id === 'array_shift',
+                    );
 
-                if ($array_type instanceof TKeyedArray) {
-                    $array_type = $array_type->getGenericArrayType();
+                    return null;
                 }
 
-                $by_ref_type = new Union([$array_type]);
+                // noops
+                if (in_array($method_id, ['reset', 'end', 'next', 'prev', 'ksort'], true)) {
+                    return null;
+                }
 
-                AssignmentAnalyzer::assignByRefParam(
+                if (($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
+                    && $arg_value_type->hasArray()
+                ) {
+                    /**
+                     * @var TArray|TKeyedArray
+                     */
+                    $array_type = $arg_value_type->getArray();
+
+                    if ($array_type instanceof TKeyedArray) {
+                        $array_type = $array_type->getGenericArrayType();
+                    }
+
+                    $by_ref_type = new Union([$array_type]);
+
+                    AssignmentAnalyzer::assignByRefParam(
+                        $statements_analyzer,
+                        $arg->value,
+                        $by_ref_type,
+                        $by_ref_type,
+                        $context,
+                        false,
+                    );
+
+                    return null;
+                }
+            }
+
+            if ($method_id === 'socket_select') {
+                if (ExpressionAnalyzer::analyze(
                     $statements_analyzer,
                     $arg->value,
-                    $by_ref_type,
-                    $by_ref_type,
                     $context,
-                    false,
-                );
+                ) === false) {
+                    return false;
+                }
+            }
 
-                return null;
+            if (!$arg->value instanceof PhpParser\Node\Expr\Variable) {
+                $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
+                if (!isset($suppressed_issues['EmptyArrayAccess'])) {
+                    $statements_analyzer->addSuppressedIssues(['EmptyArrayAccess']);
+                }
+
+                $v = ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context);
+
+                if (!isset($suppressed_issues['EmptyArrayAccess'])) {
+                    $statements_analyzer->removeSuppressedIssues(['EmptyArrayAccess']);
+                }
+
+                if ($v === false) {
+                    return false;
+                }
+            }
+
+            return null;
+        } finally {
+            $context->inside_by_ref_offset = $was_inside_by_ref_offset;
+        }
+    }
+
+    /**
+     * Whether PHP takes the argument by reference, creating the array offset passed as it: a stub may take by
+     * reference what PHP doesn't, as the one of fclose() does to close the resource it is given
+     */
+    private static function phpTakesArgumentByReference(?string $method_id, int $argument_offset): bool
+    {
+        $callables = $method_id === null ? null : InternalCallMapHandler::getCallablesFromCallMap($method_id);
+
+        if ($callables === null) {
+            return true;
+        }
+
+        foreach ($callables as $callable) {
+            $params = $callable->params ?? [];
+            $param = $params[$argument_offset] ?? null;
+
+            if ($param === null && $params !== [] && $params[count($params) - 1]->is_variadic) {
+                $param = $params[count($params) - 1];
+            }
+
+            if ($param !== null && $param->by_ref) {
+                return true;
             }
         }
 
-        if ($method_id === 'socket_select') {
-            if (ExpressionAnalyzer::analyze(
-                $statements_analyzer,
-                $arg->value,
-                $context,
-            ) === false) {
-                return false;
-            }
-        }
-
-        if (!$arg->value instanceof PhpParser\Node\Expr\Variable) {
-            $suppressed_issues = $statements_analyzer->getSuppressedIssues();
-
-            if (!isset($suppressed_issues['EmptyArrayAccess'])) {
-                $statements_analyzer->addSuppressedIssues(['EmptyArrayAccess']);
-            }
-
-            $v = ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context);
-
-            if (!isset($suppressed_issues['EmptyArrayAccess'])) {
-                $statements_analyzer->removeSuppressedIssues(['EmptyArrayAccess']);
-            }
-
-            if ($v === false) {
-                return false;
-            }
-        }
-
-        return null;
+        return false;
     }
 
     /**

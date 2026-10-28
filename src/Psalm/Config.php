@@ -587,6 +587,7 @@ final class Config
         "simplexml" => null,
         "soap" => null,
         "xdebug" => null,
+        "zstd" => null,
     ];
 
     /**
@@ -2606,7 +2607,7 @@ final class Config
             if (str_starts_with($file_path, 'phar:\\\\')) {
                 $file_path = 'phar://'. substr($file_path, 7);
             }
-            $codebase->scanner->addFileToDeepScan($file_path);
+            $codebase->scanner->addStubFileToDeepScan($file_path);
             if ($is_user_stub) {
                 $user_stub_paths[] = $file_path;
             }
@@ -2748,7 +2749,7 @@ final class Config
             if (str_starts_with($file_path, 'phar:\\\\')) {
                 $file_path = 'phar://' . substr($file_path, 7);
             }
-            $codebase->scanner->addFileToDeepScan($file_path);
+            $codebase->scanner->addStubFileToDeepScan($file_path);
             if ($is_user_stub) {
                 $user_stub_paths[] = $file_path;
             }

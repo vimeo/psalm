@@ -219,9 +219,60 @@ function show(Model $model): void {
   `$model->toArray()['title']` are tainted. What is under a key the analysis doesn't know (an array whose keys aren't
   literals, or a key read with a variable) may be any property, and a key that names no property of the class is
   still returned under that key.
-+ When `$name` isn't a literal string, the call sets or returns every property it may name.
++ When `$name` isn't a literal string, the call sets or returns every property it may name. A copy loop,
+  `foreach ($values as $name => $value) { $model->set($name, $value); }`, sets each property to what is under its
+  name in `$values`, as `($values) -> $this->{key}` does, when `$name` and `$value` are still the key and the value of
+  the loop.
 + For a class with [`@psalm-taint-specialize`](avoiding_false_positives.md#specializing-taints-in-classes), properties
   are tracked per object.
+
+### Properties held in an array property
+
+Models often hold their properties in an array property under their names, and their methods read and write them
+there. `@psalm-taint-property-bag` on the class names that array property: in the methods of the class and of the
+classes extending it, an element of it under a literal key is the property of that name.
+
+```php
+<?php // --taint-analysis
+/** @psalm-taint-property-bag $properties */
+abstract class Model
+{
+    /** @var array<string, mixed> */
+    protected array $properties = [];
+
+    abstract public function __get(string $name): mixed;
+}
+
+/**
+ * @property string $title
+ * @property string $body
+ */
+final class Article extends Model
+{
+    public function setTitle(string $title): void {
+        $this->properties['title'] = $title;
+    }
+
+    public function getBody(): string {
+        return (string) $this->properties['body'];
+    }
+}
+
+function save(Article $article): void {
+    $article->setTitle($_GET['title'] ?? '');
+}
+
+function show(Article $article): void {
+    echo $article->title;     // TaintedHtml
+    echo $article->getBody(); // no issue
+}
+```
+
++ `$this->properties['title']` reads `$this->title`, and `$this->properties['title'] = $value` sets it, also under
+  further keys (`$this->properties['tags']['main'] = $tag`). They meet `$object->title`, `@property` tags and the
+  flows of [properties set and got by name](#properties-set-and-got-by-name).
++ An element under a key that isn't a literal, and the whole array, are only the array property: declare the flows
+  of the methods setting and getting properties by name with `@psalm-flow`.
 
 ### A property and its elements
 
@@ -296,12 +347,23 @@ Plugins can add flows that annotations can't express with these `Codebase` metho
 
 + `getTaintNode($source, $label, $location, $value_type = null)`: a node for a value at a location. The taints of
   `$value_type` flow into it. To make an expression carry what reaches the node, use
-  `$type->addParentNodes([$node->id => $node])`.
+  `$type->addParentNodes([$node])`.
 + `getTaintPropertyNode('Class::$name')`: the node holding a property's value. The property doesn't need to be declared.
 + `addTaintSink($taint_id, $location, $taints)`: adds a sink and returns it.
 + `addTaintPath($source, $from, $to, $path_type = '=', $added_taints = 0, $removed_taints = 0)`: connects two nodes.
++ `addTaintPropertyAssignment($source, $value, 'Class::$name')`: assigns the node `$value` to an instance property
+  of an object of the class, as `$object->name = ` does: what the parent classes sharing the property and the
+  subclasses read of it gets the value too.
++ `getTaintReturnNode($source, $function, $call_location = null)`, `getTaintArgumentNode($source, $function, $offset,
+  $call_location = null)` and `getTaintReceiverNode($source, 'Class::method', $call_location)`: the nodes of what a
+  function (`'ns\f'`), a method (`'Class::method'`) or a closure (its `Closure`/`ArrowFunction` node) returns, of its
+  parameter at `$offset` and of the object it runs on, for a call the code doesn't show (e.g. a framework's). Given
+  the location of the call, these are the nodes of that call if Psalm tells its calls apart (see
+  `@psalm-taint-specialize`); the receiver node only exists then (null otherwise).
 + `tracksTaintFlow($source)`: false when taints aren't tracked there, e.g. when `TaintedInput` is suppressed. The
   methods above then add nothing.
 
 See [examples/plugins/TaintModelFields.php](https://github.com/vimeo/psalm/blob/master/examples/plugins/TaintModelFields.php),
-which tracks ORM model fields from `set()` to `get()`.
+which tracks ORM model fields from `set()` to `get()`, and
+[examples/plugins/TaintPageComponents.php](https://github.com/vimeo/psalm/blob/master/examples/plugins/TaintPageComponents.php),
+which outputs what the components of a page render, as a framework would.

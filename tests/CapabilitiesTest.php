@@ -30,6 +30,39 @@ final class CapabilitiesTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticReturnOfASubclassOfAPurityTemplatedClassIsTheCalledClass' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-purity-template P
+                     * @psalm-purity-template D
+                     */
+                    abstract class Base {
+                        final public static function create(): static {
+                            return new static();
+                        }
+
+                        final protected function __construct() {}
+                    }
+
+                    /**
+                     * @psalm-purity-template D
+                     * @extends Base[impure, D]
+                     */
+                    class Block extends Base {
+                        public function add(string $child): static {
+                            return $this;
+                        }
+                    }
+
+                    class Page extends Block {}
+
+                    final class AdminPage extends Page {}
+
+                    $page = AdminPage::create()->add("child");',
+                'assertions' => [
+                    '$page===' => 'AdminPage',
+                ],
+            ],
             'pureGeneratorWithoutReturn' => [
                 'code' => '<?php
                     /**
@@ -405,6 +438,19 @@ final class CapabilitiesTest extends TestCase
                         $temp = new SplTempFileObject();
                         $temp->fwrite("line");
                         return $count;
+                    }',
+            ],
+            'temporaryFilesRequireIo' => [
+                'code' => '<?php
+                    /** @psalm-capabilities io */
+                    function copyToTemporaryFile(string $path): bool {
+                        $source = fopen($path, "r");
+                        $temp = tmpfile();
+                        if ($source === false || $temp === false) {
+                            return false;
+                        }
+
+                        return stream_copy_to_stream($source, $temp) !== false && tempnam("/tmp", "x") !== false;
                     }',
             ],
             'splObserverBindingItsPurityIsMutationFree' => [
@@ -3344,6 +3390,14 @@ final class CapabilitiesTest extends TestCase
                         return filesize($file) === 0;
                     }',
                 'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on filesize requires io',
+            ],
+            'tmpfileRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function makeTemporaryFile(): bool {
+                        return tmpfile() !== false;
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on tmpfile requires io',
             ],
             'isUploadedFileReadsGlobals' => [
                 'code' => '<?php

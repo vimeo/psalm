@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -32,6 +33,90 @@ final class ArrayAssignmentTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
 
         $this->assertFalse(isset($context->vars_in_scope['$foo[\'a\']']));
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, array<string, string>}>
+     */
+    public static function providerItemsBeyondMaxShapedArraySize(): iterable
+    {
+        yield 'keyed items' => [
+            '<?php
+                $a = ["a" => 1, "b" => "x", "c" => null, "d" => 2.5, "e" => 3];',
+            ['$a' => 'array{a: 1, b: \'x\', c: null, ...<\'d\'|\'e\', 3|float(2.5)>}'],
+        ];
+
+        yield 'list items' => [
+            '<?php
+                $a = [1, "x", null, 2.5, 3];',
+            ['$a' => 'list{1, \'x\', null, ...<3|float(2.5)>}'],
+        ];
+
+        yield 'items of an unpacked iterable' => [
+            '<?php
+                $a = ["a" => 1, "b" => "x", "c" => null, ...$it, "d" => 2.5, "e" => 3];',
+            ['$a' => 'array{a: 1, b: \'x\', c: null, ...<\'d\'|\'e\'|int, 3|float>}'],
+        ];
+
+        yield 'items of an unpacked array with a fallback' => [
+            '<?php
+                $a = ["a" => 1, "b" => "x", "c" => null, "d" => 2.5, ...$map, ...$it];',
+            ['$a' => 'array{a: 1|bool, b: \'x\'|bool, c: bool|null, ...<int|string, bool|float>}'],
+        ];
+
+        yield 'item of unknown type' => [
+            '<?php
+                $a = ["a" => 1, "b" => "x", "c" => null, "d" => $mixed, "e" => 3];',
+            ['$a' => 'array{a: 1, b: \'x\', c: null, ...<\'d\'|\'e\', 3|mixed>}'],
+        ];
+
+        yield 'constants' => [
+            '<?php
+                class C {
+                    const A = ["a" => 1, "b" => "x", "c" => null, "d" => 2.5, "e" => 3];
+                    const B = [1, "x", null, 2.5, 3];
+                    const M = ["a" => 1, "b" => "x", "c" => null, "d" => 2.5, "e" => 3.5];
+                    const U = [...self::B, ...self::M, "z" => true];
+                    const W = [...[], ...self::M, 5 => "v", 6 => "w", 7 => "u", 8 => 1.5, "k" . "x" => 9];
+                }
+                $a = C::A;
+                $b = C::B;
+                $u = C::U;
+                $w = C::W;',
+            [
+                '$a' => 'non-empty-array<\'a\'|\'b\'|\'c\'|\'d\'|\'e\', \'x\'|1|3|float(2.5)|null>',
+                '$b' => 'non-empty-list<\'x\'|1|3|float(2.5)|null>',
+                '$u' => 'non-empty-array<int|string, \'x\'|1|3|float(2.5)|float(3.5)|null|true>',
+                '$w' => 'non-empty-array<5|6|7|8|string, \'u\'|\'v\'|\'w\'|\'x\'|1|9|float(1.5)|float(2.5)|float(3.5)|null>',
+            ],
+        ];
+    }
+
+    /**
+     * @param array<string, string> $expected_types
+     */
+    #[DataProvider('providerItemsBeyondMaxShapedArraySize')]
+    public function testItemsBeyondMaxShapedArraySize(string $code, array $expected_types): void
+    {
+        $this->testConfig->max_shaped_array_size = 2;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $this->addFile('somefile.php', $code);
+
+        $context = new Context();
+        $context->vars_in_scope['$it'] = Type::parseString('iterable<int, float>');
+        $context->vars_in_scope['$map'] = Type::parseString('iterable<string, bool>');
+        $context->vars_in_scope['$mixed'] = Type::getMixed();
+
+        $this->analyzeFile('somefile.php', $context);
+
+        $actual_types = [];
+        foreach ($expected_types as $var_id => $_) {
+            $actual_types[$var_id] = $context->vars_in_scope[$var_id]->getId();
+        }
+
+        $this->assertSame($expected_types, $actual_types);
     }
 
     /**

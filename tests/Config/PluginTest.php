@@ -10,6 +10,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
@@ -32,6 +33,8 @@ use function getcwd;
 use function microtime;
 use function ob_end_clean;
 use function ob_start;
+use function restore_error_handler;
+use function set_error_handler;
 use function sprintf;
 
 use const DIRECTORY_SEPARATOR;
@@ -1147,6 +1150,64 @@ final class PluginTest extends TestCase
         $this->assertSame(['b', 'array_map', 'fopen', 'a'], $plugin::$function_ids);
     }
 
+    public function testTaintNodesOfEmptyFunctionId(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                ></psalm>',
+            ),
+        );
+
+        $plugin = new class implements AfterEveryFunctionCallAnalysisInterface {
+            /** @var list<?DataFlowNode> */
+            public static array $nodes = [];
+
+            /** @var list<string> */
+            public static array $errors = [];
+
+            #[Override]
+            public static function afterEveryFunctionCallAnalysis(AfterEveryFunctionCallAnalysisEvent $event): void
+            {
+                $source = $event->getStatementsSource();
+                $codebase = $event->getCodebase();
+                set_error_handler(static function (int $_errno, string $error): bool {
+                    self::$errors[] = $error;
+
+                    return true;
+                });
+
+                try {
+                    foreach (['', '\\'] as $function_id) {
+                        self::$nodes[] = $codebase->getTaintReturnNode($source, $function_id);
+                        self::$nodes[] = $codebase->getTaintArgumentNode($source, $function_id, 0);
+                    }
+                } finally {
+                    restore_error_handler();
+                }
+            }
+        };
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+        $this->project_analyzer->getCodebase()->config->eventDispatcher->after_every_function_checks[] = get_class($plugin);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+            strlen("a");',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $this->assertSame([null, null, null, null], $plugin::$nodes);
+        $this->assertSame([], $plugin::$errors);
+    }
+
     public function testAddTaints(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -1354,6 +1415,116 @@ final class PluginTest extends TestCase
         $this->analyzeFile($file_path, new Context());
 
         $this->addFile($file_path, $models . '(new Page())->set("body_html", (string) ($_GET["body"] ?? ""));');
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/TaintedHtml/');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testTaintReceiverNodeOfPlugin(): void
+    {
+        $this->analyzePageComponents(
+            '$other = new Greeting((string) ($_GET["name"] ?? ""));
+            (new Page())->add(new Greeting("world"));',
+            '(new Page())->add(new Greeting((string) ($_GET["name"] ?? "")));',
+        );
+    }
+
+    public function testTaintArgumentNodeOfPlugin(): void
+    {
+        $this->analyzePageComponents(
+            '(new Page())->add(new Heading(), "Home");',
+            '(new Page())->add(new Heading(), (string) ($_GET["title"] ?? ""));',
+        );
+    }
+
+    public function testTaintPropertyAssignmentOfPlugin(): void
+    {
+        $print_title = 'function printTitle(Page $page): void {
+                echo $page->getTitle();
+            }
+
+            $home = new HomePage();
+            ';
+
+        $this->analyzePageComponents(
+            $print_title . '$home->add(new Greeting("world"), "Home");
+            printTitle($home);',
+            $print_title . '$home->add(new Greeting("world"), (string) ($_GET["title"] ?? ""));
+            printTitle($home);',
+        );
+    }
+
+    /**
+     * Analyzes $clean_code, then expects TaintedHtml in $tainted_code, with the components of
+     * examples/plugins/TaintPageComponents.php
+     */
+    private function analyzePageComponents(string $clean_code, string $tainted_code): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="6"
+                    runTaintAnalysis="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <plugin filename="examples/plugins/TaintPageComponents.php" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $components = '<?php // --taint-analysis
+            namespace app;
+
+            abstract class Component {
+                abstract public function render(string $title): string;
+            }
+
+            /** @psalm-taint-specialize */
+            final class Greeting extends Component {
+                public function __construct(private string $name) {}
+
+                public function render(string $title): string {
+                    return "<p>Hello " . $this->name . "</p>";
+                }
+            }
+
+            final class Heading extends Component {
+                public function render(string $title): string {
+                    return "<h1>" . $title . "</h1>";
+                }
+            }
+
+            class Page {
+                protected string $title = "";
+
+                public function add(Component $component, string $title = ""): void {}
+
+                public function getTitle(): string {
+                    return $this->title;
+                }
+            }
+
+            final class HomePage extends Page {}
+            ';
+
+        $this->addFile($file_path, $components . $clean_code);
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context());
+
+        $this->addFile($file_path, $components . $tainted_code);
 
         $this->expectException(CodeException::class);
         $this->expectExceptionMessageMatches('/TaintedHtml/');

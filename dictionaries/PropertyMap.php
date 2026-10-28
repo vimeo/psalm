@@ -373,7 +373,7 @@ return [
         'stream' => 'resource|null',
     ],
     'phpparser\\node\\expr\\array_' => [
-        'items' => 'array<int, PhpParser\\Node\\Expr\\ArrayItem|null>',
+        'items' => 'array<int, PhpParser\\Node\\Expr\\ArrayItem>',
     ],
     'phpparser\\node\\expr\\arrowfunction' => [
         'params' => 'list<PhpParser\\Node\\Param>',

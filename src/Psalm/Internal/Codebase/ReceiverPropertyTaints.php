@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Psalm\Internal\Codebase;
 
 use PhpParser\Node\Arg;
+use PhpParser\Node\Expr\Variable;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -17,8 +19,11 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type\Union;
 
 use function array_keys;
+use function array_pop;
 use function count;
+use function is_string;
 use function str_starts_with;
+use function strtolower;
 use function substr;
 
 /**
@@ -203,7 +208,10 @@ final class ReceiverPropertyTaints
                 '$this->' . $read['property'] . ' fetch ' . $index,
                 $call_location,
             );
-            $read_node = DataFlowNode::getForAssignment('$this->' . $read['property'] . ' read ' . $index, $call_location);
+            $read_node = DataFlowNode::getForAssignment(
+                '$this->' . $read['property'] . ' read ' . $index,
+                $call_location,
+            );
 
             $graph->addNode($fetch_node);
             $graph->addNode($read_node);
@@ -347,7 +355,6 @@ final class ReceiverPropertyTaints
      *
      * @param array<array-key, Arg> $args
      * @param array<int, list<Arg>>|null $args_by_param null when which arguments the parameters get is not known
-     * @psalm-capabilities read-props|write-props
      */
     private static function taintWrites(
         StatementsAnalyzer $statements_analyzer,
@@ -414,6 +421,22 @@ final class ReceiverPropertyTaints
 
         foreach ($storage->taint_property_writes as $index => $write) {
             $write_node = DataFlowNode::getForAssignment('$this->property write ' . $index, $call_location);
+
+            // `foreach ($values as $name => $value) $object->set($name, $value)`: each element of $values is set to
+            // the property of its key, as `($values) -> $this->{key}` sets them
+            $copied_array_nodes = $class_storage->specialize_instance
+                ? null
+                : self::getElementCopySource($statements_analyzer, $context, $args_by_param, $write);
+            if ($copied_array_nodes !== null) {
+                $graph->addNode($write_node);
+                foreach ($copied_array_nodes as $array_node) {
+                    $graph->addPath($array_node, $write_node, '=');
+                }
+
+                self::addKeyedWrite($codebase, $graph, $class_storage, $write_node);
+
+                continue;
+            }
 
             if (!self::addValuePaths(
                 $statements_analyzer,
@@ -512,6 +535,138 @@ final class ReceiverPropertyTaints
         }
 
         return array_keys($path_types);
+    }
+
+    /**
+     * The parent nodes of the array whose elements the write of a property by name $write copies under their own key,
+     * if it does: the call is in the body of a foreach loop over the array, and given its key variable as the name and
+     * its value variable as the value, not reassigned since (see Context::$foreach_element_copies and
+     * ArrayAssignmentAnalyzer::getElementCopySource())
+     *
+     * @param array<int, list<Arg>>|null $args_by_param null when which arguments the parameters get is not known
+     * @param array{name: ?int, params: list<int>, path_type: string} $write
+     * @return array<string, DataFlowNode>|null
+     * @psalm-capabilities read-props
+     */
+    private static function getElementCopySource(
+        StatementsAnalyzer $statements_analyzer,
+        ?Context $context,
+        ?array $args_by_param,
+        array $write,
+    ): ?array {
+        if ($write['name'] === null
+            || $context === null
+            || $args_by_param === null
+            || $write['path_type'] !== 'arg'
+            || count($write['params']) !== 1
+        ) {
+            return null;
+        }
+
+        $name_args = $args_by_param[$write['name']] ?? [];
+        $value_args = $args_by_param[$write['params'][0]] ?? [];
+        if (count($name_args) !== 1 || count($value_args) !== 1) {
+            return null;
+        }
+
+        $name = $name_args[0]->value;
+        $value = $value_args[0]->value;
+        if (!$name instanceof Variable
+            || !is_string($name->name)
+            || !$value instanceof Variable
+            || !is_string($value->name)
+            || !isset($context->foreach_element_copies['$' . $value->name])
+        ) {
+            return null;
+        }
+
+        [$key_var_id, $key_node_ids, $value_node_ids, $array_nodes] =
+            $context->foreach_element_copies['$' . $value->name];
+
+        $value_type = $statements_analyzer->node_data->getType($value);
+
+        // what the fetch of the element holds that the array doesn't (see ArrayAssignmentAnalyzer)
+        foreach ($value_type->parent_nodes ?? [] as $value_node) {
+            if ($statements_analyzer->taint_flow_graph?->isSource($value_node)) {
+                return null;
+            }
+        }
+
+        $name_type = $statements_analyzer->node_data->getType($name);
+
+        return $key_var_id === '$' . $name->name
+            && ArrayAssignmentAnalyzer::getValueNodeIds($name_type) === $key_node_ids
+            && ArrayAssignmentAnalyzer::getValueNodeIds($value_type) === $value_node_ids
+            ? $array_nodes
+            : null;
+    }
+
+    /**
+     * Sets the property $name of `$this`, in a method of $class, to what reaches $write_node, as `$this->name = $value`
+     * does through these flows
+     *
+     * @psalm-capabilities read-props|write-props
+     */
+    public static function addWriteOfThis(
+        Codebase $codebase,
+        TaintFlowGraph $graph,
+        string $class,
+        string $name,
+        DataFlowNode $write_node,
+        Context $context,
+        CodeLocation $location,
+    ): void {
+        if (!$codebase->classlike_storage_provider->has($class)) {
+            return;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($class);
+        $graph->addNode($write_node);
+
+        if ($class_storage->specialize_instance) {
+            self::addInstanceWrite(
+                $graph,
+                $context,
+                '$this',
+                null,
+                'property bag write',
+                [[true, $name]],
+                $write_node,
+                $location,
+            );
+        } else {
+            self::addWrite($codebase, $graph, $class_storage, [[true, $name]], $write_node);
+        }
+    }
+
+    /**
+     * Makes $fetch_node get the property $name of `$this`, in a method of $class, as `$this->name` does through these
+     * flows
+     *
+     * @psalm-capabilities read-props|write-props
+     */
+    public static function addReadOfThis(
+        Codebase $codebase,
+        TaintFlowGraph $graph,
+        string $class,
+        string $name,
+        DataFlowNode $fetch_node,
+        Context $context,
+    ): void {
+        if (!$codebase->classlike_storage_provider->has($class)) {
+            return;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($class);
+        $graph->addNode($fetch_node);
+
+        if ($class_storage->specialize_instance) {
+            foreach ($context->vars_in_scope['$this']->parent_nodes ?? [] as $parent_node) {
+                $graph->addPath($parent_node, $fetch_node, 'property-fetch-' . $name);
+            }
+        } else {
+            self::addRead($codebase, $graph, $class_storage, [[true, $name]], $fetch_node);
+        }
     }
 
     /**
@@ -666,7 +821,7 @@ final class ReceiverPropertyTaints
 
         if ($other_names !== []) {
             $path_type = self::getOtherPropertiesPathType('assignment', $other_names);
-            foreach (self::getOtherPropertiesNodes($graph, [$class_storage, ...$ancestors]) as $other_properties_node) {
+            foreach (self::getOtherPropertiesNodes($graph, [$class_storage]) as $other_properties_node) {
                 $graph->addPath($write_node, $other_properties_node, $path_type);
             }
         }
@@ -698,7 +853,7 @@ final class ReceiverPropertyTaints
         }
 
         // the keys may name properties none of the classes has: the arrays are what they hold, under their names
-        foreach (self::getOtherPropertiesNodes($graph, [$class_storage, ...$ancestors]) as $other_properties_node) {
+        foreach (self::getOtherPropertiesNodes($graph, [$class_storage]) as $other_properties_node) {
             $graph->addPath($write_node, $other_properties_node, '=');
         }
     }
@@ -762,7 +917,10 @@ final class ReceiverPropertyTaints
         }
 
         $path_type = self::getOtherPropertiesPathType('fetch', $names);
-        foreach (self::getOtherPropertiesNodes($graph, [$class_storage, ...$ancestors]) as $other_properties_node) {
+        foreach (self::getOtherPropertiesNodes(
+            $graph,
+            self::getOtherPropertiesClasses($codebase, $class_storage, $ancestors),
+        ) as $other_properties_node) {
             $graph->addPath($other_properties_node, $fetch_node, $path_type);
         }
     }
@@ -792,7 +950,10 @@ final class ReceiverPropertyTaints
             );
         }
 
-        foreach (self::getOtherPropertiesNodes($graph, [$class_storage, ...$ancestors]) as $other_properties_node) {
+        foreach (self::getOtherPropertiesNodes(
+            $graph,
+            self::getOtherPropertiesClasses($codebase, $class_storage, $ancestors),
+        ) as $other_properties_node) {
             $graph->addPath($other_properties_node, $read_node, '=');
         }
     }
@@ -970,6 +1131,40 @@ final class ReceiverPropertyTaints
         }
 
         return $ancestors;
+    }
+
+    /**
+     * The classes whose objects an object read through the class may be, or whose type a write of it may have been
+     * made through: the class, its ancestors and the classes extending or implementing it, at any depth. What is set
+     * under a name not known only goes to the class of the object written, so that it doesn't reach the objects of
+     * the other classes extending the same ancestor
+     *
+     * @param list<ClassLikeStorage> $ancestors
+     * @return list<ClassLikeStorage>
+     * @psalm-capabilities read-props
+     */
+    private static function getOtherPropertiesClasses(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        array $ancestors,
+    ): array {
+        $classes = [$class_storage, ...$ancestors];
+        $seen = [strtolower($class_storage->name) => true];
+        $queue = [$class_storage];
+        while (($storage = array_pop($queue)) !== null) {
+            foreach ($storage->dependent_classlikes as $dependent_classlike => $_) {
+                if (!isset($seen[$dependent_classlike])
+                    && $codebase->classlike_storage_provider->has($dependent_classlike)
+                ) {
+                    $seen[$dependent_classlike] = true;
+                    $descendant = $codebase->classlike_storage_provider->get($dependent_classlike);
+                    $classes[] = $descendant;
+                    $queue[] = $descendant;
+                }
+            }
+        }
+
+        return $classes;
     }
 
     /**

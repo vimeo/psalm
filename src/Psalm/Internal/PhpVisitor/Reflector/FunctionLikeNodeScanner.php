@@ -153,78 +153,14 @@ final class FunctionLikeNodeScanner
 
         $storage->stmt_location = new CodeLocation($this->file_scanner, $stmt);
 
-        $required_param_count = 0;
-        $i = 0;
-        $has_optional_param = false;
-
-        $existing_params = [];
-        $storage->setParams([]);
-
-        foreach ($stmt->getParams() as $param) {
-            if ($param->var instanceof PhpParser\Node\Expr\Error) {
-                $storage->docblock_issues[] = new InvalidDocblock(
-                    'Param' . ($i + 1) . ' of ' . $cased_function_id . ' has invalid syntax',
-                    new CodeLocation($this->file_scanner, $param, null, true),
-                );
-
-                ++$i;
-
-                continue;
-            }
-
-            $param_storage = $this->getTranslatedFunctionParam($param, $stmt, $fake_method, $fq_classlike_name);
-
-            foreach ($param->attrGroups as $attr_group) {
-                foreach ($attr_group->attrs as $attr) {
-                    $param_storage->attributes[] = AttributeResolver::resolve(
-                        $this->codebase,
-                        $this->file_scanner,
-                        $this->file_storage,
-                        $this->aliases,
-                        $attr,
-                        $this->classlike_storage->name ?? null,
-                    );
-                }
-            }
-
-            if ($param_storage->name === 'haystack'
-                && in_array($this->file_path, $this->codebase->config->internal_stubs)
-            ) {
-                $param_storage->expect_variable = true;
-            }
-
-            if (isset($existing_params['$' . $param_storage->name])) {
-                $storage->docblock_issues[] = new DuplicateParam(
-                    'Duplicate param $' . $param_storage->name . ' in docblock for ' . $cased_function_id,
-                    new CodeLocation($this->file_scanner, $param, null, true),
-                );
-
-                ++$i;
-
-                continue;
-            }
-
-            $existing_params['$' . $param_storage->name] = $i;
-            $storage->addParam($param_storage, (bool)$param->type);
-
-            if (!$param_storage->is_optional && !$param_storage->is_variadic) {
-                $required_param_count = $i + 1;
-
-                if (!$param->variadic
-                    && $has_optional_param
-                ) {
-                    foreach ($storage->params as $param) {
-                        $param->is_optional = false;
-                    }
-                }
-            } else {
-                $has_optional_param = true;
-            }
-
-            ++$i;
-        }
-
-        $storage->required_param_count = $required_param_count;
+        $existing_params = $this->addParams(
+            $stmt,
+            $storage,
+            $cased_function_id,
+            $fake_method,
+            $fq_classlike_name,
+            $is_functionlike_override,
+        );
 
         if ($stmt instanceof PhpParser\Node\Stmt\Function_
             || $stmt instanceof PhpParser\Node\Stmt\ClassMethod
@@ -880,8 +816,7 @@ final class FunctionLikeNodeScanner
 
         if ($expr instanceof PhpParser\Node\Expr\Array_) {
             foreach ($expr->items as $item) {
-                if ($item === null
-                    || $item->byRef
+                if ($item->byRef
                     || $item->unpack
                     || ($item->key !== null && !self::isConstantValue($item->key))
                     || !self::isConstantValue($item->value)
@@ -1408,6 +1343,113 @@ final class FunctionLikeNodeScanner
             $method_id,
             false,
         ];
+    }
+
+    /**
+     * Sets the parameters of $storage from those of $stmt
+     *
+     * @return array<string, int> the offsets of the parameters by variable id
+     */
+    private function addParams(
+        PhpParser\Node\FunctionLike $stmt,
+        FunctionLikeStorage $storage,
+        string $cased_function_id,
+        bool $fake_method,
+        ?string $fq_classlike_name,
+        bool $is_functionlike_override,
+    ): array {
+        $required_param_count = 0;
+        $i = 0;
+        $has_optional_param = false;
+
+        $existing_params = [];
+
+        // A stub redeclaring a method an earlier stub declared reuses its storage, and its parameters are built
+        // again from this declaration. The taint annotations of the earlier declaration still hold for the
+        // parameters this one redeclares, as its function-level ones do (the docblock scanner merges those).
+        $overridden_params = [];
+        if ($is_functionlike_override) {
+            foreach ($storage->params as $overridden_param) {
+                $overridden_params[$overridden_param->name] = $overridden_param;
+            }
+        }
+
+        $storage->setParams([]);
+
+        foreach ($stmt->getParams() as $param) {
+            if ($param->var instanceof PhpParser\Node\Expr\Error) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    'Param' . ($i + 1) . ' of ' . $cased_function_id . ' has invalid syntax',
+                    new CodeLocation($this->file_scanner, $param, null, true),
+                );
+
+                ++$i;
+
+                continue;
+            }
+
+            $param_storage = $this->getTranslatedFunctionParam($param, $stmt, $fake_method, $fq_classlike_name);
+
+            if (isset($overridden_params[$param_storage->name])) {
+                $overridden_param = $overridden_params[$param_storage->name];
+                $param_storage->sinks = $overridden_param->sinks;
+                $param_storage->value_sinks = $overridden_param->value_sinks;
+                $param_storage->assert_untainted = $overridden_param->assert_untainted;
+            }
+
+            foreach ($param->attrGroups as $attr_group) {
+                foreach ($attr_group->attrs as $attr) {
+                    $param_storage->attributes[] = AttributeResolver::resolve(
+                        $this->codebase,
+                        $this->file_scanner,
+                        $this->file_storage,
+                        $this->aliases,
+                        $attr,
+                        $this->classlike_storage->name ?? null,
+                    );
+                }
+            }
+
+            if ($param_storage->name === 'haystack'
+                && in_array($this->file_path, $this->codebase->config->internal_stubs)
+            ) {
+                $param_storage->expect_variable = true;
+            }
+
+            if (isset($existing_params['$' . $param_storage->name])) {
+                $storage->docblock_issues[] = new DuplicateParam(
+                    'Duplicate param $' . $param_storage->name . ' in docblock for ' . $cased_function_id,
+                    new CodeLocation($this->file_scanner, $param, null, true),
+                );
+
+                ++$i;
+
+                continue;
+            }
+
+            $existing_params['$' . $param_storage->name] = $i;
+            $storage->addParam($param_storage, (bool)$param->type);
+
+            if (!$param_storage->is_optional && !$param_storage->is_variadic) {
+                $required_param_count = $i + 1;
+
+                if (!$param->variadic
+                    && $has_optional_param
+                ) {
+                    foreach ($storage->params as $param) {
+                        $param->is_optional = false;
+                    }
+                }
+            } else {
+                $has_optional_param = true;
+            }
+
+            ++$i;
+        }
+
+        $storage->required_param_count = $required_param_count;
+
+        return $existing_params;
     }
 
     /**

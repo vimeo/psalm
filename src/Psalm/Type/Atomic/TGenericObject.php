@@ -129,6 +129,10 @@ final class TGenericObject extends TNamedObject
             return false;
         }
 
+        if ($this->is_static !== $other_type->is_static) {
+            return false;
+        }
+
         if (count($this->type_params) !== count($other_type->type_params)) {
             return false;
         }

@@ -425,7 +425,7 @@ final class CloneAnalyzer
         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
         foreach ($with_properties_value->items as $item) {
-            if ($item === null || $item->unpack || $item->key === null) {
+            if ($item->unpack || $item->key === null) {
                 continue;
             }
 

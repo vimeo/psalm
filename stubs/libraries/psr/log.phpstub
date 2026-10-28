@@ -113,4 +113,165 @@ interface LoggerInterface
      */
     public function log($level, string|\Stringable $message, array $context = []);
 }
+
+// The level methods of LoggerTrait, and of AbstractLogger (which declares them itself in psr/log 1) only call log().
+trait LoggerTrait
+{
+    /**
+     * @param mixed[] $context
+     * @return void
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function emergency(string|\Stringable $message, array $context = [])
+    {
+    }
+    /**
+     * @param mixed[] $context
+     * @return void
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function alert(string|\Stringable $message, array $context = [])
+    {
+    }
+    /**
+     * @param mixed[] $context
+     * @return void
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function critical(string|\Stringable $message, array $context = [])
+    {
+    }
+    /**
+     * @param mixed[] $context
+     * @return void
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function error(string|\Stringable $message, array $context = [])
+    {
+    }
+    /**
+     * @param mixed[] $context
+     * @return void
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function warning(string|\Stringable $message, array $context = [])
+    {
+    }
+    /**
+     * @param mixed[] $context
+     * @return void
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function notice(string|\Stringable $message, array $context = [])
+    {
+    }
+    /**
+     * @param mixed[] $context
+     * @return void
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function info(string|\Stringable $message, array $context = [])
+    {
+    }
+    /**
+     * @param mixed[] $context
+     * @return void
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function debug(string|\Stringable $message, array $context = [])
+    {
+    }
+    /**
+     * @param mixed $level
+     * @param mixed[] $context
+     *
+     * @throws \Psr\Log\InvalidArgumentException
+     * @return void
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    abstract public function log($level, string|\Stringable $message, array $context = []);
+}
+
+abstract class AbstractLogger implements LoggerInterface
+{
+    /**
+     * @param mixed[] $context
+     * @return void
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function emergency(string|\Stringable $message, array $context = [])
+    {
+    }
+    /**
+     * @param mixed[] $context
+     * @return void
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function alert(string|\Stringable $message, array $context = [])
+    {
+    }
+    /**
+     * @param mixed[] $context
+     * @return void
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function critical(string|\Stringable $message, array $context = [])
+    {
+    }
+    /**
+     * @param mixed[] $context
+     * @return void
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function error(string|\Stringable $message, array $context = [])
+    {
+    }
+    /**
+     * @param mixed[] $context
+     * @return void
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function warning(string|\Stringable $message, array $context = [])
+    {
+    }
+    /**
+     * @param mixed[] $context
+     * @return void
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function notice(string|\Stringable $message, array $context = [])
+    {
+    }
+    /**
+     * @param mixed[] $context
+     * @return void
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function info(string|\Stringable $message, array $context = [])
+    {
+    }
+    /**
+     * @param mixed[] $context
+     * @return void
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function debug(string|\Stringable $message, array $context = [])
+    {
+    }
+}
+
+class NullLogger extends AbstractLogger
+{
+    /**
+     * @param mixed $level
+     * @param mixed[] $context
+     *
+     * @throws \Psr\Log\InvalidArgumentException
+     * @return void
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function log($level, string|\Stringable $message, array $context = [])
+    {
+    }
+}
 }

@@ -60,6 +60,7 @@ use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeExpressionAnalysisEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TMixed;
 
 use function count;
 use function in_array;
@@ -148,7 +149,11 @@ final class ExpressionAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
     ): void {
-        if (count($type->getAtomicTypes()) > 1) {
+        // mixed already contains the other types: like mixed alone, it says nothing of what is compared
+        $atomic_types = $type->getAtomicTypes();
+        if (count($atomic_types) > 1
+            && !(isset($atomic_types['mixed']) && $atomic_types['mixed']::class === TMixed::class)
+        ) {
             $has_truthy_or_falsy_exclusive_type = false;
             $both_types = $type->getBuilder();
             foreach ($both_types->getAtomicTypes() as $key => $atomic_type) {

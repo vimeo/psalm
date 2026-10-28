@@ -266,10 +266,6 @@ final class ExpressionResolver
             $items = [];
 
             foreach ($stmt->items as $item) {
-                if ($item === null) {
-                    return null;
-                }
-
                 if ($item->key) {
                     $item_key_type = self::getUnresolvedClassConstExpr(
                         $item->key,

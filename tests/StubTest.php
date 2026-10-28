@@ -1670,6 +1670,64 @@ final class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    /**
+     * A stub redeclaring a method of an earlier stub (e.g. to add its purity) keeps the earlier stub's sinks
+     */
+    public function testRedeclaredStubMethodKeepsTheSinksOfTheEarlierStub(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('TaintedHtml - src/somefile.php');
+
+        $this->analyzeWithRedeclaredStubMethod(
+            '<?php
+                $html = $_GET["html"];
+                if (is_string($html)) {
+                    new StubRedeclaringASinkHolder($html, "SELECT 1");
+                }',
+        );
+    }
+
+    public function testRedeclaredStubMethodAddsItsOwnSinks(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('TaintedSql - src/somefile.php');
+
+        $this->analyzeWithRedeclaredStubMethod(
+            '<?php
+                $query = $_GET["query"];
+                if (is_string($query)) {
+                    new StubRedeclaringASinkHolder("<b>bold</b>", $query);
+                }',
+        );
+    }
+
+    private function analyzeWithRedeclaredStubMethod(string $code): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/redeclared_method_taints_first.phpstub" />
+                        <file name="tests/fixtures/stubs/redeclared_method_taints_second.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->trackTaintedInputs();
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src/somefile.php';
+        $this->addFile($file_path, $code);
+        $this->analyzeFile($file_path, new Context());
+    }
+
     private function analyzeWithLibraryStubs(string $code, bool $load_library_stubs = true): Config
     {
         $config = TestConfig::loadFromXML(
@@ -1745,5 +1803,42 @@ final class StubTest extends TestCase
             self::getLibraryStubsDir() . DIRECTORY_SEPARATOR . 'library' . DIRECTORY_SEPARATOR . 'client.phpstub',
             $config->internal_stubs,
         );
+    }
+
+    /**
+     * A stub that extends a class from an already scanned real file forces its rescan during stub registration.
+     */
+    public function testRealFileRescannedDuringStubRegistrationKeepsRealClassFlags(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm errorLevel="1">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/stub_depending_on_real_file.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->scanner->addFileToShallowScan(dirname(__DIR__) . '/tests/fixtures/stub_dependency/Lib.php');
+        $codebase->scanFiles();
+        $codebase->config->visitStubFiles($codebase);
+
+        foreach (['StubDependency\Lib', 'StubDependency\Lib2'] as $class_name) {
+            $storage = $codebase->classlike_storage_provider->get($class_name);
+            $this->assertTrue($storage->user_defined, $class_name);
+            $this->assertFalse($storage->stubbed, $class_name);
+        }
+
+        $stub_defined = $codebase->classlike_storage_provider->get('StubDependency\StubbedElsewhere');
+        $this->assertFalse($stub_defined->user_defined);
+        $this->assertTrue($stub_defined->stubbed);
     }
 }

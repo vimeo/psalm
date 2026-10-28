@@ -27,6 +27,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\NativeClassTaintAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
@@ -2987,6 +2988,199 @@ final class Codebase
         $graph->addNode($from);
         $graph->addNode($to);
         $graph->addPath($from, $to, $path_type, $added_taints, $removed_taints);
+    }
+
+    /**
+     * The taint node of what a call of $function returns: a function (`ns\f`), a method (`Class::method`, the body the
+     * class runs, as a call naming the class does: not the overrides of its subclasses) or a closure. Given the
+     * location of a call, the node of the call there if Psalm tells the calls of the function-like apart (see
+     * `@psalm-taint-specialize`), which its arguments and object given at the same location flow into (see
+     * getTaintArgumentNode() and getTaintReceiverNode()). Null if there is no such function-like.
+     */
+    public function getTaintReturnNode(
+        StatementsSource $source,
+        string|PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction $function,
+        ?CodeLocation $call_location = null,
+    ): ?DataFlowNode {
+        $body = $this->getTaintBody($source, $function);
+        if ($body === null) {
+            return null;
+        }
+
+        [$cased_function_id, $storage] = $body;
+
+        return DataFlowNode::getForMethodReturn(
+            $cased_function_id,
+            $storage,
+            $this->getTaintSpecializationLocation($source, $storage, $call_location),
+        );
+    }
+
+    /**
+     * The taint node of the parameter at $offset (0 for the first) of $function, for a call at $call_location if
+     * given (see getTaintReturnNode()): what flows into it is what the body gets in that parameter, and reaches its
+     * sinks. Null if there is no such function-like or parameter.
+     */
+    public function getTaintArgumentNode(
+        StatementsSource $source,
+        string|PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction $function,
+        int $offset,
+        ?CodeLocation $call_location = null,
+    ): ?DataFlowNode {
+        $body = $this->getTaintBody($source, $function);
+        if ($body === null) {
+            return null;
+        }
+
+        [$cased_function_id, $storage] = $body;
+
+        $last_param = $storage->params === [] ? null : $storage->params[count($storage->params) - 1];
+        if ($offset < 0 || (!isset($storage->params[$offset]) && $last_param?->is_variadic !== true)) {
+            return null;
+        }
+
+        return DataFlowNode::getForMethodArgument(
+            $cased_function_id,
+            $offset,
+            $storage,
+            $this->getTaintSpecializationLocation($source, $storage, $call_location),
+        );
+    }
+
+    /**
+     * The taint node of the object a call of $method_id (`Class::method`) at $call_location runs on, if Psalm tracks
+     * the objects of the method apart (see `@psalm-taint-specialize`): what flows into it is the `$this` of the body
+     * for that call, whose return node (see getTaintReturnNode()) then holds what this object gives it. Null for other
+     * methods, whose body takes from what every object of the class holds.
+     */
+    public function getTaintReceiverNode(
+        StatementsSource $source,
+        string $method_id,
+        CodeLocation $call_location,
+    ): ?DataFlowNode {
+        $body = $this->getTaintBody($source, $method_id);
+        if ($body === null) {
+            return null;
+        }
+
+        $storage = $body[1];
+        if (!$storage instanceof MethodStorage || !$storage->specialize_call || $storage->location === null) {
+            return null;
+        }
+
+        return DataFlowNode::getForAssignment(
+            '$this in ' . (string) FunctionLikeAnalyzer::getBodyMethodId($this, MethodIdentifier::wrap($method_id)),
+            $storage->location,
+            DataFlowNode::getSpecializationKey($call_location),
+        );
+    }
+
+    /**
+     * Adds the paths of an assignment of $value to the instance property $property_id (`Class::$name`) of an object of
+     * the class, as `$object->name = $value` does: what the class and the parent classes sharing the property read of
+     * it gets the value, and so does what its subclasses read, as the object may be one of theirs.
+     */
+    public function addTaintPropertyAssignment(
+        StatementsSource $source,
+        DataFlowNode $value,
+        string $property_id,
+    ): void {
+        $parts = explode('::$', $property_id, 2);
+        if (count($parts) !== 2) {
+            throw new InvalidArgumentException('Expecting a property id like Class::$name, got ' . $property_id);
+        }
+
+        $graph = $this->getTaintFlowGraphOf($source);
+        if ($graph === null) {
+            return;
+        }
+
+        $property_node = DataFlowNode::getForPropertyFetch($property_id);
+
+        $graph->addNode($value);
+        $graph->addNode($property_node);
+        $graph->addPath($value, $property_node, 'property-assignment');
+
+        InstancePropertyAssignmentAnalyzer::taintInheritedProperty(
+            $this,
+            $graph,
+            $value,
+            $property_node,
+            $parts[0],
+            $parts[1],
+        );
+    }
+
+    /**
+     * The cased id the taint nodes of the body of $function are keyed by, and its storage (see getTaintReturnNode())
+     *
+     * @return array{string, FunctionLikeStorage}|null
+     */
+    private function getTaintBody(
+        StatementsSource $source,
+        string|PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction $function,
+    ): ?array {
+        if (!is_string($function)) {
+            $closure_id = strtolower($source->getFilePath())
+                . ':' . $function->getLine()
+                . ':' . (int) $function->getAttribute('startFilePos')
+                . ':-:closure';
+
+            try {
+                return [$closure_id, $this->getClosureStorage($source->getFilePath(), $closure_id)];
+            } catch (UnexpectedValueException) {
+                return null;
+            }
+        }
+
+        if (MethodIdentifier::isValidMethodIdReference($function)) {
+            $method_id = MethodIdentifier::wrap($function);
+            $fq_class_name = $this->classlikes->getUnAliasedName($method_id->fq_class_name);
+            if (!$this->classlike_storage_provider->has($fq_class_name)) {
+                return null;
+            }
+
+            $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
+
+            return $declaring_method_id === null
+                ? null
+                : [
+                    FunctionLikeAnalyzer::getCasedBodyMethodId($this, $method_id),
+                    $this->methods->getStorage($declaring_method_id),
+                ];
+        }
+
+        $function_id = strtolower(ltrim($function, '\\'));
+        if (!$function_id) {
+            return null;
+        }
+
+        try {
+            $storage = $this->functions->getStorage(
+                null,
+                $function_id,
+                $source->getRootFilePath(),
+                $source->getFilePath(),
+            );
+        } catch (UnexpectedValueException) {
+            return null;
+        }
+
+        return [$storage->cased_name ?? $function, $storage];
+    }
+
+    /**
+     * $call_location if the call there of the function-like of $storage has nodes of its own
+     */
+    private function getTaintSpecializationLocation(
+        StatementsSource $source,
+        FunctionLikeStorage $storage,
+        ?CodeLocation $call_location,
+    ): ?CodeLocation {
+        return $call_location !== null
+            && TaintFlowGraph::isCallSpecialized($this->getTaintFlowGraphOf($source), $this, $storage, $call_location)
+            ? $call_location
+            : null;
     }
 
     /**

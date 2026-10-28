@@ -155,6 +155,75 @@ final class Populator
     }
 
     /**
+     * Replaces the imported type aliases (`@psalm-import-type`) in the bounds of the templates with their types, which
+     * the scanner could not resolve: until then, a template bound by one may be a purity template too.
+     */
+    private function resolveTemplateBoundAliases(ClassLikeStorage|FunctionLikeStorage $storage): void
+    {
+        if ($storage->template_types === null) {
+            return;
+        }
+
+        $template_types = $storage->template_types;
+
+        foreach ($template_types as $template_name => $bounds) {
+            foreach ($bounds as $defining_class => $bound) {
+                if ($bound->hasTypeAlias()) {
+                    $template_types[$template_name][$defining_class] = $this->resolveTypeAliases($bound) ?? $bound;
+                }
+            }
+        }
+
+        $storage->template_types = $template_types;
+    }
+
+    /**
+     * The type with its imported type aliases replaced by their types, or null when one of them can't be resolved
+     *
+     * @psalm-mutation-free
+     */
+    private function resolveTypeAliases(Union $type, int $depth = 0): ?Union
+    {
+        $atomic_types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TTypeAlias) {
+                $atomic_types[] = $atomic;
+
+                continue;
+            }
+
+            if ($depth >= 10) {
+                return null;
+            }
+
+            try {
+                $alias_storage = $this->classlike_storage_provider->get($atomic->declaring_fq_classlike_name);
+            } catch (InvalidArgumentException) {
+                return null;
+            }
+
+            $alias = $alias_storage->type_aliases[$atomic->alias_name] ?? null;
+
+            if (!$alias instanceof ClassTypeAlias || $alias->replacement_atomic_types === []) {
+                return null;
+            }
+
+            $resolved = $this->resolveTypeAliases(new Union($alias->replacement_atomic_types), $depth + 1);
+
+            if ($resolved === null) {
+                return null;
+            }
+
+            foreach ($resolved->getAtomicTypes() as $resolved_atomic) {
+                $atomic_types[] = $resolved_atomic;
+            }
+        }
+
+        return $atomic_types === [] ? null : $type->setTypes($atomic_types);
+    }
+
+    /**
      * Binds the purity template of the Generator (or Iterator, Traversable) a generator function-like
      * returns to what running its body may do: its own capabilities, less reading properties, plus
      * the purity templates it inherits its purity from, which each call binds. A generator
@@ -535,6 +604,7 @@ final class Populator
         }
 
         $this->resolveDeferredCapabilities($storage);
+        $this->resolveTemplateBoundAliases($storage);
 
         if ($storage->is_interface
             && !$storage->has_mutations_annotation
@@ -552,6 +622,8 @@ final class Populator
         }
 
         foreach ($storage->methods as $method) {
+            $this->resolveTemplateBoundAliases($method);
+
             if ($method->capabilities_type !== null) {
                 $this->resolveDeferredCapabilities($method);
                 FunctionLikeDocblockScanner::applyPurityTemplateLowerBounds($storage, $method);
@@ -904,6 +976,8 @@ final class Populator
 
         // the instances of a child class are instances of its parent class: their properties hold per-instance
         // taints in the methods of both, which may not change them once constructed (see ClassAnalyzer)
+        $storage->taint_property_bag ??= $parent_storage->taint_property_bag;
+
         if ($parent_storage->taint_specialize && !$storage->taint_specialize) {
             $storage->taint_specialize = true;
             $storage->inherits_taint_specialize = !$storage->specialize_instance;
@@ -1255,6 +1329,7 @@ final class Populator
 
         foreach ($storage->functions as $function_storage) {
             $this->resolveDeferredCapabilities($function_storage);
+            $this->resolveTemplateBoundAliases($function_storage);
             $this->populateGeneratorPurity($function_storage, null);
         }
 

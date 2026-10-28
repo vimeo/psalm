@@ -223,6 +223,10 @@ workaround explicitly in the report.
     anything that only makes sense in the context of an agent's iteration history;
   - prefer deleting an unnecessary comment over expanding or rewording it;
   - document an idea once, where it naturally belongs.
+- Documentation (`docs/`, issue pages, user-facing docblocks): more examples, less text.
+  Show behaviour with a code example whose lines end in their result (`// TaintedNosql`,
+  `// safe`, `// no issue`), cases that stay reported included, and keep the prose around
+  it to a sentence. Check each line's result on the branch before writing it.
 - Hot loops (`TaintFlowGraph::connectSinksAndSources()`, `TaintFlowResolution`): keep the
   branch structure inline and call `getChildNodes()` directly in each branch. Don't
   collect nodes into intermediate arrays (allocation per iteration), and avoid new

@@ -2594,6 +2594,27 @@ final class TaintTest extends TestCase
 
                     query((bool) $_GET["username"]);',
             ],
+            'nosqlSinkNotTaintedByTheEqualityOperandOfAField' => [
+                'code' => '<?php
+                    final class Collection {
+                        /** @psalm-taint-sink nosql $filter */
+                        public function find(array $filter): void {}
+                    }
+
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    final class Users {
+                        private const NAME = "name";
+
+                        public static function search(Collection $users): void {
+                            // MongoDB compares the field with what $eq is given as it is, operators and regexes included
+                            $users->find(["name" => [\'$eq\' => $_GET["name"]]]);
+                            $users->find([self::NAME => [\'$eq\' => $_GET["name"]], "age" => [\'$gt\' => 18]]);
+                            query(["name" => [\'$eq\' => $_GET["name"]]]);
+                        }
+                    }',
+            ],
             'nosqlFilterEscapedByIntCast' => [
                 'code' => '<?php
                     function getUser(): MongoDB\Driver\Query {
@@ -4431,6 +4452,30 @@ final class TaintTest extends TestCase
                         echo $model->get("body");
                     }',
             ],
+            'propertySetUnderANameNotKnownStaysInTheClassOfTheObject' => [
+                'code' => '<?php
+                    abstract class Bag {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+                    }
+
+                    final class Query extends Bag {}
+
+                    final class Options extends Bag {}
+
+                    function save(Options $options, string $name): void {
+                        $options->set($name, (string) $_GET["x"]);
+                    }
+
+                    function show(Query $query): void {
+                        echo $query->get("other");
+                    }',
+            ],
             'propertySetByNameOfAnObjectSpecializedStaysInIt' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -4509,6 +4554,120 @@ final class TaintTest extends TestCase
 
                     function show(Model $model): void {
                         echo $model->toArray()["body"];
+                    }',
+            ],
+            'propertiesSetByNameInACopyLoopKeepTheirKeys' => [
+                'code' => '<?php
+                    /**
+                     * @property string $label
+                     * @property string $size
+                     */
+                    final class Options {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    function fillOptions(Options $options): void {
+                        foreach (["label" => (string) $_GET["x"], "size" => "m"] as $name => $value) {
+                            $options->set($name, $value);
+                        }
+
+                        echo $options->size;
+                    }',
+            ],
+            'propertyBagOfAnObjectTrackedPerInstanceKeepsObjectsApart' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-property-bag $properties
+                     * @psalm-taint-specialize
+                     */
+                    abstract class Bag {
+                        /** @var array<string, mixed> */
+                        protected array $properties = [];
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class Model extends Bag {
+                        public function __construct(string $title) {
+                            $this->properties["title"] = $title;
+                        }
+
+                        public function getTitle(): string {
+                            return (string) $this->properties["title"];
+                        }
+                    }
+
+                    $tainted = new Model((string) $_GET["x"]);
+                    $clean = new Model("safe");
+                    echo $clean->getTitle();',
+            ],
+            'propertyBagElementsUnderNestedIntKeysKeepTheirKeysApart' => [
+                'code' => '<?php
+                    /** @psalm-taint-property-bag $properties */
+                    abstract class Bag {
+                        /** @var array<string, mixed> */
+                        protected array $properties = [];
+
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @property list<string> $tags */
+                    final class Model extends Bag {
+                        public function setTags(string $tag): void {
+                            $this->properties["tags"][0] = $tag;
+                            $this->properties["tags"][1] = "safe";
+                        }
+                    }
+
+                    function save(Model $model): void {
+                        $model->setTags((string) $_GET["x"]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->tags[1];
+                    }',
+            ],
+            'propertyBagElementsKeepTheOtherPropertiesApart' => [
+                'code' => '<?php
+                    /** @psalm-taint-property-bag $properties */
+                    abstract class Bag {
+                        /** @var array<string, mixed> */
+                        protected array $properties = [];
+
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    /**
+                     * @property string $title
+                     * @property string $body
+                     */
+                    final class Model extends Bag {
+                        public function setTitle(string $title): void {
+                            $this->properties["title"] = $title;
+                        }
+
+                        public function getBody(): string {
+                            return (string) $this->properties["body"];
+                        }
+                    }
+
+                    function save(Model $model): void {
+                        $model->setTitle((string) $_GET["x"]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->body;
+                        echo $model->getBody();
                     }',
             ],
             'elementsOfANamedPropertyKeepTheirKeysApart' => [
@@ -6097,6 +6256,60 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'propertySetUnderANameNotKnownThroughAParentTypeIsReadThroughASubclass' => [
+                'code' => '<?php
+                    abstract class Bag {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+                    }
+
+                    final class Query extends Bag {}
+
+                    function save(Bag $bag, string $name): void {
+                        $bag->set($name, (string) $_GET["x"]);
+                    }
+
+                    function show(Query $query): void {
+                        echo $query->get("other");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertySetUnderANameNotKnownThroughASubclassIsReadThroughAnInterface' => [
+                'code' => '<?php
+                    interface PropertyObject {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void;
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string;
+                    }
+
+                    abstract class Bag implements PropertyObject {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+                    }
+
+                    final class Query extends Bag {}
+
+                    function save(Query $query, string $name): void {
+                        $query->set($name, (string) $_GET["x"]);
+                    }
+
+                    function show(PropertyObject $object): void {
+                        echo $object->get("other");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'propertySetUnderAKnownStartIsThePropertiesStartingWithIt' => [
                 'code' => '<?php
                     final class Model {
@@ -6484,6 +6697,253 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'is neither',
             ],
+            'propertySetByNameInACopyLoop' => [
+                'code' => '<?php
+                    /**
+                     * @property string $label
+                     * @property string $size
+                     */
+                    final class Options {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    function fillOptions(Options $options): void {
+                        foreach (["label" => (string) $_GET["x"], "size" => "m"] as $name => $value) {
+                            $options->set($name, $value);
+                        }
+
+                        echo $options->label;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyConstructedByNameInACopyLoopMayBeAnyOfThem' => [
+                'code' => '<?php
+                    /**
+                     * @property string $label
+                     * @property string $size
+                     */
+                    final class Options {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function __construct(string $name, string $value) {}
+
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    foreach (["label" => (string) $_GET["x"], "size" => "m"] as $name => $value) {
+                        $options = new Options($name, $value);
+                        echo $options->size;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertySetByNameInALoopOfAnotherValueMayBeAnyOfThem' => [
+                'code' => '<?php
+                    /**
+                     * @property string $label
+                     * @property string $size
+                     */
+                    final class Options {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    function fillOptions(Options $options): void {
+                        foreach (["label" => (string) $_GET["x"], "size" => "m"] as $name => $value) {
+                            $options->set($name, trim($value));
+                        }
+
+                        echo $options->size;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyBagElementSetIsTheProperty' => [
+                'code' => '<?php
+                    /** @psalm-taint-property-bag $properties */
+                    abstract class Bag {
+                        /** @var array<string, mixed> */
+                        protected array $properties = [];
+
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    /** @property string $title */
+                    final class Model extends Bag {
+                        public function setTitle(string $title): void {
+                            $this->properties["title"] = $title;
+                        }
+                    }
+
+                    function save(Model $model): void {
+                        $model->setTitle((string) $_GET["x"]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->title;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyBagElementReadIsTheProperty' => [
+                'code' => '<?php
+                    /** @psalm-taint-property-bag $properties */
+                    abstract class Bag {
+                        /** @var array<string, mixed> */
+                        protected array $properties = [];
+
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    /** @property string $title */
+                    final class Model extends Bag {
+                        public function getTitle(): string {
+                            return (string) $this->properties["title"];
+                        }
+                    }
+
+                    function save(Model $model): void {
+                        $model->title = (string) $_GET["x"];
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->getTitle();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyBagElementSetUnderNestedKeys' => [
+                'code' => '<?php
+                    /** @psalm-taint-property-bag $properties */
+                    abstract class Bag {
+                        /** @var array<string, mixed> */
+                        protected array $properties = [];
+
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    /** @property array<string, string> $tags */
+                    final class Model extends Bag {
+                        public function setTag(string $tag): void {
+                            $this->properties["tags"]["main"] = $tag;
+                        }
+                    }
+
+                    function save(Model $model): void {
+                        $model->setTag((string) $_GET["x"]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->tags["main"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyBagElementReadSetThroughAReceiverFlow' => [
+                'code' => '<?php
+                    /** @psalm-taint-property-bag $properties */
+                    abstract class Bag {
+                        /** @var array<string, mixed> */
+                        protected array $properties = [];
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    /** @property string $title */
+                    final class Model extends Bag {
+                        public function getTitle(): string {
+                            return (string) $this->properties["title"];
+                        }
+                    }
+
+                    function save(Model $model): void {
+                        $model->set("title", (string) $_GET["x"]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->getTitle();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyBagOfAnObjectTrackedPerInstance' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-property-bag $properties
+                     * @psalm-taint-specialize
+                     */
+                    abstract class Bag {
+                        /** @var array<string, mixed> */
+                        protected array $properties = [];
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class Model extends Bag {
+                        public function __construct(string $title) {
+                            $this->properties["title"] = $title;
+                        }
+
+                        public function getTitle(): string {
+                            return (string) $this->properties["title"];
+                        }
+                    }
+
+                    $model = new Model((string) $_GET["x"]);
+                    echo $model->getTitle();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyBagElementUnderANestedIntKey' => [
+                'code' => '<?php
+                    /** @psalm-taint-property-bag $properties */
+                    abstract class Bag {
+                        /** @var array<string, mixed> */
+                        protected array $properties = [];
+
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @property list<string> $tags */
+                    final class Model extends Bag {
+                        public function setTags(string $tag): void {
+                            $this->properties["tags"][0] = $tag;
+                            $this->properties["tags"][1] = "safe";
+                        }
+                    }
+
+                    function save(Model $model): void {
+                        $model->setTags((string) $_GET["x"]);
+                    }
+
+                    function show(Model $model): void {
+                        echo $model->tags[0];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyBagThatIsNotAProperty' => [
+                'code' => '<?php
+                    /** @psalm-taint-property-bag properties */
+                    abstract class Bag {}',
+                'error_message' => 'InvalidDocblock',
+            ],
             'elementOfANamedPropertySetAndReturned' => [
                 'code' => '<?php
                     final class Request {
@@ -6698,6 +7158,77 @@ final class TaintTest extends TestCase
                         show((string) $_GET["x"]);
                     }',
                 'error_message' => 'TaintedHtml',
+            ],
+            'nosqlSinkTaintedByAnEqualityOperandInExpr' => [
+                'code' => '<?php
+                    final class Collection {
+                        /** @psalm-taint-sink nosql $filter */
+                        public function find(array $filter): void {}
+                    }
+
+                    function search(Collection $users): void {
+                        // in $expr, an operand like "$name" is a field path
+                        $users->find([\'$expr\' => [\'$eq\' => [\'$name\', $_GET["name"]]]]);
+                    }',
+                'error_message' => 'TaintedNosql',
+            ],
+            'nosqlSinkTaintedByAnEqualityOperandBelowTheFieldDocument' => [
+                'code' => '<?php
+                    final class Collection {
+                        /** @psalm-taint-sink nosql $filter */
+                        public function find(array $filter): void {}
+                    }
+
+                    function search(Collection $users): void {
+                        $users->find(["name" => [\'$not\' => [\'$eq\' => $_GET["name"]]]]);
+                    }',
+                'error_message' => 'TaintedNosql',
+            ],
+            'nosqlSinkTaintedByAnotherOperatorOfTheFieldDocument' => [
+                'code' => '<?php
+                    final class Collection {
+                        /** @psalm-taint-sink nosql $filter */
+                        public function find(array $filter): void {}
+                    }
+
+                    function search(Collection $users): void {
+                        $users->find(["name" => [\'$eq\' => "a", \'$in\' => $_GET["names"]]]);
+                    }',
+                'error_message' => 'TaintedNosql',
+            ],
+            'nosqlSinkTaintedByAnEqualityOperandOfAFieldNotLiteral' => [
+                'code' => '<?php
+                    final class Collection {
+                        /** @psalm-taint-sink nosql $filter */
+                        public function find(array $filter): void {}
+                    }
+
+                    function search(Collection $users, string $field): void {
+                        $users->find([$field => [\'$eq\' => $_GET["name"]]]);
+                    }',
+                'error_message' => 'TaintedNosql',
+            ],
+            'nosqlSinkTaintedByAnEqualityOperandAnOverrideMayTakeAnywhere' => [
+                'code' => '<?php
+                    class Collection {
+                        /** @psalm-taint-sink nosql $filter */
+                        public function find(array $filter): void {}
+
+                        /** @psalm-taint-sink nosql $pipeline */
+                        public function aggregate(array $pipeline): void {}
+                    }
+
+                    final class ExprCollection extends Collection {
+                        #[Override]
+                        public function find(array $filter): void {
+                            $this->aggregate([[\'$match\' => [\'$expr\' => $filter]]]);
+                        }
+                    }
+
+                    function search(Collection $users): void {
+                        $users->find(["name" => [\'$eq\' => $_GET["name"]]]);
+                    }',
+                'error_message' => 'TaintedNosql',
             ],
             'keyedStoreExactKey' => [
                 'code' => '<?php

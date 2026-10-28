@@ -70,7 +70,7 @@ final class TaintModelFields implements AfterExpressionAnalysisInterface
 
             $read = $codebase->getTaintNode($source, 'model field', $location);
             $codebase->addTaintPath($source, $field_node, $read, 'property-fetch');
-            $node_types->setType($call, $type->addParentNodes([$read->id => $read]));
+            $node_types->setType($call, $type->addParentNodes([$read]));
         }
 
         return null;

@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\PropertyBagTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Codebase\VariableUseGraph;
@@ -100,6 +101,8 @@ final class ArrayAssignmentAnalyzer
             $context,
             true,
         );
+
+        PropertyBagTaints::taintAssignment($statements_analyzer, $stmt, $assignment_value_type, $context);
 
         if (!$statements_analyzer->node_data->getType($stmt->var) && $var_id) {
             $context->vars_in_scope[$var_id] = Type::getMixed();
