@@ -329,11 +329,7 @@ final class Analyzer
 
             $file_reference_cache = $codebase->file_reference_provider->cache;
             $previous_timings = $file_reference_cache?->getCachedAnalysisTimings() ?? [];
-            $files_longest_first = AnalysisOrder::longestFirst(
-                $this->files_to_analyze,
-                $previous_timings,
-                fn(string $file_path): int => strlen($this->file_provider->getContents($file_path)),
-            );
+            $files_longest_first = $this->getFilesLongestFirst($previous_timings);
 
             // Wait for all tasks to complete and collect the results.
             await($pool->runAll(new InitAnalyzerTask));
@@ -435,6 +431,22 @@ final class Analyzer
                 $task_done_closure(self::analysisWorker($this->config, $this->progress, $file_path));
             }
         }
+    }
+
+    /**
+     * The order in which files are handed to the analysis workers
+     *
+     * @param array<string, float> $previous_timings seconds a previous run spent on each file
+     * @return array<string, string>
+     * @psalm-external-mutation-free
+     */
+    public function getFilesLongestFirst(array $previous_timings): array
+    {
+        return AnalysisOrder::longestFirst(
+            $this->files_to_analyze,
+            $previous_timings,
+            $this->file_provider->getSize(...),
+        );
     }
 
     public function loadCachedResults(ProjectAnalyzer $project_analyzer): void

@@ -23,33 +23,37 @@ final class AnalysisOrder
     /**
      * @param array<string, string> $files files to analyse, keyed by path
      * @param array<string, float> $timings seconds a previous run spent on a file
-     * @param Closure[_](string): int $size_of cheap proxy for the cost of a file without history
+     * @param Closure[_](string): int $size_of size proxy for a file's cost; needed only if a file has no history
      * @return array<string, string> the same files, most expensive first; ties are broken by path
      * @psalm-pure
      */
     public static function longestFirst(array $files, array $timings, Closure $size_of): array
     {
-        $sizes = [];
+        $costs = [];
+        $without_history = [];
         foreach ($files as $path => $_) {
-            $sizes[$path] = $size_of($path);
-        }
-
-        // Express the size of files without history in seconds, using the observed cost per byte of the files
-        // that have both, so that the two kinds of estimates can be compared.
-        $known_seconds = 0.0;
-        $known_bytes = 0;
-        foreach ($sizes as $path => $size) {
             if (isset($timings[$path])) {
-                $known_seconds += $timings[$path];
-                $known_bytes += $size;
+                $costs[$path] = $timings[$path];
+            } else {
+                $without_history[] = $path;
             }
         }
 
-        $seconds_per_byte = $known_bytes > 0 && $known_seconds > 0.0 ? $known_seconds / (float) $known_bytes : 1.0;
+        if ($without_history !== []) {
+            // Express the size of files without history in seconds, using the observed cost per byte of the files
+            // that have both, so that the two kinds of estimates can be compared.
+            $known_seconds = 0.0;
+            $known_bytes = 0;
+            foreach ($costs as $path => $seconds) {
+                $known_seconds += $seconds;
+                $known_bytes += $size_of($path);
+            }
 
-        $costs = [];
-        foreach ($sizes as $path => $size) {
-            $costs[$path] = $timings[$path] ?? (float) $size * $seconds_per_byte;
+            $seconds_per_byte = $known_bytes > 0 && $known_seconds > 0.0 ? $known_seconds / (float) $known_bytes : 1.0;
+
+            foreach ($without_history as $path) {
+                $costs[$path] = (float) $size_of($path) * $seconds_per_byte;
+            }
         }
 
         $files_in_order = $files;

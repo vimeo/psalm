@@ -128,4 +128,17 @@ final class AnalysisOrderTest extends TestCase
         self::assertSame(['/b' => '/b', '/a' => '/a'], $ordered);
         self::assertSame(['/a' => '/a', '/b' => '/b'], $files);
     }
+
+    public function testSizesAreNotNeededWhenEveryFileHasHistory(): void
+    {
+        $ordered = AnalysisOrder::longestFirst(
+            self::files(['/a', '/b']),
+            ['/a' => 1.0, '/b' => 2.0],
+            static function (string $path): int {
+                self::fail('size of ' . $path . ' was requested although every file has history');
+            },
+        );
+
+        self::assertSame(['/b', '/a'], array_keys($ordered));
+    }
 }
