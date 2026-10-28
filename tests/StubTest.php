@@ -1358,6 +1358,9 @@ final class StubTest extends TestCase
             (string) getcwd() . '/vendor/trait_provided_method.php',
             '<?php
                 trait TraitWithMethod {
+                    /** @var string */
+                    public $p = "";
+
                     /** @param string $x */
                     public function m($x): void {}
                 }
@@ -1367,14 +1370,18 @@ final class StubTest extends TestCase
                 }
 
                 class StubbedChild extends StubbedBase {}
-
-                class StubbedGrandChild extends StubbedChild {}',
+                class StubbedChild2 extends StubbedChild {}
+                class StubbedChild3 extends StubbedChild2 {}
+                class StubbedChild4 extends StubbedChild3 {}',
         );
 
         $this->addStubFile(
             'trait_provided_method.phpstub',
             '<?php
                 class StubbedBase {
+                    /** @var int */
+                    public $p = 0;
+
                     /** @param int $x */
                     public function m($x): void {}
                 }',
@@ -1385,9 +1392,9 @@ final class StubTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                (new StubbedBase())->m(1);
                 (new StubbedChild())->m(1);
-                (new StubbedGrandChild())->m(1);',
+                (new StubbedChild4())->m(1);
+                (new StubbedChild4())->p = 1;',
         );
 
         $this->analyzeFile($file_path, new Context());

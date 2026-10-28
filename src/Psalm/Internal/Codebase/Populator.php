@@ -40,6 +40,7 @@ use function in_array;
 use function key;
 use function krsort;
 use function reset;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 
@@ -1160,8 +1161,7 @@ final class Populator
                     // A method that appears in an ancestor was inherited, not declared here: after a stub
                     // re-opens the parent class we are repopulated and must take the parent's new declaration
                     // instead of keeping the stale one (own and own-trait methods appear in this class).
-                    $is_stale_inheritance = !$parent_storage->is_trait
-                        && !$parent_storage->is_interface
+                    $is_stale_inheritance = !$parent_storage->is_interface
                         && isset($storage->appearing_method_ids[$aliased_method_name])
                         && $storage->appearing_method_ids[$aliased_method_name]->fq_class_name !== $storage->name;
 
@@ -1208,7 +1208,14 @@ final class Populator
 
         // register where they're declared
         foreach ($parent_storage->declaring_property_ids as $property_name => $declaring_property_class) {
-            if (isset($storage->declaring_property_ids[$property_name])) {
+            // as with methods, a property that appears in an ancestor was inherited and may be stale
+            if (isset($storage->declaring_property_ids[$property_name])
+                && ($parent_storage->is_trait
+                    || str_starts_with(
+                        $storage->appearing_property_ids[$property_name] ?? '',
+                        $storage->name . '::$',
+                    ))
+            ) {
                 continue;
             }
 

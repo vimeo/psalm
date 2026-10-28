@@ -75,6 +75,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_diff_key;
+use function array_key_first;
 use function array_merge;
 use function array_pop;
 use function array_shift;
@@ -223,14 +224,25 @@ final class ClassLikeNodeScanner
                     $storage->stubbed = true;
                     $storage->aliases = $this->aliases;
 
-                    foreach ($storage->dependent_classlikes as $dependent_name_lc => $_) {
+                    // dependent_classlikes is not transitively closed, so walk the descendants of each dependent too
+                    $dependents = $storage->dependent_classlikes;
+
+                    while (($dependent_name_lc = array_key_first($dependents)) !== null) {
+                        unset($dependents[$dependent_name_lc]);
+
                         try {
                             $dependent_storage = $this->codebase->classlike_storage_provider->get($dependent_name_lc);
                         } catch (InvalidArgumentException) {
                             continue;
                         }
+
+                        if (!$dependent_storage->populated) {
+                            continue;
+                        }
+
                         $dependent_storage->populated = false;
                         $this->codebase->classlike_storage_provider->makeNew($dependent_name_lc);
+                        $dependents += $dependent_storage->dependent_classlikes;
                     }
                 }
             }
