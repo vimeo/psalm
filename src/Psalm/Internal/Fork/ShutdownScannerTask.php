@@ -46,9 +46,39 @@ final class ShutdownScannerTask implements Task
             'classlike_storage' => $codebase->classlike_storage_provider->getAll(),
             'file_storage' => $codebase->file_storage_provider->getAll(),
             'taint_data' => $codebase->taint_flow_graph,
-            'global_constants' => $codebase->getAllStubbedConstants(),
-            'unresolved_global_constants' => $codebase->getAllUnresolvedGlobalConstants(),
-            'global_functions' => $codebase->functions->getAllStubbedFunctions(),
+            'global_constants' => self::getChanged(
+                $codebase->getAllStubbedConstants(),
+                InitScannerTask::$inherited_constants,
+            ),
+            'unresolved_global_constants' => self::getChanged(
+                $codebase->getAllUnresolvedGlobalConstants(),
+                InitScannerTask::$inherited_unresolved_constants,
+            ),
+            'missed_global_constants' => $codebase->getMissedGlobalConstants(),
+            // the parent registers the functions of autoloaded files from their file storage, see Scanner
+            'global_functions' => $codebase->register_autoload_files
+                ? []
+                : $codebase->functions->getAllStubbedFunctions(),
         ];
+    }
+
+    /**
+     * @template T of object
+     * @param array<string, T> $current
+     * @param array<string, T> $inherited
+     * @return array<string, T>
+     * @psalm-pure
+     */
+    private static function getChanged(array $current, array $inherited): array
+    {
+        $changed = [];
+
+        foreach ($current as $name => $value) {
+            if (($inherited[$name] ?? null) !== $value) {
+                $changed[$name] = $value;
+            }
+        }
+
+        return $changed;
     }
 }
