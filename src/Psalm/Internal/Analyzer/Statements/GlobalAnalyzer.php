@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements;
 
+use ArrayObject;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -42,7 +43,7 @@ final class GlobalAnalyzer
      * Per root and checked file path: the functions a function-like calls are resolved as the analyzed file sees them
      *
      * @see getGlobalsWrittenBy()
-     * @var ?WeakMap<FunctionLikeStorage, array<string, array<string, bool>>>
+     * @var ?WeakMap<FunctionLikeStorage, ArrayObject<string, array<string, bool>>>
      */
     private static ?WeakMap $globals_written_by = null;
 
@@ -278,14 +279,14 @@ final class GlobalAnalyzer
         }
 
         if (self::$globals_written_by === null) {
-            /** @var WeakMap<FunctionLikeStorage, array<string, array<string, bool>>> */
+            /** @var WeakMap<FunctionLikeStorage, ArrayObject<string, array<string, bool>>> */
             self::$globals_written_by = new WeakMap();
         }
 
         $file_key = $statements_analyzer->getRootFilePath() . "\0" . $statements_analyzer->getFilePath();
-        $memoized_by_file = self::$globals_written_by[$storage] ?? [];
+        $memoized_by_file = self::$globals_written_by[$storage] ?? null;
 
-        if (isset($memoized_by_file[$file_key])) {
+        if ($memoized_by_file !== null && isset($memoized_by_file[$file_key])) {
             return $memoized_by_file[$file_key];
         }
 
@@ -309,6 +310,7 @@ final class GlobalAnalyzer
             }
         }
 
+        $memoized_by_file ??= new ArrayObject();
         $memoized_by_file[$file_key] = $global_variables;
         self::$globals_written_by[$storage] = $memoized_by_file;
 
