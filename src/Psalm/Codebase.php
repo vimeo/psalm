@@ -170,8 +170,6 @@ final class Codebase
      */
     private static array $missed_global_constants = [];
 
-    private static int $missed_global_constant_lookups = 0;
-
     /**
      * Whether to register autoloaded information
      */
@@ -351,7 +349,6 @@ final class Codebase
         self::$stubbed_constants = [];
         self::$unresolved_stubbed_constants = [];
         self::$missed_global_constants = [];
-        self::$missed_global_constant_lookups = 0;
 
         $reflection = new Reflection($providers->classlike_storage_provider, $this);
 
@@ -1255,7 +1252,6 @@ final class Codebase
     public function recordMissedGlobalConstant(string $const_id): void
     {
         self::$missed_global_constants[$const_id] = true;
-        ++self::$missed_global_constant_lookups;
     }
 
     /**
@@ -1268,22 +1264,11 @@ final class Codebase
     }
 
     /**
-     * How many lookups of a global constant without a type were recorded so far
-     *
-     * @psalm-capabilities read-globals
-     */
-    public function getMissedGlobalConstantLookups(): int
-    {
-        return self::$missed_global_constant_lookups;
-    }
-
-    /**
      * @psalm-capabilities write-globals
      */
     public function resetMissedGlobalConstants(): void
     {
         self::$missed_global_constants = [];
-        self::$missed_global_constant_lookups = 0;
     }
 
     public function fileExists(string $file_path): bool

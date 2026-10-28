@@ -93,6 +93,7 @@ use const PHP_EOL;
  *     global_constants: array<string, Union>,
  *     unresolved_global_constants: array<string, UnresolvedConstantComponent>,
  *     missed_global_constants: array<string, true>,
+ *     files_to_cache: list<string>,
  *     global_functions: array<lowercase-string, FunctionStorage>
  * }
  */
@@ -105,13 +106,17 @@ use const PHP_EOL;
 final class Scanner
 {
     /**
-     * A round of scanning forks only for at least this many files, which is where the scan outweighs
-     * starting and collecting the processes
+     * A round of scanning forks only for more files than this, which is where the scan outweighs starting and
+     * collecting the processes; it adds a process for every FILES_PER_PROCESS files. The autoloaded files are
+     * scanned first, with nothing else to overlap with, so they fork earlier.
      */
-    private const MIN_FILES_TO_FORK = 64;
+    private const MAX_FILES_IN_ONE_PROCESS = 512;
 
-    /** A process is added for every so many files */
-    private const MIN_FILES_PER_PROCESS = 32;
+    private const FILES_PER_PROCESS = 256;
+
+    private const MAX_AUTOLOADED_FILES_IN_ONE_PROCESS = 64;
+
+    private const AUTOLOADED_FILES_PER_PROCESS = 32;
 
     /**
      * @var array<string, string>
@@ -171,6 +176,14 @@ final class Scanner
     private array $reflected_classlikes_lc = [];
 
     private bool $is_forked = false;
+
+    /**
+     * The files of a process scanning autoloaded files whose storage the parent writes to the cache once it
+     * accepted the result of the processes, see scanFilesInParallel
+     *
+     * @var list<string>
+     */
+    private array $files_to_cache = [];
 
     /**
      * @psalm-mutation-free
@@ -474,8 +487,16 @@ final class Scanner
             return false;
         }
 
-        if (!$this->is_forked && $pool_size > 1 && count($files_to_scan) >= self::MIN_FILES_TO_FORK) {
-            $pool_size = (int) ceil(min($pool_size, count($files_to_scan) / self::MIN_FILES_PER_PROCESS));
+        if ($this->codebase->register_autoload_files) {
+            $max_files = self::MAX_AUTOLOADED_FILES_IN_ONE_PROCESS;
+            $files_per_process = self::AUTOLOADED_FILES_PER_PROCESS;
+        } else {
+            $max_files = self::MAX_FILES_IN_ONE_PROCESS;
+            $files_per_process = self::FILES_PER_PROCESS;
+        }
+
+        if (!$this->is_forked && $pool_size > 1 && count($files_to_scan) > $max_files) {
+            $pool_size = (int) ceil(min($pool_size, count($files_to_scan) / $files_per_process));
         } else {
             $pool_size = 1;
         }
@@ -552,7 +573,15 @@ final class Scanner
         }
 
         foreach ($forked_pool_data as $pool_data) {
-            $this->addPoolData($pool_data->await(), !$in_order);
+            $pool_data = $pool_data->await();
+
+            $this->addPoolData($pool_data, !$in_order);
+
+            // a process may have scanned a file against constants that another process redefines, which a cache
+            // entry mustn't keep: the parent caches the files once the result is known to be the one of a scan in order
+            foreach ($pool_data['files_to_cache'] as $file_path) {
+                $this->writeToCache($file_path);
+            }
         }
 
         if ($in_order) {
@@ -616,6 +645,8 @@ final class Scanner
         $types = [];
         /** @var array<string, array{array-key, UnresolvedConstantComponent}> $unresolved */
         $unresolved = [];
+        /** @var array<string, array<array-key, true>> $definers the processes that define each constant */
+        $definers = [];
 
         foreach ($forked_pool_data as $process => $pool_data) {
             foreach ($pool_data['global_constants'] as $const_id => $type) {
@@ -626,6 +657,7 @@ final class Scanner
                 }
 
                 $types[$const_id] = [$process, $type];
+                $definers[$const_id][$process] = true;
             }
 
             foreach ($pool_data['unresolved_global_constants'] as $const_id => $value) {
@@ -636,12 +668,13 @@ final class Scanner
                 }
 
                 $unresolved[$const_id] = [$process, $value];
+                $definers[$const_id][$process] = true;
             }
         }
 
         foreach ($forked_pool_data as $process => $pool_data) {
             foreach ($pool_data['missed_global_constants'] as $const_id => $_) {
-                if (($types[$const_id][0] ?? $process) !== $process) {
+                if (isset($definers[$const_id]) && $definers[$const_id] !== [$process => true]) {
                     return true;
                 }
             }
@@ -659,21 +692,36 @@ final class Scanner
      */
     private function registerAutoloadedFunctions(array $files): void
     {
-        $functions = $this->codebase->functions;
-
         foreach ($files as $file_path) {
-            if (!$this->file_storage_provider->has($file_path)) {
-                continue;
-            }
-
-            foreach ($this->file_storage_provider->get($file_path)->functions as $function_id => $function_storage) {
-                if (($this->codebase->all_functions_global || !$functions->hasStubbedFunction($function_id))
-                    && InternalCallMapHandler::getIntroducingPhpVersionId($function_id) === null
-                ) {
-                    $functions->addGlobalFunction($function_id, $function_storage);
-                }
+            if ($this->file_storage_provider->has($file_path)) {
+                $this->registerGlobalFunctions($this->file_storage_provider->get($file_path));
             }
         }
+    }
+
+    /**
+     * Like on a fresh scan (see FunctionLikeNodeScanner), a polyfill of a native function the analysed version
+     * predates doesn't replace the native signature, and a function that is global already is left alone.
+     */
+    private function registerGlobalFunctions(FileStorage $file_storage): void
+    {
+        $functions = $this->codebase->functions;
+
+        foreach ($file_storage->first_declared_functions as $function_id => $function_storage) {
+            if (($this->codebase->all_functions_global || !$functions->hasStubbedFunction($function_id))
+                && InternalCallMapHandler::getIntroducingPhpVersionId($function_id) === null
+            ) {
+                $functions->addGlobalFunction($function_id, $function_storage);
+            }
+        }
+    }
+
+    private function writeToCache(string $file_path): void
+    {
+        $this->file_storage_provider->cache?->writeToCache(
+            $this->file_storage_provider->get($file_path),
+            $this->file_provider->getContents($file_path),
+        );
     }
 
     private function convertClassesToFilePaths(ClassLikes $classlikes): void
@@ -767,8 +815,6 @@ final class Scanner
 
         $file_storage = $this->file_storage_provider->get($file_path);
 
-        $missed_constant_lookups = $this->codebase->getMissedGlobalConstantLookups();
-
         $file_scanner->scan(
             $this->codebase,
             $file_storage,
@@ -777,16 +823,12 @@ final class Scanner
         );
 
         if (!$from_cache) {
-            // a constant looked up in a process that doesn't know it yet may get another type once the files are
-            // scanned in order, see scanFilePaths
-            $depends_on_scan_order = $this->is_forked
-                && $missed_constant_lookups !== $this->codebase->getMissedGlobalConstantLookups();
-
-            if (!$file_storage->has_visitor_issues
-                && !$depends_on_scan_order
-                && $this->file_storage_provider->cache
-            ) {
-                $this->file_storage_provider->cache->writeToCache($file_storage, $file_contents);
+            if (!$file_storage->has_visitor_issues && $this->file_storage_provider->cache) {
+                if ($this->is_forked && $this->codebase->register_autoload_files) {
+                    $this->files_to_cache[] = $file_path;
+                } else {
+                    $this->file_storage_provider->cache->writeToCache($file_storage, $file_contents);
+                }
             }
         } else {
             $this->codebase->statements_provider->setUnchangedFile($file_path);
@@ -818,19 +860,7 @@ final class Scanner
             if ($this->codebase->register_autoload_files
                 || $this->codebase->all_functions_global
             ) {
-                foreach ($file_storage->functions as $function_storage) {
-                    // like on a fresh scan (see FunctionLikeNodeScanner), a polyfill of a native
-                    // function the analysed version predates doesn't replace the native signature
-                    if ($function_storage->cased_name
-                        && !$this->codebase->functions->hasStubbedFunction($function_storage->cased_name)
-                        && InternalCallMapHandler::getIntroducingPhpVersionId($function_storage->cased_name) === null
-                    ) {
-                        $this->codebase->functions->addGlobalFunction(
-                            $function_storage->cased_name,
-                            $function_storage,
-                        );
-                    }
-                }
+                $this->registerGlobalFunctions($file_storage);
             }
             if ($this->codebase->register_autoload_files
                 || $this->codebase->all_constants_global
@@ -1029,6 +1059,15 @@ final class Scanner
             $this->scanned_files[$file_path] = $deep || ($this->scanned_files[$file_path] ?? false);
         }
         $this->reflected_classlikes_lc = array_merge($reflected_classlikes_lc, $this->reflected_classlikes_lc);
+    }
+
+    /**
+     * @return list<string>
+     * @psalm-mutation-free
+     */
+    public function getFilesToCache(): array
+    {
+        return $this->files_to_cache;
     }
 
     /**
