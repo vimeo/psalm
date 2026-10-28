@@ -434,6 +434,121 @@ final class UnusedCodeTest extends TestCase
         $this->assertSame(10, $issue->line_from);
     }
 
+    public function testCodeUseGraphIsNotResolvedWithoutUnusedCodeDetection(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->find_unused_code = null;
+        $codebase->collectLocations();
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                interface I {
+                    public function value(): int;
+                }
+
+                final class Used implements I {
+                    public function value(): int {
+                        return 1;
+                    }
+                }
+
+                final class Unused {
+                    public function never(): void {}
+                }
+
+                class Open {}
+
+                /** @api */
+                class Published {}
+
+                (new Used())->value();',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $graph = $codebase->code_use_graph;
+
+        // nothing derived from the class storages is added: only unused code detection reads it
+        self::assertSame([], $graph->getReferencingNodes(CodeUseGraph::classNode('used'), CodeUseGraph::EDGE_METHOD));
+        self::assertSame(
+            [],
+            $graph->getReferencingNodes(CodeUseGraph::functionLikeNode('used::value'), CodeUseGraph::EDGE_OVERRIDE),
+        );
+        self::assertSame(
+            [],
+            $graph->getReferencingNodes(CodeUseGraph::classNode('published'), CodeUseGraph::EDGE_PUBLIC_API),
+        );
+
+        // the issues that do not depend on it, and the references, are unaffected
+        self::assertSame(
+            ['ClassMustBeFinal'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+        self::assertCount(1, $codebase->findReferencesToMethod('Used::value'));
+        self::assertNotSame([], $codebase->findReferencesToClassLike('Used'));
+    }
+
+    public function testCodeUseGraphIsResolvedWithUnusedCodeDetection(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->collectLocations();
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                interface I {
+                    public function value(): int;
+                }
+
+                final class Used implements I {
+                    public function value(): int {
+                        return 1;
+                    }
+                }
+
+                final class Unused {
+                    public function never(): void {}
+                }
+
+                class Open {}
+
+                /** @api */
+                class Published {}
+
+                (new Used())->value();',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $graph = $codebase->code_use_graph;
+
+        self::assertSame(
+            [CodeUseGraph::functionLikeNode('used::value') => true],
+            $graph->getReferencingNodes(CodeUseGraph::classNode('used'), CodeUseGraph::EDGE_METHOD),
+        );
+        self::assertSame(
+            [CodeUseGraph::functionLikeNode('i::value') => true],
+            $graph->getReferencingNodes(CodeUseGraph::functionLikeNode('used::value'), CodeUseGraph::EDGE_OVERRIDE),
+        );
+        self::assertSame(
+            [CodeUseGraph::PUBLIC_API => true],
+            $graph->getReferencingNodes(CodeUseGraph::classNode('published'), CodeUseGraph::EDGE_PUBLIC_API),
+        );
+        self::assertTrue($graph->isUsed(CodeUseGraph::classNode('used')));
+        self::assertFalse($graph->isUsed(CodeUseGraph::classNode('unused')));
+        self::assertCount(1, $codebase->findReferencesToMethod('Used::value'));
+        self::assertNotSame([], $codebase->findReferencesToClassLike('Used'));
+    }
+
     /**
      * @return array<string, array{code:string, ignored_issues?: list<string>}>
      * @psalm-pure
