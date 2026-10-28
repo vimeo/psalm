@@ -45,6 +45,7 @@ use function implode;
 use function in_array;
 use function is_array;
 use function is_dir;
+use function json_encode;
 use function mkdir;
 use function preg_match;
 use function realpath;
@@ -56,12 +57,15 @@ use function set_error_handler;
 use function set_exception_handler;
 use function sprintf;
 use function str_replace;
+use function substr;
 use function symlink;
 use function sys_get_temp_dir;
 use function uniqid;
 use function unlink;
 
 use const DIRECTORY_SEPARATOR;
+use const JSON_THROW_ON_ERROR;
+use const JSON_UNESCAPED_SLASHES;
 
 final class ConfigTest extends TestCase
 {
@@ -2083,6 +2087,8 @@ final class ConfigTest extends TestCase
     ): void {
         $root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-library-plugins-');
         mkdir($root);
+        // the root inside a JSON string, whose backslashes on Windows need escaping
+        $json_root = substr(json_encode($root, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), 1, -1);
         $dirs = [$root];
         $paths = [];
         foreach ($files as $path => $contents) {
@@ -2093,7 +2099,7 @@ final class ConfigTest extends TestCase
             if (!is_dir(dirname($path))) {
                 mkdir(dirname($path), 0777, true);
             }
-            file_put_contents($path, str_replace('%root%', $root, $contents));
+            file_put_contents($path, str_replace('%root%', $json_root, $contents));
             $paths[] = $path;
         }
 
