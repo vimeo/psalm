@@ -492,11 +492,31 @@ final class AtomicStaticCallAnalyzer
             if ($found_method_and_class_storage) {
                 [ $method_storage, $defining_class_storage ] = $found_method_and_class_storage;
 
-                // expanded as the return type of a pseudo-method call in checkPseudoMethod()
+                // params are resolved as in ArgumentAnalyzer, so that a `static` param of a final class
+                // accepts the class; the return type is expanded as in checkPseudoMethod()
+                $params = $method_storage->params;
+
+                foreach ($params as &$param) {
+                    if ($param->type) {
+                        $param = $param->setType(TypeExpander::expandUnion(
+                            $codebase,
+                            $param->type,
+                            $defining_class_storage->name,
+                            $fq_class_name,
+                            $defining_class_storage->parent_class,
+                            true,
+                            false,
+                            $class_storage->final,
+                            true,
+                        ));
+                    }
+                }
+                unset($param);
+
                 $statements_analyzer->node_data->setType($stmt, TypeExpander::expandUnion(
                     $codebase,
                     new Union([new TClosure(
-                        $method_storage->params,
+                        $params,
                         $method_storage->return_type,
                         $method_storage->capabilities,
                     )]),

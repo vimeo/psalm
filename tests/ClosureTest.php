@@ -1324,6 +1324,72 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => ['MissingTemplateParam'],
                 'php_version' => '8.1',
             ],
+            'FirstClassCallable:InstanceMethod:BackedEnumFromOnEnumCase' => [
+                'code' => '<?php
+                    enum E: string {
+                        case A = "a";
+                        case B = "b";
+                    }
+
+                    $e = E::A;
+                    $from = $e->from(...);
+                    $result = $from("b");
+                ',
+                'assertions' => [
+                    '$result===' => 'E',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:StaticMethod:PseudoMethodStaticParameterOfFinalClass' => [
+                'code' => '<?php
+                    /**
+                     * @method static void take(static $x)
+                     */
+                    final class Pseudo
+                    {
+                        public static function __callStatic(string $name, array $arguments): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    $take = Pseudo::take(...);
+                    $take(new Pseudo());
+                ',
+                'assertions' => [
+                    '$take===' => 'Closure[impure](Pseudo):void',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:StaticParameterOfFinalClassAcceptsTheClass' => [
+                'code' => '<?php
+                    abstract class Base
+                    {
+                        /** @param static $other */
+                        public static function compareStatic($other): void {}
+
+                        /** @param static $other */
+                        public function compare($other): void {}
+                    }
+
+                    final class Impl extends Base
+                    {
+                        public static function test(): void
+                        {
+                            (self::compareStatic(...))(new Impl());
+                            (static::compareStatic(...))(new Impl());
+                        }
+                    }
+
+                    (Impl::compareStatic(...))(new Impl());
+                    ((new Impl())->compare(...))(new Impl());
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'FirstClassCallable:WithArrayMap' => [
                 'code' => '<?php
                     $array = [1, 2, 3];

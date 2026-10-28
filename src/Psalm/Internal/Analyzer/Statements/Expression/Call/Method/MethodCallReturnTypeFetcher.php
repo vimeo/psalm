@@ -34,6 +34,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -83,6 +84,15 @@ final class MethodCallReturnTypeFetcher
                 $self_fq_class_name = $fq_class_name;
                 $codebase->getMethodReturnType($method_id, $self_fq_class_name);
 
+                // `static` is the enum, whichever case the callable is called on
+                if ($static_type instanceof TEnumCase) {
+                    $closure_static_type = $static_type->value;
+                    $static_type_final = true;
+                } else {
+                    $closure_static_type = $static_type;
+                    $static_type_final = self::isFinalStaticType($codebase, $static_type);
+                }
+
                 return TypeExpander::expandUnion(
                     $codebase,
                     new Union([new TClosure(
@@ -91,11 +101,11 @@ final class MethodCallReturnTypeFetcher
                         $method_storage->capabilities,
                     )]),
                     $self_fq_class_name,
-                    $static_type,
+                    $closure_static_type,
                     $class_storage->parent_class,
                     true,
                     false,
-                    self::isFinalStaticType($codebase, $static_type),
+                    $static_type_final,
                     true,
                 );
             }
