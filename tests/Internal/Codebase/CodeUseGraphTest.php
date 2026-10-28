@@ -5,9 +5,25 @@ declare(strict_types=1);
 namespace Psalm\Tests\Internal\Codebase;
 
 use Closure;
+use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PhpParser\Node\Scalar\String_;
+use Psalm\Aliases;
+use Psalm\CodeLocation;
+use Psalm\FileSource;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Codebase\MutationLevelResolver;
+use Psalm\Storage\Capabilities;
 use Psalm\Tests\TestCase;
 
+use function array_keys;
+use function array_slice;
+use function count;
+
+/**
+ * @psalm-import-type MutationInfo from MutationLevelResolver
+ * @psalm-import-type CapabilitySet from Capabilities
+ */
 final class CodeUseGraphTest extends TestCase
 {
     /**
@@ -108,5 +124,314 @@ final class CodeUseGraphTest extends TestCase
         $graph->resolve(static fn(string $node_id): bool => $node_id === $external);
 
         self::assertTrue($graph->isUsed($method));
+    }
+
+    /**
+     * @param array<string, bool> $callees
+     * @param CapabilitySet $intrinsic
+     * @param array<string, bool> $default_callees
+     * @param array<string, list<string>> $wildcards
+     * @param CapabilitySet $default_intrinsic
+     * @param CapabilitySet $allowed
+     * @return MutationInfo
+     */
+    private static function mutationInfo(
+        string $name,
+        string $root,
+        bool $inherited = false,
+        int $intrinsic = Capabilities::NONE,
+        array $callees = [],
+        bool $fresh = true,
+        int $default_intrinsic = Capabilities::NONE,
+        array $default_callees = [],
+        array $wildcards = [],
+        int $allowed = Capabilities::NONE,
+    ): array {
+        $declaring_file = new class ('/src/Declaring.php', new Aliases()) implements FileSource {
+            public function __construct(private string $path, private Aliases $aliases)
+            {
+            }
+
+            #[Override]
+            public function getFileName(): string
+            {
+                return $this->path;
+            }
+
+            #[Override]
+            public function getFilePath(): string
+            {
+                return $this->path;
+            }
+
+            #[Override]
+            public function getRootFileName(): string
+            {
+                return $this->path;
+            }
+
+            #[Override]
+            public function getRootFilePath(): string
+            {
+                return $this->path;
+            }
+
+            #[Override]
+            public function getAliases(): Aliases
+            {
+                return $this->aliases;
+            }
+        };
+
+        return [
+            'intrinsic' => $intrinsic,
+            'allowed' => $allowed,
+            'callees' => $callees,
+            'default_intrinsic' => $default_intrinsic,
+            'default_callees' => $default_callees,
+            'location' => new CodeLocation($declaring_file, new String_('x')),
+            'cased_name' => $name,
+            'suppressed_issues' => [],
+            'class' => null,
+            'start' => 0,
+            'fresh' => $fresh,
+            'root' => $root,
+            'inherited' => $inherited,
+            'report' => true,
+            'wildcards' => $wildcards,
+        ];
+    }
+
+    /**
+     * Candidates analysed for the same function-like declared in /src/Declaring.php, with the name of the one that
+     * has to win. The merge has to give the same result for every order the workers' graphs are merged in.
+     *
+     * @return iterable<string, array{list<MutationInfo>, string}>
+     */
+    public static function providerMutationInfoPrecedence(): iterable
+    {
+        $declaring = '/src/Declaring.php';
+
+        yield 'analysis in the declaring file over the analysis when included' => [
+            [
+                self::mutationInfo('own', $declaring),
+                self::mutationInfo('included', '/zzz/Includer.php', false, Capabilities::ALL),
+            ],
+            'own',
+        ];
+
+        yield 'analysis when included over the analysis of an inherited body' => [
+            [
+                self::mutationInfo('included', '/aaa/Includer.php'),
+                self::mutationInfo('inherited', '/zzz/Includer.php', true, Capabilities::ALL),
+            ],
+            'included',
+        ];
+
+        yield 'analysis in the declaring file over the analysis of an inherited body' => [
+            [
+                self::mutationInfo('own', $declaring),
+                self::mutationInfo('inherited', $declaring, true, Capabilities::ALL),
+            ],
+            'own',
+        ];
+
+        yield 'greater root file among the analyses when included' => [
+            [
+                self::mutationInfo('b', '/src/B.php', false, Capabilities::NONE),
+                self::mutationInfo('a', '/src/A.php', false, Capabilities::ALL),
+            ],
+            'b',
+        ];
+
+        yield 'greater intrinsic level among analyses of one root' => [
+            [
+                self::mutationInfo('low', '/src/Root.php', true, Capabilities::READ_PROPS, ['z' => false]),
+                self::mutationInfo('high', '/src/Root.php', true, Capabilities::IO, ['a' => false]),
+            ],
+            'high',
+        ];
+
+        yield 'greater callees among analyses of one root and level' => [
+            [
+                self::mutationInfo('x', '/src/Root.php', true, Capabilities::IO, ['x' => false]),
+                self::mutationInfo('y', '/src/Root.php', true, Capabilities::IO, ['y' => false]),
+            ],
+            'y',
+        ];
+
+        yield 'callees are compared as a list' => [
+            [
+                self::mutationInfo('short', '/src/Root.php', true, Capabilities::IO, ['a' => false]),
+                self::mutationInfo('long', '/src/Root.php', true, Capabilities::IO, ['a' => false, 'b' => true]),
+            ],
+            'long',
+        ];
+
+        yield 'callees are compared whatever their order' => [
+            [
+                self::mutationInfo('ab', '/src/Root.php', true, Capabilities::IO, ['a' => false, 'b' => false]),
+                self::mutationInfo('ba', '/src/Root.php', true, Capabilities::IO, ['b' => false, 'a' => true]),
+            ],
+            'ba',
+        ];
+
+        yield 'trait method analysed in three classes using it' => [
+            [
+                self::mutationInfo('first', '/src/Declaring.php', true, Capabilities::READ_PROPS, ['m' => false]),
+                self::mutationInfo('second', '/src/Declaring.php', true, Capabilities::WRITE_PROPS, ['k' => false]),
+                self::mutationInfo('third', '/src/Declaring.php', true, Capabilities::WRITE_PROPS, ['n' => false]),
+            ],
+            'third',
+        ];
+
+        yield 'fresh analysis over one of a previous run' => [
+            [
+                self::mutationInfo('stale', $declaring, false, Capabilities::NONE, [], false),
+                self::mutationInfo('fresh', '/src/Includer.php', true, Capabilities::ALL),
+            ],
+            'fresh',
+        ];
+
+        yield 'fresh analysis over one of a previous run of a greater root' => [
+            [
+                self::mutationInfo('stale', '/zzz/Root.php', false, Capabilities::ALL, [], false),
+                self::mutationInfo('fresh', '/aaa/Root.php', false, Capabilities::NONE),
+            ],
+            'fresh',
+        ];
+    }
+
+    /**
+     * Candidates analysed for the same function-like in the same file, that only differ in what the level resolution
+     * reads besides the level and callees of the body, with the name of the one that has to win.
+     *
+     * @return iterable<string, array{list<MutationInfo>, string}>
+     */
+    public static function providerMutationInfoContent(): iterable
+    {
+        yield 'greater parameter default level among analyses with the same callees' => [
+            [
+                self::mutationInfo('low', '/src/Root.php', true, Capabilities::IO, ['a' => false]),
+                self::mutationInfo(
+                    'high',
+                    '/src/Root.php',
+                    true,
+                    Capabilities::IO,
+                    ['a' => false],
+                    true,
+                    Capabilities::READ_PROPS,
+                ),
+            ],
+            'high',
+        ];
+
+        yield 'parameter default callees among analyses with the same callees' => [
+            [
+                self::mutationInfo('x', '/src/Root.php', true, Capabilities::IO, [], true, 0, ['x' => false]),
+                self::mutationInfo('y', '/src/Root.php', true, Capabilities::IO, [], true, 0, ['y' => false]),
+            ],
+            'y',
+        ];
+
+        yield 'wildcards among analyses with the same levels and callees' => [
+            [
+                self::mutationInfo('a', '/src/Root.php', true, Capabilities::IO, [], true, 0, [], ['a' => ['$a']]),
+                self::mutationInfo('b', '/src/Root.php', true, Capabilities::IO, [], true, 0, [], ['b' => ['$b']]),
+            ],
+            'b',
+        ];
+    }
+
+    /**
+     * @param list<MutationInfo> $infos
+     * @return list<list<MutationInfo>>
+     * @psalm-pure
+     */
+    private static function permutations(array $infos): array
+    {
+        if (count($infos) <= 1) {
+            return [$infos];
+        }
+
+        $permutations = [];
+
+        foreach ($infos as $i => $info) {
+            $rest = [...array_slice($infos, 0, $i), ...array_slice($infos, $i + 1)];
+
+            foreach (self::permutations($rest) as $permutation) {
+                $permutations[] = [$info, ...$permutation];
+            }
+        }
+
+        return $permutations;
+    }
+
+    /**
+     * @param list<MutationInfo> $infos
+     */
+    #[DataProvider('providerMutationInfoPrecedence')]
+    #[DataProvider('providerMutationInfoContent')]
+    public function testMergingWorkerGraphsPicksTheSameMutationInfoInAnyOrder(array $infos, string $winner): void
+    {
+        $node_id = CodeUseGraph::functionLikeNode('a\\trait_::m');
+
+        $expected_levels = null;
+
+        foreach (self::permutations($infos) as $permutation) {
+            $merged = new CodeUseGraph();
+
+            foreach ($permutation as $info) {
+                $worker_graph = new CodeUseGraph();
+                $worker_graph->addMutationInfo($node_id, $info);
+                $merged->addGraph($worker_graph);
+            }
+
+            $order = '';
+
+            foreach ($permutation as $info) {
+                $order .= $info['cased_name'] . ' ';
+            }
+
+            self::assertSame([$node_id], array_keys($merged->getMutationInfo()), $order);
+            self::assertSame($winner, $merged->getMutationInfo()[$node_id]['cased_name'], 'merged in order: ' . $order);
+
+            $expected_levels ??= $merged->getMutationLevels();
+            self::assertSame($expected_levels, $merged->getMutationLevels(), 'merged in order: ' . $order);
+        }
+    }
+
+    public function testStaleMutationInfoNeverReplacesFreshOne(): void
+    {
+        $graph = new CodeUseGraph();
+        $node_id = CodeUseGraph::functionLikeNode('a\\c::m');
+
+        $graph->addMutationInfo($node_id, self::mutationInfo('fresh', '/src/Root.php', true));
+        $graph->addMutationInfo(
+            $node_id,
+            self::mutationInfo('stale', '/src/Declaring.php', false, Capabilities::ALL, [], false),
+        );
+
+        self::assertSame('fresh', $graph->getMutationInfo()[$node_id]['cased_name']);
+    }
+
+    public function testMutationLevelsFollowTheMutationInfoThatWon(): void
+    {
+        $graph = new CodeUseGraph();
+        $node_id = CodeUseGraph::functionLikeNode('a\\c::m');
+
+        $graph->addMutationInfo($node_id, self::mutationInfo('included', '/src/Includer.php', false, Capabilities::IO));
+        self::assertSame([$node_id => Capabilities::IO], $graph->getMutationLevels());
+
+        // the analysis in the declaring file replaces it
+        $graph->addMutationInfo(
+            $node_id,
+            self::mutationInfo('own', '/src/Declaring.php', false, Capabilities::READ_PROPS),
+        );
+        self::assertSame([$node_id => Capabilities::READ_PROPS], $graph->getMutationLevels());
+
+        // one that does not replace it leaves them as they are
+        $graph->addMutationInfo($node_id, self::mutationInfo('inherited', '/src/Includer.php', true, Capabilities::ALL));
+        self::assertSame([$node_id => Capabilities::READ_PROPS], $graph->getMutationLevels());
     }
 }
