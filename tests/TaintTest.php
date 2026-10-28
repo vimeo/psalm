@@ -6,6 +6,7 @@ namespace Psalm\Tests;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use Psalm\CodeLocation\Raw;
 use Psalm\Config;
 use Psalm\Config\IssueHandler;
 use Psalm\Context;
@@ -13,6 +14,8 @@ use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
@@ -29,6 +32,7 @@ use function in_array;
 use function preg_match;
 use function range;
 use function sort;
+use function sprintf;
 use function str_starts_with;
 use function strpos;
 use function trim;
@@ -482,6 +486,59 @@ final class TaintTest extends TestCase
         );
 
         self::assertSame(['TaintedHtml', 'TaintedTextWithQuotes'], $taint_issues);
+    }
+
+    /**
+     * The flows of many sources through a node widened reach a sink one of whose flows is of a file where issues aren't
+     * reported: that one adds no issue, so it must not stop the others from being reported.
+     */
+    public function testWidenedFlowsAreReportedIntoASinkWhoseFirstFlowIsNotReported(): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $external_path = '/external/vendor/somefile.php';
+        $text = '<?php echo $x;';
+        $this->file_provider->registerFile($file_path, $text);
+        $this->file_provider->registerFile($external_path, $text);
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+
+        $location = new Raw($text, $file_path, 'somefile.php', 6, 13);
+        $external_location = new Raw($text, $external_path, 'vendor/somefile.php', 6, 13);
+
+        $graph = new TaintFlowGraph();
+        $codebase->taint_flow_graph = $graph;
+
+        $sink = DataFlowNode::getForTaint('sink', $external_location, TaintKind::INPUT_SHELL);
+        $unreported_source = DataFlowNode::getForTaint('a-unreported', $external_location, TaintKind::INPUT_SHELL);
+        $hub = DataFlowNode::getForAssignment('hub', $location);
+        $argument = DataFlowNode::getForAssignment('argument', $location);
+        $graph->addSink($sink);
+        $graph->addSource($unreported_source);
+        $graph->addNode($hub);
+        $graph->addNode($argument);
+        $graph->addPath($unreported_source, $sink, '=');
+
+        // more keys than a node has states for before its flows are widened, none of them the one fetched
+        for ($i = 0; $i < 100; ++$i) {
+            $source = DataFlowNode::getForTaint(sprintf('z-source-%03d', $i), $location, TaintKind::INPUT_SHELL);
+            $graph->addSource($source);
+            $graph->addPath($source, $hub, "arrayvalue-assignment-'k" . $i . "'");
+        }
+
+        $graph->addPath($hub, $argument, "arrayvalue-fetch-'other'");
+        $graph->addPath($argument, $sink, '=');
+        $graph->connectSinksAndSources($codebase->progress);
+
+        self::assertSame(
+            ['TaintedShell'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
     }
 
     /**

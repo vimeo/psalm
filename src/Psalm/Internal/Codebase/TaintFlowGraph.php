@@ -1105,7 +1105,8 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
-     * Reports the flow of taints $taints from $predecessor into $sink.
+     * Reports the flow of taints $taints from $predecessor into $sink, and returns whether an issue was added: none
+     * is where the issues aren't reported, or are suppressed.
      */
     public function reportTaintedFlow(
         DataFlowNode $predecessor,
@@ -1113,7 +1114,7 @@ final class TaintFlowGraph extends DataFlowGraph
         int $taints,
         Config $config,
         Codebase $codebase,
-    ): void {
+    ): bool {
         if ($sink->code_location
             && $config->reportIssueInFile('TaintedInput', $sink->code_location->file_path)
         ) {
@@ -1132,13 +1133,14 @@ final class TaintFlowGraph extends DataFlowGraph
                 $issue_location = $argument_location;
             }
         } else {
-            return;
+            return false;
         }
 
         $issue_trace = $this->getIssueTrace($predecessor);
         $path = $this->getPredecessorPath($predecessor)
             . ' -> ' . $this->getSuccessorPath($sink);
 
+        $added = false;
         $max = $codebase->taint_count;
         for ($x = 0; $x < $max; $x++) {
             $t = 1 << $x;
@@ -1286,7 +1288,9 @@ final class TaintFlowGraph extends DataFlowGraph
                 ),
             };
 
-            IssueBuffer::maybeAdd($issue);
+            $added = IssueBuffer::accepts($issue) || $added;
         }
+
+        return $added;
     }
 }

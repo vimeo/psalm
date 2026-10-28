@@ -762,7 +762,8 @@ final class TaintFlowResolution
     private array $widened_states = [];
 
     /**
-     * Sink id => taints reported into it so far
+     * Sink id => taints of the issues added for it so far (not those of flows into a sink where issues aren't
+     * reported, or that were suppressed)
      *
      * @var array<string, int>
      */
@@ -3828,7 +3829,6 @@ final class TaintFlowResolution
                 TaintKind::INPUT_URL_COMPONENT => TaintKind::INPUT_URL_PATH,
                 default => 0,
             };
-            $this->reported_sink_taints[$sink_id] = ($this->reported_sink_taints[$sink_id] ?? 0) | $taint;
 
             $predecessor = null;
 
@@ -3849,8 +3849,10 @@ final class TaintFlowResolution
                     );
             }
 
-            if ($predecessor !== null) {
-                $this->graph->reportTaintedFlow($predecessor, $sink, $taint, $this->config, $this->codebase);
+            if ($predecessor !== null
+                && $this->graph->reportTaintedFlow($predecessor, $sink, $taint, $this->config, $this->codebase)
+            ) {
+                $this->reported_sink_taints[$sink_id] = ($this->reported_sink_taints[$sink_id] ?? 0) | $taint;
             }
         }
     }
