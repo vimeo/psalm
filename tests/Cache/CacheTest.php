@@ -25,6 +25,7 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use ReflectionProperty;
 
+use function array_keys;
 use function chmod;
 use function fclose;
 use function file_get_contents;
@@ -219,6 +220,83 @@ final class CacheTest extends TestCase
         $in_memory = new ReflectionProperty(Cache::class, 'cache');
         self::assertSame($retained, $in_memory->getValue($cache) !== []);
         self::assertSame('item', $cache->getItem('key', 'hash'));
+    }
+
+    public function testConsolidatedEntriesAreOnlyUnserializedWhenUsed(): void
+    {
+        $config = $this->newConfig();
+        $config->array_cache = true;
+
+        /** @var Cache<string> $cache */
+        $cache = new Cache($config, 'test');
+        $cache->saveItem('a', 'item a', 'hash a');
+        $cache->saveItem('b', 'item b', 'hash b');
+        $cache->consolidate();
+        unset($cache);
+
+        /** @var Cache<string> $cache */
+        $cache = new Cache($config, 'test');
+        $in_memory = new ReflectionProperty(Cache::class, 'cache');
+        self::assertSame([], $in_memory->getValue($cache));
+
+        self::assertSame('hash b', $cache->getHash('b'));
+        self::assertNull($cache->getHash('missing'));
+        self::assertNull($cache->getItem('a', 'stale hash'));
+        self::assertSame([], $in_memory->getValue($cache));
+
+        self::assertSame('item a', $cache->getItem('a', 'hash a'));
+        self::assertSame(['a'], array_keys($in_memory->getValue($cache)));
+        self::assertSame('item a', $cache->getItem('a', null));
+    }
+
+    public function testConsolidatingAgainKeepsEntriesNobodyUsed(): void
+    {
+        $config = $this->newConfig();
+        $config->array_cache = true;
+
+        /** @var Cache<string> $cache */
+        $cache = new Cache($config, 'test');
+        $cache->saveItem('used', 'old', 'old hash');
+        $cache->saveItem('unused', 'item', 'hash');
+        $cache->consolidate();
+        unset($cache);
+
+        /** @var Cache<string> $cache */
+        $cache = new Cache($config, 'test');
+        // the hash is unchanged, so this must not replace the consolidated item
+        $cache->saveItem('unused', 'ignored', 'hash');
+        $cache->saveItem('used', 'new', 'new hash');
+        $cache->saveItem('added', 'added item', 'added hash');
+        $cache->consolidate();
+        unset($cache);
+
+        /** @var Cache<string> $cache */
+        $cache = new Cache($config, 'test');
+        self::assertSame('item', $cache->getItem('unused', 'hash'));
+        self::assertSame('new', $cache->getItem('used', 'new hash'));
+        self::assertNull($cache->getItem('used', 'old hash'));
+        self::assertSame('added item', $cache->getItem('added', 'added hash'));
+    }
+
+    public function testConsolidatedEntriesCanBeFoundAndForgotten(): void
+    {
+        $config = $this->newConfig();
+        $config->array_cache = true;
+
+        /** @var Cache<string> $cache */
+        $cache = new Cache($config, 'test');
+        $cache->saveItem('a', 'old', 'hash');
+        $cache->consolidate();
+        unset($cache);
+
+        /** @var Cache<string> $cache */
+        $cache = new Cache($config, 'test');
+        self::assertTrue($cache->hasItem('a'));
+
+        // the same hash is skipped as a duplicate, unless the item was forgotten
+        $cache->forgetItem('a');
+        $cache->saveItem('a', 'new', 'hash');
+        self::assertSame('new', $cache->getItem('a', 'hash'));
     }
 
     /**
