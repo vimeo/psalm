@@ -18,8 +18,10 @@ use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 
+use function array_keys;
 use function extension_loaded;
 use function microtime;
+use function str_repeat;
 use function sys_get_temp_dir;
 use function uniqid;
 
@@ -144,6 +146,46 @@ final class AnalysisTimingsTest extends TestCase
         self::assertSame(9.0, $timings_after[$outside_project] ?? null, 'history of a file not analysed this run is kept');
         self::assertArrayNotHasKey('/vanished.php', $timings_after);
         self::assertArrayHasKey($config->base_dir . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'D.php', $timings_after);
+    }
+
+    public function testFilesAreDispatchedLongestFirst(): void
+    {
+        $config = self::configWithCacheDirectory();
+        $file_provider = new FakeFileProvider();
+        $providers = new Providers(
+            $file_provider,
+            new ParserCacheProvider($config, '', false),
+            new FileStorageCacheProvider($config, '', false),
+            new ClassLikeStorageCacheProvider($config, '', false),
+            new FileReferenceCacheProvider($config, 'lock'),
+            new ProjectCacheProvider(),
+        );
+        $project_analyzer = new ProjectAnalyzer($config, $providers);
+
+        // x1 and x4 have history (51 s for 50 bytes), so x2 is expected to cost 102 s and x3 10.2 s
+        $file_provider->registerFile('/x1.php', str_repeat('a', 10));
+        $file_provider->registerFile('/x2.php', str_repeat('a', 100));
+        $file_provider->registerFile('/x3.php', str_repeat('a', 10));
+        $file_provider->registerFile('/x4.php', str_repeat('a', 40));
+
+        $analyzer = $project_analyzer->getCodebase()->analyzer;
+        $analyzer->addFilesToAnalyze([
+            '/x1.php' => '/x1.php',
+            '/x2.php' => '/x2.php',
+            '/x3.php' => '/x3.php',
+            '/x4.php' => '/x4.php',
+        ]);
+
+        $order = $analyzer->getFilesLongestFirst(['/x1.php' => 50.0, '/x4.php' => 1.0]);
+
+        self::assertSame(['/x2.php', '/x1.php', '/x3.php', '/x4.php'], array_keys($order));
+
+        // the size of a file being edited in the language server is that of its unsaved contents
+        $file_provider->addTemporaryFileChanges('/x3.php', str_repeat('a', 500));
+
+        $order = $analyzer->getFilesLongestFirst(['/x1.php' => 50.0, '/x4.php' => 1.0]);
+
+        self::assertSame(['/x3.php', '/x2.php', '/x1.php', '/x4.php'], array_keys($order));
     }
 
     private function analyse(Config $config, Providers $providers): void

@@ -14,8 +14,10 @@ use UnexpectedValueException;
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
+use function filesize;
 use function in_array;
 use function is_dir;
+use function strlen;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -68,6 +70,26 @@ class FileProvider
         self::$open_files[$file_path] = $file_contents;
 
         return $file_contents;
+    }
+
+    /**
+     * Size in bytes of what getContents() would return, without reading files that are only on disk
+     *
+     * @psalm-external-mutation-free
+     */
+    public function getSize(string $file_path): int
+    {
+        if ($this->isOpen($file_path)) {
+            return strlen($this->getContents($file_path));
+        }
+
+        /** @psalm-suppress ImpureFunctionCall */
+        if (!file_exists($file_path)) {
+            return 0;
+        }
+
+        /** @psalm-suppress ImpureFunctionCall */
+        return (int) filesize($file_path);
     }
 
     public function setContents(string $file_path, string $file_contents): void
