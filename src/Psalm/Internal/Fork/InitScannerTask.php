@@ -11,6 +11,8 @@ use Override;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Type\Union;
 
 use const PHP_EOL;
 
@@ -20,6 +22,17 @@ use const PHP_EOL;
  */
 final class InitScannerTask implements Task
 {
+    /**
+     * The global constants the worker inherited at fork time, which the parent has too: ShutdownScannerTask sends
+     * back only the ones the worker added or changed.
+     *
+     * @var array<string, Union>
+     */
+    public static array $inherited_constants = [];
+
+    /** @var array<string, UnresolvedConstantComponent> */
+    public static array $inherited_unresolved_constants = [];
+
     #[Override]
     final public function run(Channel $channel, Cancellation $cancellation): mixed
     {
@@ -30,6 +43,9 @@ final class InitScannerTask implements Task
         $statements_provider = $codebase->statements_provider;
 
         $codebase->scanner->isForked();
+        self::$inherited_constants = $codebase->getAllStubbedConstants();
+        self::$inherited_unresolved_constants = $codebase->getAllUnresolvedGlobalConstants();
+        $codebase->resetMissedGlobalConstants();
         FileStorageProvider::deleteAll();
         ClassLikeStorageProvider::deleteAll();
 

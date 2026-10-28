@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
+use Amp\Future;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
@@ -30,6 +31,7 @@ use UnexpectedValueException;
 
 use function Amp\Future\await;
 use function array_filter;
+use function array_map;
 use function array_merge;
 use function array_pop;
 use function ceil;
@@ -90,6 +92,7 @@ use const PHP_EOL;
  *     taint_data: ?TaintFlowGraph,
  *     global_constants: array<string, Union>,
  *     unresolved_global_constants: array<string, UnresolvedConstantComponent>,
+ *     missed_global_constants: array<string, true>,
  *     global_functions: array<lowercase-string, FunctionStorage>
  * }
  */
@@ -101,6 +104,15 @@ use const PHP_EOL;
  */
 final class Scanner
 {
+    /**
+     * A round of scanning forks only for at least this many files, which is where the scan outweighs
+     * starting and collecting the processes
+     */
+    private const MIN_FILES_TO_FORK = 64;
+
+    /** A process is added for every so many files */
+    private const MIN_FILES_PER_PROCESS = 32;
+
     /**
      * @var array<string, string>
      */
@@ -462,76 +474,25 @@ final class Scanner
             return false;
         }
 
-        if (!$this->is_forked && $pool_size > 1 && count($files_to_scan) > 512) {
-            $pool_size = (int) ceil(min($pool_size, count($files_to_scan) / 256));
+        if (!$this->is_forked && $pool_size > 1 && count($files_to_scan) >= self::MIN_FILES_TO_FORK) {
+            $pool_size = (int) ceil(min($pool_size, count($files_to_scan) / self::MIN_FILES_PER_PROCESS));
         } else {
             $pool_size = 1;
         }
 
         $this->progress->expand(count($files_to_scan));
-        if ($pool_size > 1) {
-            $this->progress->debug('Forking process for scanning' . PHP_EOL);
 
-            // Run scanning one file at a time, splitting the set of
-            // files up among a given number of child processes.
-            $pool = new Pool(
-                $pool_size,
-                $this->config->long_scan_warning,
-                $this->progress,
-            );
+        if ($pool_size > 1 && $this->scanFilesInParallel($files_to_scan, $pool_size)) {
+            $this->file_reference_provider->addClassLikeFiles($this->classlike_files);
 
-            await($pool->runAll(new InitScannerTask));
-            $pool->run(
-                $files_to_scan,
-                ScannerTask::class,
-                function (): void {
-                    $this->progress->taskDone(0);
-                },
-                // Register custom taints a worker discovers in this (parent) process's single registry, so
-                // every worker resolves a given taint name to the same bit.
-                fn(string $taint_type): array => $this->codebase->registerTaintFromWorker($taint_type),
-            );
+            return true;
+        }
 
-            // Wait for all tasks to complete and collect the results.
-            $forked_pool_data = $pool->runAll(new ShutdownScannerTask);
+        foreach ($files_to_scan as $file_path => $_) {
+            $this->scanAPath($file_path);
 
-            foreach ($forked_pool_data as $pool_data) {
-                $pool_data = $pool_data->await();
-
-                IssueBuffer::addIssues($pool_data['issues']);
-
-                $this->codebase->statements_provider->addChangedMembers(
-                    $pool_data['changed_members'],
-                );
-                $this->codebase->statements_provider->addUnchangedSignatureMembers(
-                    $pool_data['unchanged_signature_members'],
-                );
-                $this->codebase->statements_provider->addDiffMap(
-                    $pool_data['diff_map'],
-                );
-                $this->codebase->statements_provider->addDeletionRanges(
-                    $pool_data['deletion_ranges'],
-                );
-                $this->codebase->statements_provider->addErrors($pool_data['errors']);
-
-                if ($this->codebase->taint_flow_graph && $pool_data['taint_data']) {
-                    $this->codebase->taint_flow_graph->addGraph($pool_data['taint_data']);
-                }
-
-                $this->codebase->file_storage_provider->addMore($pool_data['file_storage']);
-                $this->codebase->classlike_storage_provider->addMore($pool_data['classlike_storage']);
-
-                $this->codebase->classlikes->addThreadData($pool_data['classlikes_data']);
-
-                $this->addThreadData($pool_data['scanner_data']);
-
-                $this->codebase->addGlobalConstantTypes($pool_data['global_constants']);
-                $this->codebase->addUnresolvedGlobalConstants($pool_data['unresolved_global_constants']);
-                $this->codebase->functions->addGlobalFunctions($pool_data['global_functions']);
-            }
-        } else {
-            foreach ($files_to_scan as $file_path => $_) {
-                $this->scanAPath($file_path);
+            // a scan in parallel that found out it can't be used has counted the files already
+            if ($pool_size === 1) {
                 $this->progress->taskDone(0);
             }
         }
@@ -539,6 +500,180 @@ final class Scanner
         $this->file_reference_provider->addClassLikeFiles($this->classlike_files);
 
         return true;
+    }
+
+    /**
+     * Returns false, having changed nothing, if the result would depend on the order of the files
+     *
+     * @param array<string, string> $files_to_scan
+     * @param int<2, max> $pool_size
+     */
+    private function scanFilesInParallel(array $files_to_scan, int $pool_size): bool
+    {
+        $this->progress->debug('Forking process for scanning' . PHP_EOL);
+
+        // Run scanning one file at a time, splitting the set of
+        // files up among a given number of child processes.
+        $pool = new Pool(
+            $pool_size,
+            $this->config->long_scan_warning,
+            $this->progress,
+        );
+
+        await($pool->runAll(new InitScannerTask));
+        $pool->run(
+            $files_to_scan,
+            ScannerTask::class,
+            function (): void {
+                $this->progress->taskDone(0);
+            },
+            // Register custom taints a worker discovers in this (parent) process's single registry, so
+            // every worker resolves a given taint name to the same bit.
+            fn(string $taint_type): array => $this->codebase->registerTaintFromWorker($taint_type),
+        );
+
+        // Wait for all tasks to complete and collect the results.
+        $forked_pool_data = $pool->runAll(new ShutdownScannerTask);
+
+        // A global function or constant of an autoloaded file is registered in the order of the files, which the
+        // processes can't follow: a process knows only the ones of the files it scanned itself.
+        $in_order = $this->codebase->register_autoload_files;
+
+        if ($in_order) {
+            $forked_pool_data = await($forked_pool_data);
+
+            if (self::dependsOnScanOrder($forked_pool_data)) {
+                $this->progress->debug('Scanning the files again, one after another' . PHP_EOL);
+
+                return false;
+            }
+
+            $forked_pool_data = array_map(Future::complete(...), $forked_pool_data);
+        }
+
+        foreach ($forked_pool_data as $pool_data) {
+            $this->addPoolData($pool_data->await(), !$in_order);
+        }
+
+        if ($in_order) {
+            $this->registerAutoloadedFunctions($files_to_scan);
+        }
+
+        return true;
+    }
+
+    /**
+     * @param PoolData $pool_data
+     */
+    private function addPoolData(array $pool_data, bool $add_functions): void
+    {
+        IssueBuffer::addIssues($pool_data['issues']);
+
+        $this->codebase->statements_provider->addChangedMembers(
+            $pool_data['changed_members'],
+        );
+        $this->codebase->statements_provider->addUnchangedSignatureMembers(
+            $pool_data['unchanged_signature_members'],
+        );
+        $this->codebase->statements_provider->addDiffMap(
+            $pool_data['diff_map'],
+        );
+        $this->codebase->statements_provider->addDeletionRanges(
+            $pool_data['deletion_ranges'],
+        );
+        $this->codebase->statements_provider->addErrors($pool_data['errors']);
+
+        if ($this->codebase->taint_flow_graph && $pool_data['taint_data']) {
+            $this->codebase->taint_flow_graph->addGraph($pool_data['taint_data']);
+        }
+
+        $this->codebase->file_storage_provider->addMore($pool_data['file_storage']);
+        $this->codebase->classlike_storage_provider->addMore($pool_data['classlike_storage']);
+
+        $this->codebase->classlikes->addThreadData($pool_data['classlikes_data']);
+
+        $this->addThreadData($pool_data['scanner_data']);
+
+        $this->codebase->addGlobalConstantTypes($pool_data['global_constants']);
+        $this->codebase->addUnresolvedGlobalConstants($pool_data['unresolved_global_constants']);
+
+        if ($add_functions) {
+            $this->codebase->functions->addGlobalFunctions($pool_data['global_functions']);
+        }
+    }
+
+    /**
+     * Whether a file scanned by one of the processes would have got another result if the files were scanned
+     * one after another: it looked up a global constant that a file of another process defines, or two
+     * processes define the same constant differently, the later of the files being the one that counts.
+     *
+     * @param array<array-key, PoolData> $forked_pool_data
+     * @psalm-pure
+     */
+    private static function dependsOnScanOrder(array $forked_pool_data): bool
+    {
+        /** @var array<string, array{array-key, Union}> $types */
+        $types = [];
+        /** @var array<string, array{array-key, UnresolvedConstantComponent}> $unresolved */
+        $unresolved = [];
+
+        foreach ($forked_pool_data as $process => $pool_data) {
+            foreach ($pool_data['global_constants'] as $const_id => $type) {
+                if (isset($types[$const_id]) && $types[$const_id][0] !== $process
+                    && $types[$const_id][1]->getId() !== $type->getId()
+                ) {
+                    return true;
+                }
+
+                $types[$const_id] = [$process, $type];
+            }
+
+            foreach ($pool_data['unresolved_global_constants'] as $const_id => $value) {
+                if (isset($unresolved[$const_id]) && $unresolved[$const_id][0] !== $process
+                    && $unresolved[$const_id][1] != $value
+                ) {
+                    return true;
+                }
+
+                $unresolved[$const_id] = [$process, $value];
+            }
+        }
+
+        foreach ($forked_pool_data as $process => $pool_data) {
+            foreach ($pool_data['missed_global_constants'] as $const_id => $_) {
+                if (($types[$const_id][0] ?? $process) !== $process) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The functions of the autoloaded files a process scanned are known as global ones by it only; register
+     * them in the order of the files like a scan in one process does, where the first declaration of a
+     * function wins.
+     *
+     * @param array<string, string> $files
+     */
+    private function registerAutoloadedFunctions(array $files): void
+    {
+        $functions = $this->codebase->functions;
+
+        foreach ($files as $file_path) {
+            if (!$this->file_storage_provider->has($file_path)) {
+                continue;
+            }
+
+            foreach ($this->file_storage_provider->get($file_path)->functions as $function_id => $function_storage) {
+                if (($this->codebase->all_functions_global || !$functions->hasStubbedFunction($function_id))
+                    && InternalCallMapHandler::getIntroducingPhpVersionId($function_id) === null
+                ) {
+                    $functions->addGlobalFunction($function_id, $function_storage);
+                }
+            }
+        }
     }
 
     private function convertClassesToFilePaths(ClassLikes $classlikes): void
@@ -632,6 +767,8 @@ final class Scanner
 
         $file_storage = $this->file_storage_provider->get($file_path);
 
+        $missed_constant_lookups = $this->codebase->getMissedGlobalConstantLookups();
+
         $file_scanner->scan(
             $this->codebase,
             $file_storage,
@@ -640,7 +777,15 @@ final class Scanner
         );
 
         if (!$from_cache) {
-            if (!$file_storage->has_visitor_issues && $this->file_storage_provider->cache) {
+            // a constant looked up in a process that doesn't know it yet may get another type once the files are
+            // scanned in order, see scanFilePaths
+            $depends_on_scan_order = $this->is_forked
+                && $missed_constant_lookups !== $this->codebase->getMissedGlobalConstantLookups();
+
+            if (!$file_storage->has_visitor_issues
+                && !$depends_on_scan_order
+                && $this->file_storage_provider->cache
+            ) {
                 $this->file_storage_provider->cache->writeToCache($file_storage, $file_contents);
             }
         } else {

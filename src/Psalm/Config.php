@@ -494,6 +494,9 @@ final class Config
     /** @var array<string, mixed> */
     private array $predefined_constants = [];
 
+    /** @var array<string, mixed> the constants PHP code defined at runtime, i.e. not the ones of an extension */
+    private array $user_defined_constants = [];
+
     /** @var array<callable-string, bool> */
     private array $predefined_functions = [];
 
@@ -2920,9 +2923,21 @@ final class Config
         return $this->predefined_constants;
     }
 
+    /**
+     * Whether PHP itself or one of its extensions defines the constant, as opposed to code the autoloader ran
+     *
+     * @psalm-mutation-free
+     */
+    public function isInternalConstant(string $const_name): bool
+    {
+        return array_key_exists($const_name, $this->predefined_constants)
+            && !array_key_exists($const_name, $this->user_defined_constants);
+    }
+
     public function collectPredefinedConstants(): void
     {
         $this->predefined_constants = get_defined_constants();
+        $this->user_defined_constants = get_defined_constants(true)['user'] ?? [];
     }
 
     /**
@@ -3003,7 +3018,7 @@ final class Config
                 $codebase->scanner->addFileToDeepScan($file_path);
             }
 
-            $codebase->scanner->scanFiles($codebase->classlikes);
+            $codebase->scanner->scanFiles($codebase->classlikes, $project_analyzer->scanThreads);
 
             $progress->debug('Finished registering autoloaded files' . "\n");
 

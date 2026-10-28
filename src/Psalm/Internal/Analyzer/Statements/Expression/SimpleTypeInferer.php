@@ -307,6 +307,14 @@ final class SimpleTypeInferer
                 return null;
             }
 
+            // a constant an autoloaded file defines isn't known yet if that file is scanned by another process
+            if ($codebase->register_autoload_files
+                && $codebase->getStubbedConstantType($name) === null
+                && !$codebase->config->isInternalConstant($name)
+            ) {
+                $codebase->recordMissedGlobalConstant($name);
+            }
+
             if ($type = ConstFetchAnalyzer::getGlobalConstType($codebase, $name, $name)) {
                 return $type;
             }
