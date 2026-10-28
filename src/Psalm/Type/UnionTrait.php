@@ -1514,11 +1514,7 @@ trait UnionTrait
             $context,
         );
 
-        $checker->traverseArray($this->types);
-
-        if ($checker->hasErrors()) {
-            $checker->forgetChecked();
-
+        if (!$checker->check($this->types)) {
             return false;
         }
 
