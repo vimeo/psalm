@@ -22,6 +22,7 @@ use Psalm\Type\Union;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
+use ReflectionIntersectionType;
 use ReflectionMethod;
 use ReflectionNamedType;
 use ReflectionParameter;
@@ -449,25 +450,45 @@ final class Reflection
             return Type::getMixed();
         }
 
-        if ($reflection_type instanceof ReflectionNamedType) {
-            $type = $reflection_type->getName();
-        } elseif ($reflection_type instanceof ReflectionUnionType) {
-            $type = implode(
-                '|',
-                array_map(
-                    static fn(ReflectionNamedType $reflection): string => $reflection->getName(),
-                    $reflection_type->getTypes(),
-                ),
-            );
-        } else {
-            throw new LogicException('Unexpected reflection class ' . $reflection_type::class . ' found.');
-        }
+        $type = self::getTypeStringFromReflectionType($reflection_type);
 
         if ($reflection_type->allowsNull()) {
             $type .= '|null';
         }
 
         return Type::parseString($type);
+    }
+
+    private static function getTypeStringFromReflectionType(ReflectionType $reflection_type): string
+    {
+        if ($reflection_type instanceof ReflectionNamedType) {
+            return $reflection_type->getName();
+        }
+
+        if ($reflection_type instanceof ReflectionUnionType) {
+            // the intersections of a DNF type
+            return implode(
+                '|',
+                array_map(
+                    static fn(ReflectionType $reflection): string => $reflection instanceof ReflectionIntersectionType
+                        ? '(' . self::getTypeStringFromReflectionType($reflection) . ')'
+                        : self::getTypeStringFromReflectionType($reflection),
+                    $reflection_type->getTypes(),
+                ),
+            );
+        }
+
+        if ($reflection_type instanceof ReflectionIntersectionType) {
+            return implode(
+                '&',
+                array_map(
+                    static fn(ReflectionType $reflection): string => self::getTypeStringFromReflectionType($reflection),
+                    $reflection_type->getTypes(),
+                ),
+            );
+        }
+
+        throw new LogicException('Unexpected reflection class ' . $reflection_type::class . ' found.');
     }
 
     private function registerInheritedMethods(
