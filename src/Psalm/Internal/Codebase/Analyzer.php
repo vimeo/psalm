@@ -41,6 +41,7 @@ use function array_merge;
 use function array_values;
 use function count;
 use function explode;
+use function hrtime;
 use function implode;
 use function ksort;
 use function number_format;
@@ -54,6 +55,7 @@ use function strtolower;
 use function substr;
 use function usort;
 
+use const ARRAY_FILTER_USE_KEY;
 use const PATHINFO_EXTENSION;
 use const PHP_INT_MAX;
 
@@ -72,6 +74,7 @@ use const PHP_INT_MAX;
  *      mixed_counts: array<string, array{0: int, 1: int}>,
  *      mixed_member_names: array<string, array<string, bool>>,
  *      function_timings: array<string, float>,
+ *      file_timings: array<string, float>,
  *      file_manipulations: array<string, FileManipulation[]>,
  *      method_dependencies: array<string, array<string,bool>>,
  *      method_param_uses: array<string, array<int, array<string, bool>>>,
@@ -118,6 +121,13 @@ final class Analyzer
      * @var array<string, float>
      */
     private array $function_timings = [];
+
+    /**
+     * Seconds spent analysing each file in this run
+     *
+     * @var array<string, float>
+     */
+    private array $file_timings = [];
 
     /**
      * We analyze more files than we necessarily report errors in
@@ -317,9 +327,17 @@ final class Analyzer
 
             $this->progress->debug('Forking analysis' . "\n");
 
+            $file_reference_cache = $codebase->file_reference_provider->cache;
+            $previous_timings = $file_reference_cache?->getCachedAnalysisTimings() ?? [];
+            $files_longest_first = AnalysisOrder::longestFirst(
+                $this->files_to_analyze,
+                $previous_timings,
+                fn(string $file_path): int => strlen($this->file_provider->getContents($file_path)),
+            );
+
             // Wait for all tasks to complete and collect the results.
             await($pool->runAll(new InitAnalyzerTask));
-            $pool->run($this->files_to_analyze, AnalyzerTask::class, $task_done_closure);
+            $pool->run($files_longest_first, AnalyzerTask::class, $task_done_closure);
             $forked_pool_data = $pool->runAll(new ShutdownAnalyzerTask);
 
             $this->progress->debug('Collecting forked analysis results' . "\n");
@@ -357,6 +375,7 @@ final class Analyzer
                     $pool_data['mixed_member_names'],
                 );
                 $this->function_timings += $pool_data['function_timings'];
+                $this->file_timings += $pool_data['file_timings'];
 
                 foreach ($pool_data['mutable_classes'] as $class => $capabilities) {
                     $this->addMutableClass($class, $capabilities);
@@ -403,6 +422,14 @@ final class Analyzer
 
                 $this->progress->taskDone(0);
             }
+
+            $file_reference_cache?->setCachedAnalysisTimings(
+                array_filter(
+                    [...$previous_timings, ...$this->file_timings],
+                    fn(int|string $file_path): bool => $this->file_provider->fileExists((string) $file_path),
+                    ARRAY_FILTER_USE_KEY,
+                ),
+            );
         } else {
             foreach ($this->files_to_analyze as $file_path => $_) {
                 $task_done_closure(self::analysisWorker($this->config, $this->progress, $file_path));
@@ -989,6 +1016,22 @@ final class Analyzer
     /**
      * @psalm-external-mutation-free
      */
+    public function addFileTiming(string $file_path, float $seconds): void
+    {
+        $this->file_timings[$file_path] = $seconds;
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    public function getFileTimings(): array
+    {
+        return $this->file_timings;
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addFunctionTiming(string $function_id, float $time_per_node): void
     {
         $this->function_timings[$function_id] = $time_per_node;
@@ -1418,10 +1461,17 @@ final class Analyzer
 
         $progress->debug('Analyzing ' . $file_analyzer->getFilePath() . "\n");
 
+        $start_time = hrtime(true);
+
         $file_analyzer->analyze();
         $file_analyzer->context = null;
         $file_analyzer->clearSourceBeforeDestruction();
         unset($file_analyzer);
+
+        ProjectAnalyzer::getInstance()->getCodebase()->analyzer->addFileTiming(
+            $file_path,
+            (float) (hrtime(true) - $start_time) / 1e9,
+        );
 
         $has_error = false;
         $has_info = false;
