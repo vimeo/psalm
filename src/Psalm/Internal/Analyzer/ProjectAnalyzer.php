@@ -423,7 +423,7 @@ final class ProjectAnalyzer
         $message = "Target PHP version: "
             .$codebase->getMajorAnalysisPhpVersion()."."
             .$codebase->getMinorAnalysisPhpVersion()." "
-            .$source
+            .$source.'.'
         ;
 
         $enabled_extensions_names = array_keys(array_filter($codebase->config->php_extensions));
@@ -435,7 +435,8 @@ final class ProjectAnalyzer
             $message .= ' (unsupported extensions: ' . implode(', ', $unsupported_php_extensions) . ')';
         }
 
-        $message .= '.'.PHP_EOL.PHP_EOL;
+        // each sentence ends with a dot: the target version always, the extensions when there are any
+        $message .= (str_ends_with($message, '.') ? '' : '.') . PHP_EOL . PHP_EOL;
 
         return $message;
     }
