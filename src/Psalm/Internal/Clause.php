@@ -123,9 +123,9 @@ final class Clause implements Stringable
     private static function isKeyedByAssertionString(array $possibilities): bool
     {
         foreach ($possibilities as $var_possibilities) {
-            foreach ($var_possibilities as $key => $assertion) {
-                // PHP turns a numeric string key such as the id of a literal int (`0`) into an int
-                if ((string) $key !== (string) $assertion) {
+            foreach ($var_possibilities as $assertion) {
+                // the key of a literal int is an int, as PHP turns numeric string keys into ints
+                if (($var_possibilities[(string) $assertion] ?? null) !== $assertion) {
                     return false;
                 }
             }

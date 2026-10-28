@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use AssertionError;
-use PhpParser;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PhpParser;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
@@ -300,9 +300,9 @@ final class AlgebraTest extends TestCase
     {
         foreach ($clauses as $clause) {
             foreach ($clause->possibilities as $assertions) {
-                foreach ($assertions as $key => $assertion) {
-                    // PHP turns the numeric id of a literal int into an int key
-                    $this->assertSame((string) $assertion, (string) $key);
+                foreach ($assertions as $assertion) {
+                    // looked up by string: PHP turns the numeric id of a literal int into an int key
+                    $this->assertSame($assertion, $assertions[(string) $assertion] ?? null);
                 }
             }
         }
@@ -344,6 +344,7 @@ final class AlgebraTest extends TestCase
 
     /**
      * @return iterable<string, array{array<string, non-empty-list<Assertion>>, array<string, non-empty-list<Assertion>>, bool}>
+     * @psalm-pure
      */
     public static function providerContains(): iterable
     {
@@ -449,6 +450,7 @@ final class AlgebraTest extends TestCase
 
     /**
      * @return iterable<string, array{list<array<string, non-empty-list<Assertion>>>, list<string>}>
+     * @psalm-pure
      */
     public static function providerNegateFormula(): iterable
     {
@@ -504,6 +506,7 @@ final class AlgebraTest extends TestCase
 
     /**
      * @return iterable<string, array{list<array<string, non-empty-list<Assertion>>>, list<string>}>
+     * @psalm-pure
      */
     public static function providerSimplifyCNF(): iterable
     {

@@ -288,7 +288,6 @@ final class Algebra
                                 }
                             }
 
-                            /** @psalm-suppress MixedArgumentTypeCoercion due I think to Psalm bug */
                             $conflict_clause = (new Clause(
                                 $new_possibilities,
                                 $clause_a->creating_conditional_id,
