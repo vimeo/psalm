@@ -602,28 +602,38 @@ final class DataFlowNode implements Stringable
      * The node of an array of $node once a check tells it holds nothing under a key (see Reconciler), the
      * removal being made by $removal (its label and location): data flows from $node to it through an
      * overwrite of that key. It holds part of what $node holds, so it is merged away where $node is merged
-     * in (see combineParentNodes()). The same removal from a node it made is that node: the key is already
-     * gone (e.g. in the next iteration of a loop).
+     * in (see combineParentNodes()). The same removal (by label, wherever it is made) from a node it made,
+     * or from one made from such a node, is that node: the key is already gone (e.g. in the next iteration
+     * of a loop, or where a check is made again in a context that holds it).
      *
      * @psalm-mutation-free
      */
     public static function getForKeyRemoval(self $node, self $removal): self
     {
-        if (self::getKeyRemovalParts($node->id)[0] === $removal->id) {
-            return $node;
-        }
+        $id = $node->id;
+
+        do {
+            [$label, $id] = self::getKeyRemovalParts($id);
+
+            if ($label === $removal->label) {
+                return $node;
+            }
+        } while ($id !== null);
 
         // $removal's location is a function of its id, so of this id too: see the class invariant
         return self::make(
-            self::KEY_REMOVED . strlen($removal->id) . ':' . $removal->id . $node->id,
+            self::KEY_REMOVED
+                . strlen($removal->label) . ':' . $removal->label
+                . strlen($removal->id) . ':' . $removal->id
+                . $node->id,
             $removal->label,
             $removal->code_location,
         );
     }
 
     /**
-     * The id of the removal and the id of the node the key is removed from, of the node of id $id if it is one
-     * of getForKeyRemoval(), else nulls
+     * The label of the removal and the id of the node the key is removed from, of the node of id $id if it is
+     * one of getForKeyRemoval(), else nulls
      *
      * @return array{?string, ?string}
      * @psalm-pure
@@ -634,10 +644,14 @@ final class DataFlowNode implements Stringable
             return [null, null];
         }
 
-        $colon = (int) strpos($id, ':', strlen(self::KEY_REMOVED));
-        $length = (int) substr($id, strlen(self::KEY_REMOVED), $colon - strlen(self::KEY_REMOVED));
+        $offset = strlen(self::KEY_REMOVED);
+        $colon = (int) strpos($id, ':', $offset);
+        $label = substr($id, $colon + 1, (int) substr($id, $offset));
 
-        return [substr($id, $colon + 1, $length), substr($id, $colon + 1 + $length)];
+        $offset = $colon + 1 + strlen($label);
+        $colon = (int) strpos($id, ':', $offset);
+
+        return [$label, substr($id, $colon + 1 + (int) substr($id, $offset))];
     }
 
     /**
