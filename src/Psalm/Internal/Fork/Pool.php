@@ -115,6 +115,72 @@ final class Pool
         ?Closure $task_done_closure = null,
         ?Closure $message_handler = null,
     ): void {
+        await($this->dispatch($process_task_data_iterator, $main_task, $task_done_closure, $message_handler));
+    }
+
+    /**
+     * Like {@see run()} followed by {@see runAll()}, except that each worker is given $final_task as soon as it has
+     * nothing left to do, instead of once the slowest worker is done. The parent can then receive and merge the
+     * results of the workers that finished early while the others are still busy.
+     *
+     * @template TResult
+     * @template TReceive
+     * @template TSend
+     * @template TFinal
+     * @param array<string> $process_task_data_iterator
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint
+     * @param class-string<Task<TResult, TReceive, TSend>> $main_task
+     * @param Task<TFinal, void, void> $final_task
+     * @param null|Closure(TResult $data):void $task_done_closure
+     * @return array<int, Future<TFinal>>
+     */
+    public function runThenAll(
+        array $process_task_data_iterator,
+        string $main_task,
+        Task $final_task,
+        ?Closure $task_done_closure = null,
+    ): array {
+        $results = $this->dispatch($process_task_data_iterator, $main_task, $task_done_closure, null);
+
+        // Every task has been handed out, so a worker only becomes available once it has finished its last one.
+        $results []= $submitted = async(function () use ($final_task): array {
+            gc_collect_cycles();
+            // A pooled worker returns to the pool as soon as it is released and its final task is quick to finish,
+            // so every worker is kept until all of them have been given theirs.
+            $workers = [];
+            $final_futures = [];
+            for ($x = 0; $x < $this->threads; $x++) {
+                $workers []= $worker = $this->pool->getWorker();
+                $final_futures []= $worker->submit($final_task)->getFuture();
+            }
+
+            return [$workers, $final_futures];
+        });
+
+        await($results);
+
+        return $submitted->await()[1];
+    }
+
+    /**
+     * Hands every task data item to the next idle worker, blocking while all workers are busy.
+     *
+     * @template TResult
+     * @template TReceive
+     * @template TSend
+     * @param array<string> $process_task_data_iterator
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint
+     * @param class-string<Task<TResult, TReceive, TSend>> $main_task
+     * @param null|Closure(TResult $data):void $task_done_closure
+     * @param null|Closure(TSend):TReceive $message_handler
+     * @return list<Future<mixed>> The futures of the tasks (and message pumps) still to be awaited
+     */
+    private function dispatch(
+        array $process_task_data_iterator,
+        string $main_task,
+        ?Closure $task_done_closure,
+        ?Closure $message_handler,
+    ): array {
         $total = count($process_task_data_iterator);
         $this->progress->debug("Processing ".$total." tasks...".PHP_EOL);
 
@@ -147,7 +213,8 @@ final class Pool
                 }
             });
         }
-        await($results);
+
+        return $results;
     }
 
     /**
