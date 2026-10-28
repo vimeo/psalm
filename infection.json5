@@ -22,7 +22,7 @@
         "configDir": "."
     },
     "timeout": 120,
-    // The MSI of the whole source tree the CI job requires: raised as tests improve.
+    // The MSI of the whole source tree the nightly CI run requires: raised as tests improve.
     "minMsi": 37,
     "tmpDir": "build/infection",
     "logs": {

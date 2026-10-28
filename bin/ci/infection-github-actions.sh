@@ -8,7 +8,7 @@ if [ -z "${SHARD_NUMBER:-}" ]; then echo "Did not find env var SHARD_NUMBER."; e
 mkdir -p build/infection-coverage build/infection
 
 php -d memory_limit=-1 bin/ci/infection-shard-coverage.php \
-    "$SHARD_NUMBER" "$SHARD_COUNT" \
+    "$SHARD_NUMBER/$SHARD_COUNT" \
     build/coverage-php build/infection-coverage/coverage-xml build/infection-files.txt
 
 php bin/ci/merge-junit.php build/infection-coverage/junit.xml build/junit/*.junit.xml

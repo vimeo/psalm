@@ -1,6 +1,12 @@
 name: Mutation testing
 
-on: pull_request
+# Pull requests mutate the lines they change; the nightly run mutates the whole source tree and checks its MSI.
+on:
+  pull_request:
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
 permissions:
   contents: read
 
@@ -17,12 +23,13 @@ jobs:
 
       - id: changes
         run: |
-          if [ -n "$(git diff --name-only "origin/$BASE_REF..." -- . ':!docs' ':!*.md')" ]; then
+          if [ "$EVENT" != pull_request ] || [ -n "$(git diff --name-only "origin/$BASE_REF..." -- src)" ]; then
             echo "code=true" >> $GITHUB_OUTPUT
           else
             echo "code=false" >> $GITHUB_OUTPUT
           fi
         env:
+          EVENT: ${{ github.event_name }}
           BASE_REF: ${{ github.base_ref }}
 
   coverage:
@@ -92,9 +99,74 @@ jobs:
             build/junit
           if-no-files-found: error
 
+  infection-pr:
+    name: Mutation testing
+    needs: coverage
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    env:
+      BASE_REF: ${{ github.base_ref }}
+
+    steps:
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.5'
+          ini-values: zend.assertions=1, assert.exception=1
+          tools: composer:v2
+          coverage: none
+          extensions: none, curl, dom, filter, intl, json, libxml, mbstring, opcache, openssl, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
+        env:
+          fail-fast: true
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Get Composer Cache Directories
+        id: composer-cache
+        run: |
+          echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+          echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
+
+      - name: Generate composer.lock
+        run: composer update --no-install
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Cache composer cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
+        with:
+          path: |
+            ${{ steps.composer-cache.outputs.files_cache }}
+            ${{ steps.composer-cache.outputs.vcs_cache }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Run composer install
+        run: composer install -o
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Install Infection
+        run: composer bin infection install
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: coverage-*
+          path: build
+          merge-multiple: true
+
+      - name: Run Infection on the changed lines
+        run: bin/ci/infection-pr-github-actions.sh
+
   infection:
     name: "Mutation testing ${{ matrix.shard }}/${{ matrix.count }}"
     needs: coverage
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 360
 

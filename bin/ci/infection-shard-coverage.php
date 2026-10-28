@@ -2,23 +2,25 @@
 
 declare(strict_types=1);
 
-// Writes the list of the source files of one shard of the mutation testing job, and their coverage in the XML format
-// Infection reads, from the coverage of every chunk of the test suite: the XML of the whole source tree is too big for
-// a runner's disk. The source files are those of infection.json5, given to the shards by size.
+// Writes the list of some source files, and their coverage in the XML format Infection reads, from the coverage of every
+// chunk of the test suite: the XML of the whole source tree is too big for a runner's disk. The files are either one
+// shard of those of infection.json5, given to the shards by size (`<shard>/<shard count>`), or those listed one per
+// line in a file (`@<file>`, paths relative to the root).
 
 use SebastianBergmann\CodeCoverage\Report\Facade;
 use SebastianBergmann\CodeCoverage\Serialization\Unserializer;
 
 require dirname(__DIR__, 2) . '/vendor/autoload.php';
 
-if ($argc !== 6) {
-    fwrite(STDERR, "Usage: $argv[0] <shard> <shard count> <coverage-php dir> <coverage-xml dir> <file list>\n");
+if ($argc !== 5) {
+    fwrite(
+        STDERR,
+        "Usage: $argv[0] <shard>/<shard count>|@<file> <coverage-php dir> <coverage-xml dir> <file list>\n",
+    );
     exit(1);
 }
 
-[, $shard, $shard_count, $coverage_dir, $xml_dir, $file_list] = $argv;
-$shard = (int) $shard;
-$shard_count = (int) $shard_count;
+[, $selection, $coverage_dir, $xml_dir, $file_list] = $argv;
 $root = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR;
 
 $config = json_decode(
@@ -28,7 +30,7 @@ $config = json_decode(
 );
 
 $sizes = [];
-foreach ($config['source']['directories'] as $directory) {
+foreach (str_starts_with($selection, '@') ? [] : $config['source']['directories'] as $directory) {
     $excludes = array_map(
         static fn(string $exclude): string => $root . $directory . DIRECTORY_SEPARATOR . $exclude,
         $config['source']['excludes'] ?? [],
@@ -51,15 +53,22 @@ foreach ($config['source']['directories'] as $directory) {
     }
 }
 
-ksort($sizes);
-arsort($sizes);
-$loads = array_fill(1, $shard_count, 0);
 $shard_files = [];
-foreach ($sizes as $path => $size) {
-    $least_loaded = array_keys($loads, min($loads), true)[0];
-    $loads[$least_loaded] += $size;
-    if ($least_loaded === $shard) {
-        $shard_files[$path] = true;
+if (str_starts_with($selection, '@')) {
+    foreach (file(substr($selection, 1), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $path) {
+        $shard_files[$root . $path] = true;
+    }
+} else {
+    [$shard, $shard_count] = array_map('intval', explode('/', $selection));
+    ksort($sizes);
+    arsort($sizes);
+    $loads = array_fill(1, $shard_count, 0);
+    foreach ($sizes as $path => $size) {
+        $least_loaded = array_keys($loads, min($loads), true)[0];
+        $loads[$least_loaded] += $size;
+        if ($least_loaded === $shard) {
+            $shard_files[$path] = true;
+        }
     }
 }
 

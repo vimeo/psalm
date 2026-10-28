@@ -42,10 +42,12 @@ These come first, before every other rule here:
    Running the covering tests this way is the one exception to running only single test
    cases.
 
-   The "Mutation testing" CI workflow mutates all of `src/` against the whole test suite
-   (coverage collected in 8 chunks, mutants in 16 shards) and fails when the MSI drops
-   below `minMsi` in `infection.json5`. Mutants whose covering tests exceed the timeout
-   are skipped and don't count. `minMsi` is raised gradually.
+   The "Mutation testing" CI workflow, against the coverage of the whole test suite
+   (collected in 8 chunks), mutates on each PR that changes `src/` only the lines it
+   changes, and fails unless every mutant is killed, like `composer mutation`. Nightly,
+   it mutates all of `src/` (in 16 shards) and fails when the MSI drops below `minMsi` in
+   `infection.json5`. Mutants whose covering tests exceed the timeout are skipped and
+   don't count. `minMsi` is raised gradually.
 
 ## Validating changes: CI, not local test runs
 
