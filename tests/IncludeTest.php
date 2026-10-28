@@ -9,6 +9,7 @@ use Psalm\Config;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use ReflectionProperty;
 
@@ -1018,5 +1019,53 @@ final class IncludeTest extends TestCase
         // This must not crash — previously threw UnexpectedValueException
         // from MethodAnalyzer when the method was missing from storage.
         $file_analyzer->analyze();
+    }
+
+    /**
+     * A method whose parameter type names an unknown class is not analyzed, and it must not be the first analysis
+     * of it only: a class analyzed again (when another file includes it) has to be skipped the same way, or the
+     * issues depend on which files a process analyzed before.
+     */
+    public function testMethodWithUnknownParamClassIsSkippedWhenAnalyzedAgain(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $class_file = (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php';
+        $includer_file = (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php';
+
+        $this->addFile($class_file, '<?php
+            class Foo {
+                /** @param Unknown $a */
+                public function bar($a): void {
+                    missing_function();
+                }
+            }
+        ');
+        $this->addFile($includer_file, '<?php
+            require_once __DIR__ . "/file1.php";
+        ');
+
+        foreach ([$class_file, $includer_file] as $file_path) {
+            $codebase->scanner->addFilesToDeepScan([$file_path => $file_path]);
+            $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        }
+
+        $codebase->scanFiles();
+
+        foreach ([$class_file, $includer_file] as $file_path) {
+            (new FileAnalyzer($this->project_analyzer, $file_path, $config->shortenFileName($file_path)))->analyze();
+        }
+
+        $issue_types = [];
+
+        foreach (IssueBuffer::getIssuesData() as $file_issues) {
+            foreach ($file_issues as $issue) {
+                $issue_types[$issue->type] = true;
+            }
+        }
+
+        $this->assertSame(['UndefinedDocblockClass' => true], $issue_types);
     }
 }

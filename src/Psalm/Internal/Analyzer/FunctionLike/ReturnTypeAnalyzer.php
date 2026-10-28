@@ -1107,9 +1107,15 @@ final class ReturnTypeAnalyzer
 
         $checker->traverseArray($type->getAtomicTypes());
 
+        if ($checker->hasErrors()) {
+            $checker->forgetChecked();
+
+            return false;
+        }
+
         /** @psalm-suppress InaccessibleProperty Does not affect anything else */
         $type->checked = true;
 
-        return !$checker->hasErrors();
+        return true;
     }
 }

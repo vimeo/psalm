@@ -1516,10 +1516,16 @@ trait UnionTrait
 
         $checker->traverseArray($this->types);
 
+        if ($checker->hasErrors()) {
+            $checker->forgetChecked();
+
+            return false;
+        }
+
         /** @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment Does not affect anything else */
         $this->checked = true;
 
-        return !$checker->hasErrors();
+        return true;
     }
 
     /**
