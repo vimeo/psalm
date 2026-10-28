@@ -6,7 +6,10 @@
 
 set -eu
 
-mapfile -d '' environment < <(env -0)
+environment=()
+while IFS= read -r -d '' variable; do
+    environment+=("$variable")
+done < <(env -0)
 
 exec sudo env "${environment[@]}" systemd-run --scope --quiet \
     -p "MemoryMax=${MEMORY_MAX:-12G}" -p MemorySwapMax=0 -p OOMPolicy=continue \
