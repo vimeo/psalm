@@ -8,24 +8,34 @@ use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use PhpParser\Comment\Doc;
+use PhpParser\Error;
 use PhpParser\Node\Scalar\String_;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\DocblockTypeLocation;
+use Psalm\CodeLocation\ParseErrorLocation;
+use Psalm\CodeLocation\Raw;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Tests\Internal\LiteralFileSource;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use ReflectionClass;
 
 use function count;
+use function extension_loaded;
+use function igbinary_serialize;
+use function igbinary_unserialize;
 use function mb_check_encoding;
 use function restore_error_handler;
+use function serialize;
 use function set_error_handler;
 use function str_repeat;
 use function strlen;
 use function strpos;
 use function substr;
+use function unserialize;
 
 final class CodeLocationTest extends BaseTestCase
 {
@@ -125,6 +135,69 @@ final class CodeLocationTest extends BaseTestCase
         $this->assertSame($location->getSelectionBounds(), $copy->getSelectionBounds());
         $this->assertSame($location->getColumn(), $copy->getColumn());
         $this->assertEquals($previous, $copy->previous_location);
+    }
+
+    /**
+     * @return iterable<string, array{bool}>
+     * @psalm-pure
+     */
+    public static function provideSerializers(): iterable
+    {
+        yield 'native' => [false];
+        yield 'igbinary' => [true];
+    }
+
+    /**
+     * The same round trip through the serializers a worker's result goes through, for every kind of location. They
+     * come from a file source with a literal path: a path from the file analyzer would be flagged as user input
+     * reaching unserialize() by Psalm's own taint analysis.
+     */
+    #[DataProvider('provideSerializers')]
+    public function testLocationsSurviveEncodingAndDecoding(bool $igbinary): void
+    {
+        if ($igbinary && !extension_loaded('igbinary')) {
+            $this->markTestSkipped('igbinary is not loaded');
+        }
+
+        $contents = "<?php\n// Grüße\n\$a = 'x' . \$b;\n";
+        $this->file_provider->registerFile(self::FILE, $contents);
+
+        $source = new LiteralFileSource(self::FILE);
+
+        $start = strlen("<?php\n// Grüße\n\$a = ");
+        $previous_node = new String_('x', ['startFilePos' => $start, 'endFilePos' => $start + 2, 'startLine' => 3]);
+        $previous = new CodeLocation($source, $previous_node);
+        $node = new String_('x', ['startFilePos' => $start + 6, 'endFilePos' => $start + 7, 'startLine' => 3]);
+
+        $fresh = new CodeLocation($source, $node, $previous, true, null, null, 7);
+        $computed = new CodeLocation($source, $node, $previous, true, null, null, 7);
+        $this->assertSame('$a = \'x\' . $b;', $computed->getSnippet());
+
+        $locations = [
+            'fresh' => $fresh,
+            'computed' => $computed,
+            'raw' => new Raw($contents, self::FILE, self::FILE, $start, $start + 2),
+            'docblock type' => new DocblockTypeLocation($source, $start, $start + 3, 3),
+            'parse error' => new ParseErrorLocation(
+                new Error('syntax error', ['startFilePos' => $start, 'endFilePos' => $start + 2]),
+                $contents,
+                self::FILE,
+                self::FILE,
+            ),
+        ];
+
+        foreach ($locations as $name => $location) {
+            $serialized = $igbinary ? igbinary_serialize($location) : serialize($location);
+            $this->assertIsString($serialized, $name);
+            $copy = $igbinary ? igbinary_unserialize($serialized) : unserialize($serialized);
+
+            $this->assertInstanceOf($location::class, $copy, $name);
+            $this->assertEquals($location, $copy, $name);
+            $this->assertSame($location->getLineNumber(), $copy->getLineNumber(), $name);
+            $this->assertSame($location->getSelectionBounds(), $copy->getSelectionBounds(), $name);
+            $this->assertSame($location->getSnippet(), $copy->getSnippet(), $name);
+            $this->assertSame($location->getSelectedText(), $copy->getSelectedText(), $name);
+        }
     }
 
     public function testLocationNotAskedForItsSnippetSerializesWithoutTheComputedProperties(): void
