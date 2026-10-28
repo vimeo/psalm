@@ -945,6 +945,385 @@ final class ClosureTest extends TestCase
 
                     takesIntToHolder(C::create(...));',
             ],
+            'FirstClassCallable:StaticMethod:BackedEnumFromInArrayMap' => [
+                'code' => '<?php
+                    enum E: string {
+                        case A = "a";
+                    }
+
+                    $result = array_map(E::from(...), ["a"]);
+                ',
+                'assertions' => [
+                    '$result===' => 'list{E}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:StaticMethod:BackedEnumFromKeepsArrayShape' => [
+                'code' => '<?php
+                    enum DataSource: string
+                    {
+                        case A = "a";
+                        case B = "b";
+                    }
+
+                    final class Mapper
+                    {
+                        /**
+                         * @param array<non-empty-string,DataSource> $map
+                         */
+                        private function __construct(
+                            private array $map,
+                        ) {}
+
+                        /**
+                         * @param array<non-empty-string,value-of<DataSource>> $map
+                         */
+                        public static function fromArrayConfig(array $map): self
+                        {
+                            return new self(array_map(DataSource::from(...), $map));
+                        }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:StaticMethod:ReturnsStaticOfFinalClass' => [
+                'code' => '<?php
+                    final class Impl
+                    {
+                        public static function make(): static
+                        {
+                            return new self();
+                        }
+                    }
+
+                    $make = Impl::make(...);
+                    $result = $make();
+                ',
+                'assertions' => [
+                    '$result===' => 'Impl',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:StaticMethod:ReturnsStaticOfNonFinalClass' => [
+                'code' => '<?php
+                    class NF
+                    {
+                        public static function make(): static
+                        {
+                            return new static();
+                        }
+
+                        public function viaStatic(): static
+                        {
+                            return (static::make(...))();
+                        }
+
+                        public function viaSelf(): static
+                        {
+                            return (self::make(...))();
+                        }
+                    }
+
+                    class Child extends NF {}
+
+                    $outside = NF::make(...);
+                    $result = $outside();
+                    $child = Child::make(...);
+                    $childResult = $child();
+                ',
+                'assertions' => [
+                    '$result===' => 'NF',
+                    '$childResult===' => 'Child',
+                ],
+                'ignored_issues' => ['UnsafeInstantiation'],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:StaticMethod:ReturnsStaticDeclaredOnInterface' => [
+                'code' => '<?php
+                    interface Maker
+                    {
+                        public static function make(): static;
+                    }
+
+                    abstract class Base implements Maker {}
+
+                    $make = Base::make(...);
+                    $result = $make();
+                ',
+                'assertions' => [
+                    '$result===' => 'Base',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:StaticMethod:ReturnsStaticInheritedFromParent' => [
+                'code' => '<?php
+                    abstract class Base
+                    {
+                        public static function create(): static
+                        {
+                            return new static();
+                        }
+                    }
+
+                    final class Impl extends Base {}
+
+                    $create = Impl::create(...);
+                    $result = $create();
+                ',
+                'assertions' => [
+                    '$result===' => 'Impl',
+                ],
+                'ignored_issues' => ['UnsafeInstantiation'],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:StaticMethod:ReturnsStaticOfTemplateClassString' => [
+                'code' => '<?php
+                    abstract class Base
+                    {
+                        public static function create(): static
+                        {
+                            return new static();
+                        }
+                    }
+
+                    /**
+                     * @template T of Base
+                     * @param class-string<T> $class
+                     * @return T
+                     */
+                    function make(string $class): Base
+                    {
+                        return ($class::create(...))();
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => ['UnsafeInstantiation'],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:StaticMethod:PseudoMethodReturnsStatic' => [
+                'code' => '<?php
+                    /**
+                     * @method static static fromPseudo()
+                     * @method static self selfPseudo(self $other)
+                     */
+                    class Base
+                    {
+                        public static function __callStatic(string $name, array $arguments): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    class Child extends Base {}
+
+                    $fromPseudo = Child::fromPseudo(...);
+                    $result = $fromPseudo();
+                    $selfPseudo = Child::selfPseudo(...);
+                    $selfResult = $selfPseudo(new Child());
+                ',
+                'assertions' => [
+                    '$result===' => 'Child&static',
+                    '$selfResult===' => 'Base',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:StaticMethod:MagicCallStaticReturnsStatic' => [
+                'code' => '<?php
+                    final class Magic
+                    {
+                        public static function __callStatic(string $name, array $arguments): static
+                        {
+                            return new static();
+                        }
+                    }
+
+                    $make = Magic::anything(...);
+                    $result = $make();
+                ',
+                'assertions' => [
+                    '$result===' => 'Magic',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:ParentMagicInstanceMethodReturnsStatic' => [
+                'code' => '<?php
+                    /** @method static fluent() */
+                    class Base
+                    {
+                        public function __call(string $name, array $arguments): mixed
+                        {
+                            return $this;
+                        }
+                    }
+
+                    final class Child extends Base
+                    {
+                        public function test(): Child
+                        {
+                            return (parent::fluent(...))();
+                        }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:ReturnsStaticSelfAndThis' => [
+                'code' => '<?php
+                    abstract class Base
+                    {
+                        public function static(): static
+                        {
+                            return $this;
+                        }
+
+                        public function self(): self
+                        {
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function this()
+                        {
+                            return $this;
+                        }
+                    }
+
+                    final class FinalChild extends Base {}
+
+                    class OpenChild extends Base {}
+
+                    $finalStatic = (new FinalChild())->static(...);
+                    $finalSelf = (new FinalChild())->self(...);
+                    $finalThis = (new FinalChild())->this(...);
+                    $openStatic = (new OpenChild())->static(...);
+                    $openSelf = (new OpenChild())->self(...);
+                    $openThis = (new OpenChild())->this(...);
+
+                    $a = $finalStatic();
+                    $b = $finalSelf();
+                    $c = $finalThis();
+                    $d = $openStatic();
+                    $e = $openSelf();
+                    $f = $openThis();
+                ',
+                'assertions' => [
+                    '$a===' => 'FinalChild',
+                    '$b===' => 'Base',
+                    '$c===' => 'FinalChild',
+                    '$d===' => 'OpenChild&static',
+                    '$e===' => 'Base',
+                    '$f===' => 'OpenChild&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:SelfAndStaticParameters' => [
+                'code' => '<?php
+                    abstract class Base
+                    {
+                        /** @param static $other */
+                        public function acceptStatic($other): void {}
+
+                        public function acceptSelf(self $other): void {}
+                    }
+
+                    final class FinalChild extends Base {}
+
+                    class OpenChild extends Base {}
+
+                    $finalStatic = (new FinalChild())->acceptStatic(...);
+                    $finalSelf = (new FinalChild())->acceptSelf(...);
+                    $openStatic = (new OpenChild())->acceptStatic(...);
+                ',
+                'assertions' => [
+                    '$finalStatic===' => 'Closure[impure](FinalChild):void',
+                    '$finalSelf===' => 'Closure[impure](Base):void',
+                    '$openStatic===' => 'Closure[impure](OpenChild&static):void',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:SelfOfTraitMethodIsUsingClass' => [
+                'code' => '<?php
+                    trait IdentityTrait
+                    {
+                        public function identity(): self
+                        {
+                            return $this;
+                        }
+                    }
+
+                    final class IdentityUser
+                    {
+                        use IdentityTrait;
+
+                        public function copy(): self
+                        {
+                            return ($this->identity(...))();
+                        }
+                    }
+
+                    $identity = (new IdentityUser())->identity(...);
+                    $result = $identity();
+                ',
+                'assertions' => [
+                    '$result===' => 'IdentityUser',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'ReturnsStaticOfGenericClassFromInstanceCall' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     */
+                    abstract class Box
+                    {
+                        public function identity(): static
+                        {
+                            return $this;
+                        }
+
+                        public function viaCall(): static
+                        {
+                            return $this->identity();
+                        }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => ['MissingTemplateParam'],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:ReturnsStaticOfGenericClass' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     */
+                    abstract class Box
+                    {
+                        public function identity(): static
+                        {
+                            return $this;
+                        }
+
+                        public function viaCallable(): static
+                        {
+                            return ($this->identity(...))();
+                        }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => ['MissingTemplateParam'],
+                'php_version' => '8.1',
+            ],
             'FirstClassCallable:WithArrayMap' => [
                 'code' => '<?php
                     $array = [1, 2, 3];
@@ -1454,6 +1833,25 @@ final class ClosureTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
                 'error_levels' => [],
                 'php_version' => '7.4',
+            ],
+            'enumFromResultInListDoesNotMatchStringKeyedArray' => [
+                'code' => '<?php
+                    enum DataSource: string
+                    {
+                        case A = "a";
+                    }
+
+                    /** @param array<non-empty-string,DataSource> $map */
+                    function takesMap(array $map): void {}
+
+                    function test(string $case): void
+                    {
+                        takesMap([DataSource::from($case)]);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'detectImplicitVoidReturn' => [
                 'code' => '<?php
