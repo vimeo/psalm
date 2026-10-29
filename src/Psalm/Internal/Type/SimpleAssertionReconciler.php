@@ -2034,6 +2034,24 @@ final class SimpleAssertionReconciler extends Reconciler
                 $redundant = false;
                 $existing_var_type->removeType($atomic_type->getKey());
                 $existing_var_type->addType(new TIntRange($assertion_value, null));
+            } elseif ($atomic_type instanceof TTemplateParam) {
+                // the bound of the template is what the comparison narrows
+                $redundant = false;
+                $existing_var_type->removeType($atomic_type->getKey());
+                $narrowed_bound = self::reconcileIsGreaterThan(
+                    $assertion,
+                    $atomic_type->as,
+                    $inside_loop,
+                    $old_var_type_string,
+                    null,
+                    $negated,
+                    null,
+                    $suppressed_issues,
+                );
+
+                if (!$narrowed_bound->isNever()) {
+                    $existing_var_type->addType($atomic_type->replaceAs($narrowed_bound));
+                }
             } else {
                 // we assume that other types may have been removed (empty strings? numeric strings?)
                 //It may be worth refining to improve reconciliation while keeping in mind we're on loose comparison
@@ -2140,6 +2158,24 @@ final class SimpleAssertionReconciler extends Reconciler
                 $redundant = false;
                 $existing_var_type->removeType($atomic_type->getKey());
                 $existing_var_type->addType(new TIntRange(null, $assertion_value));
+            } elseif ($atomic_type instanceof TTemplateParam) {
+                // the bound of the template is what the comparison narrows
+                $redundant = false;
+                $existing_var_type->removeType($atomic_type->getKey());
+                $narrowed_bound = self::reconcileIsLessThan(
+                    $assertion,
+                    $atomic_type->as,
+                    $inside_loop,
+                    $old_var_type_string,
+                    null,
+                    $negated,
+                    null,
+                    $suppressed_issues,
+                );
+
+                if (!$narrowed_bound->isNever()) {
+                    $existing_var_type->addType($atomic_type->replaceAs($narrowed_bound));
+                }
             } else {
                 // we assume that other types may have been removed (empty strings? numeric strings?)
                 //It may be worth refining to improve reconciliation while keeping in mind we're on loose comparison

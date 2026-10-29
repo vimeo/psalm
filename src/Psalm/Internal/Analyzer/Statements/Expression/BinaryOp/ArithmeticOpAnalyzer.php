@@ -450,6 +450,21 @@ final class ArithmeticOpAnalyzer
             }
         }
 
+        // a number bounded by its template is still within that bound
+        if ($left_type_part instanceof TTemplateParam
+            && $left_type_part->as->isSingle()
+            && ($left_type_part->as->isInt() || $left_type_part->as->isFloat())
+        ) {
+            $left_type_part = $left_type_part->as->getSingleAtomic();
+        }
+
+        if ($right_type_part instanceof TTemplateParam
+            && $right_type_part->as->isSingle()
+            && ($right_type_part->as->isInt() || $right_type_part->as->isFloat())
+        ) {
+            $right_type_part = $right_type_part->as->getSingleAtomic();
+        }
+
         if ($left_type_part instanceof TMixed || $right_type_part instanceof TMixed) {
             if ($statements_source && $codebase && $context) {
                 if (!$context->collect_initializations
