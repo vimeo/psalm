@@ -3341,7 +3341,7 @@ final class Config
 
     public function addUniversalObjectCrate(string $class): void
     {
-        if (!class_exists($class)) {
+        if (!class_exists($class) && !interface_exists($class)) {
             throw new UnexpectedValueException($class . ' is not a known class');
         }
         $this->universal_object_crates[] = strtolower($class);

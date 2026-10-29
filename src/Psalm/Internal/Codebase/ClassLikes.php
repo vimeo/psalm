@@ -62,6 +62,7 @@ use function explode;
 use function get_declared_classes;
 use function get_declared_interfaces;
 use function implode;
+use function in_array;
 use function is_array;
 use function ltrim;
 use function preg_match;
@@ -536,6 +537,39 @@ final class ClassLikes
             $location,
             $context,
         );
+    }
+
+    /**
+     * Whether the properties of a class cannot be determined statically: it is, extends or implements
+     * one of the universal object crates of the config
+     *
+     * @psalm-capabilities read-props
+     */
+    public function isUniversalObjectCrate(string $fq_class_name): bool
+    {
+        $crates = $this->config->getUniversalObjectCrates();
+        $class_name_lc = strtolower($fq_class_name);
+
+        if (in_array($class_name_lc, $crates, true)) {
+            return true;
+        }
+
+        if (!$this->classlike_storage_provider->has($class_name_lc)) {
+            return false;
+        }
+
+        $storage = $this->classlike_storage_provider->get($class_name_lc);
+
+        foreach ($crates as $crate) {
+            if (isset($storage->parent_classes[$crate])
+                || isset($storage->class_implements[$crate])
+                || isset($storage->parent_interfaces[$crate])
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
