@@ -1212,6 +1212,41 @@ final class ConfigTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testProtobufExtensionStubIsLoadedWhenEnabled(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <enableExtensions>
+                        <extension name="protobuf"/>
+                    </enableExtensions>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $config = $this->project_analyzer->getConfig();
+        $config->visitStubFiles($this->project_analyzer->getCodebase());
+        $this->assertContains((string) realpath('stubs/extensions/protobuf.phpstub'), $config->internal_stubs);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function seconds(): int|string {
+                    return (new \\Google\\Protobuf\\Timestamp())->setSeconds(0)->getSeconds();
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testZstdExtensionStubDeclaresItsFunctions(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

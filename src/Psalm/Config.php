@@ -608,6 +608,7 @@ final class Config
         "mongodb" => null,
         "mysqli" => null,
         "pdo" => null,
+        "protobuf" => null,
         "random" => null,
         "rdkafka" => null,
         "redis" => null,
