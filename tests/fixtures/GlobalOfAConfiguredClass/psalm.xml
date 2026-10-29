@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<psalm
+    autoloader="autoloader.php"
+    resolveFromConfigFile="true"
+    findUnusedCode="false"
+    findUnusedBaselineEntry="false"
+    runTaintAnalysis="false"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+>
+    <projectFiles>
+        <file name="file.php" />
+    </projectFiles>
+    <globals>
+        <var name="connection" type="GlobalOfAConfiguredClass\Connection" />
+        <var name="connections" type="array&lt;int, GlobalOfAConfiguredClass\Pool|null&gt;" />
+    </globals>
+</psalm>
