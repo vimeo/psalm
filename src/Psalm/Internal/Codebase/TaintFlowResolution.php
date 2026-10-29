@@ -1310,7 +1310,7 @@ final class TaintFlowResolution
 
         [$observed_family, $observed_key] = $this->path_type_effects[$path_type];
         [$made, $closed] = $this->open_assignments[$open_assignments];
-        $array_assignments = $made[self::ARRAY_FAMILY] ?? [];
+        $array_assignments = $made[self::ARRAY_FAMILY];
 
         // the innermost open array assignment the flow made, if any: the overwrites of a flow anywhere in an array
         // (see addOverwrite()) are no assignment, and only ever below the others
@@ -1613,11 +1613,11 @@ final class TaintFlowResolution
      */
     private function isAnywhereInArray(array $made, array $closed): ?bool
     {
-        if ($made[self::PROPERTY_FAMILY] ?? []) {
+        if ($made[self::PROPERTY_FAMILY]) {
             return false;
         }
 
-        if ($made[self::ARRAY_FAMILY] ?? []) {
+        if ($made[self::ARRAY_FAMILY]) {
             return $this->isOverwrittenAnywhere($made);
         }
 
@@ -1725,8 +1725,8 @@ final class TaintFlowResolution
                 ? $this->getSlot(
                     $foreach_marker,
                     $this->resolvePutBackAssignment(
-                        $call_made[self::ARRAY_FAMILY] ?? [],
-                        $call_closed[self::ARRAY_FAMILY] ?? self::NO_CALL,
+                        $call_made[self::ARRAY_FAMILY],
+                        $call_closed[self::ARRAY_FAMILY],
                         -$assignment,
                     ),
                 )
@@ -2882,10 +2882,10 @@ final class TaintFlowResolution
     private function passesConversion(int $state, array $closed): bool
     {
         [$made] = $this->open_assignments[$this->state_open_assignments[$state]];
-        $array_assignments = $made[self::ARRAY_FAMILY] ?? [];
+        $array_assignments = $made[self::ARRAY_FAMILY];
         $array_left = count($array_assignments) - $closed[self::ARRAY_FAMILY];
 
-        if ($array_left <= 0 || count($made[self::PROPERTY_FAMILY] ?? []) > $closed[self::PROPERTY_FAMILY]) {
+        if ($array_left <= 0 || count($made[self::PROPERTY_FAMILY]) > $closed[self::PROPERTY_FAMILY]) {
             return true;
         }
 
@@ -2946,12 +2946,12 @@ final class TaintFlowResolution
         [$made, $state_closed] = $this->open_assignments[$this->state_open_assignments[$state]];
 
         if ($state_closed[self::ARRAY_FAMILY] !== self::NO_CALL
-            || count($made[self::PROPERTY_FAMILY] ?? []) > $closed[self::PROPERTY_FAMILY]
+            || count($made[self::PROPERTY_FAMILY]) > $closed[self::PROPERTY_FAMILY]
         ) {
             return false;
         }
 
-        $array_assignments = $made[self::ARRAY_FAMILY] ?? [];
+        $array_assignments = $made[self::ARRAY_FAMILY];
         $array_left = count($array_assignments) - $closed[self::ARRAY_FAMILY];
 
         return $array_left <= 0 || isset($this->overwrite_path_types[$array_assignments[$array_left - 1]]);

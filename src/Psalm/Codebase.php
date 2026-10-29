@@ -1836,7 +1836,7 @@ final class Codebase
             $symbol = (string) preg_replace('/:.*/', '', $reference->symbol);
             $symbol_parts = explode('-', $symbol);
 
-            if (!isset($symbol_parts[0]) || !isset($symbol_parts[1])) {
+            if (!isset($symbol_parts[1])) {
                 return null;
             }
 

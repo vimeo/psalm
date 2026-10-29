@@ -45,11 +45,13 @@ final class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProvi
             return null;
         }
 
+        // the formats that were asked for, whichever of the arguments set them
+        /** @var array<int, true> $formats */
+        $formats = [];
         if (!$call_args) {
-            $formats = [0 => true];
+            $formats[0] = true;
         } else {
             $normalized = $source->node_data->getType($call_args[0]->value) ?? Type::getMixed();
-            $formats = [];
             foreach ($normalized->getAtomicTypes() as $t) {
                 if ($t instanceof TLiteralInt && in_array($t->value, [0, 1, 2], true)) {
                     $formats[$t->value] = true;

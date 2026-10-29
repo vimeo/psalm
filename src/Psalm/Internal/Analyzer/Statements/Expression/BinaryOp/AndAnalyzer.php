@@ -136,19 +136,21 @@ final class AndAnalyzer
             $right_context = clone $context;
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
-            [$right_context->vars_in_scope, $right_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
-                $left_type_assertions,
-                $active_left_assertions,
-                $right_context->vars_in_scope,
-                $context->references_in_scope,
-                $changed_var_ids,
-                $left_referenced_var_ids,
-                $statements_analyzer,
-                $statements_analyzer->getTemplateTypeMap() ?: [],
-                $context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $stmt->left),
-                $context->inside_negation,
-            );
+            [$right_context->vars_in_scope, $right_context->references_in_scope] =
+                Reconciler::reconcileKeyedTypesExcludingAssignedVars(
+                    $left_type_assertions,
+                    $active_left_assertions,
+                    $right_context->vars_in_scope,
+                    $context->references_in_scope,
+                    $changed_var_ids,
+                    $left_referenced_var_ids,
+                    $statements_analyzer,
+                    $statements_analyzer->getTemplateTypeMap() ?: [],
+                    $context->inside_loop,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->left),
+                    $context->inside_negation,
+                    $left_assigned_var_ids,
+                );
         } else {
             $right_context = clone $left_context;
         }

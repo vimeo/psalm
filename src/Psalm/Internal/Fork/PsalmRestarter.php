@@ -231,9 +231,7 @@ final class PsalmRestarter extends XdebugHandler
             $result += self::JIT_OPCACHE_SETTINGS['jit_buffer_size'] / 1024 / 1024;
         }
 
-        if (isset(self::REQUIRED_OPCACHE_SETTINGS['interned_strings_buffer'])) {
-            $result += self::REQUIRED_OPCACHE_SETTINGS['interned_strings_buffer'];
-        }
+        $result += self::REQUIRED_OPCACHE_SETTINGS['interned_strings_buffer'];
 
         return $result;
     }
