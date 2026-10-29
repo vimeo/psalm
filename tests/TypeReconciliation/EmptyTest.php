@@ -553,7 +553,7 @@ final class EmptyTest extends TestCase
                     }
                     PHP,
                 'assertions' => [
-                    '$x===' => 'string', // perhaps this should be improved in future
+                    '$x===' => '\'\'',
                 ],
             ],
             'issue-9205-3' => [
