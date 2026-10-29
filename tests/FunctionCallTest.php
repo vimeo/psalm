@@ -2196,6 +2196,21 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'strtolowerOfAStringableObjectIsNotRedundant' => [
+                'code' => '<?php
+                    class Test {
+                        public function __toString(): string {
+                            return "AAA";
+                        }
+                    }
+
+                    function lower(Test $test, Stringable $stringable): string {
+                        return strtolower($test) . strtolower($stringable);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
+            ],
             'array_is_list_on_empty_array' => [
                 'code' => '<?php
                     $a = [];
@@ -3176,6 +3191,11 @@ final class FunctionCallTest extends TestCase
                     takesArrayShapeWithZeroOrPositiveInt(["bar" => $mayBeInt]);
                 ',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'strtolowerOfALowercaseString' => [
+                'code' => '<?php
+                    echo strtolower("abc");',
+                'error_message' => 'The call to strtolower is unnecessary',
             ],
             'is_a_withAStringAndNoThirdArg' => [
                 'code' => '<?php
