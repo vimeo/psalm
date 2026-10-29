@@ -756,6 +756,16 @@ or interfaces defined in a stub file, this stub should be configured with attrib
 </stubs>
 ```
 
+A `<directory name="path/to/stubs" />` adds every `.php` and `.phpstub` file below it, in alphabetical order, and takes
+the same `preloadClasses` attribute:
+
+```xml
+<stubs>
+  <directory name="path/to/stubs" />
+  <directory name="path/to/base-classes" preloadClasses="true" />
+</stubs>
+```
+
 Stubs aren't analyzed, but the issues of their docblocks (e.g. `InvalidDocblock`) are reported, also for the stubs
 plugins add, so that an annotation a stub gets wrong isn't silently dropped.
 

@@ -12,6 +12,7 @@ use Composer\Semver\VersionParser;
 use DOMAttr;
 use DOMDocument;
 use DOMElement;
+use FilesystemIterator;
 use Generator;
 use InvalidArgumentException;
 use JsonException;
@@ -58,8 +59,11 @@ use Psalm\Plugin\PluginInterface;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Type\TaintKind;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use RuntimeException;
 use SimpleXMLElement;
+use SplFileInfo;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 use UnexpectedValueException;
@@ -121,6 +125,7 @@ use function rtrim;
 use function scandir;
 use function sha1;
 use function simplexml_import_dom;
+use function sort;
 use function str_contains;
 use function str_ends_with;
 use function str_replace;
@@ -1475,34 +1480,48 @@ final class Config
             }
         }
 
-        if (isset($config_xml->stubs) && isset($config_xml->stubs->file)) {
-            /** @var SimpleXMLElement $stub_file */
-            foreach ($config_xml->stubs->file as $stub_file) {
-                $stub_file_name = (string)$stub_file['name'];
-                if (!Path::isAbsolute($stub_file_name)) {
-                    $stub_file_name = $config->base_dir . DIRECTORY_SEPARATOR . $stub_file_name;
-                }
-                $file_path = realpath($stub_file_name);
-
-                if (!$file_path) {
-                    throw new ConfigException(
-                        'Cannot resolve stubfile path '
-                            . $config->base_dir
-                            . DIRECTORY_SEPARATOR
-                            . $stub_file['name'],
-                    );
-                }
-
-                if (isset($stub_file['preloadClasses'])) {
-                    $preload_classes = (string)$stub_file['preloadClasses'];
-
-                    if ($preload_classes === 'true' || $preload_classes === '1') {
-                        $config->addPreloadedStubFile($file_path);
-                    } else {
-                        $config->addStubFile($file_path);
+        if (isset($config_xml->stubs)) {
+            // the files and directories are registered in the order they are listed, as a stub may need another
+            foreach ($config_xml->stubs->children() ?? [] as $stub) {
+                if ($stub->getName() === 'file') {
+                    $stub_file_name = (string)$stub['name'];
+                    if (!Path::isAbsolute($stub_file_name)) {
+                        $stub_file_name = $config->base_dir . DIRECTORY_SEPARATOR . $stub_file_name;
                     }
-                } else {
-                    $config->addStubFile($file_path);
+                    $file_path = realpath($stub_file_name);
+
+                    if (!$file_path) {
+                        throw new ConfigException('Cannot resolve stubfile path ' . $stub_file_name);
+                    }
+
+                    $config->addStubFileFromXml($file_path, $stub);
+                } elseif ($stub->getName() === 'directory') {
+                    $stub_directory_name = (string)$stub['name'];
+                    if (!Path::isAbsolute($stub_directory_name)) {
+                        $stub_directory_name = $config->base_dir . DIRECTORY_SEPARATOR . $stub_directory_name;
+                    }
+                    $directory_path = realpath($stub_directory_name);
+
+                    if ($directory_path === false || !is_dir($directory_path)) {
+                        throw new ConfigException('Cannot resolve stubs directory path ' . $stub_directory_name);
+                    }
+
+                    $stub_file_paths = [];
+                    foreach (new RecursiveIteratorIterator(
+                        new RecursiveDirectoryIterator($directory_path, FilesystemIterator::SKIP_DOTS),
+                    ) as $file) {
+                        assert($file instanceof SplFileInfo);
+                        if (in_array($file->getExtension(), ['php', 'phpstub'], true)) {
+                            $stub_file_paths[] = $file->getPathname();
+                        }
+                    }
+
+                    // a stub may use the classes of another one, so keep the order the same on every machine
+                    sort($stub_file_paths);
+
+                    foreach ($stub_file_paths as $file_path) {
+                        $config->addStubFileFromXml($file_path, $stub);
+                    }
                 }
             }
         }
@@ -3237,6 +3256,21 @@ final class Config
     public function addStubFile(string $stub_file): void
     {
         $this->stub_files[$stub_file] = $stub_file;
+    }
+
+    private function addStubFileFromXml(string $file_path, SimpleXMLElement $stub): void
+    {
+        if (isset($stub['preloadClasses'])) {
+            $preload_classes = (string)$stub['preloadClasses'];
+
+            if ($preload_classes === 'true' || $preload_classes === '1') {
+                $this->addPreloadedStubFile($file_path);
+
+                return;
+            }
+        }
+
+        $this->addStubFile($file_path);
     }
 
     /**

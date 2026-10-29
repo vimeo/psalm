@@ -82,7 +82,6 @@
     </ComplexMethod>
     <ImplicitToStringCast>
       <code><![CDATA[$config_xml['errorLevel']]]></code>
-      <code><![CDATA[$stub_file['name']]]></code>
     </ImplicitToStringCast>
     <ImpureStaticProperty>
       <code><![CDATA[self::$instance]]></code>
