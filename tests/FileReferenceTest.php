@@ -7,9 +7,11 @@ namespace Psalm\Tests;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
@@ -172,6 +174,87 @@ final class FileReferenceTest extends TestCase
         $all = $graph->getAllReferences();
         $ksort_recursive($all);
         $this->assertSame($expected_references, $all);
+    }
+
+    public function testAnalysisPersistsEveryResultToTheReferenceCache(): void
+    {
+        $config = new TestConfig();
+        $cache = new FileReferenceCacheProvider($config, '', false);
+        $file_path = $this->scanFileWithReferenceCache($cache);
+        $this->project_analyzer->getCodebase()->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        self::assertArrayHasKey('b::foo', $cache->getAnalyzedMethodCache()[$file_path] ?? []);
+        self::assertNotSame([], $cache->getFileMapCache()[$file_path] ?? []);
+        self::assertNotSame([], $cache->getTypeCoverage()[$file_path] ?? []);
+        $issue = $cache->getCachedIssues()[$file_path][0] ?? null;
+        self::assertInstanceOf(IssueData::class, $issue);
+        self::assertSame('InvalidReturnStatement', $issue->type);
+        self::assertSame([$file_path], $cache->getCachedFileReferences()[$file_path]['i'] ?? null);
+    }
+
+    public function testAnalysisWritesTheReferenceCacheOnce(): void
+    {
+        $cache = $this->getMockBuilder(FileReferenceCacheProvider::class)
+            ->setConstructorArgs([new TestConfig(), '', false])
+            ->onlyMethods(['setCachedFileReferences'])
+            ->getMock();
+
+        $this->scanFileWithReferenceCache($cache);
+        $cache->expects(self::once())->method('setCachedFileReferences');
+        $this->project_analyzer->getCodebase()->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+    }
+
+    public function testUpdatingReferenceCacheKeepsReferencesAsLists(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $file_path = self::$src_dir_path . 'a.php';
+        $this->file_provider->registerFile($file_path, '<?php class A {}');
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $codebase->scanFiles();
+
+        $provider = $codebase->file_reference_provider;
+        $graph = $provider->code_use_graph;
+        $class_node = CodeUseGraph::classNode('a');
+
+        $provider->addFileInheritanceToClass('/b.php', 'a');
+        $graph->addReference($class_node, null, null, CodeUseGraph::EDGE_USE, '/b.php');
+        $provider->updateReferenceCache($codebase, [$file_path => true]);
+
+        $provider->addFileInheritanceToClass('/c.php', 'a');
+        $graph->addReference($class_node, null, null, CodeUseGraph::EDGE_USE, '/c.php');
+        $provider->updateReferenceCache($codebase, [$file_path => true]);
+
+        self::assertSame(['/b.php', '/c.php'], $provider->getFilesInheritingFromFile($file_path));
+        self::assertSame(['/b.php', '/c.php'], $provider->getFilesReferencingFile($file_path));
+    }
+
+    private function scanFileWithReferenceCache(FileReferenceCacheProvider $cache): string
+    {
+        $this->file_provider = new FakeFileProvider();
+        $this->project_analyzer = new ProjectAnalyzer(
+            new TestConfig(),
+            new Providers($this->file_provider, new FakeParserCacheProvider(), null, null, $cache),
+        );
+        $this->project_analyzer->setPhpVersion('7.3', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->diff_methods = true;
+        $codebase->config->throw_exception = false;
+
+        $this->file_provider->registerFile(
+            $file_path,
+            '<?php
+                class A {}
+                class B extends A {
+                    public function foo(): int {
+                        return "a";
+                    }
+                }',
+        );
+        $codebase->reloadFiles($this->project_analyzer, [$file_path]);
+
+        return $file_path;
     }
 
     /**

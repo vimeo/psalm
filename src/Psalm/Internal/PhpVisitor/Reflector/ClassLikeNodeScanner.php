@@ -1021,6 +1021,21 @@ final class ClassLikeNodeScanner
                     $storage->deprecated = true;
                 }
 
+                if ($attribute->fq_class_name === 'Deprecated') {
+                    foreach ($attribute->args as $i => $arg) {
+                        if (($arg->name ?? ($i === 0 ? 'message' : null)) === 'message'
+                            && $arg->type instanceof Union
+                            && $arg->type->isSingleStringLiteral()
+                        ) {
+                            $message = $arg->type->getSingleStringLiteral()->value;
+
+                            if ($message !== '') {
+                                $storage->deprecated_message = $message;
+                            }
+                        }
+                    }
+                }
+
                 if ($attribute->fq_class_name === 'Psalm\\Internal' && !$storage->internal) {
                     $storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name)];
                 }

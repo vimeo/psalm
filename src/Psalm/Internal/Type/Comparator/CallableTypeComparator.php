@@ -252,7 +252,7 @@ final class CallableTypeComparator
                 return false;
             }
         } elseif ($input_type_part instanceof TKeyedArray) {
-            $method_id = self::getCallableMethodIdFromTKeyedArray($input_type_part);
+            $method_id = self::getCallableMethodIdFromTKeyedArray($input_type_part, $codebase);
 
             if ($method_id === 'not-callable') {
                 return false;
@@ -434,7 +434,7 @@ final class CallableTypeComparator
                 }
             }
         } elseif ($input_type_part instanceof TKeyedArray) {
-            $method_id = self::getCallableMethodIdFromTKeyedArray($input_type_part);
+            $method_id = self::getCallableMethodIdFromTKeyedArray($input_type_part, $codebase);
             if ($method_id && $method_id !== 'not-callable') {
                 try {
                     $method_storage = $codebase->methods->getStorage($method_id);
@@ -719,6 +719,10 @@ final class CallableTypeComparator
             $class_name = $lhs->getSingleStringLiteral()->value;
             if ($class_name[0] === '\\') {
                 $class_name = substr($class_name, 1);
+            }
+
+            if ($codebase) {
+                $class_name = $codebase->classlikes->getUnAliasedName($class_name);
             }
         } elseif ($lhs->isSingle()) {
             foreach ($lhs->getAtomicTypes() as $lhs_atomic_type) {
