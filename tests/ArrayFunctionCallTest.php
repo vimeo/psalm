@@ -2103,6 +2103,75 @@ final class ArrayFunctionCallTest extends TestCase
                     '$e' => 'list<int>',
                 ],
             ],
+            'arraySpliceReturnKeepsTheTypeOfTheElements' => [
+                'code' => '<?php
+                    /** @var list<array{id: int}> $shapes */
+                    $shapes = [];
+                    /** @var array<int, bool> $bools */
+                    $bools = [];
+                    /** @var non-empty-list<float> $floats */
+                    $floats = [1.0];
+                    /** @var list<"a"|"b"> $literals */
+                    $literals = [];
+                    /** @var array<string, int> $named */
+                    $named = [];
+                    /** @var array<array-key, int> $keys */
+                    $keys = [];
+                    /** @var list<mixed> $mixed */
+                    $mixed = [];
+
+                    $a = array_splice($shapes, 0, 1);
+                    $b = array_splice($bools, 0, 1);
+                    $c = array_splice($floats, 0, 1);
+                    $d = array_splice($literals, 0, 1);
+                    $e = array_splice($named, 0, 1);
+                    $f = array_splice($keys, 0, 1);
+                    $g = array_splice($mixed, 0, 1);',
+                'assertions' => [
+                    '$a===' => 'list<array{id: int}>',
+                    '$b===' => 'list<bool>',
+                    '$c===' => 'list<float>',
+                    '$d===' => 'list<\'a\'|\'b\'>',
+                    '$e===' => 'array<string, int>',
+                    '$f===' => 'array<array-key, int>',
+                    '$g===' => 'list<mixed>',
+                ],
+            ],
+            'arraySpliceReturnIsAcceptedWhereTheElementsAreExpected' => [
+                'code' => '<?php
+                    /**
+                     * @param array[] $body
+                     * @return object[]
+                     */
+                    function sendWebRequest(array $body): array
+                    {
+                        $result = [];
+                        foreach ($body as $item) {
+                            $result[] = (object) $item;
+                        }
+                        return $result;
+                    }
+
+                    /**
+                     * @param int[] $ids
+                     * @return object[]
+                     */
+                    function fetchListing(array $ids, string $type): array {
+                        $fetch = [];
+                        foreach ($ids as $id) {
+                            $fetch[] = [$type => $id];
+                        }
+
+                        $output = [];
+                        while (count($fetch)) {
+                            $length = min(100, count($fetch));
+                            $input = array_splice($fetch, 0, $length);
+                            $output = array_merge($output, sendWebRequest($input));
+                        }
+
+                        return $output;
+                    }',
+            ],
             'arraySpliceOtherType' => [
                 'code' => '<?php
                     $d = [["red"], ["green"], ["blue"]];

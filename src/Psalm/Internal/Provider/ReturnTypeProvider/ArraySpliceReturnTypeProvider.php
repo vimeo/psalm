@@ -55,14 +55,9 @@ final class ArraySpliceReturnTypeProvider implements FunctionReturnTypeProviderI
             $array_type = $array_type->getGenericArrayType();
         }
 
+        // the removed elements are renumbered, unless they have string keys
         if (!$array_type->type_params[0]->hasString()) {
-            if ($array_type->type_params[1]->isString()) {
-                $array_type = Type::getListAtomic(Type::getString());
-            } elseif ($array_type->type_params[1]->isInt()) {
-                $array_type = Type::getListAtomic(Type::getInt());
-            } else {
-                $array_type = Type::getListAtomic(Type::getMixed());
-            }
+            $array_type = Type::getListAtomic($array_type->type_params[1]);
         }
 
         return new Union([$array_type]);
