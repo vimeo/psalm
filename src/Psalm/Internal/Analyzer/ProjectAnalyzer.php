@@ -493,6 +493,12 @@ final class ProjectAnalyzer
         $this->codebase->taint_flow_graph = new TaintFlowGraph();
     }
 
+    public function trackTaintedInputsWithOtherIssues(): void
+    {
+        $this->codebase->combined_taint_analysis = true;
+        $this->codebase->taint_flow_graph = new TaintFlowGraph();
+    }
+
     public function trackUnusedSuppressions(): void
     {
         $this->codebase->track_unused_suppressions = true;

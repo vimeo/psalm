@@ -4,6 +4,21 @@ Psalm can attempt to find connections between user-controlled input (like `$_GET
 
 You can enable this mode with the `--taint-analysis` command line flag. When taint analysis is enabled, no other analysis is performed.  To [ensure comprehensive results](https://github.com/vimeo/psalm/issues/6156), Psalm should be run normally prior to taint analysis, and any errors should be fixed.
 
+### Taint analysis alongside normal analysis
+
+To get both in one run, use `--combined-taint-analysis` (or `runCombinedTaintAnalysis="true"` in `psalm.xml`; `--no-combined-taint-analysis` turns the config setting off for one run). Psalm scans the codebase once, then forks a process that runs the taint analysis on a copy of the scanned codebase, runs the normal analysis in the original process, and reports the issues from both together. A baseline made with `--set-baseline` or `--update-baseline` in this mode keeps both kinds of issues, and the exit code is non-zero if either kind remains. It needs the `pcntl` and `posix` extensions and a writable temporary directory. If the mode is turned on with `--combined-taint-analysis` and they are missing, Psalm stops with an error; if it is turned on only in `psalm.xml`, Psalm prints a warning and runs without taint analysis, so a shared config still works on machines that can't fork. `--dump-taint-graph` is not supported in this mode. If the taint analysis process fails (it is killed, crashes or sends back unreadable results), Psalm prints why and exits with code 1 instead of reporting a run without taint issues. If Psalm itself is stopped or killed, the taint analysis process and its workers stop too, within about a second.
+
+The results are meant to match a normal run plus a `--taint-analysis` run. These differences are known:
+
+ - **Plugin hooks run twice.** Both analyses run the plugin hooks, so a plugin with side effects outside Psalm (writing a file, counting calls, printing) does them in both processes. Hooks that run while the codebase is scanned and populated run once, and any taint sources and sinks they add are used by the taint analysis.
+ - **`AfterAnalysis` hooks see both kinds of issues**, where each separate run would show them only its own kind.
+ - **Taint data added while populating is visible to the normal analysis.** A hook that adds taint sources to stored types (for example in `AfterCodebasePopulated`) leaves them on those types for both analyses, as a `--taint-analysis` run does. The normal analysis doesn't report anything from them.
+ - **Issue handler suppressions are counted across both analyses.** With `findUnusedIssueHandlerSuppression`, an `<issueHandlers>` suppression counts as used if either analysis used it. A normal run alone would report a suppression of a `Tainted*` issue as unused, and a `--taint-analysis` run alone would report one of any other issue. Only a suppression that neither analysis used is reported.
+ - **The exit code with `--report` and `GITHUB_WORKFLOW`.** A `--taint-analysis` run exits 0 when it writes its issues to a report file on GitHub Actions. A combined run exits 2 if any issue is left, as a normal run does.
+ - **Memory.** The taint analysis process starts as a copy-on-write fork of the scanned codebase, and the original process waits for it, so the two analyses do not run at the same time and the waiting process mostly shares its memory with the fork. On a ~5,600-file codebase, the peak memory of the whole process tree was 9.5 GB in combined mode against 9.7 GB for a `--taint-analysis` run, so plan for the memory a taint analysis run needs.
+ - **Time.** The run takes about as long as a normal run plus a taint analysis run, minus one scan, because the two analyses run one after the other.
+
+
 Tainted input is anything that can be controlled, wholly or in part, by a user of your application. In taint analysis, tainted input is called a _taint source_.
 
 Example sources:

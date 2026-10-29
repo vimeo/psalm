@@ -173,6 +173,13 @@ final class Codebase
 
     public ?TaintFlowGraph $taint_flow_graph = null;
 
+    /**
+     * Run taint analysis in a forked process alongside the normal analysis, so one run reports
+     * both kinds of issues. $taint_flow_graph is set while the codebase is scanned and populated,
+     * like in a taint-only run, and is handed to the forked taint pass before analysis starts.
+     */
+    public bool $combined_taint_analysis = false;
+
     public bool $server_mode = false;
 
     public bool $store_node_types = false;

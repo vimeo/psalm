@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
-use Amp\Future;
+use Closure;
 use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;
@@ -243,12 +243,30 @@ final class Analyzer
             $this->file_provider->fileExists(...),
         );
 
+        $taint_pass_result = null;
+        if ($codebase->combined_taint_analysis && $codebase->taint_flow_graph) {
+            // Scanning and populating ran with the taint graph a taint-only run has. The taint
+            // pass takes it over; the normal pass must not have one, or it would build taint
+            // nodes into types and report differently from a normal run.
+            $taint_flow_graph = $codebase->taint_flow_graph;
+            $codebase->taint_flow_graph = null;
+
+            if ($this->files_to_analyze) {
+                $taint_pass_result = $this->runCombinedTaintPass($project_analyzer, $pool_size, $taint_flow_graph);
+            }
+        }
+
         $this->doAnalysis($project_analyzer, $pool_size);
 
         $scanned_files = $codebase->scanner->getScannedFiles();
 
         if ($codebase->taint_flow_graph) {
             $codebase->taint_flow_graph->connectSinksAndSources();
+        }
+
+        if ($taint_pass_result !== null) {
+            IssueBuffer::addTaintAnalysisIssues($taint_pass_result['issues']);
+            $codebase->config->combineIssueHandlerSuppressions($taint_pass_result['issue_handler_suppressions']);
         }
 
         $this->progress->finish();
@@ -293,7 +311,45 @@ final class Analyzer
         }
     }
 
-    private function doAnalysis(ProjectAnalyzer $project_analyzer, int $pool_size): void
+    /**
+     * Runs the taint analysis half of a combined run in a forked copy of the codebase,
+     * which has the same state a --taint-analysis run has at this point.
+     *
+     * @return array{
+     *     issues: array<string, list<IssueData>>,
+     *     issue_handler_suppressions: list<array{type: string, index: int, count: int}>
+     * }
+     */
+    private function runCombinedTaintPass(
+        ProjectAnalyzer $project_analyzer,
+        int $pool_size,
+        TaintFlowGraph $taint_flow_graph,
+    ): array {
+        $codebase = $project_analyzer->getCodebase();
+
+        $this->progress->write('Running taint analysis pass' . "\n");
+
+        $result = CombinedTaintPass::run(
+            function (Closure $between_files) use ($project_analyzer, $codebase, $pool_size, $taint_flow_graph): void {
+                // From here on this process is a plain taint analysis.
+                $codebase->combined_taint_analysis = false;
+                $codebase->taint_flow_graph = $taint_flow_graph;
+
+                $this->doAnalysis($project_analyzer, $pool_size, $between_files);
+                $taint_flow_graph->connectSinksAndSources();
+                $this->progress->finish();
+            },
+        );
+
+        $this->progress->write('Running analysis pass' . "\n");
+
+        return $result;
+    }
+
+    /**
+     * @param ?Closure():void $between_files called after each analyzed file
+     */
+    private function doAnalysis(ProjectAnalyzer $project_analyzer, int $pool_size, ?Closure $between_files = null): void
     {
         $this->progress->start(count($this->files_to_analyze));
 
@@ -302,6 +358,13 @@ final class Analyzer
         $codebase = $project_analyzer->getCodebase();
 
         $task_done_closure = $this->progress->taskDone(...);
+        if ($between_files !== null) {
+            $progress_task_done = $task_done_closure;
+            $task_done_closure = static function (int $level) use ($progress_task_done, $between_files): void {
+                $between_files();
+                $progress_task_done($level);
+            };
+        }
 
         if ($pool_size > 1 && count($this->files_to_analyze) > $pool_size) {
             // Run analysis one file at a time, splitting the set of
@@ -317,13 +380,9 @@ final class Analyzer
             // Wait for all tasks to complete and collect the results.
             await($pool->runAll(new InitAnalyzerTask));
             $pool->run($this->files_to_analyze, AnalyzerTask::class, $task_done_closure);
-            $forked_pool_data = $pool->runAll(new ShutdownAnalyzerTask);
-
             $this->progress->debug('Collecting forked analysis results' . "\n");
 
-            foreach (Future::iterate($forked_pool_data) as $pool_data) {
-                $pool_data = $pool_data->await();
-
+            foreach ($pool->runAllThenKill(new ShutdownAnalyzerTask) as $pool_data) {
                 IssueBuffer::addIssues($pool_data['issues']);
                 IssueBuffer::addFixableIssues($pool_data['fixable_issue_counts']);
 

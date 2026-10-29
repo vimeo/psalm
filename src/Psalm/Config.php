@@ -402,6 +402,11 @@ final class Config
 
     public bool $run_taint_analysis = false;
 
+    /**
+     * Run taint analysis alongside the normal analysis and report both kinds of issues
+     */
+    public bool $run_combined_taint_analysis = false;
+
     public bool $use_phpstorm_meta_path = true;
 
     public bool $resolve_from_config_file = true;
@@ -982,6 +987,7 @@ final class Config
             'sealAllMethods' => 'seal_all_methods',
             'sealAllProperties' => 'seal_all_properties',
             'runTaintAnalysis' => 'run_taint_analysis',
+            'runCombinedTaintAnalysis' => 'run_combined_taint_analysis',
             'usePhpStormMetaPath' => 'use_phpstorm_meta_path',
             'allowInternalNamedArgumentsCalls' => 'allow_internal_named_arg_calls',
             'allowNamedArgumentCalls' => 'allow_named_arg_calls',
