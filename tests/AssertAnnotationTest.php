@@ -159,6 +159,82 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertIfTrueAndFalseKeepEveryAlternativeOfAUnion' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true \'a\'|\'b\' $x */
+                    function isAOrB(string $x): bool {
+                        return $x === "a" || $x === "b";
+                    }
+
+                    /** @psalm-assert-if-false \'a\'|\'b\' $x */
+                    function isNotAOrB(string $x): bool {
+                        return $x !== "a" && $x !== "b";
+                    }
+
+                    /** @var string $s */
+                    $s = "";
+                    /** @var string $t */
+                    $t = "";
+
+                    $ifTrue = isAOrB($s) ? $s : null;
+                    $ifFalse = isNotAOrB($t) ? null : $t;',
+                'assertions' => [
+                    '$ifTrue===' => "'a'|'b'|null",
+                    '$ifFalse===' => "'a'|'b'|null",
+                ],
+            ],
+            'assertIfTrueAndFalseKeepEveryAlternativeOfAUnionOnAProperty' => [
+                'code' => '<?php
+                    final class Foo {
+                        public string $bar = "";
+
+                        /** @psalm-assert-if-true \'a\'|\'b\' $this->bar */
+                        public function hasAOrB(): bool {
+                            return $this->bar === "a" || $this->bar === "b";
+                        }
+
+                        /** @psalm-assert-if-false \'a\'|\'b\' $this->bar */
+                        public function hasNotAOrB(): bool {
+                            return $this->bar !== "a" && $this->bar !== "b";
+                        }
+                    }
+
+                    /** @psalm-assert-if-true \'a\'|\'b\' $foo->bar */
+                    function fooHasAOrB(Foo $foo): bool {
+                        return $foo->hasAOrB();
+                    }
+
+                    /** @psalm-assert-if-false \'a\'|\'b\' $foo->bar */
+                    function fooHasNotAOrB(Foo $foo): bool {
+                        return $foo->hasNotAOrB();
+                    }
+
+                    $one = new Foo();
+                    $two = new Foo();
+                    $three = new Foo();
+                    $four = new Foo();
+
+                    $viaThisTrue = $one->hasAOrB() ? $one->bar : null;
+                    $viaThisFalse = $two->hasNotAOrB() ? null : $two->bar;
+                    $viaArgumentTrue = fooHasAOrB($three) ? $three->bar : null;
+                    $viaArgumentFalse = fooHasNotAOrB($four) ? null : $four->bar;',
+                'assertions' => [
+                    '$viaThisTrue===' => "'a'|'b'|null",
+                    '$viaThisFalse===' => "'a'|'b'|null",
+                    '$viaArgumentTrue===' => "'a'|'b'|null",
+                    '$viaArgumentFalse===' => "'a'|'b'|null",
+                ],
+            ],
+            'reflectionNamedTypeNameOfANonBuiltinTypeMaybeSelfStaticOrParent' => [
+                'code' => '<?php
+                    /** @var ReflectionNamedType $type */
+                    $type = null;
+
+                    $name = $type->isBuiltin() ? null : $type->getName();',
+                'assertions' => [
+                    '$name===' => "'parent'|'self'|'static'|class-string|null",
+                ],
+            ],
             'assertKeyOfAClassConstantNarrowsToItsKeys' => [
                 'code' => '<?php
                     final class OwnerTypes {
