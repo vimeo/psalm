@@ -62,6 +62,22 @@ This corresponds to Psalm‘s [error-detection level](error_levels.md).
 ```
 Setting this to `"false"` hides all issues with `Mixed` types in Psalm’s output. If not given, this defaults to `"false"` when `errorLevel` is 3 or higher, and `"true"` when the error level is 1 or 2.
 
+`"true"` only stops Psalm from hiding them: above level 2 they are reported as `info`, so give the issue the error level you want in `<issueHandlers>`. For a `mixed` value passed to `strtolower()` (`MixedArgument`; `MixedAssignment` behaves the same):
+
+```xml
+<psalm errorLevel="1" />                                  <!-- MixedArgument: error -->
+<psalm errorLevel="2" />                                  <!-- MixedArgument: info -->
+<psalm errorLevel="5" />                                  <!-- nothing -->
+<psalm errorLevel="5" reportMixedIssues="true" />         <!-- MixedArgument: info -->
+<psalm errorLevel="5" reportMixedIssues="true">           <!-- MixedArgument: error -->
+  <issueHandlers><MixedArgument errorLevel="error" /></issueHandlers>
+</psalm>
+<psalm errorLevel="5" reportMixedIssues="false">          <!-- nothing, even with the handler -->
+  <issueHandlers><MixedArgument errorLevel="error" /></issueHandlers>
+</psalm>
+<psalm errorLevel="1" reportMixedIssues="false" />        <!-- nothing -->
+```
+
 #### totallyTyped
 
 \(Deprecated\) This setting has been replaced by `reportMixedIssues` which is automatically enabled when `errorLevel` is 1.
