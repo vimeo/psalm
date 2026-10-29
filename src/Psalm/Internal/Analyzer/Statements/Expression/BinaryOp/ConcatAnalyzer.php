@@ -281,6 +281,9 @@ final class ConcatAnalyzer
                     );
                 }
 
+                $result_type = self::getResultTypeFromKnownOperand($left_type->hasMixed() ? $right_type : $left_type)
+                    ?? $result_type;
+
                 return;
             }
 
@@ -439,26 +442,41 @@ final class ConcatAnalyzer
              */
             $known_operand = $right_type ?? $left_type;
 
-            if ($known_operand->isSingle()) {
-                $known_operands_atomic = $known_operand->getSingleAtomic();
+            $result_type = self::getResultTypeFromKnownOperand($known_operand) ?? $result_type;
+        }
+    }
 
-                if ($known_operand->isNonEmptyString()) {
-                    $result_type = Type::getNonEmptyString();
-                }
+    /**
+     * The type of a concatenation with an operand of unknown type: it is no emptier than the known operand
+     *
+     * @psalm-pure
+     */
+    private static function getResultTypeFromKnownOperand(Union $known_operand): ?Union
+    {
+        if (!$known_operand->isSingle()) {
+            return null;
+        }
 
-                if ($known_operands_atomic instanceof TNonFalsyString) {
-                    $result_type = Type::getNonFalsyString();
-                }
+        $known_operands_atomic = $known_operand->getSingleAtomic();
+        $result_type = null;
 
-                if ($known_operands_atomic instanceof TLiteralString) {
-                    if ($known_operands_atomic->value) {
-                        $result_type = Type::getNonFalsyString();
-                    } elseif ($known_operands_atomic->value !== '') {
-                        $result_type = Type::getNonEmptyString();
-                    }
-                }
+        if ($known_operand->isNonEmptyString()) {
+            $result_type = Type::getNonEmptyString();
+        }
+
+        if ($known_operands_atomic instanceof TNonFalsyString) {
+            $result_type = Type::getNonFalsyString();
+        }
+
+        if ($known_operands_atomic instanceof TLiteralString) {
+            if ($known_operands_atomic->value) {
+                $result_type = Type::getNonFalsyString();
+            } elseif ($known_operands_atomic->value !== '') {
+                $result_type = Type::getNonEmptyString();
             }
         }
+
+        return $result_type;
     }
 
     private static function analyzeOperand(
