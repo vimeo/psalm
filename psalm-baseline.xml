@@ -918,7 +918,6 @@
       <code><![CDATA[$cased_method_id ?: $method_id]]></code>
       <code><![CDATA[$cased_method_id ?: $method_id]]></code>
       <code><![CDATA[$cased_method_id ?: $method_id]]></code>
-      <code><![CDATA[$cased_method_id ?: $method_id]]></code>
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$context->self]]></code>
