@@ -81,6 +81,12 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     private const GENERATOR_SEND_CALL_DEPTH = 8;
 
+    /**
+     * How many call stacks the search for the generators what is sent can be sent to reaches a node with
+     * before any call matches there (see linkGeneratorSends()): the walks through shared nodes multiply them.
+     */
+    private const GENERATOR_SEND_STACKS = 16;
+
     /** @var array<string, DataFlowNode> */
     private array $sources = [];
 
@@ -860,6 +866,7 @@ final class TaintFlowGraph extends DataFlowGraph
             // [node id, specialization keys of the calls entered through their returns, innermost last]
             $queue = [];
             $visited = [];
+            $stacks_per_node = [];
 
             foreach ($generator_ids as $generator_id => $_) {
                 $queue[] = [$generator_id, []];
@@ -903,10 +910,21 @@ final class TaintFlowGraph extends DataFlowGraph
 
                     $state_key = $from_id . "\0" . implode("\0", $from_calls);
 
-                    if (!isset($visited[$state_key])) {
-                        $visited[$state_key] = true;
-                        $queue[] = [$from_id, $from_calls];
+                    if (!isset($visited[$state_key])
+                        && ($stacks_per_node[$from_id] ?? 0) >= self::GENERATOR_SEND_STACKS
+                    ) {
+                        // a new call stack at a node with too many: any call matches
+                        $from_calls = [];
+                        $state_key = $from_id . "\0";
                     }
+
+                    if (isset($visited[$state_key])) {
+                        continue;
+                    }
+
+                    $visited[$state_key] = true;
+                    $stacks_per_node[$from_id] = ($stacks_per_node[$from_id] ?? 0) + 1;
+                    $queue[] = [$from_id, $from_calls];
                 }
             }
         }

@@ -442,6 +442,114 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * What is sent to a generator delegating to another one that a chain of functions returns, each calling the next
+     * one from many call sites, is linked to the latter: the search for it reaches the deepest functions with a call
+     * stack per path through the chain.
+     */
+    public function testGeneratorSendThroughManyCallStacks(): void
+    {
+        $layers = 8;
+        $call_sites = 12;
+
+        $code = "<?php\n"
+            . "function inner(): Generator { \$sent = yield 1; echo \$sent; }\n";
+
+        for ($layer = 1; $layer <= $layers; $layer++) {
+            $next = $layer < $layers ? 'layer' . ($layer + 1) : 'inner';
+            $args = $layer < $layers ? '$n' : '';
+            $returned = "$next($args)";
+
+            for ($site = $call_sites - 1; $site >= 1; $site--) {
+                $returned = "\$n === $site ? $next($args) : ($returned)";
+            }
+
+            $code .= "function layer$layer(int \$n): Generator { return $returned; }\n";
+        }
+
+        $code .= "function outer(): Generator { yield from layer1(1); }\n"
+            . "\$values = outer();\n"
+            . "\$values->current();\n"
+            . "\$values->send((string) \$_GET['value']);\n";
+
+        self::assertSame([2], $this->getTaintedHtmlLines($code));
+    }
+
+    /**
+     * `pass()` is called from one call site per stack that reaches its nodes. Past 16 distinct call stacks at a node,
+     * any call matches there: a generator that is not sent to is linked then (and not before), and every generator
+     * that is sent to stays linked.
+     */
+    #[DataProvider('providerGeneratorSendCallStackCap')]
+    public function testGeneratorSendCallStackCap(int $call_sites, bool $other_is_linked): void
+    {
+        $code = "<?php\n"
+            . "function pass(Generator \$generator): Generator { return \$generator; }\n";
+        $expected_lines = [];
+
+        for ($site = 0; $site < $call_sites; $site++) {
+            $code .= "function gen$site(): Generator { \$sent = yield 1; echo \$sent; }\n";
+            $expected_lines[] = $site + 3;
+        }
+
+        $code .= "function other(): Generator { \$sent = yield 1; echo \$sent; }\n"
+            . "function relay(): Generator { yield from pass(other()); }\n";
+
+        if ($other_is_linked) {
+            $expected_lines[] = $call_sites + 3;
+        }
+
+        $returned = 'pass(gen' . ($call_sites - 1) . '())';
+
+        for ($site = $call_sites - 2; $site >= 0; $site--) {
+            $returned = "\$n === $site ? pass(gen$site()) : ($returned)";
+        }
+
+        $code .= "function run(int \$n): Generator { yield from $returned; }\n"
+            . "\$values = run(1);\n"
+            . "\$values->current();\n"
+            . "\$values->send((string) \$_GET['value']);\n";
+
+        self::assertSame($expected_lines, $this->getTaintedHtmlLines($code));
+    }
+
+    /**
+     * @return array<string, array{int, bool}>
+     * @psalm-pure
+     */
+    public static function providerGeneratorSendCallStackCap(): array
+    {
+        return [
+            'sixteenCallStacks' => [16, false],
+            'seventeenCallStacks' => [17, true],
+            'twentyCallStacks' => [20, true],
+        ];
+    }
+
+    /**
+     * @return list<int> the lines of the TaintedHtml issues of $code, sorted
+     */
+    private function getTaintedHtmlLines(string $code): array
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, $code);
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $lines = array_values(array_map(
+            static fn(IssueData $issue): int => $issue->line_from,
+            array_filter(
+                IssueBuffer::getIssuesDataForFile($file_path),
+                static fn(IssueData $issue): bool => $issue->type === 'TaintedHtml',
+            ),
+        ));
+        sort($lines);
+
+        return $lines;
+    }
+
+    /**
      * The sinks of the curl options with several, which a test expecting an issue can't check: it only sees the first
      * one reported.
      *
