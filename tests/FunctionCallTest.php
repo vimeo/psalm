@@ -2207,6 +2207,56 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'array_is_list_keeps_keyed_array_shape' => [
+                'code' => '<?php
+                    /** @param array{0: string, 1: string[]} $arr */
+                    function f(array $arr): string {
+                        if (!array_is_list($arr)) {
+                            throw new Exception();
+                        }
+                        [$a0, $a1] = $arr;
+                        return $a0 . implode("", $a1);
+                    }
+
+                    /** @var array{0: string, 1: int} $s */
+                    $s = [];
+                    assert(array_is_list($s));
+                    ',
+                'assertions' => [
+                    '$s===' => 'list{string, int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'array_is_list_keeps_optional_keys_of_keyed_array' => [
+                'code' => '<?php
+                    /** @var array{0: string, 1?: int} $s */
+                    $s = [];
+                    assert(array_is_list($s));
+
+                    /** @var array{0?: string, 1: int} $t */
+                    $t = [];
+                    assert(array_is_list($t));
+                    ',
+                'assertions' => [
+                    '$s===' => 'list{0: string, 1?: int}',
+                    '$t===' => 'list{string, int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'array_is_list_on_keyed_array_with_extra_keys' => [
+                'code' => '<?php
+                    /** @var array{0: string, ...<int, bool>} $s */
+                    $s = [];
+                    assert(array_is_list($s));
+                    ',
+                'assertions' => [
+                    '$s===' => 'non-empty-list<bool|string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'possiblyUndefinedArrayDestructurationOnOptionalArg' => [
                 'code' => '<?php
                     class A
@@ -3086,6 +3136,60 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'array_is_list_on_list_shape' => [
+                'code' => '<?php
+                    /** @param list{string, int} $arr */
+                    function f(array $arr): void {
+                        assert(array_is_list($arr));
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'array_is_list_keyed_array_with_string_keys' => [
+                'code' => '<?php
+                    /** @param array{a: string, b: int} $arr */
+                    function f(array $arr): void {
+                        assert(array_is_list($arr));
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'array_is_list_keyed_array_without_first_key' => [
+                'code' => '<?php
+                    /** @param array{1: string, 2: int} $arr */
+                    function f(array $arr): void {
+                        assert(array_is_list($arr));
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'array_is_list_keyed_array_with_required_key_after_gap' => [
+                'code' => '<?php
+                    /** @param array{0: string, 2: int} $arr */
+                    function f(array $arr): void {
+                        assert(array_is_list($arr));
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'keyed_array_asserted_as_list_of_other_values' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert list<int> $value
+                     */
+                    function assertIntList($value): void {}
+
+                    /** @param array{0: string} $arr */
+                    function f(array $arr): void {
+                        assertIntList($arr);
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'passingObjectToStringableObjectParam' => [
                 'code' => '<?php

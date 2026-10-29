@@ -80,8 +80,10 @@ use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function array_is_list;
 use function array_map;
 use function array_merge;
+use function array_reverse;
 use function array_values;
 use function assert;
 use function count;
@@ -2359,6 +2361,22 @@ final class SimpleAssertionReconciler extends Reconciler
     }
 
     /**
+     * @psalm-pure
+     */
+    private static function getKeyedArrayAsList(TKeyedArray $keyed_array): TKeyedArray|TArray
+    {
+        $properties = [];
+        $required = false;
+        // a key can only be set if all the keys before it are
+        foreach (array_reverse($keyed_array->properties, true) as $key => $property) {
+            $required = $required || !$property->possibly_undefined;
+            $properties[$key] = $required ? $property->setPossiblyUndefined(false) : $property;
+        }
+
+        return TKeyedArray::make($properties, $keyed_array->class_strings, null, true, $keyed_array->from_docblock);
+    }
+
+    /**
      * @param   string[]  $suppressed_issues
      * @param Reconciler::RECONCILIATION_* $failed_reconciliation
      */
@@ -2385,6 +2403,16 @@ final class SimpleAssertionReconciler extends Reconciler
         $redundant = true;
 
         foreach ($existing_var_atomic_types as $type) {
+            // the keys 0, 1, 2... of a sealed keyed array make it a list only if they are in order
+            if ($type instanceof TKeyedArray
+                && !$type->is_list
+                && $type->isSealed()
+                && array_is_list($type->properties)
+            ) {
+                $type = self::getKeyedArrayAsList($type);
+                $redundant = false;
+            }
+
             if ($type instanceof TKeyedArray && $type->is_list) {
                 if ($is_non_empty && !$type->isNonEmpty()) {
                     $properties = $type->properties;
