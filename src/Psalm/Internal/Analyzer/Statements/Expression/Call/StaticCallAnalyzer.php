@@ -22,9 +22,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\ParentNotFound;
 use Psalm\IssueBuffer;
@@ -410,34 +408,13 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        $conditionally_removed_taints = 0;
-
-        if ($method_storage && $template_result) {
-            foreach ($method_storage->conditionally_removed_taints as $conditionally_removed_taint) {
-                $conditionally_removed_taint = TemplateInferredTypeReplacer::replace(
-                    $conditionally_removed_taint,
-                    $template_result,
-                    $codebase,
-                );
-
-                $expanded_type = TypeExpander::expandUnion(
-                    $statements_analyzer->getCodebase(),
-                    $conditionally_removed_taint,
-                    null,
-                    null,
-                    null,
-                    true,
-                    true,
-                );
-
-                foreach ($expanded_type->getLiteralStrings() as $literal_string) {
-                    $taint = $codebase->getOrRegisterTaint($literal_string->value, $method_storage->location);
-                    if ($taint !== null) {
-                        $conditionally_removed_taints |= $taint;
-                    }
-                }
-            }
-        }
+        $conditionally_removed_taints = $method_storage && $template_result
+            ? FunctionCallReturnTypeFetcher::getConditionallyRemovedTaints(
+                $codebase,
+                $method_storage,
+                $template_result,
+            )
+            : 0;
 
         $added_taints = 0;
         $removed_taints = 0;
