@@ -15,6 +15,7 @@ use function count;
 use function ltrim;
 use function rtrim;
 use function str_contains;
+use function strtolower;
 use function trim;
 
 /**
@@ -81,7 +82,7 @@ final class TrimReturnTypeProvider implements FunctionReturnTypeProviderInterfac
         $string = $string_type->getSingleStringLiteral()->value;
 
         return Type::getString(
-            match ($event->getFunctionId()) {
+            match (strtolower($event->getFunctionId())) {
                 'ltrim' => ltrim($string, $characters),
                 'rtrim', 'chop' => rtrim($string, $characters),
                 default => trim($string, $characters),

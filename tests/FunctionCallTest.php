@@ -2224,6 +2224,19 @@ final class FunctionCallTest extends TestCase
                     '$i===' => '\'12\'',
                 ],
             ],
+            'trimOfALiteralStringIgnoresTheCaseOfTheCall' => [
+                'code' => '<?php
+                    $a = LTRIM("  abc  ");
+                    $b = \\rtrim("  abc  ");
+                    $c = Chop("  abc  ");
+                    $d = \\TRIM("  abc  ");',
+                'assertions' => [
+                    '$a===' => '\'abc  \'',
+                    '$b===' => '\'  abc\'',
+                    '$c===' => '\'  abc\'',
+                    '$d===' => '\'abc\'',
+                ],
+            ],
             'trimThatIsNotOfOneLiteralKeepsTheStubType' => [
                 'code' => '<?php
                     /** @var string $s */
