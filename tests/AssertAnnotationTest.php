@@ -1751,7 +1751,7 @@ final class AssertAnnotationTest extends TestCase
             ],
             'reflectionNameTypeClassStringIfNotBuiltin' => [
                 'code' => '<?php
-                    /** @return class-string|null */
+                    /** @return class-string|\'self\'|\'static\'|\'parent\'|null */
                     function getPropertyType(\ReflectionProperty $reflectionItem): ?string {
                         $type = $reflectionItem->getType();
                         return ($type instanceof \ReflectionNamedType) && !$type->isBuiltin() ? $type->getName() : null;
