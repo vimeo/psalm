@@ -401,6 +401,13 @@ final class ArrayAnalyzer
             if ($item_key_type = $statements_analyzer->node_data->getType($item->key)) {
                 $key_type = $item_key_type;
 
+                // null is what a nullable type that is asked to be ignored (e.g. a return type) doesn't have
+                if ($key_type->ignore_nullable_issues && $key_type->isNullable() && !$key_type->isNull()) {
+                    $key_type_without_null = $key_type->getBuilder();
+                    $key_type_without_null->removeType('null');
+                    $key_type = $key_type_without_null->freeze();
+                }
+
                 if ($key_type->isNull()) {
                     $key_type = Type::getString('');
                 }
