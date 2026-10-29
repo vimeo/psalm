@@ -1195,6 +1195,68 @@ final class BinaryOperationTest extends TestCase
                     '$b===' => 'non-falsy-string',
                 ],
             ],
+            'concatMixedWithNonFalsyLiteralReturnsNonFalsyString' => [
+                'code' => '<?php
+                    /** @var mixed $m */
+                    $m = 1;
+
+                    $a = "<?xml encoding=\"UTF-8\">" . $m;
+                    $b = $m . "<?xml encoding=\"UTF-8\">";',
+                'assertions' => [
+                    '$a===' => 'non-falsy-string',
+                    '$b===' => 'non-falsy-string',
+                ],
+                'ignored_issues' => ['MixedOperand'],
+            ],
+            'concatMixedWithNonFalsyStringReturnsNonFalsyString' => [
+                'code' => '<?php
+                    /** @var mixed $m */
+                    $m = 1;
+                    /** @var non-falsy-string $s */
+                    $s = "ab";
+
+                    $a = $s . $m;
+                    $b = $m . $s;',
+                'assertions' => [
+                    '$a===' => 'non-falsy-string',
+                    '$b===' => 'non-falsy-string',
+                ],
+                'ignored_issues' => ['MixedOperand'],
+            ],
+            'concatMixedWithNonEmptyStringReturnsNonEmptyString' => [
+                'code' => '<?php
+                    /** @var mixed $m */
+                    $m = 1;
+                    /** @var non-empty-string $s */
+                    $s = "0";
+
+                    $a = $s . $m;
+                    $b = $m . $s;
+                    $c = "0" . $m;',
+                'assertions' => [
+                    '$a===' => 'non-empty-string',
+                    '$b===' => 'non-empty-string',
+                    '$c===' => 'non-empty-string',
+                ],
+                'ignored_issues' => ['MixedOperand'],
+            ],
+            'concatMixedWithPossiblyEmptyStringReturnsString' => [
+                'code' => '<?php
+                    /** @var mixed $m */
+                    $m = 1;
+                    /** @var string $s */
+                    $s = "";
+
+                    $a = $s . $m;
+                    $b = "" . $m;
+                    $c = $m . $m;',
+                'assertions' => [
+                    '$a===' => 'string',
+                    '$b===' => 'string',
+                    '$c===' => 'string',
+                ],
+                'ignored_issues' => ['MixedOperand'],
+            ],
             'unaryMinusOverflows' => [
                 'code' => <<<'PHP'
                     <?php
