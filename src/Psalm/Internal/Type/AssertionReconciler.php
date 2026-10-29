@@ -930,13 +930,16 @@ final class AssertionReconciler extends Reconciler
                 $fallback_types = [$type_1_atomic->fallback_params[0], $type_2_param];
             }
 
-            $matching_atomic_type = TKeyedArray::make(
+            $filtered_atomic_type = TKeyedArray::make(
                 $type_1_properties,
                 $type_1_atomic->class_strings,
                 $fallback_types,
                 $type_1_atomic->is_list,
                 $type_1_atomic->from_docblock,
             );
+            $matching_atomic_type = $filtered_atomic_type instanceof TKeyedArray
+                ? $filtered_atomic_type->setIsCallable($type_1_atomic->is_callable)
+                : $filtered_atomic_type;
             $atomic_comparison_results->type_coerced = true;
         }
 

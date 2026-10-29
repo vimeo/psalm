@@ -636,13 +636,16 @@ final class TypeExpander
                 unset($property_type);
             }
             if ($changed) {
-                $return_type = TKeyedArray::make(
+                $expanded = TKeyedArray::make(
                     $properties,
                     $return_type->class_strings,
                     $fallback_params,
                     $return_type->is_list,
                     $return_type->from_docblock,
                 );
+                $return_type = $expanded instanceof TKeyedArray
+                    ? $expanded->setIsCallable($return_type->is_callable)
+                    : $expanded;
             }
         }
 
