@@ -2196,6 +2196,60 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'trimOfALiteralStringIsALiteralString' => [
+                'code' => '<?php
+                    $a = trim("  abc \n");
+                    $b = ltrim("  abc  ");
+                    $c = rtrim("  abc  ");
+                    $d = chop("abc \n");
+                    $e = trim("xxabcxx", "x");
+                    $f = trim("abc", "");
+                    $g = trim("");
+                    $h = trim("\0\x0B\t abc \r");
+                    $i = ltrim("0012", "0");
+
+                    /** @param "string"|"int"|"float" $type */
+                    function takesAType(string $type): void {}
+
+                    takesAType(trim("string "));',
+                'assertions' => [
+                    '$a===' => '\'abc\'',
+                    '$b===' => '\'abc  \'',
+                    '$c===' => '\'  abc\'',
+                    '$d===' => '\'abc\'',
+                    '$e===' => '\'abc\'',
+                    '$f===' => '\'abc\'',
+                    '$g===' => '\'\'',
+                    '$h===' => '\'abc\'',
+                    '$i===' => '\'12\'',
+                ],
+            ],
+            'trimThatIsNotOfOneLiteralKeepsTheStubType' => [
+                'code' => '<?php
+                    /** @var string $s */
+                    $s = getenv("X");
+                    /** @var "a "|"b " $union */
+                    $union = rand(0, 1) ? "a " : "b ";
+                    /** @var string $chars */
+                    $chars = getenv("Y");
+
+                    $a = trim($s);
+                    $b = trim($union);
+                    $c = trim("abc ", $chars);
+                    $d = trim("abc", "a..c");
+                    $e = trim(string: " abc ");
+                    $f = trim(...["abc "]);
+                    $g = trim(" abc ", " ", "extra");',
+                'assertions' => [
+                    '$a===' => 'string',
+                    '$b===' => 'lowercase-string',
+                    '$c===' => 'lowercase-string',
+                    '$d===' => 'lowercase-string',
+                    '$e===' => 'lowercase-string',
+                    '$f===' => 'lowercase-string',
+                ],
+                'ignored_issues' => ['TooManyArguments'],
+            ],
             'array_is_list_on_empty_array' => [
                 'code' => '<?php
                     $a = [];
