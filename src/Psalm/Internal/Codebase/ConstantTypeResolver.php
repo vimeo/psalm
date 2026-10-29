@@ -6,6 +6,7 @@ namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
 use Psalm\Exception\CircularReferenceException;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayOffsetFetch;
@@ -33,6 +34,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -117,6 +119,13 @@ final class ConstantTypeResolver
                 if (($left instanceof TLiteralFloat || $left instanceof TLiteralInt)
                     && ($right instanceof TLiteralFloat || $right instanceof TLiteralInt)
                 ) {
+                    if ($c instanceof UnresolvedBitwiseOr
+                        || $c instanceof UnresolvedBitwiseXor
+                        || $c instanceof UnresolvedBitwiseAnd
+                    ) {
+                        return self::resolveBitwiseOperation($c, $left->value, $right->value);
+                    }
+
                     if ($c instanceof UnresolvedAdditionOp) {
                         return self::getLiteralTypeFromScalarValue($left->value + $right->value);
                     }
@@ -127,18 +136,6 @@ final class ConstantTypeResolver
 
                     if ($c instanceof UnresolvedDivisionOp) {
                         return self::getLiteralTypeFromScalarValue($left->value / $right->value);
-                    }
-
-                    if ($c instanceof UnresolvedBitwiseOr) {
-                        return self::getLiteralTypeFromScalarValue($left->value | $right->value);
-                    }
-
-                    if ($c instanceof UnresolvedBitwiseXor) {
-                        return self::getLiteralTypeFromScalarValue($left->value ^ $right->value);
-                    }
-
-                    if ($c instanceof UnresolvedBitwiseAnd) {
-                        return self::getLiteralTypeFromScalarValue($left->value & $right->value);
                     }
 
                     return self::getLiteralTypeFromScalarValue($left->value * $right->value);
@@ -361,6 +358,32 @@ final class ConstantTypeResolver
         }
 
         return new TMixed;
+    }
+
+    /**
+     * PHP converts the operands to ints, and deprecates that for a float that is not an exact int
+     */
+    private static function resolveBitwiseOperation(
+        UnresolvedBitwiseOr|UnresolvedBitwiseXor|UnresolvedBitwiseAnd $operation,
+        float|int $left,
+        float|int $right,
+    ): Atomic {
+        $left_int = ArithmeticOpAnalyzer::toExactInt($left);
+        $right_int = ArithmeticOpAnalyzer::toExactInt($right);
+
+        if ($left_int === null || $right_int === null) {
+            return new TInt();
+        }
+
+        if ($operation instanceof UnresolvedBitwiseOr) {
+            return self::getLiteralTypeFromScalarValue($left_int | $right_int);
+        }
+
+        if ($operation instanceof UnresolvedBitwiseXor) {
+            return self::getLiteralTypeFromScalarValue($left_int ^ $right_int);
+        }
+
+        return self::getLiteralTypeFromScalarValue($left_int & $right_int);
     }
 
     /**
