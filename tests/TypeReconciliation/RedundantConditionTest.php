@@ -1045,6 +1045,15 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'redundantCoalesceOnCallNamesTheLeftOperand' => [
+                'code' => '<?php
+                    function getArray(): array {
+                        return [];
+                    }
+
+                    echo count(getArray() ?? []);',
+                'error_message' => 'left operand of ?? at offset',
+            ],
             'instanceofOfATemplateParamAlreadyNarrowedToTheClass' => [
                 'code' => '<?php
                     interface Node {}
