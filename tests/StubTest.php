@@ -224,6 +224,40 @@ final class StubTest extends TestCase
         );
     }
 
+    public function testStubDirectoriesAndFilesFollowTheOrderOfTheConfig(): void
+    {
+        $fixtures = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'fixtures';
+
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__),
+            '<?xml version="1.0"?>
+            <psalm
+                errorLevel="1"
+            >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+
+                <stubs>
+                    <file name="tests/fixtures/stubs/systemclass.phpstub" />
+                    <directory name="tests/fixtures/stubs_directory" />
+                    <file name="tests/fixtures/stubs/DomainException.phpstub" />
+                </stubs>
+            </psalm>',
+        );
+
+        $this->assertSame(
+            [
+                $fixtures . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'systemclass.phpstub',
+                $fixtures . DIRECTORY_SEPARATOR . 'stubs_directory' . DIRECTORY_SEPARATOR . 'nested'
+                    . DIRECTORY_SEPARATOR . 'two.php',
+                $fixtures . DIRECTORY_SEPARATOR . 'stubs_directory' . DIRECTORY_SEPARATOR . 'one.phpstub',
+                $fixtures . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'DomainException.phpstub',
+            ],
+            array_values($config->getStubFiles()),
+        );
+    }
+
     #[DataProvider('providerStubDirectoryPreloadClasses')]
     public function testStubDirectoryPreloadClassesAttribute(string $attribute, bool $is_preloaded): void
     {

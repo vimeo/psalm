@@ -1481,30 +1481,22 @@ final class Config
         }
 
         if (isset($config_xml->stubs)) {
-            if (isset($config_xml->stubs->file)) {
-                foreach ($config_xml->stubs->file as $stub_file) {
-                    $stub_file_name = (string)$stub_file['name'];
+            // the files and directories are registered in the order they are listed, as a stub may need another
+            foreach ($config_xml->stubs->children() ?? [] as $stub) {
+                if ($stub->getName() === 'file') {
+                    $stub_file_name = (string)$stub['name'];
                     if (!Path::isAbsolute($stub_file_name)) {
                         $stub_file_name = $config->base_dir . DIRECTORY_SEPARATOR . $stub_file_name;
                     }
                     $file_path = realpath($stub_file_name);
 
                     if (!$file_path) {
-                        throw new ConfigException(
-                            'Cannot resolve stubfile path '
-                                . $config->base_dir
-                                . DIRECTORY_SEPARATOR
-                                . $stub_file['name'],
-                        );
+                        throw new ConfigException('Cannot resolve stubfile path ' . $stub_file_name);
                     }
 
-                    $config->addStubFileFromXml($file_path, $stub_file);
-                }
-            }
-
-            if (isset($config_xml->stubs->directory)) {
-                foreach ($config_xml->stubs->directory as $stub_directory) {
-                    $stub_directory_name = (string)$stub_directory['name'];
+                    $config->addStubFileFromXml($file_path, $stub);
+                } elseif ($stub->getName() === 'directory') {
+                    $stub_directory_name = (string)$stub['name'];
                     if (!Path::isAbsolute($stub_directory_name)) {
                         $stub_directory_name = $config->base_dir . DIRECTORY_SEPARATOR . $stub_directory_name;
                     }
@@ -1528,7 +1520,7 @@ final class Config
                     sort($stub_file_paths);
 
                     foreach ($stub_file_paths as $file_path) {
-                        $config->addStubFileFromXml($file_path, $stub_directory);
+                        $config->addStubFileFromXml($file_path, $stub);
                     }
                 }
             }
