@@ -904,8 +904,8 @@ final class TaintTest extends TestCase
                     build((string) $_GET["q"], []);',
             ],
             'keyOfAForeachElementKeptByAFlowThatForgotItsOpenAssignmentsInACall' => [
-                // the flow of the 257th write forgets its key in build(), but not the element of the loop it came from,
-                // which puts it back under its own key: "other" isn't "a"
+                // the last of the 257 flows of the writes to reach build()'s return forgets its key, but not the element
+                // of the loop it came from, which puts it back under its own key: "other" isn't "a"
                 'code' => '<?php
                     /** @psalm-taint-specialize */
                     function build(string $value, array $form): string {
@@ -5541,7 +5541,7 @@ final class TaintTest extends TestCase
                 'error_message' => 'TaintedHtml',
             ],
             'keyFetchAfterKeyWritesOfMoreFlowsThanANodeHoldsBeforeForgettingTakesThem' => [
-                // the flow of the 257th write reaches the node of the last one in a state past FORGETTING_STATES: it
+                // the last of the 257 flows of the writes to reach the node of the last one is past FORGETTING_STATES: it
                 // forgets its key, which the fetch of another key then doesn't ignore
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -5557,8 +5557,9 @@ final class TaintTest extends TestCase
                 'error_message' => 'TaintedHtml',
             ],
             'overwriteOfAKeyDoesntStopAFlowThatForgotItsOpenAssignments' => [
-                // the flow of the 257th write forgets that it is anywhere in an array: the overwrite of "z" in the
-                // array it takes from "other" doesn't stop it, which the fetch of "z" then doesn't ignore
+                // the last of the 257 flows of the writes to reach the fetch forgets that it is anywhere in an array:
+                // the overwrite of "z" in the array it takes from "other" doesn't stop it, which the fetch of "z" then
+                // doesn't ignore
                 'code' => '<?php
                     /** @psalm-taint-specialize */
                     function build(string $value, string $clean, array $form): void {
