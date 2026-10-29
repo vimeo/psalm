@@ -88,6 +88,29 @@ final class ClassMoveTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'renameClassInDocblockOfTypedProperty' => [
+                'input' => '<?php
+                    namespace Ns;
+
+                    class A {}
+
+                    class C {
+                        /** @var list<A> */
+                        public array $items = [];
+                    }',
+                'output' => '<?php
+                    namespace Ns;
+
+                    class B {}
+
+                    class C {
+                        /** @var list<B> */
+                        public array $items = [];
+                    }',
+                'migrations' => [
+                    'Ns\A' => 'Ns\B',
+                ],
+            ],
             'renameEmptyClass' => [
                 'input' => '<?php
                     namespace Ns;

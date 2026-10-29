@@ -2011,6 +2011,8 @@ final class ClassLikeNodeScanner
                 }
 
                 if ($property_storage->signature_type) {
+                    $property_storage->type_location = $doc_var_location ?? $property_storage->type_location;
+
                     $all_typehint_types_match = true;
                     $signature_atomic_types = $property_storage->signature_type->getAtomicTypes();
 
