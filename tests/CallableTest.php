@@ -20,6 +20,32 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callableKeyedArrayKeepsTheCallableFlagWhenItsValuesAreNarrowed' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert array<int, non-empty-string> $value
+                     */
+                    function assertNonEmptyStrings($value): void {}
+
+                    /** @var callable-array{0: string, 1: string} $a */
+                    $a = [];
+                    assertNonEmptyStrings($a);',
+                'assertions' => [
+                    '$a===' => 'callable-array{0: non-empty-string, 1: non-empty-string}',
+                ],
+            ],
+            'callableKeyedArrayShapesKeepTheCallableFlag' => [
+                'code' => '<?php
+                    /** @var callable-array{0: string, 1: non-empty-string} $a */
+                    $a = [];
+                    /** @var callable-list{string, non-empty-string} $l */
+                    $l = [];',
+                'assertions' => [
+                    '$a===' => 'callable-array{0: string, 1: non-empty-string}',
+                    '$l===' => 'callable-list{string, non-empty-string}',
+                ],
+            ],
             'byRefUseVar' => [
                 'code' => '<?php
                     /** @return void */
