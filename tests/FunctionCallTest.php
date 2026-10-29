@@ -2196,6 +2196,31 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'strReplaceWithAsManyReplacementsAsSearches' => [
+                'code' => '<?php
+                    /** @var string $subject */
+                    $subject = getenv("X");
+                    /** @var list<string> $searches */
+                    $searches = [];
+                    /** @var list<string> $replacements */
+                    $replacements = [];
+                    /** @var list{0?: string, 1?: string} $optional */
+                    $optional = [];
+
+                    $a = str_replace(["a", "b"], ["x", "y"], $subject);
+                    $b = str_replace(["a", "b"], ["x", "y", "z"], $subject);
+                    $c = str_replace(["a", "b"], "x", $subject);
+                    $d = str_replace(["a", "b"], [], $subject);
+                    $e = str_replace($searches, ["x"], $subject);
+                    $f = str_replace(["a", "b"], $replacements, $subject);
+                    $g = str_replace(["a", "b"], $optional, $subject);
+                    $h = str_replace("a", "x", $subject);
+                    $i = str_replace(...["a", "x", $subject]);
+                    $j = str_replace(subject: $subject, replace: ["x"], search: ["a", "b"]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'array_is_list_on_empty_array' => [
                 'code' => '<?php
                     $a = [];
@@ -3078,6 +3103,19 @@ final class FunctionCallTest extends TestCase
                         $a = count_chars("foo", $mode);
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'strReplaceWithFewerReplacementsThanSearches' => [
+                'code' => '<?php
+                    $subject = "Hello";
+                    $search = ["a", "b", "c"];
+                    $replace = ["x", "y"];
+                    echo str_replace($search, $replace, $subject);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'strIreplaceWithFewerReplacementsThanSearches' => [
+                'code' => '<?php
+                    echo str_ireplace(["a", "b"], ["x"], "Hello");',
+                'error_message' => 'InvalidArgument',
             ],
             'array_is_list_literal_array' => [
                 'code' => '<?php
