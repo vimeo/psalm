@@ -17,11 +17,13 @@ use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
@@ -278,6 +280,7 @@ final class MethodCallReturnTypeFetcher
             $declaring_method_id,
             $cased_method_id,
             $context,
+            $template_result,
         );
 
         // what is sent to a generator becomes the value of its yield expressions (what it gives back, see
@@ -315,6 +318,40 @@ final class MethodCallReturnTypeFetcher
     }
 
     /**
+     * What the method removes from its return depends on the arguments of this call: its result has a node of its own,
+     * as $method_call_node may be shared with the other calls, the last call deciding for all
+     */
+    private static function escapeReturnByArguments(
+        Codebase $codebase,
+        TaintFlowGraph|CombinedFlowGraph|VariableUseGraph $graph,
+        MethodStorage $method_storage,
+        ?TemplateResult $template_result,
+        MethodIdentifier $method_id,
+        CodeLocation $node_location,
+        DataFlowNode $method_call_node,
+        Union &$return_type_candidate,
+    ): void {
+        $removed_taints = $template_result
+            ? FunctionCallReturnTypeFetcher::getConditionallyRemovedTaints(
+                $codebase,
+                $method_storage,
+                $template_result,
+            )
+            : 0;
+
+        if (!$removed_taints) {
+            return;
+        }
+
+        $escaped_node = DataFlowNode::getForAssignment((string) $method_id . '-escaped', $node_location);
+
+        $graph->addNode($escaped_node);
+        $graph->addPath($method_call_node, $escaped_node, 'conditionally-escaped', 0, $removed_taints);
+
+        $return_type_candidate = $return_type_candidate->setParentNodes([$escaped_node->id => $escaped_node]);
+    }
+
+    /**
      * @param list<PhpParser\Node\Arg> $args
      */
     public static function taintMethodCallResult(
@@ -327,6 +364,7 @@ final class MethodCallReturnTypeFetcher
         ?MethodIdentifier $declaring_method_id,
         string $cased_method_id,
         Context $context,
+        ?TemplateResult $template_result = null,
     ): void {
         if (!($graph = $statements_analyzer->getDataFlowGraphWithSuppressed())
             || !$declaring_method_id
@@ -580,6 +618,17 @@ final class MethodCallReturnTypeFetcher
                 $method_call_node->id => $method_call_node,
             ]);
         }
+
+        self::escapeReturnByArguments(
+            $codebase,
+            $graph,
+            $method_storage,
+            $template_result,
+            $method_id,
+            $node_location,
+            $method_call_node,
+            $return_type_candidate,
+        );
 
         if (!$taint_flow_graph) {
             return;

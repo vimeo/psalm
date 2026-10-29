@@ -504,6 +504,125 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * @param list<string> $expected_issues
+     */
+    #[DataProvider('providerConditionallyEscapedTaintsDependOnTheArguments')]
+    public function testConditionallyEscapedTaintsDependOnTheArguments(
+        string $code,
+        array $expected_issues,
+        bool $track_unused_variables,
+    ): void {
+        if ($track_unused_variables) {
+            $this->trackUnusedVariables();
+        }
+
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, $code);
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $taint_issues = array_values(array_filter(
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ' on line ' . $issue->line_from,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+            static fn(string $issue): bool => str_starts_with($issue, 'Tainted'),
+        ));
+        sort($taint_issues);
+
+        self::assertSame($expected_issues, $taint_issues);
+    }
+
+    /**
+     * @return array<string, array{string, list<string>, bool}>
+     * @psalm-pure
+     */
+    public static function providerConditionallyEscapedTaintsDependOnTheArguments(): array
+    {
+        $cases = [
+            // what a call escapes depends on the arguments of this call, whether it is of a function, a static
+            // method or an instance method, and a condition the arguments can't decide escapes nothing
+            'functionStaticAndInstanceMethods' => [
+                '<?php
+                /** @psalm-taint-escape ($type is "expression" ? null : "shell") */
+                function quoteFunction(string $val, string $type): string {
+                    return $val;
+                }
+
+                class DB {
+                    /**
+                     * @psalm-taint-specialize
+                     * @psalm-taint-escape ($type is "expression" ? null : "shell") $val
+                     */
+                    public function quote(string $val, string $type): string {
+                        return $val;
+                    }
+
+                    /** @psalm-taint-escape ($type is "expression" ? null : "shell") */
+                    public function quoteUnspecialized(string $val, string $type): string {
+                        return $val;
+                    }
+
+                    /**
+                     * @psalm-taint-specialize
+                     * @psalm-taint-escape ($type is "expression" ? null : "shell") $val
+                     */
+                    public static function quoteStatic(string $val, string $type): string {
+                        return $val;
+                    }
+                }
+
+                class SubDB extends DB {}
+
+                function run(DB $db, SubDB $sub, string $unknown): void {
+                    $a = (string) $_GET["a"];
+
+                    shell_exec(quoteFunction($a, ""));
+                    shell_exec(quoteFunction($a, "expression"));
+                    shell_exec(quoteFunction($a, $unknown));
+
+                    shell_exec(DB::quoteStatic($a, ""));
+                    shell_exec(DB::quoteStatic($a, "expression"));
+                    shell_exec(DB::quoteStatic($a, $unknown));
+
+                    shell_exec($db->quote($a, ""));
+                    shell_exec($db->quote($a, "expression"));
+                    shell_exec($db->quote($a, $unknown));
+
+                    shell_exec($db->quoteUnspecialized($a, ""));
+                    shell_exec($db->quoteUnspecialized($a, "expression"));
+                    shell_exec($db->quoteUnspecialized($a, $unknown));
+
+                    shell_exec($sub->quote($a, ""));
+                    shell_exec($sub->quote($a, "expression"));
+                }',
+                [
+                    'TaintedShell on line 36',
+                    'TaintedShell on line 37',
+                    'TaintedShell on line 40',
+                    'TaintedShell on line 41',
+                    'TaintedShell on line 44',
+                    'TaintedShell on line 45',
+                    'TaintedShell on line 48',
+                    'TaintedShell on line 49',
+                    'TaintedShell on line 52',
+                ],
+            ],
+        ];
+
+        $data = [];
+
+        foreach ($cases as $name => [$code, $expected_issues]) {
+            $data[$name] = [$code, $expected_issues, false];
+            $data[$name . ' tracking unused variables'] = [$code, $expected_issues, true];
+        }
+
+        return $data;
+    }
+
+    /**
      * @return array<string, array{code:string}>
      * @psalm-pure
      */
@@ -3811,6 +3930,25 @@ final class TaintTest extends TestCase
 
                     echo U::foo($_GET["foo"], true);
                     echo U::foo($_GET["foo"]);',
+            ],
+            'conditionallyEscapedTaintPassedTrueInstanceMethod' => [
+                'code' => '<?php
+                    class U {
+                        /**
+                         * @psalm-taint-escape ($escape is true ? "html"|"has_quotes" : null)
+                         */
+                        public function foo(string $string, bool $escape = true): string {
+                            if ($escape) {
+                                $string = htmlspecialchars($string);
+                            }
+
+                            return $string;
+                        }
+                    }
+
+                    $u = new U();
+                    echo $u->foo($_GET["foo"], true);
+                    echo $u->foo($_GET["foo"]);',
             ],
             'valuesOfAnArrayWhoseKeysAreTaintedAreNotTainted' => [
                 // The taint is in a key: a fetch of a value doesn't take it.
@@ -13407,6 +13545,60 @@ final class TaintTest extends TestCase
                     }
 
                     shell_exec(U::escape((string) $_GET["x"], true));',
+                'error_message' => 'TaintedShell',
+            ],
+            'conditionallyEscapedTaintPassedFalseInstanceMethod' => [
+                'code' => '<?php
+                    class U {
+                        /**
+                         * @psalm-taint-escape ($escape is true ? "html" : null)
+                         */
+                        public function foo(string $string, bool $escape = true): string {
+                            return $string;
+                        }
+                    }
+
+                    echo (new U())->foo($_GET["foo"], false);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionallyEscapedTaintPassedTrueToAnInstanceMethodKeepsTheOtherTaints' => [
+                'code' => '<?php
+                    class U {
+                        /** @psalm-taint-escape ($escape is true ? "html" : null) */
+                        public function escape(string $s, bool $escape = true): string {
+                            return $s;
+                        }
+                    }
+
+                    shell_exec((new U())->escape((string) $_GET["x"], true));',
+                'error_message' => 'TaintedShell',
+            ],
+            'conditionallyEscapedTaintOfAnUndecidedConditionToAStaticCall' => [
+                'code' => '<?php
+                    class U {
+                        /** @psalm-taint-escape ($type is "expression" ? null : "shell") */
+                        public static function escape(string $s, string $type): string {
+                            return $s;
+                        }
+                    }
+
+                    function run(string $type): void {
+                        shell_exec(U::escape((string) $_GET["x"], $type));
+                    }',
+                'error_message' => 'TaintedShell',
+            ],
+            'conditionallyEscapedTaintOfAnUndecidedConditionToAnInstanceMethod' => [
+                'code' => '<?php
+                    class U {
+                        /** @psalm-taint-escape ($type is "expression" ? null : "shell") */
+                        public function escape(string $s, string $type): string {
+                            return $s;
+                        }
+                    }
+
+                    function run(U $u, string $type): void {
+                        shell_exec($u->escape((string) $_GET["x"], $type));
+                    }',
                 'error_message' => 'TaintedShell',
             ],
             'suppressOneCatchAnother' => [
