@@ -1480,6 +1480,43 @@ final class ArrayFunctionCallTest extends TestCase
                     '$g===' => 'non-empty-string',
                 ],
             ],
+            'arrayUniqueOfValuesThatConvertToStrings' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string {
+                            return "name";
+                        }
+                    }
+
+                    /** @var list<string> $strings */
+                    $strings = [];
+                    /** @var array<string, int|float|bool|null> $scalars */
+                    $scalars = [];
+                    /** @var list<Name> $names */
+                    $names = [];
+                    /** @var list<array<array-key, mixed>> $arrays */
+                    $arrays = [];
+                    /** @var list<mixed> $mixed */
+                    $mixed = [];
+                    /** @var list<stdClass> $objects */
+                    $objects = [];
+
+                    $a = array_unique($strings);
+                    $b = array_unique($scalars, SORT_STRING);
+                    $c = array_unique($names, SORT_LOCALE_STRING);
+                    $d = array_unique($arrays);
+                    $e = array_unique($mixed);
+                    $f = array_unique($objects, SORT_REGULAR);
+                    $g = array_unique(array: $objects, flags: SORT_REGULAR);
+                    $h = array_unique($objects, SORT_NUMERIC);
+                    $i = array_unique($objects, (int) $mixed[0]);
+                    $j = array_unique($objects, ...[SORT_REGULAR]);',
+                'assertions' => [
+                    '$a===' => 'array<int<0, max>, string>',
+                ],
+                'ignored_issues' => ['MixedArgumentTypeCoercion', 'MixedArgument', 'MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'key' => [
                 'code' => '<?php
                     $a = ["one" => 1, "two" => 3];
@@ -2959,6 +2996,46 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayUniqueOfObjectsThatAreNotStringable' => [
+                'code' => '<?php
+                    /** @var list<stdClass> $objects */
+                    $objects = [];
+
+                    array_unique($objects);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayUniqueOfObjectsWithTheStringFlag' => [
+                'code' => '<?php
+                    /** @var list<stdClass> $objects */
+                    $objects = [];
+
+                    array_unique($objects, SORT_STRING);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayUniqueOfObjectsWithTheLocaleStringFlag' => [
+                'code' => '<?php
+                    /** @var list<stdClass> $objects */
+                    $objects = [];
+
+                    array_unique($objects, SORT_LOCALE_STRING);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayUniqueOfObjectsWithANamedStringFlag' => [
+                'code' => '<?php
+                    /** @var list<stdClass> $objects */
+                    $objects = [];
+
+                    array_unique(flags: SORT_STRING, array: $objects);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayUniqueOfSomeObjectsThatAreNotStringable' => [
+                'code' => '<?php
+                    /** @var list<string|stdClass> $values */
+                    $values = [];
+
+                    array_unique($values);',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
             'arrayFilterUseMethodOnInferableInt' => [
                 'code' => '<?php
                     $a = array_filter([1, 2, 3, 4], function ($i) { return $i->foo(); });',

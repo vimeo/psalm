@@ -934,6 +934,7 @@ final class PreloaderList {
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayReduceReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayReplaceRecursiveReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayReverseReturnTypeProvider::class,
+        \Psalm\Internal\Provider\ReturnTypeProvider\ArrayUniqueReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArraySliceReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArraySpliceReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\BasenameReturnTypeProvider::class,
