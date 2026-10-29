@@ -21,6 +21,32 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalOnObjectWithToStringDoesNotMatchString' => [
+                'code' => '<?php
+                    final class Strable {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param callable(): T $cb
+                     * @return (T is Strable ? list<T> : array<T>)
+                     */
+                    function s(callable $cb) {
+                        throw new \Exception();
+                    }
+
+                    function str(): string {
+                        return "";
+                    }
+
+                    $b = s(static fn(): string => str());',
+                'assertions' => [
+                    '$b' => 'array<array-key, string>',
+                ],
+            ],
             'conditionalReturnTypeSimple' => [
                 'code' => '<?php
 

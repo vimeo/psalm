@@ -21,6 +21,100 @@ final class FunctionTemplateAssertTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertIdenticalToAUnionWithAnObjectWithToStringKeepsAString' => [
+                'code' => '<?php
+                    final class Html {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @template ExpectedType
+                     * @param ExpectedType $expected
+                     * @param mixed $actual
+                     * @psalm-assert =ExpectedType $actual
+                     */
+                    function assertSameish($expected, $actual): void {}
+
+                    /** @return Html|string */
+                    function getExpected() {
+                        return "";
+                    }
+
+                    function getActual(): string {
+                        return "";
+                    }
+
+                    $actual = getActual();
+                    assertSameish(getExpected(), $actual);',
+                'assertions' => [
+                    '$actual' => 'string',
+                ],
+            ],
+            'assertIdenticalToALiteralOrAnObjectWithToStringNarrowsAString' => [
+                'code' => '<?php
+                    final class Html {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @template ExpectedType
+                     * @param ExpectedType $expected
+                     * @param mixed $actual
+                     * @psalm-assert =ExpectedType $actual
+                     */
+                    function assertSameish($expected, $actual): void {}
+
+                    /** @return \'a\'|Html */
+                    function getExpected() {
+                        return "a";
+                    }
+
+                    function getActual(): string {
+                        return "";
+                    }
+
+                    $actual = getActual();
+                    assertSameish(getExpected(), $actual);',
+                'assertions' => [
+                    '$actual===' => "'a'",
+                ],
+            ],
+            'assertIdenticalToAUnionWithAnObjectWithToStringStillNarrowsTheObject' => [
+                'code' => '<?php
+                    final class Html {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @template ExpectedType
+                     * @param ExpectedType $expected
+                     * @param mixed $actual
+                     * @psalm-assert =ExpectedType $actual
+                     */
+                    function assertSameish($expected, $actual): void {}
+
+                    /** @return Html|string */
+                    function getExpected() {
+                        return "";
+                    }
+
+                    /** @return Html|int */
+                    function getActual() {
+                        return 1;
+                    }
+
+                    $actual = getActual();
+                    assertSameish(getExpected(), $actual);',
+                'assertions' => [
+                    '$actual' => 'Html',
+                ],
+            ],
             'assertTemplatedType' => [
                 'code' => '<?php
                     namespace Bar;
