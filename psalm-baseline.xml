@@ -831,17 +831,11 @@
       <code><![CDATA[$right_type_part]]></code>
     </ImplicitToStringCast>
     <InvalidOperand>
-      <code><![CDATA[$operand1 % $operand2]]></code>
-      <code><![CDATA[$operand1 & $operand2]]></code>
       <code><![CDATA[$operand1 * $operand2]]></code>
       <code><![CDATA[$operand1 ** $operand2]]></code>
       <code><![CDATA[$operand1 + $operand2]]></code>
       <code><![CDATA[$operand1 - $operand2]]></code>
       <code><![CDATA[$operand1 / $operand2]]></code>
-      <code><![CDATA[$operand1 << $operand2]]></code>
-      <code><![CDATA[$operand1 >> $operand2]]></code>
-      <code><![CDATA[$operand1 ^ $operand2]]></code>
-      <code><![CDATA[$operand1 | $operand2]]></code>
     </InvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$invalid_left_messages[0]]]></code>
@@ -1559,13 +1553,10 @@
   </file>
   <file src="src/Psalm/Internal/Codebase/ConstantTypeResolver.php">
     <InvalidOperand>
-      <code><![CDATA[$left->value & $right->value]]></code>
       <code><![CDATA[$left->value * $right->value]]></code>
       <code><![CDATA[$left->value + $right->value]]></code>
       <code><![CDATA[$left->value - $right->value]]></code>
       <code><![CDATA[$left->value / $right->value]]></code>
-      <code><![CDATA[$left->value ^ $right->value]]></code>
-      <code><![CDATA[$left->value | $right->value]]></code>
     </InvalidOperand>
     <PossiblyInvalidOperand>
       <code><![CDATA[$left->value]]></code>
