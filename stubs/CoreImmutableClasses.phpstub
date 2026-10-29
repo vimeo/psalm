@@ -6,6 +6,7 @@ class DateTimeImmutable implements DateTimeInterface
 
     /**
      * @psalm-mutation-free
+     * @psalm-ignore-falsable-return
      * @return static|false
      */
     public static function createFromFormat(string $format, string $datetime, ?DateTimeZone $timezone = null) {}

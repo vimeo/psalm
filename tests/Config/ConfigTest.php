@@ -1252,6 +1252,55 @@ final class ConfigTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, bool, bool}>
+     */
+    public static function providerIgnoreInternalFalseReturn(): iterable
+    {
+        yield 'a method of a stub, ignored' => ['\\DateTimeImmutable::createFromFormat("Y-m-d", $date)', true, false];
+        yield 'a method of a stub, reported' => ['\\DateTimeImmutable::createFromFormat("Y-m-d", $date)', false, true];
+        yield 'a method of the call map, ignored' => ['\\DateTime::createFromFormat("Y-m-d", $date)', true, false];
+        yield 'a function, ignored' => ['date_create_from_format("Y-m-d", $date)', true, false];
+        yield 'a function, reported' => ['date_create_from_format("Y-m-d", $date)', false, true];
+    }
+
+    #[DataProvider('providerIgnoreInternalFalseReturn')]
+    public function testIgnoreInternalFunctionFalseReturnAppliesToStubbedMethods(
+        string $call,
+        bool $ignore_false_return,
+        bool $is_reported,
+    ): void {
+        if ($is_reported) {
+            $this->expectException(CodeException::class);
+            $this->expectExceptionMessage('PossiblyFalseReference');
+        }
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm ignoreInternalFunctionFalseReturn="' . ($ignore_false_return ? 'true' : 'false') . '">
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function resetTimestamp(string $date): void {
+                    ' . $call . '->setTimestamp(0);
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        // an ignored issue: the analysis went through without an exception
+        $this->addToAssertionCount(1);
+    }
+
     public function testValidThrowInvalidCatch(): void
     {
         $this->expectExceptionMessage('InvalidCatch');
