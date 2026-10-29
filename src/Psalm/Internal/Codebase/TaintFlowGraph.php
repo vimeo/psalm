@@ -58,6 +58,8 @@ use function strlen;
 use function strpos;
 use function substr;
 
+use const SORT_STRING;
+
 /**
  * @internal
  */
@@ -987,7 +989,7 @@ final class TaintFlowGraph extends DataFlowGraph
      * linkSpecialization()) in both directions, for linkGeneratorSends() (TaintFlowResolution computes its own).
      *
      * @return array<string, array<string, true>>
-     * @psalm-capabilities read-props
+     * @psalm-capabilities read-props|write-refs
      */
     private function getReverseEdges(): array
     {
@@ -1008,6 +1010,14 @@ final class TaintFlowGraph extends DataFlowGraph
                 $reverse[$node->unspecialized_id][$node->id] = true;
             }
         }
+
+        // which call stacks a node is reached with first matters to linkGeneratorSends(), and the graphs of the
+        // forked workers are merged in any order
+        foreach ($reverse as &$origins) {
+            ksort($origins, SORT_STRING);
+        }
+
+        unset($origins);
 
         return $reverse;
     }
