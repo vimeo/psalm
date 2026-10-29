@@ -912,6 +912,7 @@ final class PreloaderList {
         \Psalm\Internal\Provider\ParamsProvider\ArrayFilterParamsProvider::class,
         \Psalm\Internal\Provider\ParamsProvider\ArrayMultisortParamsProvider::class,
         \Psalm\Internal\Provider\ParamsProvider\ArrayUArrayParamsProvider::class,
+        \Psalm\Internal\Provider\ParamsProvider\PregReplaceCallbackParamsProvider::class,
         \Psalm\Internal\Provider\ParserCacheProvider::class,
         \Psalm\Internal\Provider\ProjectCacheProvider::class,
         \Psalm\Internal\Provider\PropertyExistenceProvider::class,
