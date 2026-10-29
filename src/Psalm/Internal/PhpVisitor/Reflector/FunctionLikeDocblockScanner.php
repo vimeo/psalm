@@ -29,6 +29,8 @@ use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\PossiblyInvalidDocblockTag;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\ArrayKeyDoesNotExist;
+use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Storage\Assertion\Empty_;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsIdentical;
@@ -64,6 +66,7 @@ use function count;
 use function explode;
 use function in_array;
 use function is_string;
+use function preg_match;
 use function preg_replace;
 use function str_contains;
 use function str_ends_with;
@@ -831,6 +834,10 @@ final class FunctionLikeDocblockScanner
         $class_template_types = !$stmt instanceof PhpParser\Node\Stmt\ClassMethod || !$stmt->isStatic()
             ? $class_template_types
             : [];
+
+        if ($assertion_type === 'array-key-exists') {
+            return [$is_negation ? new ArrayKeyDoesNotExist() : new ArrayKeyExists()];
+        }
 
         if ($assertion_type === 'falsy') {
             return [$is_negation ? new Truthy() : new Falsy()];
@@ -1639,6 +1646,13 @@ final class FunctionLikeDocblockScanner
                     continue;
                 }
 
+                $offset_target = self::getArrayOffsetTarget($storage, $file_scanner, $stmt, $assertion['param_name']);
+
+                if ($offset_target !== null) {
+                    $storage->assertions[] = new Possibilities($offset_target, $assertion_type_parts);
+                    continue;
+                }
+
                 foreach ($storage->params as $i => $param) {
                     if ($param->name === $assertion['param_name']) {
                         $storage->assertions[] = new Possibilities(
@@ -1683,6 +1697,13 @@ final class FunctionLikeDocblockScanner
                 );
 
                 if (!$assertion_type_parts) {
+                    continue;
+                }
+
+                $offset_target = self::getArrayOffsetTarget($storage, $file_scanner, $stmt, $assertion['param_name']);
+
+                if ($offset_target !== null) {
+                    $storage->if_true_assertions[] = new Possibilities($offset_target, $assertion_type_parts);
                     continue;
                 }
 
@@ -1733,6 +1754,13 @@ final class FunctionLikeDocblockScanner
                     continue;
                 }
 
+                $offset_target = self::getArrayOffsetTarget($storage, $file_scanner, $stmt, $assertion['param_name']);
+
+                if ($offset_target !== null) {
+                    $storage->if_false_assertions[] = new Possibilities($offset_target, $assertion_type_parts);
+                    continue;
+                }
+
                 foreach ($storage->params as $i => $param) {
                     if ($param->name === $assertion['param_name']) {
                         $storage->if_false_assertions[] = new Possibilities(
@@ -1757,6 +1785,45 @@ final class FunctionLikeDocblockScanner
                 );
             }
         }
+    }
+
+    /**
+     * The target `$array[$key]` of an assertion on the offset of a parameter that another parameter holds, as
+     * `<index of $array>[<index of $key>]`
+     */
+    private static function getArrayOffsetTarget(
+        FunctionLikeStorage $storage,
+        FileScanner $file_scanner,
+        PhpParser\Node\FunctionLike $stmt,
+        string $param_name,
+    ): ?string {
+        if (preg_match('/^(\w+)\[\$(\w+)\]$/', $param_name, $matches) !== 1 || !isset($matches[1], $matches[2])) {
+            return null;
+        }
+
+        $array_index = null;
+        $key_index = null;
+
+        foreach ($storage->params as $i => $param) {
+            if ($param->name === $matches[1]) {
+                $array_index = $i;
+            }
+
+            if ($param->name === $matches[2]) {
+                $key_index = $i;
+            }
+        }
+
+        if ($array_index === null || $key_index === null) {
+            $storage->docblock_issues[] = new InvalidDocblock(
+                'Assertion on ' . $param_name . ' needs both of its variables to be parameters',
+                new CodeLocation($file_scanner, $stmt, null, true),
+            );
+
+            return null;
+        }
+
+        return $array_index . '[' . $key_index . ']';
     }
 
     /**

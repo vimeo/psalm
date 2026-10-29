@@ -56,6 +56,53 @@ final class AssertAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testArrayKeyExistsAssertionOfAnArgumentOffset(): void
+    {
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @psalm-assert array-key-exists $c[$key] */
+                function check(int $key, array $c): void {
+                    if (!array_key_exists($key, $c)) {
+                        throw new RuntimeException();
+                    }
+                }
+
+                function f(array $c, int $key): void {
+                    check(0, $c);
+                    echo (string) $c[0];
+                    check($key, $c);
+                    echo (string) $c[$key];
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testArrayKeyExistsAssertionDoesNotCoverOtherOffsets(): void
+    {
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @psalm-assert array-key-exists $c[$key] */
+                function check(int $key, array $c): void {}
+
+                function f(array $c): void {
+                    check(0, $c);
+                    echo (string) $c[1];
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testForgetAssertionAfterNonMutationFreeCall(): void
     {
         $this->expectExceptionMessage('PossiblyNullArgument');
@@ -159,6 +206,67 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertArrayKeyExistsOfAnArgumentOffsetNarrowsTheArray' => [
+                'code' => '<?php
+                    /** @psalm-assert array-key-exists $array[$key] */
+                    function check(string $key, array $array): void {}
+
+                    /** @psalm-assert-if-true array-key-exists $array[$key] */
+                    function has(string $key, array $array): bool {
+                        return array_key_exists($key, $array);
+                    }
+
+                    /** @psalm-assert-if-false array-key-exists $array[$key] */
+                    function missing(string $key, array $array): bool {
+                        return !array_key_exists($key, $array);
+                    }
+
+                    /** @var array<array-key, mixed> $a */
+                    $a = [];
+                    /** @var array<array-key, mixed> $b */
+                    $b = [];
+                    /** @var array<array-key, mixed> $c */
+                    $c = [];
+                    /** @var array<array-key, mixed> $d */
+                    $d = [];
+
+                    check("k", $a);
+                    $afterCheck = $a;
+                    $ifTrue = has("k", $b) ? $b : null;
+                    $ifFalse = missing("k", $c) ? null : $c;
+                    check(strtoupper("k"), $d);
+                    $unknownKey = $d;',
+                'assertions' => [
+                    '$afterCheck' => 'array{k: mixed, ...<array-key, mixed>}',
+                    '$ifTrue' => 'array{k: mixed, ...<array-key, mixed>}|null',
+                    '$ifFalse' => 'array{k: mixed, ...<array-key, mixed>}|null',
+                    '$unknownKey' => 'array<array-key, mixed>',
+                ],
+            ],
+            'assertArrayKeyExistsOfAMethodArgumentOffset' => [
+                'code' => '<?php
+                    final class Asserter {
+                        /** @psalm-assert array-key-exists $array[$key] */
+                        public function check(array $array, string $key): void {}
+
+                        /** @psalm-assert array-key-exists $array[$key] */
+                        public static function checkStatic(string $key, array $array): void {}
+                    }
+
+                    /** @var array<array-key, mixed> $a */
+                    $a = [];
+                    /** @var array<array-key, mixed> $b */
+                    $b = [];
+
+                    (new Asserter())->check($a, "k");
+                    Asserter::checkStatic("j", $b);
+                    $first = $a;
+                    $second = $b;',
+                'assertions' => [
+                    '$first' => 'array{k: mixed, ...<array-key, mixed>}',
+                    '$second' => 'array{j: mixed, ...<array-key, mixed>}',
+                ],
+            ],
             'assertKeyOfAClassConstantNarrowsToItsKeys' => [
                 'code' => '<?php
                     final class OwnerTypes {
@@ -3228,6 +3336,12 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertArrayKeyExistsNeedsParametersForBothVariables' => [
+                'code' => '<?php
+                    /** @psalm-assert array-key-exists $array[$missing] */
+                    function check(string $key, array $array): void {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Assertion on array[$missing] needs both of its variables to be parameters',
+            ],
             'assertInstanceOfMultipleInterfaces' => [
                 'code' => '<?php
                     class A {
