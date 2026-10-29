@@ -1159,6 +1159,110 @@ final class ConfigTest extends TestCase
         );
     }
 
+    #[DataProvider('providerConfigPathErrorNamesTheElement')]
+    public function testConfigPathErrorNamesTheElement(string $xml, string $expected_message): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage($expected_message);
+        Config::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+                ' . $xml . '
+            </psalm>',
+        );
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, string}>
+     */
+    public static function providerConfigPathErrorNamesTheElement(): iterable
+    {
+        yield 'directory of an issue handler' => [
+            '<issueHandlers>
+                <RedundantConditionGivenDocblockType>
+                    <errorLevel type="suppress">
+                        <directory name="missing_dir/" />
+                    </errorLevel>
+                </RedundantConditionGivenDocblockType>
+            </issueHandlers>',
+            'In <RedundantConditionGivenDocblockType>: Could not resolve config path to ',
+        ];
+        yield 'file of an issue handler' => [
+            '<issueHandlers>
+                <MixedAssignment>
+                    <errorLevel type="suppress">
+                        <file name="missing_file.php" />
+                    </errorLevel>
+                </MixedAssignment>
+            </issueHandlers>',
+            'In <MixedAssignment>: Could not resolve config path to ',
+        ];
+        yield 'glob directory of an issue handler' => [
+            '<issueHandlers>
+                <MixedAssignment>
+                    <errorLevel type="suppress">
+                        <directory name="missing_dir/*" />
+                    </errorLevel>
+                </MixedAssignment>
+            </issueHandlers>',
+            'In <MixedAssignment>: Could not resolve config path to ',
+        ];
+        yield 'glob file of an issue handler' => [
+            '<issueHandlers>
+                <MixedAssignment>
+                    <errorLevel type="suppress">
+                        <file name="missing_dir/*.php" />
+                    </errorLevel>
+                </MixedAssignment>
+            </issueHandlers>',
+            'In <MixedAssignment>: Could not resolve config path to ',
+        ];
+        yield 'plugin issue handler' => [
+            '<issueHandlers>
+                <PluginIssue name="MyPluginIssue">
+                    <errorLevel type="suppress">
+                        <directory name="missing_dir/" />
+                    </errorLevel>
+                </PluginIssue>
+            </issueHandlers>',
+            'In <PluginIssue name="MyPluginIssue">: Could not resolve config path to ',
+        ];
+        yield 'extraFiles' => [
+            '<extraFiles>
+                <directory name="missing_dir/" />
+            </extraFiles>',
+            'In <extraFiles>: Could not resolve config path to ',
+        ];
+        yield 'ignoreFiles of the taint analysis' => [
+            '<taintAnalysis>
+                <ignoreFiles>
+                    <directory name="missing_dir/" />
+                </ignoreFiles>
+            </taintAnalysis>',
+            'In <taintAnalysis><ignoreFiles>: Could not resolve config path to ',
+        ];
+    }
+
+    public function testConfigPathErrorOfTheProjectFilesNamesTheElement(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('In <projectFiles>: Could not resolve config path to ');
+        Config::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="missing_dir/" />
+                </projectFiles>
+            </psalm>',
+        );
+    }
+
     public function testImpossibleIssue(): void
     {
         $this->expectExceptionMessage('This element is not expected');
