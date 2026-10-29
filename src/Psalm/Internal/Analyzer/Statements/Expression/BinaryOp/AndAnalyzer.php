@@ -134,6 +134,7 @@ final class AndAnalyzer
 
         if ($left_type_assertions) {
             $right_context = clone $context;
+            $right_context->phantom_classes = $left_context->phantom_classes;
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
             [$right_context->vars_in_scope, $right_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
@@ -173,6 +174,9 @@ final class AndAnalyzer
 
         if ($context->inside_conditional) {
             $context->updateChecks($right_context);
+
+            // the classes checked with class_exists() on either side exist in what follows the condition
+            $context->phantom_classes = $right_context->phantom_classes;
 
             $context->vars_possibly_in_scope = array_merge(
                 $right_context->vars_possibly_in_scope,
@@ -218,6 +222,10 @@ final class AndAnalyzer
             ];
 
             $if_body_context->updateChecks($context);
+            $if_body_context->phantom_classes = [
+                ...$if_body_context->phantom_classes,
+                ...$context->phantom_classes,
+            ];
         } else {
             $context->vars_in_scope = $left_context->vars_in_scope;
         }

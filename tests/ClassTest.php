@@ -608,6 +608,50 @@ final class ClassTest extends TestCase
                         }
                     }',
             ],
+            'noErrorsAfterClassExistsInAConjunction' => [
+                'code' => '<?php
+                    /** @psalm-suppress MixedArgument */
+                    if (class_exists(A::class) && rand(0, 1)) {
+                        echo A::method();
+                        echo A::SOME_CONST;
+                    }
+
+                    /** @psalm-suppress MixedArgument */
+                    if (rand(0, 1) && class_exists(B::class)) {
+                        echo B::method();
+                    }
+
+                    /** @psalm-suppress MixedArgument */
+                    if (class_exists("C") && class_exists("D") && rand(0, 1)) {
+                        echo C::method();
+                        echo D::method();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition', 'MissingThrowsDocblock'],
+            ],
+            'noErrorsAfterClassExistsInAConjunctionWithIsA' => [
+                'code' => '<?php
+                    class Foo {
+                        public static function someMethod(): string {
+                            return "hello";
+                        }
+                    }
+
+                    if (class_exists(FooAlias::class) && is_a(FooAlias::class, Foo::class, true)) {
+                        echo FooAlias::class;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'noErrorsAfterInterfaceExistsInAConjunction' => [
+                'code' => '<?php
+                    if (interface_exists(I::class) && rand(0, 1)) {
+                        echo I::class;
+                        echo I::SOME_CONST;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+            ],
             'instanceofWithPhantomClass' => [
                 'code' => '<?php
                     if (class_exists(NS\UnknonwClass::class)) {
@@ -978,6 +1022,14 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classMissingAfterAClassExistsOfAnotherClassInAConjunction' => [
+                'code' => '<?php
+                    if (class_exists(A::class) && rand(0, 1)) {
+                        echo B::class;
+                        echo B::SOME_CONST;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
             'undefinedClass' => [
                 'code' => '<?php
                     (new Foo());',
