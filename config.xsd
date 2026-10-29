@@ -804,6 +804,7 @@
             <xs:enumeration value="mongodb"/>
             <xs:enumeration value="mysqli"/>
             <xs:enumeration value="pdo"/>
+            <xs:enumeration value="protobuf"/>
             <xs:enumeration value="random"/>
             <xs:enumeration value="rdkafka"/>
             <xs:enumeration value="redis"/>
