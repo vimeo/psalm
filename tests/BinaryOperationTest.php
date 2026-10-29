@@ -781,6 +781,47 @@ final class BinaryOperationTest extends TestCase
                     '$b' => 'int',
                 ],
             ],
+            'bitwiseOperationsOfFloatsAreInts' => [
+                'code' => '<?php
+                    /** @var float $f */
+                    $f = 1.5;
+                    /** @var int $i */
+                    $i = 1;
+                    /** @var int|float $n */
+                    $n = 1;
+
+                    $a = $f | $i;
+                    $b = $i & $f;
+                    $c = $f ^ $i;
+                    $d = $f << $i;
+                    $e = $i >> $f;
+                    $g = $f | $f;
+                    $h = $n | $i;
+                    $j = 1.5 | 1;
+                    $k = ~$f;
+                    $l = $i | $i;
+                    $m = $f % $i;
+                    $o = $i;
+                    $o |= $f;
+                    $p = $f;
+                    $p <<= $i;',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                    '$c===' => 'int',
+                    '$d===' => 'int',
+                    '$e===' => 'int',
+                    '$g===' => 'int',
+                    '$h===' => 'int',
+                    '$j===' => 'int',
+                    '$k===' => 'int',
+                    '$l===' => 'int',
+                    '$m===' => 'int',
+                    '$o===' => 'int',
+                    '$p===' => 'int',
+                ],
+                'ignored_issues' => ['ImplicitFloatToIntCast'],
+            ],
             'bitwiseOperationsOfIntegralFloatsAreNotReported' => [
                 'code' => '<?php
                     /** @var float $f */

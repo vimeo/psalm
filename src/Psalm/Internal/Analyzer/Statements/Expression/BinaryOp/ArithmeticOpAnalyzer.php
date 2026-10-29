@@ -916,7 +916,7 @@ final class ArithmeticOpAnalyzer
             }
 
             if ($left_type_part instanceof TFloat && $right_type_part instanceof TFloat) {
-                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                if (self::isIntResultOperation($parent)) {
                     $result_type = Type::getInt();
                 } else {
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
@@ -944,7 +944,7 @@ final class ArithmeticOpAnalyzer
                     }
                 }
 
-                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                if (self::isIntResultOperation($parent)) {
                     $result_type = Type::getInt();
                 } else {
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
@@ -970,7 +970,7 @@ final class ArithmeticOpAnalyzer
                     }
                 }
 
-                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                if (self::isIntResultOperation($parent)) {
                     $result_type = Type::getInt();
                 } else {
                     $result_type = new Union([new TInt, new TFloat]);
@@ -1083,6 +1083,16 @@ final class ArithmeticOpAnalyzer
         }
 
         return self::isExactInt($number) ? (int) $number : null;
+    }
+
+    /**
+     * The operations that convert their numeric operands to ints and give an int
+     *
+     * @psalm-pure
+     */
+    private static function isIntResultOperation(PhpParser\Node $operation): bool
+    {
+        return $operation instanceof PhpParser\Node\Expr\BinaryOp\Mod || self::isBitwiseOperation($operation);
     }
 
     /**
