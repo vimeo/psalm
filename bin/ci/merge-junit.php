@@ -28,5 +28,17 @@ foreach (array_slice($argv, 2) as $report_path) {
     }
 }
 
+// Infection takes the time of a test case to be that of its whole class, and skips a mutant whose tests' classes take
+// longer than its timeout, though it then runs only the cases covering the mutant: the time of a class becomes that of
+// its slowest case, so that the mutants of the lines the cases of a long class cover are tested instead of skipped
+foreach ((new DOMXPath($merged))->query('//testsuite[@file][not(contains(@name, "::"))]') ?: [] as $class_suite) {
+    assert($class_suite instanceof DOMElement);
+    $slowest = 0.0;
+    foreach ($class_suite->getElementsByTagName('testcase') as $test_case) {
+        $slowest = max($slowest, (float) $test_case->getAttribute('time'));
+    }
+    $class_suite->setAttribute('time', (string) $slowest);
+}
+
 $merged->formatOutput = true;
 $merged->save($argv[1]);

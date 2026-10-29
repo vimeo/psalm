@@ -45,10 +45,12 @@ These come first, before every other rule here:
 
    The "Mutation testing" CI workflow, against the coverage of the whole test suite
    (collected in 8 chunks), mutates on each PR that changes `src/` only the lines it
-   changes, and fails unless every mutant is killed, like `composer mutation`. Nightly,
-   it mutates all of `src/` (in 16 shards) and fails when the MSI drops below `minMsi` in
-   `infection.json5`. Mutants whose covering tests exceed the timeout are skipped and
-   don't count. `minMsi` is raised gradually.
+   changes, and fails unless every mutant is killed, like `composer mutation`, and none
+   is skipped. Nightly, it mutates all of `src/` (in 16 shards) and fails when the MSI
+   drops below `minMsi` in `infection.json5`; skipped mutants don't count there. A
+   mutant's tests are the fastest covering each of its lines within half of the timeout,
+   and a mutant is skipped when they take longer than the timeout. `minMsi` is raised
+   gradually.
 
 ## Validating changes: CI, not local test runs
 

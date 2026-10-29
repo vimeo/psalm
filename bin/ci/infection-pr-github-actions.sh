@@ -30,4 +30,15 @@ bin/ci/memory-capped.sh "$PWD/vendor-bin/infection/vendor/infection/infection/bi
     --ignore-msi-with-no-mutations \
     --threads=2 \
     --no-progress \
-    --logger-github
+    --logger-github \
+    --logger-summary-json=build/infection/summary.json
+
+# a skipped mutant, whose tests take longer than the timeout, isn't tested at all, but doesn't count in the MSI
+skipped=0
+if [ -f build/infection/summary.json ]; then
+    skipped=$(php -r 'echo json_decode(file_get_contents($argv[1]), true)["stats"]["skippedCount"];' build/infection/summary.json)
+fi
+if [ "$skipped" != 0 ]; then
+    echo "$skipped mutants of the changed lines were skipped, as their tests take longer than the timeout"
+    exit 1
+fi

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-// Writes the list of some source files, and their coverage in the XML format Infection reads, from the coverage of every
-// chunk of the test suite: the XML of the whole source tree is too big for a runner's disk. The files are either one
-// shard of those of infection.json5, given to the shards by size (`<shard>/<shard count>`), or those listed one per
-// line in a file (`@<file>`, paths relative to the root).
+// Writes the list of some source files, and their coverage in the XML format Infection reads, from the coverage of
+// every chunk of the test suite: the XML of the whole source tree is too big for a runner's disk. The files are either
+// one shard of those of infection.json5, given to the shards by size (`<shard>/<shard count>`), or those listed one
+// per line in a file (`@<file>`, paths relative to the root).
 
 use SebastianBergmann\CodeCoverage\Report\Facade;
 use SebastianBergmann\CodeCoverage\Serialization\Unserializer;
@@ -111,6 +111,38 @@ foreach ($paths as $path) {
 
     unset($coverage, $data);
 }
+
+// Infection runs the tests covering a mutant fastest first, and skips the mutant if they all take longer than its
+// timeout: keep, per line, the fastest that fit in half of it (at least one), so that the mutants of the lines
+// thousands of tests cover are tested instead of skipped, and their coverage fits in memory
+$budget = ($config['timeout'] ?? 10) / 2;
+$data = $merged['codeCoverage'];
+$times = [];
+foreach ($data->testIds() as $index => $test_id) {
+    $times[$index] = $merged['testResults'][$test_id]['time'] ?? 0.0;
+}
+$line_coverage = $data->lineCoverage();
+foreach ($line_coverage as $file => $lines) {
+    foreach ($lines as $line => $tests) {
+        if ($tests === null || count($tests) < 2) {
+            continue;
+        }
+
+        $test_times = array_intersect_key($times, $tests);
+        asort($test_times);
+        $kept = [];
+        $total = 0.0;
+        foreach ($test_times as $index => $time) {
+            if ($kept !== [] && $total + $time > $budget) {
+                break;
+            }
+            $kept[$index] = $tests[$index];
+            $total += $time;
+        }
+        $line_coverage[$file][$line] = $kept;
+    }
+}
+$data->setLineCoverage($line_coverage);
 
 Facade::fromSerializedData($merged)->renderXml($xml_dir, false);
 
