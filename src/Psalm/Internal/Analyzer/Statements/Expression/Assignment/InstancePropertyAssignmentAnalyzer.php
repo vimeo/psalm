@@ -1149,9 +1149,9 @@ final class InstancePropertyAssignmentAnalyzer
         // stdClass and SimpleXMLElement are special cases where we cannot infer the return types
         // but we don't want to throw an error
         // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
-        if ($lhs_type_part instanceof TObject ||
-            (
-            in_array(
+        if ($lhs_type_part instanceof TObject
+            || $codebase->classlikes->isUniversalObjectCrate($lhs_type_part->value)
+            || in_array(
                 strtolower($lhs_type_part->value),
                 Config::getInstance()->getUniversalObjectCrates() + [
                     'dateinterval',
@@ -1159,7 +1159,6 @@ final class InstancePropertyAssignmentAnalyzer
                     'domnode',
                 ],
                 true,
-            )
             )
         ) {
             if ($var_id) {
