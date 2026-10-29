@@ -2245,6 +2245,19 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'array_is_list_keeps_callable_keyed_array' => [
+                'code' => '<?php
+                    /** @var array $c */
+                    $c = [];
+                    assert(is_callable($c));
+                    assert(array_is_list($c));
+                    ',
+                'assertions' => [
+                    '$c===' => 'callable-list{array-key, mixed}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'array_is_list_on_keyed_array_with_extra_keys' => [
                 'code' => '<?php
                     /** @var array{0: string, ...<int, bool>} $s */

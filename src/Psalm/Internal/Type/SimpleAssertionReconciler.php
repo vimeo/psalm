@@ -2373,7 +2373,9 @@ final class SimpleAssertionReconciler extends Reconciler
             $properties[$key] = $required ? $property->setPossiblyUndefined(false) : $property;
         }
 
-        return TKeyedArray::make($properties, $keyed_array->class_strings, null, true, $keyed_array->from_docblock);
+        $list = TKeyedArray::make($properties, $keyed_array->class_strings, null, true, $keyed_array->from_docblock);
+
+        return $list instanceof TKeyedArray ? $list->setIsCallable($keyed_array->is_callable) : $list;
     }
 
     /**
