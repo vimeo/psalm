@@ -2196,6 +2196,61 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'pregReplaceCallbackWithNamedUnmatchedAsNullFlag' => [
+                'code' => '<?php
+                    preg_replace_callback(
+                        pattern: "#^([a-z]+)$|^([0-9]+)$#",
+                        callback: fn (array $m): string => $m[1] === null ? "1" : "a",
+                        subject: "1234567890",
+                        flags: PREG_UNMATCHED_AS_NULL,
+                    );',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'pregReplaceCallbackWithFlagsThatAreNotKnown' => [
+                'code' => '<?php
+                    function spread(): void {
+                        $args = ["#(a)#", fn (array $m): string => "x", "a", -1, null, PREG_UNMATCHED_AS_NULL];
+                        preg_replace_callback(...$args);
+                    }
+
+                    function variable(int $flags): void {
+                        preg_replace_callback(
+                            "#(a)#",
+                            fn (array $m): string => "x",
+                            "a",
+                            -1,
+                            $count,
+                            $flags,
+                        );
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument', 'ArgumentTypeCoercion', 'PossiblyInvalidArgument', 'InvalidArgument'],
+            ],
+            'pregReplaceCallbackWithUnmatchedAsNullFlag' => [
+                'code' => '<?php
+                    $a = preg_replace_callback(
+                        "#^([a-z]+)$|^([0-9]+)$#",
+                        fn ($m) => null === $m[1] ? "1" : "a",
+                        "1234567890",
+                        1,
+                        $count,
+                        PREG_UNMATCHED_AS_NULL,
+                    );
+
+                    $b = preg_replace_callback(
+                        "#^([a-z]+)$|^([0-9]+)$#",
+                        function (array $m): string {
+                            return $m[1] === null ? "1" : "a";
+                        },
+                        "1234567890",
+                        -1,
+                        $count,
+                        PREG_OFFSET_CAPTURE | PREG_UNMATCHED_AS_NULL,
+                    );',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedIntArrayOffset'],
+            ],
             'array_is_list_on_empty_array' => [
                 'code' => '<?php
                     $a = [];
@@ -3078,6 +3133,32 @@ final class FunctionCallTest extends TestCase
                         $a = count_chars("foo", $mode);
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'pregReplaceCallbackWithoutUnmatchedAsNullFlag' => [
+                'code' => '<?php
+                    preg_replace_callback(
+                        "#^([a-z]+)$|^([0-9]+)$#",
+                        fn ($m) => null === $m[1] ? "1" : "a",
+                        "1234567890",
+                        1,
+                        $count,
+                        PREG_OFFSET_CAPTURE,
+                    );',
+                'error_message' => 'DocblockTypeContradiction',
+                'error_levels' => ['PossiblyUndefinedIntArrayOffset'],
+            ],
+            'pregReplaceCallbackWithUnmatchedAsNullFlagMayGiveNull' => [
+                'code' => '<?php
+                    preg_replace_callback(
+                        "#^([a-z]+)$|^([0-9]+)$#",
+                        fn ($m) => strtoupper($m[1]),
+                        "1234567890",
+                        1,
+                        $count,
+                        PREG_UNMATCHED_AS_NULL,
+                    );',
+                'error_message' => 'PossiblyNullArgument',
+                'error_levels' => ['PossiblyUndefinedIntArrayOffset'],
             ],
             'array_is_list_literal_array' => [
                 'code' => '<?php

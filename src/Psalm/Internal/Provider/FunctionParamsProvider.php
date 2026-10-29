@@ -11,6 +11,7 @@ use Psalm\Context;
 use Psalm\Internal\Provider\ParamsProvider\ArrayFilterParamsProvider;
 use Psalm\Internal\Provider\ParamsProvider\ArrayMultisortParamsProvider;
 use Psalm\Internal\Provider\ParamsProvider\ArrayUArrayParamsProvider;
+use Psalm\Internal\Provider\ParamsProvider\PregReplaceCallbackParamsProvider;
 use Psalm\Plugin\EventHandler\Event\FunctionParamsProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
 use Psalm\StatementsSource;
@@ -38,6 +39,7 @@ final class FunctionParamsProvider
         $this->registerClass(ArrayFilterParamsProvider::class);
         $this->registerClass(ArrayMultisortParamsProvider::class);
         $this->registerClass(ArrayUArrayParamsProvider::class);
+        $this->registerClass(PregReplaceCallbackParamsProvider::class);
     }
 
     /**
