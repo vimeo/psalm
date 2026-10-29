@@ -2437,7 +2437,7 @@ final class CallableTest extends TestCase
                 'assertions' => [
                     '$a' => 'class-string|object',
                     '$b' => 'string',
-                    '$c' => 'list{class-string|object, string}',
+                    '$c' => 'callable-list{class-string|object, string}',
                 ],
             ],
             'inferTypeWithNestedTemplatesAndExplicitTypeHint' => [
