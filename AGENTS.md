@@ -38,7 +38,8 @@ These come first, before every other rule here:
    `composer mutation` mutates only the lines changed against `origin/master` and fails
    unless every mutant is killed, uncovered ones included. Restrict the tests to the test
    classes that cover the change with `--filter` (a plain class name; escaped namespaces
-   don't survive the quoting). Every escaped mutant needs a new test or a simpler change.
+   don't survive the quoting). Every escaped mutant needs a new test (see "Test through
+   analysis" under Tests) or a simpler change.
    Running the covering tests this way is the one exception to running only single test
    cases.
 
@@ -174,6 +175,13 @@ workaround explicitly in the report.
 
 ## Tests
 
+- **Test through analysis of PHP code.** Prefer cases that analyze a PHP snippet and assert
+  the issues or inferred types Psalm reports (`testValidCode`/`testInvalidCode` providers,
+  `TaintTest`, `assertions`) over unit tests that call Psalm's classes and methods directly.
+  Analysis is the behaviour users get: a unit test can pass while the code it exercises
+  never runs that way during analysis. This holds for mutation coverage too: kill a
+  mutant with a snippet whose analysis changes, not by calling the mutated method. Unit
+  tests fit code that analysis doesn't reach (config loading, CLI, caches).
 - **Tests must assert the change.** Every test case a PR adds or changes for the bug or
   feature itself must fail on the base branch and pass on the PR, because it checks the
   exact behaviour being fixed or added. Prove it by running that single test case on
