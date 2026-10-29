@@ -275,6 +275,81 @@ final class BinaryOperationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testPowOfDifferingNumericLiteralTypesInStrictMode(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    $a = 1.5 ** 10;
+                    $b = 2 ** 0.5;
+                    $c = 2 ** 3;',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPowOfDifferingNumericTypesInStrictMode(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    /**
+                     * @param int|float $number
+                     * @param numeric $numeric
+                     */
+                    function f(int $int, float $float, $number, $numeric): void {
+                        echo $int ** $float;
+                        echo $float ** $int;
+                        echo $number ** $int;
+                        echo $numeric ** $int;
+                        $int **= $float;
+                        $float **= $int;
+                    }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPowOfNonNumericTypesInStrictModeIsStillReported(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    function f(string $s): void {
+                        echo $s ** 2;
+                    }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testDifferingNumericTypesMultiplicationInStrictModeIsStillReported(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    function f(int $int, float $float): void {
+                        echo $int * $float;
+                    }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testConcatenationWithIntInStrictMode(): void
     {
         $config = Config::getInstance();
