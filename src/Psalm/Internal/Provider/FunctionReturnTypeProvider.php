@@ -49,6 +49,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\StrReplaceReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\StrTrReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\StrvalReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\TriggerErrorReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\TrimReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\VersionCompareReturnTypeProvider;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
@@ -99,6 +100,7 @@ final class FunctionReturnTypeProvider
         $this->registerClass(StrReplaceReturnTypeProvider::class);
         $this->registerClass(StrTrReturnTypeProvider::class);
         $this->registerClass(StrvalReturnTypeProvider::class);
+        $this->registerClass(TrimReturnTypeProvider::class);
         $this->registerClass(VersionCompareReturnTypeProvider::class);
         $this->registerClass(MktimeReturnTypeProvider::class);
         $this->registerClass(BasenameReturnTypeProvider::class);
