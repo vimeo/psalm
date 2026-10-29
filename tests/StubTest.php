@@ -247,6 +247,7 @@ final class StubTest extends TestCase
     }
 
     /**
+     * @psalm-pure
      * @return iterable<string, array{string, bool}>
      */
     public static function providerStubDirectoryPreloadClasses(): iterable
