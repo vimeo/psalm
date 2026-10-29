@@ -15,8 +15,9 @@ php -d memory_limit=-1 bin/ci/infection-shard-coverage.php \
 
 php bin/ci/merge-junit.php build/infection-coverage/junit.xml build/junit/*.junit.xml
 
-# a mutant may allocate without end: without a memory limit for its tests, it exhausts the runner's memory
-export PSALM_TEST_MEMORY_LIMIT=4G
+# a mutant may allocate without end: without a memory limit for its tests, it exhausts the runner's memory; one test
+# run per core at most 2G each stays within the memory cgroup
+export PSALM_TEST_MEMORY_LIMIT=2G
 
 # every mutant of the changed lines must be killed, uncovered ones included
 bin/ci/memory-capped.sh "$PWD/vendor-bin/infection/vendor/infection/infection/bin/infection" \
@@ -28,7 +29,7 @@ bin/ci/memory-capped.sh "$PWD/vendor-bin/infection/vendor/infection/infection/bi
     --with-uncovered \
     --min-msi=100 \
     --ignore-msi-with-no-mutations \
-    --threads=2 \
+    --threads=max \
     --no-progress \
     --logger-github \
     --logger-summary-json=build/infection/summary.json
