@@ -193,9 +193,10 @@
     </xs:complexType>
 
     <xs:complexType name="StubsType">
-        <xs:sequence>
+        <xs:choice maxOccurs="unbounded">
             <xs:element name="file" maxOccurs="unbounded" type="StubsAttributeType" />
-        </xs:sequence>
+            <xs:element name="directory" maxOccurs="unbounded" type="StubsAttributeType" />
+        </xs:choice>
         <xs:anyAttribute processContents="skip" />
     </xs:complexType>
 

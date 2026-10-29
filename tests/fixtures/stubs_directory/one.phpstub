@@ -1,0 +1,5 @@
+<?php
+
+function stub_directory_one(): int
+{
+}
