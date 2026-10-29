@@ -56,6 +56,7 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
@@ -972,6 +973,13 @@ final class Codebase
      */
     public function scanFiles(int $threads = 1): void
     {
+        // the classes of the global variables of the config are named nowhere else
+        foreach ($this->config->globals as $global_type) {
+            (new TypeScanner($this->scanner, null, []))->traverseArray(
+                Type::parseString($global_type)->getAtomicTypes(),
+            );
+        }
+
         $has_changes = $this->scanner->scanFiles($this->classlikes, $threads);
 
         // a taint analysis analyzes the bodies of inherited methods again, for the classes inheriting them (see
