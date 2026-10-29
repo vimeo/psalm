@@ -1372,6 +1372,34 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'arrayReduceCallbackParamsTakeTheTypeOfTheElements' => [
+                'code' => '<?php
+                    /** @param array<array{tags: string}> $a */
+                    function typed(array $a): string {
+                        return array_reduce($a, function (string $carry, array $value) {
+                            return $carry . $value["tags"];
+                        }, "");
+                    }
+
+                    /** @param array<array{tags: string}> $a */
+                    function untyped(array $a): string {
+                        return array_reduce($a, function ($carry, $value) {
+                            return $value["tags"];
+                        }, "");
+                    }
+
+                    /** @param list<array{tags: string}> $a */
+                    function arrow(array $a): string {
+                        return array_reduce($a, fn(string $carry, array $value) => $carry . $value["tags"], "");
+                    }
+
+                    /** @param array{a: array{tags: string}, b: array{tags: string}} $a */
+                    function shape(array $a): string {
+                        return array_reduce($a, function (string $carry, array $value) {
+                            return $carry . $value["tags"];
+                        }, "");
+                    }',
+            ],
             'implodeMultiDimensionalArray' => [
                 'code' => '<?php
                     $urls = array_map("implode", [["a", "b"]]);',
@@ -2056,10 +2084,12 @@ final class ArrayFunctionCallTest extends TestCase
                             return $carry * $item;
                         }
 
+                        /** @param list<int> $arr */
                         public static function multiplySelf(array $arr): int {
                             return array_reduce($arr, [self::class, "multiply"], 1);
                         }
 
+                        /** @param list<int> $arr */
                         public static function multiplyStatic(array $arr): int {
                             return array_reduce($arr, [static::class, "multiply"], 1);
                         }
@@ -2959,6 +2989,21 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayReduceUntypedArrayWithTypedCallback' => [
+                'code' => '<?php
+                    function multiply(array $arr): int {
+                        return array_reduce($arr, fn(int $carry, int $item): int => $carry * $item, 1);
+                    }',
+                'error_message' => 'MixedArgumentTypeCoercion',
+            ],
+            'arrayReduceCallbackParamOfTheWrongType' => [
+                'code' => '<?php
+                    /** @param list<array{tags: string}> $a */
+                    function f(array $a): string {
+                        return array_reduce($a, fn(string $carry, int $value): string => $carry . $value, "");
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'arrayFilterUseMethodOnInferableInt' => [
                 'code' => '<?php
                     $a = array_filter([1, 2, 3, 4], function ($i) { return $i->foo(); });',
