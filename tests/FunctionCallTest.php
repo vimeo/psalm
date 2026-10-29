@@ -2914,6 +2914,38 @@ final class FunctionCallTest extends TestCase
                     preg_match(\'/adsf/\');',
                 'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21 - Too few arguments for preg_match - expecting subject to be passed',
             ],
+            'tooFewArgsForCallableNamesTheCallable' => [
+                'code' => '<?php
+                    /** @param callable(mixed): bool $c */
+                    function f(callable $c): void {
+                        $c();
+                    }',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - Too few arguments for callable(mixed) - expecting parameter #1 to be passed',
+            ],
+            'tooFewArgsForCallableCountsTheMissingParameterFromTheStart' => [
+                'code' => '<?php
+                    /** @param callable(int, string): void $c */
+                    function f(callable $c): void {
+                        $c(1);
+                    }',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - Too few arguments for callable(int, string) - expecting parameter #2 to be passed',
+            ],
+            'tooFewArgsForCallableWithNamedParametersNamesTheParameter' => [
+                'code' => '<?php
+                    /** @param callable(int $a, string $b): void $c */
+                    function f(callable $c): void {
+                        $c(1);
+                    }',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - Too few arguments for callable(int, string) - expecting b to be passed',
+            ],
+            'tooManyArgsForCallableNamesTheCallable' => [
+                'code' => '<?php
+                    /** @param callable(int, string): void $c */
+                    function f(callable $c): void {
+                        $c(1, "a", 3);
+                    }',
+                'error_message' => 'TooManyArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - Too many arguments for callable(int, string) - expecting 2 but saw 3',
+            ],
             'compactUndefinedVariable' => [
                 'code' => '<?php
                     /**
