@@ -17,14 +17,21 @@ use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerPool;
 use AssertionError;
 use Closure;
+use Generator;
 use Override;
 use Psalm\Progress\Progress;
 use Revolt\EventLoop;
+use RuntimeException;
 
 use function Amp\Future\await;
+use function Amp\Future\awaitAll;
 use function array_map;
 use function count;
+use function file_get_contents;
 use function gc_collect_cycles;
+use function is_file;
+use function ksort;
+use function unlink;
 
 use const PHP_EOL;
 
@@ -137,5 +144,52 @@ final class Pool
             $workers []= $this->pool->getWorker();
         }
         return array_map(fn(Worker $w): Future => $w->submit($task)->getFuture(), $workers);
+    }
+
+    /**
+     * Runs a task on every worker, then kills the workers before handing back
+     * the results one at a time.
+     *
+     * Each worker holds its whole analysis state until it is killed. Waiting
+     * for the pool to go out of scope keeps that state alive while the
+     * results are unpacked and merged, so kill the workers first. The pool
+     * cannot be used again afterwards.
+     *
+     * @template T
+     * @param Task<T, void, void> $task
+     * @return Generator<int, T, mixed, void>
+     */
+    public function runAllThenKill(Task $task): Generator
+    {
+        [$errors, $paths] = awaitAll($this->runAll(new FileResultTask($task)));
+        $this->pool->kill();
+        ksort($paths);
+
+        try {
+            foreach ($errors as $error) {
+                throw $error;
+            }
+
+            $serializer = ForkContext::createSerializer();
+            foreach ($paths as $key => $path) {
+                $serialized = file_get_contents($path);
+                unlink($path);
+                unset($paths[$key]);
+                if ($serialized === false) {
+                    throw new RuntimeException("Could not read the worker result from $path");
+                }
+
+                /** @var T */
+                $result = $serializer->unserialize($serialized);
+                unset($serialized);
+                yield $result;
+            }
+        } finally {
+            foreach ($paths as $path) {
+                if (is_file($path)) {
+                    unlink($path);
+                }
+            }
+        }
     }
 }

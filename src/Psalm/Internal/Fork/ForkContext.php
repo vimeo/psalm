@@ -15,6 +15,7 @@ use Amp\Parallel\Context\Internal\ExitSuccess;
 use Amp\Parallel\Ipc\IpcHub;
 use Amp\Serialization\NativeSerializer;
 use Amp\Serialization\SerializationException;
+use Amp\Serialization\Serializer;
 use Amp\TimeoutCancellation;
 use Error;
 use Override;
@@ -75,9 +76,7 @@ final class ForkContext extends AbstractContext
         ?Cancellation $cancellation = null,
         int $childConnectTimeout = self::DEFAULT_START_TIMEOUT,
     ): self {
-        $serializer = extension_loaded('igbinary')
-            ? new IgbinarySerializer
-            : new NativeSerializer;
+        $serializer = self::createSerializer();
 
         $key = $ipcHub->generateKey();
 
@@ -176,6 +175,16 @@ final class ForkContext extends AbstractContext
 
         fwrite(STDERR, "ERROR IN WORKER: Unreachable!".PHP_EOL);
         exit(1);
+    }
+
+    /**
+     * The serializer both ends of a worker channel use.
+     */
+    public static function createSerializer(): Serializer
+    {
+        return extension_loaded('igbinary')
+            ? new IgbinarySerializer
+            : new NativeSerializer;
     }
 
     private ?int $exited = null;
