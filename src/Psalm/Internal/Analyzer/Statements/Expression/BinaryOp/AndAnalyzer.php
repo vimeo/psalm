@@ -148,6 +148,7 @@ final class AndAnalyzer
                 $context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->left),
                 $context->inside_negation,
+                $left_assigned_var_ids,
             );
         } else {
             $right_context = clone $left_context;

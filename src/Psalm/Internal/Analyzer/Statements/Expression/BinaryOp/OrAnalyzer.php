@@ -238,6 +238,7 @@ final class OrAnalyzer
                 $left_context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->left),
                 !$context->inside_negation,
+                $left_assigned_var_ids,
             );
         }
 
