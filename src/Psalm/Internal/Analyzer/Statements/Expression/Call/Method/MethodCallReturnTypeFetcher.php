@@ -34,6 +34,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -79,11 +80,34 @@ final class MethodCallReturnTypeFetcher
 
         if ($stmt->isFirstClassCallable()) {
             if ($method_storage) {
-                return new Union([new TClosure(
-                    $method_storage->params,
-                    $method_storage->return_type,
-                    $method_storage->capabilities,
-                )]);
+                // a trait method's self is the class that uses the trait
+                $self_fq_class_name = $fq_class_name;
+                $codebase->getMethodReturnType($method_id, $self_fq_class_name);
+
+                // `static` is the enum, whichever case the callable is called on
+                if ($static_type instanceof TEnumCase) {
+                    $closure_static_type = $static_type->value;
+                    $static_type_final = true;
+                } else {
+                    $closure_static_type = $static_type;
+                    $static_type_final = self::isFinalStaticType($codebase, $static_type);
+                }
+
+                return TypeExpander::expandUnion(
+                    $codebase,
+                    new Union([new TClosure(
+                        $method_storage->params,
+                        $method_storage->return_type,
+                        $method_storage->capabilities,
+                    )]),
+                    $self_fq_class_name,
+                    $closure_static_type,
+                    $class_storage->parent_class,
+                    true,
+                    false,
+                    $static_type_final,
+                    true,
+                );
             }
 
             return Type::getClosure();
@@ -203,8 +227,7 @@ final class MethodCallReturnTypeFetcher
                         $class_storage->parent_class,
                         true,
                         false,
-                        $static_type instanceof TNamedObject
-                        && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                        self::isFinalStaticType($codebase, $static_type),
                         true,
                     );
                 }
@@ -225,8 +248,7 @@ final class MethodCallReturnTypeFetcher
                     $class_storage->parent_class,
                     true,
                     false,
-                    $static_type instanceof TNamedObject
-                    && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                    self::isFinalStaticType($codebase, $static_type),
                     true,
                 );
 
@@ -312,6 +334,15 @@ final class MethodCallReturnTypeFetcher
             $args,
             $return_type_candidate,
         );
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function isFinalStaticType(Codebase $codebase, ?Atomic $static_type): bool
+    {
+        return $static_type instanceof TNamedObject
+            && $codebase->classlike_storage_provider->get($static_type->value)->final;
     }
 
     /**

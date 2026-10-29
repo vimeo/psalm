@@ -490,82 +490,110 @@ final class AtomicStaticCallAnalyzer
 
         if ($stmt->isFirstClassCallable()) {
             if ($found_method_and_class_storage) {
-                [ $method_storage ] = $found_method_and_class_storage;
+                [ $method_storage, $defining_class_storage ] = $found_method_and_class_storage;
 
-                $return_type_candidate = new Union([new TClosure(
-                    $method_storage->params,
-                    $method_storage->return_type,
-                    $method_storage->capabilities,
-                )]);
-            } else {
-                $method_exists = $naive_method_exists
-                    || $fake_method_exists
-                    || isset($class_storage->methods[$method_name_lc])
-                    || isset($class_storage->pseudo_static_methods[$method_name_lc]);
+                // params are resolved as in ArgumentAnalyzer, so that a `static` param of a final class
+                // accepts the class; the return type is expanded as in checkPseudoMethod()
+                $params = $method_storage->params;
 
-                if ($method_exists) {
-                    $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
-
-                    $return_type_candidate = new Union([new TClosure(
-                        array_values($codebase->getMethodParams($method_id)),
-                        $codebase->getMethodReturnType($method_id, $fq_class_name),
-                        $codebase->methods->getStorage($declaring_method_id)->capabilities,
-                    )]);
-                } elseif ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->getFirst() === 'parent'
-                    && !$statements_analyzer->isStatic()
-                    && isset($class_storage->pseudo_methods[$method_name_lc])
-                    && $codebase->methodExists(
-                        new MethodIdentifier($method_id->fq_class_name, '__call'),
-                        is_used: false,
-                    )
-                ) {
-                    // Same instance-context fallback as ordinary parent::xxx() calls below:
-                    // the closure is bound to $this and dispatches through __call
-                    $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
-                    $return_type_candidate = new Union([new TClosure(
-                        $pseudo_method_storage->params,
-                        $pseudo_method_storage->return_type,
-                        $pseudo_method_storage->capabilities,
-                    )]);
-                } elseif ($codebase->methodExists(
-                    $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
-                    null,
-                    new CodeLocation($statements_analyzer, $stmt),
-                    is_used: false,
-                )) {
-                    $return_type_candidate = new Union([new TClosure(
-                        null,
-                        $codebase->getMethodReturnType($call_static_method_id, $fq_class_name),
-                        $codebase->methods->getStorage($call_static_method_id)->capabilities,
-                    )]);
-                } else {
-                    if (IssueBuffer::accepts(
-                        new UndefinedMethod(
-                            'Method ' . $method_id . ' does not exist',
-                            new CodeLocation($statements_analyzer, $stmt),
-                            (string) $method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    )) {
-                        return false;
+                foreach ($params as &$param) {
+                    if ($param->type) {
+                        $param = $param->setType(TypeExpander::expandUnion(
+                            $codebase,
+                            $param->type,
+                            $defining_class_storage->name,
+                            $fq_class_name,
+                            $defining_class_storage->parent_class,
+                            true,
+                            false,
+                            $class_storage->final,
+                            true,
+                        ));
                     }
-
-                    $return_type_candidate = Type::getClosure();
                 }
+                unset($param);
+
+                $statements_analyzer->node_data->setType($stmt, TypeExpander::expandUnion(
+                    $codebase,
+                    new Union([new TClosure(
+                        $params,
+                        $method_storage->return_type,
+                        $method_storage->capabilities,
+                    )]),
+                    $defining_class_storage->name,
+                    $fq_class_name,
+                    $defining_class_storage->parent_class,
+                ));
+
+                return true;
             }
 
-            $expanded_return_type = TypeExpander::expandUnion(
-                $codebase,
-                $return_type_candidate,
-                $context->self,
-                $class_storage->name,
-                $context->parent,
-                true,
-                false,
-                true,
-            );
+            $self_fq_class_name = $fq_class_name;
+            $method_exists = $naive_method_exists
+                || $fake_method_exists
+                || isset($class_storage->methods[$method_name_lc])
+                || isset($class_storage->pseudo_static_methods[$method_name_lc]);
 
-            $statements_analyzer->node_data->setType($stmt, $expanded_return_type);
+            if ($method_exists) {
+                $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
+
+                $return_type_candidate = new Union([new TClosure(
+                    array_values($codebase->getMethodParams($method_id)),
+                    $codebase->getMethodReturnType($method_id, $self_fq_class_name),
+                    $codebase->methods->getStorage($declaring_method_id)->capabilities,
+                )]);
+            } elseif ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->getFirst() === 'parent'
+                && !$statements_analyzer->isStatic()
+                && isset($class_storage->pseudo_methods[$method_name_lc])
+                && $codebase->methodExists(
+                    new MethodIdentifier($method_id->fq_class_name, '__call'),
+                    is_used: false,
+                )
+            ) {
+                // Same instance-context fallback as ordinary parent::xxx() calls below:
+                // the closure is bound to $this and dispatches through __call
+                $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
+                $return_type_candidate = new Union([new TClosure(
+                    $pseudo_method_storage->params,
+                    $pseudo_method_storage->return_type,
+                    $pseudo_method_storage->capabilities,
+                )]);
+            } elseif ($codebase->methodExists(
+                $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
+                null,
+                new CodeLocation($statements_analyzer, $stmt),
+                is_used: false,
+            )) {
+                $return_type_candidate = new Union([new TClosure(
+                    null,
+                    $codebase->getMethodReturnType($call_static_method_id, $self_fq_class_name),
+                    $codebase->methods->getStorage($call_static_method_id)->capabilities,
+                )]);
+            } else {
+                if (IssueBuffer::accepts(
+                    new UndefinedMethod(
+                        'Method ' . $method_id . ' does not exist',
+                        new CodeLocation($statements_analyzer, $stmt),
+                        (string) $method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                )) {
+                    return false;
+                }
+
+                $return_type_candidate = Type::getClosure();
+            }
+
+            $statements_analyzer->node_data->setType($stmt, ExistingAtomicStaticCallAnalyzer::expandDeclaredType(
+                $codebase,
+                $stmt,
+                $return_type_candidate,
+                $self_fq_class_name,
+                $lhs_type_part,
+                $context,
+                $fq_class_name,
+                $class_storage,
+            ));
 
             return true;
         }
