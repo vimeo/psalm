@@ -605,6 +605,8 @@ final class Config
         "geos" => null,
         "gmp" => null,
         "ibm_db2" => null,
+        "intl" => null,
+        "memcached" => null,
         "mongodb" => null,
         "mysqli" => null,
         "pdo" => null,
@@ -614,6 +616,7 @@ final class Config
         "simplexml" => null,
         "soap" => null,
         "xdebug" => null,
+        "zip" => null,
         "zstd" => null,
     ];
 

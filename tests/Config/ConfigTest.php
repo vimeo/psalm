@@ -35,12 +35,18 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use Throwable;
 
+use function array_flip;
+use function array_intersect_key;
+use function array_keys;
 use function array_map;
+use function basename;
 use function dirname;
 use function error_get_last;
+use function file_get_contents;
 use function file_put_contents;
 use function get_class;
 use function getcwd;
+use function glob;
 use function implode;
 use function in_array;
 use function is_array;
@@ -55,6 +61,7 @@ use function rmdir;
 use function rsort;
 use function set_error_handler;
 use function set_exception_handler;
+use function sort;
 use function sprintf;
 use function str_replace;
 use function substr;
@@ -1250,6 +1257,93 @@ final class ConfigTest extends TestCase
         );
 
         $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, string}>
+     */
+    public static function providerExtensionStubs(): iterable
+    {
+        yield 'intl' => [
+            'intl',
+            '<?php
+                echo INTL_MAX_LOCALE_LEN, IDNA_DEFAULT, NumberFormatter::DECIMAL;',
+        ];
+
+        yield 'memcached' => [
+            'memcached',
+            '<?php
+                $memcached = new Memcached();
+                echo $memcached->getResultCode() === Memcached::RES_SUCCESS ? "ok" : "failed";',
+        ];
+
+        yield 'zip' => [
+            'zip',
+            '<?php
+                echo ZipArchive::CREATE, ZipArchive::OVERWRITE;',
+        ];
+    }
+
+    #[DataProvider('providerExtensionStubs')]
+    public function testExtensionStubCanBeEnabled(string $extension, string $code): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <enableExtensions>
+                        <extension name="' . $extension . '"/>
+                    </enableExtensions>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+        $config = $this->project_analyzer->getConfig();
+        $config->visitStubFiles($this->project_analyzer->getCodebase());
+        $this->assertContains((string) realpath('stubs/extensions/' . $extension . '.phpstub'), $config->internal_stubs);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, $code);
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testEveryExtensionStubHasAConfigurableExtension(): void
+    {
+        $paths = glob(dirname(__DIR__, 2) . '/stubs/extensions/*.phpstub');
+        $this->assertIsArray($paths);
+
+        $stubs = [];
+        foreach ($paths as $path) {
+            $stubs[] = basename($path, '.phpstub');
+        }
+
+        sort($stubs);
+
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+            </psalm>',
+        );
+
+        $configurable = array_keys(array_intersect_key($config->php_extensions, array_flip($stubs)));
+        sort($configurable);
+
+        $this->assertSame($stubs, $configurable);
+
+        $schema = file_get_contents(dirname(__DIR__, 2) . '/config.xsd');
+        foreach ($stubs as $stub) {
+            $this->assertStringContainsString('<xs:enumeration value="' . $stub . '"/>', (string) $schema, $stub);
+        }
     }
 
     public function testValidThrowInvalidCatch(): void
