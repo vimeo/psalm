@@ -134,6 +134,38 @@ final class FileReferenceTest extends TestCase
     }
 
     /**
+     * @see https://github.com/vimeo/psalm/issues/12586
+     */
+    public function testLineOneLocationHasOneBasedColumnAndFullSnippet(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, "<?php class A {} new A();\n");
+
+        $this->analyzeFile($file_path, new Context());
+
+        $found_references = $this->project_analyzer->getCodebase()->findReferencesToSymbol('A');
+
+        // `new A()` is recorded both as the whole expression and as the class name
+        $actual = [];
+        foreach ($found_references as $location) {
+            $actual[$location->getColumn()] = $location->getLineNumber()
+                . ':' . $location->getColumn()
+                . ':' . $location->getSelectedText()
+                . ':' . $location->getSnippet();
+        }
+        ksort($actual);
+
+        $this->assertSame(
+            [
+                18 => '1:18:new A():<?php class A {} new A();',
+                22 => '1:22:A:<?php class A {} new A();',
+            ],
+            $actual,
+        );
+    }
+
+    /**
      * @param array<string,array<string,bool>> $expected_references
      */
     #[DataProvider('providerReferencedMethods')]
