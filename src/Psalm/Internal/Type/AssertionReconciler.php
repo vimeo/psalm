@@ -476,7 +476,6 @@ final class AssertionReconciler extends Reconciler
                 && $key
                 && !$assertion->hasEquality()
                 && $new_type_part instanceof TNamedObject
-                && !$new_type_has_interface
                 && (!($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
                     || $key !== '$this')
                 && UnionTypeComparator::isContainedBy(
