@@ -79,11 +79,16 @@ final class MethodCallReturnTypeFetcher
 
         if ($stmt->isFirstClassCallable()) {
             if ($method_storage) {
-                return new Union([new TClosure(
-                    $method_storage->params,
-                    $method_storage->return_type,
-                    $method_storage->capabilities,
-                )]);
+                // the templates of the class are what the object it is called on has for them
+                return TemplateInferredTypeReplacer::replace(
+                    new Union([new TClosure(
+                        $method_storage->params,
+                        $method_storage->return_type,
+                        $method_storage->capabilities,
+                    )]),
+                    $template_result,
+                    $codebase,
+                );
             }
 
             return Type::getClosure();
