@@ -38,6 +38,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function array_filter;
 use function array_merge;
 use function array_values;
 use function count;
@@ -236,6 +237,31 @@ final class NegatedAssertionReconciler extends Reconciler
             if ($assertion_type && !$existing_var_type->removeType($assertion_type->getKey())) {
                 if ($assertion_type instanceof TNamedObject) {
                     foreach ($existing_var_type->getAtomicTypes() as $part_name => $existing_var_type_part) {
+                        if ($existing_var_type_part instanceof TTemplateParam) {
+                            // the objects the assertion excludes can't be what the template is bound to either
+                            $remaining_as_types = array_filter(
+                                $existing_var_type_part->as->getAtomicTypes(),
+                                static fn(Atomic $as_part): bool => !($as_part instanceof TNamedObject
+                                    && AtomicTypeComparator::isContainedBy(
+                                        $codebase,
+                                        $as_part,
+                                        $assertion_type,
+                                    )),
+                            );
+
+                            if (count($remaining_as_types) !== count($existing_var_type_part->as->getAtomicTypes())) {
+                                $existing_var_type->removeType($part_name);
+
+                                if ($remaining_as_types) {
+                                    $existing_var_type->addType(
+                                        $existing_var_type_part->replaceAs(new Union($remaining_as_types)),
+                                    );
+                                }
+
+                                continue;
+                            }
+                        }
+
                         if (!$existing_var_type_part->isObjectType()) {
                             continue;
                         }
