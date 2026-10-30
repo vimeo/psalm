@@ -21,6 +21,23 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedArrayIsListKeepsTheItemTypesInTheElseBranch' => [
+                'code' => '<?php
+                    /**
+                     * @param array<int|string> $foo
+                     * @return array<array-key, int|string>
+                     */
+                    function f(array $foo): array {
+                        if (!array_is_list($foo)) {
+                            return $foo;
+                        }
+
+                        return [];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'nonStrictConditionOnMixedOrNull' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $owners */

@@ -219,6 +219,14 @@ final class NegatedAssertionReconciler extends Reconciler
         } elseif ($existing_var_type->isArray()
             && ($assertion->getAtomicType() instanceof TArray
                 || $assertion->getAtomicType() instanceof TKeyedArray)
+            && ($assertion->getAtomicType() instanceof TKeyedArray
+                ? $assertion->getAtomicType()->getGenericValueType()->isMixed()
+                : $assertion->getAtomicType()->type_params[1]->isMixed())
+        ) {
+            // being no array of mixed items (e.g. no list) says nothing about the items
+        } elseif ($existing_var_type->isArray()
+            && ($assertion->getAtomicType() instanceof TArray
+                || $assertion->getAtomicType() instanceof TKeyedArray)
         ) {
             //if both types are arrays, try to combine them
             $combined_type = TypeCombiner::combine(
