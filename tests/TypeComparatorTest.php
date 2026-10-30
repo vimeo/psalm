@@ -10,12 +10,14 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TPropertiesOf;
 use Psalm\Type\Union;
 
@@ -24,6 +26,7 @@ use function array_keys;
 use function array_map;
 use function array_reverse;
 use function hrtime;
+use function is_int;
 
 final class TypeComparatorTest extends TestCase
 {
@@ -173,6 +176,14 @@ final class TypeComparatorTest extends TestCase
             'callable-string',
             'lowercase-string',
         ];
+        yield 'literalStringIntoClassStringAmongLiterals' => [
+            "'a'|'b'|class-string",
+            "'Foo'",
+        ];
+        yield 'literalStringIntoLiteralClassStringAmongLiterals' => [
+            "'a'|'b'|Foo::class",
+            "'Foo'",
+        ];
     }
 
     /**
@@ -306,9 +317,17 @@ final class TypeComparatorTest extends TestCase
                 '1|2|3',
                 '3|1',
             ],
-            'literalStringsAndNonEmptyStringAcceptAnotherLiteral' => [
-                "'a'|'b'|non-empty-string",
-                "'c'",
+            'literalStringsAndNumericAcceptAnotherLiteral' => [
+                "'a'|'b'|numeric",
+                "'5'",
+            ],
+            'literalIntsAndFloatAcceptAnotherLiteral' => [
+                '1|2|float',
+                '3',
+            ],
+            'literalsOfBothClassesAndFloatAcceptLiterals' => [
+                "'a'|1|float",
+                "'a'|1|2",
             ],
             'literalIntsAndStringsAcceptBoth' => [
                 "1|'1'|2",
@@ -437,12 +456,54 @@ final class TypeComparatorTest extends TestCase
         ];
     }
 
-    public function testLargeLiteralUnionIsComparedWithoutComparingEachPair(): void
+    #[DataProvider('getDifferentLiterals')]
+    public function testLiteralDoesNotContainDifferentLiteral(int|string $input, int|string $container): void
+    {
+        $result = new TypeComparisonResult();
+
+        $this->assertFalse(
+            AtomicTypeComparator::isContainedBy(
+                $this->project_analyzer->getCodebase(),
+                is_int($input) ? new TLiteralInt($input) : new TLiteralString($input),
+                is_int($container) ? new TLiteralInt($container) : new TLiteralString($container),
+                false,
+                true,
+                $result,
+            ),
+        );
+        // UnionTypeComparator skips these comparisons, so they must not report anything either
+        $this->assertEquals(new TypeComparisonResult(), $result);
+    }
+
+    /**
+     * @return iterable<string, list{int|string, int|string}>
+     * @psalm-pure
+     */
+    public static function getDifferentLiterals(): iterable
+    {
+        yield 'ints' => [1, 2];
+        yield 'emptyStringAndZero' => ['', '0'];
+        yield 'zeroAndEmptyString' => ['0', ''];
+        yield 'lowercaseAndUppercase' => ['a', 'A'];
+        yield 'numericStrings' => ['1', '01'];
+        yield 'intAndNumericString' => [1, '1'];
+        yield 'numericStringAndInt' => ['1', 1];
+        yield 'zeroAndEmptyStringOfOtherClasses' => [0, ''];
+        yield 'stringAndInt' => ['a', 0];
+    }
+
+    /**
+     * @param 'int'|'string'|'both' $literal_class
+     */
+    #[DataProvider('getLargeLiteralUnionClasses')]
+    public function testLargeLiteralUnionIsComparedWithoutComparingEachPair(string $literal_class): void
     {
         // e.g. an int-mask of 12 bits
         $literals = [];
         for ($value = 0; $value < 4_096; $value++) {
-            $literals[] = new TLiteralInt($value);
+            $literals[] = $literal_class === 'int' || ($literal_class === 'both' && $value % 2 === 0)
+                ? new TLiteralInt($value)
+                : new TLiteralString((string) $value);
         }
 
         $container_type = new Union($literals);
@@ -457,7 +518,18 @@ final class TypeComparatorTest extends TestCase
         $nanoseconds = hrtime(true) - $start;
 
         $this->assertTrue($contained);
-        // comparing each of the 16.7 million pairs takes tens of seconds
+        // comparing each of the millions of pairs takes seconds to tens of seconds
         $this->assertLessThan(2_000_000_000, $nanoseconds);
+    }
+
+    /**
+     * @return iterable<string, list{'int'|'string'|'both'}>
+     * @psalm-pure
+     */
+    public static function getLargeLiteralUnionClasses(): iterable
+    {
+        yield 'ints' => ['int'];
+        yield 'strings' => ['string'];
+        yield 'intsAndStrings' => ['both'];
     }
 }
