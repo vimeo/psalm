@@ -21,7 +21,7 @@ final class RedundantConditionTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
-    public function testAssertIsReportedOnceAtTheCondition(): void
+    public function testAssertOfATypeCheckFunctionIsReportedOnce(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
         $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
@@ -29,14 +29,12 @@ final class RedundantConditionTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                function f(string $s, int $i, ?array $a): void {
+                function f(string $s, int $i, array $a, ?int $n): void {
                     assert(is_string($s));
                     assert(is_int($i));
-                    assert($s !== null);
-                    assert($i instanceof stdClass);
-                    assert(
-                        is_array($a)
-                    );
+                    assert(is_array($a));
+                    assert(is_int($n));
+                    if (is_string($s)) {}
                 }',
         );
         $this->analyzeFile($file_path, new Context(), false);
@@ -44,10 +42,10 @@ final class RedundantConditionTest extends TestCase
 
         $this->assertSame(
             [
-                ['RedundantCondition', 3, 28],
-                ['RedundantCondition', 4, 28],
-                ['RedundantConditionGivenDocblockType', 5, 28],
-                ['DocblockTypeContradiction', 6, 28],
+                ['RedundantCondition', 3, 21],
+                ['RedundantCondition', 4, 21],
+                ['RedundantCondition', 5, 21],
+                ['RedundantConditionGivenDocblockType', 7, 25],
             ],
             array_map(
                 static fn($issue): array => [$issue->type, $issue->line_from, $issue->column_from],

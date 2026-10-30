@@ -211,13 +211,17 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         $set_inside_conditional = false;
+        $was_inside_assert = $context->inside_assert;
 
         if ($function_name instanceof PhpParser\Node\Name
             && $function_name->getParts() === ['assert']
-            && !$context->inside_conditional
         ) {
-            $context->inside_conditional = true;
-            $set_inside_conditional = true;
+            $context->inside_assert = true;
+
+            if (!$context->inside_conditional) {
+                $context->inside_conditional = true;
+                $set_inside_conditional = true;
+            }
         }
 
         if (!$template_result) {
@@ -239,6 +243,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $template_result,
             );
         }
+
+        $context->inside_assert = $was_inside_assert;
 
         if ($set_inside_conditional) {
             $context->inside_conditional = false;
@@ -1361,8 +1367,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer,
                 $statements_analyzer->getTemplateTypeMap() ?: [],
                 $context->inside_loop,
-                // the condition, where the check of an is_*() call reports the same thing: it is reported once
-                new CodeLocation($statements_analyzer->getSource(), $first_arg->value),
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
             );
 
             foreach ($changed_var_ids as $var_id => $_) {

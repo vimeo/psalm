@@ -522,6 +522,7 @@ final class NamedFunctionCallHandler
             && str_starts_with($function_id, 'is_')
             && $function_id !== 'is_a'
             && !$context->inside_negation
+            && !$context->inside_assert
         ) {
             $stmt_assertions = $statements_analyzer->node_data->getAssertions($stmt);
 
