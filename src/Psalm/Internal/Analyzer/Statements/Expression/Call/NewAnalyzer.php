@@ -1411,6 +1411,7 @@ final class NewAnalyzer extends CallAnalyzer
         if (!$class_string instanceof TClassString
             || $class_string instanceof TTemplateParamClass
             || !$class_string->as_type
+            || $class_string->as_type->is_static
             || !$codebase->classlikes->classExists($class_string->as_type->value, null, $context)
         ) {
             return null;
