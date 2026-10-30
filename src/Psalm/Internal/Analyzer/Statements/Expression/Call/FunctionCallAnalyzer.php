@@ -1361,7 +1361,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer,
                 $statements_analyzer->getTemplateTypeMap() ?: [],
                 $context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                // the condition, where the check of an is_*() call reports the same thing: it is reported once
+                new CodeLocation($statements_analyzer->getSource(), $first_arg->value),
             );
 
             foreach ($changed_var_ids as $var_id => $_) {

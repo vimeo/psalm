@@ -1756,20 +1756,10 @@
       <code><![CDATA[$b[$y]]]></code>
     </InvalidArrayOffset>
   </file>
-  <file src="src/Psalm/Internal/Diff/FileStatementsDiffer.php">
-    <RedundantCondition>
-      <code><![CDATA[assert(!empty($name_parts))]]></code>
-      <code><![CDATA[assert(!empty($name_parts))]]></code>
-    </RedundantCondition>
-  </file>
   <file src="src/Psalm/Internal/Diff/NamespaceStatementsDiffer.php">
     <ImplicitToStringCast>
       <code><![CDATA[$diff_elem->old->name]]></code>
     </ImplicitToStringCast>
-    <RedundantCondition>
-      <code><![CDATA[assert(!empty($name_parts))]]></code>
-      <code><![CDATA[assert(!empty($name_parts))]]></code>
-    </RedundantCondition>
   </file>
   <file src="src/Psalm/Internal/ExecutionEnvironment/GitInfoCollector.php">
     <PossiblyUndefinedArrayOffset>

@@ -6,7 +6,6 @@ namespace Psalm\Internal\Diff;
 
 use PhpParser;
 
-use function assert;
 use function end;
 use function substr;
 
@@ -117,7 +116,6 @@ final class NamespaceStatementsDiffer extends AstDiffer
                             $add_or_delete[] = 'use:' . (string) $use->alias;
                         } else {
                             $name_parts = $use->name->getParts();
-                            assert(!empty($name_parts));
 
                             $add_or_delete[] = 'use:' . end($name_parts);
                         }
@@ -132,7 +130,6 @@ final class NamespaceStatementsDiffer extends AstDiffer
                             $add_or_delete[] = 'use:' . (string) $use->alias;
                         } else {
                             $name_parts = $use->name->getParts();
-                            assert(!empty($name_parts));
 
                             $add_or_delete[] = 'use:' . end($name_parts);
                         }
