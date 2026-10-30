@@ -201,6 +201,27 @@ final class TypeCombinationTest extends TestCase
                     'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: list<array<array-key, mixed>>}&array<string, mixed>',
                 ],
             ],
+            'optionalKeyOfAnUnsealedShapeKeepsItsTypeWhenCombinedWithTheSameKeyRequired' => [
+                'array{id: string, name?: string, ...<array-key, mixed>}',
+                [
+                    'array{id: string, name: string, ...<array-key, mixed>}',
+                    'array{id: string, name?: string, ...<array-key, mixed>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItButItsFallbackMayHoldIt' => [
+                'array{id: string, name?: int|string, ...<string, int|string>}',
+                [
+                    'array{id: string, name: string, ...<string, string>}',
+                    'array{id: string, ...<string, int>}',
+                ],
+            ],
+            'keyOfASealedShapeIsOptionalWhenAnotherShapeDeclaresItOptional' => [
+                'array{a?: int|string, ...<string, mixed>}',
+                [
+                    'array{a: int, ...<string, mixed>}',
+                    'array{a?: string}',
+                ],
+            ],
             'complexArrayFallback2' => [
                 'list{0?: 0|a, 1?: 0|a, ...<a>}',
                 [

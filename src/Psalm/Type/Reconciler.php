@@ -1335,8 +1335,10 @@ class Reconciler
         $shape_changed = false;
 
         foreach ($base_type->getAtomicTypes() as $atomic_type) {
+            // with a fallback, dropping the offset would let the fallback type stand for it
             if ($atomic_type instanceof TKeyedArray
                 && !$atomic_type->is_list
+                && !$atomic_type->fallback_params
                 && isset($atomic_type->properties[$offset->value])
                 && $atomic_type->properties[$offset->value]->possibly_undefined
                 && ($is_absent
@@ -1348,8 +1350,6 @@ class Reconciler
 
                 if ($properties) {
                     $atomic_type = $atomic_type->setProperties($properties);
-                } elseif ($atomic_type->fallback_params) {
-                    $atomic_type = new TArray($atomic_type->fallback_params);
                 } else {
                     $atomic_type = new TArray([new Union([new TNever()]), new Union([new TNever()])]);
                 }

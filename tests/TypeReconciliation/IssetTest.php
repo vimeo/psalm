@@ -21,6 +21,27 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOfAnOptionalKeyOfAnUnsealedShapeKeepsTheShape' => [
+                'code' => '<?php
+                    /** @var array{name?: string, id: string, ...} $a */
+                    $a = ["id" => "x"];
+
+                    $name = $a["name"] ?? "";
+                    $afterCoalesce = $a;
+
+                    $whenSet = isset($a["name"]) ? $a : null;
+                    $whenNotSet = isset($a["name"]) ? null : $a;
+
+                    /** @var array{name?: string, ...} $b */
+                    $b = [];
+                    $onlyOptionalKey = isset($b["name"]) ? null : $b;',
+                'assertions' => [
+                    '$afterCoalesce===' => 'array{id: string, name?: string, ...<array-key, mixed>}',
+                    '$whenSet===' => 'array{id: string, name: string, ...<array-key, mixed>}|null',
+                    '$whenNotSet===' => 'array{id: string, name?: string, ...<array-key, mixed>}|null',
+                    '$onlyOptionalKey===' => 'array{name?: string, ...<array-key, mixed>}|null',
+                ],
+            ],
             'issetWithSimpleAssignment' => [
                 'code' => '<?php
                     $array = [];
