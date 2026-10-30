@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\NonComparisonOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\OrAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\PipeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
@@ -114,6 +115,10 @@ final class BinaryOpAnalyzer
             );
 
             return $expr_result;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Pipe) {
+            return PipeAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp) {
