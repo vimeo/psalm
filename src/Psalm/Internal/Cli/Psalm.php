@@ -1156,7 +1156,13 @@ final class Psalm
             $init_source_dir = $args[0] ?? null;
 
             echo "Calculating best config level based on project files\n";
-            Creator::createBareConfig($current_dir, $init_source_dir, $vendor_dir);
+            try {
+                Creator::createBareConfig($current_dir, $init_source_dir, $vendor_dir);
+            } catch (ConfigCreationException $e) {
+                fwrite(STDERR, $e->getMessage() . PHP_EOL);
+                exit(1);
+            }
+
             $config = Config::getInstance();
             $config->setComposerClassLoader($first_autoloader);
         } else {
