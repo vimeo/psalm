@@ -1884,7 +1884,7 @@ final class AssertAnnotationTest extends TestCase
                         /** @psalm-check-type-exact $x = Item */;
                     }',
             ],
-            'memoizedCallKeepsUnboundMethodTemplateOfReturnType' => [
+            'memoizedCallBindsUnboundMethodTemplateToNever' => [
                 'code' => '<?php
                     final class Item {}
 
@@ -1909,7 +1909,45 @@ final class AssertAnnotationTest extends TestCase
                     }
                     $x = $box->first();',
                 'assertions' => [
-                    '$x===' => 'Item|(U:fn-box::first as mixed)',
+                    '$x===' => 'Item',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'memoizedCallKeepsUnboundMethodTemplateThatWouldMakeItNever' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T
+                     */
+                    final class Box {
+                        /** @param T $item */
+                        public function __construct(public mixed $item) {}
+
+                        /**
+                         * @template U
+                         * @return U
+                         */
+                        public function only() { throw new LogicException(); }
+
+                        /** @psalm-assert !null $this->only() */
+                        public function assertNotEmpty(): void {}
+
+                        /** @psalm-assert-if-true !null $this->only() */
+                        public function isNotEmpty(): bool { return true; }
+                    }
+
+                    $box = new Box(1);
+                    if (!$box->isNotEmpty()) {
+                        throw new LogicException();
+                    }
+                    $x = $box->only();
+                    $box = new Box(1);
+                    $box->assertNotEmpty();
+                    $y = $box->only();',
+                'assertions' => [
+                    '$x===' => 'U:fn-box::only as mixed',
+                    '$y===' => 'U:fn-box::only as mixed',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
