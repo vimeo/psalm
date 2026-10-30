@@ -1421,6 +1421,8 @@ final class ArrayAssignmentAnalyzer
                 $parent_array_var_id = $root_var_id . implode('', array_slice($var_id_additions, 0, -1));
                 $context->vars_in_scope[$extended_var_id] = $child_stmt_type;
                 $context->possibly_assigned_var_ids[$extended_var_id] = true;
+                // the next array to update is the one that holds this one
+                $parent_var_id = $parent_array_var_id;
             }
 
             if ($statements_analyzer->data_flow_graph) {
