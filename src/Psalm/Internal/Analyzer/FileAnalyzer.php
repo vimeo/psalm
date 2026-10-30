@@ -256,7 +256,9 @@ class FileAnalyzer extends SourceAnalyzer
                         continue;
                     }
 
-                    $referenced_class_storage = $codebase->classlike_storage_provider->get($fq_source_classlike);
+                    $referenced_class_storage = $codebase->classlike_storage_provider->get(
+                        $codebase->classlikes->getUnAliasedName($fq_source_classlike),
+                    );
                     if (!isset($referenced_class_storage->type_aliases[$alias->alias_name])) {
                         IssueBuffer::maybeAdd(
                             new InvalidTypeImport(
