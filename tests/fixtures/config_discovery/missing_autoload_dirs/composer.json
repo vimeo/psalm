@@ -1,0 +1,12 @@
+{
+    "name": "dummy/missing-autoload-dirs",
+    "autoload": {
+        "psr-4": {
+            "App\\": ["missing/", "lib/"],
+            "Database\\Factories\\": "database/factories/"
+        },
+        "psr-0": {
+            "Legacy_": "legacy/"
+        }
+    }
+}
