@@ -175,6 +175,11 @@ final class ClassLikeNodeScanner
 
             $class_name = $node->name->name;
 
+            // A stub refines the native declaration, so the methods it leaves out still come from reflection
+            if ($this->codebase->register_stub_files && $this->codebase->scanner->isStubFile($this->file_path)) {
+                $this->codebase->scanner->registerReflectedClassLikeStorage($fq_classlike_name);
+            }
+
             if ($this->codebase->classlike_storage_provider->has($fq_classlike_name_lc)) {
                 $duplicate_storage = $this->codebase->classlike_storage_provider->get($fq_classlike_name_lc);
 
