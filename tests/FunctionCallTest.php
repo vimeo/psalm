@@ -2702,6 +2702,16 @@ final class FunctionCallTest extends TestCase
                     PHP,
                 'error_message' => 'UndefinedClass',
             ],
+            'classExistsInStandaloneAndDoesNotLeakAfterTheExpression' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $result = class_exists(Foo::class) && Foo::bar();
+                        new Foo();
+                    }
+                    PHP,
+                'error_message' => 'UndefinedClass',
+            ],
             'invalidDocblockParamDefault' => [
                 'code' => '<?php
                     /**
