@@ -9,6 +9,7 @@ use JsonException;
 use Phar;
 use Psalm\Config;
 use Psalm\Config\Creator;
+use Psalm\Exception\ConfigCreationException;
 use Psalm\Exception\ConfigException;
 use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -441,7 +442,7 @@ final class CliUtils
                     );
                 }
             }
-        } catch (ConfigException $e) {
+        } catch (ConfigException | ConfigCreationException $e) {
             fwrite(
                 STDERR,
                 $e->getMessage() . PHP_EOL,

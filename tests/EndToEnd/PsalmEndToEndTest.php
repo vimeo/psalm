@@ -118,6 +118,35 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertFileExists(self::$tmpDir . '/psalm.xml');
     }
 
+    public function testInitReportsMissingAutoloadDirectoriesWithoutCrashing(): void
+    {
+        $project_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndMissingAutoload_');
+        assert($project_dir !== false);
+        unlink($project_dir);
+        mkdir($project_dir);
+
+        try {
+            file_put_contents(
+                $project_dir . '/composer.json',
+                '{"autoload": {"psr-4": {"App\\\\": "missing/"}}}',
+            );
+            mkdir($project_dir . '/vendor');
+            file_put_contents($project_dir . '/vendor/autoload.php', "<?php\n");
+
+            $process = new Process([PHP_BINARY, $this->psalm, '--init'], $project_dir, self::agentEnvVarsToUnset());
+            $process->run();
+        } finally {
+            self::recursiveRemoveDirectory($project_dir);
+        }
+
+        $this->assertSame(1, $process->getExitCode());
+        $this->assertStringContainsString(
+            'Could not located any PSR-0 or PSR-4-compatible paths',
+            $process->getErrorOutput(),
+        );
+        $this->assertStringNotContainsString('Uncaught', $process->getErrorOutput());
+    }
+
     public function testAlter(): void
     {
         $this->runPsalmInit();
