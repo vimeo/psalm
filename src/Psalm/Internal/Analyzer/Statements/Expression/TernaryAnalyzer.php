@@ -248,12 +248,15 @@ final class TernaryAnalyzer
         $assign_all = array_intersect_key($assign_var_ifs, $assign_var_else);
 
         //if the same var was assigned in both branches
-        foreach ($assign_all as $var_id => $_) {
+        foreach ($assign_all as $var_id => $assigned_at) {
             if (isset($if_context->vars_in_scope[$var_id]) && isset($t_else_context->vars_in_scope[$var_id])) {
                 $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                     $if_context->vars_in_scope[$var_id],
                     $t_else_context->vars_in_scope[$var_id],
                 );
+
+                // an enclosing ternary (a match arm chain) sees it as assigned in this branch
+                $context->assigned_var_ids[$var_id] = $assigned_at;
             }
         }
 

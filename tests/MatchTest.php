@@ -20,6 +20,32 @@ final class MatchTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedInEveryMatchArmIsDefinedAfterwards' => [
+                'code' => '<?php
+                    class A {}
+                    class B extends A {}
+
+                    function f(string $case): A {
+                        match ($case) {
+                            "a" => $object = new A(),
+                            "b" => $object = new B(),
+                            default => $object = new B(),
+                        };
+
+                        return $object;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'variableAssignedInEveryNestedTernaryBranchIsDefinedAfterwards' => [
+                'code' => '<?php
+                    function f(bool $a, bool $b): int {
+                        $a ? $x = 1 : ($b ? $x = 2 : $x = 3);
+
+                        return $x;
+                    }',
+            ],
             'subjectIsOneOfTheArmValuesAfterAMatchWithoutDefault' => [
                 'code' => '<?php
                     function f(string $type): int {
@@ -243,6 +269,21 @@ final class MatchTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableAssignedInOnlySomeMatchArmsIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(string $case): int {
+                        match ($case) {
+                            "a" => $x = 1,
+                            "b" => $x = 2,
+                            default => 0,
+                        };
+
+                        return $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'getClassArgWrongClass' => [
                 'code' => '<?php
                     class A {}
