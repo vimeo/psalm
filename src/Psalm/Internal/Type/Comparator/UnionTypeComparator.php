@@ -17,6 +17,8 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
@@ -78,6 +80,11 @@ final class UnionTypeComparator
 
 
         $container_has_template = $container_type->hasTemplateOrStatic();
+
+        $container_type_parts = self::getTypeParts($codebase, $container_type);
+
+        // by literal class: the keys of the container parts of that class, and the other container parts
+        $container_literals = [];
 
         $input_atomic_types = array_reverse(self::getTypeParts($codebase, $input_type));
 
@@ -201,7 +208,38 @@ final class UnionTypeComparator
             $alternative_bounds = [];
             $unconditional_match = false;
 
-            foreach (self::getTypeParts($codebase, $container_type) as $container_type_part) {
+            $container_parts_to_compare = $container_type_parts;
+
+            if ($input_type_part::class === TLiteralInt::class || $input_type_part::class === TLiteralString::class) {
+                // of the container's literals of the same class, only the same literal can contain the input, and
+                // comparing the input with the others has no effect: compare it with that one alone
+                $literal_class = $input_type_part::class;
+
+                if (!isset($container_literals[$literal_class])) {
+                    $same_class_literals = [];
+                    $other_parts = [];
+
+                    foreach ($container_type_parts as $container_type_part) {
+                        if ($container_type_part::class === $literal_class) {
+                            $same_class_literals[$container_type_part->getKey()] = $container_type_part;
+                        } else {
+                            $other_parts[] = $container_type_part;
+                        }
+                    }
+
+                    $container_literals[$literal_class] = [$same_class_literals, $other_parts];
+                }
+
+                [$same_class_literals, $container_parts_to_compare] = $container_literals[$literal_class];
+
+                $same_literal = $same_class_literals[$input_type_part->getKey()] ?? null;
+
+                if ($same_literal !== null) {
+                    $container_parts_to_compare[] = $same_literal;
+                }
+            }
+
+            foreach ($container_parts_to_compare as $container_type_part) {
                 if ($ignore_null
                     && $container_type_part instanceof TNull
                     && !$input_type_part instanceof TNull

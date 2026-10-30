@@ -15,11 +15,15 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Union;
 
 use function array_diff_key;
 use function array_keys;
 use function array_map;
+use function array_reverse;
+use function hrtime;
 
 final class TypeComparatorTest extends TestCase
 {
@@ -298,6 +302,18 @@ final class TypeComparatorTest extends TestCase
                 'string',
                 'non-decimal-int-string',
             ],
+            'literalIntsAcceptSomeOfThem' => [
+                '1|2|3',
+                '3|1',
+            ],
+            'literalStringsAndNonEmptyStringAcceptAnotherLiteral' => [
+                "'a'|'b'|non-empty-string",
+                "'c'",
+            ],
+            'literalIntsAndStringsAcceptBoth' => [
+                "1|'1'|2",
+                "'1'|1",
+            ],
         ];
     }
 
@@ -407,5 +423,41 @@ final class TypeComparatorTest extends TestCase
             'non-empty-mixed',
             'mixed',
         ];
+        yield 'literalIntsDoNotAcceptAnotherLiteral' => [
+            '1|2|3',
+            '2|4',
+        ];
+        yield 'literalStringsDoNotAcceptLiteralIntOfTheSameValue' => [
+            "'1'|'2'",
+            '1',
+        ];
+        yield 'literalIntsDoNotAcceptLiteralStringOfTheSameValue' => [
+            '1|2',
+            "'1'",
+        ];
+    }
+
+    public function testLargeLiteralUnionIsComparedWithoutComparingEachPair(): void
+    {
+        // e.g. an int-mask of 12 bits
+        $literals = [];
+        for ($value = 0; $value < 4_096; $value++) {
+            $literals[] = new TLiteralInt($value);
+        }
+
+        $container_type = new Union($literals);
+        $input_type = new Union(array_reverse($literals));
+
+        $start = hrtime(true);
+        $contained = UnionTypeComparator::isContainedBy(
+            $this->project_analyzer->getCodebase(),
+            $input_type,
+            $container_type,
+        );
+        $nanoseconds = hrtime(true) - $start;
+
+        $this->assertTrue($contained);
+        // comparing each of the 16.7 million pairs takes tens of seconds
+        $this->assertLessThan(2_000_000_000, $nanoseconds);
     }
 }
