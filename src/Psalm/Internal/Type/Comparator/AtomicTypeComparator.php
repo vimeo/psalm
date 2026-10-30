@@ -975,8 +975,11 @@ final class AtomicTypeComparator
             && self::keyedArrayRequirementsFit($codebase, $second, $first);
     }
 
-    private static function keyedArrayRequirementsFit(Codebase $codebase, TKeyedArray $required, TKeyedArray $other): bool
-    {
+    private static function keyedArrayRequirementsFit(
+        Codebase $codebase,
+        TKeyedArray $required,
+        TKeyedArray $other,
+    ): bool {
         foreach ($required->properties as $key => $property) {
             if ($property->possibly_undefined) {
                 continue;
