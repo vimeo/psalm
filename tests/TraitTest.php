@@ -22,6 +22,31 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticReturnOfTraitMethodOverriddenByMethodOfLaterTrait' => [
+                'code' => '<?php
+                    trait A {
+                        public function get(): static {
+                            return $this;
+                        }
+                    }
+
+                    trait B {
+                        public function get(): static {
+                            return $this;
+                        }
+                    }
+
+                    class C {
+                        use A;
+                    }
+
+                    class D extends C {
+                        use B;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'accessiblePrivateMethodFromTrait' => [
                 'code' => '<?php
                     trait T {
@@ -1224,6 +1249,33 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticReturnOfTraitMethodOverriddenByUnrelatedReturnTypeOfLaterTrait' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    trait A {
+                        public function get(): static {
+                            return $this;
+                        }
+                    }
+
+                    trait B {
+                        public function get(): Foo {
+                            return new Foo();
+                        }
+                    }
+
+                    class C {
+                        use A;
+                    }
+
+                    class D extends C {
+                        use B;
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'inaccessiblePrivateMethodFromInheritedTrait' => [
                 'code' => '<?php
                     trait T {
