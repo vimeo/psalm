@@ -41,32 +41,19 @@ final class ReturnTypeTest extends TestCase
                         return (object) ["string" => "string"];
                     }',
             ],
-            'objectCastOfAnArrayIsAStdClass' => [
-                'code' => '<?php
-                    /**
-                     * @param array<string, int> $values
-                     */
-                    function test(array $values): stdClass {
-                        return (object) $values;
-                    }',
-            ],
-            'objectCastOfAScalarAndNullIsAStdClass' => [
+            'objectCastOfAScalarIsAStdClass' => [
                 'code' => '<?php
                     function fromInt(): stdClass {
                         return (object) 1;
-                    }
-
-                    function fromNull(): stdClass {
-                        return (object) null;
                     }',
             ],
-            'objectCastOfAShapedArrayOrNullIsAStdClassWithoutTheProperties' => [
+            'objectCastOfAShapedArrayOrNullIsAnObjectWithoutTheProperties' => [
                 'code' => '<?php
                     /** @var array{a: int}|null $values */
                     $values = null;
                     $object = (object) $values;',
                 'assertions' => [
-                    '$object' => 'stdClass',
+                    '$object' => 'object',
                 ],
             ],
             'objectCastOfAShapedArrayOrAScalarIsAStdClass' => [

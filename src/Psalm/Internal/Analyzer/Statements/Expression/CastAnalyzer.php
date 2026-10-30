@@ -223,7 +223,7 @@ final class CastAnalyzer
 
                 $all_permissible = true;
 
-                // what a scalar, null or array becomes is an stdClass
+                // what a scalar or a shaped array becomes is an stdClass
                 $std_class = ['stdclass' => new TNamedObject('stdClass')];
 
                 foreach ($stmt_expr_type->getAtomicTypes() as $type) {
@@ -232,8 +232,6 @@ final class CastAnalyzer
                         $permissible_atomic_types[] = $objWithProps;
                     } elseif ($type instanceof TKeyedArray) {
                         $permissible_atomic_types[] = new TObjectWithProperties($type->properties, [], $std_class);
-                    } elseif ($type instanceof TArray || $type instanceof TNull) {
-                        $permissible_atomic_types[] = new TNamedObject('stdClass');
                     } else {
                         $all_permissible = false;
                         break;
