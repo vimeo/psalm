@@ -206,9 +206,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         $codebase = $project_analyzer->getCodebase();
 
         foreach ($stmt->traits as $trait) {
-            $fq_trait_name = self::getFQCLNFromNameObject(
-                $trait,
-                $aliases,
+            $fq_trait_name = $codebase->classlikes->getUnAliasedName(
+                self::getFQCLNFromNameObject($trait, $aliases),
             );
 
             $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
