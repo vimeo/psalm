@@ -2589,18 +2589,18 @@ final class AssertionFinder
                     if ($var_type->from_docblock) {
                         IssueBuffer::maybeAdd(
                             new RedundantConditionGivenDocblockType(
-                                'Docblock-defined type ' . $var_type->getId() . ' can never contain null',
+                                'Docblock-defined type ' . $var_type->getId() . ' can never be an empty array',
                                 new CodeLocation($source, $conditional),
-                                $var_type->getId() . ' null',
+                                $var_type->getId() . ' []',
                             ),
                             $source->getSuppressedIssues(),
                         );
                     } else {
                         IssueBuffer::maybeAdd(
                             new RedundantCondition(
-                                $var_type->getId() . ' can never contain null',
+                                $var_type->getId() . ' can never be an empty array',
                                 new CodeLocation($source, $conditional),
-                                $var_type->getId() . ' null',
+                                $var_type->getId() . ' []',
                             ),
                             $source->getSuppressedIssues(),
                         );
