@@ -66,6 +66,7 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_pop;
 use function array_values;
+use function count;
 use function range;
 use function strtolower;
 
@@ -222,12 +223,15 @@ final class CastAnalyzer
 
                 $all_permissible = true;
 
+                // what a scalar or a shaped array becomes is an stdClass
+                $std_class = ['stdclass' => new TNamedObject('stdClass')];
+
                 foreach ($stmt_expr_type->getAtomicTypes() as $type) {
                     if ($type instanceof Scalar) {
-                        $objWithProps = new TObjectWithProperties(['scalar' => new Union([$type])]);
+                        $objWithProps = new TObjectWithProperties(['scalar' => new Union([$type])], [], $std_class);
                         $permissible_atomic_types[] = $objWithProps;
                     } elseif ($type instanceof TKeyedArray) {
-                        $permissible_atomic_types[] = new TObjectWithProperties($type->properties);
+                        $permissible_atomic_types[] = new TObjectWithProperties($type->properties, [], $std_class);
                     } else {
                         $all_permissible = false;
                         break;
@@ -236,7 +240,10 @@ final class CastAnalyzer
             }
 
             if ($permissible_atomic_types && $all_permissible) {
-                $type = TypeCombiner::combine($permissible_atomic_types);
+                // the properties of one shape would be wrong for the other parts of a union
+                $type = count($permissible_atomic_types) === 1
+                    ? new Union($permissible_atomic_types)
+                    : new Union([new TNamedObject('stdClass')]);
             } else {
                 $type = Type::getObject();
             }
