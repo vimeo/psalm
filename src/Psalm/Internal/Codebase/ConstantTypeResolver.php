@@ -6,12 +6,14 @@ namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
 use Psalm\Exception\CircularReferenceException;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayOffsetFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArraySpread;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayValue;
 use Psalm\Internal\Scanner\UnresolvedConstant\ClassConstant;
+use Psalm\Internal\Scanner\UnresolvedConstant\ClosureValue;
 use Psalm\Internal\Scanner\UnresolvedConstant\Constant;
 use Psalm\Internal\Scanner\UnresolvedConstant\EnumNameFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\EnumPropertyFetch;
@@ -31,6 +33,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -72,6 +75,19 @@ final class ConstantTypeResolver
 
         if ($c instanceof ScalarValue) {
             return self::getLiteralTypeFromScalarValue($c->value);
+        }
+
+        if ($c instanceof ClosureValue) {
+            $codebase = ProjectAnalyzer::getInstance()->getCodebase();
+            $storage = $codebase->getClosureStorage($c->file_path, $c->closure_id);
+
+            return new TClosure(
+                'Closure',
+                $storage->params,
+                $storage->return_type ?? Type::getMixed(),
+                $storage->pure ? true : null,
+                $storage->byref_uses,
+            );
         }
 
         if ($c instanceof UnresolvedBinaryOp) {

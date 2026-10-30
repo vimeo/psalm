@@ -1459,6 +1459,7 @@ final class ClassLikeNodeScanner
                     $this->aliases,
                     $fq_classlike_name,
                     $storage->parent_class,
+                    $this->file_path,
                 );
 
                 if ($unresolved_const_expr) {
