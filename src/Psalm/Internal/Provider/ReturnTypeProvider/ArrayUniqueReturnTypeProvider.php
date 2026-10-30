@@ -164,7 +164,11 @@ final class ArrayUniqueReturnTypeProvider implements FunctionReturnTypeProviderI
 
     private static function isObjectWithoutToString(Codebase $codebase, Atomic $atomic): bool
     {
-        if ($atomic instanceof TObject || $atomic instanceof TObjectWithProperties) {
+        if ($atomic instanceof TObjectWithProperties) {
+            return !isset($atomic->methods['__tostring']);
+        }
+
+        if ($atomic instanceof TObject) {
             return true;
         }
 

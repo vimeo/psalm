@@ -1480,6 +1480,16 @@ final class ArrayFunctionCallTest extends TestCase
                     '$g===' => 'non-empty-string',
                 ],
             ],
+            'arrayUniqueOfStringableObjects' => [
+                'code' => '<?php
+                    /**
+                     * @param list<stringable-object> $objects
+                     * @return list<stringable-object>
+                     */
+                    function unique(array $objects): array {
+                        return array_values(array_unique($objects));
+                    }',
+            ],
             'arrayUniqueOfValuesThatConvertToStrings' => [
                 'code' => '<?php
                     final class Name {
