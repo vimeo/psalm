@@ -60,6 +60,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_any;
 use function array_reduce;
 use function array_reverse;
 use function array_slice;
@@ -979,6 +980,15 @@ final class ArgumentsAnalyzer
             if ($arg->unpack) {
                 if ($function_param_count > $argument_offset) {
                     for ($i = $argument_offset; $i < $function_param_count; $i++) {
+                        // a parameter passed by name cannot also receive an unpacked value
+                        if (array_any(
+                            $args,
+                            static fn(PhpParser\Node\Arg $named_arg): bool => $named_arg->name !== null
+                                && $named_arg->name->name === $function_params[$i]->name,
+                        )) {
+                            continue;
+                        }
+
                         $arg_function_params[$argument_offset][] = $function_params[$i];
                     }
                 }

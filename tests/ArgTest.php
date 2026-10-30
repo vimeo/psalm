@@ -22,6 +22,32 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'unpackedShapeAndNamedArgument' => [
+                'code' => '<?php
+                    function add(int $a, int $b): int {
+                        return $a + $b;
+                    }
+
+                    $args = ["a" => 7];
+
+                    echo add(...$args, b: 8);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedListAndNamedArgument' => [
+                'code' => '<?php
+                    function add(int $a, int $b): int {
+                        return $a + $b;
+                    }
+
+                    $list = [7];
+
+                    echo add(...$list, b: 8);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'argumentUnpackingLiteral' => [
                 'code' => '<?php
                     function add(int $a, int $b, int $c) : int {
@@ -386,6 +412,33 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'unpackedShapeAndNamedArgumentWithBadType' => [
+                'code' => '<?php
+                    function add(int $a, int $b): int {
+                        return $a + $b;
+                    }
+
+                    $args = ["a" => 7];
+
+                    echo add(...$args, b: "x");',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedArrayStillChecksTheParamsNotPassedByName' => [
+                'code' => '<?php
+                    function f(int $a, int $b, int $c): int {
+                        return $a + $b + $c;
+                    }
+
+                    /** @var array<string, string> $args */
+                    $args = [];
+
+                    echo f(...$args, c: 3);',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'arrayPushArgumentUnpackingWithBadArg' => [
                 'code' => '<?php
                     $a = [];
