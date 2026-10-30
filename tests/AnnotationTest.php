@@ -193,6 +193,45 @@ final class AnnotationTest extends TestCase
                     '$_a' => 'int',
                 ],
             ],
+            'varDocblockBeforeUse' => [
+                'code' => '<?php
+                    /** @var int|null $a */
+                    use Foo\Bar;
+
+                    $_b = $a;',
+                'assertions' => [
+                    '$_b' => 'int|null',
+                ],
+            ],
+            'varDocblockBeforeGroupUse' => [
+                'code' => '<?php
+                    /** @var int|null $a */
+                    use Foo\{Bar, Baz};
+
+                    $_b = $a;',
+                'assertions' => [
+                    '$_b' => 'int|null',
+                ],
+            ],
+            'varDocblockBeforeUseInNamespace' => [
+                'code' => '<?php
+                    namespace Ns;
+
+                    /** @var int|null $a */
+                    use Foo\Bar;
+
+                    $_b = $a;',
+                'assertions' => [
+                    '$_b' => 'int|null',
+                ],
+            ],
+            'plainDocblockBeforeUse' => [
+                'code' => '<?php
+                    /**
+                     * File header.
+                     */
+                    use Foo\Bar;',
+            ],
             'validDocblockReturn' => [
                 'code' => '<?php
                     /**

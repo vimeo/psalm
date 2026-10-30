@@ -304,10 +304,8 @@ class FileAnalyzer extends SourceAnalyzer
                     $namespace_analyzer->getAliasedClassesFlipped();
                 $this->namespace_aliased_classes_flipped_replaceable[$namespace_name] =
                     $namespace_analyzer->getAliasedClassesFlippedReplaceable();
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
-                $this->visitUse($stmt);
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
-                $this->visitGroupUse($stmt);
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_ || $stmt instanceof PhpParser\Node\Stmt\GroupUse) {
+                $this->visitAnyUse($stmt, $leftover_stmts);
             } else {
                 if ($stmt instanceof PhpParser\Node\Stmt\If_) {
                     foreach ($stmt->stmts as $if_stmt) {
