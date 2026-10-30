@@ -1044,7 +1044,7 @@ class Reconciler
 
     /**
      * The key `$x->m()` denotes a call without arguments, so the method's parameters take their defaults.
-     * Templates that neither defaults nor the receiver can bind would become `never`, so the declared type is kept.
+     * Templates that neither defaults nor the receiver can bind would become `never`, so they are left unbound.
      */
     private static function resolveZeroArgCallReturnType(
         Codebase $codebase,
@@ -1089,7 +1089,8 @@ class Reconciler
         }
 
         if (array_diff_key($method_storage->template_types ?? [], $defaulted_templates) !== []) {
-            return $return_type;
+            // with no template types, replaceTemplateTypes() doesn't bind the unbound ones to never
+            $template_result->template_types = [];
         }
 
         return MethodCallReturnTypeFetcher::replaceTemplateTypes(

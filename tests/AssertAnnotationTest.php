@@ -1795,6 +1795,125 @@ final class AssertAnnotationTest extends TestCase
                         return "empty";
                     }',
             ],
+            'memoizedCallWithUnboundMethodTemplateResolvesClassTemplate' => [
+                'code' => '<?php
+                    final class Item {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template T
+                     */
+                    class Box {
+                        /**
+                         * @template U
+                         * @return T|null
+                         */
+                        public function first() { throw new LogicException(); }
+
+                        /** @return T */
+                        public function firstOrFail() {
+                            if ($this->first() === null) {
+                                throw new LogicException();
+                            }
+                            $x = $this->first();
+                            /** @psalm-check-type-exact $x = T */;
+                            return $x;
+                        }
+
+                        /** @psalm-assert-if-false null $this->first() */
+                        public function isNotEmpty(): bool { return true; }
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     * @template V
+                     * @extends Box<list<V>>
+                     */
+                    final class ListBox extends Box {}
+
+                    /** @param Box<Item> $box */
+                    function check(Box $box): void {
+                        if ($box->first() === null) {
+                            throw new LogicException();
+                        }
+                        $x = $box->first();
+                        /** @psalm-check-type-exact $x = Item */;
+                    }
+
+                    /** @param ListBox<Item> $box */
+                    function checkInherited(ListBox $box): void {
+                        if ($box->first() === null) {
+                            throw new LogicException();
+                        }
+                        $x = $box->first();
+                        /** @psalm-check-type-exact $x = list<Item> */;
+                    }
+
+                    /** @param Box<Item> $box */
+                    function checkAsserted(Box $box): void {
+                        if ($box->isNotEmpty()) {
+                            $x = $box->first();
+                            /** @psalm-check-type-exact $x = Item */;
+                        }
+                    }',
+            ],
+            'memoizedCallWithUnboundMethodTemplateResolvesDefaultedOne' => [
+                'code' => '<?php
+                    final class Item {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template T
+                     */
+                    final class Box {
+                        /**
+                         * @template D
+                         * @template U
+                         * @param D $default
+                         * @return T|D
+                         */
+                        public function first($default = null) { throw new LogicException(); }
+                    }
+
+                    /** @param Box<Item> $box */
+                    function check(Box $box): void {
+                        if ($box->first() === null) {
+                            throw new LogicException();
+                        }
+                        $x = $box->first();
+                        /** @psalm-check-type-exact $x = Item */;
+                    }',
+            ],
+            'memoizedCallKeepsUnboundMethodTemplateOfReturnType' => [
+                'code' => '<?php
+                    final class Item {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template T
+                     */
+                    final class Box {
+                        /** @param T $item */
+                        public function __construct(public mixed $item) {}
+
+                        /**
+                         * @template U
+                         * @return T|U|null
+                         */
+                        public function first() { throw new LogicException(); }
+                    }
+
+                    $box = new Box(new Item());
+                    if ($box->first() === null) {
+                        throw new LogicException();
+                    }
+                    $x = $box->first();',
+                'assertions' => [
+                    '$x===' => 'Item|(U:fn-box::first as mixed)',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assertTemplatedIterable' => [
                 'code' => '<?php
                     class Foo{}
