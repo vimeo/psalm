@@ -1689,9 +1689,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[end($path_types)]]></code>
     </RiskyTruthyFalsyComparison>
-    <UnnecessaryVarAnnotation>
-      <code><![CDATA[DataFlowNode]]></code>
-    </UnnecessaryVarAnnotation>
   </file>
   <file src="src/Psalm/Internal/Codebase/VariableUseGraph.php">
     <ImmutableDependency>

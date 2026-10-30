@@ -23,6 +23,29 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'doWhileConditionOnVariableIncrementedAfterIt' => [
+                'code' => '<?php
+                    $v = 0;
+                    do {
+                        $foo = "a";
+                        if ($v > 0) {
+                            $foo .= sprintf("_%02d", $v);
+                        }
+                        $v++;
+                    } while (rand(1, 10) < 5);
+
+                    echo $foo;',
+            ],
+            'doWhileUsesVariableIncrementedAfterTheCondition' => [
+                'code' => '<?php
+                    $i = 0;
+                    do {
+                        if ($i > 0) {
+                            echo $i;
+                        }
+                        $i++;
+                    } while ($i < 10);',
+            ],
             'doWhileTrue' => [
                 'code' => '<?php
                     function ret(): int {
@@ -384,6 +407,15 @@ final class DoTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'doWhileBodyIssueIsReportedOnce' => [
+                'code' => '<?php
+                    $i = 0;
+                    do {
+                        echo $undefined;
+                        $i++;
+                    } while ($i < 3);',
+                'error_message' => 'UndefinedGlobalVariable',
+            ],
             'doWhileVarWithPossibleBreakWithoutDefining' => [
                 'code' => '<?php
                     do {
