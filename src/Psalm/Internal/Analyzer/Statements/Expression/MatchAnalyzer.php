@@ -218,6 +218,9 @@ final class MatchAnalyzer
             $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
         }
 
+        // the arms narrow the subject for what follows the match, but its exhaustiveness is judged on the type it had
+        $subject_type_before_arms = $switch_var_id !== null ? ($context->vars_in_scope[$switch_var_id] ?? null) : null;
+
         $v = ExpressionAnalyzer::analyze($statements_analyzer, $ternary, $context);
 
         if (!isset($suppressed_issues['RedundantCondition'])) {
@@ -283,10 +286,16 @@ final class MatchAnalyzer
             if ($reconcilable_types) {
                 $changed_var_ids = [];
 
+                $vars_in_scope_before_arms = $context->vars_in_scope;
+
+                if ($subject_type_before_arms) {
+                    $vars_in_scope_before_arms[$switch_var_id] = $subject_type_before_arms;
+                }
+
                 [$vars_in_scope_reconciled, $_] = Reconciler::reconcileKeyedTypes(
                     $reconcilable_types,
                     [],
-                    $context->vars_in_scope,
+                    $vars_in_scope_before_arms,
                     $context->references_in_scope,
                     $changed_var_ids,
                     [],

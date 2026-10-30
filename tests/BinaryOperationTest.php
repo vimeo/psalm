@@ -1135,6 +1135,102 @@ final class BinaryOperationTest extends TestCase
                     '$j' => 'int<100, 110>',
                 ],
             ],
+            'coalesceStatementWithThrowOrExitNarrowsTheLeftOperand' => [
+                'code' => '<?php
+                    /** @var ?string $a */
+                    $a = null;
+                    $a ?? throw new RuntimeException();
+                    $afterThrow = $a;
+
+                    /** @var ?string $b */
+                    $b = null;
+                    $b ?? exit(1);
+                    $afterExit = $b;',
+                'assertions' => [
+                    '$afterThrow===' => 'string',
+                    '$afterExit===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'ternaryWithAThrowingBranchNarrowsByTheOtherBranch' => [
+                'code' => '<?php
+                    /** @var ?string $a */
+                    $a = null;
+                    $a !== null ? 1 : throw new RuntimeException();
+                    $afterElseThrows = $a;
+
+                    /** @var ?string $b */
+                    $b = null;
+                    isset($b) ? 1 : throw new RuntimeException();
+                    $afterIsset = $b;
+
+                    /** @var ?string $c */
+                    $c = null;
+                    $c === null ? throw new RuntimeException() : 1;
+                    $afterIfThrows = $c;',
+                'assertions' => [
+                    '$afterElseThrows===' => 'string',
+                    '$afterIsset===' => 'string',
+                    '$afterIfThrows===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceWithThrowNarrowsAnArrayOffsetAndACallArgument' => [
+                'code' => '<?php
+                    /** @var array{k?: string} $arr */
+                    $arr = [];
+                    $arr["k"] ?? throw new RuntimeException();
+                    $offset = $arr["k"];
+
+                    /** @var ?int $n */
+                    $n = null;
+                    $length = abs($n ?? throw new RuntimeException());
+                    $afterCall = $n;',
+                'assertions' => [
+                    '$offset===' => 'string',
+                    '$afterCall===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'ternaryWithAThrowingBranchKeepsTheAssignmentOfTheOtherBranch' => [
+                'code' => '<?php
+                    /** @var bool $flag */
+                    $flag = true;
+                    $flag ? ($made = 5) : throw new RuntimeException();
+                    $afterAssignment = $made;',
+                'assertions' => [
+                    '$afterAssignment===' => '5',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'elvisWithThrowNarrowsByTheTypeCheck' => [
+                'code' => '<?php
+                    /** @var mixed $n */
+                    $n = 1;
+                    is_numeric($n) ?: throw new RuntimeException();
+                    $afterElvis = $n;',
+                'assertions' => [
+                    '$afterElvis===' => 'numeric',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'ternaryWithoutAThrowingBranchKeepsTheOriginalType' => [
+                'code' => '<?php
+                    /** @var ?string $a */
+                    $a = null;
+                    $a !== null ? 1 : 2;
+                    $unchanged = $a;',
+                'assertions' => [
+                    '$unchanged===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'coalesceFilterOutNullEvenWithTernary' => [
                 'code' => '<?php
 
