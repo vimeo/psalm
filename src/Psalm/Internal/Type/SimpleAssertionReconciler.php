@@ -93,6 +93,9 @@ use function strlen;
 use function strpos;
 use function strtolower;
 
+use const PHP_INT_MAX;
+use const PHP_INT_MIN;
+
 /**
  * This class receives a known type and an assertion (probably coming from AssertionFinder). The goal is to refine
  * the known type using the assertion. For example: old type is `int` assertion is `>5` result is `int<6, max>`.
@@ -1978,8 +1981,10 @@ final class SimpleAssertionReconciler extends Reconciler
         array         $suppressed_issues,
     ): Union {
         $existing_var_type = $existing_var_type->getBuilder();
+        // no integer is greater than PHP_INT_MAX, and adding 1 to it would give a float
+        $is_unreachable = $assertion->value === PHP_INT_MAX;
         //we add 1 from the assertion value because we're on a strict operator
-        $assertion_value = $assertion->value + 1;
+        $assertion_value = $is_unreachable ? PHP_INT_MAX : $assertion->value + 1;
 
         $redundant = true;
 
@@ -1992,7 +1997,10 @@ final class SimpleAssertionReconciler extends Reconciler
         }
 
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TIntRange) {
+            if ($is_unreachable && $atomic_type instanceof TInt) {
+                $redundant = false;
+                $existing_var_type->removeType($atomic_type->getKey());
+            } elseif ($atomic_type instanceof TIntRange) {
                 if ($atomic_type->contains($assertion_value)) {
                     // if the range contains the assertion, the range must be adapted
                     $redundant = false;
@@ -2086,8 +2094,10 @@ final class SimpleAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array         $suppressed_issues,
     ): Union {
+        // no integer is less than PHP_INT_MIN, and removing 1 from it would give a float
+        $is_unreachable = $assertion->value === PHP_INT_MIN;
         //we remove 1 from the assertion value because we're on a strict operator
-        $assertion_value = $assertion->value - 1;
+        $assertion_value = $is_unreachable ? PHP_INT_MIN : $assertion->value - 1;
         $existing_var_type = $existing_var_type->getBuilder();
 
         $redundant = true;
@@ -2101,7 +2111,10 @@ final class SimpleAssertionReconciler extends Reconciler
         }
 
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TIntRange) {
+            if ($is_unreachable && $atomic_type instanceof TInt) {
+                $redundant = false;
+                $existing_var_type->removeType($atomic_type->getKey());
+            } elseif ($atomic_type instanceof TIntRange) {
                 if ($atomic_type->contains($assertion_value)) {
                     // if the range contains the assertion, the range must be adapted
                     $redundant = false;
