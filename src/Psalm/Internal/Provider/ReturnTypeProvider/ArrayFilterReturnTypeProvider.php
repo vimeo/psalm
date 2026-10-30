@@ -69,7 +69,7 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
             $first_arg_array = $fallback;
         } else {
             $first_arg_type = $statements_source->node_data->getType($array_arg);
-            if (!$first_arg_type || $first_arg_type->isMixed()) {
+            if (!$first_arg_type || $first_arg_type->hasMixed()) {
                 $first_arg_array = $fallback;
             } else {
                 $first_arg_array = $first_arg_type->hasType('array')
