@@ -21,6 +21,39 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'privateMethodAnalysedFromTheConstructorIgnoresTheConditionsOfItsCaller' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    class Test {
+                        private string $pattern;
+
+                        public function __construct(string $pattern) {
+                            $this->captureErrors(fn(): bool => random_int(0, 1) ? true : false);
+                            $this->pattern = $pattern;
+                        }
+
+                        private function captureErrors(\\Closure $function): void {
+                            if ($function() === false) {
+                                throw new \\RuntimeException($this->formatPcreError(random_int(0, 1)));
+                            }
+
+                            $errorCode = preg_last_error();
+
+                            if ($errorCode !== 0) {
+                                throw new \\RuntimeException($this->formatPcreError($errorCode));
+                            }
+                        }
+
+                        private function formatPcreError(int $errorCode): string {
+                            if ($errorCode === 0) {
+                                return "Is Zero";
+                            }
+
+                            return "Not Zero";
+                        }
+                    }',
+            ],
             'nonStrictConditionOnMixedOrNull' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $owners */
