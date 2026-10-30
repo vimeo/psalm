@@ -1394,7 +1394,7 @@ final class InstancePropertyAssignmentAnalyzer
         }
 
         // a private property of the current class, assigned on an object of a child class
-        if ($context->self
+        if ($context->self !== null
             && $fq_class_name !== $context->self
             && !$codebase->propertyExists($property_id, false, $statements_analyzer, $context)
             && $codebase->classlikes->classExtends($fq_class_name, $context->self)
