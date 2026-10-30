@@ -132,7 +132,7 @@ final class FunctionCallReturnTypeFetcher
                         if (!isset($template_result->lower_bounds[$template_name])) {
                             if ($template_name === 'TFunctionArgCount') {
                                 $template_result->lower_bounds[$template_name] = [
-                                    'fn-' . $function_id => [
+                                    'fn-' . strtolower($function_id) => [
                                         new TemplateBound(
                                             Type::getInt(false, count($stmt->getArgs())),
                                         ),
@@ -140,7 +140,7 @@ final class FunctionCallReturnTypeFetcher
                                 ];
                             } elseif ($template_name === 'TPhpMajorVersion') {
                                 $template_result->lower_bounds[$template_name] = [
-                                    'fn-' . $function_id => [
+                                    'fn-' . strtolower($function_id) => [
                                         new TemplateBound(
                                             Type::getInt(false, $codebase->getMajorAnalysisPhpVersion()),
                                         ),
@@ -148,7 +148,7 @@ final class FunctionCallReturnTypeFetcher
                                 ];
                             } elseif ($template_name === 'TPhpVersionId') {
                                 $template_result->lower_bounds[$template_name] = [
-                                    'fn-' . $function_id => [
+                                    'fn-' . strtolower($function_id) => [
                                         new TemplateBound(
                                             Type::getInt(
                                                 false,
@@ -159,7 +159,7 @@ final class FunctionCallReturnTypeFetcher
                                 ];
                             } else {
                                 $template_result->lower_bounds[$template_name] = [
-                                    'fn-' . $function_id => [
+                                    'fn-' . strtolower($function_id) => [
                                         new TemplateBound(
                                             Type::getNever(),
                                         ),
