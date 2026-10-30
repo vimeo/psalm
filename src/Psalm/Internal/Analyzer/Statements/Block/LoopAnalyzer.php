@@ -623,6 +623,11 @@ final class LoopAnalyzer
             self::setLoopVars($inner_loop_context, $context, $loop_scope);
         }
 
+        if ($can_leave_loop && $pre_conditions) {
+            // the condition is evaluated before the loop is left, whatever happens in the body
+            self::setVarsAssignedInCondition($statements_analyzer, $pre_conditions[0], $context, $inner_loop_context);
+        }
+
         $for_context->loop_scope = null;
 
         if ($can_leave_loop) {
@@ -639,6 +644,49 @@ final class LoopAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * Defines the variables the expression assigns whenever it is evaluated, with the type of what they are assigned
+     */
+    private static function setVarsAssignedInCondition(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $expr,
+        Context $context,
+        Context $inner_loop_context,
+    ): void {
+        if ($expr instanceof PhpParser\Node\Expr\Assign) {
+            if ($expr->var instanceof PhpParser\Node\Expr\Variable && is_string($expr->var->name)) {
+                $var_id = '$' . $expr->var->name;
+                $assigned_type = $statements_analyzer->node_data->getType($expr->expr);
+
+                if ($assigned_type
+                    && !isset($context->vars_in_scope[$var_id])
+                    && isset($inner_loop_context->vars_in_scope[$var_id])
+                ) {
+                    // the type of the value, with the data flow of the variable
+                    $context->vars_in_scope[$var_id] = $assigned_type->setParentNodes(
+                        $inner_loop_context->vars_in_scope[$var_id]->parent_nodes,
+                    );
+                }
+            }
+
+            self::setVarsAssignedInCondition($statements_analyzer, $expr->expr, $context, $inner_loop_context);
+        } elseif ($expr instanceof PhpParser\Node\Expr\BooleanNot) {
+            self::setVarsAssignedInCondition($statements_analyzer, $expr->expr, $context, $inner_loop_context);
+        } elseif ($expr instanceof PhpParser\Node\Expr\BinaryOp) {
+            self::setVarsAssignedInCondition($statements_analyzer, $expr->left, $context, $inner_loop_context);
+
+            // the right operand of a short-circuiting operator may not be evaluated
+            if (!$expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                && !$expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                && !$expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+                && !$expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+                && !$expr instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
+            ) {
+                self::setVarsAssignedInCondition($statements_analyzer, $expr->right, $context, $inner_loop_context);
+            }
+        }
     }
 
     /**
