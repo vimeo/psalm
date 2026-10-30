@@ -875,6 +875,28 @@ final class ArrayFetchAnalyzer
             );
         }
 
+        // PHP turns a false offset into 0
+        if (!$context->inside_isset
+            && !$offset_type->ignore_falsable_issues
+            && isset($offset_type->getAtomicTypes()['false'])
+        ) {
+            $is_only_false = $offset_type->isSingle();
+
+            IssueBuffer::maybeAdd(
+                $is_only_false
+                    ? new InvalidArrayOffset(
+                        'Cannot access value on variable ' . $extended_var_id . ' using a false offset, which is 0',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    )
+                    : new PossiblyInvalidArrayOffset(
+                        'Cannot access value on variable ' . $extended_var_id
+                            . ' using possibly false offset ' . $offset_type->getId() . ', which is 0',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
         if ($offset_type->isNullable()) {
             if (!$offset_type->ignore_nullable_issues) {
                 IssueBuffer::maybeAdd(
