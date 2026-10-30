@@ -6,6 +6,7 @@ namespace Psalm\Tests;
 
 use Override;
 use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -37,6 +38,51 @@ final class AttributeTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testDeprecatedTraitMessageMatchesPhp(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.5', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                #[\Deprecated("use V", "1.0")]
+                trait Positional {}
+
+                #[\Deprecated(since: "1.0", message: "use W")]
+                trait Named {}
+
+                #[\Deprecated("")]
+                trait EmptyMessage {}
+
+                #[\Deprecated(since: "2.0")]
+                trait SinceOnly {}
+
+                final class U {
+                    use Positional, Named, EmptyMessage, SinceOnly;
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $messages = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'DeprecatedTrait') {
+                $messages[] = $issue->message;
+            }
+        }
+
+        $this->assertSame(
+            [
+                'Trait Positional is deprecated, use V',
+                'Trait Named is deprecated, use W',
+                'Trait EmptyMessage is deprecated',
+                'Trait SinceOnly is deprecated',
+            ],
+            $messages,
+        );
     }
 
     #[Override]
@@ -623,6 +669,30 @@ final class AttributeTest extends TestCase
                     trait Foo {}',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:23',
             ],
+            'missingAttributeOnNamespacedTrait' => [
+                'code' => '<?php
+                    namespace N;
+
+                    #[\Nope]
+                    trait T {}
+
+                    final class A {
+                        use T;
+                    }',
+                'error_message' => 'UndefinedAttributeClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:23',
+            ],
+            'namespacedTraitCannotBeAttributeClass' => [
+                'code' => '<?php
+                    namespace N {
+                        #[\Attribute]
+                        trait T {}
+                    }
+
+                    namespace {
+                        trait T {}
+                    }',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27',
+            ],
             'abstractClassCannotBeAttributeClass' => [
                 'code' => '<?php
                     #[Attribute]
@@ -919,6 +989,49 @@ final class AttributeTest extends TestCase
                 'error_message' => 'Attribute SensitiveParameter cannot be used on a method',
                 'ignored_issues' => [],
                 'php_version' => '8.2',
+            ],
+            'deprecatedAttributeOnTraitBeforePhp85' => [
+                'code' => '<?php
+                    #[\Deprecated("t")]
+                    trait T {}
+                ',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:23 - Attribute Deprecated cannot be used on a class',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'deprecatedAttributeOnClass' => [
+                'code' => '<?php
+                    #[\Deprecated("c")]
+                    class C {}
+                ',
+                'error_message' => 'Attribute Deprecated cannot be used on a class',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'deprecatedAttributeOnTrait' => [
+                'code' => '<?php
+                    #[\Deprecated("use Logger instead")]
+                    trait LegacyLogger {}
+
+                    final class Service {
+                        use LegacyLogger;
+                    }
+                ',
+                'error_message' => 'DeprecatedTrait - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29 - Trait LegacyLogger is deprecated, use Logger instead',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'userAttributeOnTraitWithInvalidTarget' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_METHOD)]
+                    final class OnlyMethods {}
+
+                    #[OnlyMethods]
+                    trait T {}
+                ',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:23 - Attribute OnlyMethods cannot be used on a class',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
             ],
         ];
     }
