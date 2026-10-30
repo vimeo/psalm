@@ -1909,20 +1909,18 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 }
             }
 
-            if ($codebase->collect_locations) {
-                if ($function_param->type_location !== $function_param->signature_type_location &&
-                    $function_param->signature_type_location &&
-                    $function_param->signature_type
-                ) {
-                    if ($function_param->signature_type->check(
-                        $this->source,
-                        $function_param->signature_type_location,
-                        $this->suppressed_issues,
-                        [],
-                        false,
-                    ) === false) {
-                        $check_stmts = false;
-                    }
+            if ($function_param->type_location !== $function_param->signature_type_location &&
+                $function_param->signature_type_location &&
+                $function_param->signature_type
+            ) {
+                if ($function_param->signature_type->check(
+                    $this->source,
+                    $function_param->signature_type_location,
+                    $this->suppressed_issues,
+                    [],
+                    false,
+                ) === false) {
+                    $check_stmts = false;
                 }
             }
 

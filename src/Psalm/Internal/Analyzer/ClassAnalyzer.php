@@ -970,7 +970,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if ($property_type_location && !$fleshed_out_type->isMixed()) {
+            if ($property_type_location && (!$fleshed_out_type->isMixed() || $property_storage->signature_type)) {
                 $stmt = array_filter(
                     $stmts,
                     static fn($stmt): bool => $stmt instanceof PhpParser\Node\Stmt\Property
@@ -1022,6 +1022,19 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                                     '\', should be \'' . $property_storage->signature_type . '\'',
                                 $property_type_location,
                             ),
+                        );
+                    }
+
+                    if ($property_storage->signature_type_location
+                        && $property_storage->type !== $property_storage->signature_type
+                    ) {
+                        /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
+                        $property_storage->signature_type->check(
+                            $statements_source,
+                            $property_storage->signature_type_location,
+                            $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
+                            [],
+                            false,
                         );
                     }
                 }
