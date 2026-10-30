@@ -153,6 +153,27 @@ final class Functions
         return $declaring_file_storage->functions[$function_id];
     }
 
+    /**
+     * Like getStorage(), for looking up a function referenced in a file outside of analysis (e.g. by the language
+     * server). Storage of builtin functions is only registered lazily during analysis, which may not have happened
+     * in this process, and never for functions only known from the callmap (e.g. of extensions not loaded here).
+     *
+     * @param non-empty-lowercase-string $function_id
+     */
+    public function getStorageForSymbolLookup(string $function_id, string $file_path): FunctionStorage
+    {
+        try {
+            return $this->getStorage(null, $function_id, $file_path, $file_path);
+        } catch (UnexpectedValueException $e) {
+            // a function declared for the file whose storage is missing is broken, not just unregistered
+            if (isset($this->file_storage_provider->get($file_path)->declaring_function_ids[$function_id])) {
+                throw $e;
+            }
+
+            return $this->reflection->createFunctionStorage($function_id) ?? throw $e;
+        }
+    }
+
     public function addGlobalFunction(string $function_id, FunctionStorage $storage): void
     {
         self::$stubbed_functions[strtolower($function_id)] = $storage;
