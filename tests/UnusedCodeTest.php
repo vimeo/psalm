@@ -441,6 +441,45 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'preIncrementUsedAsAnArrayKey' => [
+                'code' => '<?php
+                    /**
+                     * @return array<int, string>
+                     * @psalm-api
+                     */
+                    function f(): array {
+                        $i = -1;
+                        $array = [];
+                        $array[++$i] = "a";
+                        $array[++$i] = "b";
+
+                        return $array;
+                    }',
+            ],
+            'preDecrementUsedAsAnArrayKey' => [
+                'code' => '<?php
+                    /**
+                     * @return array<int, string>
+                     * @psalm-api
+                     */
+                    function f(): array {
+                        $i = 5;
+                        $array = [];
+                        $array[--$i] = "a";
+
+                        return $array;
+                    }',
+            ],
+            'preIncrementUsedAsAnArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-api
+                     */
+                    function f(): void {
+                        $i = 0;
+                        echo strlen((string) ++$i);
+                    }',
+            ],
             'usedExceptionsAreNotReported' => [
                 'code' => '<?php
                     /** @psalm-api */
@@ -1789,6 +1828,17 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'preIncrementAsAStatementIsUnused' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-api
+                     */
+                    function f(): void {
+                        $i = 0;
+                        ++$i;
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
             'unusedClass' => [
                 'code' => '<?php
                     final class A { }',

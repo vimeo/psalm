@@ -13,6 +13,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Node\Expr\BinaryOp\VirtualMinus;
 use Psalm\Node\Expr\BinaryOp\VirtualPlus;
 use Psalm\Node\Expr\VirtualAssign;
@@ -129,10 +130,20 @@ final class IncDecExpressionAnalyzer
             }
 
             if ($stmt instanceof PreInc || $stmt instanceof PreDec) {
-                $old_node_data->setType(
-                    $stmt,
-                    $statements_analyzer->node_data->getType($fake_assignment) ?? Type::getMixed(),
-                );
+                $pre_type = $statements_analyzer->node_data->getType($fake_assignment) ?? Type::getMixed();
+
+                $old_node_data->setType($stmt, $pre_type);
+
+                // the new value is what the expression evaluates to, so it is used when the expression is
+                if ($context->inside_general_use && $statements_analyzer->data_flow_graph) {
+                    foreach ($pre_type->parent_nodes as $parent_node) {
+                        $statements_analyzer->data_flow_graph->addPath(
+                            $parent_node,
+                            DataFlowNode::getForVariableUse(),
+                            'variable-use',
+                        );
+                    }
+                }
             }
 
             $statements_analyzer->node_data = $old_node_data;
