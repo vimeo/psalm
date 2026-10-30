@@ -813,6 +813,10 @@ final class FunctionLikeDocblockScanner
         $is_loose_equality = false;
         $is_strict_equality = false;
 
+        if ($assertion_type === '') {
+            return null;
+        }
+
         if ($assertion_type[0] === '!') {
             $is_negation = true;
             $assertion_type = substr($assertion_type, 1);

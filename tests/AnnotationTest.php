@@ -184,6 +184,15 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertionWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert * $x
+                     */
+                    function f(int $x): void {
+                        echo $x;
+                    }',
+            ],
             'nopType' => [
                 'code' => '<?php
                     $_a = "hello";
@@ -1470,6 +1479,18 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'returnTypeWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-return      * @return list<int>
+                         */
+                        public static function a(): array {
+                            return [];
+                        }
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
             'invalidClassMethodReturn' => [
                 'code' => '<?php
                     class C {
