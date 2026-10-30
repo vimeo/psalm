@@ -158,6 +158,11 @@ final class Context
     public bool $inside_conditional = false;
 
     /**
+     * Whether or not we're inside the argument of assert(), whose own check reports what its condition asserts
+     */
+    public bool $inside_assert = false;
+
+    /**
      * Whether or not we're inside an isset call
      *
      * Inside issets Psalm is more lenient about certain things
