@@ -696,6 +696,7 @@ Optional. A list of extensions to enable. By default, only extensions required b
 ```xml
 <enableExtensions>
   <extension name="decimal"/>
+  <extension name="imagick"/>
   <extension name="pdo"/>
 </enableExtensions>
 ```
