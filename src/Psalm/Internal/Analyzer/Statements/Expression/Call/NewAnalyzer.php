@@ -1368,6 +1368,15 @@ final class NewAnalyzer extends CallAnalyzer
             $can_extend,
         );
 
+        // the constructor of a class-string<A> is the constructor of A when it can't change in child classes
+        $class_string_class = self::getClassOfClassString($codebase, $context, $stmt_class_type);
+
+        if ($class_string_class !== null) {
+            $fq_class_name = $class_string_class;
+
+            return;
+        }
+
         if (!$has_single_class) {
             if ($new_type) {
                 $statements_analyzer->node_data->setType($stmt, $new_type);
@@ -1385,6 +1394,36 @@ final class NewAnalyzer extends CallAnalyzer
             return;
         }
     }
+    /**
+     * The class of a class-string<A> whose constructor is guaranteed to be the one of A
+     */
+    private static function getClassOfClassString(
+        Codebase $codebase,
+        Context $context,
+        Union $stmt_class_type,
+    ): ?string {
+        if (!$stmt_class_type->isSingle()) {
+            return null;
+        }
+
+        $class_string = $stmt_class_type->getSingleAtomic();
+
+        if (!$class_string instanceof TClassString
+            || $class_string instanceof TTemplateParamClass
+            || !$class_string->as_type
+            || !$codebase->classlikes->classExists($class_string->as_type->value, null, $context)
+        ) {
+            return null;
+        }
+
+        $storage = $codebase->classlike_storage_provider->get($class_string->as_type->value);
+
+        // the template arguments of the constructor call would replace the ones of the class-string
+        return $storage->preserve_constructor_signature && $storage->template_types === null
+            ? $class_string->as_type->value
+            : null;
+    }
+
     private static function getNewType(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
