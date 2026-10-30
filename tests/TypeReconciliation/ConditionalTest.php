@@ -21,6 +21,46 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullsafeMethodCallFalsyKeepsTheNullableVariable' => [
+                'code' => '<?php
+                    class C {
+                        public function isOne(): bool {
+                            return rand(0, 1) === 1;
+                        }
+                    }
+
+                    function f(?C $value): ?C {
+                        if ($value?->isOne()) {
+                            return $value;
+                        } elseif ($value?->isOne()) {
+                            return $value;
+                        }
+
+                        return $value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeMethodCallTruthyMakesTheVariableNotNull' => [
+                'code' => '<?php
+                    class C {
+                        public function isOne(): bool {
+                            return rand(0, 1) === 1;
+                        }
+                    }
+
+                    function f(?C $value): C {
+                        if ($value?->isOne()) {
+                            return $value;
+                        }
+
+                        return new C();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nonStrictConditionOnMixedOrNull' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $owners */
@@ -3475,6 +3515,25 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nullsafeMethodCallFalsyKeepsNullPossible' => [
+                'code' => '<?php
+                    class C {
+                        public function isOne(): bool {
+                            return rand(0, 1) === 1;
+                        }
+                    }
+
+                    function f(?C $value): C {
+                        if ($value?->isOne()) {
+                            return $value;
+                        }
+
+                        return $value;
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'makeNonNullableNull' => [
                 'code' => '<?php
                     class A { }
