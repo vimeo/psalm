@@ -198,9 +198,7 @@ final class TryAnalyzer
         ];
 
         $definitely_newly_assigned_var_ids = $newly_assigned_var_ids;
-
-        // the variables a catch of a try that always exits gave the context: the next catches add to them
-        $vars_set_by_catches = [];
+        $has_continuing_catch = false;
 
         /** @var int $i */
         foreach ($stmt->catches as $i => $catch) {
@@ -443,12 +441,28 @@ final class TryAnalyzer
                     $definitely_newly_assigned_var_ids,
                 );
 
+                // when the try block always ends, the first catch that goes on gives the variables, and the other
+                // ones are combined with it
+                $is_first_continuing_catch = $try_block_control_actions === [ScopeAnalyzer::ACTION_END]
+                    && !$has_continuing_catch;
+
+                if ($try_block_control_actions === [ScopeAnalyzer::ACTION_END] && $has_continuing_catch) {
+                    foreach ($context->vars_in_scope as $var_id => $type) {
+                        if (!isset($catch_context->vars_in_scope[$var_id])) {
+                            $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true, true);
+                        }
+                    }
+                }
+
+                $has_continuing_catch = true;
+
                 foreach ($catch_context->vars_in_scope as $var_id => $type) {
-                    if ($try_block_control_actions === [ScopeAnalyzer::ACTION_END]) {
-                        $context->vars_in_scope[$var_id] = isset($vars_set_by_catches[$var_id])
+                    if ($is_first_continuing_catch) {
+                        $context->vars_in_scope[$var_id] = $type;
+                    } elseif ($try_block_control_actions === [ScopeAnalyzer::ACTION_END]) {
+                        $context->vars_in_scope[$var_id] = isset($context->vars_in_scope[$var_id])
                             ? Type::combineUnionTypes($context->vars_in_scope[$var_id], $type)
-                            : $type;
-                        $vars_set_by_catches[$var_id] = true;
+                            : $type->setPossiblyUndefined(true, true);
                     } elseif (isset($context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->vars_in_scope[$var_id],
