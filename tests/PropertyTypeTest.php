@@ -1109,6 +1109,62 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'setInFinalMethodOfAParentClass' => [
+                'code' => '<?php
+                    abstract class Event {
+                        protected string $uniqueId;
+
+                        final protected function generateUniqueId(): void {
+                            $this->uniqueId = "test";
+                        }
+                    }
+
+                    final class SomeEvent extends Event {
+                        public function __construct(string $someValue) {
+                            $this->generateUniqueId();
+                        }
+                    }',
+            ],
+            'setInPrivateTraitMethodByAParentConstructor' => [
+                'code' => '<?php
+                    trait CreatedAt {
+                        protected DateTimeImmutable $createdAt;
+
+                        private function onCreated(): void {
+                            $this->createdAt = new DateTimeImmutable();
+                        }
+                    }
+
+                    class Foo {
+                        use CreatedAt;
+
+                        public function __construct() {
+                            $this->onCreated();
+                        }
+                    }
+
+                    class Bar extends Foo {}',
+            ],
+            'setInFinalTraitMethodByAParentConstructor' => [
+                'code' => '<?php
+                    trait Tr {
+                        protected int $a;
+
+                        final protected function set(): void {
+                            $this->a = 5;
+                        }
+                    }
+
+                    class B {
+                        use Tr;
+
+                        protected function __construct() {
+                            $this->set();
+                        }
+                    }
+
+                    final class Cl extends B {}',
+            ],
             'setInFinalClass' => [
                 'code' => '<?php
                     final class C
@@ -2903,6 +2959,67 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'notSetWhenTheChildOverridesTheMethodOfAParentClass' => [
+                'code' => '<?php
+                    abstract class Event {
+                        protected string $uniqueId;
+
+                        protected function generateUniqueId(): void {
+                            $this->uniqueId = "test";
+                        }
+                    }
+
+                    final class SomeEvent extends Event {
+                        protected function generateUniqueId(): void {}
+
+                        public function __construct() {
+                            $this->generateUniqueId();
+                        }
+                    }',
+                'error_message' => 'Property SomeEvent::$uniqueId is not defined in constructor',
+            ],
+            'notSetInFinalMethodOfAParentClassThatSetsAnotherProperty' => [
+                'code' => '<?php
+                    abstract class Event {
+                        protected string $uniqueId;
+
+                        protected string $when;
+
+                        final protected function generateUniqueId(): void {
+                            $this->uniqueId = "test";
+                        }
+                    }
+
+                    final class SomeEvent extends Event {
+                        public function __construct() {
+                            $this->generateUniqueId();
+                        }
+                    }',
+                'error_message' => 'Property SomeEvent::$when is not defined in constructor',
+            ],
+            'notSetByAParentConstructorThatTheChildDoesNotCall' => [
+                'code' => '<?php
+                    trait CreatedAt {
+                        protected DateTimeImmutable $createdAt;
+
+                        private function onCreated(): void {
+                            $this->createdAt = new DateTimeImmutable();
+                        }
+                    }
+
+                    class Foo {
+                        use CreatedAt;
+
+                        public function __construct() {
+                            $this->onCreated();
+                        }
+                    }
+
+                    class Bar extends Foo {
+                        public function __construct() {}
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:18',
+            ],
             'undefinedPropertyAssignment' => [
                 'code' => '<?php
                     class A {
