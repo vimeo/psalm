@@ -2702,8 +2702,6 @@
     <PossiblyInvalidArrayOffset>
       <code><![CDATA[$type_tokens[$i - 1]]]></code>
       <code><![CDATA[$type_tokens[$i - 1]]]></code>
-      <code><![CDATA[$type_tokens[$i - 1]]]></code>
-      <code><![CDATA[$type_tokens[$i - 1]]]></code>
     </PossiblyInvalidArrayOffset>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$parent_fqcln]]></code>
