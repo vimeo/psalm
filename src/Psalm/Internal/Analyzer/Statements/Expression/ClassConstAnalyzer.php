@@ -695,7 +695,12 @@ final class ClassConstAnalyzer
                 );
             }
 
-            if ($const_class_storage->final || $lhs_type_definite_class === true) {
+            if ($const_class_storage->final
+                || $lhs_type_definite_class === true
+                || (isset($const_class_storage->constants[$stmt->name->name])
+                    && $const_class_storage->constants[$stmt->name->name]->final
+                )
+            ) {
                 $stmt_type = $class_constant_type;
 
                 $statements_analyzer->node_data->setType($stmt, $stmt_type);
