@@ -21,6 +21,24 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'ternaryAfterIssetAndTypeCheckOfAnOffsetOfMixed' => [
+                'code' => '<?php
+                    /** @var mixed $array */
+                    $array = json_decode("{}", true);
+
+                    $text = isset($array["text"]) && is_string($array["text"]) ? $array["text"] : "";
+                    $number = isset($array["n"]) && is_int($array["n"]) ? $array["n"] : 0;
+
+                    /** @var mixed $other */
+                    $other = [];
+                    $kept = isset($other["text"]) ? $other["text"] : "";',
+                'assertions' => [
+                    '$text===' => 'string',
+                    '$number===' => 'int',
+                    '$kept===' => "''|mixed",
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
             'issetWithSimpleAssignment' => [
                 'code' => '<?php
                     $array = [];
