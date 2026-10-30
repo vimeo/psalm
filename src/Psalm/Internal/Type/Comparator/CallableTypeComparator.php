@@ -390,7 +390,9 @@ final class CallableTypeComparator
                 $callable = self::getCallableFromMethodId(
                     $codebase,
                     new MethodIdentifier(
-                        ltrim(substr($input_type_part->value, 0, $method_separator), '\\'),
+                        $codebase->classlikes->getUnAliasedName(
+                            ltrim(substr($input_type_part->value, 0, $method_separator), '\\'),
+                        ),
                         strtolower(substr($input_type_part->value, $method_separator + 2)),
                     ),
                     $container_type_part,

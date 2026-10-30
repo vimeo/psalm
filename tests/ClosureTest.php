@@ -724,6 +724,23 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'FirstClassCallable:StringStaticMethodOfAliasedClass' => [
+                'code' => '<?php
+                    class C {
+                        public static function sm(int $i): string {
+                            return (string) $i;
+                        }
+                    }
+
+                    class_alias(C::class, "Alias");
+
+                    $closure = "Alias::sm"(...);',
+                'assertions' => [
+                    '$closure' => 'Closure[impure](int):string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'FirstClassCallable:UndefinedStringStaticMethod' => [
                 'code' => '<?php
                     class C {}
