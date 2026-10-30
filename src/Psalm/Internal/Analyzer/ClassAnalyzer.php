@@ -970,7 +970,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if ($property_type_location && (!$fleshed_out_type->isMixed() || $property_storage->signature_type)) {
+            $has_docblock_over_signature = $property_storage->signature_type
+                && $property_storage->type !== $property_storage->signature_type;
+
+            if ($property_type_location && (!$fleshed_out_type->isMixed() || $has_docblock_over_signature)) {
                 $stmt = array_filter(
                     $stmts,
                     static fn($stmt): bool => $stmt instanceof PhpParser\Node\Stmt\Property
@@ -1026,7 +1029,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     }
 
                     if ($property_storage->signature_type_location
-                        && $property_storage->type !== $property_storage->signature_type
+                        && $has_docblock_over_signature
+                        && !$property_storage->signature_type->isMixed()
                     ) {
                         /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
                         $property_storage->signature_type->check(

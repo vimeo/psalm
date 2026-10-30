@@ -1911,7 +1911,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             if ($function_param->type_location !== $function_param->signature_type_location &&
                 $function_param->signature_type_location &&
-                $function_param->signature_type
+                $function_param->signature_type &&
+                !$function_param->signature_type->isMixed()
             ) {
                 if ($function_param->signature_type->check(
                     $this->source,
