@@ -1060,7 +1060,15 @@ final class AssignmentAnalyzer
         Context $context,
         ?PhpParser\Node\Stmt $from_stmt,
     ): bool {
+        // Usage through a reference held by a property or array item can't be tracked, so the referenced
+        // variable counts as used, like the value of a regular assignment to one.
+        $was_inside_general_use = $context->inside_general_use;
+        $context->inside_general_use = $was_inside_general_use
+            || $stmt->var instanceof PropertyFetch
+            || $stmt->var instanceof PhpParser\Node\Expr\StaticPropertyFetch
+            || $stmt->var instanceof ArrayDimFetch;
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context, false, null, null, null, true);
+        $context->inside_general_use = $was_inside_general_use;
 
         $lhs_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
@@ -1166,7 +1174,10 @@ final class AssignmentAnalyzer
         }
 
         $lhs_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
-        if (!$stmt->var instanceof ArrayDimFetch && !$stmt->var instanceof PropertyFetch) {
+        if (!$stmt->var instanceof ArrayDimFetch
+            && !$stmt->var instanceof PropertyFetch
+            && !$stmt->var instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
             // If left-hand-side is an array offset or object property, usage is too difficult to track,
             // so it's not registered as an unused variable (this mirrors behavior for non-references).
             $statements_analyzer->registerVariableAssignment(
