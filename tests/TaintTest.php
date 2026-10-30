@@ -2064,6 +2064,16 @@ final class TaintTest extends TestCase
                     }
                     echo (string) ($data["city"] ?? "");',
             ],
+            'dontTaintTheValueOfAKeyAWholeArrayDoesNotHaveInALoopThatChecksIt' => [
+                'code' => '<?php // --taint-analysis
+                    $data = $_GET;
+                    foreach ([1, 2] as $_) {
+                        if (array_key_exists("city", $data)) {
+                            $data["city"] = htmlspecialchars((string) $data["city"], ENT_QUOTES);
+                        }
+                    }
+                    echo (string) ($data["city"] ?? "");',
+            ],
             'dontTaintTheValueOfAKeyAWholeArrayHasNotSet' => [
                 'code' => '<?php // --taint-analysis
                     $data = $_GET;
@@ -8704,6 +8714,24 @@ final class TaintTest extends TestCase
                     $data = $_GET;
                     $hasCity = array_key_exists("city", $data) ? 1 : 0;
                     echo (string) ($data["city"] ?? "");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheKeysOfAWholeArrayCheckedAgainOverManyStatements' => [
+                'code' => '<?php
+                    function f(array $a): void {
+                        if (isset($a["x"])) {
+                            return;
+                        }
+                        $r1 = array_map("strval", is_array($a["k1"] ?? null) ? $a["k1"] : []);
+                        $r2 = array_map("strval", is_array($a["k2"] ?? null) ? $a["k2"] : []);
+                        $r3 = array_map("strval", is_array($a["k3"] ?? null) ? $a["k3"] : []);
+                        $r4 = array_map("strval", is_array($a["k4"] ?? null) ? $a["k4"] : []);
+                        $r5 = array_map("strval", is_array($a["k5"] ?? null) ? $a["k5"] : []);
+                        $r6 = array_map("strval", is_array($a["k6"] ?? null) ? $a["k6"] : []);
+                        echo $r6[0];
+                    }
+
+                    f($_GET);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintTheOtherValuesOfAWholeArrayIteratedOverNotHavingSetAKey' => [
