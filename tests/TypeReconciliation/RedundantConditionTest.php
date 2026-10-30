@@ -23,6 +23,23 @@ final class RedundantConditionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'identicalComparisonOfAShapeWithAListOfARangeOfItsValues' => [
+                'code' => '<?php
+                    /** @param list<int<1, max>> $ints */
+                    function one(int $i, array $ints): bool {
+                        return [$i] === $ints;
+                    }
+
+                    /** @param list<int<1, max>> $ints */
+                    function two(int $i, array $ints): bool {
+                        return [$i, $i] === $ints;
+                    }
+
+                    /** @param array{id: int, name?: string, ...<string, int>} $shape */
+                    function keyed(int $i, array $shape): bool {
+                        return ["id" => $i] === $shape;
+                    }',
+            ],
             'negatedInstanceofOfAGenericSubclassOnAnInterfaceWithTemplateArguments' => [
                 'code' => '<?php
                     /**
@@ -1045,6 +1062,36 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'identicalComparisonOfAShapeWithAListOfOtherValuesIsImpossible' => [
+                'code' => '<?php
+                    /** @param list<int<1, max>> $ints */
+                    function f(string $s, array $ints): bool {
+                        return [$s] === $ints;
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - list{string} cannot be identical to list<int<1, max',
+            ],
+            'identicalComparisonOfShapesWithOtherKeysIsImpossible' => [
+                'code' => '<?php
+                    function f(): bool {
+                        return ["a" => 1] === ["b" => 1];
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - array{b: 1} cannot be identical to array{a: 1',
+            ],
+            'identicalComparisonOfAShapeWithAMapOfOtherValuesIsImpossible' => [
+                'code' => '<?php
+                    /** @param array<string, string> $map */
+                    function f(int $i, array $map): bool {
+                        return ["id" => $i] === $map;
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - array{id: int} cannot be identical to array<string, string',
+            ],
+            'identicalComparisonOfAShapeWithAShorterOneIsImpossible' => [
+                'code' => '<?php
+                    function f(): bool {
+                        return [1, 2] === [3];
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - list{3} cannot be identical to list{1, 2',
+            ],
             'instanceofOfATemplateParamAlreadyNarrowedToTheClass' => [
                 'code' => '<?php
                     interface Node {}

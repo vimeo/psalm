@@ -7,6 +7,7 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Codebase;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Storage\Capabilities;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
@@ -24,6 +25,7 @@ use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -48,6 +50,7 @@ use function array_merge;
 use function array_values;
 use function assert;
 use function count;
+use function is_int;
 use function strtolower;
 
 /**
@@ -956,7 +959,57 @@ final class AtomicTypeComparator
             && !$second_comparison_result->to_string_cast
         ) || ($first_comparison_result->type_coerced
             && $second_comparison_result->type_coerced
+        ) || ($type1_part instanceof TKeyedArray
+            && $type2_part instanceof TKeyedArray
+            && self::canKeyedArraysBeIdentical($codebase, $type1_part, $type2_part)
         );
+    }
+
+    /**
+     * Whether some array could have the shape of both: each key that one of them requires is allowed by the other
+     * (as a key it declares, or by its fallback), and the values of such a key can be identical.
+     */
+    private static function canKeyedArraysBeIdentical(Codebase $codebase, TKeyedArray $first, TKeyedArray $second): bool
+    {
+        return self::keyedArrayRequirementsFit($codebase, $first, $second)
+            && self::keyedArrayRequirementsFit($codebase, $second, $first);
+    }
+
+    private static function keyedArrayRequirementsFit(Codebase $codebase, TKeyedArray $required, TKeyedArray $other): bool
+    {
+        foreach ($required->properties as $key => $property) {
+            if ($property->possibly_undefined) {
+                continue;
+            }
+
+            if (isset($other->properties[$key])) {
+                if (!UnionTypeComparator::canExpressionTypesBeIdentical(
+                    $codebase,
+                    $property,
+                    $other->properties[$key],
+                )) {
+                    return false;
+                }
+
+                continue;
+            }
+
+            if ($other->fallback_params === null) {
+                return false;
+            }
+
+            $key_type = new Union([is_int($key) ? new TLiteralInt($key) : Type::getAtomicStringFromLiteral($key)]);
+
+            [$fallback_key_type, $fallback_value_type] = $other->fallback_params;
+
+            if (!UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $key_type, $fallback_key_type)
+                || !UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $property, $fallback_value_type)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
