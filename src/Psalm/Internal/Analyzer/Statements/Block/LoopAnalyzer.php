@@ -776,6 +776,16 @@ final class LoopAnalyzer
                     }
                 }
             }
+
+            // variables defined in the loop body keep what a `continue` assigned them too
+            foreach ($loop_scope->possibly_defined_loop_vars as $var => $type) {
+                if ($continue_context->hasVariable($var)) {
+                    $continue_context->vars_in_scope[$var] = Type::combineUnionTypes(
+                        $continue_context->vars_in_scope[$var],
+                        $type,
+                    );
+                }
+            }
         }
 
         // merge vars possibly in scope at the end of each loop

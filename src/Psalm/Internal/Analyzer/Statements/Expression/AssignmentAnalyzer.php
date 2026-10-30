@@ -1557,7 +1557,6 @@ final class AssignmentAnalyzer
     /**
      * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $assign_var
      * @param list<VarDocblockComment> $var_comments
-     * @psalm-suppress ComplexMethod to be refactored
      */
     private static function analyzeDestructuringAssignment(
         StatementsAnalyzer $statements_analyzer,
