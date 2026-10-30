@@ -29,6 +29,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\PurityWildcardPaths;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\DeprecatedFunction;
@@ -87,6 +88,7 @@ use function is_string;
 use function preg_replace;
 use function reset;
 use function spl_object_id;
+use function str_contains;
 use function strpos;
 use function strtolower;
 
@@ -225,6 +227,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         if (!$is_first_class_callable) {
+            $template_result->template_types += $function_call_info->callable_template_types;
             if (isset($function_call_info->function_storage->template_types)) {
                 $template_result->template_types += $function_call_info->function_storage->template_types ?: [];
             }
@@ -266,7 +269,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $already_inferred_lower_bounds = $template_result->lower_bounds;
 
-        $template_result = new TemplateResult([], []);
+        $template_result = new TemplateResult($function_call_info->callable_template_types, []);
 
         // do this here to allow closure param checks
         if (!$is_first_class_callable && $function_call_info->function_params !== null) {
@@ -305,6 +308,17 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         );
 
         $template_result->lower_bounds = [...$template_result->lower_bounds, ...$already_inferred_lower_bounds];
+
+        if (!$is_first_class_callable
+            && $function_name instanceof PhpParser\Node\Expr
+            && $function_call_info->callable_template_types !== []
+            && ($stmt_type = $statements_analyzer->node_data->getType($real_stmt))
+        ) {
+            $statements_analyzer->node_data->setType(
+                $real_stmt,
+                TemplateInferredTypeReplacer::replace($stmt_type, $template_result, $codebase),
+            );
+        }
 
         if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {
             $stmt_type = FunctionCallReturnTypeFetcher::fetch(
@@ -353,6 +367,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
             if ($input_type = $type_provider->getType($function_name)) {
                 foreach ($input_type->getAtomicTypes() as $atomic_type) {
+                    if ($atomic_type instanceof TClosure) {
+                        $closure_types[] = $atomic_type;
+                        continue;
+                    }
                     $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
                         $codebase,
                         $atomic_type,
@@ -930,6 +948,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $has_valid_function_call_type = false;
 
             $var_atomic_types = $stmt_name_type->getAtomicTypes();
+            $callable_templates = $stmt_name_type->getTemplateTypes();
 
             $source = $statements_analyzer->getSource();
 
@@ -1045,6 +1064,21 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     }
 
                     if ($var_type_part->callable_id !== null) {
+                        $defining_function = $var_type_part->callable_id;
+                        if (str_contains($defining_function, '::')) {
+                            $method_id = MethodIdentifier::wrap($defining_function);
+                            if ($codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
+                                $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+                                $defining_function = strtolower((string) ($declaring_method_id ?? $method_id));
+                            }
+                        }
+                        foreach ($callable_templates as $template) {
+                            if ($template->defining_class === 'fn-' . $defining_function) {
+                                $name = $template->param_name;
+                                $function_call_info->callable_template_types[$name][$template->defining_class] =
+                                    $template->as;
+                            }
+                        }
                         // Collect every known underlying id. When the call target is a union of
                         // distinct callables, any of them may run, so the taint behavior of all
                         // of them is re-dispatched on invocation (an over-approximation, which is

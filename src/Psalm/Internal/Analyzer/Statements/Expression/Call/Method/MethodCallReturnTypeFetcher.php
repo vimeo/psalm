@@ -83,6 +83,7 @@ final class MethodCallReturnTypeFetcher
                     $method_storage->params,
                     $method_storage->return_type,
                     $method_storage->capabilities,
+                    callable_id: strtolower((string) ($declaring_method_id ?? $method_id)),
                 )]);
             }
 
