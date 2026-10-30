@@ -606,6 +606,9 @@ final class ArrayAnalyzer
         $config = $codebase->config;
 
         if ($item_value_type = $statements_analyzer->node_data->getType($item->value)) {
+            // the item exists in the array whether or not its value was possibly undefined
+            $item_value_type = $item_value_type->setPossiblyUndefined(false, false);
+
             if ($item_key_value !== null
                 && count($array_creation_info->property_types) <= $config->max_shaped_array_size
             ) {
