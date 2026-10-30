@@ -163,6 +163,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $function_name,
                 $context,
             );
+            $function_call_info->callable_template_types = self::getCallableTemplateTypes(
+                $codebase,
+                $function_call_info->callable_ids,
+                $statements_analyzer->node_data->getType($function_name),
+            );
 
             if ($function_call_info->function_exists === false) {
                 return true;
@@ -897,6 +902,34 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         return $function_call_info;
     }
 
+    /**
+     * @param array<non-empty-lowercase-string, true> $callable_ids
+     * @return array<string, array<string, Union>>
+     * @psalm-capabilities read-props
+     */
+    private static function getCallableTemplateTypes(Codebase $codebase, array $callable_ids, ?Union $type): array
+    {
+        $templates = $type?->getTemplateTypes() ?? [];
+        $template_types = [];
+        foreach ($callable_ids as $callable_id => $_) {
+            $defining_function = $callable_id;
+            if (str_contains($defining_function, '::')) {
+                $method_id = MethodIdentifier::wrap($defining_function);
+                if ($codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
+                    $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+                    $defining_function = strtolower((string) ($declaring_method_id ?? $method_id));
+                }
+            }
+            foreach ($templates as $template) {
+                if ($template->defining_class === 'fn-' . $defining_function) {
+                    $template_types[$template->param_name][$template->defining_class] = $template->as;
+                }
+            }
+        }
+
+        return $template_types;
+    }
+
     private static function getAnalyzeNamedExpression(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
@@ -948,7 +981,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $has_valid_function_call_type = false;
 
             $var_atomic_types = $stmt_name_type->getAtomicTypes();
-            $callable_templates = $stmt_name_type->getTemplateTypes();
 
             $source = $statements_analyzer->getSource();
 
@@ -1064,21 +1096,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     }
 
                     if ($var_type_part->callable_id !== null) {
-                        $defining_function = $var_type_part->callable_id;
-                        if (str_contains($defining_function, '::')) {
-                            $method_id = MethodIdentifier::wrap($defining_function);
-                            if ($codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
-                                $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
-                                $defining_function = strtolower((string) ($declaring_method_id ?? $method_id));
-                            }
-                        }
-                        foreach ($callable_templates as $template) {
-                            if ($template->defining_class === 'fn-' . $defining_function) {
-                                $name = $template->param_name;
-                                $function_call_info->callable_template_types[$name][$template->defining_class] =
-                                    $template->as;
-                            }
-                        }
                         // Collect every known underlying id. When the call target is a union of
                         // distinct callables, any of them may run, so the taint behavior of all
                         // of them is re-dispatched on invocation (an over-approximation, which is
