@@ -844,11 +844,25 @@ final class AssignmentAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
+        $type_location = null;
+
+        if ($var_comment->type_start
+            && $var_comment->type_end
+            && $var_comment->line_number
+        ) {
+            $type_location = new DocblockTypeLocation(
+                $statements_analyzer,
+                $var_comment->type_start,
+                $var_comment->type_end,
+                $var_comment->line_number,
+            );
+        }
+
         try {
             TypeChecker::checkDeferredIntersections(
                 $var_comment->type,
                 $statements_analyzer,
-                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $type_location ?? new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer->getSuppressedIssues(),
                 $context,
             );
@@ -869,7 +883,7 @@ final class AssignmentAnalyzer
             /** @psalm-suppress UnusedMethodCall This actually has the side effect of generating issues */
             $var_comment_type->check(
                 $statements_analyzer,
-                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $type_location ?? new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer->getSuppressedIssues(),
                 [],
                 false,
@@ -878,28 +892,14 @@ final class AssignmentAnalyzer
                 $context,
             );
 
-            $type_location = null;
-
-            if ($var_comment->type_start
-                && $var_comment->type_end
-                && $var_comment->line_number
-            ) {
-                $type_location = new DocblockTypeLocation(
+            if ($type_location && $codebase->alter_code) {
+                $codebase->classlikes->handleDocblockTypeInMigration(
+                    $codebase,
                     $statements_analyzer,
-                    $var_comment->type_start,
-                    $var_comment->type_end,
-                    $var_comment->line_number,
+                    $var_comment_type,
+                    $type_location,
+                    $context->calling_method_id,
                 );
-
-                if ($codebase->alter_code) {
-                    $codebase->classlikes->handleDocblockTypeInMigration(
-                        $codebase,
-                        $statements_analyzer,
-                        $var_comment_type,
-                        $type_location,
-                        $context->calling_method_id,
-                    );
-                }
             }
 
             if (!$var_comment->var_id || $var_comment->var_id === $var_id) {

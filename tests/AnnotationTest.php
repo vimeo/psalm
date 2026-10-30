@@ -1470,6 +1470,24 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'wrongCasingInAnInlineVarDocblockIsReportedAtTheDocblock' => [
+                'code' => '<?php
+                    class FooBar {}
+
+                    /** @var Foobar $obj */
+
+                    echo "the next statement";',
+                'error_message' => 'InvalidClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:30 - Class, interface or enum Foobar has wrong casing',
+            ],
+            'undefinedClassInAnInlineVarDocblockOfAnAssignmentIsReportedAtTheDocblock' => [
+                'code' => '<?php
+                    function f(): int { return 1; }
+
+                    /** @var Missing $x */
+                    $x = f();
+                    echo $x;',
+                'error_message' => 'UndefinedDocblockClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:30 - Docblock-defined class, interface or enum named Missing does not exist',
+            ],
             'invalidClassMethodReturn' => [
                 'code' => '<?php
                     class C {
