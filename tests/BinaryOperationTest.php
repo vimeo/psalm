@@ -1207,6 +1207,18 @@ final class BinaryOperationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'elvisWithThrowNarrowsByTheTypeCheck' => [
+                'code' => '<?php
+                    /** @var mixed $n */
+                    $n = 1;
+                    is_numeric($n) ?: throw new RuntimeException();
+                    $afterElvis = $n;',
+                'assertions' => [
+                    '$afterElvis===' => 'numeric',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'ternaryWithoutAThrowingBranchKeepsTheOriginalType' => [
                 'code' => '<?php
                     /** @var ?string $a */
