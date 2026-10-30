@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_column;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -47,6 +51,25 @@ final class ClassTest extends TestCase
         );
     }
 
+    public function testArrayOfClassStringChecksItsLiteralsAsClassNames(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param array<class-string> $input */
+                function f(array $input): void {}
+
+                f(["string"]);',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertContains('ReservedWord', array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'));
+    }
+
     /**
      * @psalm-pure
      */
@@ -54,6 +77,13 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayOfLiteralStringOrClassStringIsNotCheckedAsClassName' => [
+                'code' => '<?php
+                    /** @param array<"string"|"int"|class-string> $input */
+                    function f(array $input): void {}
+
+                    f(["string", Countable::class]);',
+            ],
             'overrideProtectedAccessLevelToPublic' => [
                 'code' => '<?php
                     class A {

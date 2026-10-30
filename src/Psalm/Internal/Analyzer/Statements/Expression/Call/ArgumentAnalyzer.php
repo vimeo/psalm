@@ -1530,6 +1530,7 @@ final class ArgumentAnalyzer
                 }
             } elseif ($param_type_part instanceof TArray
                 && $input_expr instanceof PhpParser\Node\Expr\Array_
+                && $param_type_part->type_params[1]->isSingle()
             ) {
                 foreach ($param_type_part->type_params[1]->getAtomicTypes() as $param_array_type_part) {
                     if ($param_array_type_part instanceof TClassString) {
