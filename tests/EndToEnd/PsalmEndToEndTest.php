@@ -16,6 +16,7 @@ use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
 use function getcwd;
+use function glob;
 use function is_dir;
 use function is_string;
 use function mkdir;
@@ -86,6 +87,12 @@ final class PsalmEndToEndTest extends TestCase
     {
         @unlink(self::$tmpDir . '/psalm.xml');
 
+        $baseline_files = glob(self::$tmpDir . '/*baseline*.xml');
+        assert($baseline_files !== false);
+        foreach ($baseline_files as $baseline_file) {
+            unlink($baseline_file);
+        }
+
         if (file_exists(self::$tmpDir . '/cache')) {
             self::recursiveRemoveDirectory(self::$tmpDir . '/cache');
         }
@@ -109,6 +116,35 @@ final class PsalmEndToEndTest extends TestCase
             $this->runPsalmInit()['STDOUT'],
         );
         $this->assertFileExists(self::$tmpDir . '/psalm.xml');
+    }
+
+    public function testInitReportsMissingAutoloadDirectoriesWithoutCrashing(): void
+    {
+        $project_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndMissingAutoload_');
+        assert($project_dir !== false);
+        unlink($project_dir);
+        mkdir($project_dir);
+
+        try {
+            file_put_contents(
+                $project_dir . '/composer.json',
+                '{"autoload": {"psr-4": {"App\\\\": "missing/"}}}',
+            );
+            mkdir($project_dir . '/vendor');
+            file_put_contents($project_dir . '/vendor/autoload.php', "<?php\n");
+
+            $process = new Process([PHP_BINARY, $this->psalm, '--init'], $project_dir, self::agentEnvVarsToUnset());
+            $process->run();
+        } finally {
+            self::recursiveRemoveDirectory($project_dir);
+        }
+
+        $this->assertSame(1, $process->getExitCode());
+        $this->assertStringContainsString(
+            'Could not located any PSR-0 or PSR-4-compatible paths',
+            $process->getErrorOutput(),
+        );
+        $this->assertStringNotContainsString('Uncaught', $process->getErrorOutput());
     }
 
     public function testAlter(): void
@@ -215,6 +251,31 @@ final class PsalmEndToEndTest extends TestCase
         $this->runPsalm(['--set-baseline=psalm-custom-baseline.xml'], self::$tmpDir, true);
 
         $this->assertSame(0, $this->runPsalm([], self::$tmpDir)['CODE']);
+    }
+
+    public function testPsalmSetBaselineWithUseBaselineKeepsConfig(): void
+    {
+        $this->runPsalmInit(1);
+        $this->runPsalm(['--set-baseline'], self::$tmpDir, true);
+        $config_before = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $other_baseline = self::$tmpDir . '/psalm-other-baseline.xml';
+
+        $this->runPsalm(['--use-baseline=' . $other_baseline, '--set-baseline=' . $other_baseline], self::$tmpDir);
+
+        $this->assertFileExists($other_baseline);
+        $this->assertSame($config_before, file_get_contents(self::$tmpDir . '/psalm.xml'));
+    }
+
+    public function testPsalmSetBaselineWithoutArgumentWritesUseBaselineFile(): void
+    {
+        $this->runPsalmInit(1);
+        $config_before = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $run_baseline = self::$tmpDir . '/psalm-run-baseline.xml';
+
+        $this->runPsalm(['--use-baseline=' . $run_baseline, '--set-baseline'], self::$tmpDir);
+
+        $this->assertFileExists($run_baseline);
+        $this->assertSame($config_before, file_get_contents(self::$tmpDir . '/psalm.xml'));
     }
 
     public function testTaintingWithoutInit(): void

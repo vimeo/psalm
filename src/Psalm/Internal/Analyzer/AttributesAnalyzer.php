@@ -74,8 +74,11 @@ final class AttributesAnalyzer
             $attribute_name = (string) $attribute->name;
             $attribute_name_location = new CodeLocation($source, $attribute->name);
 
+            // only the storage read resolves an alias: PHP checks repetition by the written name
             $attribute_class_storage = $codebase->classlikes->classExists($fq_attribute_name)
-                ? $codebase->classlike_storage_provider->get($fq_attribute_name)
+                ? $codebase->classlike_storage_provider->get(
+                    $codebase->classlikes->getUnAliasedName($fq_attribute_name),
+                )
                 : null;
 
             $attribute_class_flags = self::getAttributeClassFlags(
@@ -110,7 +113,14 @@ final class AttributesAnalyzer
                 $appearing_non_repeatable_attributes[$fq_attribute_name] = true;
             }
 
-            if (($attribute_class_flags & $target) === 0) {
+            // PHP 8.5 accepts #[\Deprecated] on traits (but still not on classes, interfaces or enums)
+            // through a special-case validator rather than via the attribute's declared targets.
+            $is_deprecated_on_trait = $fq_attribute_name === 'Deprecated'
+                && $storage instanceof ClassLikeStorage
+                && $storage->is_trait
+                && $codebase->analysis_php_version_id >= 8_05_00;
+
+            if (($attribute_class_flags & $target) === 0 && !$is_deprecated_on_trait) {
                 IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         "Attribute {$attribute_name} cannot be used on a "
@@ -383,7 +393,9 @@ final class AttributesAnalyzer
             return;
         }
 
-        $class_storage = $codebase->classlike_storage_provider->get($class_string->value);
+        $class_storage = $codebase->classlike_storage_provider->get(
+            $codebase->classlikes->getUnAliasedName($class_string->value),
+        );
         $arg_location = new CodeLocation($statements_analyzer, $arg);
         $class_attribute_target = self::getAttributeClassFlags(
             $statements_analyzer,

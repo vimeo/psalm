@@ -1143,6 +1143,7 @@ final class AssignmentAnalyzer
                 );
 
                 if (!$context->inside_conditional) {
+                    $context->possibly_assigned_var_ids[$var_id] = true;
                     $context->vars_in_scope[$var_id] = $by_ref_out_type;
 
                     if (!($stmt_type = $statements_analyzer->node_data->getType($stmt))
@@ -1595,7 +1596,8 @@ final class AssignmentAnalyzer
                 }
             }
 
-            if ($list_var_id) {
+            // an array-dim target (e.g. $a['b']) never enters the scope when its root var is undefined
+            if ($list_var_id && isset($context->vars_in_scope[$list_var_id])) {
                 if (($context->error_suppressing && ($offset || $can_be_empty))
                     || $has_null
                 ) {
