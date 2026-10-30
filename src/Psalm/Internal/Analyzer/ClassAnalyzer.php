@@ -81,6 +81,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -1028,18 +1029,24 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         );
                     }
 
-                    if ($property_storage->signature_type_location
-                        && $has_docblock_over_signature
-                        && !$property_storage->signature_type->isMixed()
-                    ) {
-                        /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
-                        $property_storage->signature_type->check(
-                            $statements_source,
-                            $property_storage->signature_type_location,
-                            $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
-                            [],
-                            false,
+                    if ($property_storage->signature_type_location && $has_docblock_over_signature) {
+                        // only the classes: the docblock type replaces the native one everywhere else
+                        $signature_classes = array_filter(
+                            $property_storage->signature_type->getAtomicTypes(),
+                            static fn(Atomic $atomic): bool => $atomic instanceof TNamedObject
+                                && !self::isReservedClassName($atomic->value),
                         );
+
+                        if ($signature_classes) {
+                            /** @psalm-suppress UnusedMethodCall This call has the side effect of creating issues */
+                            (new Union($signature_classes))->check(
+                                $statements_source,
+                                $property_storage->signature_type_location,
+                                $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
+                                [],
+                                false,
+                            );
+                        }
                     }
                 }
             }

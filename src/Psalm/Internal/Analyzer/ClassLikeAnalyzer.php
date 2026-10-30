@@ -261,6 +261,19 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * Whether the name is one of the type names that can't be a class name
+     *
+     * @psalm-pure
+     */
+    public static function isReservedClassName(string $fq_class_name): bool
+    {
+        return (bool) preg_match(
+            '/(^|\\\)(int|float|bool|string|void|null|false|true|object|mixed)$/i',
+            $fq_class_name,
+        ) || strtolower($fq_class_name) === 'resource';
+    }
+
+    /**
      * @param  array<string>    $suppressed_issues
      */
     public static function checkFullyQualifiedClassLikeName(
@@ -298,11 +311,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             return true;
         }
 
-        if (preg_match(
-            '/(^|\\\)(int|float|bool|string|void|null|false|true|object|mixed)$/i',
-            $fq_class_name,
-        ) || strtolower($fq_class_name) === 'resource'
-        ) {
+        if (self::isReservedClassName($fq_class_name)) {
             $class_name_parts = explode('\\', $fq_class_name);
             $class_name = array_pop($class_name_parts);
 
