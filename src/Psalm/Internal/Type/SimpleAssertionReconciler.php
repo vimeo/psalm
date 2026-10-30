@@ -1024,19 +1024,26 @@ final class SimpleAssertionReconciler extends Reconciler
                 $string_types[] = new TString;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasString() || $type->as->hasMixed() || $type->as->hasScalar()) {
-                    $type = $type->replaceAs(self::reconcileString(
+                if ($type->as->hasString()
+                    || $type->as->hasMixed()
+                    || $type->as->hasScalar()
+                    || $type->as->hasTemplate()
+                ) {
+                    $nested_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+                    $narrowed_as = self::reconcileString(
                         $assertion,
                         $type->as,
                         null,
                         false,
                         null,
                         $suppressed_issues,
-                        $failed_reconciliation,
+                        $nested_failed_reconciliation,
                         $is_equality,
-                    ));
+                    );
 
-                    $string_types[] = $type;
+                    if (!$narrowed_as->isNever()) {
+                        $string_types[] = $type->replaceAs($narrowed_as);
+                    }
                 }
 
                 $redundant = false;
@@ -1118,18 +1125,21 @@ final class SimpleAssertionReconciler extends Reconciler
                 $int_types[] = new TInt;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasInt() || $type->as->hasMixed()) {
-                    $type = $type->replaceAs(self::reconcileInt(
+                if ($type->as->hasInt() || $type->as->hasMixed() || $type->as->hasTemplate()) {
+                    $nested_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+                    $narrowed_as = self::reconcileInt(
                         $assertion,
                         $type->as,
                         null,
                         false,
                         null,
                         $suppressed_issues,
-                        $failed_reconciliation,
-                    ));
+                        $nested_failed_reconciliation,
+                    );
 
-                    $int_types[] = $type;
+                    if (!$narrowed_as->isNever()) {
+                        $int_types[] = $type->replaceAs($narrowed_as);
+                    }
                 }
 
                 $redundant = false;
@@ -1197,19 +1207,22 @@ final class SimpleAssertionReconciler extends Reconciler
                 $bool_types[] = new TBool;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasBool() || $type->as->hasMixed()) {
-                    $type = $type->replaceAs(self::reconcileBool(
+                if ($type->as->hasBool() || $type->as->hasMixed() || $type->as->hasTemplate()) {
+                    $nested_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+                    $narrowed_as = self::reconcileBool(
                         $assertion,
                         $type->as,
                         null,
                         false,
                         null,
                         $suppressed_issues,
-                        $failed_reconciliation,
+                        $nested_failed_reconciliation,
                         $is_equality,
-                    ));
+                    );
 
-                    $bool_types[] = $type;
+                    if (!$narrowed_as->isNever()) {
+                        $bool_types[] = $type->replaceAs($narrowed_as);
+                    }
                 }
 
                 $redundant = false;
@@ -1436,19 +1449,22 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($type instanceof Scalar) {
                 $scalar_types[] = $type;
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasScalarType() || $type->as->hasMixed()) {
-                    $type = $type->replaceAs(self::reconcileScalar(
+                if ($type->as->hasScalarType() || $type->as->hasMixed() || $type->as->hasTemplate()) {
+                    $nested_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+                    $narrowed_as = self::reconcileScalar(
                         $assertion,
                         $type->as,
                         null,
                         false,
                         null,
                         $suppressed_issues,
-                        $failed_reconciliation,
+                        $nested_failed_reconciliation,
                         $is_equality,
-                    ));
+                    );
 
-                    $scalar_types[] = $type;
+                    if (!$narrowed_as->isNever()) {
+                        $scalar_types[] = $type->replaceAs($narrowed_as);
+                    }
                 }
 
                 $redundant = false;
@@ -1537,19 +1553,22 @@ final class SimpleAssertionReconciler extends Reconciler
                 $numeric_types[] = new TInt();
                 $numeric_types[] = new TNumericString();
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasScalarType() || $type->as->hasMixed()) {
-                    $type = $type->replaceAs(self::reconcileNumeric(
+                if ($type->as->hasScalarType() || $type->as->hasMixed() || $type->as->hasTemplate()) {
+                    $nested_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+                    $narrowed_as = self::reconcileNumeric(
                         $assertion,
                         $type->as,
                         null,
                         false,
                         null,
                         $suppressed_issues,
-                        $failed_reconciliation,
+                        $nested_failed_reconciliation,
                         $is_equality,
-                    ));
+                    );
 
-                    $numeric_types[] = $type;
+                    if (!$narrowed_as->isNever()) {
+                        $numeric_types[] = $type->replaceAs($narrowed_as);
+                    }
                 }
 
                 $redundant = false;
@@ -2309,19 +2328,26 @@ final class SimpleAssertionReconciler extends Reconciler
 
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasArray() || $type->as->hasIterable() || $type->as->hasMixed()) {
-                    $type = $type->replaceAs(self::reconcileArray(
+                if ($type->as->hasArray()
+                    || $type->as->hasIterable()
+                    || $type->as->hasMixed()
+                    || $type->as->hasTemplate()
+                ) {
+                    $nested_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+                    $narrowed_as = self::reconcileArray(
                         $assertion,
                         $type->as,
                         null,
                         false,
                         null,
                         $suppressed_issues,
-                        $failed_reconciliation,
+                        $nested_failed_reconciliation,
                         $is_equality,
-                    ));
+                    );
 
-                    $array_types[] = $type;
+                    if (!$narrowed_as->isNever()) {
+                        $array_types[] = $type->replaceAs($narrowed_as);
+                    }
                 }
 
                 $redundant = false;
