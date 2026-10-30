@@ -665,7 +665,7 @@ final class ArgTest extends TestCase
                     function processUserDataInvalid(array $data) : User {
                         return new User(...$data);
                     }',
-                'error_message' => 'MixedArgument',
+                'error_message' => 'TooFewArguments',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
