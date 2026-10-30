@@ -1393,6 +1393,21 @@ final class InstancePropertyAssignmentAnalyzer
             }
         }
 
+        // a private property of the current class, assigned on an object of a child class
+        if ($context->self
+            && $fq_class_name !== $context->self
+            && !$codebase->propertyExists($property_id, false, $statements_analyzer, $context)
+            && $codebase->classlikes->classExtends($fq_class_name, $context->self)
+            && $codebase->propertyExists(
+                $context->self . '::$' . $prop_name,
+                false,
+                $statements_analyzer,
+                $context,
+            )
+        ) {
+            $property_id = $context->self . '::$' . $prop_name;
+        }
+
         if ($statements_analyzer->data_flow_graph
             && !$context->collect_initializations
             && !$context->collect_mutations
