@@ -146,6 +146,9 @@ final class OrAnalyzer
             $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
         }
 
+        // the classes checked with class_exists() on the left are checked on the right and after the condition too
+        $context->phantom_classes = array_merge($context->phantom_classes, $left_context->phantom_classes);
+
         $left_cond_id = spl_object_id($stmt->left);
 
         $left_clauses = FormulaGenerator::getFormula(
@@ -273,6 +276,8 @@ final class OrAnalyzer
         }
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
+
+        $context->phantom_classes = array_merge($context->phantom_classes, $right_context->phantom_classes);
 
         $right_referenced_var_ids = $right_context->cond_referenced_var_ids;
         $right_context->cond_referenced_var_ids = array_merge($pre_referenced_var_ids, $right_referenced_var_ids);
