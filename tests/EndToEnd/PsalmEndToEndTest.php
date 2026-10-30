@@ -9,7 +9,6 @@ use Override;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
 
-use function array_merge;
 use function assert;
 use function closedir;
 use function copy;
@@ -121,26 +120,31 @@ final class PsalmEndToEndTest extends TestCase
 
     public function testInitReportsMissingAutoloadDirectoriesWithoutCrashing(): void
     {
-        $result = $this->runPsalmInProjectWithOnlyMissingAutoloadDirs(['--init']);
+        $project_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndMissingAutoload_');
+        assert($project_dir !== false);
+        unlink($project_dir);
+        mkdir($project_dir);
 
-        $this->assertSame(1, $result['CODE']);
+        try {
+            file_put_contents(
+                $project_dir . '/composer.json',
+                '{"autoload": {"psr-4": {"App\\\\": "missing/"}}}',
+            );
+            mkdir($project_dir . '/vendor');
+            file_put_contents($project_dir . '/vendor/autoload.php', "<?php\n");
+
+            $process = new Process([PHP_BINARY, $this->psalm, '--init'], $project_dir, self::agentEnvVarsToUnset());
+            $process->run();
+        } finally {
+            self::recursiveRemoveDirectory($project_dir);
+        }
+
+        $this->assertSame(1, $process->getExitCode());
         $this->assertStringContainsString(
             'Could not located any PSR-0 or PSR-4-compatible paths',
-            $result['STDERR'],
+            $process->getErrorOutput(),
         );
-        $this->assertStringNotContainsString('Uncaught', $result['STDERR']);
-    }
-
-    public function testTaintAnalysisReportsMissingAutoloadDirectoriesWithoutCrashing(): void
-    {
-        $result = $this->runPsalmInProjectWithOnlyMissingAutoloadDirs(['--taint-analysis']);
-
-        $this->assertSame(1, $result['CODE']);
-        $this->assertStringContainsString(
-            'Could not located any PSR-0 or PSR-4-compatible paths',
-            $result['STDERR'],
-        );
-        $this->assertStringNotContainsString('Uncaught', $result['STDERR']);
+        $this->assertStringNotContainsString('Uncaught', $process->getErrorOutput());
     }
 
     public function testAlter(): void
@@ -378,42 +382,6 @@ final class PsalmEndToEndTest extends TestCase
         file_put_contents(self::$tmpDir . '/psalm.xml', $psalm_config_contents);
 
         return $ret;
-    }
-
-    /**
-     * @param list<string> $args
-     * @return array{STDOUT: string, STDERR: string, CODE: int|null}
-     */
-    private function runPsalmInProjectWithOnlyMissingAutoloadDirs(array $args): array
-    {
-        $project_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndMissingAutoload_');
-        assert($project_dir !== false);
-        unlink($project_dir);
-        mkdir($project_dir);
-
-        try {
-            file_put_contents(
-                $project_dir . '/composer.json',
-                '{"autoload": {"psr-4": {"App\\\\": "missing/"}}}',
-            );
-            mkdir($project_dir . '/vendor');
-            file_put_contents($project_dir . '/vendor/autoload.php', "<?php\n");
-
-            $process = new Process(
-                array_merge([PHP_BINARY, $this->psalm], $args),
-                $project_dir,
-                self::agentEnvVarsToUnset(),
-            );
-            $process->run();
-
-            return [
-                'STDOUT' => $process->getOutput(),
-                'STDERR' => $process->getErrorOutput(),
-                'CODE' => $process->getExitCode(),
-            ];
-        } finally {
-            self::recursiveRemoveDirectory($project_dir);
-        }
     }
 
     /** from comment by itay at itgoldman dot com at

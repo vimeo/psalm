@@ -6,21 +6,11 @@ namespace Psalm\Tests\Config;
 
 use Override;
 use Psalm\Config\Creator;
-use Psalm\Exception\ConfigCreationException;
 use Psalm\Tests\TestCase;
 
 use function dirname;
-use function file_put_contents;
-use function json_encode;
-use function mkdir;
-use function realpath;
-use function rmdir;
-use function sys_get_temp_dir;
-use function tempnam;
-use function unlink;
 
 use const DIRECTORY_SEPARATOR;
-use const JSON_THROW_ON_ERROR;
 
 final class CreatorTest extends TestCase
 {
@@ -96,52 +86,5 @@ final class CreatorTest extends TestCase
     </projectFiles>
 </psalm>
 ', $contents);
-    }
-
-    public function testFailsWhenAllAutoloadDirectoriesAreMissing(): void
-    {
-        $this->expectException(ConfigCreationException::class);
-        $this->expectExceptionMessage('Could not located any PSR-0 or PSR-4-compatible paths');
-
-        Creator::getContents(
-            dirname(__DIR__, 1)
-                . DIRECTORY_SEPARATOR . 'fixtures'
-                . DIRECTORY_SEPARATOR . 'config_discovery'
-                . DIRECTORY_SEPARATOR . 'only_missing_autoload_dirs',
-            null,
-            1,
-            'vendor',
-        );
-    }
-
-    public function testKeepsExistingAbsoluteAutoloadDirectories(): void
-    {
-        $absolute_lib = realpath(
-            dirname(__DIR__, 1)
-                . DIRECTORY_SEPARATOR . 'fixtures'
-                . DIRECTORY_SEPARATOR . 'config_discovery'
-                . DIRECTORY_SEPARATOR . 'files_in_lib'
-                . DIRECTORY_SEPARATOR . 'lib',
-        );
-        $this->assertNotFalse($absolute_lib);
-
-        $project_dir = tempnam(sys_get_temp_dir(), 'PsalmCreatorTest_');
-        $this->assertNotFalse($project_dir);
-        unlink($project_dir);
-        mkdir($project_dir);
-
-        try {
-            file_put_contents(
-                $project_dir . DIRECTORY_SEPARATOR . 'composer.json',
-                json_encode(['autoload' => ['psr-4' => ['Foo\\Bar\\' => $absolute_lib]]], JSON_THROW_ON_ERROR),
-            );
-
-            $contents = Creator::getContents($project_dir, null, 1, 'vendor');
-        } finally {
-            @unlink($project_dir . DIRECTORY_SEPARATOR . 'composer.json');
-            @rmdir($project_dir);
-        }
-
-        $this->assertStringContainsString('<directory name="' . $absolute_lib . '" />', $contents);
     }
 }

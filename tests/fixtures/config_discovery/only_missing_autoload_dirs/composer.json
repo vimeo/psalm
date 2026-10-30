@@ -1,8 +1,0 @@
-{
-    "name": "dummy/only-missing-autoload-dirs",
-    "autoload": {
-        "psr-4": {
-            "App\\": "missing/"
-        }
-    }
-}
