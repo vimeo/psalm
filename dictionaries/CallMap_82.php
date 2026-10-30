@@ -2448,7 +2448,7 @@ return array (
   'assert' => 
   array (
     0 => 'bool',
-    'assertion' => 'bool|int|string',
+    'assertion' => 'mixed',
     'description=' => 'Throwable|null|string',
   ),
   'assert_options' => 
