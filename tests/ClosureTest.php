@@ -896,6 +896,48 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'FirstClassCallable:InheritedMagicStaticMethod' => [
+                'code' => '<?php
+                    class ParentClass {
+                        public static function __callStatic(string $name, array $args): int { return 1; }
+                    }
+                    final class Child extends ParentClass {}
+                    $c = Child::foo(...);
+                ',
+                'assertions' => [
+                    '$c===' => 'Closure[impure]:int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InheritedStaticMethod:LiteralExpr' => [
+                'code' => '<?php
+                    class ParentClass {
+                        public static function inherited(string $s): int { return strlen($s); }
+                    }
+                    final class Child extends ParentClass {}
+                    $c = Child::{"inherited"}(...);
+                ',
+                'assertions' => [
+                    '$c===' => 'Closure[impure](string):int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InheritedInstanceMethod:LiteralExpr' => [
+                'code' => '<?php
+                    class ParentClass {
+                        public function inherited(string $s): int { return strlen($s); }
+                    }
+                    final class Child extends ParentClass {}
+                    $c = (new Child)->{"inherited"}(...);
+                ',
+                'assertions' => [
+                    '$c===' => 'Closure[impure](string):int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'FirstClassCallable:InheritedStaticMethod' => [
                 'code' => '<?php
 

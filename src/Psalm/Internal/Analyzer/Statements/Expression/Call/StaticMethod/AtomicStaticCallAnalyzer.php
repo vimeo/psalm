@@ -249,7 +249,9 @@ final class AtomicStaticCallAnalyzer
                             true,
                             $context->insideUse(),
                         )) {
-                            $method_storage = $codebase->methods->getStorage($method_identifier);
+                            $method_storage = $codebase->methods->getStorage(
+                                $codebase->methods->getDeclaringMethodId($method_identifier) ?? $method_identifier,
+                            );
 
                             $return_type_candidate = new Union([new TClosure(
                                 $method_storage->params,
@@ -536,7 +538,9 @@ final class AtomicStaticCallAnalyzer
                     $return_type_candidate = new Union([new TClosure(
                         null,
                         $codebase->getMethodReturnType($call_static_method_id, $fq_class_name),
-                        $codebase->methods->getStorage($call_static_method_id)->capabilities,
+                        $codebase->methods->getStorage(
+                            $codebase->methods->getDeclaringMethodId($call_static_method_id) ?? $call_static_method_id,
+                        )->capabilities,
                     )]);
                 } else {
                     if (IssueBuffer::accepts(
