@@ -23,7 +23,9 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TString;
 
+use function array_map;
 use function spl_object_id;
+use function strval;
 
 final class AlgebraTest extends TestCase
 {
@@ -261,5 +263,117 @@ final class AlgebraTest extends TestCase
         $result_clauses = Algebra::groupImpossibilities([$clause1, $clause2]);
 
         $this->assertCount(0, $result_clauses);
+    }
+
+    public function testSimplifyCNFLeavesImplicationsOut(): void
+    {
+        $falsy = new Falsy();
+        $formula = [
+            new Clause(['$k' => ['truthy' => new Truthy()]], 1, 1),
+            new Clause(['$k' => [(string) $falsy => $falsy], '$a' => ['truthy' => new Truthy()]], 1, 2, premise_var_id: '$k'),
+            new Clause(['$k' => ['truthy' => new Truthy()], '$b' => ['truthy' => new Truthy()]], 1, 3, premise_var_id: '$k'),
+        ];
+
+        $this->assertSame(
+            ['$k', '($a) || (!$k)', '($b) || ($k)'],
+            array_map(strval(...), Algebra::simplifyCNF($formula)),
+        );
+
+        $formula = [
+            new Clause(['$k' => [(string) $falsy => $falsy], '$a' => ['truthy' => new Truthy()]], 1, 1, premise_var_id: '$k'),
+            new Clause(['$k' => ['truthy' => new Truthy()], '$a' => ['truthy' => new Truthy()]], 1, 2),
+            new Clause(
+                ['$k' => [(string) $falsy => $falsy], '$a' => ['truthy' => new Truthy()], '$b' => ['truthy' => new Truthy()]],
+                1,
+                3,
+            ),
+        ];
+
+        $this->assertSame(
+            ['($a) || (!$k)', '($a) || ($k)', '($a) || ($b) || (!$k)'],
+            array_map(strval(...), Algebra::simplifyCNF($formula)),
+        );
+    }
+
+    public function testSimplifyCNFKeepsTheDuplicateNegateFormulaDoesntLeaveOut(): void
+    {
+        $simplified_formula = Algebra::simplifyCNF([
+            new Clause(['$a' => ['truthy' => new Truthy()]], 1, 1),
+            new Clause(['$a' => ['truthy' => new Truthy()]], 1, 2, implied: true),
+        ]);
+
+        $this->assertCount(1, $simplified_formula);
+        $this->assertFalse($simplified_formula[0]->implied);
+    }
+
+    public function testNegateFormulaKeepsImplications(): void
+    {
+        $falsy = new Falsy();
+        $formula = [
+            new Clause(['$k' => ['truthy' => new Truthy()]], 1, 1),
+            new Clause(['$a' => ['truthy' => new Truthy()]], 1, 1, implied: true),
+            new Clause(['$k' => [(string) $falsy => $falsy], '$a' => ['truthy' => new Truthy()]], 1, 1, premise_var_id: '$k'),
+            new Clause(['$k' => ['truthy' => new Truthy()], '$b' => ['truthy' => new Truthy()]], 1, 1, premise_var_id: '$k'),
+        ];
+
+        $negated_formula = Algebra::negateFormula($formula);
+
+        $this->assertSame(
+            ['!$k', '!$a', '($a) || (!$k)', '($b) || ($k)'],
+            array_map(strval(...), $negated_formula),
+        );
+        $this->assertSame(
+            [false, true, false, false],
+            array_map(static fn(Clause $clause): bool => $clause->implied, $negated_formula),
+        );
+        $this->assertSame(
+            ['$k', '$a', '($a) || (!$k)', '($b) || ($k)'],
+            array_map(strval(...), Algebra::negateFormula($negated_formula)),
+        );
+    }
+
+    public function testCombineOredClausesKeepsImplications(): void
+    {
+        $combined_formula = Algebra::combineOredClauses(
+            [new Clause(['$j' => ['truthy' => new Truthy()]], 1, 1)],
+            [
+                new Clause(['$k' => ['truthy' => new Truthy()]], 1, 2),
+                new Clause(['$a' => ['truthy' => new Truthy()]], 1, 2, implied: true),
+                new Clause(['$k' => ['truthy' => new Truthy()], '$b' => ['truthy' => new Truthy()]], 1, 2, premise_var_id: '$k'),
+            ],
+            1,
+        );
+
+        $this->assertSame(
+            ['($j) || ($k)', '($a) || ($j)', '($b) || ($k)'],
+            array_map(strval(...), $combined_formula),
+        );
+        $this->assertSame(
+            ['!$j', '!$k', '!$a', '!$j', '($b) || ($k)'],
+            array_map(strval(...), Algebra::negateFormula($combined_formula)),
+        );
+    }
+
+    public function testGetTruthsFromImplicationsOnlyConcludesFromTheirPremise(): void
+    {
+        $int = new IsType(new TInt());
+        $not_int = $int->getNegation();
+        $implication = new Clause(
+            ['$k' => ['truthy' => new Truthy()], '$b' => [(string) $int => $int]],
+            1,
+            1,
+            premise_var_id: '$k',
+        );
+
+        $falsy = new Falsy();
+
+        $this->assertSame(
+            ['$k' => [[$falsy]], '$b' => [[$int]]],
+            Algebra::getTruthsFromFormula([new Clause(['$k' => [(string) $falsy => $falsy]], 1, 2), $implication]),
+        );
+        $this->assertSame(
+            ['$b' => [[$not_int]]],
+            Algebra::getTruthsFromFormula([new Clause(['$b' => [(string) $not_int => $not_int]], 1, 2), $implication]),
+        );
     }
 }

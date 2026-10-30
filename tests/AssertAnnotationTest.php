@@ -159,6 +159,240 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'ifFalseAssertionsOfMethodCallWithSeveralAssertions' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    final class Item {}
+
+                    /** @template T */
+                    final class Coll
+                    {
+                        /** @param list<T> $items */
+                        public function __construct(private array $items) {}
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert-if-true 0 $this->count()
+                         * @psalm-assert-if-false T $this->first()
+                         * @psalm-assert-if-false positive-int $this->count()
+                         */
+                        public function isEmpty(): bool
+                        {
+                            return $this->items === [];
+                        }
+
+                        /**
+                         * @psalm-mutation-free
+                         * @return T|null
+                         */
+                        public function first()
+                        {
+                            return $this->items[0] ?? null;
+                        }
+
+                        /**
+                         * @psalm-mutation-free
+                         * @return int<0, max>
+                         */
+                        public function count(): int
+                        {
+                            return count($this->items);
+                        }
+
+                        public function clear(): void
+                        {
+                            $this->items = [];
+                        }
+                    }
+
+                    $c = new Coll([new Item()]);
+                    if ($c->isEmpty()) {
+                        throw new Exception();
+                    }
+                    $first = $c->first();
+                    $count = $c->count();
+                    $c->clear();
+                    $first_after_clear = $c->first();
+
+                    $d = new Coll([new Item()]);
+                    if (!$d->isEmpty()) {
+                        throw new Exception();
+                    }
+                    $d_first = $d->first();
+                    $d_count = $d->count();
+
+                    $e = new Coll([new Item()]);
+                    $else_first = $e->isEmpty() ? new Item() : $e->first();
+                    $and_first = rand(0, 1) && !$e->isEmpty() ? $e->first() : new Item();
+                    $or_first = rand(0, 1) || $e->isEmpty() ? new Item() : $e->first();
+                    $and_count = rand(0, 1) && $e->isEmpty() ? $e->count() : 0;
+
+                    $f = new Coll([new Item()]);
+                    if (rand(0, 1) && $f->isEmpty()) {
+                        throw new Exception();
+                    }
+                    if ($f->isEmpty()) {
+                        $checked_again_first = new Item();
+                    } else {
+                        $checked_again_first = $f->first();
+                    }',
+                'assertions' => [
+                    '$first===' => 'Item',
+                    '$count===' => 'int<1, max>',
+                    '$first_after_clear===' => 'Item|null',
+                    '$d_first===' => 'null',
+                    '$d_count===' => '0',
+                    '$else_first===' => 'Item',
+                    '$and_first===' => 'Item',
+                    '$or_first===' => 'Item',
+                    '$and_count===' => '0',
+                    '$checked_again_first===' => 'Item',
+                ],
+            ],
+            'ifTrueAndIfFalseAssertionsOfFunctionCallOnTheSameArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert-if-true !null $v
+                     * @psalm-assert-if-false string $v
+                     */
+                    function isInteger(int|string|null $v): bool
+                    {
+                        if ($v === null) {
+                            throw new InvalidArgumentException();
+                        }
+                        return is_int($v);
+                    }
+
+                    function intInEitherCase(int|string|null $v, bool $a, bool $b): int
+                    {
+                        if ((isInteger($v) && $a) || (isInteger($v) && $b)) {
+                            return $v;
+                        }
+                        return 0;
+                    }
+
+                    function reassignedOnTheRight(int|string|null $v, bool $b): int
+                    {
+                        if (isInteger($v) || (($v = 2) && $b)) {
+                            return 0;
+                        }
+                        return $v;
+                    }
+
+                    function getValue(int|string|null $value): int|string|null
+                    {
+                        return $value;
+                    }
+
+                    $v = getValue(1);
+                    if (isInteger($v)) {
+                        $int = $v;
+                        $string = "";
+                    } else {
+                        $int = 0;
+                        $string = $v;
+                    }
+
+                    $w = getValue(1);
+                    if ($w !== "" && isInteger($w)) {
+                        $string_or_null = "";
+                    } else {
+                        $string_or_null = $w;
+                    }
+
+                    $x = getValue(1);
+                    if ($x === "" || isInteger($x)) {
+                        $empty_or_int = $x;
+                    } else {
+                        $empty_or_int = 0;
+                    }',
+                'assertions' => [
+                    '$int===' => 'int',
+                    '$string===' => 'string',
+                    '$string_or_null===' => 'null|string',
+                    '$empty_or_int===' => "''|int|null",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertionsOfACallDontTellWhatItReturns' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    final class Pair
+                    {
+                        public function __construct(public int|string $a, public int|string $b) {}
+
+                        /**
+                         * @psalm-assert-if-false string $this->a
+                         * @psalm-assert-if-false int $this->b
+                         */
+                        public function isInvalid(): bool
+                        {
+                            return !is_string($this->a) || !is_int($this->b);
+                        }
+                    }
+
+                    $p = new Pair("name", "not an int");
+                    $invalid = null;
+                    if (rand(0, 1) || $p->isInvalid()) {
+                        if (is_string($p->a)) {
+                            $invalid = $p->isInvalid();
+                        }
+                    }',
+                'assertions' => [
+                    '$invalid===' => 'bool|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'ifFalseAssertionsOfFunctionAndStaticCallsOnSeveralArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert-if-false string $a
+                     * @psalm-assert-if-false int $b
+                     */
+                    function isInvalid(int|string $a, int|string $b): bool
+                    {
+                        return !is_string($a) || !is_int($b);
+                    }
+
+                    final class Validator
+                    {
+                        /**
+                         * @psalm-assert-if-false string $a
+                         * @psalm-assert-if-false int $b
+                         */
+                        public static function isInvalid(int|string $a, int|string $b): bool
+                        {
+                            return !is_string($a) || !is_int($b);
+                        }
+                    }
+
+                    function getValue(): int|string
+                    {
+                        return 1;
+                    }
+
+                    $a = getValue();
+                    $b = getValue();
+                    if (isInvalid($a, $b)) {
+                        throw new Exception();
+                    }
+
+                    $c = getValue();
+                    $d = getValue();
+                    if (Validator::isInvalid($c, $d)) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$a===' => 'string',
+                    '$b===' => 'int',
+                    '$c===' => 'string',
+                    '$d===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assertKeyOfAClassConstantNarrowsToItsKeys' => [
                 'code' => '<?php
                     final class OwnerTypes {

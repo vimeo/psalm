@@ -15,11 +15,16 @@ use Psalm\Internal\Clause;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\VirtualBooleanNot;
+use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\Truthy;
 
+use function array_filter;
 use function array_map;
+use function array_values;
 use function count;
+use function reset;
 use function spl_object_id;
+use function strcspn;
 use function substr;
 
 /**
@@ -108,10 +113,31 @@ final class FormulaGenerator
                             $clause->reconcilable,
                             $clause->generated,
                             [...$clause->redefined_vars, ...$right_assigned_var_ids],
+                            $clause->implied,
                         )
                         : $clause,
                     $right_clauses,
                 );
+
+                // nor can what a call on the left side asserts of the previous value hold where the right one runs
+                $left_clauses = array_values(array_filter(
+                    $left_clauses,
+                    static function (Clause $clause) use ($right_assigned_var_ids): bool {
+                        if ($clause->premise_var_id === null) {
+                            return true;
+                        }
+
+                        foreach ($clause->possibilities as $var_id => $_) {
+                            if (isset($right_assigned_var_ids[$var_id])
+                                || isset($right_assigned_var_ids[substr($var_id, 0, strcspn($var_id, '[-'))])
+                            ) {
+                                return false;
+                            }
+                        }
+
+                        return true;
+                    },
+                ));
             }
 
             return Algebra::combineOredClauses($left_clauses, $right_clauses, $conditional_object_id);
@@ -416,6 +442,26 @@ final class FormulaGenerator
             );
         }
 
+        if (($conditional instanceof PhpParser\Node\Expr\FuncCall
+                || $conditional instanceof PhpParser\Node\Expr\MethodCall
+                || $conditional instanceof PhpParser\Node\Expr\StaticCall)
+            && !$conditional->isFirstClassCallable()
+            && ($assertions_by_result = AssertionFinder::getCustomAssertionsByResult(
+                $conditional,
+                $this_class_name,
+                $source,
+            ))
+        ) {
+            return self::getCallResultFormula(
+                $conditional_object_id,
+                $creating_object_id,
+                $conditional,
+                $this_class_name,
+                $source,
+                ...$assertions_by_result,
+            );
+        }
+
         $anded_assertions = null;
 
         if ($cache && $source instanceof StatementsAnalyzer) {
@@ -481,6 +527,72 @@ final class FormulaGenerator
                 $creating_object_id,
             ),
         ];
+    }
+
+    /**
+     * The formula of a call's result: the call returns true, so what it asserts where it does holds, and, as for a
+     * call that asserts one thing, what it asserts where it returns false doesn't. Its implications from the result
+     * to each if-false assertion, ($call || if-false assertion), are kept as they are by negating the formula: what
+     * the call asserts where it returns false then holds there.
+     *
+     * @param list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>> $if_true_assertions
+     * @param non-empty-list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>> $if_false_assertions
+     * @return non-empty-list<Clause>
+     */
+    private static function getCallResultFormula(
+        int $conditional_object_id,
+        int $creating_object_id,
+        PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $conditional,
+        ?string $this_class_name,
+        FileSource $source,
+        array $if_true_assertions,
+        array $if_false_assertions,
+    ): array {
+        /** @psalm-suppress MixedOperand */
+        $call_id = ExpressionIdentifier::getExtendedVarId($conditional, $this_class_name, $source)
+            ?? '*' . $conditional->getAttribute('startFilePos') . ':' . $conditional->getAttribute('endFilePos');
+
+        $clauses = [new Clause([$call_id => ['truthy' => new Truthy()]], $conditional_object_id, $creating_object_id)];
+
+        foreach ([[$if_true_assertions, true], [$if_false_assertions, false]] as [$anded_assertions, $if_true]) {
+            foreach ($anded_assertions as $assertions) {
+                foreach ($assertions as $var_id => $anded_types) {
+                    foreach ($anded_types as $orred_types) {
+                        $mapped_orred_types = [];
+                        foreach ($orred_types as $orred_type) {
+                            $mapped_orred_types[(string) $orred_type] = $orred_type;
+                        }
+
+                        if (!$if_true) {
+                            $clauses[] = new Clause(
+                                [$call_id => ['truthy' => new Truthy()], $var_id => $mapped_orred_types],
+                                $conditional_object_id,
+                                $creating_object_id,
+                                generated: $orred_types[0]->hasEquality(),
+                                premise_var_id: $call_id,
+                            );
+
+                            if (count($orred_types) !== 1) {
+                                continue;
+                            }
+
+                            $negated_type = $orred_types[0]->getNegation();
+                            $mapped_orred_types = [(string) $negated_type => $negated_type];
+                        }
+
+                        $clauses[] = new Clause(
+                            [$var_id => $mapped_orred_types],
+                            $conditional_object_id,
+                            $creating_object_id,
+                            generated: reset($mapped_orred_types)->hasEquality(),
+                            implied: true,
+                        );
+                    }
+                }
+            }
+        }
+
+        return $clauses;
     }
 
     /**

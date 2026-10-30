@@ -10,6 +10,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use UnexpectedValueException;
 
+use function array_diff_key;
 use function array_filter;
 use function array_intersect_key;
 use function array_keys;
@@ -115,21 +116,28 @@ final class Algebra
 
         $cloned_clauses = [];
 
-        // avoid strict duplicates
+        // avoid strict duplicates, keeping the one negateFormula() doesn't leave out
         foreach ($clauses as $clause) {
-            $cloned_clauses[$clause->hash] = $clause;
+            if (!$clause->implied || !isset($cloned_clauses[$clause->hash])) {
+                $cloned_clauses[$clause->hash] = $clause;
+            }
         }
 
-        // remove impossible types
+        // remove impossible types. Implications take no part in this: they say nothing where their call wasn't
+        // made, and must stay what negateFormula() keeps
         foreach ($cloned_clauses as $clause_a_hash => $clause_a) {
-            if (!$clause_a->reconcilable || $clause_a->wedge) {
+            if (!$clause_a->reconcilable || $clause_a->wedge || $clause_a->premise_var_id !== null) {
                 continue;
             }
             $clause_a_keys = array_keys($clause_a->possibilities);
 
             if (count($clause_a->possibilities) !== 1 || count(array_values($clause_a->possibilities)[0]) !== 1) {
                 foreach ($cloned_clauses as $clause_b) {
-                    if ($clause_a === $clause_b || !$clause_b->reconcilable || $clause_b->wedge) {
+                    if ($clause_a === $clause_b
+                        || !$clause_b->reconcilable
+                        || $clause_b->wedge
+                        || $clause_b->premise_var_id !== null
+                    ) {
                         continue;
                     }
 
@@ -178,7 +186,11 @@ final class Algebra
             $negated_clause_type_string = (string)$negated_clause_type;
 
             foreach ($cloned_clauses as $clause_b_hash => $clause_b) {
-                if ($clause_a === $clause_b || !$clause_b->reconcilable || $clause_b->wedge) {
+                if ($clause_a === $clause_b
+                    || !$clause_b->reconcilable
+                    || $clause_b->wedge
+                    || $clause_b->premise_var_id !== null
+                ) {
                     continue;
                 }
 
@@ -228,6 +240,8 @@ final class Algebra
                     || !$clause_b->reconcilable
                     || $clause_b->wedge
                     || $clause_a->wedge
+                    || $clause_a->premise_var_id !== null
+                    || $clause_b->premise_var_id !== null
                 ) {
                     continue;
                 }
@@ -248,13 +262,17 @@ final class Algebra
         // simplify (A || X) && (!A || Y) && (X || Y)
         // to
         // simplify (A || X) && (!A || Y)
-        // where X and Y are sets of orred terms
+        // where X and Y are sets of orred terms, unless one is an implication: (X || Y) may say what nothing else does
         if ($clause_count > 2 && $clause_count < 256) {
             $clauses = array_values($simplified_clauses);
             for ($i = 0; $i < $clause_count; $i++) {
                 $clause_a = $clauses[$i];
                 for ($k = $i + 1; $k < $clause_count; $k++) {
                     $clause_b = $clauses[$k];
+                    if ($clause_a->premise_var_id !== null || $clause_b->premise_var_id !== null) {
+                        continue;
+                    }
+
                     $common_keys = array_keys(
                         array_intersect_key($clause_a->possibilities, $clause_b->possibilities),
                     );
@@ -326,6 +344,74 @@ final class Algebra
     }
 
     /**
+     * What implications conclude where single-assertion clauses rule out their premise: B from ($call || B) and
+     * (!$call). An implication never says anything of its premise, as what a call asserts can't tell what it
+     * returns.
+     *
+     * @param non-empty-list<Clause> $clauses
+     * @return list<Clause>
+     * @psalm-pure
+     */
+    private static function getImplicationConclusions(array $clauses): array
+    {
+        $implications = [];
+
+        foreach ($clauses as $clause) {
+            if ($clause->premise_var_id !== null && $clause->reconcilable) {
+                $implications[$clause->premise_var_id][] = $clause;
+            }
+        }
+
+        if (!$implications) {
+            return [];
+        }
+
+        $premise_assertions = [];
+
+        foreach ($clauses as $clause) {
+            if ($clause->reconcilable && count($clause->possibilities) === 1) {
+                foreach ($clause->possibilities as $var_id => $possibilities) {
+                    if (count($possibilities) === 1 && isset($implications[$var_id])) {
+                        $premise_assertions[$var_id][] = reset($possibilities);
+                    }
+                }
+            }
+        }
+
+        $conclusions = [];
+
+        foreach ($premise_assertions as $premise_var_id => $assertions) {
+            foreach ($implications[$premise_var_id] as $implication) {
+                $conclusion_possibilities = $implication->possibilities;
+                $premise_possibilities = $conclusion_possibilities[$premise_var_id];
+                unset($conclusion_possibilities[$premise_var_id]);
+
+                if (count($premise_possibilities) !== 1 || count($conclusion_possibilities) !== 1) {
+                    continue;
+                }
+
+                $premise_possibility = reset($premise_possibilities);
+
+                foreach ($assertions as $assertion) {
+                    if ($premise_possibility->isNegationOf($assertion)) {
+                        $conclusions[] = new Clause(
+                            $conclusion_possibilities,
+                            $implication->creating_conditional_id,
+                            $implication->creating_object_id,
+                            generated: $implication->generated,
+                            redefined_vars: $implication->redefined_vars,
+                        );
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $conclusions;
+    }
+
+    /**
      * Look for clauses with only one possible value
      *
      * doesn't infer the "unset" correctly
@@ -348,6 +434,12 @@ final class Algebra
 
         if ($clauses === []) {
             return [];
+        }
+
+        $conclusions = self::getImplicationConclusions($clauses);
+
+        if ($conclusions) {
+            $clauses = [...$clauses, ...$conclusions];
         }
 
         foreach ($clauses as $clause) {
@@ -596,6 +688,27 @@ final class Algebra
             return [];
         }
 
+        $left_implications = array_filter(
+            $left_clauses,
+            static fn(Clause $clause): bool => $clause->premise_var_id !== null,
+        );
+        $right_implications = array_filter(
+            $right_clauses,
+            static fn(Clause $clause): bool => $clause->premise_var_id !== null,
+        );
+
+        if ($left_implications || $right_implications) {
+            return [
+                ...self::combineOredClauses(
+                    array_values(array_diff_key($left_clauses, $left_implications)),
+                    array_values(array_diff_key($right_clauses, $right_implications)),
+                    $conditional_object_id,
+                ),
+                ...array_values($left_implications),
+                ...array_values($right_implications),
+            ];
+        }
+
         $clauses = [];
 
         $all_wedges = true;
@@ -681,6 +794,7 @@ final class Algebra
                         || count($left_clauses) > 1
                         || count($right_clauses) > 1,
                     [],
+                    $left_clause->implied || $right_clause->implied,
                 );
             }
         }
@@ -707,11 +821,59 @@ final class Algebra
      *   (!$a || !$c || !$e) &&
      *   (!$a || !$c || !$f)
      *
+     * Implications are kept as they are, and the formula is negated as two readings apart: with the results of its
+     * calls, leaving out implied clauses, and with what the calls assert in place of their results, made of the
+     * implied clauses and the others not about those results, whose negation is implied in turn.
+     *
      * @param list<Clause>  $clauses
      * @return non-empty-list<Clause>
      */
     public static function negateFormula(array $clauses): array
     {
+        $implications = [];
+        $premise_var_ids = [];
+
+        foreach ($clauses as $clause) {
+            if ($clause->premise_var_id !== null) {
+                $implications[] = $clause;
+                $premise_var_ids[$clause->premise_var_id] = true;
+            }
+        }
+
+        if ($implications) {
+            $reading_with_results = [];
+            $reading_with_assertions = [];
+
+            foreach ($clauses as $clause) {
+                if ($clause->premise_var_id !== null) {
+                    continue;
+                }
+
+                if (!$clause->implied) {
+                    $reading_with_results[] = $clause;
+                }
+
+                if ($clause->implied || !array_intersect_key($clause->possibilities, $premise_var_ids)) {
+                    $reading_with_assertions[] = $clause;
+                }
+            }
+
+            $negated_clauses = self::negateFormula($reading_with_results);
+
+            if ($reading_with_assertions) {
+                try {
+                    foreach (self::negateFormula($reading_with_assertions) as $clause) {
+                        if (!$clause->wedge) {
+                            $negated_clauses[] = $clause->setImplied();
+                        }
+                    }
+                } catch (ComplicatedExpressionException) {
+                }
+            }
+
+            return [...$negated_clauses, ...$implications];
+        }
+
         $reconcilable_clauses = array_filter(
             $clauses,
             static fn(Clause $clause): bool => $clause->reconcilable,
