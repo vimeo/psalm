@@ -250,12 +250,7 @@ final class MethodCallTest extends TestCase
 
                         return 0;
                     }
-
-                    function b(?P $p): void {
-                        if ($p?->next?->v !== null) {
-                            echo $p->v;
-                        }
-                    }',
+',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
@@ -1583,6 +1578,24 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nullsafeChainWithSeveralLinksNotIdenticalToNullDoesNotNarrowElseBranch' => [
+                'code' => '<?php
+                    final class P {
+                        public int $v = 0;
+                        public ?P $next = null;
+                    }
+
+                    function a(?P $p): void {
+                        if ($p?->next?->v !== null) {
+                            return;
+                        }
+
+                        echo $p->v;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'nullsafeMethodCallNotIdenticalToNullElseBranchIsNullReceiver' => [
                 'code' => '<?php
                     final class B {
