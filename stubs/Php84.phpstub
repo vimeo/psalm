@@ -70,4 +70,30 @@ namespace {
         /** @psalm-pure */
         public function isFinal(): bool {}
     }
+
+    /**
+     * @template TValue
+     * @template TArray as array<array-key, TValue>
+     *
+     * @param TArray $array
+     *
+     * @return (TArray is non-empty-array ? TValue : TValue|null)
+     * @since 8.5
+     * @psalm-pure
+     * @psalm-flow ($array) -(arrayvalue-fetch)-> return
+     */
+    function array_first(array $array) {}
+
+    /**
+     * @template TValue
+     * @template TArray as array<array-key, TValue>
+     *
+     * @param TArray $array
+     *
+     * @return (TArray is non-empty-array ? TValue : TValue|null)
+     * @since 8.5
+     * @psalm-pure
+     * @psalm-flow ($array) -(arrayvalue-fetch)-> return
+     */
+    function array_last(array $array) {}
 }
