@@ -35,6 +35,40 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'generatorThatThrowsInInfiniteLoop' => [
+                'code' => '<?php
+                    /**
+                     * @return Generator<int>
+                     */
+                    function events(): Generator {
+                        while (true) {
+                            if (rand(0, 1)) {
+                                throw new Exception("failed");
+                            }
+
+                            yield 1;
+                        }
+                    }',
+            ],
+            'generatorMethodThatThrowsInInfiniteLoop' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @return Generator<int>
+                         */
+                        public function events(): Generator {
+                            while (true) {
+                                if (rand(0, 1)) {
+                                    throw new Exception("failed");
+                                }
+
+                                foreach ([1, 2] as $event) {
+                                    yield $event;
+                                }
+                            }
+                        }
+                    }',
+            ],
             'wordPressHashNotationAfterReturnAndVarType' => [
                 'code' => '<?php
                     /**
