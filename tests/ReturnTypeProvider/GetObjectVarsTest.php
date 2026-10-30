@@ -121,6 +121,12 @@ final class GetObjectVarsTest extends TestCase
             'assertions' => [],
         ];
 
+        yield 'propertiesOfStdClassMayHaveIntKeys' => [
+            'code' => '<?php
+                $ret = get_object_vars(new stdClass());',
+            'assertions' => ['$ret===' => 'array<array-key, mixed>'],
+        ];
+
         yield 'propertiesOfCastScalar' => [
             'code' => '<?php $ret = get_object_vars((object)true);',
             'assertions' => ['$ret' => 'array{scalar: true}'],

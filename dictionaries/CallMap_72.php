@@ -26984,7 +26984,7 @@ return array (
   ),
   'get_object_vars' => 
   array (
-    0 => 'array<string, mixed>',
+    0 => 'array<array-key, mixed>',
     'obj' => 'object',
   ),
   'get_parent_class' => 

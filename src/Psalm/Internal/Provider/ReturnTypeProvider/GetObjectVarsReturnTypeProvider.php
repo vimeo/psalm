@@ -52,7 +52,8 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
         Context $context,
         CodeLocation $location,
     ): Atomic {
-        self::$fallback ??= new TArray([Type::getString(), Type::getMixed()]);
+        // the properties added to an object dynamically can have int keys (`(object) [1 => 'a']`)
+        self::$fallback ??= new TArray([Type::getArrayKey(), Type::getMixed()]);
 
         if ($first_arg_type->isSingle()) {
             $atomics = $first_arg_type->getAtomicTypes();
