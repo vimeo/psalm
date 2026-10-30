@@ -139,6 +139,29 @@ final class IntersectionTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
             ],
+            'intersectionOfTwoObjectShapesKeepsBothShapes' => [
+                'code' => '<?php
+                    /** @var object{a: int}&object{b: string} $x */
+                    $a = $x->a;
+                    $b = $x->b;',
+                'assertions' => [
+                    '$x===' => 'object{a:int}&object{b:string}',
+                    '$a===' => 'int',
+                    '$b===' => 'string',
+                ],
+            ],
+            'intersectionOfThreeObjectShapesKeepsAllShapes' => [
+                'code' => '<?php
+                    /** @var object{a: int}&object{b: string}&object{c: float} $x */
+                    $a = $x->a;
+                    $b = $x->b;
+                    $c = $x->c;',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'string',
+                    '$c===' => 'float',
+                ],
+            ],
             'objectShapePropertyOnFinalClassWithMagicGetter' => [
                 'code' => '<?php
                     final class Row {

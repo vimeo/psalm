@@ -121,8 +121,22 @@ final class AtomicPropertyFetchAnalyzer
         }
 
         if ($lhs_type_part instanceof TObjectWithProperties) {
-            if (!isset($lhs_type_part->properties[$prop_name])) {
-                return;
+            $shape = $lhs_type_part;
+
+            if (!isset($shape->properties[$prop_name])) {
+                // `object{a: int}&object{b: int}`: the property may be declared by another shape of the intersection
+                $shape = null;
+
+                foreach ($lhs_type_part->extra_types as $extra_type) {
+                    if ($extra_type instanceof TObjectWithProperties && isset($extra_type->properties[$prop_name])) {
+                        $shape = $extra_type;
+                        break;
+                    }
+                }
+
+                if ($shape === null) {
+                    return;
+                }
             }
 
             $has_valid_fetch_type = true;
@@ -134,7 +148,7 @@ final class AtomicPropertyFetchAnalyzer
                 Type::combineUnionTypes(
                     TypeExpander::expandUnion(
                         $statements_analyzer->getCodebase(),
-                        $lhs_type_part->properties[$prop_name],
+                        $shape->properties[$prop_name],
                         null,
                         null,
                         null,
