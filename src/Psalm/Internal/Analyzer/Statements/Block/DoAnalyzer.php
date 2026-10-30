@@ -12,7 +12,6 @@ use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\LoopScope;
-use Psalm\IssueBuffer;
 use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
@@ -172,16 +171,14 @@ final class DoAnalyzer
         if (!isset($suppressed_issues['TypeDoesNotContainType'])) {
             $statements_analyzer->addSuppressedIssues(['TypeDoesNotContainType']);
         }
+        // a branch only impossible in the first iteration is reachable in the next ones
+        if (!isset($suppressed_issues['NoValue'])) {
+            $statements_analyzer->addSuppressedIssues(['NoValue']);
+        }
 
         $do_context->loop_scope = $loop_scope;
 
-        // only the types after the body are wanted here: the loop analysis reports what is wrong in it
-        IssueBuffer::startRecording();
-
         $statements_analyzer->analyze($stmt->stmts, $do_context);
-
-        IssueBuffer::clearRecordingLevel();
-        IssueBuffer::stopRecording();
 
         if (!isset($suppressed_issues['RedundantCondition'])) {
             $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
@@ -191,6 +188,9 @@ final class DoAnalyzer
         }
         if (!isset($suppressed_issues['TypeDoesNotContainType'])) {
             $statements_analyzer->removeSuppressedIssues(['TypeDoesNotContainType']);
+        }
+        if (!isset($suppressed_issues['NoValue'])) {
+            $statements_analyzer->removeSuppressedIssues(['NoValue']);
         }
     }
 }

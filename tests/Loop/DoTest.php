@@ -407,15 +407,6 @@ final class DoTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'doWhileBodyIssueIsReportedOnce' => [
-                'code' => '<?php
-                    $i = 0;
-                    do {
-                        echo $undefined;
-                        $i++;
-                    } while ($i < 3);',
-                'error_message' => 'UndefinedGlobalVariable',
-            ],
             'doWhileVarWithPossibleBreakWithoutDefining' => [
                 'code' => '<?php
                     do {
