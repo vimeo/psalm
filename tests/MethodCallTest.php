@@ -205,6 +205,76 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'parentSelfAndStaticCallsReturnTheStaticTypeOfTheCallingClass' => [
+                'code' => '<?php
+                    abstract class Core {
+                        public function instance(): static {
+                            return $this;
+                        }
+
+                        public static function make(): static {
+                            /** @psalm-suppress UnsafeInstantiation */
+                            return new static();
+                        }
+                    }
+
+                    class Child extends Core {
+                        public function check(): void {
+                            $this->parentInstance = parent::instance();
+                            $this->parentStatic = parent::make();
+                            $this->selfStatic = self::make();
+                            $this->staticStatic = static::make();
+                        }
+
+                        /** @var mixed */
+                        public $parentInstance;
+                        /** @var mixed */
+                        public $parentStatic;
+                        /** @var mixed */
+                        public $selfStatic;
+                        /** @var mixed */
+                        public $staticStatic;
+
+                        public function parentInstanceReturn(): static {
+                            return parent::instance();
+                        }
+
+                        public static function parentStaticReturn(): static {
+                            return parent::make();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+            ],
+            'parentCallOfAStaticReturnTypeInAChildOfAGenericClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Box {
+                        public function same(): static {
+                            return $this;
+                        }
+                    }
+
+                    /** @extends Box<int> */
+                    class IntBox extends Box {
+                        public function same(): static {
+                            return parent::same();
+                        }
+                    }
+
+                    trait Chain {
+                        public function chain(): static {
+                            return parent::same();
+                        }
+                    }
+
+                    /** @extends Box<string> */
+                    class StringBox extends Box {
+                        use Chain;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+            ],
             'notInCallMapTest' => [
                 'code' => '<?php
                     new DOMImplementation();',

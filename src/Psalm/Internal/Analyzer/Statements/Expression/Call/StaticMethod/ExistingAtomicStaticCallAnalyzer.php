@@ -622,7 +622,7 @@ final class ExistingAtomicStaticCallAnalyzer
                 && $lhs_type_part instanceof TNamedObject
                 && $context->self
             ) {
-                $static_type = $context->self;
+                $static_type = new TNamedObject($context->self);
                 $context_final = $codebase->classlike_storage_provider->get($context->self)->final;
             } elseif ($context->calling_method_id !== null) {
                 // differentiate between these cases:
@@ -660,10 +660,12 @@ final class ExistingAtomicStaticCallAnalyzer
                 $class_storage->parent_class,
                 true,
                 false,
-                is_string($static_type)
-                && ($static_type !== $context->self
-                    || $class_storage->final
-                    || $context_final),
+                $static_type instanceof TNamedObject
+                    ? $class_storage->final || $context_final
+                    : is_string($static_type)
+                        && ($static_type !== $context->self
+                            || $class_storage->final
+                            || $context_final),
             );
 
             $secondary_return_type_location = null;
