@@ -82,6 +82,7 @@ use function array_values;
 use function assert;
 use function count;
 use function implode;
+use function is_array;
 use function ltrim;
 use function pathinfo;
 use function preg_match;
@@ -150,6 +151,7 @@ final class ClassLikeNodeScanner
         $class_name = null;
 
         $is_classlike_overridden = false;
+        $is_overriding_stub = false;
 
         if ($node->name === null) {
             if (!$node instanceof PhpParser\Node\Stmt\Class_) {
@@ -213,6 +215,7 @@ final class ClassLikeNodeScanner
                     || $class_location->getHash() !== $duplicate_storage->location->getHash()
                 ) {
                     $is_classlike_overridden = true;
+                    $is_overriding_stub = $duplicate_storage->stubbed;
                     // we're overwriting some methods
                     $storage = $this->storage = $duplicate_storage;
                     $this->codebase->classlike_storage_provider->makeNew(strtolower($fq_classlike_name));
@@ -263,8 +266,14 @@ final class ClassLikeNodeScanner
         if ($this->namespace_name) {
             $storage->namespace_name_location = new CodeLocation($this->file_scanner, $this->namespace_name);
         }
-        $storage->user_defined = !$this->codebase->register_stub_files;
-        $storage->stubbed = $this->codebase->register_stub_files;
+        $is_stub_file = $this->codebase->register_stub_files
+            && $this->codebase->scanner->isStubFile($this->file_path);
+        // Real files scanned during stub registration keep real-class flags;
+        // only a class a stub already defined keeps the stub flags.
+        if ($is_stub_file || !$is_overriding_stub) {
+            $storage->user_defined = !$is_stub_file;
+            $storage->stubbed = $is_stub_file;
+        }
         $storage->aliases = $this->aliases;
 
         if ($node instanceof PhpParser\Node\Stmt\Class_) {
@@ -818,6 +827,21 @@ final class ClassLikeNodeScanner
                     $storage->deprecated = true;
                 }
 
+                if ($attribute->fq_class_name === 'Deprecated') {
+                    foreach ($attribute->args as $i => $arg) {
+                        if (($arg->name ?? ($i === 0 ? 'message' : null)) === 'message'
+                            && $arg->type instanceof Union
+                            && $arg->type->isSingleStringLiteral()
+                        ) {
+                            $message = $arg->type->getSingleStringLiteral()->value;
+
+                            if ($message !== '') {
+                                $storage->deprecated_message = $message;
+                            }
+                        }
+                    }
+                }
+
                 if ($attribute->fq_class_name === 'Psalm\\Internal' && !$storage->internal) {
                     $storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name)];
                 }
@@ -1327,7 +1351,8 @@ final class ClassLikeNodeScanner
         $config = $this->config;
 
         if ($comment && $comment->getText() && ($config->use_docblock_types || $config->use_docblock_property_types)) {
-            $comments = DocComment::parsePreservingLength($comment);
+            // unknown @psalm- tags are reported by CommentAnalyzer::getTypeFromComment() below
+            $comments = DocComment::parsePreservingLength($comment, true);
 
             if (isset($comments->tags['deprecated'])) {
                 $deprecated = true;
@@ -1576,10 +1601,17 @@ final class ClassLikeNodeScanner
 
             $comment = $stmt->getDocComment();
             if ($comment) {
-                $comments = DocComment::parsePreservingLength($comment);
+                try {
+                    $comments = DocComment::parsePreservingLength($comment);
 
-                if (isset($comments->tags['deprecated'])) {
-                    $case->deprecated = true;
+                    if (isset($comments->tags['deprecated'])) {
+                        $case->deprecated = true;
+                    }
+                } catch (DocblockParseException $e) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        $e->getMessage(),
+                        $case_location,
+                    );
                 }
             }
             $storage->enum_cases[$stmt->name->name] = $case;
@@ -1730,7 +1762,7 @@ final class ClassLikeNodeScanner
             $property_storage->has_default = (bool)$property->default;
             $property_storage->deprecated = $var_comment ? $var_comment->deprecated : false;
             $property_storage->since_php_version_id = $comment
-                ? $this->parseSincePhpVersionId(DocComment::parsePreservingLength($comment))
+                ? $this->parseSincePhpVersionId(DocComment::parsePreservingLength($comment, true))
                 : null;
             $property_storage->suppressed_issues = $var_comment ? $var_comment->suppressed_issues : [];
             $property_storage->internal = $var_comment ? $var_comment->psalm_internal : [];
@@ -1836,7 +1868,7 @@ final class ClassLikeNodeScanner
             $storage->declaring_property_ids[$property->name->name] = $fq_classlike_name;
             $storage->appearing_property_ids[$property->name->name] = $property_id;
 
-            if ($property_is_initialized) {
+            if ($property_is_initialized || self::isVirtualProperty($stmt, $property->name->name)) {
                 $storage->initialized_properties[$property->name->name] = true;
             }
 
@@ -1927,6 +1959,72 @@ final class ClassLikeNodeScanner
                 }
             }
         }
+    }
+
+    /**
+     * A hooked property is virtual, and so has no value to initialize, when none of its hooks
+     * reads or writes `$this->propertyName` outside a nested function or class.
+     * A short `set => expr;` hook assigns to the property, so it makes the property backed.
+     */
+    private static function isVirtualProperty(PhpParser\Node\Stmt\Property $stmt, string $property_name): bool
+    {
+        if (!$stmt->hooks) {
+            return false;
+        }
+
+        foreach ($stmt->hooks as $hook) {
+            if ($hook->body instanceof PhpParser\Node\Expr && $hook->name->toLowerString() === 'set') {
+                return false;
+            }
+
+            if ($hook->body !== null && self::nodesUseProperty([$hook->body], $property_name)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param array<array-key, mixed> $nodes
+     */
+    private static function nodesUseProperty(array $nodes, string $property_name): bool
+    {
+        foreach ($nodes as $node) {
+            if (is_array($node)) {
+                if (self::nodesUseProperty($node, $property_name)) {
+                    return true;
+                }
+
+                continue;
+            }
+
+            if (!$node instanceof PhpParser\Node) {
+                continue;
+            }
+
+            if (($node instanceof PhpParser\Node\Expr\PropertyFetch
+                    || $node instanceof PhpParser\Node\Expr\NullsafePropertyFetch)
+                && $node->var instanceof PhpParser\Node\Expr\Variable
+                && $node->var->name === 'this'
+                && (($node->name instanceof Identifier && $node->name->name === $property_name)
+                    || ($node->name instanceof PhpParser\Node\Scalar\String_ && $node->name->value === $property_name))
+            ) {
+                return true;
+            }
+
+            if ($node instanceof PhpParser\Node\FunctionLike || $node instanceof PhpParser\Node\Stmt\ClassLike) {
+                continue;
+            }
+
+            foreach ($node->getSubNodeNames() as $sub_node_name) {
+                if (self::nodesUseProperty([$node->$sub_node_name], $property_name)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**

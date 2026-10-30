@@ -2328,7 +2328,7 @@ final class Config
             if (str_starts_with($file_path, 'phar:\\\\')) {
                 $file_path = 'phar://'. substr($file_path, 7);
             }
-            $codebase->scanner->addFileToDeepScan($file_path);
+            $codebase->scanner->addStubFileToDeepScan($file_path);
         }
 
         $progress->debug('Registering preloaded stub files' . "\n");
@@ -2431,7 +2431,7 @@ final class Config
             if (str_starts_with($file_path, 'phar:\\\\')) {
                 $file_path = 'phar://' . substr($file_path, 7);
             }
-            $codebase->scanner->addFileToDeepScan($file_path);
+            $codebase->scanner->addStubFileToDeepScan($file_path);
         }
 
         $progress->debug('Registering stub files' . "\n");

@@ -515,6 +515,141 @@ final class ClassTest extends TestCase
                     class_alias(A::class, B::class);
                     B::$prop = 123;',
             ],
+            'classAliasInterfaceMethodCall' => [
+                'code' => '<?php
+                    interface NewI {}
+                    class_alias(NewI::class, OldI::class);
+
+                    class A implements OldI {
+                        public function foo(): void {}
+                    }
+
+                    function action(A $a): void {
+                        $a->foo();
+                    }',
+            ],
+            'classAliasEnumCase' => [
+                'code' => '<?php
+                    enum Suit { case Hearts; }
+                    class_alias(Suit::class, "SuitAlias");
+
+                    $case = SuitAlias::Hearts;',
+                'assertions' => [
+                    '$case===' => 'enum(Suit::Hearts)',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classAliasEnumCaseThroughClassString' => [
+                'code' => '<?php
+                    enum Suit { case Hearts; }
+                    class_alias(Suit::class, "SuitAlias");
+
+                    /** @param SuitAlias::class $enum */
+                    function hearts(string $enum): Suit {
+                        return $enum::Hearts;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classAliasClassLiteralKeepsAliasSpelling' => [
+                'code' => '<?php
+                    enum Suit {}
+                    class_alias(Suit::class, "SuitAlias");
+                    interface HasLabel {}
+                    class_alias(HasLabel::class, "LabelAlias");
+
+                    $enum = SuitAlias::class;
+                    $interface = LabelAlias::class;',
+                'assertions' => [
+                    '$enum===' => 'SuitAlias::class',
+                    '$interface===' => 'LabelAlias::class',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classAliasInterfaceConstant' => [
+                'code' => '<?php
+                    interface HasLabel {
+                        /** @var string */
+                        public const LABEL = "x";
+                    }
+                    class_alias(HasLabel::class, "LabelAlias");
+
+                    function f(): string {
+                        return LabelAlias::LABEL;
+                    }',
+            ],
+            'classAliasAttribute' => [
+                'code' => '<?php
+                    #[Attribute]
+                    final class Tag {}
+                    class_alias(Tag::class, "TagAlias");
+
+                    #[Tag, TagAlias]
+                    final class Tagged {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classAliasTraitInitializedInConstructor' => [
+                'code' => '<?php
+                    trait Greets {
+                        private string $greeting;
+                        private function init(): void {
+                            $this->greeting = "hi";
+                        }
+                    }
+                    class_alias(Greets::class, "GreetsAlias");
+
+                    final class Greeter {
+                        use GreetsAlias;
+                        public function __construct() {
+                            $this->init();
+                        }
+                    }',
+            ],
+            'classAliasPropertiesOf' => [
+                'code' => '<?php
+                    final class Row {
+                        public int $id = 1;
+                    }
+                    class_alias(Row::class, "RowAlias");
+
+                    /** @param properties-of<RowAlias> $p */
+                    function id(array $p): int {
+                        return $p["id"];
+                    }',
+            ],
+            'classAliasImportType' => [
+                'code' => '<?php
+                    /** @psalm-type Row = array{id: int} */
+                    final class Rows {}
+                    class_alias(Rows::class, "RowsAlias");
+
+                    /** @psalm-import-type Row from RowsAlias */
+                    final class UsesRow {
+                        /** @param Row $r */
+                        public function id(array $r): int {
+                            return $r["id"];
+                        }
+                    }',
+            ],
+            'classAliasImportTypeInIntersection' => [
+                'code' => '<?php
+                    /** @psalm-type Row = array{id: int} */
+                    final class Rows {}
+                    class_alias(Rows::class, "RowsAlias");
+
+                    /** @psalm-import-type Row from RowsAlias */
+                    final class UsesRow {
+                        /** @param Row&array{name: string} $r */
+                        public function id(array $r): int {
+                            return $r["id"];
+                        }
+                    }',
+            ],
             'resourceAndNumericSoftlyReserved' => [
                 'code' => '<?php
                     namespace {
@@ -1509,6 +1644,57 @@ final class ClassTest extends TestCase
                     PHP,
                 'error_message' => 'DuplicateProperty',
                 'ignored_issues' => [],
+            ],
+            'classAliasRepeatedNonRepeatableAttribute' => [
+                'code' => '<?php
+                    #[Attribute]
+                    final class Tag {}
+                    class_alias(Tag::class, "TagAlias");
+
+                    #[TagAlias, TagAlias]
+                    final class Tagged {}',
+                'error_message' => 'Attribute TagAlias is not repeatable',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classAliasDocblockConstant' => [
+                'code' => '<?php
+                    final class Level {
+                        public const A = "a";
+                        public const B = "b";
+                    }
+                    class_alias(Level::class, "LevelAlias");
+
+                    /** @param LevelAlias::A|LevelAlias::B $v */
+                    function f(string $v): void {}
+                    f("c");',
+                'error_message' => 'expects \'a\'|\'b\', but \'c\' provided',
+            ],
+            'classAliasReflectionGetAttributes' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_METHOD)]
+                    final class Tag {}
+                    class_alias(Tag::class, "TagAlias");
+
+                    final class Tagged {}
+                    (new ReflectionClass(Tagged::class))->getAttributes("TagAlias");',
+                'error_message' => 'Attribute TagAlias cannot be used on a class',
+                'ignored_issues' => ['ArgumentTypeCoercion'],
+                'php_version' => '8.0',
+            ],
+            'classAliasCallableArray' => [
+                'code' => '<?php
+                    final class Num {
+                        public static function twice(int $i): int {
+                            return $i * 2;
+                        }
+                    }
+                    class_alias(Num::class, "NumAlias");
+
+                    /** @param callable(string):int $f */
+                    function takeWrong(callable $f): void {}
+                    takeWrong(["NumAlias", "twice"]);',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }

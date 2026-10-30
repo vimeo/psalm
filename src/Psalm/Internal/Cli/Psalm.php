@@ -444,6 +444,8 @@ final class Psalm
         if ($for_scan) {
             if (isset($options['scan-threads'])) {
                 $threads = max(1, (int)$options['scan-threads']);
+            } elseif (isset($options['threads'])) {
+                $threads = max(1, (int)$options['threads']);
             } elseif (isset($options['debug']) || $in_ci) {
                 $threads = 1;
             } elseif ($config->scan_threads) {
@@ -741,7 +743,8 @@ final class Psalm
 
         fwrite(STDERR, "Baseline saved to $error_baseline.");
 
-        if ($error_baseline !== $config->error_baseline) {
+        // --use-baseline selects a baseline for this run only, so the config must keep its own
+        if ($error_baseline !== $config->error_baseline && !isset($options['use-baseline'])) {
             CliUtils::updateConfigFile(
                 $config,
                 $path_to_config ?? $current_dir,
@@ -1153,7 +1156,13 @@ final class Psalm
             $init_source_dir = $args[0] ?? null;
 
             echo "Calculating best config level based on project files\n";
-            Creator::createBareConfig($current_dir, $init_source_dir, $vendor_dir);
+            try {
+                Creator::createBareConfig($current_dir, $init_source_dir, $vendor_dir);
+            } catch (ConfigCreationException $e) {
+                fwrite(STDERR, $e->getMessage() . PHP_EOL);
+                exit(1);
+            }
+
             $config = Config::getInstance();
             $config->setComposerClassLoader($first_autoloader);
         } else {
@@ -1182,14 +1191,6 @@ final class Psalm
     ): array {
         $issue_baseline = [];
 
-        if (isset($options['set-baseline'])) {
-            if ($paths_to_check !== null) {
-                fwrite(STDERR, PHP_EOL . 'Cannot generate baseline when checking specific files' . PHP_EOL);
-                exit(1);
-            }
-            $issue_baseline = self::generateBaseline($options, $config, $current_dir, $path_to_config);
-        }
-
         if (isset($options['use-baseline'])) {
             if (!is_string($options['use-baseline'])) {
                 fwrite(STDERR, '--use-baseline must be a string' . PHP_EOL);
@@ -1200,6 +1201,14 @@ final class Psalm
             $config->error_baseline = $baseline_file_path;
         } else {
             $baseline_file_path = $config->error_baseline;
+        }
+
+        if (isset($options['set-baseline'])) {
+            if ($paths_to_check !== null) {
+                fwrite(STDERR, PHP_EOL . 'Cannot generate baseline when checking specific files' . PHP_EOL);
+                exit(1);
+            }
+            $issue_baseline = self::generateBaseline($options, $config, $current_dir, $path_to_config);
         }
 
         if (isset($options['update-baseline'])) {

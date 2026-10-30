@@ -1637,6 +1637,93 @@ final class AssertAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'assertOnGenericMethodResolvesClassTemplate' => [
+                'code' => '<?php
+                    final class Item {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template T
+                     */
+                    final class Box {
+                        /** @return T|null */
+                        public function first() { throw new LogicException(); }
+
+                        /** @psalm-assert-if-false null $this->first() */
+                        public function isNotEmpty(): bool { return true; }
+                    }
+
+                    /** @param Box<Item> $box */
+                    function check(Box $box): void {
+                        if ($box->isNotEmpty()) {
+                            $x = $box->first();
+                            /** @psalm-check-type-exact $x = Item */;
+                        }
+                    }',
+            ],
+            'assertOnConditionalReturnResolvesLikeCallWithoutArguments' => [
+                'code' => '<?php
+                    final class Item {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template T
+                     */
+                    final class Box {
+                        /**
+                         * @template D
+                         * @param D|(Closure(): D)|null $default
+                         * @return ($default is Closure ? D : (D|T))
+                         */
+                        public function first($default = null) { throw new LogicException(); }
+
+                        /** @psalm-assert-if-false null $this->first() */
+                        public function isNotEmpty(): bool { return true; }
+                    }
+
+                    /** @param Box<Item> $box */
+                    function check(Box $box): void {
+                        if ($box->isNotEmpty()) {
+                            $x = $box->first();
+                            /** @psalm-check-type-exact $x = Item */;
+                        } else {
+                            $y = $box->first();
+                            /** @psalm-check-type-exact $y = null */;
+                        }
+                    }',
+            ],
+            'assertOnIfThisIsMethodKeepsDeclaredReturnType' => [
+                'code' => '<?php
+                    final class Item {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template T
+                     */
+                    final class Box {
+                        /**
+                         * @template U
+                         * @psalm-if-this-is Box<U>
+                         * @param (Closure(): U)|null $default
+                         * @return U|null
+                         */
+                        public function first($default = null) { throw new LogicException(); }
+
+                        /** @psalm-assert-if-false null $this->first() */
+                        public function isNotEmpty(): bool { return true; }
+                    }
+
+                    /** @param Box<Item> $box */
+                    function check(Box $box): string {
+                        if ($box->isNotEmpty()) {
+                            $x = $box->first();
+                            // must stay possibly null: the declared type is kept, not resolved to never
+                            return $x === null ? "empty" : "item";
+                        }
+
+                        return "empty";
+                    }',
+            ],
             'assertTemplatedIterable' => [
                 'code' => '<?php
                     class Foo{}

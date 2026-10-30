@@ -15,6 +15,7 @@ use function array_filter;
 use function array_keys;
 use function array_merge;
 use function array_unique;
+use function array_values;
 use function explode;
 
 /**
@@ -677,19 +678,19 @@ final class FileReferenceProvider
     public function updateReferenceCache(Codebase $codebase, array $visited_files): void
     {
         foreach ($visited_files as $file => $_) {
-            $all_file_references = array_unique(
+            $all_file_references = array_values(array_unique(
                 array_merge(
                     self::$file_references[$file]['a'] ?? [],
                     $this->calculateFilesReferencingFile($codebase, $file),
                 ),
-            );
+            ));
 
-            $inheritance_references = array_unique(
+            $inheritance_references = array_values(array_unique(
                 array_merge(
                     self::$file_references[$file]['i'] ?? [],
                     $this->calculateFilesInheritingFile($codebase, $file),
                 ),
-            );
+            ));
 
             self::$file_references[$file] = [
                 'a' => $all_file_references,
