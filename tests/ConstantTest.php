@@ -988,6 +988,26 @@ final class ConstantTest extends TestCase
                     A::foo(2);
                     A::foo(3);',
             ],
+            'constantDeclaredWithClassConstantWildcardTypeAcceptsItsValues' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public const BAR_A = "a";
+                        public const BAR_B = "b";
+
+                        /** @var self::BAR_* */
+                        public const ONE = self::BAR_A;
+
+                        /** @var array<self::BAR_*, self::BAR_*> */
+                        public const BARS = [
+                            self::BAR_A => self::BAR_A,
+                            self::BAR_B => self::BAR_B,
+                        ];
+
+                        /** @var Foo::BAR_* */
+                        public const OTHER = "b";
+                    }',
+            ],
             'tooLongArrayInvalidConstantAssignmentValueFalsePositiveWithArray' => [
                 'code' => '<?php
                     class TestInvalidConstantAssignmentValueFalsePositiveWithArray {
@@ -2365,6 +2385,18 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constantDeclaredWithClassConstantWildcardTypeRejectsOtherValues' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public const BAR_A = "a";
+                        public const BAR_B = "b";
+
+                        /** @var self::BAR_* */
+                        public const ONE = "c";
+                    }',
+                'error_message' => 'InvalidConstantAssignmentValue',
+            ],
             'constantDefinedInFunctionButNotCalled' => [
                 'code' => '<?php
                     /**
