@@ -175,6 +175,11 @@ final class ClassLikeNodeScanner
 
             $class_name = $node->name->name;
 
+            // A stub refines the native declaration, so the methods it leaves out still come from reflection
+            if ($this->codebase->register_stub_files && $this->codebase->scanner->isStubFile($this->file_path)) {
+                $this->codebase->scanner->registerReflectedClassLikeStorage($fq_classlike_name);
+            }
+
             if ($this->codebase->classlike_storage_provider->has($fq_classlike_name_lc)) {
                 $duplicate_storage = $this->codebase->classlike_storage_provider->get($fq_classlike_name_lc);
 
@@ -1019,6 +1024,21 @@ final class ClassLikeNodeScanner
                     || $attribute->fq_class_name === 'Deprecated'
                 ) {
                     $storage->deprecated = true;
+                }
+
+                if ($attribute->fq_class_name === 'Deprecated') {
+                    foreach ($attribute->args as $i => $arg) {
+                        if (($arg->name ?? ($i === 0 ? 'message' : null)) === 'message'
+                            && $arg->type instanceof Union
+                            && $arg->type->isSingleStringLiteral()
+                        ) {
+                            $message = $arg->type->getSingleStringLiteral()->value;
+
+                            if ($message !== '') {
+                                $storage->deprecated_message = $message;
+                            }
+                        }
+                    }
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\Internal' && !$storage->internal) {

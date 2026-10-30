@@ -749,7 +749,10 @@ final class AtomicPropertyFetchAnalyzer
                     $context,
                 );
 
-                $statements_analyzer->node_data->setType($stmt, $stmt_type);
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    Type::combineUnionTypes($stmt_type, $statements_analyzer->node_data->getType($stmt)),
+                );
 
                 return false;
             }
@@ -1404,7 +1407,10 @@ final class AtomicPropertyFetchAnalyzer
             );
 
             $has_valid_fetch_type = true;
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                Type::combineUnionTypes($stmt_type, $statements_analyzer->node_data->getType($stmt)),
+            );
 
             return;
         }

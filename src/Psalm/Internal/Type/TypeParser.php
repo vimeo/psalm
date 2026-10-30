@@ -2650,7 +2650,9 @@ final class TypeParser
         $modified = false;
         foreach ($intersection_types as $intersection_type) {
             if (!$intersection_type instanceof TTypeAlias
-                || !$codebase->classlike_storage_provider->has($intersection_type->declaring_fq_classlike_name)
+                || !$codebase->classlike_storage_provider->has(
+                    $codebase->classlikes->getUnAliasedName($intersection_type->declaring_fq_classlike_name),
+                )
             ) {
                 $normalized_intersection_types[] = [$intersection_type];
                 continue;
