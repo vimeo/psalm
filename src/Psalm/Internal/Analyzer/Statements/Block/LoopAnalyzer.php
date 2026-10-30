@@ -27,6 +27,7 @@ use UnexpectedValueException;
 use function array_filter;
 use function array_keys;
 use function array_merge;
+use function array_slice;
 use function array_unique;
 use function array_values;
 use function count;
@@ -623,9 +624,21 @@ final class LoopAnalyzer
             self::setLoopVars($inner_loop_context, $context, $loop_scope);
         }
 
-        if ($can_leave_loop && $pre_conditions) {
-            // the condition is evaluated before the loop is left, whatever happens in the body
-            self::setVarsAssignedInCondition($statements_analyzer, $pre_conditions[0], $context, $inner_loop_context);
+        if ($can_leave_loop) {
+            // the condition is evaluated before the loop is left, whatever happens in the body: all the
+            // comma separated expressions of a for, but only the first operand of the && of a while
+            $evaluated_conditions = $stmt instanceof PhpParser\Node\Stmt\For_
+                ? $pre_conditions
+                : array_slice($pre_conditions, 0, 1);
+
+            foreach ($evaluated_conditions as $evaluated_condition) {
+                self::setVarsAssignedInCondition(
+                    $statements_analyzer,
+                    $evaluated_condition,
+                    $context,
+                    $inner_loop_context,
+                );
+            }
         }
 
         $for_context->loop_scope = null;
