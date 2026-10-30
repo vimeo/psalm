@@ -75,6 +75,21 @@ final class ConditionalTest extends TestCase
                     '$r===' => '1|non-empty-array<array-key, string>',
                 ],
             ],
+            'elseifWithoutElseKnowsVarAssignedInOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    $r = 1;
+                    if (check() || !($data = getData())) {
+                        $r = 2;
+                    } elseif (check()) {
+                        $r = $data;
+                    }',
+                'assertions' => [
+                    '$r===' => '1|2|non-empty-array<array-key, string>',
+                ],
+            ],
             'elseifElseKnowsVarAssignedInOrCondition' => [
                 'code' => '<?php
                     /** @return string[] */
