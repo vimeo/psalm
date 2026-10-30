@@ -1116,6 +1116,14 @@ final class ClassLikeStringTest extends TestCase
                     }',
                 'error_message' => 'Class, interface or enum named Doesnt\\Unchecked does not exist',
             ],
+            'classExistsInStandaloneAndDoesNotLeakAfterTheExpression' => [
+                'code' => '<?php
+                    function test(): void {
+                        $result = class_exists(\\Doesnt\\Really::class) && \\Doesnt\\Really::bar();
+                        new \\Doesnt\\Really();
+                    }',
+                'error_message' => 'Class, interface or enum named Doesnt\\Really does not exist',
+            ],
             'arrayOfStringClasses' => [
                 'code' => '<?php
                     /**

@@ -59,6 +59,7 @@ final class AndAnalyzer
         $pre_assigned_var_ids = $context->assigned_var_ids;
 
         $left_context = clone $context;
+        $left_context->inside_logical_operand = true;
 
         $left_context->cond_referenced_var_ids = [];
         $left_context->assigned_var_ids = [];
@@ -71,9 +72,6 @@ final class AndAnalyzer
         }
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->left);
-
-        // the classes checked with class_exists() on the left exist on the right and after the condition too
-        $context->phantom_classes = array_merge($context->phantom_classes, $left_context->phantom_classes);
 
         $codebase = $statements_analyzer->getCodebase();
 
@@ -156,6 +154,12 @@ final class AndAnalyzer
             $right_context = clone $left_context;
         }
 
+        $right_context->inside_logical_operand = true;
+        $right_context->phantom_classes = [
+            ...$right_context->phantom_classes,
+            ...$left_context->phantom_classes,
+        ];
+
         $partitioned_clauses = Context::removeReconciledClauses(
             [...$left_context->clauses, ...$left_clauses],
             $changed_var_ids,
@@ -169,12 +173,17 @@ final class AndAnalyzer
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
 
-        $context->phantom_classes = array_merge($context->phantom_classes, $right_context->phantom_classes);
-
         $context->cond_referenced_var_ids = array_merge(
             $right_context->cond_referenced_var_ids,
             $left_context->cond_referenced_var_ids,
         );
+
+        if ($context->inside_logical_operand) {
+            $context->phantom_classes = [
+                ...$context->phantom_classes,
+                ...$right_context->phantom_classes,
+            ];
+        }
 
         if ($context->inside_conditional) {
             $context->updateChecks($right_context);
@@ -198,11 +207,6 @@ final class AndAnalyzer
                 ...$context->vars_in_scope,
             ];
 
-            $if_body_context->phantom_classes = array_merge(
-                $if_body_context->phantom_classes,
-                $context->phantom_classes,
-            );
-
             $if_body_context->cond_referenced_var_ids = [
                 ...$if_body_context->cond_referenced_var_ids,
                 ...$context->cond_referenced_var_ids,
@@ -225,6 +229,11 @@ final class AndAnalyzer
             $if_body_context->vars_possibly_in_scope = [
                 ...$if_body_context->vars_possibly_in_scope,
                 ...$context->vars_possibly_in_scope,
+            ];
+
+            $if_body_context->phantom_classes = [
+                ...$if_body_context->phantom_classes,
+                ...$right_context->phantom_classes,
             ];
 
             $if_body_context->updateChecks($context);
