@@ -22,6 +22,34 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'twoUnpackedShapesPassTheirOwnParameters' => [
+                'code' => '<?php
+                    function test(string $a, int $b): void {
+                        echo $a, $b;
+                    }
+
+                    $arg1 = ["a" => "string"];
+                    $arg2 = ["b" => 9];
+
+                    test(...$arg1, ...$arg2);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'twoUnpackedListsPassTheirOwnParameters' => [
+                'code' => '<?php
+                    function test(string $a, int $b): void {
+                        echo $a, $b;
+                    }
+
+                    $list1 = ["string"];
+                    $list2 = [9];
+
+                    test(...$list1, ...$list2);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'unpackedShapeAndNamedArgument' => [
                 'code' => '<?php
                     function add(int $a, int $b): int {
@@ -412,6 +440,34 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'unpackedShapeStillChecksTheTypeOfItsOwnParameter' => [
+                'code' => '<?php
+                    function test(string $a, int $b): void {
+                        echo $a, $b;
+                    }
+
+                    $arg1 = ["a" => 5];
+                    $arg2 = ["b" => 9];
+
+                    test(...$arg1, ...$arg2);',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedListStillChecksTheTypeOfItsOwnParameter' => [
+                'code' => '<?php
+                    function test(string $a, int $b): void {
+                        echo $a, $b;
+                    }
+
+                    $list1 = [5];
+                    $list2 = [9];
+
+                    test(...$list1, ...$list2);',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'unpackedShapeAndNamedArgumentWithBadType' => [
                 'code' => '<?php
                     function add(int $a, int $b): int {
