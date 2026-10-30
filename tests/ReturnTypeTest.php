@@ -60,6 +60,24 @@ final class ReturnTypeTest extends TestCase
                         return (object) null;
                     }',
             ],
+            'objectCastOfAShapedArrayOrNullIsAStdClassWithoutTheProperties' => [
+                'code' => '<?php
+                    /** @var array{a: int}|null $values */
+                    $values = null;
+                    $object = (object) $values;',
+                'assertions' => [
+                    '$object' => 'stdClass',
+                ],
+            ],
+            'objectCastOfAShapedArrayOrAScalarIsAStdClass' => [
+                'code' => '<?php
+                    /** @var array{a: int}|int $values */
+                    $values = 1;
+                    $object = (object) $values;',
+                'assertions' => [
+                    '$object' => 'stdClass',
+                ],
+            ],
             'objectCastOfAShapedArrayKeepsItsProperties' => [
                 'code' => '<?php
                     /**

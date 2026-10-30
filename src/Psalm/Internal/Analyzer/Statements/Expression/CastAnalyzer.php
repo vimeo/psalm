@@ -66,6 +66,7 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_pop;
 use function array_values;
+use function count;
 use function range;
 use function strtolower;
 
@@ -241,7 +242,10 @@ final class CastAnalyzer
             }
 
             if ($permissible_atomic_types && $all_permissible) {
-                $type = TypeCombiner::combine($permissible_atomic_types);
+                // the properties of one shape would be wrong for the other parts of a union
+                $type = count($permissible_atomic_types) === 1
+                    ? new Union($permissible_atomic_types)
+                    : new Union([new TNamedObject('stdClass')]);
             } else {
                 $type = Type::getObject();
             }
