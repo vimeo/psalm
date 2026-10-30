@@ -35,6 +35,40 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'objectCastOfAShapedArrayIsAStdClass' => [
+                'code' => '<?php
+                    function test(): stdClass {
+                        return (object) ["string" => "string"];
+                    }',
+            ],
+            'objectCastOfAnArrayIsAStdClass' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int> $values
+                     */
+                    function test(array $values): stdClass {
+                        return (object) $values;
+                    }',
+            ],
+            'objectCastOfAScalarAndNullIsAStdClass' => [
+                'code' => '<?php
+                    function fromInt(): stdClass {
+                        return (object) 1;
+                    }
+
+                    function fromNull(): stdClass {
+                        return (object) null;
+                    }',
+            ],
+            'objectCastOfAShapedArrayKeepsItsProperties' => [
+                'code' => '<?php
+                    /**
+                     * @return object{a: int}
+                     */
+                    function test(): object {
+                        return (object) ["a" => 1];
+                    }',
+            ],
             'wordPressHashNotationAfterReturnAndVarType' => [
                 'code' => '<?php
                     /**
@@ -984,7 +1018,7 @@ final class ReturnTypeTest extends TestCase
                     $obj = (object)returnsInt();
                 ',
                 'assertions' => [
-                    '$obj' => 'object{scalar:int}',
+                    '$obj' => 'object{scalar:int}&stdClass',
                 ],
             ],
             'infersObjectShapeOfCastArray' => [
@@ -999,7 +1033,7 @@ final class ReturnTypeTest extends TestCase
                     $obj = (object)returnsArray();
                 ',
                 'assertions' => [
-                    '$obj' => 'object{a:int}',
+                    '$obj' => 'object{a:int}&stdClass',
                 ],
             ],
             'mixedAssignmentWithUnderscore' => [
