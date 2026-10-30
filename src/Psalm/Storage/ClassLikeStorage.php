@@ -218,6 +218,13 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $declaring_pseudo_method_ids = [];
 
     /**
+     * Same as $declaring_pseudo_method_ids, but for static pseudo methods
+     *
+     * @var array<lowercase-string, MethodIdentifier>
+     */
+    public array $declaring_pseudo_static_method_ids = [];
+
+    /**
      * @var array<lowercase-string, MethodIdentifier>
      */
     public array $declaring_method_ids = [];
