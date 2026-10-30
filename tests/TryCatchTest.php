@@ -20,6 +20,45 @@ final class TryCatchTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'finallySeesVariableSetInCatchOfNestedTryThatRethrows' => [
+                'code' => '<?php
+                    function g2(): void {}
+
+                    function h(): void {
+                        $retry = false;
+                        try {
+                            try {
+                                g2();
+                            } catch (Throwable $e) {
+                                $retry = true;
+                                throw $e;
+                            }
+                        } finally {
+                            if (!$retry) {
+                                echo 1;
+                            }
+                        }
+                    }',
+            ],
+            'finallySeesVariableSetBeforeReturnInTryBody' => [
+                'code' => '<?php
+                    function a(): int {
+                        $x = null;
+                        try {
+                            $x = 1;
+                            if (rand(0, 1)) {
+                                return 5;
+                            }
+                            $x = "a";
+                        } finally {
+                            if ($x === 1) {
+                                echo 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+            ],
             'addThrowableInterfaceType' => [
                 'code' => '<?php
                     interface CustomThrowable {}
@@ -505,6 +544,26 @@ final class TryCatchTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'finallyStillKnowsVariableNotSetByNestedTryThatRethrows' => [
+                'code' => '<?php
+                    function g2(): void {}
+
+                    function h(): void {
+                        $retry = false;
+                        try {
+                            try {
+                                g2();
+                            } catch (Throwable $e) {
+                                throw $e;
+                            }
+                        } finally {
+                            if (!$retry) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
             'invalidCatchClass' => [
                 'code' => '<?php
                     class A {}
