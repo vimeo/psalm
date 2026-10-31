@@ -33,7 +33,7 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
 
         if (!$statements_analyzer instanceof StatementsAnalyzer
             || !$item instanceof PhpParser\Node\Expr\FuncCall
-            || $item->isFirstClassCallable()
+            || $item->isPartialFunctionApplication()
             || !$item->name instanceof PhpParser\Node\Name
             || count($item->name->getParts()) !== 1
             || count($item->getArgs()) === 0
@@ -84,7 +84,7 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
 
         if (!$statements_analyzer instanceof StatementsAnalyzer
             || !$item instanceof PhpParser\Node\Expr\FuncCall
-            || $item->isFirstClassCallable()
+            || $item->isPartialFunctionApplication()
             || !$item->name instanceof PhpParser\Node\Name
             || count($item->name->getParts()) !== 1
             || count($item->getArgs()) === 0

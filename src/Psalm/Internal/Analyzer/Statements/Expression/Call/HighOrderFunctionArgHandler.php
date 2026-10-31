@@ -165,6 +165,14 @@ final class HighOrderFunctionArgHandler
             return null;
         }
 
+        // the closure that a partial application makes has the type that it is analysed to have
+        if ($input_arg_expr instanceof PhpParser\Node\Expr\CallLike
+            && $input_arg_expr->isPartialFunctionApplication()
+            && !$input_arg_expr->isFirstClassCallable()
+        ) {
+            return null;
+        }
+
         $codebase = $statements_analyzer->getCodebase();
 
         try {

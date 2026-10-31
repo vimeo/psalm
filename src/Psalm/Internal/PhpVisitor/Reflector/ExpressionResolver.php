@@ -406,7 +406,7 @@ final class ExpressionResolver
         string $file_path,
         PhpParser\Node\Expr\FuncCall $function,
     ): ?bool {
-        if (!$function->name instanceof PhpParser\Node\Name) {
+        if (!$function->name instanceof PhpParser\Node\Name || $function->isPartialFunctionApplication()) {
             return null;
         }
 

@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\BooleanNotAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\PartialApplicationAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
@@ -207,6 +208,10 @@ final class ExpressionAnalyzer
                 false,
                 $assigned_to_reference,
             );
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\CallLike && PartialApplicationAnalyzer::isPartialApplication($stmt)) {
+            return PartialApplicationAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Assign) {

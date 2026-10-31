@@ -31,6 +31,8 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Node\VirtualArg;
+use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Storage\FunctionLikeParameter;
@@ -54,6 +56,8 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_map;
+use function array_slice;
 use function array_values;
 use function count;
 use function explode;
@@ -624,12 +628,15 @@ final class FunctionCallReturnTypeFetcher
      *    analyzed body and registers any @psalm-taint-sink parameters as sinks.
      *
      * @param non-empty-lowercase-string $callable_id
+     * @param array<int, FunctionLikeParameter>|null $closure_params the parameters of the callable value invoked, if
+     *                                                               they are not those of the function it is of
      */
     public static function taintCallableReturnType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Expr $real_stmt,
         string $callable_id,
+        ?array $closure_params,
         Context $context,
     ): void {
         if ($stmt->isFirstClassCallable()) {
@@ -689,19 +696,25 @@ final class FunctionCallReturnTypeFetcher
                 $graph->addNode($closure_return_node);
                 $stmt_type = $stmt_type->addParentNodes([$closure_return_node->id => $closure_return_node]);
 
+                $closure_args = self::nameArgsAfterClosureParams(
+                    $stmt->getArgs(),
+                    $closure_params,
+                    $closure_storage->params,
+                );
+
                 self::taintCallableParams(
                     $statements_analyzer,
                     $graph,
                     $callable_id,
                     $closure_storage,
-                    $stmt->getArgs(),
+                    $closure_args,
                     null,
                 );
                 ConditionalTaintSinks::taintCall(
                     $statements_analyzer,
                     $graph,
                     $closure_storage,
-                    $stmt->getArgs(),
+                    $closure_args,
                     $callable_id,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 );
@@ -711,7 +724,7 @@ final class FunctionCallReturnTypeFetcher
                     $context,
                     $callable_id,
                     $closure_storage,
-                    $stmt->getArgs(),
+                    $closure_args,
                     null,
                 );
             }
@@ -721,7 +734,7 @@ final class FunctionCallReturnTypeFetcher
             return;
         }
 
-        $args = $stmt->getArgs();
+        $args = self::nameArgsAfterClosureParams($stmt->getArgs(), $closure_params, $storage->params);
 
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
@@ -783,6 +796,7 @@ final class FunctionCallReturnTypeFetcher
             $args,
             $specialization_location,
         );
+        self::taintBuiltinParams($statements_analyzer, $graph, $callable_id, $storage, $args, $node_location);
 
         ConditionalTaintSinks::taintCall($statements_analyzer, $graph, $storage, $args, $callable_id, $node_location);
 
@@ -1128,6 +1142,184 @@ final class FunctionCallReturnTypeFetcher
         } catch (UnexpectedValueException) {
             return null;
         }
+    }
+
+    /**
+     * The parameters of a builtin have no location, and their sinks are those of the call map.
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     */
+    private static function taintBuiltinParams(
+        StatementsAnalyzer $statements_analyzer,
+        TaintFlowGraph $graph,
+        string $callable_id,
+        FunctionLikeStorage $storage,
+        array $args,
+        CodeLocation $node_location,
+    ): void {
+        $function_id = strtolower($callable_id);
+
+        foreach ($storage->params as $i => $param) {
+            $sinks = $param->location === null
+                ? $param->sinks | InternalCallMapHandler::getParamTaintSinks($callable_id, $i)
+                : 0;
+
+            if ($function_id === 'curl_setopt_array' && $i === 1) {
+                // the sinks of the options in it are those of curl_setopt() (see ArgumentsAnalyzer)
+                continue;
+            }
+
+            if ($function_id === 'curl_setopt' && $i === 2) {
+                // the value given is the sink of the option, which has to be known
+                $option_indices = self::callableArgIndices($storage->params, $args, 1);
+                $sinks = $option_indices !== []
+                    ? ArgumentsAnalyzer::getArgumentSinks($function_id, 2, [1 => $args[$option_indices[0]]], $sinks)
+                    : 0;
+            }
+
+            foreach ($sinks ? self::callableArgIndices($storage->params, $args, $i) : [] as $arg_index) {
+                $arg_type = $statements_analyzer->node_data->getType($args[$arg_index]->value);
+                $sink = DataFlowNode::getForCallableArg('builtin', $callable_id, $i, $node_location, $sinks);
+                $graph->addNode($sink);
+                $graph->addSink($sink);
+
+                foreach ($arg_type->parent_nodes ?? [] as $parent_node) {
+                    $graph->addPath($parent_node, $sink, 'arg');
+                }
+            }
+        }
+    }
+
+    /**
+     * The arguments that a partial application binds, given to the parameters of the function as those of a call are,
+     * for the taints to reach what the parameters are sinks of, and the node of what the function returns of them.
+     *
+     * @param non-empty-string $callable_id the id of the function, closure or method, as cased for a method
+     * @param list<PhpParser\Node\Arg> $args named after the parameters they are given to
+     */
+    public static function taintBoundArguments(
+        StatementsAnalyzer $statements_analyzer,
+        string $callable_id,
+        array $args,
+        CodeLocation $node_location,
+        ?FunctionLikeStorage $storage = null,
+    ): ?DataFlowNode {
+        $graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+
+        if ($graph === null) {
+            return null;
+        }
+
+        $is_closure = false;
+
+        if ($storage === null) {
+            $storage = self::getCallableStorage($statements_analyzer, strtolower($callable_id));
+
+            if ($storage === null) {
+                $storage = self::getClosureStorage($statements_analyzer, $callable_id);
+                $is_closure = $storage !== null;
+            }
+        }
+
+        if ($storage === null) {
+            return null;
+        }
+
+        self::taintBuiltinParams($statements_analyzer, $graph, $callable_id, $storage, $args, $node_location);
+
+        $specialization_location = !$is_closure && TaintFlowGraph::isCallSpecialized(
+            $graph,
+            $statements_analyzer->getCodebase(),
+            $storage,
+            $node_location,
+        ) ? $node_location : null;
+
+        self::taintCallableParams(
+            $statements_analyzer,
+            $graph,
+            $callable_id,
+            $storage,
+            $args,
+            $specialization_location,
+        );
+
+        // what the function returns of them, by its declaration or its body, is what the closure returns
+        $return_node = DataFlowNode::getForMethodReturn($callable_id, $storage, $specialization_location);
+        $graph->addNode($return_node);
+
+        foreach ($storage->return_source_params as $i => $path_type) {
+            foreach (self::callableArgIndices($storage->params, $args, $i) as $arg_index) {
+                $arg_type = $statements_analyzer->node_data->getType($args[$arg_index]->value);
+
+                foreach ($arg_type->parent_nodes ?? [] as $parent_node) {
+                    $graph->addPath($parent_node, $return_node, $path_type);
+                }
+            }
+        }
+
+        return $return_node;
+    }
+
+    /**
+     * The arguments of the invocation of a partial application, named after the parameters of the underlying function
+     * they are given to: the closure has the parameters that were not bound, in the order of its own signature. An
+     * unpacked argument is given to all those from its position on.
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     * @param array<int, FunctionLikeParameter>|null $closure_params
+     * @param array<int, FunctionLikeParameter> $callee_params
+     * @return list<PhpParser\Node\Arg>
+     */
+    private static function nameArgsAfterClosureParams(
+        array $args,
+        ?array $closure_params,
+        array $callee_params,
+    ): array {
+        $closure_params = $closure_params !== null ? array_values($closure_params) : null;
+
+        // a first-class callable has the parameters of the function: its arguments are as those of a call
+        if ($closure_params === null
+            || array_map(static fn(FunctionLikeParameter $param): string => $param->name, $closure_params)
+                === array_map(static fn(FunctionLikeParameter $param): string => $param->name, $callee_params)
+        ) {
+            return $args;
+        }
+
+        $last_param = $closure_params !== [] ? $closure_params[count($closure_params) - 1] : null;
+        $variadic_param = $last_param !== null && $last_param->is_variadic ? $last_param : null;
+        $named_args = [];
+
+        foreach ($args as $i => $arg) {
+            $params = $arg->unpack
+                ? array_slice($closure_params, $i)
+                : [$closure_params[$i] ?? $variadic_param];
+            $names = [];
+
+            foreach ($params as $param) {
+                // a parameter without a name cannot be given an argument by name
+                if ($param !== null && $param->name !== '') {
+                    $names[] = $param->name;
+                }
+            }
+
+            if ($arg->name !== null || $names === []) {
+                $named_args[] = $arg;
+
+                continue;
+            }
+
+            foreach ($names as $name) {
+                $named_args[] = new VirtualArg(
+                    $arg->value,
+                    $arg->byRef,
+                    false,
+                    $arg->getAttributes(),
+                    new VirtualIdentifier($name),
+                );
+            }
+        }
+
+        return $named_args;
     }
 
     /**

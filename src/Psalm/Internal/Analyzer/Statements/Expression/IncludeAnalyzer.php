@@ -359,6 +359,7 @@ final class IncludeAnalyzer
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\FuncCall &&
             $stmt->name instanceof PhpParser\Node\Name &&
+            !$stmt->isPartialFunctionApplication() &&
             $stmt->name->getParts() === ['dirname']
         ) {
             $args = $stmt->getArgs();

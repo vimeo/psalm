@@ -41,7 +41,7 @@ final class JsonEncodeTainter implements RemoveTaintsInterface
 
         if (!$statements_analyzer instanceof StatementsAnalyzer
             || !$item instanceof PhpParser\Node\Expr\FuncCall
-            || $item->isFirstClassCallable()
+            || $item->isPartialFunctionApplication()
             || !$item->name instanceof PhpParser\Node\Name
             || !self::isJsonEncode($statements_analyzer, $item->name)
         ) {

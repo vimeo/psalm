@@ -29,7 +29,7 @@ final class TaintPageComponents implements AfterExpressionAnalysisInterface
         if (!$call instanceof MethodCall
             || !$call->name instanceof Identifier
             || $call->name->toLowerString() !== 'add'
-            || $call->isFirstClassCallable()
+            || $call->isPartialFunctionApplication()
         ) {
             return null;
         }

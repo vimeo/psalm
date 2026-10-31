@@ -2576,6 +2576,18 @@ final class TaintTest extends TestCase
                         return array_map(preg_replace(...), $patterns, $replacements, $subjects);
                     }',
               ],
+            'firstClassCallableOfCurlSetoptKeepsTheSinksOfItsOptions' => [
+                'code' => '<?php
+                    $curl = curl_init("https://example.com");
+                    if ($curl === false) {
+                        throw new RuntimeException();
+                    }
+                    $data = (string) ($_GET["data"] ?? "");
+                    $set = curl_setopt(...);
+                    $set($curl, CURLOPT_POSTFIELDS, $data);
+                    $set_array = curl_setopt_array(...);
+                    $set_array($curl, [CURLOPT_POSTFIELDS => $data]);',
+            ],
             'ambiguousFirstClassCallableWithoutTaintNotReported' => [
                 'code' => '<?php
                     function ambig_plain_a(): string { return "a"; }
@@ -14594,6 +14606,223 @@ final class TaintTest extends TestCase
                         echo $named->name();
                     }',
                 'error_message' => 'TaintedHtml',
+            ],
+            'partialApplicationOfASinkReportsTheArgumentGivenOnInvocation' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink shell $cmd */
+                    function sink(string $cmd, string $unused = ""): void {}
+
+                    $f = sink(?);
+                    $f((string) $_GET["x"]);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationOfASinkReportsTheArgumentGivenToAMovedParameter' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink shell $cmd */
+                    function sink(string $safe, string $cmd): void {}
+
+                    $f = sink("literal", ?);
+                    $f((string) $_GET["x"]);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationOfASinkReportsTheArgumentGivenToANamedPlaceholder' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink shell $cmd */
+                    function sink(string $safe, string $cmd): void {}
+
+                    $f = sink(cmd: ?, safe: "literal");
+                    $f((string) $_GET["x"]);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationBindsATaintedArgumentToASink' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink shell $cmd */
+                    function sink(string $cmd, string $other): void {}
+
+                    $closure = sink((string) $_GET["x"], ?);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationInvokedWithAnUnpackedArgument' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink shell $a */
+                    function sink(string $a, string $b): void {}
+
+                    $closure = sink(b: ?, a: ?);
+                    $closure("safe", ...[(string) $_GET["x"]]);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'firstClassCallableInvokedWithAnUnpackedArrayKeepsTheConditionalSink' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink ($mode is array ? null : "shell") $cmd */
+                    function sink(string $cmd, mixed $mode): void {}
+
+                    $f = sink(...);
+                    $f(...[(string) $_GET["cmd"], 1]);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationBindsATaintedArgumentToAVariadicParameter' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink shell $cmd */
+                    function sink(int $safe, string ...$cmd): void {}
+
+                    $closure = sink(?, (string) $_GET["cmd"]);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationBindsATaintedArgumentToABuiltinSink' => [
+                'code' => '<?php // --taint-analysis
+                    $closure = shell_exec((string) $_GET["cmd"], ...);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationOfAPartialApplicationKeepsTheSinks' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink shell $cmd */
+                    function sink(string $cmd, int $n): void {}
+
+                    $f = sink(...);
+                    $partial = $f(?, 1);
+                    $partial((string) $_GET["cmd"]);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationThunkReturnsWhatItIsBoundTo' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-flow ($s) -> return */
+                    function wrap(string $prefix, string $s): string {
+                        return $prefix;
+                    }
+
+                    $thunk = wrap("<p>", (string) $_GET["x"], ...);
+                    echo $thunk();',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationBindsATaintedArgumentToAMethodSink' => [
+                'code' => '<?php // --taint-analysis
+                    final class Runner {
+                        /** @psalm-taint-sink shell $cmd */
+                        public function run(string $cmd, int $n): void {}
+                    }
+
+                    function f(Runner $runner): void {
+                        $closure = $runner->run((string) $_GET["cmd"], ?);
+                    }',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationBindsATaintedArgumentToAStaticMethodSink' => [
+                'code' => '<?php // --taint-analysis
+                    final class Runner {
+                        /** @psalm-taint-sink shell $cmd */
+                        public static function run(string $cmd, int $n): void {}
+                    }
+
+                    $closure = Runner::run((string) $_GET["cmd"], ?);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationBindsATaintedArgumentToAClosure' => [
+                'code' => '<?php // --taint-analysis
+                    $sink = static function (string $cmd, int $n): void {
+                        echo shell_exec($cmd);
+                    };
+                    $partial = $sink((string) $_GET["cmd"], ?);
+                    $partial(0);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationThunkOfAMethodReturnsWhatTheFlowGivesIt' => [
+                'code' => '<?php // --taint-analysis
+                    final class Repo {
+                        /** @psalm-flow ($s) -> return */
+                        public function wrap(string $s, string $t): string {
+                            return $t;
+                        }
+                    }
+
+                    function f(Repo $repo): void {
+                        $thunk = $repo->wrap((string) $_GET["x"], "a", ...);
+                        echo $thunk();
+                    }',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationThunkOfAMethodReturnsWhatItsBodyGivesIt' => [
+                'code' => '<?php // --taint-analysis
+                    final class Repo {
+                        public function wrap(string $prefix, string $s): string {
+                            return $prefix . $s;
+                        }
+                    }
+
+                    function f(Repo $repo): void {
+                        $thunk = $repo->wrap("<p>", (string) $_GET["x"], ...);
+                        echo $thunk();
+                    }',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationThunkOfAFunctionReturnsWhatItsBodyGivesIt' => [
+                'code' => '<?php // --taint-analysis
+                    function wrap(string $prefix, string $s): string {
+                        return $prefix . $s;
+                    }
+
+                    $thunk = wrap("<p>", (string) $_GET["x"], ...);
+                    echo $thunk();',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationOfABuiltinInvokedWithATaintedArgument' => [
+                'code' => '<?php // --taint-analysis
+                    $closure = shell_exec(?);
+                    $closure((string) $_GET["cmd"]);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationOfAStaticMethodReturnsItsTaintSource' => [
+                'code' => '<?php // --taint-analysis
+                    final class Repo {
+                        /** @psalm-taint-source user_secret */
+                        public static function secret(string $name): string {
+                            return "x" . $name;
+                        }
+                    }
+
+                    $secret = Repo::secret(?);
+                    echo $secret("db");',
+                'error_message' => 'TaintedUserSecret',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationOfAMethodReturnsItsTaintSource' => [
+                'code' => '<?php // --taint-analysis
+                    final class Repo {
+                        /** @psalm-taint-source user_secret */
+                        public function secret(string $name): string {
+                            return "x" . $name;
+                        }
+                    }
+
+                    function f(Repo $repo): void {
+                        $secret = $repo->secret(?);
+                        echo $secret("db");
+                    }',
+                'error_message' => 'TaintedUserSecret',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationOfAFunctionWithByReferenceParametersKeepsTheTaint' => [
+                'code' => '<?php // --taint-analysis
+                    $replace = str_replace("a", "b", ?);
+                    echo $replace((string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.6',
             ],
         ];
     }

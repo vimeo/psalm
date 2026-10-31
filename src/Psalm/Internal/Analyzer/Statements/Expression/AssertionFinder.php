@@ -210,6 +210,18 @@ final class AssertionFinder
             return [];
         }
 
+        // what a partial application is compared to is a closure, whose arguments are not those of a call
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp
+            && (($conditional->left instanceof PhpParser\Node\Expr\CallLike
+                    && $conditional->left->isPartialFunctionApplication()
+                    && !$conditional->left->isFirstClassCallable())
+                || ($conditional->right instanceof PhpParser\Node\Expr\CallLike
+                    && $conditional->right->isPartialFunctionApplication()
+                    && !$conditional->right->isFirstClassCallable()))
+        ) {
+            return [];
+        }
+
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical ||
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
         ) {
@@ -275,7 +287,7 @@ final class AssertionFinder
             );
         }
 
-        if ($conditional instanceof PhpParser\Node\Expr\FuncCall && !$conditional->isFirstClassCallable()) {
+        if ($conditional instanceof PhpParser\Node\Expr\FuncCall && !$conditional->isPartialFunctionApplication()) {
             return self::processFunctionCall(
                 $conditional,
                 $this_class_name,
@@ -287,7 +299,7 @@ final class AssertionFinder
 
         if (($conditional instanceof PhpParser\Node\Expr\MethodCall
             || $conditional instanceof PhpParser\Node\Expr\StaticCall)
-            && !$conditional->isFirstClassCallable()
+            && !$conditional->isPartialFunctionApplication()
         ) {
             $custom_assertions = self::processCustomAssertion($conditional, $this_class_name, $source);
 
@@ -771,6 +783,10 @@ final class AssertionFinder
         ?Codebase $codebase = null,
         bool $negate = false,
     ): array {
+        if ($expr->isPartialFunctionApplication()) {
+            return [];
+        }
+
         $first_var_name = isset($expr->getArgs()[0]->value)
             ? ExpressionIdentifier::getExtendedVarId(
                 $expr->getArgs()[0]->value,
@@ -893,7 +909,7 @@ final class AssertionFinder
         if (!$codebase
             || !$source instanceof StatementsAnalyzer
             || !$expr->name instanceof PhpParser\Node\Name
-            || $expr->isFirstClassCallable()
+            || $expr->isPartialFunctionApplication()
         ) {
             return null;
         }

@@ -382,12 +382,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             return true;
         }
 
-        foreach ($function_call_info->callable_ids as $callable_id => $_) {
+        foreach ($function_call_info->callable_ids as $callable_id => $closure_params) {
             FunctionCallReturnTypeFetcher::taintCallableReturnType(
                 $statements_analyzer,
                 $stmt,
                 $real_stmt,
                 $callable_id,
+                $closure_params,
                 $context,
             );
         }
@@ -1044,14 +1045,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $function_call_info->byref_uses += $var_type_part->byref_uses;
                     }
 
-                    if ($var_type_part->callable_id !== null) {
-                        // Collect every known underlying id. When the call target is a union of
-                        // distinct callables, any of them may run, so the taint behavior of all
-                        // of them is re-dispatched on invocation (an over-approximation, which is
-                        // the sound direction for taint). Callables with no known id contribute
-                        // nothing to re-dispatch and are simply skipped.
-                        $function_call_info->callable_ids[$var_type_part->callable_id] = true;
-                    }
+                    $function_call_info->addCallableId($var_type_part);
 
                     $function_call_info->function_exists = true;
                     $has_valid_function_call_type = true;

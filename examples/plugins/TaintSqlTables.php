@@ -27,7 +27,10 @@ final class TaintSqlTables implements AfterExpressionAnalysisInterface
     public static function afterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool
     {
         $call = $event->getExpr();
-        if (!$call instanceof MethodCall || !$call->name instanceof Identifier || $call->isFirstClassCallable()) {
+        if (!$call instanceof MethodCall
+            || !$call->name instanceof Identifier
+            || $call->isPartialFunctionApplication()
+        ) {
             return null;
         }
 

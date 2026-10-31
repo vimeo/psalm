@@ -513,7 +513,7 @@ final class TaintStore
             return $start;
         }
 
-        if ($expr instanceof FuncCall && $expr->name instanceof Name && !$expr->isFirstClassCallable()) {
+        if ($expr instanceof FuncCall && $expr->name instanceof Name && !$expr->isPartialFunctionApplication()) {
             $function = $expr->name->toLowerString();
             if ($function === 'sprintf') {
                 return self::getKnownStartOfSprintf($statements_analyzer, $expr->getArgs());

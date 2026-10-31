@@ -68,7 +68,7 @@ final class DynamicFunctionStorageProvider
         Context $context,
         CodeLocation $code_location,
     ): ?FunctionStorage {
-        if ($stmt->isFirstClassCallable()) {
+        if ($stmt->isPartialFunctionApplication()) {
             return null;
         }
 

@@ -2420,7 +2420,7 @@ final class ArgumentsAnalyzer
      * @param array<int, PhpParser\Node\Arg> $args
      * @psalm-capabilities read-props
      */
-    private static function getArgumentSinks(string $function_id, int $argument_offset, array $args, int $sinks): int
+    public static function getArgumentSinks(string $function_id, int $argument_offset, array $args, int $sinks): int
     {
         if ($argument_offset !== 2 || strtolower($function_id) !== 'curl_setopt' || !isset($args[1])) {
             return $sinks;

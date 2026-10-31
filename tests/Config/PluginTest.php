@@ -1660,4 +1660,142 @@ final class PluginTest extends TestCase
 
         $this->analyzeFile($file_path, new Context());
     }
+
+    public function testFunctionDynamicStorageProviderHookWithPartialApplicationAsArgument(): void
+    {
+        require_once __DIR__ . '/Plugin/StoragePlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\StoragePlugin" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->setPhpVersion('8.6', 'tests');
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @psalm-mutation-free
+                 * @param mixed ...$_args
+                 * @return mixed
+                 */
+                function custom_array_map(...$_args) { throw new RuntimeException("???"); }
+
+                /** @param callable(list<int>): mixed $_callback */
+                function takes(callable $_callback): void { }
+
+                takes(custom_array_map(fn(int $a): int => $a + 1, ?));',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testTaintPluginsOfMethodCallsWithPartialApplication(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="6"
+                    runTaintAnalysis="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <plugin filename="examples/plugins/TaintSqlTables.php" />
+                        <plugin filename="examples/plugins/TaintModelFields.php" />
+                        <plugin filename="examples/plugins/TaintPageComponents.php" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->setPhpVersion('8.6', 'tests');
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php // --taint-analysis
+                namespace app;
+
+                final class Db {
+                    public function insert(string $table, array $row): void {}
+                }
+
+                final class Model {
+                    public function get(string $field): string { return ""; }
+                }
+
+                final class Page {
+                    public function add(object $component, string $title = ""): void {}
+                }
+
+                function f(Db $db, Model $model, Page $page): void {
+                    $insert = $db->insert("users", ?);
+                    $get = $model->get(?);
+                    $add = $page->add(new \stdClass(), ?);
+                    $insert(["name" => "x"]);
+                    $get("name");
+                    $add("title");
+                }',
+        );
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testTaintOfAPartialApplicationOfAPartialApplicationOfABuiltin(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="6"
+                    runTaintAnalysis="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->setPhpVersion('8.6', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        // the data is not the file name that file_put_contents() has the sink on
+        $this->addFile(
+            $file_path,
+            '<?php // --taint-analysis
+                $write = file_put_contents("/tmp/out", ?);
+                $thunk = $write((string) ($_GET["data"] ?? ""), ...);',
+        );
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context());
+    }
 }
