@@ -22,6 +22,15 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'namedArgumentSelectsCallmapOverloadWithThatParameter' => [
+                'code' => '<?php
+                    setcookie("name", "value", path: "/");
+                    setcookie("name", "value", domain: "example.com");
+                    setcookie("name", "value", 1, path: "/");',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'argumentUnpackingLiteral' => [
                 'code' => '<?php
                     function add(int $a, int $b, int $c) : int {
@@ -386,6 +395,13 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'namedArgumentUnknownToEveryCallmapOverload' => [
+                'code' => '<?php
+                    setcookie("name", "value", nonexistent: "/");',
+                'error_message' => 'InvalidNamedArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'arrayPushArgumentUnpackingWithBadArg' => [
                 'code' => '<?php
                     $a = [];
