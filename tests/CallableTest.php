@@ -20,6 +20,27 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'stringNamingAFunctionForClosureOrStringParam' => [
+                'code' => <<<'PHP'
+                    <?php
+                    declare(strict_types=1);
+
+                    function my_url(?string $path = null): string {
+                        return (string) $path;
+                    }
+
+                    /** @param (Closure(int): mixed)|string $column */
+                    function where($column): string {
+                        return is_string($column) ? $column : '';
+                    }
+
+                    echo where('my_url');
+                    echo where('unknown_name');
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'byRefUseVar' => [
                 'code' => '<?php
                     /** @return void */
@@ -2516,6 +2537,24 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'stringNamingAFunctionForClosureParamOnly' => [
+                'code' => <<<'PHP'
+                    <?php
+                    declare(strict_types=1);
+
+                    function my_url(?string $path = null): string {
+                        return (string) $path;
+                    }
+
+                    /** @param Closure(int): mixed $column */
+                    function where($column): void {}
+
+                    where('my_url');
+                    PHP,
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'undefinedCallableClass' => [
                 'code' => '<?php
                     class A {

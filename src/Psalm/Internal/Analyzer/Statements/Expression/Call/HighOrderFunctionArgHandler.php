@@ -303,7 +303,8 @@ final class HighOrderFunctionArgHandler
                 return false;
             }
 
-            if ($a instanceof Type\Atomic\TCallableString ||
+            // a string naming a function is accepted as the string it is
+            if ($a instanceof Type\Atomic\TString ||
                 ($a instanceof Type\Atomic\TKeyedArray && $a->is_callable)
             ) {
                 return false;
