@@ -585,12 +585,21 @@ final class AssertionFinder
                         $if_types[$var_name_right] = [$all_assertions];
                     }
 
+                    $if_types = [
+                        ...$if_types,
+                        ...self::getNullsafeReceiverAssertions($conditional, $this_class_name, $source, true),
+                    ];
+
                     return $if_types ? [$if_types] : [];
                 }
             }
         }
 
-        return [];
+        $if_types = $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            ? self::getNullsafeReceiverAssertions($conditional, $this_class_name, $source, true)
+            : [];
+
+        return $if_types ? [$if_types] : [];
     }
 
     /**
@@ -3554,6 +3563,52 @@ final class AssertionFinder
     }
 
     /**
+     * `$x === $a?->p` with an `$x` that is not null means that `$a` is not.
+     *
+     * @return array<string, non-empty-list<non-empty-list<Assertion>>>
+     */
+    private static function getNullsafeReceiverAssertions(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+        ?string $this_class_name,
+        StatementsAnalyzer $source,
+        bool $identical,
+    ): array {
+        $if_types = [];
+
+        foreach ([$conditional->left, $conditional->right] as $nullsafe_operand) {
+            if (!$nullsafe_operand instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
+                continue;
+            }
+
+            $nullsafe_var_name = ExpressionIdentifier::getExtendedVarId(
+                $nullsafe_operand->var,
+                $this_class_name,
+                $source,
+            );
+
+            if ($nullsafe_var_name === null) {
+                continue;
+            }
+
+            $other_operand = $nullsafe_operand === $conditional->left
+                ? $conditional->right
+                : $conditional->left;
+            $other_operand_type = $source->node_data->getType($other_operand);
+
+            if ($other_operand_type
+                && $identical
+                && !$other_operand_type->isNullable()
+                && !$other_operand_type->isMixed()
+            ) {
+                $if_types[$nullsafe_var_name] = [[new IsNotType(new TNull())]];
+            }
+        }
+
+
+        return $if_types;
+    }
+
+    /**
      * @param PhpParser\Node\Expr\BinaryOp\Identical|PhpParser\Node\Expr\BinaryOp\Equal $conditional
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
@@ -3646,34 +3701,10 @@ final class AssertionFinder
             $if_types[$other_var_name] = [$orred_types];
         }
 
-        foreach ([$conditional->left, $conditional->right] as $nullsafe_operand) {
-            if (!$nullsafe_operand instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
-                continue;
-            }
-
-            $nullsafe_var_name = ExpressionIdentifier::getExtendedVarId(
-                $nullsafe_operand->var,
-                $this_class_name,
-                $source,
-            );
-
-            if ($nullsafe_var_name === null) {
-                continue;
-            }
-
-            $other_operand = $nullsafe_operand === $conditional->left
-                ? $conditional->right
-                : $conditional->left;
-            $other_operand_type = $source->node_data->getType($other_operand);
-
-            if ($other_operand_type
-                && $identical
-                && !$other_operand_type->isNullable()
-                && !$other_operand_type->isMixed()
-            ) {
-                $if_types[$nullsafe_var_name] = [[new IsNotType(new TNull())]];
-            }
-        }
+        $if_types = [
+            ...$if_types,
+            ...self::getNullsafeReceiverAssertions($conditional, $this_class_name, $source, $identical),
+        ];
 
         if ($codebase && $other_type && $var_type && $identical) {
             self::handleParadoxicalAssertions(
