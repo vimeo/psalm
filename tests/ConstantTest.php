@@ -346,6 +346,19 @@ final class ConstantTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment'],
             ],
+            'classConstantTypeNamingAnUndefinedConstant' => [
+                'code' => '<?php
+                    final class A {
+                        public const X = UNDEF_CONST;
+                    }
+
+                    /** @return A::X */
+                    function g() {
+                        return 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedConstant', 'MixedReturnStatement', 'MissingClassConstType'],
+            ],
             'hardToDefineClassConstant' => [
                 'code' => '<?php
                     class A {
