@@ -623,6 +623,32 @@ final class FunctionCallTest extends TestCase
 
                     a(["a" => "hello"]);',
             ],
+            'functionExistsGuardsTheRightOperandInsideAnotherNarrowingCondition' => [
+                'code' => '<?php
+                    function a(int $arg): void {
+                        if ($arg) {
+                            if (function_exists("do_something_a") && rand(0, 1)) {
+                                do_something_a("hello");
+                            }
+                        }
+                    }
+
+                    function b(int $arg): void {
+                        if (!empty($arg)) {
+                            if (function_exists("do_something_b") && do_something_b("hello")) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function c(int $arg): void {
+                        if ($arg) {
+                            if (defined("SOME_MISSING_CONSTANT") && SOME_MISSING_CONSTANT) {
+                                echo 1;
+                            }
+                        }
+                    }',
+            ],
             'getenv' => [
                 'code' => '<?php
                     $a = getenv();
