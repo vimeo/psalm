@@ -2182,6 +2182,27 @@ final class FunctionCallTest extends TestCase
                         return $lines;
                     }',
             ],
+            'execOutputEmptyArrayIsListOfStrings' => [
+                'code' => '<?php
+                    $bar = array();
+                    exec("pwd", $bar);
+
+                    $baz = [];
+                    exec("pwd", $baz, $code);
+
+                    $foo = null;
+                    exec("pwd", $foo);
+
+                    /** @var array<string> $existing */
+                    $existing = [];
+                    exec("pwd", $existing);',
+                'assertions' => [
+                    '$bar===' => 'list<string>',
+                    '$baz===' => 'list<string>',
+                    '$foo===' => 'list<string>',
+                    '$existing===' => 'array<array-key, mixed>',
+                ],
+            ],
             'array_is_list' => [
                 'code' => '<?php
                     function getArray() : array {
