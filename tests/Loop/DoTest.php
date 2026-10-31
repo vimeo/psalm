@@ -23,6 +23,25 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'counterOfDoWhileIsNotAZeroInItsFirstPassForTheIssues' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $existing */
+                    function nextId(array $existing): string {
+                        $counter = 0;
+
+                        do {
+                            $id = rand(0, 1) . ($counter === 0 ? '' : '-' . (string) $counter);
+                            $counter++;
+                        } while (in_array($id, $existing, true));
+
+                        return $id;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'doWhileTrue' => [
                 'code' => '<?php
                     function ret(): int {
@@ -384,6 +403,20 @@ final class DoTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'issueInTheBodyOfDoWhileIsStillReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int $i): void {
+                        do {
+                            $i++;
+                            echo $undefined;
+                        } while ($i < 3);
+                    }
+                    PHP,
+                'error_message' => 'UndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'doWhileVarWithPossibleBreakWithoutDefining' => [
                 'code' => '<?php
                     do {
