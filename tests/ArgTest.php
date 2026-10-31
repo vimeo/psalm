@@ -22,6 +22,18 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'namedKeysSplitOverSeveralUnpackedArrays' => [
+                'code' => '<?php
+                    function foo(int $a, string $b, float $c): void {
+                        echo $a, $b, $c;
+                    }
+
+                    foo(...["c" => 1.0], ...["a" => 0], ...["b" => "b"]);
+                    foo(...["a" => 0, "b" => "b"], ...["c" => 1.0]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'argumentUnpackingLiteral' => [
                 'code' => '<?php
                     function add(int $a, int $b, int $c) : int {
@@ -386,6 +398,28 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'namedKeyOfUnpackedArrayOfTheWrongType' => [
+                'code' => '<?php
+                    function foo(int $a, string $b, float $c): void {
+                        echo $a, $b, $c;
+                    }
+
+                    foo(...["a" => "wrong"], ...["b" => "b"], ...["c" => 1.0]);',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'namedKeysOfUnpackedArraysMissingAParameter' => [
+                'code' => '<?php
+                    function foo(int $a, string $b, float $c): void {
+                        echo $a, $b, $c;
+                    }
+
+                    foo(...["a" => 0], ...["b" => "b"]);',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'arrayPushArgumentUnpackingWithBadArg' => [
                 'code' => '<?php
                     $a = [];

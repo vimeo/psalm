@@ -569,6 +569,12 @@ final class ArgumentAnalyzer
 
                             $arg_value_type = new Union([$arg_value_type_atomic]);
                         }
+                    } elseif ($codebase->analysis_php_version_id >= 8_00_00
+                        && $allow_named_args
+                        && $unpacked_atomic_array->getGenericKeyType()->allStringLiterals()
+                    ) {
+                        // the parameter has no key here: another unpacked argument can give it
+                        return null;
                     } else {
                         $arg_value_type = Type::getMixed();
                     }
