@@ -20,6 +20,17 @@ final class EnumTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'casesOfAnEnumString' => [
+                'code' => '<?php
+                    /** @param enum-string $string */
+                    function listCases(string $string): void {
+                        $cases = $string::cases();
+                        /** @psalm-check-type-exact $cases = list<UnitEnum> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'example' => [
                 'code' => '<?php
                     interface Colourful {
@@ -766,6 +777,16 @@ final class EnumTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'methodOfABackedEnumIsUnknownOnAnEnumString' => [
+                'code' => '<?php
+                    /** @param enum-string $string */
+                    function fromValue(string $string): void {
+                        $string::from(1);
+                    }',
+                'error_message' => 'MixedMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'enumValueIsNot' => [
                 'code' => '<?php
                     enum Suit: string {
