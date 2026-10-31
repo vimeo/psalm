@@ -42,9 +42,7 @@ final class IssetAnalyzer
                             $context,
                         );
                     }
-                    if (!isset($context->vars_in_scope[$var_id])) {
-                        $context->vars_in_scope[$var_id] = Type::getMixed();
-                    }
+                    $context->vars_in_scope += [$var_id => Type::getMixed()];
                     $context->vars_possibly_in_scope[$var_id] = true;
                 }
             } elseif (!self::isValidStatement($isset_var)) {
