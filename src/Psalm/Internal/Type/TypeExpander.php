@@ -11,6 +11,7 @@ use Psalm\Exception\UnresolvableConstantException;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
+use Psalm\Internal\TypeVisitor\TemplateBoundNarrower;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
@@ -991,9 +992,21 @@ final class TypeExpander
                 }
             }
 
+            $if_type = $return_type->if_type;
+
+            // in the true branch the template is what the condition says
+            if ($return_type->subject_type === null) {
+                (new TemplateBoundNarrower(
+                    $return_type->param_name,
+                    $return_type->defining_class,
+                    $return_type->conditional_type,
+                    $codebase,
+                ))->traverse($if_type);
+            }
+
             $if_conditional_return_types = [];
 
-            foreach ($return_type->if_type->getAtomicTypes() as $if_atomic_type) {
+            foreach ($if_type->getAtomicTypes() as $if_atomic_type) {
                 $candidate_types = self::expandAtomic(
                     $codebase,
                     $if_atomic_type,
