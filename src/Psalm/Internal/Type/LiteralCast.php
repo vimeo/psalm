@@ -17,6 +17,7 @@ use const PHP_INT_MIN;
  * `%`, bitwise operators and array offsets), and when NAN is coerced to string. Psalm's error handler turns
  * such warnings into fatal errors, so literal folding must never perform these conversions natively.
  *
+ * @psalm-immutable
  * @internal
  */
 final class LiteralCast

@@ -90,82 +90,7 @@ final class ConstantTypeResolver
                 $visited_constant_ids + [$c_id => true],
             );
 
-            if ($left instanceof TMixed || $right instanceof TMixed) {
-                return new TMixed;
-            }
-
-            if ($c instanceof UnresolvedConcatOp) {
-                if (($left instanceof TLiteralString
-                        || $left instanceof TLiteralFloat
-                        || $left instanceof TLiteralInt)
-                    && ($right instanceof TLiteralString
-                        || $right instanceof TLiteralFloat
-                        || $right instanceof TLiteralInt)
-                ) {
-                    return Type::getAtomicStringFromLiteral(
-                        LiteralCast::toString($left->value) . LiteralCast::toString($right->value),
-                    );
-                }
-
-                return new TString();
-            }
-
-            if ($c instanceof UnresolvedAdditionOp
-                || $c instanceof UnresolvedSubtractionOp
-                || $c instanceof UnresolvedDivisionOp
-                || $c instanceof UnresolvedMultiplicationOp
-                || $c instanceof UnresolvedBitwiseOr
-                || $c instanceof UnresolvedBitwiseXor
-                || $c instanceof UnresolvedBitwiseAnd
-            ) {
-                if (($left instanceof TLiteralFloat || $left instanceof TLiteralInt)
-                    && ($right instanceof TLiteralFloat || $right instanceof TLiteralInt)
-                ) {
-                    if ($c instanceof UnresolvedAdditionOp) {
-                        return self::getLiteralTypeFromScalarValue($left->value + $right->value);
-                    }
-
-                    if ($c instanceof UnresolvedSubtractionOp) {
-                        return self::getLiteralTypeFromScalarValue($left->value - $right->value);
-                    }
-
-                    if ($c instanceof UnresolvedDivisionOp) {
-                        return self::getLiteralTypeFromScalarValue($left->value / $right->value);
-                    }
-
-                    if ($c instanceof UnresolvedBitwiseOr
-                        || $c instanceof UnresolvedBitwiseXor
-                        || $c instanceof UnresolvedBitwiseAnd
-                    ) {
-                        $left_int = LiteralCast::toInt($left->value);
-                        $right_int = LiteralCast::toInt($right->value);
-
-                        if ($left_int === null || $right_int === null) {
-                            return new TInt();
-                        }
-
-                        return new TLiteralInt(match (true) {
-                            $c instanceof UnresolvedBitwiseOr => $left_int | $right_int,
-                            $c instanceof UnresolvedBitwiseXor => $left_int ^ $right_int,
-                            default => $left_int & $right_int,
-                        });
-                    }
-
-                    return self::getLiteralTypeFromScalarValue($left->value * $right->value);
-                }
-
-                if ($left instanceof TKeyedArray && $right instanceof TKeyedArray) {
-                    $type = TKeyedArray::make(
-                        $left->properties + $right->properties,
-                        null,
-                    );
-                    return $type;
-                }
-
-                return new TMixed;
-            }
-
-            return new TMixed;
+            return self::resolveBinaryOp($c, $left, $right);
         }
 
         if ($c instanceof UnresolvedTernary) {
@@ -376,6 +301,93 @@ final class ConstantTypeResolver
     /**
      * Note: This takes an array, but any array should only contain other arrays and scalars.
      */
+    private static function resolveBinaryOp(UnresolvedBinaryOp $c, Atomic $left, Atomic $right): Atomic
+    {
+        if ($left instanceof TMixed || $right instanceof TMixed) {
+            return new TMixed;
+        }
+
+        if ($c instanceof UnresolvedConcatOp) {
+            if (($left instanceof TLiteralString
+                    || $left instanceof TLiteralFloat
+                    || $left instanceof TLiteralInt)
+                && ($right instanceof TLiteralString
+                    || $right instanceof TLiteralFloat
+                    || $right instanceof TLiteralInt)
+            ) {
+                return Type::getAtomicStringFromLiteral(
+                    LiteralCast::toString($left->value) . LiteralCast::toString($right->value),
+                );
+            }
+
+            return new TString();
+        }
+
+        if ($c instanceof UnresolvedBitwiseOr
+            || $c instanceof UnresolvedBitwiseXor
+            || $c instanceof UnresolvedBitwiseAnd
+        ) {
+            return self::resolveBitwiseOp($c, $left, $right);
+        }
+
+        if ($c instanceof UnresolvedAdditionOp
+            || $c instanceof UnresolvedSubtractionOp
+            || $c instanceof UnresolvedDivisionOp
+            || $c instanceof UnresolvedMultiplicationOp
+        ) {
+            if (($left instanceof TLiteralFloat || $left instanceof TLiteralInt)
+                && ($right instanceof TLiteralFloat || $right instanceof TLiteralInt)
+            ) {
+                return self::getLiteralTypeFromScalarValue(match (true) {
+                    $c instanceof UnresolvedAdditionOp => $left->value + $right->value,
+                    $c instanceof UnresolvedSubtractionOp => $left->value - $right->value,
+                    $c instanceof UnresolvedDivisionOp => $left->value / $right->value,
+                    default => $left->value * $right->value,
+                });
+            }
+
+            if ($left instanceof TKeyedArray && $right instanceof TKeyedArray) {
+                return TKeyedArray::make(
+                    $left->properties + $right->properties,
+                    null,
+                );
+            }
+        }
+
+        return new TMixed;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function resolveBitwiseOp(UnresolvedBinaryOp $c, Atomic $left, Atomic $right): Atomic
+    {
+        if (!($left instanceof TInt || $left instanceof TLiteralFloat)
+            || !($right instanceof TInt || $right instanceof TLiteralFloat)
+        ) {
+            return new TMixed;
+        }
+
+        if (!($left instanceof TLiteralInt || $left instanceof TLiteralFloat)
+            || !($right instanceof TLiteralInt || $right instanceof TLiteralFloat)
+        ) {
+            return new TInt();
+        }
+
+        $left_int = LiteralCast::toInt($left->value);
+        $right_int = LiteralCast::toInt($right->value);
+
+        if ($left_int === null || $right_int === null) {
+            return new TInt();
+        }
+
+        return new TLiteralInt(match (true) {
+            $c instanceof UnresolvedBitwiseOr => $left_int | $right_int,
+            $c instanceof UnresolvedBitwiseXor => $left_int ^ $right_int,
+            default => $left_int & $right_int,
+        });
+    }
+
     public static function getLiteralTypeFromScalarValue(array|string|int|float|bool|UnitEnum|null $value): Atomic
     {
         if ($value instanceof UnitEnum) {

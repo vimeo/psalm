@@ -54,6 +54,7 @@ final class FloatLiteralConversionTest extends TestCase
 
     /**
      * @return iterable<string, array{code: string, ignored_issues?: list<string>}>
+     * @psalm-pure
      */
     public static function providerCode(): iterable
     {

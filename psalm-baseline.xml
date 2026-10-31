@@ -831,17 +831,11 @@
       <code><![CDATA[$right_type_part]]></code>
     </ImplicitToStringCast>
     <InvalidOperand>
-      <code><![CDATA[$operand1 % $operand2]]></code>
-      <code><![CDATA[$operand1 & $operand2]]></code>
       <code><![CDATA[$operand1 * $operand2]]></code>
       <code><![CDATA[$operand1 ** $operand2]]></code>
       <code><![CDATA[$operand1 + $operand2]]></code>
       <code><![CDATA[$operand1 - $operand2]]></code>
       <code><![CDATA[$operand1 / $operand2]]></code>
-      <code><![CDATA[$operand1 << $operand2]]></code>
-      <code><![CDATA[$operand1 >> $operand2]]></code>
-      <code><![CDATA[$operand1 ^ $operand2]]></code>
-      <code><![CDATA[$operand1 | $operand2]]></code>
     </InvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$invalid_left_messages[0]]]></code>
@@ -857,10 +851,6 @@
       <code><![CDATA[$operand_type]]></code>
       <code><![CDATA[$operand_type]]></code>
     </ImplicitToStringCast>
-    <InvalidOperand>
-      <code><![CDATA[$left_type_part->value]]></code>
-      <code><![CDATA[$right_type_part->value]]></code>
-    </InvalidOperand>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/OrAnalyzer.php">
     <RiskyTruthyFalsyComparison>
@@ -1555,18 +1545,11 @@
   </file>
   <file src="src/Psalm/Internal/Codebase/ConstantTypeResolver.php">
     <InvalidOperand>
-      <code><![CDATA[$left->value & $right->value]]></code>
       <code><![CDATA[$left->value * $right->value]]></code>
       <code><![CDATA[$left->value + $right->value]]></code>
       <code><![CDATA[$left->value - $right->value]]></code>
       <code><![CDATA[$left->value / $right->value]]></code>
-      <code><![CDATA[$left->value ^ $right->value]]></code>
-      <code><![CDATA[$left->value | $right->value]]></code>
     </InvalidOperand>
-    <PossiblyInvalidOperand>
-      <code><![CDATA[$left->value]]></code>
-      <code><![CDATA[$right->value]]></code>
-    </PossiblyInvalidOperand>
   </file>
   <file src="src/Psalm/Internal/Codebase/Functions.php">
     <ImpureStaticProperty>
@@ -3602,10 +3585,6 @@
     <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
     </ImmutableDependency>
-    <InvalidOperand>
-      <code><![CDATA[$this->value]]></code>
-      <code><![CDATA[$this->value]]></code>
-    </InvalidOperand>
   </file>
   <file src="src/Psalm/Type/Atomic/TLiteralInt.php">
     <ImmutableDependency>

@@ -30,13 +30,27 @@ final class FunctionCallTest extends TestCase
                     $notANumber = filter_var(NAN, FILTER_VALIDATE_INT);
                     $whole = filter_var(5.0, FILTER_VALIDATE_INT);
                     $bigMin = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["min_range" => 1e30]]);
-                    $notANumberMax = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["max_range" => NAN]]);',
+                    $notANumberMax = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["max_range" => NAN]]);
+                    $knownMinAndNotANumberMax = filter_var(
+                        5,
+                        FILTER_VALIDATE_INT,
+                        ["options" => ["min_range" => 0, "max_range" => NAN]],
+                    );
+                    $bigMinAndKnownMax = filter_var(
+                        5,
+                        FILTER_VALIDATE_INT,
+                        ["options" => ["min_range" => 1e30, "max_range" => 10]],
+                    );
+                    $knownRange = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["min_range" => 0, "max_range" => 10]]);',
                 'assertions' => [
                     '$big===' => 'false',
                     '$notANumber===' => 'false',
                     '$whole===' => '5',
                     '$bigMin===' => 'false|int',
                     '$notANumberMax===' => 'false|int',
+                    '$knownMinAndNotANumberMax===' => 'false|int',
+                    '$bigMinAndKnownMax===' => 'false|int',
+                    '$knownRange===' => '5',
                 ],
             ],
 

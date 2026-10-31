@@ -521,6 +521,7 @@ final class FilterUtils
         $min_range = null;
         $max_range = null;
         $has_range = false;
+        $has_unrepresentable_bound = false;
         $regexp = null;
 
         if (!$options) {
@@ -582,8 +583,8 @@ final class FilterUtils
             // must be numeric, otherwise we would have continued above already
             if ($option === 'min_range' && $option_value->isSingleLiteral()) {
                 if ($filter_int_used === FILTER_VALIDATE_INT) {
-                    // An unrepresentable bound means no bound.
                     $min_range = LiteralCast::toInt($option_value->getSingleLiteral()->value);
+                    $has_unrepresentable_bound = $has_unrepresentable_bound || $min_range === null;
                 } elseif ($filter_int_used === FILTER_VALIDATE_FLOAT) {
                     $min_range = (float) $option_value->getSingleLiteral()->value;
                 }
@@ -591,8 +592,8 @@ final class FilterUtils
 
             if ($option === 'max_range' && $option_value->isSingleLiteral()) {
                 if ($filter_int_used === FILTER_VALIDATE_INT) {
-                    // An unrepresentable bound means no bound.
                     $max_range = LiteralCast::toInt($option_value->getSingleLiteral()->value);
+                    $has_unrepresentable_bound = $has_unrepresentable_bound || $max_range === null;
                 } elseif ($filter_int_used === FILTER_VALIDATE_FLOAT) {
                     $max_range = (float) $option_value->getSingleLiteral()->value;
                 }
@@ -617,6 +618,12 @@ final class FilterUtils
                     $regexp = true;
                 }
             }
+        }
+
+        if ($has_unrepresentable_bound) {
+            // what PHP makes of a bound that is not an int's value is undefined,
+            // so any value might be out of the range
+            return [$default, null, null, true, $regexp];
         }
 
         return [$default, $min_range, $max_range, $has_range, $regexp];
