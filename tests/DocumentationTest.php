@@ -257,21 +257,19 @@ final class DocumentationTest extends TestCase
         foreach (IssueHandler::getAllIssueTypes() as $issue_name) {
             $section = $sections[$issue_name] ?? '';
 
-            if ($section === 'Feature-specific errors') {
-                continue;
-            }
-
             /** @var class-string<CodeIssue> $issue_class */
             $issue_class = 'Psalm\\Issue\\' . $issue_name;
             /** @var int $level */
             $level = $issue_class::ERROR_LEVEL;
 
             // an issue of level 8 is an error at every level
-            $expected = $level === -1 || $level >= 8
-                ? 'Always treated as errors'
-                : ($level === 1
-                    ? 'Errors that only appear at level 1'
-                    : 'Errors at level ' . $level . ' and below');
+            $expected = $level === -2
+                ? 'Feature-specific errors'
+                : ($level === -1 || $level >= 8
+                    ? 'Always treated as errors'
+                    : ($level === 1
+                        ? 'Errors that only appear at level 1'
+                        : 'Errors at level ' . $level . ' and below'));
 
             if ($section !== $expected) {
                 $misplaced[$issue_name] = $section . ' (should be: ' . $expected . ')';
