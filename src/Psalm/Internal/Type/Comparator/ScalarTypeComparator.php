@@ -204,7 +204,7 @@ final class ScalarTypeComparator
 
             if ($input_type_part instanceof TLiteralString) {
                 if (strtolower($input_type_part->value) === $input_type_part->value) {
-                    return $input_type_part->value || $container_type_part instanceof TLowercaseString;
+                    return $input_type_part->value !== '' || $container_type_part instanceof TLowercaseString;
                 }
 
                 return false;
