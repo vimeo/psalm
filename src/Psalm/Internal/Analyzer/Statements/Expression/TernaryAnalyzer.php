@@ -13,6 +13,7 @@ use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -204,6 +205,19 @@ final class TernaryAnalyzer
         }
 
         $t_else_context = clone $context;
+
+        // the else runs when every operand of an `||` was evaluated and falsy, so what they assigned is known there
+        if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+        ) {
+            IfAnalyzer::addConditionallyAssignedVarsToContext(
+                $statements_analyzer,
+                $stmt->cond,
+                clone $context,
+                $t_else_context,
+                $assigned_in_conditional_var_ids,
+            );
+        }
 
         if ($stmt->if) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->if, $if_context) === false) {
