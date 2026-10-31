@@ -21,6 +21,64 @@ final class TraitTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'closureReturnTypeNamesTraitTemplate' => [
+                'code' => '<?php
+                    interface a {}
+                    class b implements a {}
+
+                    /**
+                     * @template T as a
+                     */
+                    trait c {
+                        /** @return T */
+                        abstract public function get(): a;
+
+                        public function getCb(): callable {
+                            return
+                                /** @return T */
+                                function (): a {
+                                    return $this->get();
+                                };
+                        }
+                    }
+
+                    class d {
+                        /** @use c<b> */
+                        use c;
+
+                        public function get(): b {
+                            return new b;
+                        }
+                    }',
+            ],
+            'closureReturnTypeNamesInheritedTemplate' => [
+                'code' => '<?php
+                    interface a {}
+                    class b implements a {}
+
+                    /**
+                     * @template T as a
+                     */
+                    abstract class Base {
+                        /** @return T */
+                        abstract public function get(): a;
+
+                        public function getCb(): callable {
+                            return
+                                /** @return T */
+                                function (): a {
+                                    return $this->get();
+                                };
+                        }
+                    }
+
+                    /** @extends Base<b> */
+                    final class Child extends Base {
+                        public function get(): b {
+                            return new b;
+                        }
+                    }',
+            ],
             'traitUseNotExtended' => [
                 'code' => '<?php
                     /**
@@ -553,6 +611,31 @@ final class TraitTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'closureReturnTypeNamesTraitTemplateStillChecked' => [
+                'code' => '<?php
+                    interface a {}
+                    class b implements a {}
+                    class other implements a {}
+
+                    /**
+                     * @template T as a
+                     */
+                    trait c {
+                        public function getCb(): callable {
+                            return
+                                /** @return T */
+                                function (): a {
+                                    return new other;
+                                };
+                        }
+                    }
+
+                    class d {
+                        /** @use c<b> */
+                        use c;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'badTemplateUse' => [
                 'code' => '<?php
                     /**

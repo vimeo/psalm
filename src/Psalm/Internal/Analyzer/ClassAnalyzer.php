@@ -107,6 +107,7 @@ use function preg_match;
 use function preg_replace;
 use function reset;
 use function str_replace;
+use function strpos;
 use function strtolower;
 use function substr;
 
@@ -1975,6 +1976,77 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         return new TNamedObject($original_fq_classlike_name);
     }
 
+    /**
+     * Replaces the templates of the class-like that declares a method (or a closure within it) with what
+     * the analyzed class gives them
+     *
+     * @param lowercase-string $method_name
+     */
+    public static function localizeReturnType(
+        Codebase $codebase,
+        Union $return_type,
+        ClassLikeStorage $declaring_class_storage,
+        string $original_fq_classlike_name,
+        string $method_name,
+    ): Union {
+        $this_object_type = self::getThisObjectType(
+            $declaring_class_storage,
+            $original_fq_classlike_name,
+        );
+
+        $class_template_params = ClassTemplateParamCollector::collect(
+            $codebase,
+            $declaring_class_storage,
+            $codebase->classlike_storage_provider->get($original_fq_classlike_name),
+            $method_name,
+            $this_object_type,
+        ) ?? [];
+
+        return TemplateStandinTypeReplacer::replace(
+            $return_type,
+            new TemplateResult($class_template_params, []),
+            $codebase,
+            null,
+            null,
+            null,
+            $original_fq_classlike_name,
+        );
+    }
+
+    /**
+     * A closure's return type names the templates of the class-like that declares the method around it
+     */
+    public static function localizeClosureReturnType(
+        Codebase $codebase,
+        ?Union $return_type,
+        Context $context,
+    ): ?Union {
+        if ($return_type === null
+            || $context->self === null
+            || $context->calling_method_id === null
+            || strpos($context->calling_method_id, '::') === false
+            || ($codebase->classlike_storage_provider->get($context->self)->template_extended_params ?? []) === []
+        ) {
+            return $return_type;
+        }
+
+        $enclosing_method_id = $codebase->methods->getDeclaringMethodId(
+            MethodIdentifier::wrap($context->calling_method_id),
+        );
+
+        if (!$enclosing_method_id) {
+            return $return_type;
+        }
+
+        return self::localizeReturnType(
+            $codebase,
+            $return_type,
+            $codebase->classlike_storage_provider->get($enclosing_method_id->fq_class_name),
+            $context->self,
+            $enclosing_method_id->method_name,
+        );
+    }
+
     public static function analyzeClassMethodReturnType(
         PhpParser\Node\Stmt\ClassMethod $stmt,
         MethodAnalyzer $method_analyzer,
@@ -2015,32 +2087,12 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $class_storage = $codebase->classlike_storage_provider->get($declaring_class_name);
             }
 
-            $this_object_type = self::getThisObjectType(
-                $class_storage,
-                $original_fq_classlike_name,
-            );
-
-            $class_template_params = ClassTemplateParamCollector::collect(
+            $return_type = self::localizeReturnType(
                 $codebase,
-                $class_storage,
-                $codebase->classlike_storage_provider->get($original_fq_classlike_name),
-                strtolower($stmt->name->name),
-                $this_object_type,
-            ) ?: [];
-
-            $template_result = new TemplateResult(
-                $class_template_params ?: [],
-                [],
-            );
-
-            $return_type = TemplateStandinTypeReplacer::replace(
                 $return_type,
-                $template_result,
-                $codebase,
-                null,
-                null,
-                null,
+                $class_storage,
                 $original_fq_classlike_name,
+                strtolower($stmt->name->name),
             );
         }
 
