@@ -672,30 +672,25 @@ final class TemplateInferredTypeReplacer
      */
     private static function isDisjoint(Codebase $codebase, Atomic $candidate, Union $conditional_type): bool
     {
-        // the empty array is never a non-empty one, nor the reverse
-        if (self::isEmptyArray($candidate) || self::isNonEmptyArray($candidate)) {
-            $all_disjoint = true;
-
-            foreach ($conditional_type->getAtomicTypes() as $conditional_atomic_type) {
-                if (!(self::isEmptyArray($candidate) && self::isNonEmptyArray($conditional_atomic_type))
-                    && !(self::isNonEmptyArray($candidate) && self::isEmptyArray($conditional_atomic_type))
-                ) {
-                    $all_disjoint = false;
-                    break;
-                }
+        foreach ($conditional_type->getAtomicTypes() as $conditional_atomic_type) {
+            // the empty array is never a non-empty one, nor the reverse
+            if ((self::isEmptyArray($candidate) && self::isNonEmptyArray($conditional_atomic_type))
+                || (self::isNonEmptyArray($candidate) && self::isEmptyArray($conditional_atomic_type))
+            ) {
+                continue;
             }
 
-            if ($all_disjoint) {
-                return true;
+            if (UnionTypeComparator::canExpressionTypesBeIdentical(
+                $codebase,
+                new Union([$candidate]),
+                new Union([$conditional_atomic_type]),
+                false,
+            )) {
+                return false;
             }
         }
 
-        return !UnionTypeComparator::canExpressionTypesBeIdentical(
-            $codebase,
-            new Union([$candidate]),
-            $conditional_type,
-            false,
-        );
+        return true;
     }
 
     /**
