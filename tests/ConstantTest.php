@@ -281,6 +281,45 @@ final class ConstantTest extends TestCase
 
                     echo CONSTANT;',
             ],
+            'classConstantFromBitShifts' => [
+                'code' => '<?php
+                    enum Color: int
+                    {
+                        case Blue = 2;
+                    }
+
+                    class Card
+                    {
+                        public const int LEFT = 1 << Color::Blue->value;
+                        public const int RIGHT = 256 >> 4;
+                        public const int BOTH = (1 << 4) | (64 >> 2);
+                    }
+
+                    $left = Card::LEFT;
+                    $right = Card::RIGHT;
+                    $both = Card::BOTH;',
+                'assertions' => [
+                    '$left===' => '4',
+                    '$right===' => '16',
+                    '$both===' => '16',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'classConstantFromAShiftOfANonLiteral' => [
+                'code' => '<?php
+                    class Card
+                    {
+                        public const int DYNAMIC = 1 << PHP_INT_SIZE;
+                    }
+
+                    $dynamic = Card::DYNAMIC;',
+                'assertions' => [
+                    '$dynamic' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'magicConstant' => [
                 'code' => '<?php
                     $a = __LINE__;
@@ -2365,6 +2404,23 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classConstantFromANegativeShiftIsNever' => [
+                'code' => '<?php
+                    enum Color: int
+                    {
+                        case Negative = -1;
+                    }
+
+                    class Card
+                    {
+                        public const int NEGATIVE = 1 << Color::Negative->value;
+                    }
+
+                    $negative = Card::NEGATIVE;',
+                'error_message' => 'NoValue',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'constantDefinedInFunctionButNotCalled' => [
                 'code' => '<?php
                     /**

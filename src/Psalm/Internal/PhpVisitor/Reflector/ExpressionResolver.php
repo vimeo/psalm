@@ -29,6 +29,8 @@ use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseXor;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedConcatOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedDivisionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedMultiplicationOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShiftLeft;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShiftRight;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
@@ -105,6 +107,14 @@ final class ExpressionResolver
 
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
                 return new UnresolvedBitwiseAnd($left, $right);
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft) {
+                return new UnresolvedShiftLeft($left, $right);
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight) {
+                return new UnresolvedShiftRight($left, $right);
             }
         }
 
