@@ -1074,6 +1074,11 @@ final class TemplateStandinTypeReplacer
             return [$atomic_type];
         }
 
+        // the template of a function is bound by its arguments, which the types the object gives can't replace
+        if ($template_result->readonly && str_starts_with($atomic_type->defining_class, 'fn-')) {
+            return [$atomic_type];
+        }
+
         $atomic_types = [];
 
         $as_type = $atomic_type->as_type;
