@@ -503,9 +503,20 @@ final class ClassLikeDocblockParser
                     throw new DocblockParseException('No @method entry specified');
                 }
 
+                // the name of the method isn't a type, even when it reads like one (`callable()`)
+                $method_name = null;
+                $tokenized_entry = $method_entry;
+
+                if (preg_match('/^([a-zA-Z_]\w*)(?= ?\()/', $method_entry, $name_matches)
+                    && isset($name_matches[1])
+                ) {
+                    $method_name = $name_matches[1];
+                    $tokenized_entry = 'psalm_method_name' . substr($method_entry, strlen($method_name));
+                }
+
                 try {
                     $method_tokens = TypeTokenizer::getFullyQualifiedTokens(
-                        $method_entry,
+                        $tokenized_entry,
                         $aliases,
                         $purity_template_map,
                     );
@@ -513,7 +524,7 @@ final class ClassLikeDocblockParser
                     if ($param_template_map !== $purity_template_map) {
                         $method_tokens = self::keepTemplatesInParamTypes(
                             $method_tokens,
-                            TypeTokenizer::getFullyQualifiedTokens($method_entry, $aliases, $param_template_map),
+                            TypeTokenizer::getFullyQualifiedTokens($tokenized_entry, $aliases, $param_template_map),
                         );
                     }
 
@@ -591,7 +602,8 @@ final class ClassLikeDocblockParser
                     }
                 }
 
-                $function_string = 'function ' . $method_tree->value . '(' . implode(', ', $args) . ')';
+                $function_string = 'function ' . ($method_name ?? $method_tree->value)
+                    . '(' . implode(', ', $args) . ')';
 
                 if ($is_static) {
                     $function_string = 'static ' . $function_string;
