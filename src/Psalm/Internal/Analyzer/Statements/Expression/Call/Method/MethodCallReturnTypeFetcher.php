@@ -79,9 +79,18 @@ final class MethodCallReturnTypeFetcher
 
         if ($stmt->isFirstClassCallable()) {
             if ($method_storage) {
+                // the return type the method inherits, as a call gets it
+                $self_fq_class_name = $fq_class_name;
+
                 return new Union([new TClosure(
                     $method_storage->params,
-                    $method_storage->return_type,
+                    $codebase->methods->getMethodReturnType(
+                        $codebase,
+                        $method_id,
+                        $self_fq_class_name,
+                        $statements_analyzer,
+                        [],
+                    ) ?? $method_storage->return_type,
                     $method_storage->capabilities,
                 )]);
             }
