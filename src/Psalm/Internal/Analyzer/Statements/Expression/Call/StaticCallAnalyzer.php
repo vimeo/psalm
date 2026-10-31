@@ -215,6 +215,15 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 }
 
                 if ($context->isPhantomClass($fq_class_name)) {
+                    ArgumentsAnalyzer::analyze(
+                        $statements_analyzer,
+                        $stmt->getArgs(),
+                        null,
+                        null,
+                        true,
+                        $context,
+                    );
+
                     return true;
                 }
 
@@ -247,6 +256,15 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 }
 
                 if (!$does_class_exist) {
+                    ArgumentsAnalyzer::analyze(
+                        $statements_analyzer,
+                        $stmt->getArgs(),
+                        null,
+                        null,
+                        true,
+                        $context,
+                    );
+
                     return $does_class_exist !== false;
                 }
             }
