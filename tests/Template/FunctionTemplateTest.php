@@ -23,6 +23,40 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalParamBeforeTheTemplateParamKeepsTheTemplateBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of "a"|"b"
+                     * @param (T is "a" ? string : null) $conditional
+                     * @param T $type
+                     * @return T
+                     */
+                    function conditionalFirst(?string $conditional, string $type): string {
+                        return $type;
+                    }
+
+                    $r = conditionalFirst("some-string", "a");',
+                'assertions' => [
+                    '$r===' => '\'a\'',
+                ],
+            ],
+            'conditionalParamBeforeTheTemplateParamOfAnUnconstrainedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param (T is int ? string : null) $conditional
+                     * @param T $value
+                     * @return T
+                     */
+                    function conditionalFirst(?string $conditional, $value) {
+                        return $value;
+                    }
+
+                    $r = conditionalFirst(null, 5);',
+                'assertions' => [
+                    '$r===' => '5',
+                ],
+            ],
             'extractTypeParameterValue' => [
                 'code' => '<?php
                     /**
