@@ -698,7 +698,7 @@ final class Methods
                     $overridden_class_storage->parent_class,
                     true,
                     false,
-                    $storage->final,
+                    $appearing_fq_class_storage->final,
                 );
 
                 $old_contained_by_new = UnionTypeComparator::isContainedBy(

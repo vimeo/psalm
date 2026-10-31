@@ -1182,6 +1182,9 @@ final class MethodComparator
                 : $implementer_classlike_storage->name,
             $implementer_called_class_name,
             $implementer_classlike_storage->parent_class,
+            true,
+            false,
+            $implementer_classlike_storage->final,
         );
 
         $guide_method_storage_return_type = TypeExpander::expandUnion(
@@ -1191,13 +1194,13 @@ final class MethodComparator
                 ? $implementer_classlike_storage->name
                 : $guide_classlike_storage->name,
             $guide_classlike_storage->is_trait
-                || $implementer_method_storage->final
+                || $implementer_classlike_storage->final
                 ? $implementer_called_class_name
                 : $guide_classlike_storage->name,
             $guide_classlike_storage->parent_class,
             true,
             true,
-            $implementer_method_storage->final,
+            $implementer_classlike_storage->final,
         );
 
         $guide_class_name = $guide_classlike_storage->name;
