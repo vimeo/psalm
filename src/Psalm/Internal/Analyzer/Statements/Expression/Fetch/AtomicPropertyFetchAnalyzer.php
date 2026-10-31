@@ -1437,7 +1437,13 @@ final class AtomicPropertyFetchAnalyzer
             || $class_storage->hasAttributeIncludingParents('AllowDynamicProperties', $codebase))
             && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
         ) {
-            $stmt_type = $class_storage->pseudo_property_get_types['$' . $prop_name];
+            $stmt_type = TypeExpander::expandUnion(
+                $codebase,
+                $class_storage->pseudo_property_get_types['$' . $prop_name],
+                $class_storage->name,
+                $class_storage->name,
+                $class_storage->parent_class,
+            );
 
             if (count($template_types = $class_storage->getClassTemplateTypes()) !== 0) {
                 if (!$lhs_type_part instanceof TGenericObject) {
