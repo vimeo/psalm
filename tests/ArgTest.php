@@ -22,6 +22,60 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'twoUnpackedShapesPassTheirOwnParameters' => [
+                'code' => '<?php
+                    function test(string $a, int $b): void {
+                        echo $a, $b;
+                    }
+
+                    $arg1 = ["a" => "string"];
+                    $arg2 = ["b" => 9];
+
+                    test(...$arg1, ...$arg2);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'twoUnpackedListsPassTheirOwnParameters' => [
+                'code' => '<?php
+                    function test(string $a, int $b): void {
+                        echo $a, $b;
+                    }
+
+                    $list1 = ["string"];
+                    $list2 = [9];
+
+                    test(...$list1, ...$list2);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedShapeAndNamedArgument' => [
+                'code' => '<?php
+                    function add(int $a, int $b): int {
+                        return $a + $b;
+                    }
+
+                    $args = ["a" => 7];
+
+                    echo add(...$args, b: 8);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedListAndNamedArgument' => [
+                'code' => '<?php
+                    function add(int $a, int $b): int {
+                        return $a + $b;
+                    }
+
+                    $list = [7];
+
+                    echo add(...$list, b: 8);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'argumentUnpackingLiteral' => [
                 'code' => '<?php
                     function add(int $a, int $b, int $c) : int {
@@ -386,6 +440,61 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'unpackedShapeStillChecksTheTypeOfItsOwnParameter' => [
+                'code' => '<?php
+                    function test(string $a, int $b): void {
+                        echo $a, $b;
+                    }
+
+                    $arg1 = ["a" => 5];
+                    $arg2 = ["b" => 9];
+
+                    test(...$arg1, ...$arg2);',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedListStillChecksTheTypeOfItsOwnParameter' => [
+                'code' => '<?php
+                    function test(string $a, int $b): void {
+                        echo $a, $b;
+                    }
+
+                    $list1 = [5];
+                    $list2 = [9];
+
+                    test(...$list1, ...$list2);',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedShapeAndNamedArgumentWithBadType' => [
+                'code' => '<?php
+                    function add(int $a, int $b): int {
+                        return $a + $b;
+                    }
+
+                    $args = ["a" => 7];
+
+                    echo add(...$args, b: "x");',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedArrayStillChecksTheParamsNotPassedByName' => [
+                'code' => '<?php
+                    function f(int $a, int $b, int $c): int {
+                        return $a + $b + $c;
+                    }
+
+                    /** @var array<string, string> $args */
+                    $args = [];
+
+                    echo f(...$args, c: 3);',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'arrayPushArgumentUnpackingWithBadArg' => [
                 'code' => '<?php
                     $a = [];
@@ -556,7 +665,7 @@ final class ArgTest extends TestCase
                     function processUserDataInvalid(array $data) : User {
                         return new User(...$data);
                     }',
-                'error_message' => 'MixedArgument',
+                'error_message' => 'TooFewArguments',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],

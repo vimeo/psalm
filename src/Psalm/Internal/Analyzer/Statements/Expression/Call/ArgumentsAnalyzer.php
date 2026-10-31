@@ -60,6 +60,9 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
+use function array_any;
+use function array_keys;
 use function array_reduce;
 use function array_reverse;
 use function array_slice;
@@ -977,8 +980,46 @@ final class ArgumentsAnalyzer
             }
 
             if ($arg->unpack) {
+                // what a sealed unpacked shape can pass: the parameters named by its string keys, or as many
+                // parameters as a list has elements
+                $unpacked_names = null;
+                $unpacked_count = null;
+                $unpacked_type = $statements_analyzer->node_data->getType($arg->value);
+
+                if ($unpacked_type
+                    && $unpacked_type->isSingle()
+                    && ($unpacked_atomic = $unpacked_type->getSingleAtomic()) instanceof TKeyedArray
+                    && $unpacked_atomic->fallback_params === null
+                ) {
+                    if ($unpacked_atomic->is_list) {
+                        $unpacked_count = count($unpacked_atomic->properties);
+                    } elseif (array_all(
+                        array_keys($unpacked_atomic->properties),
+                        static fn(int|string $key): bool => is_string($key),
+                    )) {
+                        $unpacked_names = array_keys($unpacked_atomic->properties);
+                    }
+                }
+
                 if ($function_param_count > $argument_offset) {
                     for ($i = $argument_offset; $i < $function_param_count; $i++) {
+                        if (!$function_params[$i]->is_variadic
+                            && (($unpacked_names !== null
+                                    && !in_array($function_params[$i]->name, $unpacked_names, true))
+                                || ($unpacked_count !== null && $i >= $argument_offset + $unpacked_count))
+                        ) {
+                            continue;
+                        }
+
+                        // a parameter passed by name cannot also receive an unpacked value
+                        if (array_any(
+                            $args,
+                            static fn(PhpParser\Node\Arg $named_arg): bool => $named_arg->name !== null
+                                && $named_arg->name->name === $function_params[$i]->name,
+                        )) {
+                            continue;
+                        }
+
                         $arg_function_params[$argument_offset][] = $function_params[$i];
                     }
                 }
