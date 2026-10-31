@@ -11,6 +11,11 @@ use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use function implode;
+use function spl_autoload_register;
+use function spl_autoload_unregister;
+use function str_starts_with;
+
 final class ClassLikeStringTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -33,6 +38,51 @@ final class ClassLikeStringTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * The autoloader would run the analyzed code (and any `exit` of it) inside the process of Psalm.
+     */
+    public function testClassExistsGuardDoesNotRunTheAutoloader(): void
+    {
+        $this->expectNotToPerformAssertions();
+
+        $autoloaded = [];
+        /** @psalm-capabilities read-props|write-this-props|write-refs */
+        $autoloader = static function (string $class) use (&$autoloaded): void {
+            if (str_starts_with($class, 'Guarded\\')) {
+                $autoloaded[] = $class;
+            }
+        };
+
+        spl_autoload_register($autoloader);
+
+        try {
+            $this->addFile(
+                'somefile.php',
+                '<?php
+                    if (!class_exists("Guarded\\Klass")) {
+                        class Klass {}
+                    }
+
+                    if (!interface_exists("Guarded\\Face")) {
+                        class Face {}
+                    }
+
+                    if (!enum_exists("Guarded\\Suit")) {
+                        class Suit {}
+                    }',
+            );
+
+            $this->project_analyzer->setPhpVersion('8.1', 'tests');
+            $this->analyzeFile('somefile.php', new Context());
+        } finally {
+            spl_autoload_unregister($autoloader);
+        }
+
+        if ($autoloaded) {
+            self::fail('The autoloader was run for ' . implode(', ', $autoloaded));
+        }
     }
 
     public function testAllowBuiltinClassStringStandInForNewClass(): void

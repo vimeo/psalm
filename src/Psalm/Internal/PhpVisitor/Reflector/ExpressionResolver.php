@@ -441,19 +441,7 @@ final class ExpressionResolver
                 $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
             }
 
-            if ($string_value && class_exists($string_value)) {
-                $reflection_class = new ReflectionClass($string_value);
-
-                if ($reflection_class->getFileName() !== $file_path) {
-                    $codebase->scanner->queueClassLikeForScanning(
-                        $string_value,
-                    );
-
-                    return true;
-                }
-            }
-
-            return false;
+            return self::isDefinedElsewhere($codebase, $string_value, $file_path, false);
         }
 
         if ($function->name->getParts() === ['interface_exists']
@@ -471,19 +459,7 @@ final class ExpressionResolver
                 $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
             }
 
-            if ($string_value && interface_exists($string_value)) {
-                $reflection_class = new ReflectionClass($string_value);
-
-                if ($reflection_class->getFileName() !== $file_path) {
-                    $codebase->scanner->queueClassLikeForScanning(
-                        $string_value,
-                    );
-
-                    return true;
-                }
-            }
-
-            return false;
+            return self::isDefinedElsewhere($codebase, $string_value, $file_path, true);
         }
 
         if ($function->name->getParts() === ['enum_exists']
@@ -501,21 +477,7 @@ final class ExpressionResolver
                 $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
             }
 
-            // We're using class_exists here because enum_exists doesn't exist on old versions of PHP
-            // Not sure what happens if we try to autoload or reflect on an enum on an old version of PHP though...
-            if ($string_value && class_exists($string_value)) {
-                $reflection_class = new ReflectionClass($string_value);
-
-                if ($reflection_class->getFileName() !== $file_path) {
-                    $codebase->scanner->queueClassLikeForScanning(
-                        $string_value,
-                    );
-
-                    return true;
-                }
-            }
-
-            return false;
+            return self::isDefinedElsewhere($codebase, $string_value, $file_path, false);
         }
 
         if ($function->name->getParts() === ['defined']
@@ -532,5 +494,40 @@ final class ExpressionResolver
         }
 
         return null;
+    }
+
+    /**
+     * Whether the class or interface is defined by something other than the file being scanned: a class Psalm's own
+     * process has loaded, or one Composer finds a file for. The autoloader is never run, as it would execute the
+     * analyzed code (and any `exit` of it).
+     */
+    private static function isDefinedElsewhere(
+        Codebase $codebase,
+        ?string $name,
+        string $file_path,
+        bool $is_interface,
+    ): bool {
+        if ($name === null || $name === '') {
+            return false;
+        }
+
+        if ($is_interface ? interface_exists($name, false) : class_exists($name, false)) {
+            /** @var class-string $name */
+            $defining_file = (new ReflectionClass($name))->getFileName();
+        } else {
+            $defining_file = $codebase->config->getComposerFilePathForClassLike($name);
+
+            if ($defining_file === false) {
+                return false;
+            }
+        }
+
+        if ($defining_file === $file_path) {
+            return false;
+        }
+
+        $codebase->scanner->queueClassLikeForScanning($name);
+
+        return true;
     }
 }
