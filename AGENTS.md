@@ -39,7 +39,7 @@ These come first, before every other rule here:
   showing that a new test fails on the base and passes on the branch. Run just that one
   case, never the whole file:
   - provider case: `vendor/bin/phpunit tests/CapabilitiesTest.php --filter 'testValidCode@caseName'`;
-  - TaintTest provider case (sharded over `tests/Taint/TaintCases{1..4}Test.php`):
+  - TaintTest provider case (sharded over `tests/Taint/TaintCases{1..8}Test.php`):
     `vendor/bin/phpunit tests/Taint --filter '@caseName'`. This runs the case in both modes
     (plain and `TrackingUnusedVariables`);
   - test method: `vendor/bin/phpunit tests/TaintTest.php --filter 'testMethodName$'`.

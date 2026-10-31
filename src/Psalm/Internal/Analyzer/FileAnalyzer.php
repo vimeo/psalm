@@ -12,7 +12,6 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\UnpreparedAnalysisException;
 use Psalm\Internal\Codebase\Functions;
-use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\Reflection;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
@@ -509,7 +508,6 @@ class FileAnalyzer extends SourceAnalyzer
         ClassLikeStorageProvider::deleteAll();
         FileStorageProvider::deleteAll();
         FileReferenceProvider::clearCache();
-        InternalCallMapHandler::clearCache();
     }
 
     /** @psalm-mutation-free */

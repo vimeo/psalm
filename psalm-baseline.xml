@@ -1065,10 +1065,6 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/Method/MissingMethodCallHandler.php">
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$found_generic_params]]></code>
-      <code><![CDATA[$found_generic_params]]></code>
-      <code><![CDATA[$found_generic_params]]></code>
-      <code><![CDATA[$found_generic_params]]></code>
       <code><![CDATA[$intersection_method_id]]></code>
       <code><![CDATA[$intersection_method_id]]></code>
     </RiskyTruthyFalsyComparison>
@@ -3932,9 +3928,6 @@
       <code><![CDATA[public function __construct()]]></code>
       <code><![CDATA[public function __construct()]]></code>
     </MethodSignatureMismatch>
-    <MutableDependency>
-      <code><![CDATA[ParserCacheProvider]]></code>
-    </MutableDependency>
   </file>
   <file src="tests/ProjectCheckerTest.php">
     <ImpureStaticProperty>
@@ -3957,6 +3950,7 @@
       <code><![CDATA[Config]]></code>
     </InvalidExtendClass>
     <MethodSignatureMismatch>
+      <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[public function __construct()]]></code>
