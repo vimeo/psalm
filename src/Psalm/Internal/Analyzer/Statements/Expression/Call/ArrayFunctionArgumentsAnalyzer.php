@@ -43,6 +43,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_key_last;
 use function array_pop;
 use function array_shift;
 use function array_unshift;
@@ -669,7 +670,14 @@ final class ArrayFunctionArgumentsAnalyzer
                         ) {
                             $array_properties = $array_atomic_type->properties;
 
-                            array_pop($array_properties);
+                            $popped_property = array_pop($array_properties);
+
+                            // an absent last item means that the one before it is the one popped
+                            if ($popped_property->possibly_undefined && $array_properties) {
+                                $new_last_key = array_key_last($array_properties);
+                                $array_properties[$new_last_key] = $array_properties[$new_last_key]
+                                    ->setPossiblyUndefined(true);
+                            }
 
                             if (!$array_properties) {
                                 $array_atomic_types []= Type::getEmptyArrayAtomic();
