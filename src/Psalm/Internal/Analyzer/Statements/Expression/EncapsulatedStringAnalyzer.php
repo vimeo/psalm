@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -21,6 +22,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
@@ -41,6 +43,11 @@ final class EncapsulatedStringAnalyzer
         $parent_nodes = [];
 
         $non_empty = false;
+
+        // only "" and "0" are falsy: a part that is neither can't leave the string one of them, and neither
+        // can two parts that are not empty
+        $non_falsy = false;
+        $non_empty_parts = 0;
 
         $all_literals = true;
 
@@ -69,6 +76,9 @@ final class EncapsulatedStringAnalyzer
                         ?? $literal_prefixes;
                 }
                 $non_empty = $non_empty || $part->value !== "";
+                $non_falsy = $non_falsy || ($part->value !== "" && $part->value !== "0");
+                $non_empty_parts += $part->value !== "" ? 1 : 0;
+                $non_falsy = $non_falsy || $non_empty_parts > 1;
             } elseif ($part_type = $statements_analyzer->node_data->getType($part)) {
                 $casted_part_type = CastAnalyzer::castStringAttempt(
                     $statements_analyzer,
@@ -76,6 +86,20 @@ final class EncapsulatedStringAnalyzer
                     $part_type,
                     $part,
                 );
+
+                $codebase = $statements_analyzer->getCodebase();
+                $non_falsy = $non_falsy || UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $casted_part_type,
+                    Type::getNonFalsyString(),
+                );
+                $non_empty_parts += UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $casted_part_type,
+                    Type::getNonEmptyString(),
+                ) ? 1 : 0;
+                $non_falsy = $non_falsy || $non_empty_parts > 1;
+                $non_empty = $non_empty || $non_falsy;
 
                 if (!$casted_part_type->allLiterals()) {
                     $all_literals = false;
@@ -175,6 +199,11 @@ final class EncapsulatedStringAnalyzer
             } elseif ($all_literals) {
                 $stmt_type = new Union(
                     [new TNonEmptyNonspecificLiteralString()],
+                    ['parent_nodes' => $parent_nodes],
+                );
+            } elseif ($non_falsy) {
+                $stmt_type = new Union(
+                    [new TNonFalsyString()],
                     ['parent_nodes' => $parent_nodes],
                 );
             } else {
