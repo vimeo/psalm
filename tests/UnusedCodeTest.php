@@ -244,6 +244,31 @@ final class UnusedCodeTest extends TestCase
         );
     }
 
+    public function testArgumentsOfStaticCallOnUndefinedClassAreUsed(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-api */
+                function f(): void {
+                    $v = "x";
+                    echo Nope::stat($v);
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            ['UndefinedClass', 'MixedArgument'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
     public function testOnlyAnInterfaceDeclaringAMethodThatDoesntSayWhatItDoesNeedsAClassAnnotation(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
@@ -441,6 +466,20 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'functionExistsGuardedCallUsesItsArguments' => [
+                'code' => '<?php
+                    if (function_exists("nope_fn")) {
+                        $foo = "foo";
+                        nope_fn($foo);
+                    }',
+            ],
+            'classExistsGuardedStaticCallUsesItsArguments' => [
+                'code' => '<?php
+                    if (class_exists("Nope")) {
+                        $foo = "foo";
+                        Nope::stat($foo);
+                    }',
+            ],
             'usedExceptionsAreNotReported' => [
                 'code' => '<?php
                     /** @psalm-api */
@@ -1789,6 +1828,20 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'functionExistsGuardedCallAnalysesItsArguments' => [
+                'code' => '<?php
+                    if (function_exists("nope_fn")) {
+                        nope_fn($undefined);
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'classExistsGuardedStaticCallAnalysesItsArguments' => [
+                'code' => '<?php
+                    if (class_exists("Nope")) {
+                        Nope::stat($undefined);
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'unusedClass' => [
                 'code' => '<?php
                     final class A { }',
