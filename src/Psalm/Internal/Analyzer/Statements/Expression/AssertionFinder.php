@@ -2219,6 +2219,39 @@ final class AssertionFinder
             }
         }
 
+        // a nullsafe chain that is null only by short-circuiting isn't null exactly when the receiver of its
+        // nullsafe link isn't, which holds for a single link: with several, a null intermediate value says nothing
+        $nullsafe_receivers = [];
+        $chain_link = NullsafeChainState::of($base_conditional) === NullsafeChainState::ShortCircuit
+            ? $base_conditional
+            : null;
+
+        while ($chain_link instanceof PhpParser\Node\Expr\PropertyFetch
+            || $chain_link instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            || $chain_link instanceof PhpParser\Node\Expr\MethodCall
+            || $chain_link instanceof PhpParser\Node\Expr\NullsafeMethodCall
+        ) {
+            if ($chain_link instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+                || $chain_link instanceof PhpParser\Node\Expr\NullsafeMethodCall
+            ) {
+                $nullsafe_receivers[] = $chain_link->var;
+            }
+
+            $chain_link = $chain_link->var;
+        }
+
+        if (count($nullsafe_receivers) === 1) {
+            $nullsafe_var_name = ExpressionIdentifier::getExtendedVarId(
+                $nullsafe_receivers[0],
+                $this_class_name,
+                $source,
+            );
+
+            if ($nullsafe_var_name !== null) {
+                $if_types[$nullsafe_var_name] = [[new IsNotType(new TNull())]];
+            }
+        }
+
         if ($codebase
             && $source instanceof StatementsAnalyzer
             && ($var_type = $source->node_data->getType($base_conditional))
