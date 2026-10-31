@@ -1002,23 +1002,7 @@ final class ParseTreeCreator
                 break;
 
             case '(':
-                if (in_array(
-                    $type_token[0],
-                    [
-                        'callable',
-                        'pure-callable',
-                        'self-mutating-callable',
-                        'self-accessing-callable',
-                        'impure-callable',
-
-                        'Closure', '\Closure',
-                        'pure-Closure',
-                        'self-mutating-Closure',
-                        'self-accessing-Closure',
-                        'impure-Closure',
-                    ],
-                    true,
-                )) {
+                if (in_array($type_token[0], self::CALLABLE_KEYWORDS, true)) {
                     $new_leaf = new CallableTree(
                         $type_token[0],
                         $new_parent,
