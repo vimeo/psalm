@@ -1100,6 +1100,46 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'undefinedClassParamWithTemplateDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $a
+                     */
+                    function foo(UndefinedClass $a): void {
+                        echo 1;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'undefinedClassParamWithMixedDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $a
+                     */
+                    function foo(UndefinedClass $a): void {
+                        echo 1;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'undefinedClassPropertyWithMixedDocblock' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var mixed */
+                        public UndefinedClass $a;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'undefinedClassPropertyWithTemplateDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class A {
+                        /** @var T */
+                        public UndefinedClass $a;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
             'undefinedClass' => [
                 'code' => '<?php
                     (new Foo());',
