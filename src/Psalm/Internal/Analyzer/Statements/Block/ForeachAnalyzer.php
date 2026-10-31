@@ -1377,6 +1377,29 @@ final class ForeachAnalyzer
                         'key',
                     );
 
+                    $traversable_key_type = null;
+                    $traversable_value_type = null;
+
+                    self::getKeyValueParamsForTraversableObject(
+                        $iterator_atomic_type,
+                        $codebase,
+                        $traversable_key_type,
+                        $traversable_value_type,
+                    );
+
+                    // current() and key() are null past the end, which a foreach never gets to
+                    if ($iterator_value_type && $traversable_value_type && !$traversable_value_type->isNullable()) {
+                        $iterator_value_type = $iterator_value_type->getBuilder();
+                        $iterator_value_type->removeType('null');
+                        $iterator_value_type = $iterator_value_type->freeze();
+                    }
+
+                    if ($iterator_key_type && $traversable_key_type && !$traversable_key_type->isNullable()) {
+                        $iterator_key_type = $iterator_key_type->getBuilder();
+                        $iterator_key_type->removeType('null');
+                        $iterator_key_type = $iterator_key_type->freeze();
+                    }
+
                     if ($iterator_value_type && !$iterator_value_type->isMixed()) {
                         $value_type = Type::combineUnionTypes($value_type, $iterator_value_type);
                     }
