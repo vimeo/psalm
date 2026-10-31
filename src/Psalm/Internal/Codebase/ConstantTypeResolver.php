@@ -28,6 +28,7 @@ use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedMultiplicationOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -100,7 +101,9 @@ final class ConstantTypeResolver
                         || $right instanceof TLiteralFloat
                         || $right instanceof TLiteralInt)
                 ) {
-                    return Type::getAtomicStringFromLiteral($left->value . $right->value);
+                    return Type::getAtomicStringFromLiteral(
+                        LiteralCast::toString($left->value) . LiteralCast::toString($right->value),
+                    );
                 }
 
                 return new TString();
