@@ -190,7 +190,8 @@ final class NativeSymbolAvailabilityTest extends TestCase
             ',
             'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:26 - WeakMap is not'
                 . ' defined for the analysed PHP version 7.4 (it was introduced in PHP 8.0);'
-                . ' install symfony/polyfill-php80',
+                . ' define a polyfill (symfony/polyfill-php80 ships some of the symbols of that version), or raise'
+                . ' the analysed PHP version',
             'error_levels' => [],
             'php_version' => '7.4',
         ];

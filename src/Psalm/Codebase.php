@@ -3342,7 +3342,7 @@ final class Codebase
      * The tail shared by the Undefined* messages reported when a native symbol (introduced in
      * `$since_php_version_id`) is used on an older analysed PHP version without a polyfill. Prefix
      * it with the symbol, e.g. "Function foo ". `symfony/polyfill-php<major><minor>` is the polyfill
-     * package for that version (e.g. symfony/polyfill-php81).
+     * package for that version (e.g. symfony/polyfill-php81), which ships only some of its symbols.
      *
      * @psalm-capabilities read-props
      */
@@ -3352,7 +3352,8 @@ final class Codebase
 
         return 'is not defined for the analysed PHP version '
             . self::getPhpVersionString($this->analysis_php_version_id)
-            . ' (it was introduced in PHP ' . $since . '); install symfony/polyfill-php'
-            . str_replace('.', '', $since) . ', define a polyfill, or raise the analysed PHP version';
+            . ' (it was introduced in PHP ' . $since . '); define a polyfill (symfony/polyfill-php'
+            . str_replace('.', '', $since) . ' ships some of the symbols of that version), or raise the analysed PHP'
+            . ' version';
     }
 }
