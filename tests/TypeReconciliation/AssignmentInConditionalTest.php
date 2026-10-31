@@ -21,6 +21,33 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assignmentInRightOperandOfAndForgetsWhatTheLeftOneTestedOfThePreviousValue' => [
+                'code' => '<?php
+                    function fresh(): ?string {
+                        return null;
+                    }
+
+                    function f(?string $name): string {
+                        if (null === $name && null !== $name = fresh()) {
+                            return $name;
+                        }
+
+                        return "none";
+                    }
+
+                    function g(?string $name): int {
+                        return $name !== null && ($name = trim($name)) !== "" ? strlen($name) : 0;
+                    }
+
+                    function other(): ?array {
+                        return null;
+                    }
+
+                    /** @param array{k?: int}|null $a */
+                    function h(?array $a): int {
+                        return isset($a["k"]) && ($a = other()) !== null ? count($a) : 0;
+                    }',
+            ],
             'orWithAssignment' => [
                 'code' => '<?php
                     function maybeString(): ?string {
