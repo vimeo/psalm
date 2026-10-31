@@ -34,6 +34,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -132,16 +133,22 @@ final class ConstantTypeResolver
                         return self::getLiteralTypeFromScalarValue($left->value / $right->value);
                     }
 
-                    if ($c instanceof UnresolvedBitwiseOr) {
-                        return self::getLiteralTypeFromScalarValue($left->value | $right->value);
-                    }
+                    if ($c instanceof UnresolvedBitwiseOr
+                        || $c instanceof UnresolvedBitwiseXor
+                        || $c instanceof UnresolvedBitwiseAnd
+                    ) {
+                        $left_int = LiteralCast::toInt($left->value);
+                        $right_int = LiteralCast::toInt($right->value);
 
-                    if ($c instanceof UnresolvedBitwiseXor) {
-                        return self::getLiteralTypeFromScalarValue($left->value ^ $right->value);
-                    }
+                        if ($left_int === null || $right_int === null) {
+                            return new TInt();
+                        }
 
-                    if ($c instanceof UnresolvedBitwiseAnd) {
-                        return self::getLiteralTypeFromScalarValue($left->value & $right->value);
+                        return new TLiteralInt(match (true) {
+                            $c instanceof UnresolvedBitwiseOr => $left_int | $right_int,
+                            $c instanceof UnresolvedBitwiseXor => $left_int ^ $right_int,
+                            default => $left_int & $right_int,
+                        });
                     }
 
                     return self::getLiteralTypeFromScalarValue($left->value * $right->value);

@@ -388,6 +388,38 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'floatOperandsOutsideTheRangeOfAnIntAreNotFolded' => [
+                'code' => '<?php
+                    $notANumberModulo = NAN % 3;
+                    $infiniteModulo = 3 % INF;
+                    $modulo = 7.0 % 4;
+                    $bigOr = 1e30 | 1;
+                    $infiniteAnd = INF & 1;
+                    $notANumberXor = 1 ^ NAN;
+                    $bigShiftLeft = 1 << 1e30;
+                    $bigShiftRight = -1e30 >> 1;
+                    $or = 6.0 | 1;
+                    $notANumberNot = ~NAN;
+                    $bigNot = ~1e30;
+                    $infiniteNot = ~-INF;
+                    $not = ~5.0;',
+                'assertions' => [
+                    '$notANumberModulo===' => 'int',
+                    '$infiniteModulo===' => 'int',
+                    '$modulo===' => '3',
+                    '$bigOr===' => 'int',
+                    '$infiniteAnd===' => 'int',
+                    '$notANumberXor===' => 'int',
+                    '$bigShiftLeft===' => 'int',
+                    '$bigShiftRight===' => 'int',
+                    '$or===' => '7',
+                    '$notANumberNot===' => 'int',
+                    '$bigNot===' => 'int',
+                    '$infiniteNot===' => 'int',
+                    '$not===' => '-6',
+                ],
+            ],
+
             'regularAddition' => [
                 'code' => '<?php
                     $a = 5 + 4;',

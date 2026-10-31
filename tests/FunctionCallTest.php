@@ -24,6 +24,22 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'filterVarIntWithFloatLiteralsOutsideTheRangeOfAnInt' => [
+                'code' => '<?php
+                    $big = filter_var(1e30, FILTER_VALIDATE_INT);
+                    $notANumber = filter_var(NAN, FILTER_VALIDATE_INT);
+                    $whole = filter_var(5.0, FILTER_VALIDATE_INT);
+                    $bigMin = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["min_range" => 1e30]]);
+                    $notANumberMax = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["max_range" => NAN]]);',
+                'assertions' => [
+                    '$big===' => 'false',
+                    '$notANumber===' => 'false',
+                    '$whole===' => '5',
+                    '$bigMin===' => 'false|int',
+                    '$notANumberMax===' => 'false|int',
+                ],
+            ],
+
             'multibyteLiteralArgument' => [
                 'code' => '<?php
                     function startsWithGreeting(string $s): bool {
