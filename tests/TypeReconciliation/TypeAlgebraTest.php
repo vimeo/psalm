@@ -1644,7 +1644,7 @@ final class TypeAlgebraTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullReference',
             ],
-            'stillNullAfterNullsafeMethodCall' => [
+            'possiblyNullAfterFalsyNullsafeMethodCall' => [
                 'code' => '<?php
                     interface X {
                         public function a(): bool;
@@ -1656,7 +1656,7 @@ final class TypeAlgebraTest extends TestCase
                             echo $x->b();
                         }
                     }',
-                'error_message' => 'NullReference',
+                'error_message' => 'PossiblyNullReference',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
