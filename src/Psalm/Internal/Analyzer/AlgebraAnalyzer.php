@@ -25,6 +25,24 @@ use function implode;
 final class AlgebraAnalyzer
 {
     /**
+     * `in-array-X` doesn't say which array the value was looked up in: two equal ones are not a repetition
+     *
+     * @psalm-pure
+     */
+    private static function hasInArrayPossibility(Clause $clause): bool
+    {
+        foreach ($clause->possibilities as $keyed_possibilities) {
+            foreach ($keyed_possibilities as $possibility) {
+                if ($possibility instanceof InArray || $possibility instanceof NotInArray) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * This looks to see if there are any clauses in one formula that contradict
      * clauses in another formula, or clauses that duplicate previous clauses
      *
@@ -65,6 +83,7 @@ final class AlgebraAnalyzer
                 && $formula_2_clause->reconcilable
                 && (isset($formula_1_hashes[$hash]) || isset($formula_2_hashes[$hash]))
                 && !array_intersect_key($new_assigned_var_ids, $formula_2_clause->possibilities)
+                && !self::hasInArrayPossibility($formula_2_clause)
             ) {
                 IssueBuffer::maybeAdd(
                     new RedundantCondition(
