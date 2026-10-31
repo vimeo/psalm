@@ -239,7 +239,10 @@ final class StatementsProvider
             $this->errors[$file_path] = true;
         }
 
-        $this->parser_cache_provider->saveStatementsToCache($file_path, $file_contents, $stmts);
+        // a cache hit can't replay the ParseError, so a file that failed to parse is parsed again every run
+        if (!$has_errors) {
+            $this->parser_cache_provider->saveStatementsToCache($file_path, $file_contents, $stmts);
+        }
 
         return $stmts;
     }
