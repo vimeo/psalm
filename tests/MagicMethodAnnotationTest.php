@@ -1286,6 +1286,69 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$d' => 'SingleQuoteChild',
                 ],
             ],
+            'childMethodAnnotationOverridesTheParentOne' => [
+                'code' => '<?php
+                    class ModelA {}
+                    class ModelB extends ModelA {}
+
+                    /** @method array<ModelA> getAll() */
+                    class AccessorParent {
+                        public function __call(string $name, array $args): array {
+                            return [];
+                        }
+                    }
+
+                    /** @method array<ModelB> getAll() */
+                    class AccessorChild extends AccessorParent {}
+
+                    $all = (new AccessorChild())->getAll();',
+                'assertions' => [
+                    '$all' => 'array<array-key, ModelB>',
+                ],
+            ],
+            'childStaticMethodAnnotationOverridesTheParentOne' => [
+                'code' => '<?php
+                    class ModelA {}
+                    class ModelB extends ModelA {}
+
+                    /** @method static ModelA make() */
+                    class StaticParent {
+                        public static function __callStatic(string $name, array $args): object {
+                            return new ModelA();
+                        }
+                    }
+
+                    /** @method static ModelB make() */
+                    class StaticChild extends StaticParent {}
+
+                    $made = StaticChild::make();',
+                'assertions' => [
+                    '$made' => 'ModelB',
+                ],
+            ],
+            'grandchildMethodAnnotationIsInheritedFromTheNearestAncestor' => [
+                'code' => '<?php
+                    class ModelA {}
+                    class ModelB extends ModelA {}
+                    class ModelC extends ModelB {}
+
+                    /** @method ModelA find() */
+                    class First {
+                        public function __call(string $name, array $args): object {
+                            return new ModelA();
+                        }
+                    }
+
+                    /** @method ModelB find() */
+                    class Second extends First {}
+
+                    class Third extends Second {}
+
+                    $found = (new Third())->find();',
+                'assertions' => [
+                    '$found' => 'ModelB',
+                ],
+            ],
         ];
     }
 

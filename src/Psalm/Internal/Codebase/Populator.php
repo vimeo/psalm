@@ -1014,17 +1014,19 @@ final class Populator
         $parent_storage->dependent_classlikes[strtolower($storage->name)] = true;
 
         foreach ($parent_storage->pseudo_static_methods as $method_name => $pseudo_method) {
-            if (!isset($storage->methods[$method_name])) {
+            if (!isset($storage->methods[$method_name]) && !isset($storage->pseudo_static_methods[$method_name])) {
                 $storage->pseudo_static_methods[$method_name] = $pseudo_method;
             }
         }
         foreach ($parent_storage->pseudo_methods as $method_name => $pseudo_method) {
-            if (!isset($storage->methods[$method_name])) {
+            if (!isset($storage->methods[$method_name]) && !isset($storage->pseudo_methods[$method_name])) {
                 $storage->pseudo_methods[$method_name] = $pseudo_method;
             }
         }
         foreach ($parent_storage->declaring_pseudo_method_ids as $method_name => $pseudo_method_id) {
-            if (!isset($storage->methods[$method_name])) {
+            if (!isset($storage->methods[$method_name])
+                && !isset($storage->declaring_pseudo_method_ids[$method_name])
+            ) {
                 $storage->declaring_pseudo_method_ids[$method_name] = $pseudo_method_id;
             };
         }
