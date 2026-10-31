@@ -2663,6 +2663,36 @@ final class AssertAnnotationTest extends TestCase
                     }
                     ',
             ],
+            'closedInheritanceOfAConcreteClassKeepsTheClassItself' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-inheritors FooClass|BarClass
+                     */
+                    class BaseClass {}
+                    class FooClass extends BaseClass {}
+                    class BarClass extends BaseClass {}
+
+                    function f(BaseClass $v): void {
+                        if (!$v instanceof FooClass) {
+                            /** @psalm-check-type-exact $v = BarClass|BaseClass */
+                        }
+                    }',
+            ],
+            'closedInheritanceOfAnAbstractClassDoesNotKeepTheClassItself' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-inheritors FooClass|BarClass
+                     */
+                    abstract class BaseClass {}
+                    class FooClass extends BaseClass {}
+                    class BarClass extends BaseClass {}
+
+                    function f(BaseClass $v): void {
+                        if (!$v instanceof FooClass) {
+                            /** @psalm-check-type-exact $v = BarClass */
+                        }
+                    }',
+            ],
             'assertObjectWithClosedInheritance' => [
                 'code' => '<?php
                     /**
