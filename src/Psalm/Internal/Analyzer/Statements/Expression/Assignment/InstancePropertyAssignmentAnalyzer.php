@@ -385,22 +385,18 @@ final class InstancePropertyAssignmentAnalyzer
         }
     }
 
-    public static function trackPropertyImpurity(
+    /**
+     * Reports a write to a readonly property that its scope or its default forbids,
+     * and returns whether the readonly property may be set from the current scope.
+     */
+    public static function trackReadonlyViolation(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         string $property_id,
         PropertyStorage $property_storage,
-        ClassLikeStorage $declaring_class_storage,
         Context $context,
-        ?string $lhs_var_id,
-    ): void {
+    ): bool {
         $codebase = $statements_analyzer->getCodebase();
-
-        $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
-
-        $property_var_pure_compatible = $stmt_var_type
-            && $stmt_var_type->reference_free
-            && $stmt_var_type->allow_mutations;
 
         $appearing_property_class = $codebase->properties->getAppearingClassForProperty(
             $property_id,
@@ -418,7 +414,7 @@ final class InstancePropertyAssignmentAnalyzer
                     || str_ends_with($context->calling_method_id, '::__unserialize')
                     || str_ends_with($context->calling_method_id, '::__clone')
                     || $property_storage->allow_private_mutation
-                    || $property_var_pure_compatible);
+                    || self::isFreshReceiver($statements_analyzer, $stmt));
 
             if (!$can_set_readonly_property && $property_storage->readonly) {
                 IssueBuffer::maybeAdd(
@@ -443,7 +439,41 @@ final class InstancePropertyAssignmentAnalyzer
                 );
             }
         }
-        
+
+        return $can_set_readonly_property;
+    }
+
+    /** @psalm-capabilities read-props */
+    private static function isFreshReceiver(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+    ): bool {
+        $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
+
+        return $stmt_var_type && $stmt_var_type->reference_free && $stmt_var_type->allow_mutations;
+    }
+
+    public static function trackPropertyImpurity(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        string $property_id,
+        PropertyStorage $property_storage,
+        ClassLikeStorage $declaring_class_storage,
+        Context $context,
+        ?string $lhs_var_id,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $property_var_pure_compatible = self::isFreshReceiver($statements_analyzer, $stmt);
+
+        $can_set_readonly_property = self::trackReadonlyViolation(
+            $statements_analyzer,
+            $stmt,
+            $property_id,
+            $property_storage,
+            $context,
+        );
+
         // writing the property of an object reached from global state writes global state
         $var_type = $statements_analyzer->node_data->getType($stmt->var);
         $on_global_state = $var_type !== null && $var_type->from_global_state;
@@ -513,6 +543,51 @@ final class InstancePropertyAssignmentAnalyzer
                 $declaring_class_storage->name,
                 Capabilities::ALL,
             );
+        }
+    }
+
+    /** Checks a write that bypasses analyze() (string `++`, by-reference `foreach`) to a readonly property. */
+    public static function trackReadonlyPropertyWrite(
+        StatementsAnalyzer $statements_analyzer,
+        PropertyFetch $fetch,
+        Context $context,
+    ): void {
+        $receiver_type = $statements_analyzer->node_data->getType($fetch->var);
+
+        if (!$fetch->name instanceof PhpParser\Node\Identifier || !$receiver_type) {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $prop_name = $fetch->name->name;
+
+        foreach ($receiver_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject) {
+                continue;
+            }
+
+            $property_id = $atomic_type->value . '::$' . $prop_name;
+            $declaring_class = $codebase->properties->getDeclaringClassForProperty(
+                $property_id,
+                true,
+                $statements_analyzer,
+            );
+            if ($declaring_class === null) {
+                continue;
+            }
+
+            $property_storage = $codebase->classlike_storage_provider->get($declaring_class)
+                ->properties[$prop_name] ?? null;
+
+            if ($property_storage !== null && $property_storage->readonly) {
+                self::trackReadonlyViolation(
+                    $statements_analyzer,
+                    $fetch,
+                    $property_id,
+                    $property_storage,
+                    $context,
+                );
+            }
         }
     }
 

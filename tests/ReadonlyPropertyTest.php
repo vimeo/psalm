@@ -118,6 +118,20 @@ final class ReadonlyPropertyTest extends TestCase
 
                     echo (new A)->bar;',
             ],
+            'incrementMutableNumericStringProperty' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var numeric-string */
+                        public string $n = "5";
+
+                        public function next(): void {
+                            $this->n++;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'readonlyPropertySetChildClass' => [
                 'code' => '<?php
                     abstract class A {
@@ -319,6 +333,32 @@ final class ReadonlyPropertyTest extends TestCase
 
                     $test->prop += 1;',
                 'error_message' => 'InaccessibleProperty',
+            ],
+            'readonlyStringPropertyIncrement' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public readonly string $s) {}
+
+                        public function next(): void {
+                            $this->s++;
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29 - A::$s is marked readonly',
+                'error_levels' => ['StringIncrement'],
+                'php_version' => '8.1',
+            ],
+            'readonlyIntOrStringPropertyPreIncrement' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public readonly int|string $v) {}
+
+                        public function next(): void {
+                            ++$this->v;
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:31 - A::$v is marked readonly',
+                'error_levels' => ['StringIncrement'],
+                'php_version' => '8.1',
             ],
             'readonlyPropertyWithDefault' => [
                 'code' => '<?php
