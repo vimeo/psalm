@@ -451,6 +451,23 @@ final class UnusedCodeManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['PossiblyUnusedMethod', 'MissingReturnType'],
                 'safe_types' => true,
             ],
+            'removeAMultiPropertyDeclarationOfUnusedProperties' => [
+                'input' => '<?php
+                    class A {
+                        private $foo, $bar;
+                    }
+
+                    new A();',
+                'output' => '<?php
+                    class A {
+
+                    }
+
+                    new A();',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedProperty'],
+                'safe_types' => true,
+            ],
             'dontRemoveUnusedPropertyOfAMultiPropertyDeclaration' => [
                 'input' => '<?php
                     class A {

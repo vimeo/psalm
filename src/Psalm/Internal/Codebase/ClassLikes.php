@@ -2513,19 +2513,24 @@ final class ClassLikes
     }
 
     /**
-     * Removing the statement of a property would remove the others declared in it, as in `public $a, $b;`
+     * Removing the statement of a property removes the others declared in it, as in `public $a, $b;`:
+     * it is only for the properties that nothing references
      *
-     * @psalm-mutation-free
+     * @psalm-capabilities read-props
      */
-    private static function declaresOnlyProperty(
+    private static function canRemoveStatement(
+        Codebase $codebase,
         ClassLikeStorage $classlike_storage,
         PropertyStorage $property_storage,
     ): bool {
-        foreach ($classlike_storage->properties as $other_property_storage) {
+        foreach ($classlike_storage->properties as $other_property_name => $other_property_storage) {
             if ($other_property_storage !== $property_storage
                 && $other_property_storage->stmt_location !== null
                 && $property_storage->stmt_location !== null
                 && $other_property_storage->stmt_location->getHash() === $property_storage->stmt_location->getHash()
+                && $codebase->code_use_graph->isUsed(
+                    CodeUseGraph::propertyNode(strtolower($classlike_storage->name), $other_property_name),
+                )
             ) {
                 return false;
             }
@@ -2615,7 +2620,7 @@ final class ClassLikes
 
                         if ($codebase->alter_code) {
                             if ($property_storage->stmt_location
-                                && self::declaresOnlyProperty($classlike_storage, $property_storage)
+                                && self::canRemoveStatement($codebase, $classlike_storage, $property_storage)
                                 && isset($project_analyzer->getIssuesToFix()['PossiblyUnusedProperty'])
                                 && !$has_variable_calls
                                 && !IssueBuffer::isSuppressed($issue, $classlike_storage->suppressed_issues)
@@ -2647,7 +2652,7 @@ final class ClassLikes
                     if ($codebase->alter_code) {
                         if (!$property_constructor_referenced
                             && $property_storage->stmt_location
-                            && self::declaresOnlyProperty($classlike_storage, $property_storage)
+                            && self::canRemoveStatement($codebase, $classlike_storage, $property_storage)
                             && isset($project_analyzer->getIssuesToFix()['UnusedProperty'])
                             && !$has_variable_calls
                             && !IssueBuffer::isSuppressed($issue, $classlike_storage->suppressed_issues)
