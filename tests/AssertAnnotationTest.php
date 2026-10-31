@@ -159,6 +159,39 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callAssertingSeveralPropertiesIsNotRedundantIfOneOfThemChangesAType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Pair {
+                        public ?int $a = null;
+                        public ?int $b = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->a
+                         * @psalm-assert !null $this->b
+                         */
+                        public function assertBoth(): void {
+                            if ($this->a === null || $this->b === null) {
+                                throw new Exception();
+                            }
+                        }
+
+                        public function test(): int {
+                            if ($this->a === null) {
+                                return 0;
+                            }
+
+                            $this->assertBoth();
+
+                            return $this->b;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'assertKeyOfAClassConstantNarrowsToItsKeys' => [
                 'code' => '<?php
                     final class OwnerTypes {
@@ -3385,6 +3418,37 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'callAssertingSeveralPropertiesIsRedundantIfAllOfThemAre' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Pair {
+                        public ?int $a = null;
+                        public ?int $b = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->a
+                         * @psalm-assert !null $this->b
+                         */
+                        public function assertBoth(): void {
+                            if ($this->a === null || $this->b === null) {
+                                throw new Exception();
+                            }
+                        }
+
+                        public function test(): void {
+                            if ($this->a === null || $this->b === null) {
+                                return;
+                            }
+
+                            $this->assertBoth();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'assertInstanceOfMultipleInterfaces' => [
                 'code' => '<?php
                     class A {
