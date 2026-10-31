@@ -98,6 +98,17 @@ final class CastTest extends TestCase
             'ignored_issues' => [],
             'php_version' => '8.5',
         ];
+        yield 'voidCastDiscardsValueWithoutErrorOnPhp86' => [
+            'code' => '<?php
+                $x = strlen("hello");
+                (void) $x;
+                (void) strlen("world");
+                echo "reachable";
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.6',
+        ];
         yield 'SKIPPED-castFalseOrIntToInt' => [
             'code' => '<?php
                 /** @var false|int<10, 20> */

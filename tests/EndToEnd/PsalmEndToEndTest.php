@@ -212,6 +212,26 @@ final class PsalmEndToEndTest extends TestCase
         );
     }
 
+    public function testPsalmWithPHP86VersionOverride(): void
+    {
+        $this->runPsalmInit(1);
+        $result = $this->runPsalm(['--php-version=8.6'], self::$tmpDir, true);
+        $this->assertStringContainsString(
+            'Target PHP version: 8.6 (set by CLI argument)',
+            $result['STDERR'],
+        );
+    }
+
+    public function testPsalmWithPHP86VersionFromConfig(): void
+    {
+        $this->runPsalmInit(1, '8.6');
+        $result = $this->runPsalm([], self::$tmpDir, true);
+        $this->assertStringContainsString(
+            'Target PHP version: 8.6 (set by config file)',
+            $result['STDERR'],
+        );
+    }
+
     /*
     public function testPsalmDiff(): void
     {
