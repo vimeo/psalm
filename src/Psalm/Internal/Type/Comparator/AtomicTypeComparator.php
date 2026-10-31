@@ -888,7 +888,9 @@ final class AtomicTypeComparator
     }
 
     /**
-     * The object half of an iterable is a Traversable, unless the other type is a class that cannot be one.
+     * The object half of an iterable is a Traversable, unless the other type is a class that cannot be one
+     * or has template params of its own, which the generic comparison handles. Whether an iterable may be
+     * that object is not a question of its purity.
      *
      * @psalm-capabilities read-props|write-props
      * @internal
@@ -897,15 +899,22 @@ final class AtomicTypeComparator
         Codebase $codebase,
         TIterable $iterable,
         TNamedObject $other,
+        bool $keep_purity = true,
     ): ?TGenericObject {
-        if ($codebase->classExists($other->value)
-            && !$codebase->classImplements($other->value, 'Traversable')
-            && $codebase->classlike_storage_provider->get($other->value)->final
+        if ($other instanceof TGenericObject
+            || $iterable->extra_types
+            || ($codebase->classExists($other->value)
+                && !$codebase->classImplements($other->value, 'Traversable')
+                && $codebase->classlike_storage_provider->get($other->value)->final)
         ) {
             return null;
         }
 
-        return new TGenericObject('Traversable', $iterable->type_params);
+        // the purity of the iterable is the last template of Traversable
+        return new TGenericObject(
+            'Traversable',
+            $keep_purity ? [...$iterable->type_params, $iterable->purity] : $iterable->type_params,
+        );
     }
 
     /**
@@ -924,9 +933,9 @@ final class AtomicTypeComparator
         }
 
         if ($type1_part instanceof TIterable && $type2_part instanceof TNamedObject) {
-            $type1_part = self::getTraversableHalf($codebase, $type1_part, $type2_part) ?? $type1_part;
+            $type1_part = self::getTraversableHalf($codebase, $type1_part, $type2_part, false) ?? $type1_part;
         } elseif ($type2_part instanceof TIterable && $type1_part instanceof TNamedObject) {
-            $type2_part = self::getTraversableHalf($codebase, $type2_part, $type1_part) ?? $type2_part;
+            $type2_part = self::getTraversableHalf($codebase, $type2_part, $type1_part, false) ?? $type2_part;
         }
 
         if ((self::isLegacyTListLike($type1_part)

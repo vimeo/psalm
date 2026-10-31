@@ -49,6 +49,22 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'pureIterableInstanceOfGeneratorKeepsItsPurity' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param iterable[pure]<int, string> $t */
+                    function f(iterable $t): void {
+                        if (!$t instanceof Generator) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $t = Generator&Traversable[pure]<int, string> */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'iterableTemplateInstanceOfGeneratorIsReturned' => [
                 'code' => <<<'PHP'
                     <?php
