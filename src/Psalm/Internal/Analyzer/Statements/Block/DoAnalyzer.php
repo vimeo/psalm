@@ -171,6 +171,10 @@ final class DoAnalyzer
         if (!isset($suppressed_issues['TypeDoesNotContainType'])) {
             $statements_analyzer->addSuppressedIssues(['TypeDoesNotContainType']);
         }
+        // a branch only impossible in the first iteration is reachable in the next ones
+        if (!isset($suppressed_issues['NoValue'])) {
+            $statements_analyzer->addSuppressedIssues(['NoValue']);
+        }
 
         $do_context->loop_scope = $loop_scope;
 
@@ -184,6 +188,9 @@ final class DoAnalyzer
         }
         if (!isset($suppressed_issues['TypeDoesNotContainType'])) {
             $statements_analyzer->removeSuppressedIssues(['TypeDoesNotContainType']);
+        }
+        if (!isset($suppressed_issues['NoValue'])) {
+            $statements_analyzer->removeSuppressedIssues(['NoValue']);
         }
     }
 }
