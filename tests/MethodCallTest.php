@@ -1495,6 +1495,59 @@ final class MethodCallTest extends TestCase
                         }
                     }',
             ],
+            'parentCallOfStaticReturnKeepsCallingClass' => [
+                'code' => '<?php
+                    abstract class P {
+                        public function copy(): static {
+                            return clone $this;
+                        }
+
+                        final public function __construct() {}
+
+                        public static function make(): static {
+                            return new static();
+                        }
+                    }
+
+                    class C extends P {
+                        public ?string $extra = null;
+
+                        public function copy(): static {
+                            $new = parent::copy();
+                            $new->extra = "a";
+
+                            return $new;
+                        }
+
+                        public static function make(): static {
+                            $new = parent::make();
+                            $new->extra = "b";
+
+                            return $new;
+                        }
+                    }',
+            ],
+            'parentCallOfStaticReturnInNonFinalSubclass' => [
+                'code' => '<?php
+                    interface I {}
+
+                    abstract class P implements I {
+                        public function copy(): static {
+                            return clone $this;
+                        }
+                    }
+
+                    class F extends P {
+                        public int $n = 0;
+
+                        public function copy(): static {
+                            $new = parent::copy();
+                            $new->n = 1;
+
+                            return $new;
+                        }
+                    }',
+            ],
         ];
     }
 

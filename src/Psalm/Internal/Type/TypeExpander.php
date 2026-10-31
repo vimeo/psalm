@@ -852,6 +852,16 @@ final class TypeExpander
             $return_type = $return_type->setIntersectionTypes($return_type_types)
                 ->setIsStatic(true, true);
         } elseif ($return_type->is_static
+            && !$return_type->is_static_resolved
+            && $return_type::class === TNamedObject::class
+            && is_string($static_class_type)
+            && !$final
+            && $codebase->classOrInterfaceExists($static_class_type)
+            && (strtolower($static_class_type) === strtolower($return_type->value)
+                || $codebase->classExtendsOrImplements($static_class_type, $return_type->value))
+        ) {
+            $return_type = $return_type->setValueIsStatic($static_class_type, true, true);
+        } elseif ($return_type->is_static
             && is_string($static_class_type)
             && $final
             && (
