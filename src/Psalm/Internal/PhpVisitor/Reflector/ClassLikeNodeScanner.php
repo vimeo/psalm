@@ -1717,7 +1717,7 @@ final class ClassLikeNodeScanner
                         ),
                         new CodeLocation($this->file_scanner, $const),
                     ),
-                    $suppressed_issues,
+                    $suppressed_issues + $storage->suppressed_issues,
                 );
             }
 

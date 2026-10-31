@@ -55,6 +55,31 @@ final class MissingClassConstTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'no type; >= PHP 8.3; but psalm-suppressed on the class' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-suppress MissingClassConstType */
+                    class A {
+                        public const B = 0;
+                        public const C = 1;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'no type; >= PHP 8.3; but psalm-suppressed on the interface' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-suppress MissingClassConstType */
+                    interface I {
+                        public const B = 0;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'no type; < PHP 8.3' => [
                 'code' => <<<'PHP'
                     <?php
