@@ -167,6 +167,9 @@ class FileAnalyzer extends SourceAnalyzer
 
         $leftover_stmts = $this->populateCheckers($stmts);
 
+        // statements outside a namespace (a shebang line) come before it, so its return or exit doesn't affect them
+        $this->context->has_returned = false;
+
         $this->node_data = new NodeDataProvider();
         $statements_analyzer = new StatementsAnalyzer($this, $this->node_data, true);
 
