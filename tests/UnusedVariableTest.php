@@ -2642,6 +2642,23 @@ final class UnusedVariableTest extends TestCase
                     }
                 );',
             ],
+            'paramUsedAsDynamicClassConstantNameOfAnExpression' => [
+                'code' => '<?php
+                    final class A {
+                        public const FOO = 1;
+                        public const BAR = 2;
+                    }
+
+                    /** @param \'FOO\'|\'BAR\' $const */
+                    function get(A $a, string $const): int {
+                        return $a::{$const};
+                    }
+
+                    echo get(new A(), "FOO");',
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnStatement'],
+                'php_version' => '8.3',
+            ],
         ];
     }
 
