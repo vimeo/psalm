@@ -22,6 +22,9 @@ use function array_map;
 use function array_values;
 use function implode;
 use function in_array;
+use function memory_get_peak_usage;
+use function memory_get_usage;
+use function memory_reset_peak_usage;
 use function range;
 use function sort;
 use function str_starts_with;
@@ -390,6 +393,52 @@ final class TaintTest extends TestCase
         ));
 
         self::assertSame(array_fill(0, $call_sites, 'TaintedShell'), $taint_issue_types);
+    }
+
+    /**
+     * Each write of a literal key makes the flow of its value reach every node after it with its own open
+     * assignment: one state per key, up to a state of every key at every node. Past FORGETTING_STATES states a node
+     * keeps no open assignments of the flows reaching it in more.
+     */
+    public function testKeyWritesDontMakeAStateOfEveryKeyAtEveryNodeAfterThem(): void
+    {
+        $writes = implode('', array_map(
+            static fn(int $i): string => "    \$form['k$i'] = \$value;\n",
+            range(1, 4000),
+        ));
+
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            "<?php\n"
+            . "/** @psalm-taint-specialize */\n"
+            . "function build(string \$value, mixed \$form): void {\n"
+            . $writes
+            . "    echo \$form['k4000'];\n"
+            . "}\n"
+            . "build((string) \$_GET['q'], []);\n",
+        );
+        $this->project_analyzer->trackTaintedInputs();
+
+        memory_reset_peak_usage();
+        $memory_before = memory_get_usage();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $memory_used = memory_get_peak_usage() - $memory_before;
+
+        $taint_issue_types = array_values(array_filter(
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+            static fn(string $type): bool => !in_array($type, self::IGNORE, true),
+        ));
+
+        self::assertSame(['TaintedHtml', 'TaintedTextWithQuotes'], $taint_issue_types);
+        self::assertLessThan(768 * 1024 * 1024, $memory_used);
     }
 
     /**
@@ -839,6 +888,47 @@ final class TaintTest extends TestCase
                     static fn(int $i): string => 'echo tag(["k' . $i . '" => (string) $_GET["q"]]);' . "\n",
                     range(1, 1100),
                 )),
+            ],
+            'keyFetchAfterKeyWritesOfAsManyFlowsAsANodeHoldsBeforeForgettingIgnoresThem' => [
+                // the 256 flows of the writes are as many states as FORGETTING_STATES at the node of the last one
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function build(string $value, mixed $form): void {
+' . implode('', array_map(
+                    static fn(int $i): string => '$form["k' . $i . '"] = $value;' . "\n",
+                    range(1, 256),
+                )) . '
+                        echo $form["other"];
+                    }
+
+                    build((string) $_GET["q"], []);',
+            ],
+            'keyOfAForeachElementKeptByAFlowThatForgotItsOpenAssignmentsInACall' => [
+                // the last of the 257 flows of the writes to reach build()'s return forgets its key, but not the element
+                // of the loop it came from, which puts it back under its own key: "other" isn't "a"
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function build(string $value, array $form): string {
+' . implode('', array_map(
+                    static fn(int $i): string => '$form["k' . $i . '"] = $value;' . "\n",
+                    range(1, 257),
+                )) . '
+                        return $form["other"] ?? "";
+                    }
+
+                    /**
+                     * @param array<string, string> $data
+                     * @psalm-taint-specialize
+                     */
+                    function show(array $data): void {
+                        $copy = [];
+                        foreach ($data as $key => $value) {
+                            $copy[$key] = build(trim($value), []);
+                        }
+                        echo $copy["other"] ?? "";
+                    }
+
+                    show(["a" => (string) $_GET["q"]]);',
             ],
             'keyFetchInACallOfACallMadeWhereTheFlowsObservedTwoOpenAssignmentsIgnoresValues' => [
                 'code' => '<?php
@@ -5448,6 +5538,42 @@ final class TaintTest extends TestCase
                     range(1, 1100),
                 )) . '
                     echo tag([(string) $_GET["q"] => "x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyFetchAfterKeyWritesOfMoreFlowsThanANodeHoldsBeforeForgettingTakesThem' => [
+                // the last of the 257 flows of the writes to reach the node of the last one is past FORGETTING_STATES: it
+                // forgets its key, which the fetch of another key then doesn't ignore
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function build(string $value, mixed $form): void {
+' . implode('', array_map(
+                    static fn(int $i): string => '$form["k' . $i . '"] = $value;' . "\n",
+                    range(1, 257),
+                )) . '
+                        echo $form["other"];
+                    }
+
+                    build((string) $_GET["q"], []);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'overwriteOfAKeyDoesntStopAFlowThatForgotItsOpenAssignments' => [
+                // the last of the 257 flows of the writes to reach the fetch forgets that it is anywhere in an array:
+                // the overwrite of "z" in the array it takes from "other" doesn't stop it, which the fetch of "z" then
+                // doesn't ignore
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function build(string $value, string $clean, array $form): void {
+' . implode('', array_map(
+                    static fn(int $i): string => '$form["k' . $i . '"] = $value;' . "\n",
+                    range(1, 257),
+                )) . '
+                        /** @var array<string, string> $sub */
+                        $sub = $form["other"] ?? [];
+                        $sub["z"] = $clean;
+                        echo $sub["z"];
+                    }
+
+                    build((string) $_GET["q"], "x", []);',
                 'error_message' => 'TaintedHtml',
             ],
             'keyFetchInACallOfACallMadeWhereTheFlowsObservedTwoOpenAssignmentsTakesKeys' => [
