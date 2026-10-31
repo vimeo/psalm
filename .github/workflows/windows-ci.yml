@@ -9,6 +9,11 @@ on:
 permissions:
   contents: read
 
+# A new push to a pull request cancels its previous run; pushes to branches always run to the end.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   chunk-matrix:
     permissions:
