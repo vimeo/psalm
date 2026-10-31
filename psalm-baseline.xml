@@ -501,9 +501,6 @@
     </ComplexMethod>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Block/SwitchAnalyzer.php">
-    <InvalidPropertyAssignmentValue>
-      <code><![CDATA[$context->assigned_var_ids += $switch_scope->new_assigned_var_ids]]></code>
-    </InvalidPropertyAssignmentValue>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$switch_var_id]]></code>
       <code><![CDATA[$switch_scope->new_assigned_var_ids]]></code>

@@ -20,6 +20,40 @@ final class TryCatchTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedInSwitchInTryAndInCatch' => [
+                'code' => '<?php
+                    function a(int $a): string {
+                        try {
+                            switch ($a) {
+                                case 1:
+                                    $data = "one";
+                                    break;
+                                default:
+                                    throw new RuntimeException("not one");
+                            }
+                        } catch (Throwable $e) {
+                            $data = $e->getMessage();
+                        }
+
+                        return $data;
+                    }
+
+                    function b(int $a): string {
+                        try {
+                            switch ($a) {
+                                case 1:
+                                    $data = "one";
+                                    break;
+                                default:
+                                    $data = "other";
+                            }
+                        } catch (Throwable $e) {
+                            $data = $e->getMessage();
+                        }
+
+                        return $data;
+                    }',
+            ],
             'addThrowableInterfaceType' => [
                 'code' => '<?php
                     interface CustomThrowable {}
@@ -505,6 +539,25 @@ final class TryCatchTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableAssignedInSwitchInTryNotInCatch' => [
+                'code' => '<?php
+                    function a(int $a): string {
+                        try {
+                            switch ($a) {
+                                case 1:
+                                    $data = "one";
+                                    break;
+                                default:
+                                    $data = "other";
+                            }
+                        } catch (Throwable $e) {
+                            echo $e->getMessage();
+                        }
+
+                        return $data;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'invalidCatchClass' => [
                 'code' => '<?php
                     class A {}
