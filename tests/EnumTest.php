@@ -20,6 +20,49 @@ final class EnumTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'enumPropertiesOfNullableAndUnionedEnums' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Letter: string {
+                        case A = 'a';
+                        case B = 'b';
+                    }
+
+                    enum Digit: string {
+                        case One = '1';
+                    }
+
+                    function nullable(?Letter $letter): void {
+                        $value = $letter->value ?? 'none';
+                        $name = $letter->name ?? 'none';
+                        if (isset($letter->value)) {
+                            echo $letter->value;
+                        }
+                        echo $value, $name;
+                    }
+
+                    function viaInterface(?BackedEnum $enum): void {
+                        echo $enum->value ?? 'none';
+                        echo $enum->name ?? 'none';
+                    }
+
+                    /** @var Letter|Digit $either */
+                    $either = Digit::One;
+                    $value = $either->value;
+                    $name = $either->name;
+
+                    /** @var Letter|Digit|null $maybe */
+                    $maybe = null;
+                    $maybeValue = $maybe->value ?? 'none';
+                    PHP,
+                'assertions' => [
+                    '$value===' => "'1'|'a'|'b'",
+                    '$name===' => "'A'|'B'|'One'",
+                    '$maybeValue===' => "'1'|'a'|'b'|'none'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'example' => [
                 'code' => '<?php
                     interface Colourful {

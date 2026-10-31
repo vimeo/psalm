@@ -223,10 +223,13 @@ final class AtomicPropertyFetchAnalyzer
                 $has_valid_fetch_type = true;
                 $statements_analyzer->node_data->setType(
                     $stmt,
-                    new Union([
-                        new TString(),
-                        new TInt(),
-                    ]),
+                    Type::combineUnionTypes(
+                        new Union([
+                            new TString(),
+                            new TInt(),
+                        ]),
+                        $statements_analyzer->node_data->getType($stmt),
+                    ),
                 );
             } elseif ($prop_name === 'value' && $class_storage->enum_type !== null && $class_storage->enum_cases) {
                 $has_valid_fetch_type = true;
@@ -1138,12 +1141,15 @@ final class AtomicPropertyFetchAnalyzer
 
         $statements_analyzer->node_data->setType(
             $stmt,
-            empty($relevant_enum_case_names)
-                ? Type::getNonEmptyString()
-                : new Union(array_map(
-                    static fn(string $name): TString => Type::getAtomicStringFromLiteral($name),
-                    $relevant_enum_case_names,
-                )),
+            Type::combineUnionTypes(
+                empty($relevant_enum_case_names)
+                    ? Type::getNonEmptyString()
+                    : new Union(array_map(
+                        static fn(string $name): TString => Type::getAtomicStringFromLiteral($name),
+                        $relevant_enum_case_names,
+                    )),
+                $statements_analyzer->node_data->getType($stmt),
+            ),
         );
     }
 
@@ -1182,7 +1188,10 @@ final class AtomicPropertyFetchAnalyzer
         /** @psalm-suppress ArgumentTypeCoercion */
         $statements_analyzer->node_data->setType(
             $stmt,
-            new Union($case_values),
+            Type::combineUnionTypes(
+                new Union($case_values),
+                $statements_analyzer->node_data->getType($stmt),
+            ),
         );
     }
 
