@@ -1080,18 +1080,23 @@ final class MethodComparator
             && $implementer_classlike_storage->final
             && !$implementer_classlike_storage->final_from_docblock;
 
+        // what a trait method refers to as self or static is the class it ends up in
+        $implementing_class_name = $implementer_classlike_storage->is_trait
+            ? $implementer_called_class_name
+            : $implementer_classlike_storage->name;
+
         $guide_signature_return_type = TypeExpander::expandUnion(
             $codebase,
             $guide_signature_return_type,
-            $guide_classlike_storage->is_trait && $guide_method_storage->abstract
-                ? $implementer_classlike_storage->name
+            $guide_classlike_storage->is_trait
+                ? $implementing_class_name
                 : $guide_classlike_storage->name,
-            ($guide_classlike_storage->is_trait && $guide_method_storage->abstract)
+            $guide_classlike_storage->is_trait
                 || $guide_classlike_storage->final
                 || $resolve_static_to_final_class
-                ? $implementer_classlike_storage->name
+                ? $implementing_class_name
                 : $guide_classlike_storage->name,
-            $guide_classlike_storage->is_trait && $guide_method_storage->abstract
+            $guide_classlike_storage->is_trait
                 ? $implementer_classlike_storage->parent_class
                 : $guide_classlike_storage->parent_class,
             true,
