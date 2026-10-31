@@ -23,6 +23,42 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'incrementOfAnItemInLoopIsNotFoldedLikeALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $elems */
+                    function check(array $elems): bool {
+                        $results = ['one' => 0, 'two' => 0];
+
+                        foreach ($elems as $elem) {
+                            $results[$elem]++;
+                        }
+
+                        return isset($results['one']) && $results['one'] == 4;
+                    }
+
+                    class Counter {
+                        public int $count = 0;
+                    }
+
+                    $counts = ['one' => 0];
+                    $counter = new Counter();
+
+                    foreach ([1, 2, 3] as $_) {
+                        $counts['one']++;
+                        $counter->count += 1;
+                    }
+
+                    $once = ['one' => 0];
+                    $once['one']++;
+                    PHP,
+                'assertions' => [
+                    '$counts===' => 'array{one: int<1, max>}',
+                    '$once===' => 'array{one: 1}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'foreachByReferenceWritesIntoTheItemsOfTheArray' => [
                 'code' => '<?php
                     $values = ["key" => ""];

@@ -325,10 +325,10 @@ final class ArithmeticOpAnalyzer
         if (($left_type_part instanceof TLiteralInt || $left_type_part instanceof TLiteralFloat)
             && ($right_type_part instanceof TLiteralInt || $right_type_part instanceof TLiteralFloat)
             && (
-                //we don't try to do arithmetics on variables in loops
+                //we don't try to do arithmetics on what a loop can change in loops: variables, items, properties
                 $context === null
                 || $context->inside_loop === false
-                || (!$left instanceof PhpParser\Node\Expr\Variable && !$right instanceof PhpParser\Node\Expr\Variable)
+                || (!self::isChangeableByLoop($left) && !self::isChangeableByLoop($right))
             )
         ) {
             // get_class is fine here because both classes are final.
@@ -1040,6 +1040,17 @@ final class ArithmeticOpAnalyzer
         }
 
         return $calculated_type;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isChangeableByLoop(PhpParser\Node\Expr $expr): bool
+    {
+        return $expr instanceof PhpParser\Node\Expr\Variable
+            || $expr instanceof PhpParser\Node\Expr\ArrayDimFetch
+            || $expr instanceof PhpParser\Node\Expr\PropertyFetch
+            || $expr instanceof PhpParser\Node\Expr\StaticPropertyFetch;
     }
 
     /**
