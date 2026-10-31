@@ -1374,7 +1374,7 @@ final class FilterUtils
                         || $atomic_type instanceof TLiteralFloat
                     ) {
                         /** @var string|false $literal */
-                        $literal = filter_var($atomic_type->value, $filter_int_used);
+                        $literal = filter_var(LiteralCast::toString($atomic_type->value), $filter_int_used);
                         if ($literal === false) {
                             $can_fail = true;
                         } else {

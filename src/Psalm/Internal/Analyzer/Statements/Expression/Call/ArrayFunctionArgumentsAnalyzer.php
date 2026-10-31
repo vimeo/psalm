@@ -474,18 +474,8 @@ final class ArrayFunctionArgumentsAnalyzer
                         ...$length_arg_type->getLiteralInts(),
                         ...$length_arg_type->getLiteralFloats(),
                     ] as $literal) {
-                        if (!$literal->isNumericType()) {
-                            continue;
-                        }
-
-                        $literal_val = LiteralCast::toInt($literal->value);
-
-                        if ($literal_val === null) { // an unrepresentable float length is unknowable
-                            $length_min = null;
-                            break;
-                        }
-
-                        if ($literal_val
+                        if ($literal->isNumericType()
+                            && ($literal_val = LiteralCast::toInt($literal->value))
                             && ((isset($length_min) && $length_min> $literal_val) || !isset($length_min))) {
                             $length_min = $literal_val;
                         }

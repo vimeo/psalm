@@ -3585,6 +3585,10 @@
     <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
     </ImmutableDependency>
+    <InvalidOperand>
+      <code><![CDATA[$this->value]]></code>
+      <code><![CDATA[$this->value]]></code>
+    </InvalidOperand>
   </file>
   <file src="src/Psalm/Type/Atomic/TLiteralInt.php">
     <ImmutableDependency>

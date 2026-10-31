@@ -783,7 +783,7 @@ final class ArithmeticOpAnalyzer
                     }
                 }
 
-                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                if (self::isIntegerOperator($parent)) {
                     $new_result_type = Type::getInt();
                 } else {
                     $new_result_type = new Union([new TFloat(), new TInt()]);
@@ -908,7 +908,7 @@ final class ArithmeticOpAnalyzer
             }
 
             if ($left_type_part instanceof TFloat && $right_type_part instanceof TFloat) {
-                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                if (self::isIntegerOperator($parent)) {
                     $result_type = Type::getInt();
                 } else {
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
@@ -936,7 +936,7 @@ final class ArithmeticOpAnalyzer
                     }
                 }
 
-                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                if (self::isIntegerOperator($parent)) {
                     $result_type = Type::getInt();
                 } else {
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
@@ -962,7 +962,7 @@ final class ArithmeticOpAnalyzer
                     }
                 }
 
-                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                if (self::isIntegerOperator($parent)) {
                     $result_type = Type::getInt();
                 } else {
                     $result_type = new Union([new TInt, new TFloat]);
@@ -993,6 +993,21 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
+     * Operators that convert their operands to int, so their result is an int whatever the operands are
+     *
+     * @psalm-pure
+     */
+    private static function isIntegerOperator(PhpParser\Node $operation): bool
+    {
+        return $operation instanceof PhpParser\Node\Expr\BinaryOp\Mod
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight;
+    }
+
+    /**
      * @psalm-pure
      */
     public static function arithmeticOperation(
@@ -1001,13 +1016,7 @@ final class ArithmeticOpAnalyzer
         float|int $operand2,
         bool $allow_float_result,
     ): ?Union {
-        if ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mod
-            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr
-            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
-            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
-            || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
-            || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
-        ) {
+        if (self::isIntegerOperator($operation)) {
             // PHP converts float operands of these operators to int implicitly, which raises
             // a warning/deprecation for non-representable or fractional floats
             $int1 = LiteralCast::toInt($operand1);

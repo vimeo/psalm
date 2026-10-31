@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Type\Atomic;
 
 use Override;
-use Psalm\Internal\Type\LiteralCast;
+
+use function is_nan;
 
 /**
  * Denotes a floating point value where the exact numeric value is known.
@@ -23,7 +24,10 @@ final class TLiteralFloat extends TFloat
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
-        return 'float(' . LiteralCast::toString($this->value) . ')';
+        if (is_nan($this->value)) {
+            return 'float(NAN)';
+        }
+        return 'float(' . $this->value . ')';
     }
 
     #[Override]
@@ -32,8 +36,11 @@ final class TLiteralFloat extends TFloat
         if (!$exact) {
             return 'float';
         }
+        if (is_nan($this->value)) {
+            return 'float(NAN)';
+        }
 
-        return 'float(' . LiteralCast::toString($this->value) . ')';
+        return 'float(' . $this->value . ')';
     }
 
     /**
