@@ -441,7 +441,9 @@ final class ReturnTypeAnalyzer
             $parent_class,
             true,
             true,
-            $classlike_storage && $classlike_storage->final,
+            ($static_fq_class_name !== null
+                ? $codebase->classlike_storage_provider->get($static_fq_class_name)
+                : $classlike_storage)?->final ?? false,
         );
 
         if ((!$inferred_return_type_parts
