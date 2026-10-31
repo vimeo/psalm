@@ -21,6 +21,33 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'identityOfANullsafeFetchWithAnotherVariableAssertsTheReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final readonly class A {
+                        public function __construct(public int $a, public int $b) {}
+                    }
+
+                    function left(A $a1, ?A $a2): bool {
+                        return $a1->a === $a2?->a && $a1->b === $a2->b;
+                    }
+
+                    function right(A $a1, ?A $a2): bool {
+                        return $a2?->a === $a1->a && $a1->b === $a2->b;
+                    }
+
+                    function scalar(int $x, ?A $a2): int {
+                        if ($x === $a2?->a) {
+                            return $a2->b;
+                        }
+
+                        return 0;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'nonStrictConditionOnMixedOrNull' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $owners */
@@ -3475,6 +3502,23 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'identityOfANullsafeFetchWithANullableDoesNotAssertTheReceiver' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public ?int $a, public int $b) {}
+                    }
+
+                    function f(?int $x, ?A $a2): int {
+                        if ($x === $a2?->a) {
+                            return $a2->b;
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'makeNonNullableNull' => [
                 'code' => '<?php
                     class A { }
