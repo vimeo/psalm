@@ -22,6 +22,80 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayIntersectKeyOfMergedDefaultsIsStringKeyed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return array<string, mixed> */
+                    function foo(array $values) {
+                        $default = ['foo' => 'foo', 'bar' => 'bar'];
+
+                        return array_intersect_key(array_merge($default, $values), $default);
+                    }
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyKeepsTheKeysOfASealedShape' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $default = ['foo' => 'foo', 'bar' => 'bar'];
+
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    $r = array_intersect_key($a, $default);
+
+                    /** @psalm-check-type-exact $r = array<'bar'|'foo', int> */
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyKeepsTheKeysSharedByAllSealedShapes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    /** @var array<string, int> $unknown */
+                    $unknown = [];
+                    $r = array_intersect_key($a, ['x' => 1, 'y' => 2, 'z' => 3], $unknown, ['y' => 1, 'z' => 1, 'w' => 1]);
+
+                    /** @psalm-check-type-exact $r = array<'y'|'z', int> */
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyWithoutSealedShapeKeepsTheKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    /** @var array<string, int> $b */
+                    $b = [];
+                    $r = array_intersect_key($a, $b);
+
+                    /** @psalm-check-type-exact $r = array<string, int> */
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyWithUnpackedArgumentKeepsTheKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    $others = [['x' => 1]];
+                    $r = array_intersect_key($a, ...$others);
+
+                    /** @psalm-check-type-exact $r = array<string, int> */
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyDropsKeysTheFirstArrayCannotHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    $r = array_intersect_key($a, [1 => 'a']);
+
+                    /** @psalm-check-type-exact $r = array<string, int> */
+                    PHP,
+                'assertions' => [],
+            ],
             'arrayFilter' => [
                 'code' => '<?php
                     $d = array_filter(["a" => rand(0, 10), "b" => rand(0, 10), "c" => null]);
