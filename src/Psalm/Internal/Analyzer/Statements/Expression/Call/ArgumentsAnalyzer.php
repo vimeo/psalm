@@ -885,8 +885,7 @@ final class ArgumentsAnalyzer
 
         foreach ($template_result->lower_bounds as $template_name => $type_map) {
             foreach ($type_map as $class => $lower_bounds) {
-                // the templates of the function are bound by its arguments, the object gives those of its class
-                if (count($lower_bounds) === 1 && !isset($function_storage->template_types[$template_name][$class])) {
+                if (count($lower_bounds) === 1) {
                     $class_generic_params[$template_name][$class] = reset($lower_bounds)->type;
                 }
             }
