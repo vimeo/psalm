@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -14,6 +16,26 @@ final class ArrayFunctionCallTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testArrayFirstNullableReturnWithoutIgnoreInternalFunctionNullReturn(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullableReturnStatement');
+
+        $this->project_analyzer->getConfig()->ignore_internal_nullable_issues = false;
+        $this->project_analyzer->setPhpVersion('8.5', 'tests');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param list<int> $list */
+                function first(array $list): int {
+                    return array_first($list);
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 
     #[Override]
     public function providerValidCodeParse(): iterable
@@ -2793,6 +2815,208 @@ final class ArrayFunctionCallTest extends TestCase
                     takes_non_empty_array($flipped);
                 ',
             ],
+            'arrayFirstLastReturnValueType' => [
+                'code' => '<?php
+                    /** @return list<int> */
+                    function getList(): array { return []; }
+                    /** @return non-empty-list<int> */
+                    function getNonEmptyList(): array { return [1]; }
+                    /** @return array<string, int> */
+                    function getMap(): array { return []; }
+                    /** @return non-empty-array<string, int> */
+                    function getNonEmptyMap(): array { return ["a" => 1]; }
+                    /** @return array{a: int, b?: string} */
+                    function getShape(): array { return ["a" => 1]; }
+                    /** @return array{a?: int, b?: string} */
+                    function getOptionalShape(): array { return []; }
+                    /** @return array{a: int, ...<string, float>} */
+                    function getUnsealedShape(): array { return ["a" => 1]; }
+                    /** @return list{0?: int, ...<string>} */
+                    function getOptionalUnsealedList(): array { return []; }
+                    /** @return list<int>|non-empty-list<string> */
+                    function getUnion(): array { return []; }
+
+                    $empty = array_first([]);
+                    $list = array_first(getList());
+                    $nonEmptyList = array_last(getNonEmptyList());
+                    $map = array_last(getMap());
+                    $nonEmptyMap = array_first(getNonEmptyMap());
+                    $shape = array_first(getShape());
+                    $optionalShape = array_last(getOptionalShape());
+                    $unsealedShape = array_last(getUnsealedShape());
+                    $optionalUnsealedList = array_first(getOptionalUnsealedList());
+                    $optionalUnsealedListLast = array_last(getOptionalUnsealedList());
+                    $union = array_first(getUnion());
+                    $named = array_first(array: getNonEmptyList());',
+                'assertions' => [
+                    '$empty===' => 'null',
+                    '$list===' => 'int|null',
+                    '$nonEmptyList===' => 'int',
+                    '$map===' => 'int|null',
+                    '$nonEmptyMap===' => 'int',
+                    '$shape===' => 'int|string',
+                    '$optionalShape===' => 'int|null|string',
+                    '$unsealedShape===' => 'float|int',
+                    '$optionalUnsealedList===' => 'int|null',
+                    '$optionalUnsealedListLast===' => 'int|null|string',
+                    '$union===' => 'int|null|string',
+                    '$named===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstLastListElement' => [
+                'code' => '<?php
+                    /** @return list{int, string} */
+                    function getPair(): array { return [1, "a"]; }
+                    /** @return list{0: int, 1: string, 2?: float} */
+                    function getTriple(): array { return [1, "a"]; }
+                    /** @return list{int, ...<string>} */
+                    function getHeadAndTail(): array { return [1]; }
+                    /** @return array{0: int, a: string} */
+                    function getShapeWithKeyZero(): array { return [1, "a" => "b"]; }
+
+                    $pairFirst = array_first(getPair());
+                    $pairLast = array_last(getPair());
+                    $tripleLast = array_last(getTriple());
+                    $tailFirst = array_first(getHeadAndTail());
+                    $tailLast = array_last(getHeadAndTail());
+                    $literalFirst = array_first([1, "a"]);
+                    $literalLast = array_last([1, "a"]);
+                    $shapeFirst = array_first(getShapeWithKeyZero());',
+                'assertions' => [
+                    '$pairFirst===' => 'int',
+                    '$pairLast===' => 'string',
+                    '$tripleLast===' => 'float|string',
+                    '$tailFirst===' => 'int',
+                    '$tailLast===' => 'int|string',
+                    '$literalFirst===' => '1',
+                    '$literalLast===' => '\'a\'',
+                    '$shapeFirst===' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstLastTemplateArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template T of non-empty-array<string, int>
+                     * @param T $arr
+                     */
+                    function firstOfBound(array $arr): int {
+                        return array_first($arr);
+                    }
+
+                    /**
+                     * @template T of list<int>
+                     * @param T $arr
+                     */
+                    function lastOfBound(array $arr): ?int {
+                        return array_last($arr);
+                    }
+
+                    /**
+                     * @template T of non-empty-array<string, string>
+                     * @param T|array<string, int> $arr
+                     */
+                    function firstOfArrayUnion(array $arr): void {
+                        $first = array_first($arr);
+                        /** @psalm-check-type-exact $first = int|null|string */
+                    }
+
+                    /**
+                     * @template T of array{b: string}
+                     * @param T|array{a?: int} $arr
+                     */
+                    function lastOfShapeUnion(array $arr): void {
+                        $last = array_last($arr);
+                        /** @psalm-check-type-exact $last = int|null|string */
+                    }
+
+                    /**
+                     * @template T of non-empty-array<string, int>
+                     * @template U of non-empty-array<string, string>
+                     * @param T|U $arr
+                     */
+                    function firstOfTemplateUnion(array $arr): void {
+                        $first = array_first($arr);
+                        /** @psalm-check-type-exact $first = int|string */
+                    }
+
+                    /**
+                     * @template T
+                     * @param non-empty-list<T> $arr
+                     * @return T
+                     */
+                    function firstElement(array $arr) {
+                        return array_first($arr);
+                    }
+
+                    /**
+                     * @template T
+                     * @param array<string, T> $arr
+                     * @return T|null
+                     */
+                    function lastElement(array $arr) {
+                        return array_last($arr);
+                    }
+
+                    $a = firstElement([new DateTime()]);
+                    $b = lastElement(["a" => 1]);',
+                'assertions' => [
+                    '$a===' => 'DateTime',
+                    '$b===' => '1|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstLastIgnoreNullAndFalseArguments' => [
+                'code' => '<?php
+                    /** @return array<string, int>|null */
+                    function getNullableMap(): ?array { return null; }
+                    /** @return non-empty-list<string>|false */
+                    function getFalsableList() { return false; }
+
+                    $nullable = array_first(getNullableMap());
+                    $falsable = array_last(getFalsableList());',
+                'assertions' => [
+                    '$nullable===' => 'int|null',
+                    '$falsable===' => 'string',
+                ],
+                'ignored_issues' => ['PossiblyNullArgument', 'PossiblyFalseArgument'],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstLastNullFollowsIgnoreInternalFunctionNullReturn' => [
+                'code' => '<?php
+                    /** @param list<int> $list */
+                    function first(array $list): int {
+                        return array_first($list);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstLastUserDefinedBeforePhp85' => [
+                'code' => '<?php
+                    /** @param list<int> $input */
+                    function array_first(array $input): string {
+                        return implode(",", $input);
+                    }
+
+                    /** @param list<int> $input */
+                    function array_last(array $input): string {
+                        return implode(",", $input);
+                    }
+
+                    $first = array_first([1, 2]);
+                    $last = array_last([3, 4]);',
+                'assertions' => [
+                    '$first===' => 'string',
+                    '$last===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
@@ -3247,6 +3471,26 @@ final class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'PossiblyInvalidArgument',
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'arrayFirstOfIterableUnionStaysMixed' => [
+                'code' => '<?php
+                    /** @param list<int>|iterable<string> $values */
+                    function f(iterable $values): int {
+                        return array_first($values) ?? 0;
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstOfUnpackedArgumentStaysMixed' => [
+                'code' => '<?php
+                    /** @param list{list<int>} $lists */
+                    function f(array $lists): int {
+                        return array_first(...$lists) ?? 0;
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
             ],
         ];
     }
