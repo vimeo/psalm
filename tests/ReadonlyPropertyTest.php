@@ -22,6 +22,31 @@ final class ReadonlyPropertyTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'promotedPropertyOfReadonlyClassSetInConstructorAndNormalClassUntouched' => [
+                'code' => '<?php
+                    readonly class Service
+                    {
+                        public string $t;
+
+                        public function __construct(private string $s)
+                        {
+                            $this->t = $s;
+                        }
+                    }
+
+                    class Plain
+                    {
+                        public function __construct(private string $s) {}
+
+                        public function set(string $s): void
+                        {
+                            $this->s = $s;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'docblockReadonlyPropertySetInConstructor' => [
                 'code' => '<?php
                     class A {
@@ -145,6 +170,21 @@ final class ReadonlyPropertyTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'promotedPropertyOfReadonlyClassIsReadonly' => [
+                'code' => '<?php
+                    readonly class Service
+                    {
+                        public function __construct(private string $s) {}
+
+                        public function set(string $s): void
+                        {
+                            $this->s = $s;
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Service::$s is marked readonly',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'readonlyPropertySetInConstructorAndAlsoAnotherMethodInsideClass' => [
                 'code' => '<?php
                     class A {
