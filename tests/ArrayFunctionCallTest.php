@@ -22,6 +22,37 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayPopOfAListWithAnOptionalLastItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function pop(bool $one, bool $two): void {
+                        $always = [0, 1];
+                        array_pop($always);
+
+                        $maybe = [0];
+                        if ($one) {
+                            $maybe[] = 2;
+                        }
+                        array_pop($maybe);
+
+                        $maybe_twice = [0];
+                        if ($one) {
+                            $maybe_twice[] = 2;
+                        }
+                        if ($two) {
+                            $maybe_twice[] = 3;
+                        }
+                        array_pop($maybe_twice);
+
+                        /** @psalm-check-type-exact $always = list{0: 0} */
+                        /** @psalm-check-type-exact $maybe = list{0?: 0} */
+                        /** @psalm-check-type-exact $maybe_twice = list{0: 0, 1?: 2|3} */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'arrayFilter' => [
                 'code' => '<?php
                     $d = array_filter(["a" => rand(0, 10), "b" => rand(0, 10), "c" => null]);
@@ -2959,6 +2990,21 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayPopOfAListWithAnOptionalLastItemMayEmptyIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $a */
+                    function foo(array $a): void {}
+
+                    function bar(bool $one): void {
+                        $d = [0];
+                        if ($one) {
+                            $d[] = 2;
+                        }
+                        array_pop($d);
+                        foo($d);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'arrayFilterUseMethodOnInferableInt' => [
                 'code' => '<?php
                     $a = array_filter([1, 2, 3, 4], function ($i) { return $i->foo(); });',
