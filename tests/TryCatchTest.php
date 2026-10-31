@@ -20,6 +20,38 @@ final class TryCatchTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedInFinallyReplacesTheTypesOfTheTryAndTheCatch' => [
+                'code' => '<?php
+                    function test(int $a, int $b): int {
+                        try {
+                            $c = intdiv($a, $b);
+                        } catch (Throwable) {
+                            $c = null;
+                        } finally {
+                            $c = 1;
+                        }
+
+                        return $c;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'variableAssignedInFinallyHasThatType' => [
+                'code' => '<?php
+                    try {
+                        $value = 1;
+                    } catch (Throwable) {
+                        $value = "a";
+                    } finally {
+                        $value = 2.5;
+                    }',
+                'assertions' => [
+                    '$value' => 'float',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'addThrowableInterfaceType' => [
                 'code' => '<?php
                     interface CustomThrowable {}
