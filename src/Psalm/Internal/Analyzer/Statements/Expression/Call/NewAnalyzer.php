@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -495,6 +496,19 @@ final class NewAnalyzer extends CallAnalyzer
                     $fq_class_name,
                 ),
                 $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
+        // the destructor runs wherever the new object ends up destroyed
+        $destructor_id = DestructorAnalyzer::getDestructorId($codebase, $fq_class_name);
+
+        if ($destructor_id !== null) {
+            $codebase->methodExists(
+                $destructor_id,
+                $context->calling_method_id,
+                $codebase->collect_locations ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
+                $statements_analyzer,
+                $statements_analyzer->getFilePath(),
             );
         }
 

@@ -812,6 +812,36 @@ final class UnusedCodeTest extends TestCase
 
                     takesCallable([C::class, "foo"]);',
             ],
+            'invokableObjectPassedAsCallable' => [
+                'code' => '<?php
+                    final class Inv {
+                        public function __construct(private int $x) {}
+
+                        public function __invoke(int $i) : int {
+                            return $i + $this->x;
+                        }
+                    }
+
+                    echo array_sum(array_map(new Inv(1), [1, 2]));',
+            ],
+            'destructorOfANewObjectIsUsed' => [
+                'code' => '<?php
+                    final class Dtor {
+                        public function __construct(private string $p) {}
+
+                        public function __destruct() {
+                            echo $this->p;
+                        }
+                    }
+
+                    function f() : void {
+                        $d = new Dtor("a");
+                        echo get_class($d);
+                    }
+
+                    f();
+                    new Dtor("b");',
+            ],
             'propertyAndMethodOverriddenDownstream' => [
                 'code' => '<?php
                     class A {
@@ -1992,6 +2022,24 @@ final class UnusedCodeTest extends TestCase
                     $a = new A();',
                 'error_message' => 'UnusedProperty',
                 'error_levels' => ['UnusedVariable'],
+            ],
+            'invokableObjectAcceptedByTheNonCallableTypeIsNotInvoked' => [
+                'code' => '<?php
+                    final class Inv {
+                        public function __construct(private int $x) {}
+
+                        public function __invoke(int $i) : int {
+                            return $i + $this->x;
+                        }
+                    }
+
+                    /** @param Inv|callable $c */
+                    function takes($c) : void {
+                        echo gettype($c);
+                    }
+
+                    takes(new Inv(1));',
+                'error_message' => 'UnusedProperty',
             ],
             'privateUnusedMethod' => [
                 'code' => '<?php
