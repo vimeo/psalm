@@ -818,6 +818,28 @@ final class FunctionCallTest extends TestCase
                         return explode($d, $s);
                     }',
             ],
+            'assertAcceptsObjectAndNarrowsIt' => [
+                'code' => '<?php
+                    function f(?DateTime $d): DateTime {
+                        assert($d);
+                        return $d;
+                    }
+                    /** @var DateTime|null $foo */
+                    $foo = null;
+                    assert($foo);',
+                'assertions' => [
+                    '$foo===' => 'DateTime',
+                ],
+            ],
+            'assertAcceptsArrayAndFloat' => [
+                'code' => '<?php
+                    function f(array $a, float $f): void {
+                        assert($a);
+                        assert($f);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'allowPossiblyUndefinedClassInClassExists' => [
                 'code' => <<<'PHP'
                     <?php
