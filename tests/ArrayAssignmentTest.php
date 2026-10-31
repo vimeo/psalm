@@ -126,6 +126,16 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assignWithKeyTypesThatAreCastToKeys' => [
+                'code' => '<?php
+                    /**
+                     * @param int|string|bool $key
+                     */
+                    function f(array $arr, $key): array {
+                        $arr[$key] = 1;
+                        return $arr;
+                    }',
+            ],
             'decimalIntStringKeysAreInts' => [
                 'code' => '<?php
                     /** @return decimal-int-string */
@@ -2612,6 +2622,39 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assignWithFloatOrStringKey' => [
+                'code' => '<?php
+                    /**
+                     * @param string|float $key
+                     */
+                    function f(array $arr, $key): array {
+                        $arr[$key] = 1;
+                        return $arr;
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+            ],
+            'assignWithObjectOrStringKey' => [
+                'code' => '<?php
+                    /**
+                     * @param string|DateTime $key
+                     */
+                    function f(array $arr, $key): array {
+                        $arr[$key] = 1;
+                        return $arr;
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+            ],
+            'pushWithFloatOrStringKey' => [
+                'code' => '<?php
+                    /**
+                     * @param string|float $key
+                     */
+                    function f(array $arr, $key): array {
+                        $arr[$key][] = 1;
+                        return $arr;
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+            ],
             'templateBoundedByDecimalIntStringIsNotItsKeyType' => [
                 'code' => '<?php
                     /**
