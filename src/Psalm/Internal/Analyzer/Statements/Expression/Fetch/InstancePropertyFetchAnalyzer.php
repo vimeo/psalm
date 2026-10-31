@@ -401,7 +401,7 @@ final class InstancePropertyFetchAnalyzer
                         && $context->vars_in_scope[$var_id]->isNullable()
                     )
                 ) {
-                    $stmt_type = $stmt_type->setProperties(['initialized' => true]);
+                    $stmt_type = $stmt_type->setProperties(['initialized' => true, 'ignore_isset' => true]);
                     $statements_analyzer->node_data->setType($stmt, $stmt_type);
                     $context->vars_in_scope[$var_id] = $stmt_type;
                 } else {
