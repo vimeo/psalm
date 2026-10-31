@@ -22,6 +22,60 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'paramOutOfMethodClosureResolvesSelfAndStatic' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public function name(): string {
+                            return 'a';
+                        }
+                    }
+
+                    class B extends A {
+                        /** @param-out self $out */
+                        public function setSelf(?self &$out): void {
+                            $out = $this;
+                        }
+
+                        /** @param-out static $out */
+                        public function setStatic(?self &$out): void {
+                            $out = $this;
+                        }
+
+                        public function viaMethod(): string {
+                            $setSelf = $this->setSelf(...);
+                            $self = null;
+                            $setSelf($self);
+
+                            $setStatic = $this->setStatic(...);
+                            $static = null;
+                            $setStatic($static);
+
+                            return $self->name() . $static->name();
+                        }
+                    }
+
+                    class C extends B {
+                        public function viaStaticCall(): string {
+                            $setSelf = self::setSelf(...);
+                            $self = null;
+                            $setSelf($self);
+
+                            $setStatic = self::setStatic(...);
+                            $static = null;
+                            $setStatic($static);
+
+                            /** @psalm-check-type-exact $self = B */
+                            /** @psalm-check-type-exact $static = C */
+
+                            return $self->name() . $static->name();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'byRefUseVarUnsetInClosure' => [
                 'code' => '<?php
                     function reserve(): Closure {
