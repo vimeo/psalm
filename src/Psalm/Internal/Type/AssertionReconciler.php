@@ -766,6 +766,16 @@ final class AssertionReconciler extends Reconciler
             return $type_2_atomic->addIntersectionType($type_1_atomic);
         }
 
+        if ($type_1_atomic instanceof TIterable
+            && $type_2_atomic instanceof TNamedObject
+            && $codebase->classExtendsOrImplements($type_2_atomic->value, 'Traversable')
+        ) {
+            $traversable = new TGenericObject('Traversable', $type_1_atomic->type_params);
+
+            return self::inferTemplateParamsFromParent($codebase, $type_2_atomic, $traversable)
+                ->addIntersectionType($traversable);
+        }
+
         /*if ($type_2_atomic instanceof TKeyedArray
         ) {
             $type_2_key = $type_2_atomic->getGenericKeyType();
