@@ -63,6 +63,20 @@ You can also parameterize `class-string` with an object name e.g. [`class-string
 
 Psalm also supports a `trait-string` annotation denoting a trait that exists.
 
+```php
+<?php
+trait T {}
+final class C {}
+
+/**
+ * @param trait-string $t
+ */
+function takesTraitName(string $t) : void {}
+
+takesTraitName(T::class); // no issue
+takesTraitName(C::class); // InvalidArgument
+```
+
 ## enum-string
 
 Psalm also supports a `enum-string` annotation denote an enum that exists.
