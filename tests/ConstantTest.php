@@ -988,6 +988,31 @@ final class ConstantTest extends TestCase
                     A::foo(2);
                     A::foo(3);',
             ],
+            'enumValueAssignedToValueOfConstant' => [
+                'code' => '<?php
+                    enum ConnectionAction: string
+                    {
+                        case Read = "r";
+                        case Write = "w";
+                    }
+
+                    class C {
+                        /** @var value-of<ConnectionAction> */
+                        protected const string ACTION = ConnectionAction::Read->value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'literalAssignedToKeyOfConstant' => [
+                'code' => '<?php
+                    class D {
+                        public const ARR = ["a" => 1, "b" => 2];
+
+                        /** @var key-of<self::ARR> */
+                        public const KEY = "a";
+                    }',
+            ],
             'tooLongArrayInvalidConstantAssignmentValueFalsePositiveWithArray' => [
                 'code' => '<?php
                     class TestInvalidConstantAssignmentValueFalsePositiveWithArray {
@@ -2365,6 +2390,32 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'literalNotInKeyOfConstant' => [
+                'code' => '<?php
+                    class D {
+                        public const ARR = ["a" => 1, "b" => 2];
+
+                        /** @var key-of<self::ARR> */
+                        public const KEY = "c";
+                    }',
+                'error_message' => 'InvalidConstantAssignmentValue',
+            ],
+            'enumValueAssignedToWrongValueOfConstant' => [
+                'code' => '<?php
+                    enum ConnectionAction: string
+                    {
+                        case Read = "r";
+                        case Write = "w";
+                    }
+
+                    class C {
+                        /** @var value-of<ConnectionAction> */
+                        protected const string ACTION = "x";
+                    }',
+                'error_message' => 'InvalidConstantAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'constantDefinedInFunctionButNotCalled' => [
                 'code' => '<?php
                     /**
