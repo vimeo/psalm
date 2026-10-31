@@ -23,6 +23,39 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachOverNullableOrFalsableMayNotRun' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<int>|null $nullable */
+                    $nullable = null;
+                    $nullableEmpty = true;
+                    foreach ($nullable as $_) {
+                        $nullableEmpty = false;
+                    }
+
+                    /** @var array<int>|false $falsable */
+                    $falsable = false;
+                    $falsableEmpty = true;
+                    foreach ($falsable as $_) {
+                        $falsableEmpty = false;
+                    }
+
+                    /** @var non-empty-array<int> $nonEmpty */
+                    $nonEmpty = [1];
+                    $nonEmptyEmpty = true;
+                    foreach ($nonEmpty as $_) {
+                        $nonEmptyEmpty = false;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$nullableEmpty===' => 'bool',
+                    '$falsableEmpty===' => 'bool',
+                    '$nonEmptyEmpty===' => 'false',
+                    '$nullable===' => 'array<array-key, int>|null',
+                    '$falsable===' => 'array<array-key, int>|false',
+                ],
+                'ignored_issues' => ['PossiblyNullIterator', 'PossiblyFalseIterator'],
+            ],
             'foreachByReferenceWritesIntoTheItemsOfTheArray' => [
                 'code' => '<?php
                     $values = ["key" => ""];
