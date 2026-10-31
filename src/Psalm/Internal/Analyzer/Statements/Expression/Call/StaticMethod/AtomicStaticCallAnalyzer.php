@@ -1144,10 +1144,11 @@ final class AtomicStaticCallAnalyzer
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
+        // the placeholder of a first-class callable stays, so the call is one too
         $fake_method_call_expr = new VirtualMethodCall(
             new VirtualVariable($virtual_var_name, $stmt->class->getAttributes()),
             $stmt_name,
-            $stmt->getArgs(),
+            $stmt->args,
             $stmt->getAttributes(),
         );
 
