@@ -33,6 +33,16 @@ Configuration file may be split into several files using [XInclude](https://www.
 </projectFiles>
 ```
 
+## Keep the configuration private
+
+`psalm.xml` lists the layout of your code, and a [baseline](dealing_with_code_issues.md#using-a-baseline-file) lists the issues Psalm found, with taint analysis the places that are vulnerable. Don't leave them where a web server serves them (the document root of a web project):
+
+```nginx
+location ~ /(psalm.*|.*baseline.*)\.xml$ {
+    deny all;
+}
+```
+
 ## Different configuration file
 
 You can also create a different configuration file, then run Psalm with:
