@@ -54,6 +54,9 @@ final class FunctionCallInfo
      */
     public array $callable_ids = [];
 
+    /** @var array<string, array<string, Union>> */
+    public array $callable_template_types = [];
+
     public bool $allow_named_args = true;
 
     public array $byref_uses = [];

@@ -105,7 +105,14 @@ final class FunctionCallReturnTypeFetcher
                 true,
             );
 
-            if ($candidate_callable) {
+            if ($function_storage && $function_storage->template_types !== null) {
+                $stmt_type = new Union([new TClosure(
+                    $function_storage->params,
+                    $function_storage->return_type,
+                    $candidate_callable?->purity ?? $function_storage->capabilities,
+                    callable_id: strtolower($function_id),
+                )]);
+            } elseif ($candidate_callable) {
                 $stmt_type = new Union([new TClosure(
                     $candidate_callable->params,
                     $candidate_callable->return_type,

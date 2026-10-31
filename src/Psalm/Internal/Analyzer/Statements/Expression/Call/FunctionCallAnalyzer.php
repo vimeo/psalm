@@ -29,6 +29,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\PurityWildcardPaths;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\DeprecatedFunction;
@@ -87,6 +88,7 @@ use function is_string;
 use function preg_replace;
 use function reset;
 use function spl_object_id;
+use function str_contains;
 use function strpos;
 use function strtolower;
 
@@ -161,6 +163,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $function_name,
                 $context,
             );
+            $function_call_info->callable_template_types = self::getCallableTemplateTypes(
+                $codebase,
+                $function_call_info->callable_ids,
+                $statements_analyzer->node_data->getType($function_name),
+            );
 
             if ($function_call_info->function_exists === false) {
                 return true;
@@ -225,6 +232,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         if (!$is_first_class_callable) {
+            $template_result->template_types += $function_call_info->callable_template_types;
             if (isset($function_call_info->function_storage->template_types)) {
                 $template_result->template_types += $function_call_info->function_storage->template_types ?: [];
             }
@@ -266,7 +274,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $already_inferred_lower_bounds = $template_result->lower_bounds;
 
-        $template_result = new TemplateResult([], []);
+        $template_result = new TemplateResult($function_call_info->callable_template_types, []);
 
         // do this here to allow closure param checks
         if (!$is_first_class_callable && $function_call_info->function_params !== null) {
@@ -305,6 +313,17 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         );
 
         $template_result->lower_bounds = [...$template_result->lower_bounds, ...$already_inferred_lower_bounds];
+
+        if (!$is_first_class_callable
+            && $function_name instanceof PhpParser\Node\Expr
+            && $function_call_info->callable_template_types !== []
+            && ($stmt_type = $statements_analyzer->node_data->getType($real_stmt))
+        ) {
+            $statements_analyzer->node_data->setType(
+                $real_stmt,
+                TemplateInferredTypeReplacer::replace($stmt_type, $template_result, $codebase),
+            );
+        }
 
         if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {
             $stmt_type = FunctionCallReturnTypeFetcher::fetch(
@@ -353,6 +372,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
             if ($input_type = $type_provider->getType($function_name)) {
                 foreach ($input_type->getAtomicTypes() as $atomic_type) {
+                    if ($atomic_type instanceof TClosure) {
+                        $closure_types[] = $atomic_type;
+                        continue;
+                    }
                     $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
                         $codebase,
                         $atomic_type,
@@ -877,6 +900,34 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         return $function_call_info;
+    }
+
+    /**
+     * @param array<non-empty-lowercase-string, true> $callable_ids
+     * @return array<string, array<string, Union>>
+     * @psalm-capabilities read-props
+     */
+    private static function getCallableTemplateTypes(Codebase $codebase, array $callable_ids, ?Union $type): array
+    {
+        $templates = $type?->getTemplateTypes() ?? [];
+        $template_types = [];
+        foreach ($callable_ids as $callable_id => $_) {
+            $defining_function = $callable_id;
+            if (str_contains($defining_function, '::')) {
+                $method_id = MethodIdentifier::wrap($defining_function);
+                if ($codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
+                    $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+                    $defining_function = strtolower((string) ($declaring_method_id ?? $method_id));
+                }
+            }
+            foreach ($templates as $template) {
+                if ($template->defining_class === 'fn-' . $defining_function) {
+                    $template_types[$template->param_name][$template->defining_class] = $template->as;
+                }
+            }
+        }
+
+        return $template_types;
     }
 
     private static function getAnalyzeNamedExpression(
