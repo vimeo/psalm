@@ -198,7 +198,6 @@
       <code><![CDATA[$const->name]]></code>
       <code><![CDATA[$fleshed_out_type]]></code>
       <code><![CDATA[$prop->name]]></code>
-      <code><![CDATA[$property_storage->signature_type]]></code>
     </ImplicitToStringCast>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comments[0]]]></code>
