@@ -1066,7 +1066,6 @@ abstract class Type
         if (self::mayHaveIntersection($type_1_atomic, $codebase)
             && self::mayHaveIntersection($type_2_atomic, $codebase)
         ) {
-            /** @psalm-suppress TypeDoesNotContainType */
             if ($type_1_atomic instanceof TNamedObject && $type_2_atomic instanceof TNamedObject) {
                 try {
                     $first = $codebase->classlike_storage_provider->get($type_1_atomic->value);
