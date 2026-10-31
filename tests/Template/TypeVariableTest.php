@@ -1147,6 +1147,107 @@ final class TypeVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'typeVariableResolvedByForeach' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @return T */
+                        public function get(): mixed { return $this->value; }
+
+                        /** @param T $value */
+                        public function set(mixed $value): void { $this->value = $value; }
+                    }
+
+                    /**
+                     * @template T
+                     * @param Box<T> $box
+                     * @return T
+                     */
+                    function unbox(Box $box): mixed { return $box->get(); }
+
+                    final class Foo { public function bar(): void {} }
+
+                    /** @var array<string, int> $arr */
+                    $arr = [];
+                    $key = null;
+                    $val = null;
+                    foreach (unbox(new Box($arr)) as $k => $v) {
+                        $key = $k;
+                        $val = $v;
+                    }',
+                'assertions' => [
+                    '$key' => 'null|string',
+                    '$val' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'typeVariableResolvedByDestructuring' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @return T */
+                        public function get(): mixed { return $this->value; }
+
+                        /** @param T $value */
+                        public function set(mixed $value): void { $this->value = $value; }
+                    }
+
+                    /**
+                     * @template T
+                     * @param Box<T> $box
+                     * @return T
+                     */
+                    function unbox(Box $box): mixed { return $box->get(); }
+
+                    final class Foo { public function bar(): void {} }
+
+                    /** @var array{string, int} $tuple */
+                    $tuple = ["a", 1];
+                    [$a, $b] = unbox(new Box($tuple));',
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'typeVariableResolvedByClone' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @return T */
+                        public function get(): mixed { return $this->value; }
+
+                        /** @param T $value */
+                        public function set(mixed $value): void { $this->value = $value; }
+                    }
+
+                    /**
+                     * @template T
+                     * @param Box<T> $box
+                     * @return T
+                     */
+                    function unbox(Box $box): mixed { return $box->get(); }
+
+                    final class Foo { public function bar(): void {} }
+
+                    $copy = clone unbox(new Box(new Foo()));',
+                'assertions' => [
+                    '$copy' => 'Foo',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 

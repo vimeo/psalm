@@ -38,6 +38,7 @@ use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidIterator;
@@ -260,7 +261,7 @@ final class ForeachAnalyzer
         );
 
         if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
-            $iterator_type = $stmt_expr_type;
+            $iterator_type = TypeVariableResolver::resolveTopLevel($stmt_expr_type, $codebase);
         } elseif ($var_id && $context->hasVariable($var_id)) {
             $iterator_type = $context->vars_in_scope[$var_id];
         } else {
