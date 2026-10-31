@@ -260,6 +260,86 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalReturnTypeOfAMethodTagIsResolvedByTheArguments' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @method ($asText is true ? string : list<string>) words(int $nb = 3, bool $asText = false)
+                     */
+                    final class FakeGenerator
+                    {
+                        public function __call(string $name, array $arguments): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    $generator = new FakeGenerator();
+                    $list = $generator->words(3, false);
+                    $text = $generator->words(3, true);
+                    $default = $generator->words();
+                    PHP,
+                'assertions' => [
+                    '$list' => 'list<string>',
+                    '$text' => 'string',
+                    '$default' => 'list<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalReturnTypeOfAStaticMethodTagIsResolvedByTheArguments' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @method static ($flag is true ? int : string) make(bool $flag)
+                     */
+                    final class Maker
+                    {
+                        public static function __callStatic(string $name, array $arguments): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    $int = Maker::make(true);
+                    $string = Maker::make(false);
+                    PHP,
+                'assertions' => [
+                    '$int' => 'int',
+                    '$string' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalReturnTypeOfAMethodTagOfAGenericClassIsResolvedByTheArguments' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @method ($x is int ? T : null) pick($x)
+                     */
+                    final class Coll
+                    {
+                        public function __call(string $name, array $arguments): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    /** @param Coll<string> $coll */
+                    function test(Coll $coll): void
+                    {
+                        $picked = $coll->pick(1);
+                        $none = $coll->pick('key');
+
+                        /** @psalm-check-type-exact $picked = string */
+                        /** @psalm-check-type-exact $none = null */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'trailingReturnTypes' => [
                 'code' => '<?php
                     class ParentClass {
