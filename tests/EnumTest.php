@@ -20,6 +20,56 @@ final class EnumTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'enumPropertiesOfUnionsOfSeveralEnums' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Letter: string {
+                        case A = 'a';
+                        case B = 'b';
+                        case C = 'c';
+                    }
+
+                    enum Number: int {
+                        case A = 10;
+                        case X = 20;
+                    }
+
+                    /** @var Letter::B|Letter::C|Number::X $cases */
+                    $cases = Number::X;
+                    $caseValue = $cases->value;
+                    $caseName = $cases->name;
+
+                    /** @var Letter|Number::X $bare */
+                    $bare = Number::X;
+                    $bareValue = $bare->value;
+                    $bareName = $bare->name;
+
+                    /** @var Letter::A|Number::A $same */
+                    $same = Number::A;
+                    $sameName = $same->name;
+                    $sameValue = $same->value;
+
+                    /**
+                     * @template T of Letter
+                     * @param T $letter
+                     */
+                    function templated(Letter $letter): void {
+                        $value = $letter->value;
+                        $name = $letter->name;
+                        echo $value, $name;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$caseValue===' => "'b'|'c'|20",
+                    '$caseName===' => "'B'|'C'|'X'",
+                    '$bareValue===' => "'a'|'b'|'c'|20",
+                    '$bareName===' => "'A'|'B'|'C'|'X'",
+                    '$sameName===' => "'A'",
+                    '$sameValue===' => "'a'|10",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'enumPropertiesOfNullableAndUnionedEnums' => [
                 'code' => <<<'PHP'
                     <?php
