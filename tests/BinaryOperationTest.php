@@ -1204,6 +1204,77 @@ final class BinaryOperationTest extends TestCase
                     '$a===' => 'float(9.2233720368548E+18)',
                 ],
             ],
+            'bitwiseOperationsOfIntRanges' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $flags = rand(0, 1) | (rand(0, 1) << 1);
+                    $or = rand(0, 5) | rand(2, 9);
+                    $xor = rand(0, 5) ^ rand(2, 9);
+                    $and = rand(0, 5) & rand(2, 9);
+                    $shift = rand(0, 5) << rand(2, 9);
+                    $bit = rand(0, 1) | rand(0, 1);
+                    $negativeOr = rand(-3, 5) | rand(2, 9);
+                    $negativeShift = rand(-3, 5) << rand(0, 2);
+                    $negativeShiftBy = rand(0, 5) << rand(-3, 2);
+                    PHP,
+                'assertions' => [
+                    '$flags===' => 'int<0, 3>',
+                    '$or===' => 'int<0, 15>',
+                    '$xor===' => 'int<0, 15>',
+                    '$and===' => 'int<0, 5>',
+                    '$shift===' => 'int<0, 2560>',
+                    '$bit===' => 'int<0, 1>',
+                    '$negativeOr===' => 'int',
+                    '$negativeShift===' => 'int',
+                    '$negativeShiftBy===' => 'int',
+                ],
+            ],
+            'bitwiseOperationsOfUnboundedIntRanges' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var int<0, max> $u */
+                    $u = 5;
+                    $andRight = $u & rand(0, 5);
+                    $andLeft = rand(0, 5) & $u;
+                    $andBoth = $u & $u;
+                    $orLeft = $u | rand(0, 5);
+                    $orRight = rand(0, 5) | $u;
+                    $xor = $u ^ rand(0, 5);
+                    $shiftLeft = $u << rand(0, 2);
+                    $shiftBy = rand(0, 2) << $u;
+                    PHP,
+                'assertions' => [
+                    '$andRight===' => 'int<0, 5>',
+                    '$andLeft===' => 'int<0, 5>',
+                    '$andBoth===' => 'int<0, max>',
+                    '$orLeft===' => 'int',
+                    '$orRight===' => 'int',
+                    '$xor===' => 'int',
+                    '$shiftLeft===' => 'int',
+                    '$shiftBy===' => 'int',
+                ],
+            ],
+            'bitwiseOperationsOfIntRangesNearTheIntegerLimits' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $fits = rand(0, 1) << rand(60, 62);
+                    $overflows = rand(0, 3) << rand(60, 62);
+                    $shiftedOut = rand(0, 1) << rand(60, 63);
+                    $edge = rand(0, 4611686018427387903) << rand(0, 1);
+                    $overEdge = rand(0, 4611686018427387904) << rand(0, 1);
+                    $sixtyTwoBits = rand(0, 4611686018427387903) | rand(0, 1);
+                    $sixtyThreeBits = rand(0, 4611686018427387904) | rand(0, 1);
+                    PHP,
+                'assertions' => [
+                    '$fits===' => 'int<0, 4611686018427387904>',
+                    '$overflows===' => 'int',
+                    '$shiftedOut===' => 'int',
+                    '$edge===' => 'int<0, 9223372036854775806>',
+                    '$overEdge===' => 'int',
+                    '$sixtyTwoBits===' => 'int<0, 4611686018427387903>',
+                    '$sixtyThreeBits===' => 'int<0, 9223372036854775807>',
+                ],
+            ],
             'invalidArrayOperations' => [
                 'code' => <<<'PHP'
                     <?php
