@@ -1538,6 +1538,52 @@ final class ConditionalTest extends TestCase
                     assert($x instanceof Traversable);
                     takesTraversable($x);',
             ],
+            'iterableInstanceofGenerator' => [
+                'code' => '<?php
+                    /** @param iterable<int, string> $i */
+                    function f(iterable $i): ?Generator {
+                        return $i instanceof Generator ? $i : null;
+                    }
+
+                    /** @param iterable<int, string> $i */
+                    function g(iterable $i): void {
+                        if ($i instanceof Generator) {
+                            $g = $i;
+                        }
+                    }
+
+                    /** @var iterable<int, string> $i */
+                    $i = [];
+                    $a = $i instanceof ArrayIterator ? $i : null;',
+                'assertions' => [
+                    '$a===' => 'ArrayIterator&Traversable<int, string>|null',
+                ],
+            ],
+            'iterableInstanceofTraversableClassWithoutTemplates' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Bag implements IteratorAggregate {
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator([]);
+                        }
+                    }
+
+                    /** @var iterable<int, string> $i */
+                    $i = [];
+                    $b = $i instanceof Bag ? $i : null;',
+                'assertions' => [
+                    '$b===' => 'Bag|null',
+                ],
+            ],
+            'iterableNotInstanceofGeneratorStaysIterable' => [
+                'code' => '<?php
+                    /** @var iterable<int, string> $i */
+                    $i = [];
+                    $r = $i instanceof Generator ? null : $i;',
+                'assertions' => [
+                    '$r===' => 'iterable<int, string>|null',
+                ],
+            ],
             'dontReconcileArrayOffset' => [
                 'code' => '<?php
                     /** @psalm-suppress TypeDoesNotContainType */
@@ -3491,6 +3537,16 @@ final class ConditionalTest extends TestCase
                     $a = rand(0, 10) > 5 ? new A() : new B();
                     if ($a instanceof A) {
                     } elseif ($a instanceof C) {
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'iterableInstanceofClassThatIsNotTraversable' => [
+                'code' => '<?php
+                    final class Plain {}
+
+                    /** @param iterable<int, string> $i */
+                    function f(iterable $i): void {
+                        if ($i instanceof Plain) {}
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
