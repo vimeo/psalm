@@ -1981,6 +1981,9 @@ final class ClassLikeNodeScanner
             $property_storage->readonly = $storage->readonly
                 || $stmt->isReadonly()
                 || ($var_comment && $var_comment->readonly);
+            $property_storage->readonly_default = ($storage->readonly || $stmt->isReadonly())
+                && !$stmt->isStatic()
+                && $property->default !== null;
             $property_storage->allow_private_mutation = $var_comment ? $var_comment->allow_private_mutation : false;
             $property_storage->description = $var_comment ? $var_comment->description : null;
 
