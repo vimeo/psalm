@@ -22,6 +22,93 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'firstClassCallableOfMethodWithParamConditionalReturn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class C {
+                        /** @return ($x is string ? int : bool) */
+                        public function m(string|int $x): int|bool {
+                            return is_string($x) ? 1 : true;
+                        }
+
+                        /** @return ($x is string ? int : bool) */
+                        public static function s(string|int $x): int|bool {
+                            return is_string($x) ? 1 : true;
+                        }
+                    }
+
+                    function check(C $c): void {
+                        $method = $c->m(...);
+                        $viaMethod = $method('a');
+                        /** @psalm-check-type-exact $viaMethod = bool|int */
+
+                        $static = C::s(...);
+                        $viaStatic = $static('a');
+                        /** @psalm-check-type-exact $viaStatic = bool|int */
+
+                        $fromCallable = Closure::fromCallable([$c, 'm']);
+                        $viaFromCallable = $fromCallable('a');
+                        /** @psalm-check-type-exact $viaFromCallable = bool|int */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'paramOutOfMethodClosureResolvesSelfAndStatic' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public function name(): string {
+                            return 'a';
+                        }
+                    }
+
+                    class B extends A {
+                        /** @param-out self $out */
+                        public function setSelf(?self &$out): void {
+                            $out = $this;
+                        }
+
+                        /** @param-out static $out */
+                        public function setStatic(?self &$out): void {
+                            $out = $this;
+                        }
+
+                        public function viaMethod(): string {
+                            $setSelf = $this->setSelf(...);
+                            $self = null;
+                            $setSelf($self);
+
+                            $setStatic = $this->setStatic(...);
+                            $static = null;
+                            $setStatic($static);
+
+                            return $self->name() . $static->name();
+                        }
+                    }
+
+                    class C extends B {
+                        public function viaStaticCall(): string {
+                            $setSelf = self::setSelf(...);
+                            $self = null;
+                            $setSelf($self);
+
+                            $setStatic = self::setStatic(...);
+                            $static = null;
+                            $setStatic($static);
+
+                            /** @psalm-check-type-exact $self = B */
+                            /** @psalm-check-type-exact $static = C */
+
+                            return $self->name() . $static->name();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'byRefUseVarUnsetInClosure' => [
                 'code' => '<?php
                     function reserve(): Closure {
