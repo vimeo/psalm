@@ -1008,6 +1008,9 @@ final class MethodComparator
                     ? $implementer_called_class_name
                     : $implementer_classlike_storage->name,
                 $implementer_classlike_storage->parent_class,
+                true,
+                false,
+                $resolve_static_to_final_class,
             ) : null;
 
         $is_contained_by = $codebase->analysis_php_version_id >= 7_04_00
@@ -1072,6 +1075,10 @@ final class MethodComparator
         CodeLocation $code_location,
         array $suppressed_issues,
     ): void {
+        $implementer_class_is_final = $codebase->classlike_storage_provider
+            ->get($implementer_called_class_name)
+            ->final;
+
         $implementer_method_storage_return_type = TypeExpander::expandUnion(
             $codebase,
             $implementer_return_type,
@@ -1080,6 +1087,9 @@ final class MethodComparator
                 : $implementer_classlike_storage->name,
             $implementer_called_class_name,
             $implementer_classlike_storage->parent_class,
+            true,
+            false,
+            $implementer_class_is_final,
         );
 
         $guide_method_storage_return_type = TypeExpander::expandUnion(
@@ -1089,13 +1099,13 @@ final class MethodComparator
                 ? $implementer_classlike_storage->name
                 : $guide_classlike_storage->name,
             $guide_classlike_storage->is_trait
-                || $implementer_method_storage->final
+                || $implementer_class_is_final
                 ? $implementer_called_class_name
                 : $guide_classlike_storage->name,
             $guide_classlike_storage->parent_class,
             true,
             true,
-            $implementer_method_storage->final,
+            $implementer_class_is_final,
         );
 
         $guide_class_name = $guide_classlike_storage->name;
