@@ -21,6 +21,74 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'iterableInstanceOfGeneratorKeepsItsParams' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return iterable<int, string> */
+                    function getIterable(): iterable {
+                        return [];
+                    }
+
+                    function narrow(): void {
+                        $positive = getIterable();
+                        $negative = getIterable();
+
+                        if (!$positive instanceof Generator) {
+                            return;
+                        }
+
+                        if ($negative instanceof Generator) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $positive = Generator&Traversable<int, string> */
+                        /** @psalm-check-type-exact $negative = array<int, string>|Traversable<int, string> */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'iterableTemplateInstanceOfGeneratorIsReturned' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template TK
+                     * @template TV
+                     * @param callable(): iterable<TK, TV> $callback
+                     * @return Generator<TK, TV>
+                     */
+                    function asGenerator(callable $callback): Generator {
+                        $iter = $callback();
+
+                        if ($iter instanceof Generator) {
+                            return $iter;
+                        }
+
+                        return (function () use ($iter): Generator {
+                            foreach ($iter as $key => $value) {
+                                yield $key => $value;
+                            }
+                        })();
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nonFinalClassCanBeIdenticalToIterable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+
+                    function f(Foo $x, iterable $i): bool {
+                        return $x === $i;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'nonStrictConditionOnMixedOrNull' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $owners */
@@ -3475,6 +3543,35 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'finalClassCannotBeIdenticalToIterable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Fin {}
+
+                    function f(Fin $x, iterable $i): bool {
+                        return $x === $i;
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'iterableIsNotInstanceOfFinalClassThatIsNotTraversable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Fin {}
+
+                    /** @param iterable<int, string> $i */
+                    function f(iterable $i): void {
+                        if ($i instanceof Fin) {
+                            echo "never";
+                        }
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'makeNonNullableNull' => [
                 'code' => '<?php
                     class A { }

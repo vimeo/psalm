@@ -886,6 +886,28 @@ final class AtomicTypeComparator
             && $array->properties[0]->equals($array->fallback_params[1])
         ;
     }
+
+    /**
+     * The object half of an iterable is a Traversable, unless the other type is a class that cannot be one.
+     *
+     * @psalm-capabilities read-props|write-props
+     * @internal
+     */
+    public static function getTraversableHalf(
+        Codebase $codebase,
+        TIterable $iterable,
+        TNamedObject $other,
+    ): ?TGenericObject {
+        if ($codebase->classExists($other->value)
+            && !$codebase->classImplements($other->value, 'Traversable')
+            && $codebase->classlike_storage_provider->get($other->value)->final
+        ) {
+            return null;
+        }
+
+        return new TGenericObject('Traversable', $iterable->type_params);
+    }
+
     /**
      * Does the input param atomic type match the given param atomic type
      */
@@ -901,6 +923,11 @@ final class AtomicTypeComparator
             return true;
         }
 
+        if ($type1_part instanceof TIterable && $type2_part instanceof TNamedObject) {
+            $type1_part = self::getTraversableHalf($codebase, $type1_part, $type2_part) ?? $type1_part;
+        } elseif ($type2_part instanceof TIterable && $type1_part instanceof TNamedObject) {
+            $type2_part = self::getTraversableHalf($codebase, $type2_part, $type1_part) ?? $type2_part;
+        }
 
         if ((self::isLegacyTListLike($type1_part)
                 && self::isLegacyTNonEmptyListLike($type2_part))
