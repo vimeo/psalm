@@ -288,7 +288,8 @@ final class ClassLikeNodeScanner
 
         if ($node instanceof PhpParser\Node\Stmt\Class_) {
             $storage->abstract = $node->isAbstract();
-            $storage->final = $node->isFinal();
+            // an anonymous class cannot be extended
+            $storage->final = $node->isFinal() || $node->name === null;
             $storage->readonly = $node->isReadonly();
 
             $this->codebase->classlikes->addFullyQualifiedClassName($fq_classlike_name, $this->file_path);
