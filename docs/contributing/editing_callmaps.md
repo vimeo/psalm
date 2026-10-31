@@ -26,6 +26,21 @@ To also regenerate the base callmaps, run `bin/gen_callmap.sh`: it will use the 
 to extract types from PHP and a set of extensions.  
 To add types from an extension to the callmap, edit all versions of the Dockerfiles.  
 
+## Checking a callmap against reflection
+
+`composer verify-callmap` runs `tests/Internal/Codebase/InternalCallMapHandlerTest.php`, which compares the
+callmap with what reflection of the installed PHP and its extensions says.
+
+Functions that don't pass yet are listed in that test (`$ignoredFunctions`, and for return types only
+`$ignoredReturnTypeOnlyFunctions`). To fix one:
+
+1. Remove its entry from the ignore list and run `composer verify-callmap`.
+2. Fix the errors it reports in the callmap (and in the deltas, if the signature changed in an older version).
+3. Run `composer verify-callmap` again, then open the PR.
+
+An entry that is already right must not be on the list: the test fails with `Remove 'name' from
+InternalCallMapHandlerTest::$ignoredFunctions`.
+
 ## Full callmap format
 
 The full callmap (`CallMap.php`) has function/method
