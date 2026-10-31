@@ -22,6 +22,20 @@ final class SwitchTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'switchTrueCaseThatCanMatch' => [
+                'code' => '<?php
+                    class Foo {}
+                    class Bar extends Foo {}
+
+                    function f(Foo $a): int {
+                        switch (true) {
+                            case $a instanceof Bar:
+                                return 1;
+                            default:
+                                return 2;
+                        }
+                    }',
+            ],
             'switchNarrowsAnArrayKeyToTheNonNumericStringsOfItsCases' => [
                 'code' => '<?php
                     /** @return array-key */
@@ -1147,6 +1161,21 @@ final class SwitchTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'switchTrueCaseThatCannotMatch' => [
+                'code' => '<?php
+                    class Foo {}
+                    class Bar {}
+
+                    function f(Foo $a): int {
+                        switch (true) {
+                            case $a instanceof Bar:
+                                return 1;
+                            default:
+                                return 2;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:34 - Cannot resolve types for $a - Foo does not contain Bar',
+            ],
             'switchReturnTypeWithFallthroughAndBreak' => [
                 'code' => '<?php
                     class A {
