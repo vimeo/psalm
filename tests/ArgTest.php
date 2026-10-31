@@ -396,6 +396,19 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'multipleUnpackedListsLeaveParameterUnfilled' => [
+                'code' => '<?php
+                    function f(float $a, float $b): void {}
+
+                    /** @var list{float} $x */
+                    $x = [1.0];
+                    /** @var list{} $empty */
+                    $empty = [];
+
+                    f(...$x, ...$empty);',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => ['NoValue'],
+            ],
             'multipleUnpackedListsWrongType' => [
                 'code' => '<?php
                     function f(float $a, float $b): void {}
