@@ -65,7 +65,9 @@ use function cli_set_process_title;
 use function count;
 use function explode;
 use function fwrite;
+use function get_object_vars;
 use function implode;
+use function is_object;
 use function json_encode;
 use function max;
 use function parse_url;
@@ -558,7 +560,7 @@ final class LanguageServer extends Dispatcher
          */
         $initializeResultServerInfo = new InitializeResultServerInfo('Psalm Language Server', PSALM_VERSION);
 
-        return new InitializeResult($serverCapabilities, $initializeResultServerInfo);
+        return new InitializeResult(self::omitNullProperties($serverCapabilities), $initializeResultServerInfo);
     }
 
     /**
@@ -769,7 +771,7 @@ final class LanguageServer extends Dispatcher
                         $diagnostic->codeDescription = new CodeDescription($issue_data->link);
                     }
 
-                    return $diagnostic;
+                    return self::omitNullProperties($diagnostic);
                 },
                 array_filter(
                     array_map(static function (IssueData $issue_data) use (&$issue_baseline) {
@@ -815,6 +817,29 @@ final class LanguageServer extends Dispatcher
 
             $this->client->textDocument->publishDiagnostics($uri, array_values($diagnostics), $version);
         }
+    }
+
+    /**
+     * The LSP types declare their optional fields as untyped properties, which PHP initializes to null, and a null
+     * is not an absent field: strict clients refuse it. Dropping them leaves what was set.
+     *
+     * @template T of object
+     * @param T $object
+     * @return T
+     * @psalm-pure
+     */
+    private static function omitNullProperties(object $object): object
+    {
+        /** @var mixed $value */
+        foreach (get_object_vars($object) as $name => $value) {
+            if ($value === null) {
+                unset($object->$name);
+            } elseif (is_object($value)) {
+                self::omitNullProperties($value);
+            }
+        }
+
+        return $object;
     }
 
     /**
