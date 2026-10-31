@@ -529,6 +529,9 @@ final class Config
 
     public string $hash = '';
 
+    /** Whether loading a config adds the paths passed on the command line to its project files */
+    private static bool $add_command_line_paths = false;
+
     public ?string $error_baseline = null;
 
     public bool $include_php_versions_in_error_baseline = false;
@@ -1333,9 +1336,11 @@ final class Config
 
         global $argv;
 
+        // Only the CLI entry points read the arguments of the process: a host that loads a config as a library
+        // (PHPUnit, ParaTest, a Symfony console) has arguments of its own, and CliUtils exits on one it can't resolve.
         // Hack for Symfonys own argv resolution.
         // @see https://github.com/vimeo/psalm/issues/10465
-        if (!isset($argv[0]) || basename($argv[0]) !== 'psalm-plugin') {
+        if (self::$add_command_line_paths && basename($argv[0] ?? '') !== 'psalm-plugin') {
             $paths_to_check = CliUtils::getPathsToCheck(null);
         }
 
@@ -1623,6 +1628,16 @@ final class Config
     public function setComposerClassLoader(array $autoloaders): void
     {
         $this->autoloaders = $autoloaders;
+    }
+
+    /**
+     * The CLI entry points set this while they load the config
+     *
+     * @psalm-capabilities write-globals
+     */
+    public static function setAddCommandLinePaths(bool $add): void
+    {
+        self::$add_command_line_paths = $add;
     }
 
     /** @return array<string, IssueHandler> */
