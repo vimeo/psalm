@@ -264,7 +264,7 @@ final class TypeParser
 
         // `T is empty` and `T is falsy` are the values `empty()` is true for, not the empty `never` type
         $conditional_type = $condition_tree instanceof Value
-            && ($condition_tree->value === 'empty' || $condition_tree->value === 'falsy')
+            && in_array($condition_tree->text ?? $condition_tree->value, ['empty', 'falsy'], true)
             ? new Union([
                 new TFalse(),
                 new TLiteralInt(0),
