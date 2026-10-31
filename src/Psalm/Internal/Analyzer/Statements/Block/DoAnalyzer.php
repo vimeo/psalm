@@ -12,7 +12,6 @@ use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\LoopScope;
-use Psalm\IssueBuffer;
 use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
@@ -175,14 +174,7 @@ final class DoAnalyzer
 
         $do_context->loop_scope = $loop_scope;
 
-        // the loop analysis reports what the body does with the types it has in each pass: this pass has the ones
-        // of the first, e.g. a counter that is still 0
-        IssueBuffer::startRecording();
-
         $statements_analyzer->analyze($stmt->stmts, $do_context);
-
-        IssueBuffer::clearRecordingLevel();
-        IssueBuffer::stopRecording();
 
         if (!isset($suppressed_issues['RedundantCondition'])) {
             $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);

@@ -17,6 +17,27 @@ final class CastTest extends TestCase
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
+        yield 'castOfAnUnreachableOperandIsNotReportedOnItsOwn' => [
+            'code' => <<<'PHP'
+                <?php
+                function f(): void {
+                    $zero = 0;
+
+                    if ($zero !== 0) {
+                        $int = (int) $zero;
+                        $float = (float) $zero;
+                        $string = (string) $zero;
+                        /** @psalm-check-type-exact $int = int */
+                        /** @psalm-check-type-exact $float = float */
+                        /** @psalm-check-type-exact $string = string */
+                    }
+                }
+                PHP,
+            'assertions' => [],
+            'ignored_issues' => ['TypeDoesNotContainType'],
+            'php_version' => '8.1',
+        ];
+
         yield 'strvalAndInterpolationConvertLikeAStringCast' => [
             'code' => '<?php
                 /**
