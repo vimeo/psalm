@@ -7,6 +7,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\ForbiddenCode;
@@ -64,7 +65,11 @@ final class EmptyAnalyzer
             } elseif ($expr_type->isAlwaysFalsy()) {
                 $stmt_type = new TTrue($expr_type->from_docblock);
             } else {
-                ExpressionAnalyzer::checkRiskyTruthyFalsyComparison($expr_type, $statements_analyzer, $stmt);
+                ExpressionAnalyzer::checkRiskyTruthyFalsyComparison(
+                    ArrayFetchAnalyzer::getTypeWithoutIssetNull($stmt->expr) ?? $expr_type,
+                    $statements_analyzer,
+                    $stmt,
+                );
                 $stmt_type = new TBool();
             }
 

@@ -21,6 +21,13 @@ final class EmptyTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'emptyOnRequiredShapeKey' => [
+                'code' => '<?php
+                    /** @param array{foo: string} $arg */
+                    function foo(array $arg): bool {
+                        return empty($arg["foo"]);
+                    }',
+            ],
             'ifNotUndefinedAndEmpty' => [
                 'code' => '<?php
                     $a = !empty($b) ? $b : null;',
@@ -656,6 +663,30 @@ final class EmptyTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'emptyOnOptionalShapeKeyIsRisky' => [
+                'code' => '<?php
+                    /** @param array{foo?: string} $arg */
+                    function foo(array $arg): bool {
+                        return empty($arg["foo"]);
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+            ],
+            'emptyOnNullableShapeKeyIsRisky' => [
+                'code' => '<?php
+                    /** @param array{foo: ?string} $arg */
+                    function foo(array $arg): bool {
+                        return empty($arg["foo"]);
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+            ],
+            'emptyOnKeyOfUnsealedArrayIsRisky' => [
+                'code' => '<?php
+                    /** @param array<string, string> $arg */
+                    function foo(array $arg): bool {
+                        return empty($arg["foo"]);
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+            ],
             'preventImpossibleEmpty' => [
                 'code' => '<?php
                     function foo(array $arr) : void {
