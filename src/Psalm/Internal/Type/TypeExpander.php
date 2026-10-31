@@ -49,8 +49,10 @@ use ReflectionProperty;
 use function array_all;
 use function array_any;
 use function array_filter;
+use function array_keys;
 use function array_map;
 use function array_merge;
+use function array_shift;
 use function array_values;
 use function count;
 use function is_string;
@@ -1203,7 +1205,29 @@ final class TypeExpander
             if (!$storage->final) {
                 $all_sealed = false;
             }
-            foreach ($storage->properties as $key => $property) {
+
+            // the properties a class declares come before those of the traits it uses
+            $property_sources = [$storage];
+            $traits_to_visit = array_keys($storage->used_traits);
+            $visited_traits = [];
+            while ($traits_to_visit) {
+                $used_trait = array_shift($traits_to_visit);
+                if (isset($visited_traits[$used_trait]) || !$codebase->classlike_storage_provider->has($used_trait)) {
+                    continue;
+                }
+
+                $visited_traits[$used_trait] = true;
+                $trait_storage = $codebase->classlike_storage_provider->get($used_trait);
+                $property_sources[] = $trait_storage;
+                $traits_to_visit = [...$traits_to_visit, ...array_keys($trait_storage->used_traits)];
+            }
+
+            $source_properties = [];
+            foreach ($property_sources as $property_source) {
+                $source_properties += $property_source->properties;
+            }
+
+            foreach ($source_properties as $key => $property) {
                 if (isset($properties[$key])) {
                     continue;
                 }
