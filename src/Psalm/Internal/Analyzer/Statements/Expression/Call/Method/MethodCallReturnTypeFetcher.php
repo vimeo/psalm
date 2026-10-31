@@ -79,8 +79,23 @@ final class MethodCallReturnTypeFetcher
 
         if ($stmt->isFirstClassCallable()) {
             if ($method_storage) {
+                // what a param-out type says about `self`, `static` and `parent` can't be resolved from the closure
+                $closure_params = $method_storage->params;
+
+                foreach ($closure_params as $offset => $closure_param) {
+                    if ($closure_param->out_type) {
+                        $closure_params[$offset] = $closure_param->setOutType(TypeExpander::expandUnion(
+                            $codebase,
+                            $closure_param->out_type,
+                            $method_storage->defining_fqcln,
+                            $fq_class_name,
+                            $class_storage->parent_class,
+                        ));
+                    }
+                }
+
                 return new Union([new TClosure(
-                    $method_storage->params,
+                    $closure_params,
                     $method_storage->return_type,
                     $method_storage->capabilities,
                 )]);
