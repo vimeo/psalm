@@ -1437,7 +1437,21 @@ function preg_match($pattern, $subject, &$matches = [], int $flags = 0, int $off
 /**
  * @psalm-pure
  *
- * @return (PHP_MAJOR_VERSION is 5|7 ? string|false : string)
+ * @template TString as string
+ * @template TOffset as int
+ * @template TLength as int|null = null
+ *
+ * @param TString $string
+ * @param TOffset $offset
+ * @param TLength $length
+ *
+ * @return (PHP_MAJOR_VERSION is 5|7
+ *     ? string|false
+ *     : (TString is non-empty-string
+ *         ? (TOffset is int<min, 0>
+ *             ? (TLength is null|int<1, max> ? non-empty-string : string)
+ *             : string)
+ *         : string))
  * @psalm-ignore-falsable-return
  *
  * @psalm-flow ($string) -> return
