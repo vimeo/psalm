@@ -92,7 +92,7 @@ final class ConstantTypeResolver
             }
         }
 
-        throw new InvalidArgumentException('$value must be a scalar.');
+        return new TMixed;
     }
 
     public static function resolve(
