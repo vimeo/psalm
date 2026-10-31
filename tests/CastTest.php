@@ -51,6 +51,25 @@ final class CastTest extends TestCase
                 }
             ',
         ];
+        yield 'closureCastToArrayIsAListOfTheClosure' => [
+            'code' => '<?php
+                /**
+                 * @param Closure(string): void|non-empty-list<Closure(string): void> $writers
+                 */
+                function write_to(mixed $writers, string $message): void {
+                    $writers = (array) $writers;
+                    $writers[0]($message);
+                }
+
+                $closure = static fn(): int => 1;
+                $cast = (array) $closure;
+            ',
+            'assertions' => [
+                '$cast===' => 'list{Closure[pure]():1}',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.1',
+        ];
         yield 'floatIsCastToANonNumericStringWhenInfiniteOrNotANumber' => [
             'code' => '<?php
                 /** @param numeric $numeric */
