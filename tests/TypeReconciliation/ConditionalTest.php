@@ -21,6 +21,50 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'instanceofClassStringIsNotRedundantForTheBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+                    class Bar extends Foo {}
+
+                    /** @param class-string<Foo> $class */
+                    function sameType(Foo $input, string $class): void {
+                        if ($input instanceof $class) {
+                            /** @psalm-check-type-exact $input = Foo */;
+                        } else {
+                            /** @psalm-check-type-exact $input = Foo */;
+                        }
+                    }
+
+                    /** @param class-string<Foo> $class */
+                    function narrower(Bar $input, string $class): void {
+                        if ($input instanceof $class) {
+                            /** @psalm-check-type-exact $input = Bar */;
+                        }
+                    }
+
+                    /** @param class-string<Foo> $class */
+                    function wider(object $input, string $class): void {
+                        if ($input instanceof $class) {
+                            /** @psalm-check-type-exact $input = Foo */;
+                        } else {
+                            /** @psalm-check-type-exact $input = object */;
+                        }
+                    }
+
+                    /** @param class-string<Foo> $class */
+                    function union(int|Foo $input, string $class): void {
+                        if ($input instanceof $class) {
+                            /** @psalm-check-type-exact $input = Foo */;
+                        } else {
+                            /** @psalm-check-type-exact $input = Foo|int */;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'nonStrictConditionOnMixedOrNull' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $owners */

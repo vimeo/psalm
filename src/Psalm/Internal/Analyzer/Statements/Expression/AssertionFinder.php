@@ -1410,7 +1410,8 @@ final class AssertionFinder
                             ),
                         );
                     } elseif ($atomic_type instanceof TClassString && $atomic_type->as !== 'object') {
-                        $literal_class_strings[] = new IsType(
+                        // the class may be a subclass of the bound, so the check is never redundant
+                        $literal_class_strings[] = new IsIdentical(
                             $atomic_type->as_type ?: new TNamedObject($atomic_type->as),
                         );
                     }
