@@ -592,35 +592,11 @@ final class TemplateStandinTypeReplacer
                     );
                 }
 
-                try {
-                    $classlike_storage =
-                        $codebase->classlike_storage_provider->get($atomic_input_type->value);
+                $matching_object = self::getObjectMatchingBase($codebase, $atomic_input_type, $base_type);
 
-                    if ($atomic_input_type instanceof TGenericObject
-                        && isset($classlike_storage->template_extended_params[$base_type->value])
-                    ) {
-                        $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
-                        continue;
-                    }
-
-                    if (!empty($classlike_storage->template_extended_params[$base_type->value])) {
-                        $atomic_input_type = new TGenericObject(
-                            $base_type->value,
-                            array_values($classlike_storage->template_extended_params[$base_type->value]),
-                        );
-
-                        $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
-                        continue;
-                    }
-
-                    if (in_array('Traversable', $classlike_storage->class_implements)
-                        && $base_type->value === 'Iterator'
-                    ) {
-                        $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
-                        continue;
-                    }
-                } catch (InvalidArgumentException) {
-                    // do nothing
+                if ($matching_object) {
+                    $matching_atomic_types[$matching_object->getId()] = $matching_object;
+                    continue;
                 }
             }
 
@@ -1333,8 +1309,47 @@ final class TemplateStandinTypeReplacer
     }
 
     /**
+     * The object as the base it is matched against, if its class extends it: with the params that the templates of
+     * the base map to for this object, an object without type params leaving them at those of its class.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function getObjectMatchingBase(
+        Codebase $codebase,
+        TNamedObject $atomic_input_type,
+        TNamedObject $base_type,
+    ): ?TNamedObject {
+        try {
+            $classlike_storage = $codebase->classlike_storage_provider->get($atomic_input_type->value);
+
+            if ($atomic_input_type instanceof TGenericObject
+                && isset($classlike_storage->template_extended_params[$base_type->value])
+            ) {
+                return $atomic_input_type;
+            }
+
+            if (!empty($classlike_storage->template_extended_params[$base_type->value])) {
+                /** @var non-empty-list<Union> $params */
+                $params = self::getMappedGenericTypeParams($codebase, $atomic_input_type, $base_type);
+
+                return new TGenericObject($base_type->value, $params);
+            }
+
+            if (in_array('Traversable', $classlike_storage->class_implements)
+                && $base_type->value === 'Iterator'
+            ) {
+                return $atomic_input_type;
+            }
+        } catch (InvalidArgumentException) {
+            // do nothing
+        }
+
+        return null;
+    }
+
+    /**
      * @param TGenericObject|TNamedObject|TIterable $input_type_part
-     * @param TGenericObject|TIterable $container_type_part
+     * @param TGenericObject|TNamedObject|TIterable $container_type_part
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      * @return list<Union>
      */
