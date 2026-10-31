@@ -1167,6 +1167,11 @@ final class ArgumentAnalyzer
                     }
 
                     $potential_method_ids[] = $potential_method_id;
+                } elseif ($input_type_part instanceof TNamedObject
+                    && $input_type_part->value !== 'Closure'
+                ) {
+                    // an invokable object is called through its `__invoke`
+                    $potential_method_ids[] = new MethodIdentifier($input_type_part->value, '__invoke');
                 }
             }
 
