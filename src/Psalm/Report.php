@@ -8,7 +8,13 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Report\ReportOptions;
 
 use function array_filter;
+use function assert;
 use function htmlspecialchars;
+use function mb_ord;
+use function ord;
+use function preg_replace_callback;
+use function sprintf;
+use function strlen;
 use function strtoupper;
 
 use const ENT_QUOTES;
@@ -97,6 +103,33 @@ abstract class Report
         $label = $issue_data->is_security ? 'SECURITY' : 'ERROR';
 
         return $this->use_color ? "\e[0;31m" . $label . "\e[0m" : $label;
+    }
+
+    /**
+     * Makes text taken from the analyzed code (or from a plugin) safe to print on a terminal: C0 controls (but LF,
+     * TAB and a CR followed by LF), DEL, C1 controls and bidi formatting characters become a visible `\u{NNNN}`, so
+     * what a person sees is what a program reads. Use it on what a human-readable report prints, before Psalm adds
+     * its own escape sequences.
+     *
+     * @psalm-pure
+     */
+    protected function escapeControlCharacters(string $text): string
+    {
+        return (string) preg_replace_callback(
+            '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]|\r(?!\n)|\xC2[\x80-\x9F]|\xD8\x9C'
+                . '|\xE2\x80[\x8E\x8F\xAA-\xAE]|\xE2\x81[\xA6-\xA9]/',
+            static function (array $match): string {
+                $matched = $match[0] ?? '';
+
+                $code_point = strlen($matched) === 1 ? ord($matched) : mb_ord($matched, 'UTF-8');
+
+                // the pattern only matches complete UTF-8 sequences
+                assert($code_point !== false);
+
+                return sprintf('\u{%04X}', $code_point);
+            },
+            $text,
+        );
     }
 
     /**
