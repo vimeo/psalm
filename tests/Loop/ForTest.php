@@ -23,6 +23,34 @@ final class ForTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedInALaterCommaSeparatedForConditionIsDefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function next_int(): int {
+                        return 1;
+                    }
+
+                    function f(): int {
+                        for ($i = 0; $first = next_int(), $second = next_int(); ++$i) {
+                            echo $first;
+                        }
+
+                        return $second;
+                    }',
+            ],
+            'variableAssignedInTheForConditionIsDefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function next_int(): int {
+                        return 1;
+                    }
+
+                    function f(): int {
+                        for (; $value = next_int(); ) {
+                            echo $value;
+                        }
+
+                        return $value;
+                    }',
+            ],
             'forTrue' => [
                 'code' => '<?php
                     function ret(): int {

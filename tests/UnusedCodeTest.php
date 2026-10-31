@@ -441,6 +441,21 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'variableAssignedInTheWhileConditionIsUsedAfterTheLoop' => [
+                'code' => '<?php
+                    function next_int(): int {
+                        return 1;
+                    }
+
+                    /** @psalm-api */
+                    function f(): int {
+                        while ($value = next_int()) {
+                            echo 1;
+                        }
+
+                        return $value;
+                    }',
+            ],
             'usedExceptionsAreNotReported' => [
                 'code' => '<?php
                     /** @psalm-api */
