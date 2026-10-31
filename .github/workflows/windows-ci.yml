@@ -17,7 +17,8 @@ jobs:
 
     runs-on: ubuntu-latest
     env:
-      CHUNK_COUNT: 8
+      # more runners than on Linux (8): the tests take about a quarter longer on Windows
+      CHUNK_COUNT: 12
 
     outputs:
       count: ${{ steps.chunk-matrix.outputs.count }}
