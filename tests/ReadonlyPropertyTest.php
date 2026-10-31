@@ -135,6 +135,50 @@ final class ReadonlyPropertyTest extends TestCase
 
                     echo (new B)->bar;',
             ],
+            'readonlyPropertyWithDefaultOnPhp86' => [
+                'code' => '<?php
+                    class A {
+                        public readonly string $s = "a";
+                    }
+
+                    echo (new A)->s;',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'readonlyPropertyWithDefaultSetInCloneOnPhp86' => [
+                'code' => '<?php
+                    class A {
+                        public readonly string $s = "a";
+
+                        public function __clone() {
+                            $this->s = "b";
+                        }
+                    }
+
+                    echo (clone new A)->s;',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'docblockReadonlyPropertyWithDefaultSetInConstructorOnPhp86' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @readonly
+                         */
+                        public string $s = "a";
+
+                        public function __construct() {
+                            $this->s = "b";
+                        }
+                    }
+
+                    echo (new A)->s;',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
         ];
     }
 
@@ -284,6 +328,81 @@ final class ReadonlyPropertyTest extends TestCase
                 'error_message' => 'InvalidPropertyAssignment',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'readonlyPropertyWithDefaultOnPhp85' => [
+                'code' => '<?php
+                    class A {
+                        public readonly string $s = "a";
+                    }',
+                'error_message' => 'InvalidPropertyAssignment',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'staticReadonlyPropertyWithDefaultOnPhp86' => [
+                'code' => '<?php
+                    class A {
+                        public static readonly int $x = 1;
+                    }',
+                'error_message' => 'InvalidPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:57'
+                    . ' - Readonly property A::$x cannot have a default',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'readonlyPropertyWithDefaultSetInConstructorOnPhp86' => [
+                'code' => '<?php
+                    class A {
+                        public readonly string $s = "a";
+
+                        public function __construct() {
+                            $this->s = "b";
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29'
+                    . ' - A::$s is readonly and already initialised by its default',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'readonlyPropertyWithDefaultSetInMethodOnPhp86' => [
+                'code' => '<?php
+                    class A {
+                        public readonly string $s = "a";
+
+                        public function set(): void {
+                            $this->s = "b";
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'readonlyPropertyWithDefaultSetInChildConstructorOnPhp86' => [
+                'code' => '<?php
+                    class A {
+                        public readonly string $s = "a";
+                    }
+
+                    class B extends A {
+                        public function __construct() {
+                            $this->s = "b";
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29'
+                    . ' - B::$s is readonly and already initialised by its default',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'readonlyClassPropertyWithDefaultSetInConstructorOnPhp86' => [
+                'code' => '<?php
+                    readonly class A {
+                        public string $s = "a";
+
+                        public function __construct() {
+                            $this->s = "b";
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29',
+                'error_levels' => [],
+                'php_version' => '8.6',
             ],
             'readonlyPromotedPropertyAssignOperator' => [
                 'code' => '<?php
