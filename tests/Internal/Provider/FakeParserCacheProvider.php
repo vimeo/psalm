@@ -58,6 +58,8 @@ final class FakeParserCacheProvider extends ParserCacheProvider
 
     /**
      * The parser follows the analysed PHP version (StatementsProvider::parseStatements()), so the statements do too
+     *
+     * @psalm-capabilities read-props
      */
     private static function getKey(string $file_path): string
     {
