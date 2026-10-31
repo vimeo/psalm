@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
@@ -1158,6 +1159,8 @@ final class AtomicStaticCallAnalyzer
         ) === false) {
             return false;
         }
+
+        MethodCallPurityAnalyzer::forwardReturnsThis($fake_method_call_expr, $stmt);
 
         $fake_method_call_type = $statements_analyzer->node_data->getType($fake_method_call_expr);
 
