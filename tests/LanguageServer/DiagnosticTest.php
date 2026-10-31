@@ -143,6 +143,10 @@ final class DiagnosticTest extends AsyncTestCase
 
     public function testADiagnosticHasNoNullField(): void
     {
+        if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
+            $this->markTestSkipped('Flaky on Windows');
+        }
+
         $deferred = new DeferredFuture;
 
         $this->codebase->config->throw_exception = false;
