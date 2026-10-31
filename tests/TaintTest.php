@@ -296,6 +296,46 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * The flags of htmlspecialchars() and the like are the argument named `flags`, wherever it is written: the second
+     * written argument is another parameter with named arguments.
+     */
+    public function testHtmlFunctionsReadTheirFlagsByName(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            echo htmlspecialchars(string: $_GET["a"], encoding: "UTF-8");
+            echo htmlspecialchars($_GET["b"], flags: ENT_NOQUOTES);
+            echo htmlspecialchars(flags: ENT_QUOTES, string: $_GET["c"]);
+            echo htmlspecialchars($_GET["d"], ENT_NOQUOTES, encoding: "UTF-8");
+            echo html_entity_decode(string: $_GET["e"], encoding: "UTF-8");
+            echo html_entity_decode($_GET["f"], flags: ENT_NOQUOTES);
+        ');
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [3, 'TaintedTextWithQuotes'],
+                [5, 'TaintedTextWithQuotes'],
+                [6, 'TaintedHtml'],
+                [6, 'TaintedTextWithQuotes'],
+                [7, 'TaintedHtml'],
+                [7, 'TaintedTextWithQuotes'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
+    /**
      * What a plugin removes from one returned expression is not removed from the other returns of the function, nor
      * from what its calls give.
      */
