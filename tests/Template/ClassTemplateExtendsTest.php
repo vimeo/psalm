@@ -23,6 +23,118 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodTemplateBoundToAnIntermediateClassTemplateOfAnObjectWithoutTypeParams' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Model {}
+                    final class Customer extends Model {}
+                    final class Mechanic extends Model {}
+
+                    /** @template TModel of Model */
+                    abstract class BaseFactory
+                    {
+                        final public function __construct() {}
+
+                        public static function new(): static
+                        {
+                            return new static();
+                        }
+
+                        /**
+                         * @template TRelated of Model
+                         * @param BaseFactory<TRelated> $factory
+                         */
+                        public function for(BaseFactory $factory): void {}
+                    }
+
+                    /**
+                     * @template TModel of Model
+                     * @extends BaseFactory<TModel>
+                     */
+                    abstract class Factory extends BaseFactory
+                    {
+                        /**
+                         * @template TRelated of Model
+                         * @param BaseFactory<TRelated> $factory
+                         */
+                        #[\Override]
+                        public function for(BaseFactory $factory): void {}
+                    }
+
+                    /** @extends Factory<Customer> */
+                    final class CustomerFactory extends Factory {}
+
+                    /**
+                     * @template TMechanic of Mechanic
+                     * @extends Factory<TMechanic>
+                     */
+                    final class MechanicFactory extends Factory {}
+
+                    function test(CustomerFactory $customers): void
+                    {
+                        $customers->for(MechanicFactory::new());
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['UnsafeGenericInstantiation'],
+                'php_version' => '8.3',
+            ],
+            'methodTemplateBoundToAnIntermediateClassParamOfAnObjectWithoutTypeParams' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Model {}
+                    final class Customer extends Model {}
+                    final class Mechanic extends Model {}
+
+                    /** @template TModel of Model */
+                    abstract class BaseFactory
+                    {
+                        final public function __construct() {}
+
+                        public static function new(): static
+                        {
+                            return new static();
+                        }
+
+                        /**
+                         * @template TRelated of Model
+                         * @param BaseFactory<TRelated> $factory
+                         */
+                        public function for(BaseFactory $factory): void {}
+                    }
+
+                    /**
+                     * @template TModel of Model
+                     * @extends BaseFactory<TModel>
+                     */
+                    abstract class Factory extends BaseFactory
+                    {
+                        /**
+                         * @template TRelated of Model
+                         * @param BaseFactory<TRelated> $factory
+                         */
+                        #[\Override]
+                        public function for(BaseFactory $factory): void {}
+                    }
+
+                    /** @extends Factory<Customer> */
+                    final class CustomerFactory extends Factory {}
+
+                    /**
+                     * @template TMechanic of Mechanic
+                     * @extends Factory<TMechanic>
+                     */
+                    final class MechanicFactory extends Factory {}
+
+                    function test(CustomerFactory $customers): void
+                    {
+                        $customers->for(CustomerFactory::new());
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['UnsafeGenericInstantiation'],
+                'php_version' => '8.3',
+            ],
             'newResolvesATemplateNotGivenToTheParentToItsBound' => [
                 'code' => '<?php
                     /** @template T */
@@ -4894,6 +5006,65 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'objectWithoutTypeParamsOfAnotherModelIsNotABaseFactoryOfTheCustomer' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Model {}
+                    final class Customer extends Model {}
+                    final class Mechanic extends Model {}
+
+                    /** @template TModel of Model */
+                    abstract class BaseFactory
+                    {
+                        final public function __construct() {}
+
+                        public static function new(): static
+                        {
+                            return new static();
+                        }
+
+                        /**
+                         * @template TRelated of Model
+                         * @param BaseFactory<TRelated> $factory
+                         */
+                        public function for(BaseFactory $factory): void {}
+                    }
+
+                    /**
+                     * @template TModel of Model
+                     * @extends BaseFactory<TModel>
+                     */
+                    abstract class Factory extends BaseFactory
+                    {
+                        /**
+                         * @template TRelated of Model
+                         * @param BaseFactory<TRelated> $factory
+                         */
+                        #[\Override]
+                        public function for(BaseFactory $factory): void {}
+                    }
+
+                    /** @extends Factory<Customer> */
+                    final class CustomerFactory extends Factory {}
+
+                    /**
+                     * @template TMechanic of Mechanic
+                     * @extends Factory<TMechanic>
+                     */
+                    final class MechanicFactory extends Factory {}
+
+                    /** @param BaseFactory<Customer> $factory */
+                    function takesCustomerFactory(BaseFactory $factory): void {}
+
+                    function test(): void
+                    {
+                        takesCustomerFactory(MechanicFactory::new());
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => ['UnsafeGenericInstantiation'],
+                'php_version' => '8.3',
+            ],
             'extendsWithUnfulfilledNonTemplate' => [
                 'code' => '<?php
                     namespace A;
