@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
-use Composer\InstalledVersions;
 use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
-
-use function version_compare;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -20,12 +17,8 @@ final class ReturnTypeTest extends TestCase
 
     public function testVoidParameterType(): void
     {
-        // PHP-Parser 5.8 rejects void parameters before Psalm analyzes the body.
-        $parser_version = InstalledVersions::getVersion('nikic/php-parser') ?? '5.0.0';
-        $this->testInvalidCode(
-            '<?php function f(void $p): void {}',
-            version_compare($parser_version, '5.8.0', '>=') ? 'ParseError' : 'ParadoxicalCondition',
-        );
+        // PHP-Parser rejects void parameters before Psalm analyzes the body.
+        $this->testInvalidCode('<?php function f(void $p): void {}', 'ParseError');
     }
 
     /**
