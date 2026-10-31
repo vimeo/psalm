@@ -106,5 +106,6 @@ jobs:
       - name: Generate test suits
         run: php bin/ci/generate_testsuites.php $env:CHUNK_COUNT
 
+      # --order-by=default: see bin/ci/tests-github-actions.sh
       - name: Run unit tests
-        run: vendor/bin/paratest --max-batch-size=1 --processes=$env:NUMBER_OF_PROCESSORS --testsuite=chunk_$env:CHUNK_NUMBER --log-junit build/phpunit/phpunit.xml
+        run: vendor/bin/paratest --max-batch-size=1 --processes=$env:NUMBER_OF_PROCESSORS --order-by=default --testsuite=chunk_$env:CHUNK_NUMBER --log-junit build/phpunit/phpunit.xml
