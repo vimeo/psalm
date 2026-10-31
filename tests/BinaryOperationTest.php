@@ -11,7 +11,13 @@ use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use function array_map;
+use function implode;
+use function range;
+use function sort;
+
 use const DIRECTORY_SEPARATOR;
+use const SORT_STRING;
 
 final class BinaryOperationTest extends TestCase
 {
@@ -379,6 +385,18 @@ final class BinaryOperationTest extends TestCase
         $this->expectExceptionMessage('ImplicitToStringCast');
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @param list<int> $suffixes
+     * @psalm-pure
+     */
+    private static function sortedLiteralUnion(string $prefix, array $suffixes): string
+    {
+        $literals = array_map(static fn(int $suffix): string => $prefix . $suffix . "'", $suffixes);
+        sort($literals, SORT_STRING);
+
+        return implode('|', $literals);
     }
 
     /**
@@ -1202,6 +1220,39 @@ final class BinaryOperationTest extends TestCase
                     PHP,
                 'assertions' => [
                     '$a===' => 'float(9.2233720368548E+18)',
+                ],
+            ],
+            'concatenatesLiteralsWithSmallIntRanges' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @var 'a'|'b' $a
+                     * @var int<0, 2> $c
+                     * @var int<-1, 1> $negative
+                     * @var int<0, 1> $bit
+                     * @var int<0, 62> $widest
+                     * @var int<0, 63> $tooWide
+                     * @var int<0, max> $unbounded
+                     * @var int<-9223372036854775808, 9223372036854775807> $everything
+                     */
+                    $right = $a . $c;
+                    $left = $c . $a;
+                    $both = $bit . $bit;
+                    $minus = $a . $negative;
+                    $fits = '.' . $widest;
+                    $wide = '.' . $tooWide;
+                    $open = $a . $unbounded;
+                    $all = $a . $everything;
+                    PHP,
+                'assertions' => [
+                    '$right===' => "'a0'|'a1'|'a2'|'b0'|'b1'|'b2'",
+                    '$left===' => "'0a'|'0b'|'1a'|'1b'|'2a'|'2b'",
+                    '$both===' => "'00'|'01'|'10'|'11'",
+                    '$minus===' => "'a-1'|'a0'|'a1'|'b-1'|'b0'|'b1'",
+                    '$fits===' => self::sortedLiteralUnion("'.", range(0, 62)),
+                    '$wide===' => 'non-empty-lowercase-string',
+                    '$open===' => 'non-empty-lowercase-string',
+                    '$all===' => 'non-empty-lowercase-string',
                 ],
             ],
             'invalidArrayOperations' => [
