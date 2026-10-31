@@ -163,9 +163,17 @@ final class IfElseAnalyzer
 
         $entry_clauses = $context->clauses;
 
+        // the clauses the condition has already reconciled are not established independently of it
+        $already_reconciled_clauses = $if_context->reconciled_expression_clauses;
+
         // this will see whether any of the clauses in set A conflict with the clauses in set B
         AlgebraAnalyzer::checkForParadox(
-            $entry_clauses,
+            $already_reconciled_clauses
+                ? array_values(array_filter(
+                    $entry_clauses,
+                    static fn(Clause $c): bool => !in_array($c->hash, $already_reconciled_clauses, true),
+                ))
+                : $entry_clauses,
             $if_clauses,
             $statements_analyzer,
             $stmt->cond,
