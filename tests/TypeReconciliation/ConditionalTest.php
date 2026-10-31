@@ -21,6 +21,45 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedInstanceofThisOrStaticNarrowsAfterTheReturn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    abstract class A
+                    {
+                        public function __construct(private string $value) {}
+
+                        public function equalsThis(mixed $other): bool
+                        {
+                            if (!$other instanceof $this) {
+                                return false;
+                            }
+
+                            return $this->value === $other->value;
+                        }
+
+                        public function equalsStatic(mixed $other): bool
+                        {
+                            if (!$other instanceof static) {
+                                return false;
+                            }
+
+                            return $this->value === $other->value;
+                        }
+
+                        public function notStatic(A $other): void
+                        {
+                            if ($other instanceof static) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $other = A */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUnusedMethod', 'UnusedClass'],
+                'php_version' => '8.1',
+            ],
             'nonStrictConditionOnMixedOrNull' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $owners */
