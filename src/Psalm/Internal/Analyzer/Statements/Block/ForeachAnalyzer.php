@@ -60,6 +60,8 @@ use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCapabilities;
+use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
@@ -888,7 +890,26 @@ final class ForeachAnalyzer
 
             $always_non_empty_array = false;
 
-            if ($iterator_atomic_type instanceof Scalar || $iterator_atomic_type instanceof TVoid) {
+            if ($iterator_atomic_type instanceof TClassStringMap) {
+                // the key is a class of the bound, and what is stored under it an object of that class
+                $bound = new Union([$iterator_atomic_type->as_type ?? new TObject()]);
+
+                $key_type = Type::combineUnionTypes(
+                    $key_type,
+                    new Union([new TClassString($bound->getId(), $iterator_atomic_type->as_type)]),
+                );
+
+                $value_type = Type::combineUnionTypes(
+                    $value_type,
+                    TemplateInferredTypeReplacer::replace(
+                        $iterator_atomic_type->value_param,
+                        new TemplateResult([], [$iterator_atomic_type->param_name => ['class-string-map' => $bound]]),
+                        $codebase,
+                    ),
+                );
+
+                $has_valid_iterator = true;
+            } elseif ($iterator_atomic_type instanceof Scalar || $iterator_atomic_type instanceof TVoid) {
                 $invalid_iterator_types[] = $iterator_atomic_type->getKey();
 
                 $value_type = Type::getMixed();
