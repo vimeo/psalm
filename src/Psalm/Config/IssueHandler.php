@@ -112,13 +112,11 @@ final class IssueHandler
         return null;
     }
 
-    /**
-     * @psalm-mutation-free
-     */
     public function getReportingLevelForFunction(string $function_id): ?string
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsMethod(strtolower($function_id))) {
+                $custom_level->suppressions++;
                 return $custom_level->getErrorLevel();
             }
         }

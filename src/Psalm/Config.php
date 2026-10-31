@@ -2443,9 +2443,6 @@ final class Config
         return null;
     }
 
-    /**
-     * @psalm-mutation-free
-     */
     public function getReportingLevelForFunction(string $issue_type, string $function_id): ?string
     {
         $level = null;
