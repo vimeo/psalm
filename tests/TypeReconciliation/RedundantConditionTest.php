@@ -5,9 +5,15 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
+use function getcwd;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -15,6 +21,39 @@ final class RedundantConditionTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function testElseBranchOfATernaryDoesNotReportTheConditionAgain(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                $a = ["a"];
+                $_b = $a === [] ? 0 : 1;
+
+                if ($a === []) {
+                    $_c = 0;
+                } else {
+                    $_c = 1;
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            [
+                ['TypeDoesNotContainType', 3],
+                ['TypeDoesNotContainType', 3],
+                ['TypeDoesNotContainType', 5],
+                ['TypeDoesNotContainType', 5],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->type, $issue->line_from],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
 
     /**
      * @psalm-pure
