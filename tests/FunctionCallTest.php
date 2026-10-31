@@ -24,6 +24,40 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayIsListOfASealedShapeWithOptionalKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{a?: string} $onlyAString */
+                    function stringKey(array $onlyAString): void {
+                        if (array_is_list($onlyAString)) {
+                            /** @psalm-check-type-exact $onlyAString = array<never, never> */
+                        }
+                    }
+
+                    /** @param array{0?: string, 1?: int} $listKeys */
+                    function listKeys(array $listKeys): void {
+                        if (array_is_list($listKeys)) {
+                            /** @psalm-check-type-exact $listKeys = list{0?: string, 1?: int} */
+                        }
+                    }
+
+                    /** @param array{0?: string, a?: int} $mixedKeys */
+                    function mixedKeys(array $mixedKeys): void {
+                        if (array_is_list($mixedKeys)) {
+                            /** @psalm-check-type-exact $mixedKeys = list{0?: string} */
+                        }
+                    }
+
+                    /** @param array{0?: string, 1?: int} $listKeys */
+                    function nonEmpty(array $listKeys): void {
+                        assert(array_is_list($listKeys) && $listKeys !== []);
+                        /** @psalm-check-type-exact $listKeys = list{0: string, 1?: int} */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'multibyteLiteralArgument' => [
                 'code' => '<?php
                     function startsWithGreeting(string $s): bool {
@@ -2513,6 +2547,42 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayIsListOfAShapeWithARequiredStringKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{a: string} $a */
+                    function f(array $a): void {
+                        if (array_is_list($a)) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayIsListOfAShapeWithAGapInItsListKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{0?: string, 2?: int} $a */
+                    function f(array $a): void {
+                        if (array_is_list($a)) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayIsListOfAShapeWithARequiredListKeyAfterAnOptionalOne' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{0?: string, 1: int} $a */
+                    function f(array $a): void {
+                        if (array_is_list($a)) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'invalidScalarArgument' => [
                 'code' => '<?php
                     function fooFoo(int $a): void {}
