@@ -99,6 +99,8 @@ final class IfElseAnalyzer
 
         $branch_point = $context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
 
+        $pre_cond_reconciled_clauses = $context->reconciled_expression_clauses;
+
         try {
             $if_conditional_scope = IfConditionalAnalyzer::analyze(
                 $statements_analyzer,
@@ -164,7 +166,10 @@ final class IfElseAnalyzer
         $entry_clauses = $context->clauses;
 
         // the clauses the condition has already reconciled are not established independently of it
-        $already_reconciled_clauses = $if_context->reconciled_expression_clauses;
+        $already_reconciled_clauses = [
+            ...$if_context->reconciled_expression_clauses,
+            ...array_diff($context->reconciled_expression_clauses, $pre_cond_reconciled_clauses),
+        ];
 
         // this will see whether any of the clauses in set A conflict with the clauses in set B
         AlgebraAnalyzer::checkForParadox(
