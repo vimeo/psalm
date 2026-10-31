@@ -76,7 +76,6 @@ final class StatementsProviderTest extends TestCase
 
     /**
      * @return list<string>
-     *
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function getIssueTypes(): array
