@@ -87,6 +87,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_any;
 use function array_combine;
 use function array_diff_key;
 use function array_key_exists;
@@ -1028,7 +1029,34 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $input_type = new Union([new TNamedObject($expected_exception)]);
                     $container_type = new Union([new TNamedObject('Exception'), new TNamedObject('Throwable')]);
 
-                    if (!UnionTypeComparator::isContainedBy($codebase, $input_type, $container_type)) {
+                    // each intersection type (`A&B`) the class is part of has to be a throwable
+                    $thrown_types = [$input_type];
+
+                    if (isset($storage->throw_intersections[$expected_exception])) {
+                        $thrown_types = [];
+
+                        foreach ($storage->throw_intersections[$expected_exception] as $intersected_exceptions) {
+                            $intersected_types = [];
+
+                            foreach ($intersected_exceptions as $intersected_exception) {
+                                $intersected_type = new TNamedObject($intersected_exception);
+                                $intersected_types[$intersected_type->getKey()] = $intersected_type;
+                            }
+
+                            $thrown_types[] = new Union([
+                                new TNamedObject($expected_exception, false, false, $intersected_types),
+                            ]);
+                        }
+                    }
+
+                    if (array_any(
+                        $thrown_types,
+                        static fn(Union $thrown_type): bool => !UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            $thrown_type,
+                            $container_type,
+                        ),
+                    )) {
                         IssueBuffer::maybeAdd(
                             new InvalidThrow(
                                 'Class supplied for @throws ' . $expected_exception
