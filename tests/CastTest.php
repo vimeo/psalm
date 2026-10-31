@@ -17,6 +17,26 @@ final class CastTest extends TestCase
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
+        yield 'castOfFloatLiteralsToIntOnlyFoldsThoseInTheRangeOfAnInt' => [
+            'code' => '<?php
+                $tooBig = (int) 1e30;
+                $notANumber = (int) NAN;
+                $infinite = (int) INF;
+                $negativelyInfinite = (int) -INF;
+                $fraction = (int) 3.7;
+                $lowest = (int) -9.2233720368547758E+18;
+                $past = (int) 9.2233720368547758E+18;',
+            'assertions' => [
+                '$tooBig===' => 'int',
+                '$notANumber===' => 'int',
+                '$infinite===' => 'int',
+                '$negativelyInfinite===' => 'int',
+                '$fraction===' => '3',
+                '$lowest===' => '-9223372036854775808',
+                '$past===' => 'int',
+            ],
+        ];
+
         yield 'strvalAndInterpolationConvertLikeAStringCast' => [
             'code' => '<?php
                 /**
