@@ -247,7 +247,14 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 }
 
                 if (!$does_class_exist) {
-                    return $does_class_exist !== false;
+                    return ArgumentsAnalyzer::analyze(
+                        $statements_analyzer,
+                        $stmt->getArgs(),
+                        null,
+                        null,
+                        true,
+                        $context,
+                    ) !== false;
                 }
             }
 
