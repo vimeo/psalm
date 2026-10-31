@@ -204,6 +204,7 @@ final class MethodCallReturnTypeFetcher
                         true,
                         false,
                         $static_type instanceof TNamedObject
+                        && $codebase->classlike_storage_provider->has($static_type->value)
                         && $codebase->classlike_storage_provider->get($static_type->value)->final,
                         true,
                     );
@@ -226,6 +227,7 @@ final class MethodCallReturnTypeFetcher
                     true,
                     false,
                     $static_type instanceof TNamedObject
+                    && $codebase->classlike_storage_provider->has($static_type->value)
                     && $codebase->classlike_storage_provider->get($static_type->value)->final,
                     true,
                 );

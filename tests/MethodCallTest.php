@@ -205,6 +205,19 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodCallOnAGlobalDocumentedAsStaticDoesNotCrash' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @global static $bar
+                         */
+                        public function instance(): void {
+                            global $bar;
+
+                            $bar->instance();
+                        }
+                    }',
+            ],
             'notInCallMapTest' => [
                 'code' => '<?php
                     new DOMImplementation();',
