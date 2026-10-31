@@ -262,6 +262,55 @@ final class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'conditionalReturnTypeOnClosureNeverTakesInterfacesIterablesOrBoundedTemplates' => [
+                'code' => '<?php
+                    interface Factory {
+                        /** @psalm-impure */
+                        public function __invoke(): int;
+                    }
+
+                    /**
+                     * @template A
+                     * @template B
+                     * @param A|(Closure(): B) $v
+                     * @return ($v is Closure ? B : A)
+                     * @psalm-pure
+                     */
+                    function pick($v) {
+                        return $v;
+                    }
+
+                    /**
+                     * @template T of string
+                     * @param T $t
+                     * @return T
+                     */
+                    function bounded(string $t): string {
+                        return pick($t);
+                    }
+
+                    /**
+                     * @template T of Countable
+                     * @param T $t
+                     * @return T
+                     */
+                    function boundedObject(Countable $t): Countable {
+                        return pick($t);
+                    }
+
+                    /** @param iterable<int, int> $iterable */
+                    function f(Factory $factory, iterable $iterable): void {
+                        $a = pick($factory);
+                        /** @psalm-check-type-exact $a = Factory */
+                        $b = pick($iterable);
+                        /** @psalm-check-type-exact $b = iterable<int, int> */
+                        $d = pick(static fn(): int => 1);
+                        /** @psalm-check-type-exact $d = 1 */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'conditionalReturnTypeOnIterableThatMayBeAnArray' => [
                 'code' => '<?php
                     /**
@@ -1373,6 +1422,29 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'conditionalReturnTypeOnClosureMayTakeAnObjectBoundedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     * @param A|(Closure(): B) $v
+                     * @return ($v is Closure ? B : A)
+                     * @psalm-pure
+                     */
+                    function pick($v) {
+                        return $v;
+                    }
+
+                    /**
+                     * @template T of object
+                     * @param T $t
+                     * @return T
+                     */
+                    function mayBeAClosure(object $t): object {
+                        return pick($t);
+                    }',
+                'error_message' => 'MixedReturnStatement',
+            ],
             'conditionalReturnTypeWithoutIsTypeIsReportedInsteadOfCrashing' => [
                 'code' => '<?php
                     /**
