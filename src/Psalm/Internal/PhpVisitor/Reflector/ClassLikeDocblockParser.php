@@ -542,12 +542,21 @@ final class ClassLikeDocblockParser
                     }
 
                     if (!$has_return) {
-                        $docblock_lines[] = '@return ' . TypeParser::getTypeFromTree(
+                        $return_type = TypeParser::getTypeFromTree(
                             $method_tree->children[1],
                             $codebase,
                             null,
                             $purity_template_map,
-                        )->toNamespacedString($aliases->namespace, $aliases->uses, null, false);
+                        );
+
+                        $docblock_lines[] = '@return ' . ($return_type instanceof Union
+                            ? $return_type->toNamespacedStringWithAllLiterals(
+                                $aliases->namespace,
+                                $aliases->uses,
+                                null,
+                                false,
+                            )
+                            : $return_type->toNamespacedString($aliases->namespace, $aliases->uses, null, false));
                     }
 
                     $method_tree = $method_tree->children[0];
@@ -584,7 +593,9 @@ final class ClassLikeDocblockParser
                             );
                         }
 
-                        $param_type_string = $param_type->toNamespacedString('\\', [], null, false);
+                        $param_type_string = $param_type instanceof Union
+                            ? $param_type->toNamespacedStringWithAllLiterals('\\', [], null, false)
+                            : $param_type->toNamespacedString('\\', [], null, false);
                         $docblock_lines[] = '@param ' . $param_type_string . ' '
                             . ($method_tree_child->variadic ? '...' : '')
                             . $method_tree_child->name;

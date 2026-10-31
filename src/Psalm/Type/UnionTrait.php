@@ -261,6 +261,36 @@ trait UnionTrait
         ?string $this_class,
         bool $use_phpdoc_format,
     ): string {
+        return $this->renderNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format, true);
+    }
+
+    /**
+     * Like toNamespacedString(), but a union of more than three literal ints or strings is not abbreviated to
+     * `int` or `string`, so the result parses back to the same type.
+     *
+     * @param  array<lowercase-string, string> $aliased_classes
+     * @psalm-mutation-free
+     */
+    public function toNamespacedStringWithAllLiterals(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format,
+    ): string {
+        return $this->renderNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format, false);
+    }
+
+    /**
+     * @param  array<lowercase-string, string> $aliased_classes
+     * @psalm-mutation-free
+     */
+    private function renderNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format,
+        bool $abbreviate_literals,
+    ): string {
         $other_types = [];
 
         $literal_ints = [];
@@ -285,13 +315,13 @@ trait UnionTrait
             }
         }
 
-        if (count($literal_ints) <= 3 && !$has_non_literal_int) {
+        if ((!$abbreviate_literals || count($literal_ints) <= 3) && !$has_non_literal_int) {
             $other_types = [...$other_types, ...$literal_ints];
         } else {
             $other_types[] = 'int';
         }
 
-        if (count($literal_strings) <= 3 && !$has_non_literal_string) {
+        if ((!$abbreviate_literals || count($literal_strings) <= 3) && !$has_non_literal_string) {
             $other_types = [...$other_types, ...$literal_strings];
         } else {
             $other_types[] = 'string';
