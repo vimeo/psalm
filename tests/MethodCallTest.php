@@ -205,6 +205,22 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'definedStaticPropertyGivenToAMethodOfAnUnknownClass' => [
+                'code' => '<?php
+                    class Holder {
+                        public static int $count = 1;
+                        public static ?int $maybe = null;
+                    }
+
+                    /** @param mixed $query */
+                    function run($query): void {
+                        $query->where(Holder::$count);
+                        $query->where(Holder::$maybe);
+                        $result = $query->where("x", Holder::$count);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedMethodCall', 'MixedAssignment', 'UnusedVariable'],
+            ],
             'notInCallMapTest' => [
                 'code' => '<?php
                     new DOMImplementation();',
@@ -1505,6 +1521,27 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'undefinedStaticPropertyGivenToAMethodOfAnUnknownClass' => [
+                'code' => '<?php
+                    class Holder {}
+
+                    /** @param mixed $query */
+                    function run($query): void {
+                        $query->where("name", Holder::$missing);
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
+                'error_levels' => ['MixedMethodCall'],
+            ],
+            'undefinedStaticPropertyGivenToAnUnknownFunction' => [
+                'code' => '<?php
+                    class Holder {}
+
+                    function run(): void {
+                        unknown_function(Holder::$missing);
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
+                'error_levels' => ['UndefinedFunction'],
+            ],
             'staticInvocation' => [
                 'code' => '<?php
                     class Foo {

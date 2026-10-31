@@ -1734,8 +1734,10 @@ final class ArgumentsAnalyzer
                 $statements_analyzer->registerPossiblyUndefinedVariable($var_id, $arg->value);
             }
 
-            if (!$context->hasVariable($var_id)
-                || $context->vars_in_scope[$var_id]->isNull()
+            // a reference can't create a static property, so one that isn't known yet is fetched, and checked
+            if ($context->hasVariable($var_id)
+                ? $context->vars_in_scope[$var_id]->isNull()
+                : !$arg->value instanceof PhpParser\Node\Expr\StaticPropertyFetch
             ) {
                 if (!isset($context->vars_in_scope[$var_id])
                     && $arg->value instanceof PhpParser\Node\Expr\Variable
@@ -1759,24 +1761,27 @@ final class ArgumentsAnalyzer
                 ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context);
                 $context->inside_call = $was_inside_call;
 
-                $context->removeVarFromConflictingClauses(
-                    $var_id,
-                    $context->vars_in_scope[$var_id],
-                    $statements_analyzer,
-                );
+                // an undefined static property has no type to keep
+                if (isset($context->vars_in_scope[$var_id])) {
+                    $context->removeVarFromConflictingClauses(
+                        $var_id,
+                        $context->vars_in_scope[$var_id],
+                        $statements_analyzer,
+                    );
 
-                $t = $context->vars_in_scope[$var_id]->getBuilder();
-                foreach ($t->getAtomicTypes() as $type) {
-                    if ($type instanceof TArray && $type->isEmptyArray()) {
-                        $t->removeType('array');
-                        $t->addType(
-                            new TArray(
-                                [Type::getArrayKey(), Type::getMixed()],
-                            ),
-                        );
+                    $t = $context->vars_in_scope[$var_id]->getBuilder();
+                    foreach ($t->getAtomicTypes() as $type) {
+                        if ($type instanceof TArray && $type->isEmptyArray()) {
+                            $t->removeType('array');
+                            $t->addType(
+                                new TArray(
+                                    [Type::getArrayKey(), Type::getMixed()],
+                                ),
+                            );
+                        }
                     }
+                    $context->vars_in_scope[$var_id] = $t->freeze();
                 }
-                $context->vars_in_scope[$var_id] = $t->freeze();
             }
         }
 
