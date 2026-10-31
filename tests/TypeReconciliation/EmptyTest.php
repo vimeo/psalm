@@ -25,7 +25,7 @@ final class EmptyTest extends TestCase
                 'code' => '<?php
                     $a = !empty($b) ? $b : null;',
                 'assertions' => [
-                    '$a' => 'mixed|null',
+                    '$a' => 'non-empty-mixed|null',
                 ],
                 'ignored_issues' => ['MixedAssignment'],
             ],
@@ -645,6 +645,51 @@ final class EmptyTest extends TestCase
                 'code' => '<?php
                     /** @var array<true> $a */
                     if (empty($a["a"])) {}',
+            ],
+            'truthyMixedIsStringStaysNonFalsy' => [
+                'code' => '<?php
+                    /** @var mixed $m */
+                    $m = $_GET["a"];
+                    /** @var mixed $n */
+                    $n = $_GET["b"];
+                    /** @var mixed $o */
+                    $o = $_GET["c"];
+                    /** @var mixed $p */
+                    $p = $_GET["d"];
+                    if (empty($m) || !is_string($m)) {
+                        exit;
+                    }
+                    $a = $m;
+                    if (!is_string($n) || empty($n)) {
+                        exit;
+                    }
+                    $b = $n;
+                    if (!$o || !is_array($o)) {
+                        exit;
+                    }
+                    $c = $o;
+                    if (!$p || !is_bool($p)) {
+                        exit;
+                    }
+                    $d = $p;',
+                'assertions' => [
+                    '$a===' => 'non-falsy-string',
+                    '$b===' => 'non-falsy-string',
+                    '$c===' => 'non-empty-array<array-key, mixed>',
+                    '$d===' => 'true',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'undefinedVariableNotEmptyThenIsString' => [
+                'code' => '<?php
+                    if (empty($s) || !is_string($s)) {
+                        exit;
+                    }
+                    $a = $s;',
+                'assertions' => [
+                    '$a===' => 'non-falsy-string',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'UndefinedGlobalVariable'],
             ],
         ];
     }

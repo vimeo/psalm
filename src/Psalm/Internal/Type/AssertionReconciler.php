@@ -54,6 +54,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonDecimalIntString;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
+use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
@@ -286,9 +287,11 @@ final class AssertionReconciler extends Reconciler
         Assertion $assertion,
         bool $inside_loop,
     ): Union {
-        if (($assertion instanceof IsIsset || $assertion instanceof IsEqualIsset)
-            || $assertion instanceof NonEmpty
-        ) {
+        if ($assertion instanceof NonEmpty) {
+            return new Union([new TNonEmptyMixed($inside_loop)]);
+        }
+
+        if ($assertion instanceof IsIsset || $assertion instanceof IsEqualIsset) {
             return Type::getMixed($inside_loop);
         }
 
