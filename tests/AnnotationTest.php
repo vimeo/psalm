@@ -1470,6 +1470,38 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'removedSelfAccessingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfMutatingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfAccessingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfMutatingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
             'invalidClassMethodReturn' => [
                 'code' => '<?php
                     class C {
