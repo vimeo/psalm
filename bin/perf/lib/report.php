@@ -208,9 +208,10 @@ function totalRow(array $projects): ?string
             $wall[$side] += (float) $p[$side]['wall'];
         }
 
-        foreach ($issues as $key => $_) {
-            $issues[$key] += $p['issues'][$key] ?? 0;
-        }
+        // Same head count as issuesCell(), which falls back to issue_count when the issue lists are unavailable.
+        $issues['head'] += $p['issues']['head'] ?? $p['head']['issue_count'] ?? 0;
+        $issues['added'] += $p['issues']['added'] ?? 0;
+        $issues['removed'] += $p['issues']['removed'] ?? 0;
 
         foreach ($weighted as $key => $_) {
             $weighted[$key] += $p['weighted_issues'][$key] ?? 0;
