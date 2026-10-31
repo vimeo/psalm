@@ -1020,10 +1020,17 @@ final class ArithmeticOpAnalyzer
             $result = $operand1 & $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor) {
             $result = $operand1 ^ $operand2;
-        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft) {
-            $result = $operand1 << $operand2;
-        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight) {
-            $result = $operand1 >> $operand2;
+        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
+        ) {
+            // a negative shift throws an ArithmeticError
+            if ((int) $operand2 < 0) {
+                return Type::getNever();
+            }
+
+            $result = $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+                ? $operand1 << $operand2
+                : $operand1 >> $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Div) {
             if ($operand2 === 0 || $operand2 === 0.0) {
                 return Type::getNever();
