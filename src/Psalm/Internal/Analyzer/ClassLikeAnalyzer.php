@@ -737,11 +737,19 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     return null;
                 }
 
-                if ($codebase->classExtends($appearing_property_class, $context->self)) {
+                // a protected property is shared by the classes of the hierarchy it first appears in,
+                // also when a subclass declares it again
+                $protected_root_class = self::getRootClassOfProperty(
+                    $codebase,
+                    $appearing_property_class,
+                    $property_name,
+                );
+
+                if ($codebase->classExtends($protected_root_class, $context->self)) {
                     return $emit_issues ? null : true;
                 }
 
-                if (!$codebase->classExtends($context->self, $appearing_property_class)) {
+                if (!$codebase->classExtends($context->self, $protected_root_class)) {
                     if ($emit_issues) {
                         IssueBuffer::maybeAdd(
                             new InaccessibleProperty(
@@ -758,6 +766,35 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         }
 
         return $emit_issues ? null : true;
+    }
+
+    /**
+     * The topmost class that declares a non-private property of that name above a class
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getRootClassOfProperty(
+        Codebase $codebase,
+        string $class_name,
+        string $property_name,
+    ): string {
+        $root_class = $class_name;
+
+        while (($parent_class = $codebase->classlike_storage_provider->get($root_class)->parent_class) !== null) {
+            $parent_storage = $codebase->classlike_storage_provider->get($parent_class);
+            $parent_declaring_class = $parent_storage->declaring_property_ids[$property_name] ?? null;
+
+            if ($parent_declaring_class === null
+                || ($codebase->classlike_storage_provider->get($parent_declaring_class)
+                    ->properties[$property_name]->visibility ?? self::VISIBILITY_PRIVATE) === self::VISIBILITY_PRIVATE
+            ) {
+                break;
+            }
+
+            $root_class = $parent_declaring_class;
+        }
+
+        return $root_class;
     }
 
     protected function checkTemplateParams(

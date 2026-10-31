@@ -54,6 +54,36 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'protectedPropertyRedeclaredInASiblingIsAccessibleFromAnotherSubclass' => [
+                'code' => '<?php
+                    class A {
+                        protected string $prop = "";
+                    }
+
+                    trait Mangler {
+                        protected string $prop = "";
+                    }
+
+                    class WithTrait extends A {
+                        use Mangler;
+                    }
+
+                    class Redeclared extends A {
+                        protected string $prop = "x";
+                    }
+
+                    class C extends A {
+                        public function __construct(
+                            private WithTrait $withTrait,
+                            private Redeclared $redeclared,
+                        ) {}
+
+                        public function set(): void {
+                            $this->withTrait->prop = "a";
+                            $this->redeclared->prop = "b";
+                        }
+                    }',
+            ],
             'overrideProtectedAccessLevelToPublic' => [
                 'code' => '<?php
                     class A {
@@ -1100,6 +1130,27 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'protectedPropertyOfUnrelatedHierarchyIsInaccessible' => [
+                'code' => '<?php
+                    class A {}
+
+                    class D {
+                        protected string $prop = "";
+                    }
+
+                    class E extends D {
+                        protected string $prop = "y";
+                    }
+
+                    class C extends A {
+                        public function __construct(private E $e) {}
+
+                        public function set(): void {
+                            $this->e->prop = "no";
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty',
+            ],
             'undefinedClass' => [
                 'code' => '<?php
                     (new Foo());',
