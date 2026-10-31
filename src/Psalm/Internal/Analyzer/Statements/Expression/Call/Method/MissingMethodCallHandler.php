@@ -29,6 +29,8 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
 use function array_map;
@@ -127,7 +129,7 @@ final class MissingMethodCallHandler
             $result->has_valid_method_call_type = true;
             $result->existent_method_ids[$method_id->__toString()] = true;
 
-            [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
+            [$pseudo_method_storage, $defining_class_storage, $mixin] = $found_method_and_class_storage;
 
             $found_generic_params = ClassTemplateParamCollector::collect(
                 $codebase,
@@ -137,6 +139,21 @@ final class MissingMethodCallHandler
                 $lhs_type_part,
                 !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
             );
+
+            // `@mixin Box<int>` binds the templates of the class of the pseudo-method
+            if ($mixin instanceof TGenericObject) {
+                $found_generic_params ??= [];
+                $mixin_template_index = 0;
+
+                foreach ($defining_class_storage->template_types ?? [] as $template_name => $_) {
+                    if (isset($mixin->type_params[$mixin_template_index])) {
+                        $found_generic_params[$template_name][$defining_class_storage->name]
+                            = $mixin->type_params[$mixin_template_index];
+                    }
+
+                    $mixin_template_index++;
+                }
+            }
 
             // the pseudo-method's own templates are the purity templates of its `_` params
             $template_result = new TemplateResult(
@@ -531,7 +548,7 @@ final class MissingMethodCallHandler
      *
      * @param ClassLikeStorage $static_class_storage The called class
      * @param lowercase-string $method_name_lc
-     * @return array{MethodStorage, ClassLikeStorage}
+     * @return array{MethodStorage, ClassLikeStorage, ?TNamedObject} the mixin it was found through, if any
      * @psalm-mutation-free
      */
     private static function findPseudoMethodAndClassStorages(
@@ -544,12 +561,12 @@ final class MissingMethodCallHandler
             $class_storage = $codebase->classlikes->getStorageFor($method_id->fq_class_name);
 
             if ($class_storage && isset($class_storage->pseudo_methods[$method_name_lc])) {
-                return [$class_storage->pseudo_methods[$method_name_lc], $class_storage];
+                return [$class_storage->pseudo_methods[$method_name_lc], $class_storage, null];
             }
         }
 
         if ($pseudo_method_storage = $static_class_storage->pseudo_methods[$method_name_lc] ?? null) {
-            return [$pseudo_method_storage, $static_class_storage];
+            return [$pseudo_method_storage, $static_class_storage, null];
         }
 
         $ancestors = $static_class_storage->class_implements;
@@ -558,10 +575,12 @@ final class MissingMethodCallHandler
             ...$static_class_storage->namedMixins,
             ...array_reverse($static_class_storage->transitiveNamedMixins),
         ];
+        $mixins_by_class = [];
         foreach ($named_mixins as $namedObject) {
             $type = $namedObject->value;
             if ($type) {
                 $ancestors[$type] = true;
+                $mixins_by_class[$type] ??= $namedObject;
             }
         }
 
@@ -572,6 +591,7 @@ final class MissingMethodCallHandler
                 return [
                     $class_storage->pseudo_methods[$method_name_lc],
                     $class_storage,
+                    $mixins_by_class[$fq_class_name] ?? null,
                 ];
             }
         }
