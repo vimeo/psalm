@@ -2038,3 +2038,29 @@ function register_tick_function(callable $callback, mixed ...$args): bool {}
  * @psalm-taint-sink extract $array
  */
 function extract(array &$array, int $flags = EXTR_OVERWRITE, string $prefix = ""): int {}
+/**
+ * @param object|string $object_or_class
+ *
+ * @return ($object_or_class is object ? array<class-string, class-string> : array<class-string, class-string>|false)
+ */
+function class_parents($object_or_class, bool $autoload = true)
+{
+}
+
+/**
+ * @param object|string $object_or_class
+ *
+ * @return ($object_or_class is object ? array<interface-string, interface-string> : array<interface-string, interface-string>|false)
+ */
+function class_implements($object_or_class, bool $autoload = true)
+{
+}
+
+/**
+ * @param object|string $object_or_class
+ *
+ * @return ($object_or_class is object ? array<trait-string, trait-string> : array<trait-string, trait-string>|false)
+ */
+function class_uses($object_or_class, bool $autoload = true)
+{
+}
