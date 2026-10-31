@@ -119,6 +119,29 @@ final class UnusedCodeTest extends TestCase
         IssueBuffer::processUnusedSuppressions($this->project_analyzer->getCodebase()->file_provider);
     }
 
+    public function testAnalysisContinuesAfterAStaticCallOnAnUndefinedClass(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-api */
+                function f(): void {
+                    Missing::call();
+                    echo $undefined;
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            ['UndefinedClass', 'UndefinedVariable', 'MixedArgument'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
     public function testSeesClassesUsedAfterUnevaluatedCodeIssue(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
@@ -441,6 +464,24 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'argumentsOfAStaticCallOnAnUndefinedClassAreUsed' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function lookup(bool $replyto, string $userid): void {
+                        if ($replyto) {
+                            $userid = "a";
+                            Missing::lookup($userid);
+                        } elseif ($userid !== "") {
+                            Missing::lookup($userid);
+                        }
+                    }
+
+                    /** @psalm-api */
+                    function justPassed(string $userid): void {
+                        Missing::lookup($userid);
+                    }',
+                'ignored_issues' => ['UndefinedClass'],
+            ],
             'usedExceptionsAreNotReported' => [
                 'code' => '<?php
                     /** @psalm-api */
