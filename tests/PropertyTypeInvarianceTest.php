@@ -20,6 +20,24 @@ final class PropertyTypeInvarianceTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'importedTypeAliasIsTheTypeItStandsFor' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type FatherType = array<string, string>
+                     */
+                    abstract class Father {
+                        /** @var FatherType */
+                        public array $a = [];
+                    }
+
+                    /**
+                     * @psalm-import-type FatherType from Father
+                     */
+                    class Child extends Father {
+                        /** @var FatherType */
+                        public array $a = ["key" => "value"];
+                    }',
+            ],
             'validcode' => [
                 'code' => '<?php
                     class ParentClass
@@ -265,6 +283,26 @@ final class PropertyTypeInvarianceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'importedTypeAliasOfAnotherType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type FatherType = array<string, string>
+                     * @psalm-type OtherType = array<string, int>
+                     */
+                    abstract class Father {
+                        /** @var FatherType */
+                        public array $a = [];
+                    }
+
+                    /**
+                     * @psalm-import-type OtherType from Father
+                     */
+                    class Child extends Father {
+                        /** @var OtherType */
+                        public array $a = [];
+                    }',
+                'error_message' => 'NonInvariantDocblockPropertyType',
+            ],
             'variantDocblockProperties' => [
                 'code' => '<?php
                     class ParentClass
