@@ -66,6 +66,7 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_pop;
 use function array_values;
+use function is_finite;
 use function range;
 use function strtolower;
 
@@ -394,7 +395,12 @@ final class CastAnalyzer
             }
 
             if ($atomic_type instanceof TFloat) {
-                if ($atomic_type instanceof TLiteralFloat) {
+                // what casting a float that is not an int's value gives is undefined, and PHP 8.5 warns of it
+                if ($atomic_type instanceof TLiteralFloat
+                    && is_finite($atomic_type->value)
+                    && $atomic_type->value >= -9_223_372_036_854_775_808.0
+                    && $atomic_type->value < 9_223_372_036_854_775_808.0
+                ) {
                     $valid_ints[] = new TLiteralInt((int) $atomic_type->value);
                 } else {
                     $castable_types[] = new TInt();
