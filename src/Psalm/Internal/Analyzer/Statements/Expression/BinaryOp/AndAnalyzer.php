@@ -58,6 +58,8 @@ final class AndAnalyzer
 
         $pre_assigned_var_ids = $context->assigned_var_ids;
 
+        $removed_var_log_position = $context->removed_var_log->position();
+
         $left_context = clone $context;
 
         $left_context->cond_referenced_var_ids = [];
@@ -165,6 +167,8 @@ final class AndAnalyzer
         }
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
+
+        $context->removeVarsRemovedSince($removed_var_log_position);
 
         $context->cond_referenced_var_ids = array_merge(
             $right_context->cond_referenced_var_ids,
