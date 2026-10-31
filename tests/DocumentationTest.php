@@ -94,7 +94,6 @@ final class DocumentationTest extends TestCase
         '@psalm-override-property-visibility',
         '@psalm-scope-this',
         '@psalm-seal-methods',
-        '@psalm-stub-override',
     ];
 
     protected ProjectAnalyzer $project_analyzer;
