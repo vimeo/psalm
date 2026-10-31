@@ -59291,6 +59291,7 @@ return array (
     'function_name' => 'string',
     'callback' => 'callable[impure]',
     'num_args=' => 'int',
+    'flags=' => 'int',
   ),
   'pdo_drivers' => 
   array (

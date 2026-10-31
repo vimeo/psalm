@@ -843,6 +843,24 @@ return array (
         'shortname=' => 'bool',
       ),
     ),
+    'pdo::sqlitecreatefunction' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'function_name' => 'string',
+        'callback' => 'callable[impure]',
+        'num_args=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'function_name' => 'string',
+        'callback' => 'callable[impure]',
+        'num_args=' => 'int',
+        'flags=' => 'int',
+      ),
+    ),
     'pfsockopen' => 
     array (
       'old' => 
