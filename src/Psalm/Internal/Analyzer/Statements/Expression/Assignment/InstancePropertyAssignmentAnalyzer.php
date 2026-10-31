@@ -554,6 +554,52 @@ final class InstancePropertyAssignmentAnalyzer
         return $can_set_readonly_property;
     }
 
+    /** Checks a write that bypasses analyze() (string `++`, by-reference `foreach`) to a readonly property. */
+    public static function trackReadonlyPropertyWrite(
+        StatementsAnalyzer $statements_analyzer,
+        PropertyFetch $fetch,
+        Context $context,
+    ): void {
+        $receiver_type = $statements_analyzer->node_data->getType($fetch->var);
+
+        if (!$fetch->name instanceof PhpParser\Node\Identifier || !$receiver_type) {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $prop_name = $fetch->name->name;
+
+        foreach ($receiver_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject) {
+                continue;
+            }
+
+            $property_id = $atomic_type->value . '::$' . $prop_name;
+            $declaring_class = $codebase->properties->getDeclaringClassForProperty(
+                $property_id,
+                true,
+                $statements_analyzer,
+            );
+            if ($declaring_class === null) {
+                continue;
+            }
+
+            $property_storage = $codebase->classlike_storage_provider->get($declaring_class)
+                ->properties[$prop_name] ?? null;
+
+            if ($property_storage !== null && $property_storage->readonly) {
+                self::checkReadonlyPropertyWrite(
+                    $statements_analyzer,
+                    $fetch,
+                    $property_id,
+                    $property_storage,
+                    $context,
+                    $receiver_type->reference_free && $receiver_type->allow_mutations,
+                );
+            }
+        }
+    }
+
     public static function analyzeStatement(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Property $stmt,
