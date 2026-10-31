@@ -90,6 +90,15 @@ final class CoalesceAnalyzer
 
         $ternary_type = $statements_analyzer->node_data->getType($ternary) ?? Type::getMixed();
 
+        // the left side is only the result when it isn't null, even when isset() can't narrow it (ArrayAccess)
+        $left_type = $statements_analyzer->node_data->getType($left_expr);
+        $right_type = $statements_analyzer->node_data->getType($stmt->right);
+        if ($left_type && $right_type && $left_type->isNullable() && !$left_type->isNull()) {
+            $left_not_null = $left_type->getBuilder();
+            $left_not_null->removeType('null');
+            $ternary_type = Type::combineUnionTypes($left_not_null->freeze(), $right_type);
+        }
+
         $statements_analyzer->node_data = $old_node_data;
 
         $statements_analyzer->node_data->setType($stmt, $ternary_type);
