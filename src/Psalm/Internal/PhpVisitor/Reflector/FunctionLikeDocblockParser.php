@@ -782,6 +782,15 @@ final class FunctionLikeDocblockParser
 
                 $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
 
+                if ($line_parts[0] === '') {
+                    $info->docblock_issues[] = new InvalidDocblock(
+                        'Badly-formatted @return in docblock for ' . $cased_function_id,
+                        $code_location,
+                    );
+
+                    break;
+                }
+
                 $info->return_type = array_shift($line_parts);
                 $info->return_type_description = $line_parts ? implode(' ', $line_parts) : null;
 
