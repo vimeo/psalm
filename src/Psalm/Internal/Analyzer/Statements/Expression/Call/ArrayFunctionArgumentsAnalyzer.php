@@ -409,7 +409,7 @@ final class ArrayFunctionArgumentsAnalyzer
             && $offset_arg_type->hasLiteralValue() && $offset_arg_type->isSingleLiteral()
         ) {
             $offset_literal_value = $offset_arg_type->getSingleLiteral()->value;
-            $offset_arg_is_zero = is_numeric($offset_literal_value) && ((int) $offset_literal_value)===0;
+            $offset_arg_is_zero = is_numeric($offset_literal_value) && LiteralCast::toInt($offset_literal_value) === 0;
         }
 
         if (!isset($args[2])) {

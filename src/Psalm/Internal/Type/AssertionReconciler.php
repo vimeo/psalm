@@ -73,6 +73,7 @@ use function array_keys;
 use function array_merge;
 use function array_search;
 use function count;
+use function is_nan;
 use function is_numeric;
 use function is_string;
 
@@ -1449,6 +1450,7 @@ final class AssertionReconciler extends Reconciler
 
             if ($assertion instanceof IsLooselyEqual
                 && $existing_var_atomic_type instanceof TLiteralFloat
+                && !is_nan($existing_var_atomic_type->value) // NAN is not equal to anything
                 && (string)$existing_var_atomic_type->value === $value
             ) {
                 return new Union([$existing_var_atomic_type]);

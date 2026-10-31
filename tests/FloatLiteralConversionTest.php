@@ -172,12 +172,32 @@ final class FloatLiteralConversionTest extends TestCase
             'ignored_issues' => ['InvalidScalarArgument'],
         ];
 
+        yield 'arraySpliceOffsetOfUnrepresentableFloat' => [
+            'code' => '<?php
+                $a = [1, 2, 3];
+                array_splice($a, 1e30, 1);
+                $b = [1, 2, 3];
+                array_splice($b, NAN);',
+            'ignored_issues' => ['InvalidScalarArgument'],
+        ];
+
         yield 'filterVarWithUnrepresentableFloats' => [
             'code' => '<?php
                 $a = filter_var(1e30, FILTER_VALIDATE_INT);
                 $b = filter_var(NAN, FILTER_VALIDATE_INT);
                 $c = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["min_range" => 1e30]]);
                 $d = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["max_range" => NAN]]);',
+        ];
+
+        yield 'looseEqualityOfNotANumberWithString' => [
+            'code' => '<?php
+                function f(): void {
+                    $value = NAN;
+                    if ($value == "NAN") {
+                        $matched = true;
+                    }
+                }',
+            'ignored_issues' => ['TypeDoesNotContainType', 'RedundantCondition'],
         ];
 
         yield 'looseEqualityOfUnrepresentableFloatWithInt' => [
