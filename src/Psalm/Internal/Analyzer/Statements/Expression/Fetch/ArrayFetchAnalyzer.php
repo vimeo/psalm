@@ -906,6 +906,11 @@ final class ArrayFetchAnalyzer
             if ($has_valid_absolute_offset === false) {
                 //we didn't find a single type that could be valid
                 $expected_offset_types[] = 'array-key';
+            } elseif ($in_assignment && self::hasOffsetTypeThatIsNotAKey($offset_type, $codebase)) {
+                // an assignment gives the array the keys it is written with, so only an offset
+                // that can't be a key at all is wrong
+                $expected_offset_types[] = 'array-key';
+                $has_valid_expected_offset = true;
             }
         } else {
             //on not-arrays, the type is considered valid
@@ -2509,6 +2514,25 @@ final class ArrayFetchAnalyzer
                 Type::getSingleLetter(),
             );
         }
+    }
+
+    /**
+     * Whether some part of the offset type can't be an array key
+     */
+    private static function hasOffsetTypeThatIsNotAKey(MutableUnion $offset_type, Codebase $codebase): bool
+    {
+        foreach ($offset_type->getAtomicTypes() as $atomic_offset_type) {
+            // a bool is cast to an int, as when the offset is read, and null is reported on its own
+            if ($atomic_offset_type instanceof TBool || $atomic_offset_type instanceof TNull) {
+                continue;
+            }
+
+            if (!self::checkArrayOffsetType($offset_type, [$atomic_offset_type], $codebase)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
