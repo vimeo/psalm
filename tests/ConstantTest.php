@@ -2365,6 +2365,34 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classConstantDividingByAZeroIntConstantOfAnotherClass' => [
+                'code' => '<?php
+                    final class A {
+                        const ZERO = 0;
+                    }
+
+                    final class B {
+                        const X = 1 / A::ZERO;
+                    }
+
+                    $x = B::X;
+                    echo $x;',
+                'error_message' => 'NoValue',
+            ],
+            'classConstantDividingByAZeroFloatConstantOfAnotherClass' => [
+                'code' => '<?php
+                    final class A {
+                        const ZERO = 0.0;
+                    }
+
+                    final class B {
+                        const X = 1 / A::ZERO;
+                    }
+
+                    $x = B::X;
+                    echo $x;',
+                'error_message' => 'NoValue',
+            ],
             'constantDefinedInFunctionButNotCalled' => [
                 'code' => '<?php
                     /**
