@@ -1495,6 +1495,15 @@ final class MethodCallTest extends TestCase
                         }
                     }',
             ],
+            'pdoSqliteCreateFunctionTakesFlags' => [
+                'code' => '<?php
+                    function register(PDO $pdo): void {
+                        $pdo->sqliteCreateFunction("double", static fn(int $i): int => $i * 2, 1, 2048);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
         ];
     }
 
