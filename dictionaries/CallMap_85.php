@@ -14997,7 +14997,7 @@ return array (
   array (
     0 => 'bool',
     'constant_name' => 'string',
-    'value' => 'array<array-key, mixed>|null|scalar',
+    'value' => 'array<array-key, mixed>|null|scalar|UnitEnum',
     'case_insensitive=' => 'false',
   ),
   'define_syslog_variables' => 
