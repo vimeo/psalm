@@ -992,7 +992,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && !$context->collect_initializations
             && !$context->collect_mutations
             && $codebase->find_unused_variables
-            && $context->check_variables
         ) {
             $this->checkParamReferences(
                 $statements_analyzer,
@@ -1249,7 +1248,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        $unused_params = $this->detectUnusedParameters($statements_analyzer, $storage, $context);
+        // after `eval`, `extract` or an include the uses of the params are unknown
+        $unused_params = $context->check_variables
+            ? $this->detectUnusedParameters($statements_analyzer, $storage, $context)
+            : [];
 
         if (!$storage instanceof MethodStorage
             || !$storage->cased_name
