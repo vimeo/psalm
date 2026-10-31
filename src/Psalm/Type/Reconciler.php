@@ -254,7 +254,28 @@ class Reconciler
             foreach ($new_type_parts as $offset => $new_type_part_parts) {
                 $orred_type = null;
 
-                foreach ($new_type_part_parts as $new_type_part_part) {
+                $report_location = $code_location
+                    && isset($referenced_var_ids[$key])
+                    && isset($active_new_types[$key][$offset])
+                    ? $code_location
+                    : null;
+
+                // an alternative that can't hold is not reported when another one can: `string` is one of `Html|string`
+                $impossible_alternatives = $report_location !== null && count($new_type_part_parts) > 1
+                    ? self::getImpossibleAlternatives(
+                        $new_type_part_parts,
+                        $result_type,
+                        $key,
+                        $statements_analyzer,
+                        $inside_loop,
+                        $template_type_map,
+                        $report_location,
+                        $suppressed_issues,
+                        $negated,
+                    )
+                    : [];
+
+                foreach ($new_type_part_parts as $alternative_offset => $new_type_part_part) {
                     if ($new_type_part_part instanceof NestedAssertions
                         || $new_type_part_part instanceof NotNestedAssertions
                     ) {
@@ -290,11 +311,7 @@ class Reconciler
                         $statements_analyzer,
                         $inside_loop,
                         $template_type_map,
-                        $code_location
-                            && isset($referenced_var_ids[$key])
-                            && isset($active_new_types[$key][$offset])
-                            ? $code_location
-                            : null,
+                        isset($impossible_alternatives[$alternative_offset]) ? null : $report_location,
                         $suppressed_issues,
                         $failed_reconciliation,
                         $negated,
@@ -482,6 +499,60 @@ class Reconciler
         }
 
         return [$existing_types, $existing_references];
+    }
+
+    /**
+     * The offsets of the alternatives of an assertion that fail to reconcile, unless all of them do
+     *
+     * @param array<int, Assertion> $alternatives
+     * @param array<string, array<string, Union>> $template_type_map
+     * @param string[] $suppressed_issues
+     * @return array<int, true>
+     */
+    private static function getImpossibleAlternatives(
+        array $alternatives,
+        ?Union $existing_type,
+        string $key,
+        StatementsAnalyzer $statements_analyzer,
+        bool $inside_loop,
+        array $template_type_map,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+        bool $negated,
+    ): array {
+        $impossible = [];
+
+        IssueBuffer::startRecording();
+
+        foreach ($alternatives as $offset => $alternative) {
+            if ($alternative instanceof NestedAssertions || $alternative instanceof NotNestedAssertions) {
+                continue;
+            }
+
+            $failed_reconciliation = self::RECONCILIATION_OK;
+
+            AssertionReconciler::reconcile(
+                $alternative,
+                $existing_type,
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $negated,
+            );
+
+            if ($failed_reconciliation === self::RECONCILIATION_EMPTY) {
+                $impossible[$offset] = true;
+            }
+        }
+
+        IssueBuffer::clearRecordingLevel();
+        IssueBuffer::stopRecording();
+
+        return count($impossible) === count($alternatives) ? [] : $impossible;
     }
 
     /**
