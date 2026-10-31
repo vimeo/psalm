@@ -2645,6 +2645,8 @@ final class AssertionFinder
             $var_type = $whichclass_expr->value;
         } elseif ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $whichclass_expr->class instanceof PhpParser\Node\Name
+            && $whichclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($whichclass_expr->name->name) === 'class'
         ) {
             $var_type = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $whichclass_expr->class,
@@ -2711,6 +2713,8 @@ final class AssertionFinder
             $var_type = $whichclass_expr->value;
         } elseif ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $whichclass_expr->class instanceof PhpParser\Node\Name
+            && $whichclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($whichclass_expr->name->name) === 'class'
         ) {
             $var_type = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $whichclass_expr->class,
@@ -2765,6 +2769,8 @@ final class AssertionFinder
             );
         } elseif ($getclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $getclass_expr->class instanceof PhpParser\Node\Expr
+            && $getclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($getclass_expr->name->name) === 'class'
         ) {
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $getclass_expr->class,
@@ -2779,6 +2785,8 @@ final class AssertionFinder
             $var_type = $whichclass_expr->value;
         } elseif ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $whichclass_expr->class instanceof PhpParser\Node\Name
+            && $whichclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($whichclass_expr->name->name) === 'class'
         ) {
             $var_type = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $whichclass_expr->class,
@@ -3429,6 +3437,8 @@ final class AssertionFinder
             $var_type = $whichclass_expr->value;
         } elseif ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $whichclass_expr->class instanceof PhpParser\Node\Name
+            && $whichclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($whichclass_expr->name->name) === 'class'
         ) {
             $var_type = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $whichclass_expr->class,
@@ -3489,6 +3499,8 @@ final class AssertionFinder
             );
         } elseif ($getclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $getclass_expr->class instanceof PhpParser\Node\Expr
+            && $getclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($getclass_expr->name->name) === 'class'
         ) {
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $getclass_expr->class,
@@ -3501,6 +3513,8 @@ final class AssertionFinder
 
         if ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $whichclass_expr->class instanceof PhpParser\Node\Name
+            && $whichclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($whichclass_expr->name->name) === 'class'
         ) {
             $var_type = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $whichclass_expr->class,
