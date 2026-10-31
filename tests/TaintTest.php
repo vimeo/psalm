@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 use Psalm\Type\TaintKind;
 
+use function array_diff;
 use function array_fill;
 use function array_filter;
 use function array_flip;
@@ -22,6 +23,8 @@ use function array_map;
 use function array_values;
 use function implode;
 use function in_array;
+use function ini_get;
+use function ini_set;
 use function memory_get_peak_usage;
 use function memory_get_usage;
 use function memory_reset_peak_usage;
@@ -439,6 +442,123 @@ final class TaintTest extends TestCase
 
         self::assertSame(['TaintedHtml', 'TaintedTextWithQuotes'], $taint_issue_types);
         self::assertLessThan(768 * 1024 * 1024, $memory_used);
+    }
+
+    /**
+     * What is sent to a generator delegating to another one that a chain of functions returns, each calling the next
+     * one from many call sites, is linked to the latter: the search for it reaches the deepest functions with a call
+     * stack per path through the chain.
+     */
+    public function testGeneratorSendThroughManyCallStacks(): void
+    {
+        $layers = 8;
+        $call_sites = 12;
+
+        $code = "<?php\n"
+            . "function inner(): Generator { \$sent = yield 1; echo \$sent; }\n";
+
+        for ($layer = 1; $layer <= $layers; $layer++) {
+            $next = $layer < $layers ? 'layer' . ($layer + 1) : 'inner';
+            $args = $layer < $layers ? '$n' : '';
+            $returned = "$next($args)";
+
+            for ($site = $call_sites - 1; $site >= 1; $site--) {
+                $returned = "\$n === $site ? $next($args) : ($returned)";
+            }
+
+            $code .= "function layer$layer(int \$n): Generator { return $returned; }\n";
+        }
+
+        $code .= "function outer(): Generator { yield from layer1(1); }\n"
+            . "\$values = outer();\n"
+            . "\$values->current();\n"
+            . "\$values->send((string) \$_GET['value']);\n";
+
+        // without the cap on the call stacks per node, the search takes gigabytes
+        $memory_limit = (string) ini_get('memory_limit');
+        ini_set('memory_limit', (string) (memory_get_usage() + 256 * 1024 * 1024));
+
+        try {
+            self::assertSame([2], $this->getTaintedHtmlLines($code));
+        } finally {
+            ini_set('memory_limit', $memory_limit);
+        }
+    }
+
+    /**
+     * `pass()` is called from one call site per stack that reaches its nodes. Up to 16 distinct call stacks at a node,
+     * only the generators that are sent to are linked. Past that, any call matches there, and they all stay linked.
+     */
+    #[DataProvider('providerGeneratorSendCallStackCap')]
+    public function testGeneratorSendCallStackCap(int $call_sites): void
+    {
+        $code = "<?php\n"
+            . "function pass(Generator \$generator): Generator { return \$generator; }\n";
+        $expected_lines = [];
+
+        for ($site = 0; $site < $call_sites; $site++) {
+            $code .= "function gen$site(): Generator { \$sent = yield 1; echo \$sent; }\n";
+            $expected_lines[] = $site + 3;
+        }
+
+        $code .= "function other(): Generator { \$sent = yield 1; echo \$sent; }\n"
+            . "function relay(): Generator { yield from pass(other()); }\n";
+
+        $returned = 'pass(gen' . ($call_sites - 1) . '())';
+
+        for ($site = $call_sites - 2; $site >= 0; $site--) {
+            $returned = "\$n === $site ? pass(gen$site()) : ($returned)";
+        }
+
+        $code .= "function run(int \$n): Generator { yield from $returned; }\n"
+            . "\$values = run(1);\n"
+            . "\$values->current();\n"
+            . "\$values->send((string) \$_GET['value']);\n";
+
+        $lines = $this->getTaintedHtmlLines($code);
+
+        if ($call_sites > 16) {
+            // past the cap, `other()` may be linked too
+            $lines = array_values(array_diff($lines, [$call_sites + 3]));
+        }
+
+        self::assertSame($expected_lines, $lines);
+    }
+
+    /**
+     * @return array<string, array{int}>
+     * @psalm-pure
+     */
+    public static function providerGeneratorSendCallStackCap(): array
+    {
+        return [
+            'sixteenCallStacks' => [16],
+            'seventeenCallStacks' => [17],
+        ];
+    }
+
+    /**
+     * @return list<int> the lines of the TaintedHtml issues of $code, sorted
+     */
+    private function getTaintedHtmlLines(string $code): array
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, $code);
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $lines = array_values(array_map(
+            static fn(IssueData $issue): int => $issue->line_from,
+            array_filter(
+                IssueBuffer::getIssuesDataForFile($file_path),
+                static fn(IssueData $issue): bool => $issue->type === 'TaintedHtml',
+            ),
+        ));
+        sort($lines);
+
+        return $lines;
     }
 
     /**
