@@ -1005,7 +1005,9 @@ final class ArgumentsAnalyzer
                             foreach ($function_params as $candidate_param) {
                                 if ($candidate_param->name === $key_type->value || $candidate_param->is_variadic) {
                                     if ($candidate_param->name === $key_type->value) {
-                                        if (isset($matched_args[$candidate_param->name])) {
+                                        if (isset($matched_args[$candidate_param->name])
+                                            && !$candidate_param->is_variadic
+                                        ) {
                                             IssueBuffer::maybeAdd(
                                                 new InvalidNamedArgument(
                                                     'Parameter $' . $key_type->value . ' has already been used in '
@@ -1045,7 +1047,9 @@ final class ArgumentsAnalyzer
                 foreach ($function_params as $candidate_param) {
                     if ($candidate_param->name === $arg->name->name || $candidate_param->is_variadic) {
                         if ($candidate_param->name === $arg->name->name) {
-                            if (isset($matched_args[$candidate_param->name])) {
+                            if (isset($matched_args[$candidate_param->name])
+                                && !$candidate_param->is_variadic
+                            ) {
                                 IssueBuffer::maybeAdd(
                                     new InvalidNamedArgument(
                                         'Parameter $' . $arg->name->name . ' has already been used in '
