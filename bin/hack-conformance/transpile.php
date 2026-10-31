@@ -143,7 +143,6 @@ function hc_transpiled_suite(array $fixtures, array $trees): string
                 );
 
                 if (\$exitCode !== 0 && \$exitCode !== 3) {
-                    /** @var list<string> \$output */
                     self::fail(implode("\\n", \$output));
                 }
             }

@@ -1970,7 +1970,7 @@ if (defined('GLOB_BRACE')) {
  * @psalm-template TOutput of array|null
  *
  * @param TOutput $output
- * @param-out (TOutput is null ? list<string> : array) $output
+ * @param-out (TOutput is null|array{} ? list<string> : array) $output
  * @param-out int $result_code
  *
  * @psalm-taint-specialize
