@@ -337,7 +337,10 @@ final class ReturnAnalyzer
                 }
 
                 if ($declared_return_type && !$declared_return_type->hasMixed()) {
-                    $local_return_type = $source->getLocalReturnType($declared_return_type);
+                    $local_return_type = $source->getLocalReturnType(
+                        $declared_return_type,
+                        $storage instanceof MethodStorage && $storage->final,
+                    );
 
                     if ($storage instanceof MethodStorage) {
                         [$fq_class_name, $method_name] = explode('::', $cased_method_id);

@@ -2620,23 +2620,21 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         self::$no_effects_hashes = [];
     }
 
-    public function getLocalReturnType(Union $storage_return_type): Union
+    public function getLocalReturnType(Union $storage_return_type, bool $final = false): Union
     {
         if ($this->local_return_type) {
             return $this->local_return_type;
         }
 
-        $fqcln = $this->getFQCLN();
-
         $this->local_return_type = TypeExpander::expandUnion(
             $this->codebase,
             $storage_return_type,
-            $fqcln,
-            $fqcln,
+            $this->getFQCLN(),
+            $this->getFQCLN(),
             $this->getParentFQCLN(),
             true,
             true,
-            $fqcln !== null && $this->codebase->classlike_storage_provider->get($fqcln)->final,
+            $final,
         );
 
         return $this->local_return_type;
