@@ -536,6 +536,7 @@ final class FunctionLikeNodeScanner
                 $var_comment_type = null;
                 $var_comment_readonly = false;
                 $var_comment_allow_private_mutation = false;
+                $promoted_var_comment = null;
                 if ($doc_comment) {
                     $template_types = ($this->existing_function_template_types ?: [])
                         + ($classlike_storage->template_types ?: [])
@@ -556,6 +557,7 @@ final class FunctionLikeNodeScanner
                         $var_comment_type = $var_comment->type;
                         $var_comment_readonly = $var_comment->readonly;
                         $var_comment_allow_private_mutation = $var_comment->allow_private_mutation;
+                        $promoted_var_comment = $var_comment;
                     }
                 }
 
@@ -599,6 +601,10 @@ final class FunctionLikeNodeScanner
                 $property_storage->is_promoted = true;
 
                 $fq_classlike_name = $classlike_storage->name;
+
+                if ($promoted_var_comment !== null) {
+                    $property_storage->suppressed_issues = $promoted_var_comment->suppressed_issues;
+                }
 
                 $property_id = $fq_classlike_name . '::$' . $param_storage->name;
 

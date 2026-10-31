@@ -1296,6 +1296,17 @@ final class UnusedCodeTest extends TestCase
 
                     (new References)->bar(["a" => "b"]);',
             ],
+            'promotedPropertyUnusedSuppressedInItsDocblock' => [
+                'code' => '<?php
+                    final class Test {
+                        public function __construct(
+                            /** @psalm-suppress PossiblyUnusedProperty */
+                            public int $test,
+                        ) {}
+                    }
+
+                    new Test(1);',
+            ],
             'promotedPropertyIsUsed' => [
                 'code' => '<?php
                     final class Test {
