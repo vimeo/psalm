@@ -11383,6 +11383,10 @@ return array (
     0 => 'string',
     'format' => 'string',
   ),
+  'datetimeinterface::getmicrosecond' => 
+  array (
+    0 => 'int',
+  ),
   'datetimeinterface::getoffset' => 
   array (
     0 => 'int',
