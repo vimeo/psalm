@@ -5,8 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_column;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -14,6 +19,67 @@ final class ClosureTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    /**
+     * @param list<string> $expected_issue_types
+     */
+    #[DataProvider('providerUndefinedClosureUse')]
+    public function testAnalysisContinuesAfterUndefinedClosureUse(string $code, array $expected_issue_types): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, $code);
+        $this->analyzeFile($file_path, new Context());
+
+        $this->assertSame($expected_issue_types, array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'));
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>}>
+     * @psalm-pure
+     */
+    public static function providerUndefinedClosureUse(): iterable
+    {
+        return [
+            'undefinedVariable' => [
+                '<?php
+                    function () use ($missing): void {
+                        if (false) {}
+                    };
+
+                    if (false) {}',
+                ['UndefinedVariable', 'TypeDoesNotContainType', 'TypeDoesNotContainType'],
+            ],
+            'undefinedVariableByReference' => [
+                '<?php
+                    function () use (&$missing): void {
+                        if (false) {}
+                    };
+
+                    if (false) {}',
+                ['UndefinedVariable', 'TypeDoesNotContainType', 'TypeDoesNotContainType'],
+            ],
+            'possiblyUndefinedVariable' => [
+                '<?php
+                    if (rand(0, 1)) {
+                        $maybe = 1;
+                    }
+
+                    function () use ($maybe): void {
+                        if (false) {}
+                    };
+
+                    if (false) {}',
+                ['PossiblyUndefinedVariable', 'TypeDoesNotContainType', 'TypeDoesNotContainType'],
+            ],
+            'severalUndefinedVariables' => [
+                '<?php
+                    function () use ($first, $second): void {};',
+                ['UndefinedVariable', 'UndefinedVariable'],
+            ],
+        ];
+    }
 
     /**
      * @psalm-pure
