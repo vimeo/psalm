@@ -95,10 +95,24 @@ final class TaintFlowGraph extends DataFlowGraph
 
     public function addGraph(self $taint): void
     {
-        $this->sources += $taint->sources;
-        $this->sinks += $taint->sinks;
-        $this->nodes += $taint->nodes;
-        $this->specialized_calls += $taint->specialized_calls;
+        // `$this->typed_property += $array` builds a new array and copies every
+        // existing entry on each call, so add the new entries one at a time.
+        // `??=` keeps the existing entry for a key, like `+=` did.
+        foreach ($taint->sources as $id => $source) {
+            $this->sources[$id] ??= $source;
+        }
+
+        foreach ($taint->sinks as $id => $sink) {
+            $this->sinks[$id] ??= $sink;
+        }
+
+        foreach ($taint->nodes as $id => $node) {
+            $this->nodes[$id] ??= $node;
+        }
+
+        foreach ($taint->specialized_calls as $key => $map) {
+            $this->specialized_calls[$key] ??= $map;
+        }
 
         foreach ($taint->forward_edges as $key => $map) {
             if (!isset($this->forward_edges[$key])) {
