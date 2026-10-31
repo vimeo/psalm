@@ -21,6 +21,35 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalTrueBranchTemplateTakesTheBoundOfItsCondition' => [
+                'code' => '<?php
+                    interface Animal {}
+
+                    /** @template TModel of Animal */
+                    final class Zoo
+                    {
+                        /**
+                         * @template TVal
+                         * @param callable(): TVal $cb
+                         * @return (TVal is Animal ? self<TVal> : string)
+                         */
+                        public function map(callable $cb): mixed {
+                            throw new RuntimeException();
+                        }
+
+                        /**
+                         * @template TVal of Countable
+                         * @param callable(): TVal $cb
+                         * @return (TVal is Animal ? self<TVal> : string)
+                         */
+                        public function mapCountable(callable $cb): mixed {
+                            throw new RuntimeException();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'conditionalReturnTypeSimple' => [
                 'code' => '<?php
 
@@ -1339,6 +1368,26 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'conditionalElseBranchTemplateKeepsItsBound' => [
+                'code' => '<?php
+                    interface Animal {}
+
+                    /** @template TModel of Animal */
+                    final class Zoo
+                    {
+                        /**
+                         * @template TVal
+                         * @param callable(): TVal $cb
+                         * @return (TVal is Animal ? string : self<TVal>)
+                         */
+                        public function map(callable $cb): mixed {
+                            throw new RuntimeException();
+                        }
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'conditionalReturnTypeWithoutIsTypeIsReportedInsteadOfCrashing' => [
                 'code' => '<?php
                     /**
