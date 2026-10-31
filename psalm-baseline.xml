@@ -3966,6 +3966,7 @@
     <MethodSignatureMismatch>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[#[Override]]]></code>
+      <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[public function __construct()]]></code>
     </MethodSignatureMismatch>
   </file>
