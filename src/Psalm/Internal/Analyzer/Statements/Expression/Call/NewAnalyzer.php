@@ -1595,7 +1595,10 @@ final class NewAnalyzer extends CallAnalyzer
                 ) {
                     $object_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
 
-                    if (!$object_storage->final && !$object_storage->preserve_constructor_signature) {
+                    if ($object_storage->user_defined
+                        && !$object_storage->final
+                        && !$object_storage->preserve_constructor_signature
+                    ) {
                         IssueBuffer::maybeAdd(
                             new UnsafeInstantiation(
                                 'Cannot safely instantiate class ' . $lhs_type_part->value
