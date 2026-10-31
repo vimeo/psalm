@@ -1047,6 +1047,46 @@ final class IntRangeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'comparisonBelowTheRangeNamesLessThan' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, 100> $p
+                     */
+                    function scope(int $p): void {
+                        if ($p < 0) {}
+                    }',
+                'error_message' => 'never < 0',
+            ],
+            'comparisonAboveTheRangeNamesGreaterThan' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, 100> $p
+                     */
+                    function scope(int $p): void {
+                        if ($p > 100) {}
+                    }',
+                'error_message' => 'never > 100',
+            ],
+            'comparisonAtMostBelowTheRangeNamesLessThanOrEqualTo' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, 100> $p
+                     */
+                    function scope(int $p): void {
+                        if ($p <= -1) {}
+                    }',
+                'error_message' => 'never <= -1',
+            ],
+            'comparisonAtLeastAboveTheRangeNamesGreaterThanOrEqualTo' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, 100> $p
+                     */
+                    function scope(int $p): void {
+                        if ($p >= 101) {}
+                    }',
+                'error_message' => 'never >= 101',
+            ],
             'intRangeNotContained' => [
                 'code' => '<?php
                     /**
