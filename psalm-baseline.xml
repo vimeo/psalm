@@ -3939,9 +3939,6 @@
       <code><![CDATA[public function __construct()]]></code>
       <code><![CDATA[public function __construct()]]></code>
     </MethodSignatureMismatch>
-    <MutableDependency>
-      <code><![CDATA[ParserCacheProvider]]></code>
-    </MutableDependency>
   </file>
   <file src="tests/ProjectCheckerTest.php">
     <ImpureStaticProperty>
