@@ -54,6 +54,43 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'classStringNewWithMatchingArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A {
+                        final public function __construct(public int $val = 0, public string $name = "") {}
+                    }
+
+                    /**
+                     * @param class-string<A> $class
+                     */
+                    function f(string $class): A {
+                        $a = new $class();
+                        $b = new $class(1);
+                        return new $class(val: 1, name: "a");
+                    }',
+            ],
+            'classStringNewOfGenericClassKeepsTheTemplateArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     * @template T
+                     */
+                    class Box {
+                        /** @param T $value */
+                        public function __construct(public $value) {}
+                    }
+
+                    /**
+                     * @param class-string<Box<int>> $class
+                     * @return Box<int>
+                     */
+                    function f(string $class): Box {
+                        return new $class(1);
+                    }',
+            ],
             'overrideProtectedAccessLevelToPublic' => [
                 'code' => '<?php
                     class A {
@@ -1100,6 +1137,57 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classStringNewChecksTheConstructorArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A {
+                        final public function __construct(public int $val) {}
+                    }
+
+                    /**
+                     * @param class-string<A> $class
+                     */
+                    function f(string $class): A {
+                        return new $class();
+                    }',
+                'error_message' => 'TooFewArguments',
+            ],
+            'classStringNewWithTooManyArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A {
+                        final public function __construct(public int $val) {}
+                    }
+
+                    /**
+                     * @param class-string<A> $class
+                     */
+                    function f(string $class): A {
+                        return new $class(1, 2);
+                    }',
+                'error_message' => 'TooManyArguments',
+            ],
+            'classStringNewWithWrongArgumentType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A {
+                        final public function __construct(public int $val) {}
+                    }
+
+                    /**
+                     * @param class-string<A> $class
+                     */
+                    function f(string $class): A {
+                        return new $class("x");
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
             'undefinedClass' => [
                 'code' => '<?php
                     (new Foo());',
