@@ -336,6 +336,10 @@ final class TypeTokenizer
                 continue;
             }
 
+            if ($was_space) {
+                self::assertNoSpaceInName($type_tokens[$rtc][0], $char);
+            }
+
             $type_tokens[$rtc][0] .= $char;
             $was_char = false;
             $was_space = false;
@@ -345,6 +349,21 @@ final class TypeTokenizer
         self::$memoized_tokens[$string_type] = $type_tokens;
 
         return $type_tokens;
+    }
+
+    /**
+     * A space can't be inside a type name: `array<int string>` is a missing comma, not `intstring`
+     *
+     * @throws TypeParseTreeException
+     * @psalm-pure
+     */
+    private static function assertNoSpaceInName(string $token, string $next_char): void
+    {
+        if (preg_match('/[a-zA-Z0-9_\x7f-\xff\\\\]$/', $token)
+            && preg_match('/[a-zA-Z0-9_\x7f-\xff\\\\]/', $next_char)
+        ) {
+            throw new TypeParseTreeException('Unexpected space after ' . $token . ', in a type name');
+        }
     }
 
     /**
