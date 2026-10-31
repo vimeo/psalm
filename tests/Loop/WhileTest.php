@@ -21,6 +21,45 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedInWhileConditionIsDefinedAfterTheLoop' => [
+                'code' => '<?php
+                    while (6 !== $result = random_int(1, 6)) {
+                        echo "Let us try again.";
+                    }
+
+                    while (($other = random_int(1, 6)) !== 6) {
+                        echo "Again.";
+                    }
+
+                    while ($flag = random_int(0, 1)) {
+                        echo "Once more.";
+                    }
+',
+                'assertions' => [
+                    '$result' => 'int<1, 6>',
+                    '$other' => 'int<1, 6>',
+                ],
+            ],
+            'variableAssignedInForConditionIsDefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function f(): int {
+                        for ($i = 0; $last = random_int(0, $i); $i++) {
+                            echo "In a for loop.";
+                        }
+
+                        return $last;
+                    }',
+            ],
+            'variableAssignedInWhileConditionIsDefinedAfterBreak' => [
+                'code' => '<?php
+                    while (6 !== $result = random_int(1, 6)) {
+                        if (random_int(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    echo $result;',
+            ],
             'variableAssignedLaterInTheBodyHoldsWhatThePreviousIterationLeft' => [
                 'code' => '<?php
                     function f(): void {
@@ -731,6 +770,24 @@ final class WhileTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableAssignedAfterAndInWhileConditionIsPossiblyUndefined' => [
+                'code' => '<?php
+                    while (random_int(0, 1) && $result = random_int(1, 6)) {
+                        echo "Again.";
+                    }
+
+                    echo $result;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'variableAssignedInWhileBodyIsPossiblyUndefined' => [
+                'code' => '<?php
+                    while (random_int(0, 1)) {
+                        $inside = 1;
+                    }
+
+                    echo $inside;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
             'whileTrueNoBreak' => [
                 'code' => '<?php
                     while (true) {
