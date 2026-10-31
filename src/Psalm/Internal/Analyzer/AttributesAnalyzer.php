@@ -63,12 +63,18 @@ final class AttributesAnalyzer
     ): void {
         $codebase = $source->getCodebase();
         $appearing_non_repeatable_attributes = [];
+        $has_delayed_target_validation = false;
         foreach (self::iterateAttributeNodes($attribute_groups) as $attribute) {
-            if ($attribute->name instanceof FullyQualified) {
-                $fq_attribute_name = (string) $attribute->name;
-            } else {
-                $fq_attribute_name = ClassLikeAnalyzer::getFQCLNFromNameObject($attribute->name, $source->getAliases());
+            if (strtolower(self::getFqAttributeName($source, $attribute)) === 'delayedtargetvalidation') {
+                // PHP 8.5 defers the target check of every internal attribute (even #[\Attribute]) to runtime;
+                // older versions still check it at compile time, even with a polyfilled DelayedTargetValidation.
+                $has_delayed_target_validation = $codebase->analysis_php_version_id >= 8_05_00;
+                break;
             }
+        }
+
+        foreach (self::iterateAttributeNodes($attribute_groups) as $attribute) {
+            $fq_attribute_name = self::getFqAttributeName($source, $attribute);
 
             $attribute_name = (string) $attribute->name;
             $attribute_name_location = new CodeLocation($source, $attribute->name);
@@ -119,7 +125,10 @@ final class AttributesAnalyzer
                 && $storage->is_trait
                 && $codebase->analysis_php_version_id >= 8_05_00;
 
-            if (($attribute_class_flags & $target) === 0 && !$is_deprecated_on_trait) {
+            if (($attribute_class_flags & $target) === 0
+                && !$is_deprecated_on_trait
+                && !($has_delayed_target_validation && $attribute_class_storage?->user_defined === false)
+            ) {
                 IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         "Attribute {$attribute_name} cannot be used on a "
@@ -148,6 +157,13 @@ final class AttributesAnalyzer
                 );
             }
         }
+    }
+
+    private static function getFqAttributeName(SourceAnalyzer $source, Attribute $attribute): string
+    {
+        return $attribute->name instanceof FullyQualified
+            ? (string) $attribute->name
+            : ClassLikeAnalyzer::getFQCLNFromNameObject($attribute->name, $source->getAliases());
     }
 
     /**
