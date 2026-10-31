@@ -155,6 +155,9 @@ final class TryAnalyzer
         $definitely_newly_assigned_var_ids = $newly_assigned_var_ids;
 
         /** @var int $i */
+        // the variables a catch of a try that always exits gave the context: the next catches add to them
+        $vars_set_by_catches = [];
+
         foreach ($stmt->catches as $i => $catch) {
             $catch_context = clone $original_context;
             $catch_context->has_returned = false;
@@ -378,7 +381,10 @@ final class TryAnalyzer
 
                 foreach ($catch_context->vars_in_scope as $var_id => $type) {
                     if ($try_block_control_actions === [ScopeAnalyzer::ACTION_END]) {
-                        $context->vars_in_scope[$var_id] = $type;
+                        $context->vars_in_scope[$var_id] = isset($vars_set_by_catches[$var_id])
+                            ? Type::combineUnionTypes($context->vars_in_scope[$var_id], $type)
+                            : $type;
+                        $vars_set_by_catches[$var_id] = true;
                     } elseif (isset($context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->vars_in_scope[$var_id],
