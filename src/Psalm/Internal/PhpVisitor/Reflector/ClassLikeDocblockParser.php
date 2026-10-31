@@ -547,7 +547,7 @@ final class ClassLikeDocblockParser
                             $codebase,
                             null,
                             $purity_template_map,
-                        )->toNamespacedString($aliases->namespace, $aliases->uses, null, false);
+                        )->toNamespacedString($aliases->namespace, $aliases->uses, null, false, false);
                     }
 
                     $method_tree = $method_tree->children[0];
@@ -584,7 +584,7 @@ final class ClassLikeDocblockParser
                             );
                         }
 
-                        $param_type_string = $param_type->toNamespacedString('\\', [], null, false);
+                        $param_type_string = $param_type->toNamespacedString('\\', [], null, false, false);
                         $docblock_lines[] = '@param ' . $param_type_string . ' '
                             . ($method_tree_child->variadic ? '...' : '')
                             . $method_tree_child->name;

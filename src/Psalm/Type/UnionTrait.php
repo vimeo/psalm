@@ -260,6 +260,7 @@ trait UnionTrait
         array $aliased_classes,
         ?string $this_class,
         bool $use_phpdoc_format,
+        bool $abbreviate_literals = true,
     ): string {
         $other_types = [];
 
@@ -285,13 +286,13 @@ trait UnionTrait
             }
         }
 
-        if (count($literal_ints) <= 3 && !$has_non_literal_int) {
+        if ((!$abbreviate_literals || count($literal_ints) <= 3) && !$has_non_literal_int) {
             $other_types = [...$other_types, ...$literal_ints];
         } else {
             $other_types[] = 'int';
         }
 
-        if (count($literal_strings) <= 3 && !$has_non_literal_string) {
+        if ((!$abbreviate_literals || count($literal_strings) <= 3) && !$has_non_literal_string) {
             $other_types = [...$other_types, ...$literal_strings];
         } else {
             $other_types[] = 'string';

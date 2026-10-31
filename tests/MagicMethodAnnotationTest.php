@@ -260,6 +260,31 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodReturnTypeOfFourLiteralStringsIsKept' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @method ('a'|'b'|'c'|'d') pick()
+                     */
+                    final class Foo
+                    {
+                        public function __call(string $name, array $arguments): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    function test(Foo $foo): void
+                    {
+                        $picked = $foo->pick();
+
+                        /** @psalm-check-type-exact $picked = 'a'|'b'|'c'|'d' */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'trailingReturnTypes' => [
                 'code' => '<?php
                     class ParentClass {
@@ -1296,6 +1321,52 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'methodParamOfFourLiteralStringsIsEnforced' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @method static four(('a'|'b'|'c'|'d') $mode)
+                     */
+                    final class Foo
+                    {
+                        public function __call(string $name, array $arguments): static
+                        {
+                            return $this;
+                        }
+                    }
+
+                    function test(Foo $foo): void
+                    {
+                        $foo->four('bogus');
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'methodParamOfFourLiteralIntsIsEnforced' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @method static fourInts((1|2|3|4) $n)
+                     */
+                    final class Foo
+                    {
+                        public function __call(string $name, array $arguments): static
+                        {
+                            return $this;
+                        }
+                    }
+
+                    function test(Foo $foo): void
+                    {
+                        $foo->fourInts(99);
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'wildcardPurityPropagatesImpureClosure' => [
                 'code' => '<?php
                     /**
