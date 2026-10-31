@@ -23,6 +23,25 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachKeyOverwritesTheValueOfTheSameName' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, list<int>> $devices */
+                    function keys(array $devices): array {
+                        $result = [];
+
+                        foreach ($devices as $device => $device) {
+                            /** @psalm-check-type-exact $device = string */
+                            $result[$device] = 'hello world';
+                        }
+
+                        return $result;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'foreachByReferenceWritesIntoTheItemsOfTheArray' => [
                 'code' => '<?php
                     $values = ["key" => ""];
