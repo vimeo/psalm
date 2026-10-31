@@ -350,7 +350,9 @@ final class CastAnalyzer
 
         IssueBuffer::maybeAdd(
             new UnrecognizedExpression(
-                'Psalm does not understand the cast ' . $stmt::class,
+                $stmt instanceof PhpParser\Node\Expr\Cast\Unset_
+                    ? 'The (unset) cast was removed in PHP 8.0'
+                    : 'Psalm does not understand the cast ' . $stmt::class,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
             ),
             $statements_analyzer->getSuppressedIssues(),

@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use const DIRECTORY_SEPARATOR;
 
 final class CastTest extends TestCase
 {
+    use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
     /**
@@ -146,6 +150,23 @@ final class CastTest extends TestCase
             'assertions' => [
                 '$string===' => "'-1'|'-2'|'-3'|'-4'|'-5'|'0'|'1'|'2'|'3'",
             ],
+        ];
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerInvalidCodeParse(): iterable
+    {
+        yield 'unsetCastIsRemovedInPhpEight' => [
+            'code' => '<?php
+                $foo = 1;
+                (unset) $foo;',
+            'error_message' => 'UnrecognizedExpression - src' . DIRECTORY_SEPARATOR
+                . 'somefile.php:3:17 - The (unset) cast was removed in PHP 8.0',
+            'error_levels' => [],
+            'php_version' => '8.0',
         ];
     }
 }
