@@ -1340,6 +1340,24 @@ final class ForeachTest extends TestCase
                     '$a===' => "''|int",
                 ],
             ],
+            'filesystemIteratorValueIsNeverNull' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $a = "";
+                    foreach (new FilesystemIterator(__DIR__) as $file) {
+                        $a = $file;
+                    }
+
+                    $b = "";
+                    foreach (new RecursiveDirectoryIterator(__DIR__) as $file) {
+                        $b = $file;
+                    }
+                PHP,
+                'assertions' => [
+                    '$a===' => 'SplFileInfo|string',
+                    '$b===' => 'SplFileInfo|string',
+                ],
+            ],
         ];
     }
 
