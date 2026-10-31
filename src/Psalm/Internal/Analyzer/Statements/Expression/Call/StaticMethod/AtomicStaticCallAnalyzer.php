@@ -261,6 +261,7 @@ final class AtomicStaticCallAnalyzer
                                 $method_storage->capabilities,
                                 $method_storage->defining_fqcln,
                                 $method_identifier->fq_class_name,
+                                self::namesTheCalledClass($stmt),
                             )]);
                         }
                     }
@@ -505,6 +506,7 @@ final class AtomicStaticCallAnalyzer
                     $method_storage->capabilities,
                     $method_storage->defining_fqcln,
                     $fq_class_name,
+                    self::namesTheCalledClass($stmt),
                 )]);
             } else {
                 $method_exists = $naive_method_exists
@@ -524,6 +526,7 @@ final class AtomicStaticCallAnalyzer
                         $declaring_method_storage->capabilities,
                         $declaring_method_storage->defining_fqcln,
                         $method_id->fq_class_name,
+                        self::namesTheCalledClass($stmt),
                     )]);
                 } elseif ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->getFirst() === 'parent'
                     && !$statements_analyzer->isStatic()
@@ -1133,6 +1136,16 @@ final class AtomicStaticCallAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * Whether `static` is the class a static call names, rather than the one it is made from (`self::`, `parent::`,
+     * `static::`)
+     */
+    private static function namesTheCalledClass(PhpParser\Node\Expr\StaticCall $stmt): bool
+    {
+        return $stmt->class instanceof PhpParser\Node\Name
+            && !in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true);
     }
 
     /**
