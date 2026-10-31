@@ -168,6 +168,16 @@ If true we force strict typing on numerical and string operations (see https://g
 
 If false, disallows comparing a boolean to a literal boolean (mostly a codestyle rule, not a bug detection rule; see [RedundantIdentityWithTrue](https://psalm.dev/docs/running_psalm/issues/RedundantIdentityWithTrue/)). Defaults to `true`.
 
+#### strictNullableComparison
+
+```xml
+<psalm
+  strictNullableComparison="[bool]"
+>
+```
+
+If true, `<`, `>`, `<=` and `>=` report [PossiblyNullOperand](https://psalm.dev/docs/running_psalm/issues/PossiblyNullOperand/) (or [NullOperand](https://psalm.dev/docs/running_psalm/issues/NullOperand/)) for an operand that can be `null`, so the `null` case has to be handled explicitly. Defaults to `false`.
+
 #### rememberPropertyAssignmentsAfterCall
 
 ```xml

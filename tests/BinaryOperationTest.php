@@ -357,6 +357,163 @@ final class BinaryOperationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testNullableLeftOperandOfSmallerThan(): void
+    {
+        Config::getInstance()->strict_nullable_comparison = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(?int $i): bool {
+                    return $i < 10;
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyNullOperand - somefile.php:3:28 - Left operand cannot be nullable, got int|null');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testNullableRightOperandOfGreaterThan(): void
+    {
+        Config::getInstance()->strict_nullable_comparison = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(?int $i): bool {
+                    return 10 > $i;
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyNullOperand - somefile.php:3:33 - Right operand cannot be nullable, got int|null');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testNullableOperandOfSmallerOrEqual(): void
+    {
+        Config::getInstance()->strict_nullable_comparison = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(?int $i): bool {
+                    return $i <= 10;
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyNullOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testNullableOperandOfGreaterOrEqual(): void
+    {
+        Config::getInstance()->strict_nullable_comparison = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(?int $i): bool {
+                    return $i >= 10;
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyNullOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testNullOperandOfComparison(): void
+    {
+        Config::getInstance()->strict_nullable_comparison = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(): bool {
+                    return null < 10;
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullOperand - somefile.php:3:28 - Left operand cannot be null');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testNullRightOperandOfComparison(): void
+    {
+        Config::getInstance()->strict_nullable_comparison = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(): bool {
+                    return 10 < null;
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullOperand - somefile.php:3:33 - Right operand cannot be null');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testNullableComparisonIsAllowedByDefault(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(?int $i): bool {
+                    return $i < 10 || 20 <= $i;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+        $this->addToAssertionCount(1);
+    }
+
+    public function testNarrowedComparisonInStrictNullableMode(): void
+    {
+        Config::getInstance()->strict_nullable_comparison = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(?int $i, int $j): bool {
+                    if ($i === null) {
+                        return false;
+                    }
+                    return $i < 10 && $j >= 5 && $i == null;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+        $this->addToAssertionCount(1);
+    }
+
+    public function testNullEqualityIsAllowedInStrictNullableMode(): void
+    {
+        Config::getInstance()->strict_nullable_comparison = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(?int $i, ?int $j): bool {
+                    return $i == $j || $i === null || $i != null || $i !== $j;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+        $this->addToAssertionCount(1);
+    }
+
     public function testImplicitStringConcatenation(): void
     {
         $config = Config::getInstance();

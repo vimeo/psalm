@@ -358,6 +358,8 @@ final class Config
 
     public bool $allow_bool_to_literal_bool_comparison = true;
 
+    public bool $strict_nullable_comparison = false;
+
     public bool $remember_property_assignments_after_call = true;
 
     public bool $use_igbinary = false;
@@ -1058,6 +1060,7 @@ final class Config
             'respectIncludeOnce' => 'respect_include_once',
             'strictBinaryOperands' => 'strict_binary_operands',
             'allowBoolToLiteralBoolComparison' => 'allow_bool_to_literal_bool_comparison',
+            'strictNullableComparison' => 'strict_nullable_comparison',
             'rememberPropertyAssignmentsAfterCall' => 'remember_property_assignments_after_call',
             'disableVarParsing' => 'disable_var_parsing',
             'allowStringToStandInForClass' => 'allow_string_standin_for_class',
