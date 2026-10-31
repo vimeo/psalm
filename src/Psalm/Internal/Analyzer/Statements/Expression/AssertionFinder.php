@@ -106,6 +106,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_key_exists;
+use function array_map;
 use function assert;
 use function count;
 use function explode;
@@ -1105,6 +1106,10 @@ final class AssertionFinder
                     }
                 }
 
+                if ($newRules === []) {
+                    continue;
+                }
+
                 $assertion = new Possibilities($assertion->var_id, $newRules);
 
                 if (is_int($assertion->var_id) && isset($expr->getArgs()[$assertion->var_id])) {
@@ -1119,7 +1124,7 @@ final class AssertionFinder
                     }
 
                     if ($var_name) {
-                        $if_types[$var_name] = [[$assertion->rule[0]]];
+                        $if_types[$var_name] = [$newRules];
                     }
                 } elseif ($assertion->var_id === '$this') {
                     if (!$expr instanceof PhpParser\Node\Expr\MethodCall) {
@@ -1139,7 +1144,7 @@ final class AssertionFinder
                     );
 
                     if ($var_id) {
-                        $if_types[$var_id] = [[$assertion->rule[0]]];
+                        $if_types[$var_id] = [$newRules];
                     }
                 } elseif (is_string($assertion->var_id)) {
                     $is_function = str_ends_with($assertion->var_id, '()');
@@ -1210,7 +1215,7 @@ final class AssertionFinder
                         );
                         continue;
                     }
-                    $if_types[$assertion_var_id] = [[$assertion->rule[0]]];
+                    $if_types[$assertion_var_id] = [$newRules];
                 }
 
                 if ($if_types) {
@@ -1245,6 +1250,10 @@ final class AssertionFinder
                     }
                 }
 
+                if ($newRules === []) {
+                    continue;
+                }
+
                 $assertion = new Possibilities($assertion->var_id, $newRules);
 
                 if (is_int($assertion->var_id) && isset($expr->getArgs()[$assertion->var_id])) {
@@ -1259,7 +1268,7 @@ final class AssertionFinder
                     }
 
                     if ($var_name) {
-                        $if_types[$var_name] = [[$assertion->rule[0]->getNegation()]];
+                        $if_types[$var_name] = self::negateAlternatives($newRules);
                     }
                 } elseif ($assertion->var_id === '$this' && $expr instanceof PhpParser\Node\Expr\MethodCall) {
                     $var_id = ExpressionIdentifier::getExtendedVarId(
@@ -1269,7 +1278,7 @@ final class AssertionFinder
                     );
 
                     if ($var_id) {
-                        $if_types[$var_id] = [[$assertion->rule[0]->getNegation()]];
+                        $if_types[$var_id] = self::negateAlternatives($newRules);
                     }
                 } elseif (is_string($assertion->var_id)) {
                     $is_function = str_ends_with($assertion->var_id, '()');
@@ -1322,17 +1331,15 @@ final class AssertionFinder
                             }
                         }
 
-                        $rule = $assertion->rule[0]->getNegation();
-
                         $assertion_var_id = str_replace($var_id, $arg_var_id, $assertion->var_id);
 
-                        $if_types[$assertion_var_id] = [[$rule]];
+                        $if_types[$assertion_var_id] = self::negateAlternatives($newRules);
                     } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
                         $var_id = $assertion->var_id;
                         if (str_starts_with($var_id, 'self::')) {
                             $var_id = $this_class_name.'::'.substr($var_id, 6);
                         }
-                        $if_types[$var_id] = [[$assertion->rule[0]->getNegation()]];
+                        $if_types[$var_id] = self::negateAlternatives($newRules);
                     } else {
                         IssueBuffer::maybeAdd(
                             new InvalidDocblock(
@@ -1350,6 +1357,21 @@ final class AssertionFinder
         }
 
         return $anded_types;
+    }
+
+    /**
+     * Something is none of the alternatives it was asserted to be one of.
+     *
+     * @param non-empty-list<Assertion> $alternatives
+     * @return non-empty-list<non-empty-list<Assertion>>
+     * @psalm-pure
+     */
+    private static function negateAlternatives(array $alternatives): array
+    {
+        return array_map(
+            static fn(Assertion $alternative): array => [$alternative->getNegation()],
+            $alternatives,
+        );
     }
 
     /**
