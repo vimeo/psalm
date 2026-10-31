@@ -550,6 +550,34 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullCoalesceOnArrayAccessObjectIsNeverNull' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {}
+
+                    /** @implements ArrayAccess<string, Foo> */
+                    final class FooMap implements ArrayAccess
+                    {
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetUnset(mixed $offset): void {}
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetGet(mixed $offset): ?Foo { return null; }
+                    }
+
+                    $map = new FooMap();
+                    $key = (string) rand();
+                    $foo = $map[$key] ?? new Foo();
+                    $int = $map[$key] ?? 5;
+                    $null = $map[$key] ?? null;
+                    PHP,
+                'assertions' => [
+                    '$foo===' => 'Foo',
+                    '$int===' => '5|Foo',
+                    '$null===' => 'Foo|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'missingOffsetPassedByReferenceIsNull' => [
                 'code' => '<?php
                     /**
