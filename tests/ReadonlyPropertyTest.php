@@ -68,6 +68,49 @@ final class ReadonlyPropertyTest extends TestCase
 
                     echo (new A)->bar;',
             ],
+            'unsetElementOfPrivateMutationAllowedReadonlyProperty' => [
+                'code' => '<?php
+                    final class A {
+                        /**
+                         * @psalm-readonly-allow-private-mutation
+                         */
+                        public array $arr = ["a" => 1, "b" => 2];
+
+                        public function drop(): void {
+                            unset($this->arr["a"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unsetPrivateMutationAllowedReadonlyPropertyWithWriteThisPropsCapability' => [
+                'code' => '<?php
+                    final class A {
+                        /**
+                         * @psalm-readonly-allow-private-mutation
+                         */
+                        public string $s = "a";
+
+                        /**
+                         * @psalm-readonly-allow-private-mutation
+                         */
+                        public array $arr = ["a" => 1];
+
+                        /** @psalm-capabilities write-this-props */
+                        public function dropProperty(): void {
+                            unset($this->s);
+                        }
+
+                        /** @psalm-capabilities write-this-props */
+                        public function dropElement(): void {
+                            unset($this->arr["a"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'readonlyPublicPropertySetInAnotherMethod' => [
                 'code' => '<?php
                     class A {
@@ -206,6 +249,32 @@ final class ReadonlyPropertyTest extends TestCase
                         }
                     }',
                 'error_message' => 'InaccessibleProperty',
+            ],
+            'readonlyPropertyUnsetInMethod' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public readonly int|string $s) {}
+
+                        public function drop(): void {
+                            unset($this->s);
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:35 - A::$s is marked readonly',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'readonlyPropertyUnsetArrayElement' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public readonly array $arr) {}
+
+                        public function drop(): void {
+                            unset($this->arr[0]);
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:35 - A::$arr is marked readonly',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'readonlyPropertySetInConstructorAndAlsoAnotherMethodInSubclass' => [
                 'code' => '<?php
