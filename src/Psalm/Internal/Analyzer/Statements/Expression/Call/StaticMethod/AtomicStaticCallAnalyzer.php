@@ -25,6 +25,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnaly
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedClass;
@@ -983,7 +984,12 @@ final class AtomicStaticCallAnalyzer
         }
 
         if ($pseudo_method_storage->return_type) {
-            $return_type_candidate = $pseudo_method_storage->return_type;
+            // the templates generated from the params, bound by the arguments
+            $return_type_candidate = TemplateInferredTypeReplacer::replace(
+                $pseudo_method_storage->return_type,
+                $template_result,
+                $codebase,
+            );
 
             $return_type_candidate = TypeExpander::expandUnion(
                 $statements_analyzer->getCodebase(),
@@ -991,6 +997,8 @@ final class AtomicStaticCallAnalyzer
                 $class_storage->name,
                 $static_fq_class_name,
                 $class_storage->parent_class,
+                true,
+                true,
             );
 
             if ($method_storage) {

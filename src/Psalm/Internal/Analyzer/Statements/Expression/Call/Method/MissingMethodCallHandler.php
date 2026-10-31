@@ -186,13 +186,12 @@ final class MissingMethodCallHandler
             if ($pseudo_method_storage->return_type) {
                 $return_type_candidate = $pseudo_method_storage->return_type;
 
-                if ($found_generic_params) {
-                    $return_type_candidate = TemplateInferredTypeReplacer::replace(
-                        $return_type_candidate,
-                        new TemplateResult([], $found_generic_params),
-                        $codebase,
-                    );
-                }
+                // the class templates, and the ones generated from the params, bound by the arguments
+                $return_type_candidate = TemplateInferredTypeReplacer::replace(
+                    $return_type_candidate,
+                    $template_result,
+                    $codebase,
+                );
 
                 $return_type_candidate = TypeExpander::expandUnion(
                     $codebase,
@@ -200,6 +199,8 @@ final class MissingMethodCallHandler
                     $defining_class_storage->name,
                     $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $fq_class_name,
                     $defining_class_storage->parent_class,
+                    true,
+                    true,
                 );
 
                 if ($all_intersection_return_type) {
@@ -402,6 +403,11 @@ final class MissingMethodCallHandler
                 !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
             );
 
+            $template_result = new TemplateResult(
+                $pseudo_method_storage->template_types ?? [],
+                $found_generic_params ?? [],
+            );
+
             if (ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->getArgs(),
@@ -409,7 +415,9 @@ final class MissingMethodCallHandler
                 (string) $method_id,
                 true,
                 $context,
-                $found_generic_params ? new TemplateResult([], $found_generic_params) : null,
+                $template_result->template_types !== [] || $template_result->lower_bounds !== []
+                    ? $template_result
+                    : null,
             ) === false) {
                 return;
             }
@@ -421,7 +429,7 @@ final class MissingMethodCallHandler
                 $pseudo_method_storage->params,
                 $pseudo_method_storage,
                 null,
-                new TemplateResult([], $found_generic_params ?: []),
+                $template_result,
                 new CodeLocation($statements_analyzer, $stmt->name),
                 $context,
             ) === false) {
@@ -431,13 +439,12 @@ final class MissingMethodCallHandler
             if ($pseudo_method_storage->return_type) {
                 $return_type_candidate = $pseudo_method_storage->return_type;
 
-                if ($found_generic_params) {
-                    $return_type_candidate = TemplateInferredTypeReplacer::replace(
-                        $return_type_candidate,
-                        new TemplateResult([], $found_generic_params),
-                        $codebase,
-                    );
-                }
+                // the class templates, and the ones generated from the params, bound by the arguments
+                $return_type_candidate = TemplateInferredTypeReplacer::replace(
+                    $return_type_candidate,
+                    $template_result,
+                    $codebase,
+                );
 
                 if ($all_intersection_return_type) {
                     $return_type_candidate = Type::intersectUnionTypes(
@@ -454,7 +461,7 @@ final class MissingMethodCallHandler
                     $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $fq_class_name,
                     $defining_class_storage->parent_class,
                     true,
-                    false,
+                    true,
                     $class_storage->final,
                 );
 
