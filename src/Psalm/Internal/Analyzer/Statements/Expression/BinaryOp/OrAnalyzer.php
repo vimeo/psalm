@@ -29,6 +29,7 @@ use Psalm\Type\Reconciler;
 
 use function array_diff_key;
 use function array_filter;
+use function array_intersect_key;
 use function array_merge;
 use function array_values;
 use function count;
@@ -253,11 +254,17 @@ final class OrAnalyzer
             }
 
             $partitioned_clauses = Context::removeReconciledClauses($context->clauses, $changed_var_ids);
-            $context->clauses = $partitioned_clauses[0];
 
             foreach ($partitioned_clauses[1] as $clause) {
                 $context->reconciled_expression_clauses[] = $clause->hash;
             }
+
+            // the clauses the context had about a variable the left operand assigns are stale, the other ones still
+            // hold after the expression (`$has = $b !== null; $has || $c;` keeps what `$has` says about `$b`)
+            $context->clauses = Context::removeReconciledClauses(
+                $context->clauses,
+                array_intersect_key($changed_var_ids, $left_assigned_var_ids),
+            )[0];
         }
 
         $right_context->if_body_context = null;
