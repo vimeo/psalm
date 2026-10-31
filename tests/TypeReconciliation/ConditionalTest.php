@@ -21,6 +21,69 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'classEqualToAClassConstantIsNotTheClassOfTheConstantFetch' => [
+                'code' => '<?php
+                    class Bar {}
+
+                    class Foo {
+                        /** @var class-string<Bar> */
+                        protected const TYPE = Bar::class;
+
+                        public function check(object $bar): void {
+                            assert($bar::class === static::TYPE);
+                            /** @psalm-check-type-exact $bar = object */
+                        }
+
+                        public function checkSelf(object $bar): void {
+                            if (self::TYPE === $bar::class) {
+                                /** @psalm-check-type-exact $bar = object */
+                            }
+                        }
+                    }',
+            ],
+            'typeNameFunctionsComparedToAClassConstant' => [
+                'code' => '<?php
+                    class A {
+                        private const TYPE = "int";
+
+                        public function f(mixed $x): void {
+                            if (get_debug_type($x) === self::TYPE) {
+                                echo 1;
+                            }
+
+                            if (get_debug_type($x) !== self::TYPE) {
+                                echo 2;
+                            }
+
+                            if (gettype($x) === self::TYPE) {
+                                echo 3;
+                            }
+
+                            if (gettype($x) !== self::TYPE) {
+                                echo 4;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType', 'RedundantCondition'],
+                'php_version' => '8.1',
+            ],
+            'classEqualToTheClassOfAnotherClassStillNarrows' => [
+                'code' => '<?php
+                    class Bar {}
+
+                    class Foo {
+                        public function check(object $bar): void {
+                            assert($bar::class === static::class);
+                            /** @psalm-check-type-exact $bar = Foo */
+                        }
+
+                        public function checkOther(object $bar): void {
+                            assert($bar::class === Bar::class);
+                            /** @psalm-check-type-exact $bar = Bar */
+                        }
+                    }',
+            ],
             'nonStrictConditionOnMixedOrNull' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $owners */

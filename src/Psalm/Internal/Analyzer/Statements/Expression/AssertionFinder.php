@@ -2645,13 +2645,16 @@ final class AssertionFinder
             $var_type = $whichclass_expr->value;
         } elseif ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $whichclass_expr->class instanceof PhpParser\Node\Name
+            && $whichclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($whichclass_expr->name->name) === 'class'
         ) {
             $var_type = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $whichclass_expr->class,
                 $source->getAliases(),
             );
         } else {
-            throw new UnexpectedValueException('Shouldn’t get here');
+            // a constant other than ::class says nothing about the class
+            return [];
         }
 
         if (!isset(ClassLikeAnalyzer::GETTYPE_TYPES[$var_type])) {
@@ -2711,13 +2714,16 @@ final class AssertionFinder
             $var_type = $whichclass_expr->value;
         } elseif ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $whichclass_expr->class instanceof PhpParser\Node\Name
+            && $whichclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($whichclass_expr->name->name) === 'class'
         ) {
             $var_type = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $whichclass_expr->class,
                 $source->getAliases(),
             );
         } else {
-            throw new UnexpectedValueException('Shouldn’t get here');
+            // a constant other than ::class says nothing about the class
+            return [];
         }
 
         if ($var_name && $var_type) {
@@ -2765,6 +2771,8 @@ final class AssertionFinder
             );
         } elseif ($getclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $getclass_expr->class instanceof PhpParser\Node\Expr
+            && $getclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($getclass_expr->name->name) === 'class'
         ) {
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $getclass_expr->class,
@@ -2779,6 +2787,8 @@ final class AssertionFinder
             $var_type = $whichclass_expr->value;
         } elseif ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $whichclass_expr->class instanceof PhpParser\Node\Name
+            && $whichclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($whichclass_expr->name->name) === 'class'
         ) {
             $var_type = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $whichclass_expr->class,
@@ -3429,13 +3439,16 @@ final class AssertionFinder
             $var_type = $whichclass_expr->value;
         } elseif ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $whichclass_expr->class instanceof PhpParser\Node\Name
+            && $whichclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($whichclass_expr->name->name) === 'class'
         ) {
             $var_type = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $whichclass_expr->class,
                 $source->getAliases(),
             );
         } else {
-            throw new UnexpectedValueException('Shouldn’t get here');
+            // a constant other than ::class says nothing about the class
+            return [];
         }
 
         if ($var_name && $var_type) {
@@ -3489,6 +3502,8 @@ final class AssertionFinder
             );
         } elseif ($getclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $getclass_expr->class instanceof PhpParser\Node\Expr
+            && $getclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($getclass_expr->name->name) === 'class'
         ) {
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $getclass_expr->class,
@@ -3501,6 +3516,8 @@ final class AssertionFinder
 
         if ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $whichclass_expr->class instanceof PhpParser\Node\Name
+            && $whichclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($whichclass_expr->name->name) === 'class'
         ) {
             $var_type = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $whichclass_expr->class,
