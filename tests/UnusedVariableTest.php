@@ -2642,6 +2642,23 @@ final class UnusedVariableTest extends TestCase
                     }
                 );',
             ],
+            'paramReferencedByAPropertyIsUsed' => [
+                'code' => '<?php
+                    function bind(object $holder, string $value): void {
+                        $holder->prop = &$value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'UnsupportedPropertyReferenceUsage'],
+            ],
+            'paramReferencedByAnArrayOffsetIsUsed' => [
+                'code' => '<?php
+                    /** @param array<string, string> $items */
+                    function bind(array $items, string $value): int {
+                        $items["k"] = &$value;
+
+                        return count($items);
+                    }',
+            ],
         ];
     }
 

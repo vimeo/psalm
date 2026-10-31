@@ -1060,7 +1060,14 @@ final class AssignmentAnalyzer
         Context $context,
         ?PhpParser\Node\Stmt $from_stmt,
     ): bool {
+        // what an array offset or an object property holds is used where it is read: usage Psalm doesn't track,
+        // so the referenced variable counts as used (see below)
+        $was_inside_general_use = $context->inside_general_use;
+        $context->inside_general_use = $was_inside_general_use
+            || $stmt->var instanceof ArrayDimFetch
+            || $stmt->var instanceof PropertyFetch;
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context, false, null, null, null, true);
+        $context->inside_general_use = $was_inside_general_use;
 
         $lhs_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
