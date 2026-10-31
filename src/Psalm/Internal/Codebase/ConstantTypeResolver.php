@@ -114,30 +114,7 @@ final class ConstantTypeResolver
                 || $c instanceof UnresolvedBitwiseXor
                 || $c instanceof UnresolvedBitwiseAnd
             ) {
-                if (!($left instanceof TInt || $left instanceof TLiteralFloat)
-                    || !($right instanceof TInt || $right instanceof TLiteralFloat)
-                ) {
-                    return new TMixed;
-                }
-
-                if (!($left instanceof TLiteralInt || $left instanceof TLiteralFloat)
-                    || !($right instanceof TLiteralInt || $right instanceof TLiteralFloat)
-                ) {
-                    return new TInt();
-                }
-
-                $left_int = LiteralCast::toInt($left->value);
-                $right_int = LiteralCast::toInt($right->value);
-
-                if ($left_int === null || $right_int === null) {
-                    return new TInt();
-                }
-
-                return new TLiteralInt(match (true) {
-                    $c instanceof UnresolvedBitwiseOr => $left_int | $right_int,
-                    $c instanceof UnresolvedBitwiseXor => $left_int ^ $right_int,
-                    default => $left_int & $right_int,
-                });
+                return self::resolveBitwiseOp($c, $left, $right);
             }
 
             if ($c instanceof UnresolvedAdditionOp
@@ -380,6 +357,37 @@ final class ConstantTypeResolver
         }
 
         return new TMixed;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function resolveBitwiseOp(UnresolvedBinaryOp $c, Atomic $left, Atomic $right): Atomic
+    {
+        if (!($left instanceof TInt || $left instanceof TLiteralFloat)
+            || !($right instanceof TInt || $right instanceof TLiteralFloat)
+        ) {
+            return new TMixed;
+        }
+
+        if (!($left instanceof TLiteralInt || $left instanceof TLiteralFloat)
+            || !($right instanceof TLiteralInt || $right instanceof TLiteralFloat)
+        ) {
+            return new TInt();
+        }
+
+        $left_int = LiteralCast::toInt($left->value);
+        $right_int = LiteralCast::toInt($right->value);
+
+        if ($left_int === null || $right_int === null) {
+            return new TInt();
+        }
+
+        return new TLiteralInt(match (true) {
+            $c instanceof UnresolvedBitwiseOr => $left_int | $right_int,
+            $c instanceof UnresolvedBitwiseXor => $left_int ^ $right_int,
+            default => $left_int & $right_int,
+        });
     }
 
     /**

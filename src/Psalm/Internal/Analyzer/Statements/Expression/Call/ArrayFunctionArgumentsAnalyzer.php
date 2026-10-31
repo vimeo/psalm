@@ -475,7 +475,7 @@ final class ArrayFunctionArgumentsAnalyzer
                         ...$length_arg_type->getLiteralFloats(),
                     ] as $literal) {
                         if ($literal->isNumericType()
-                            && ($literal_val = LiteralCast::toInt($literal->value))
+                            && ($literal_val = LiteralCast::toInt($literal->value) ?? 0)
                             && ((isset($length_min) && $length_min> $literal_val) || !isset($length_min))) {
                             $length_min = $literal_val;
                         }
