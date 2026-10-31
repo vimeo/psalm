@@ -4794,6 +4794,34 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'nullsafeCallOnAStaticPropertyStoresTheTaint' => [
+                'code' => '<?php // --taint-analysis
+                    final class H {
+                        /** @var ArrayObject<int, string>|null */
+                        public static ?ArrayObject $acc = null;
+                    }
+
+                    function f(): void {
+                        H::$acc?->append((string) $_GET["x"]);
+                        echo (string) H::$acc?->offsetGet(0);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'nullsafeCallOnAPropertyStoresTheTaint' => [
+                'code' => '<?php // --taint-analysis
+                    final class H {
+                        /** @var ArrayObject<int, string>|null */
+                        public ?ArrayObject $acc = null;
+
+                        public function f(): void {
+                            $this->acc?->append((string) $_GET["x"]);
+                            echo (string) $this->acc?->offsetGet(0);
+                        }
+                    }
+
+                    (new H())->f();',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintSourceUnderAKeyOfTheReturnOfAFunction' => [
                 'code' => '<?php // --taint-analysis
                     /**
