@@ -219,6 +219,9 @@ final class VariableFetchAnalyzer
             $expr_result = ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
             $context->inside_general_use = $was_inside_general_use;
 
+            // any variable of the scope may be the one fetched
+            $context->check_variables = false;
+
             return $expr_result;
         }
 

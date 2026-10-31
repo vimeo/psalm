@@ -441,6 +441,32 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'variableReadThroughAVariableVariableIsUsed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    function read(): void {
+                        $demo = 'hello world!';
+                        $name = 'demo';
+
+                        echo (string) $$name;
+                    }
+                    PHP,
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'variableReadThroughABracedVariableVariableIsUsed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    function read(): void {
+                        $demo = 'hello world!';
+                        $name = 'demo';
+
+                        echo (string) ${$name};
+                    }
+                    PHP,
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'usedExceptionsAreNotReported' => [
                 'code' => '<?php
                     /** @psalm-api */
