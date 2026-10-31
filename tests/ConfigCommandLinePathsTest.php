@@ -12,6 +12,7 @@ use function dirname;
 use function file_put_contents;
 use function is_dir;
 use function mkdir;
+use function realpath;
 use function rmdir;
 use function sys_get_temp_dir;
 use function uniqid;
@@ -37,7 +38,7 @@ final class ConfigCommandLinePathsTest extends TestCase
 
         $this->argv_backup = $argv ?? [];
 
-        $root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm_cli_paths_', true);
+        $root = (string) realpath(sys_get_temp_dir()) . DIRECTORY_SEPARATOR . uniqid('psalm_cli_paths_', true);
         $this->project_dir = $root . DIRECTORY_SEPARATOR . 'project';
         $this->outside_dir = $root . DIRECTORY_SEPARATOR . 'outside';
 
