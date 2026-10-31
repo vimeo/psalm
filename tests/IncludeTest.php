@@ -111,6 +111,28 @@ final class IncludeTest extends TestCase
     public static function providerTestValidIncludes(): array
     {
         return [
+            'requireGuardedByFileExistsWithParentDirectory' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php' => '<?php
+                        if (file_exists(__DIR__ . "/../optional.php")) {
+                            require __DIR__ . "/../optional.php";
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php',
+                ],
+            ],
+            'requireGuardedByIsFileWithDotSegments' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php' => '<?php
+                        if (is_file(__DIR__ . "/./sub/../optional.php")) {
+                            require __DIR__ . "/sub/../optional.php";
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php',
+                ],
+            ],
             'basicRequire' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
@@ -691,6 +713,18 @@ final class IncludeTest extends TestCase
     public static function providerTestInvalidIncludes(): array
     {
         return [
+            'requireGuardedByFileExistsOfAnotherFile' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php' => '<?php
+                        if (file_exists(__DIR__ . "/../optional.php")) {
+                            require __DIR__ . "/../other.php";
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php',
+                ],
+                'error_message' => 'MissingFile',
+            ],
             'undefinedMethodInRequire' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php

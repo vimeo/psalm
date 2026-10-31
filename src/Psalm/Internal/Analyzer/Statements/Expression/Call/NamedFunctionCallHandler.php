@@ -202,7 +202,7 @@ final class NamedFunctionCallHandler
             );
 
             if ($path_to_file) {
-                $context->phantom_files[$path_to_file] = true;
+                $context->phantom_files[IncludeAnalyzer::normalizeFilePath($path_to_file)] = true;
             }
 
             return;
