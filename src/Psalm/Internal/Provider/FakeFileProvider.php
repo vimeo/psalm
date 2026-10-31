@@ -7,6 +7,7 @@ namespace Psalm\Internal\Provider;
 use Override;
 
 use function str_starts_with;
+use function strlen;
 
 /**
  * @internal
@@ -45,6 +46,17 @@ final class FakeFileProvider extends FileProvider
         }
 
         return $this->fake_files[$file_path] ?? parent::getContents($file_path);
+    }
+
+    /** @psalm-external-mutation-free */
+    #[Override]
+    public function getSize(string $file_path): int
+    {
+        if (!isset($this->temp_files[$file_path]) && isset($this->fake_files[$file_path])) {
+            return strlen($this->fake_files[$file_path]);
+        }
+
+        return parent::getSize($file_path);
     }
 
     /**
