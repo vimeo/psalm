@@ -243,6 +243,21 @@ final class UnusedVariableTest extends TestCase
                         return $a;
                     }',
             ],
+            'variablesOfAllCatchesAreUsedWhenTryAlwaysReturns' => [
+                'code' => '<?php
+                    function test(): void
+                    {
+                        try {
+                            return;
+                        } catch (\RuntimeException $exception) {
+                            $exception = new \LogicException("test", 0, $exception);
+                        } catch (Throwable $exception) {
+                            $exception = new \InvalidArgumentException("test 2", 0, $exception);
+                        }
+
+                        echo $exception->getMessage();
+                    }',
+            ],
             'callOfCallableNarrowedFromClassStringOrCallable' => [
                 'code' => '<?php
                     /**
