@@ -2023,6 +2023,24 @@ final class UnusedCodeTest extends TestCase
                 'error_message' => 'UnusedProperty',
                 'error_levels' => ['UnusedVariable'],
             ],
+            'invokableObjectAcceptedByTheNonCallableTypeIsNotInvoked' => [
+                'code' => '<?php
+                    final class Inv {
+                        public function __construct(private int $x) {}
+
+                        public function __invoke(int $i) : int {
+                            return $i + $this->x;
+                        }
+                    }
+
+                    /** @param Inv|callable $c */
+                    function takes($c) : void {
+                        echo gettype($c);
+                    }
+
+                    takes(new Inv(1));',
+                'error_message' => 'UnusedProperty',
+            ],
             'privateUnusedMethod' => [
                 'code' => '<?php
                     final class A {

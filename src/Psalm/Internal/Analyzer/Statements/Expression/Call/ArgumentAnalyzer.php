@@ -1169,9 +1169,24 @@ final class ArgumentAnalyzer
                     $potential_method_ids[] = $potential_method_id;
                 } elseif ($input_type_part instanceof TNamedObject
                     && $input_type_part->value !== 'Closure'
+                    && ($param_type_without_callable === null || !UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $input_type,
+                        $param_type_without_callable,
+                    ))
                 ) {
                     // an invokable object is called through its `__invoke`
-                    $potential_method_ids[] = new MethodIdentifier($input_type_part->value, '__invoke');
+                    $potential_method_id = new MethodIdentifier($input_type_part->value, '__invoke');
+
+                    if (!$codebase->methodExists($potential_method_id)
+                        || $codebase->methods->getStorage(
+                            $codebase->methods->getDeclaringMethodId($potential_method_id) ?? $potential_method_id,
+                        )->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                    ) {
+                        continue;
+                    }
+
+                    $potential_method_ids[] = $potential_method_id;
                 }
             }
 
