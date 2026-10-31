@@ -1371,12 +1371,11 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
 
         if ($this->source instanceof FunctionAnalyzer) {
-            $namespace = $this->getNamespace();
-            $namespace = $namespace === "" ? "" : "$namespace\\";
+            // the name of a function in a namespace includes the namespace
             $function_name = $this->source->getFunctionLikeStorage($this)->cased_name;
             assert($function_name !== null);
 
-            return "{$namespace}{$function_name}";
+            return $function_name;
         }
 
         return $this->getNamespace();

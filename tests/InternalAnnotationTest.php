@@ -731,6 +731,44 @@ final class InternalAnnotationTest extends TestCase
                     }',
                 'error_message' => 'The method A\Foo::barBar is internal to A but called from B\Bat',
             ],
+            'internalMethodCalledFromAFunctionInANamespace' => [
+                'code' => '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @internal
+                             */
+                            public static function barBar(): void {
+                            }
+                        }
+                    }
+
+                    namespace B {
+                        function bat(): void {
+                            \A\Foo::barBar();
+                        }
+                    }',
+                'error_message' => 'The method A\\Foo::barBar is internal to A but called from B\\bat',
+            ],
+            'internalMethodCalledFromAFunctionInTheRootNamespace' => [
+                'code' => '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @internal
+                             */
+                            public static function barBar(): void {
+                            }
+                        }
+                    }
+
+                    namespace {
+                        function bat(): void {
+                            \A\Foo::barBar();
+                        }
+                    }',
+                'error_message' => 'The method A\\Foo::barBar is internal to A but called from bat',
+            ],
             'internalCloneMethodWithCall' => [
                 'code' => '<?php
                     namespace A {
