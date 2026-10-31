@@ -205,6 +205,25 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'instantiateFromObjectOfSafeClasses' => [
+                'code' => '<?php
+                    final class F {}
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class C {
+                        public function __construct(int $i) {}
+                    }
+
+                    function fromFinal(F $f): F {
+                        return new $f();
+                    }
+
+                    function fromConsistent(C $c): C {
+                        return new $c(1);
+                    }',
+            ],
             'notInCallMapTest' => [
                 'code' => '<?php
                     new DOMImplementation();',
@@ -1505,6 +1524,21 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'unsafeInstantiationFromObject' => [
+                'code' => '<?php
+                    class A {}
+
+                    class Alpha extends A {
+                        public function __construct(string $a) {}
+                    }
+
+                    function foo(A $instance): A {
+                        return new $instance();
+                    }
+
+                    foo(new Alpha("xxx"));',
+                'error_message' => 'UnsafeInstantiation',
+            ],
             'staticInvocation' => [
                 'code' => '<?php
                     class Foo {
