@@ -28,10 +28,12 @@ use Psalm\Issue\UninitializedProperty;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 
+use function array_any;
 use function array_merge;
 use function array_shift;
 use function rtrim;
@@ -272,6 +274,24 @@ final class InstancePropertyFetchAnalyzer
         }
 
         $stmt_type = $statements_analyzer->node_data->getType($stmt);
+
+        // isset() sees null for the members of a union that do not declare the property
+        if ($context->inside_isset
+            && !$stmt_var_type->isSingle()
+            && $stmt_type
+            && !$stmt_type->isNullable()
+            && !$stmt_type->hasMixed()
+            && array_any(
+                $stmt_var_type->getAtomicTypes(),
+                static fn(Atomic $part): bool => $part instanceof TNamedObject
+                    && $codebase->classlikes->classExists($part->value)
+                    && !$codebase->propertyExists($part->value . '::$' . $prop_name, true)
+                    && !$codebase->methodExists($part->value . '::__get'),
+            )
+        ) {
+            $stmt_type = $stmt_type->getBuilder()->addType(new TNull)->freeze();
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+        }
 
         $short_circuit_null = $receiver_state !== NullsafeChainState::None && $stmt_var_type->isNullable();
 
