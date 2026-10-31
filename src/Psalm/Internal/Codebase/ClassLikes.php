@@ -812,6 +812,145 @@ final class ClassLikes
 
         $code_use_graph = $codebase->code_use_graph;
 
+        if ($find_unused_code) {
+            $this->resolveCodeUseGraph($code_use_graph);
+        }
+
+        $subclass_capabilities = $this->getSubclassCapabilities($codebase->analyzer->mutable_classes);
+
+        foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
+            try {
+                $classlike_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+            if ($classlike_storage->location
+                && $this->config->isInProjectDirs($classlike_storage->location->file_path)
+            ) {
+                if (!$classlike_storage->is_trait) {
+                    if ($find_unused_code) {
+                        $class_node = CodeUseGraph::classNode($fq_class_name_lc);
+
+                        // a class that is only alive because of its own methods
+                        // still has its members unchecked
+                        if ($code_use_graph->isUsed($class_node)
+                            && ($classlike_storage->public_api || $code_use_graph->isReferenced($class_node))
+                        ) {
+                            $this->checkMethodReferences($classlike_storage, $methods);
+                            $this->checkPropertyReferences($classlike_storage);
+                        } else {
+                            IssueBuffer::maybeAdd(
+                                new UnusedClass(
+                                    'Class ' . $classlike_storage->name . ' is never used',
+                                    $classlike_storage->location,
+                                    $classlike_storage->name,
+                                ),
+                                $classlike_storage->suppressed_issues,
+                            );
+                        }
+                        $this->checkMethodParamReferences($classlike_storage);
+                    }
+                    if (!$classlike_storage->public_api
+                        && !$classlike_storage->has_children
+                        && !$classlike_storage->abstract
+                        && !$classlike_storage->final
+                        && !$classlike_storage->is_enum
+                        && !$classlike_storage->is_interface
+                    ) {
+                        $code_issue = new ClassMustBeFinal(
+                            'Class ' . $classlike_storage->name
+                                . ' is never extended and is not part of the public API, and thus must be made final.',
+                            $classlike_storage->location,
+                            $classlike_storage->name,
+                        );
+
+                        IssueBuffer::maybeAdd(
+                            $code_issue,
+                            $classlike_storage->suppressed_issues,
+                            true,
+                        );
+
+                        if ($codebase->alter_code
+                            && $classlike_storage->stmt_location !== null
+                            && !IssueBuffer::isSuppressed($code_issue, $classlike_storage->suppressed_issues)
+                            && isset($project_analyzer->getIssuesToFix()['ClassMustBeFinal'])
+                        ) {
+                            $insert_pos = self::getFinalInsertionPosition($classlike_storage->stmt_location);
+
+                            FileManipulationBuffer::add($classlike_storage->stmt_location->file_path, [
+                                new FileManipulation($insert_pos, $insert_pos, 'final '),
+                            ]);
+                        }
+                    }
+
+                    $this->findPossibleMethodParamTypes($classlike_storage);
+                } elseif (!$classlike_storage->trait_used) {
+                    continue;
+                }
+
+                $mut = Capabilities::toNamedLevel(
+                    ($codebase->analyzer->mutable_classes[$fq_class_name_lc] ?? Capabilities::NONE)
+                    | $this->getRequiredContractCapabilities($classlike_storage)
+                    | ($subclass_capabilities[$fq_class_name_lc] ?? Capabilities::NONE),
+                );
+                if ($mut === Capabilities::NONE) {
+                    foreach ($classlike_storage->properties as $property) {
+                        if (!$property->is_static) {
+                            // a pure class may not use properties: one declaring them is immutable at best
+                            $mut = Capabilities::MUTATION_FREE;
+                            break;
+                        }
+                    }
+                }
+                if ($mut !== Capabilities::ALL
+                    && !$classlike_storage->has_mutations_annotation
+                ) {
+                    $change = $codebase->alter_code
+                        && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']);
+
+                    $stmts = $codebase->getStatementsForFile(
+                        $classlike_storage->location->file_path,
+                    );
+
+                    foreach ($stmts as $stmt) {
+                        if ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
+                            foreach ($stmt->stmts as $namespace_stmt) {
+                                if ($namespace_stmt instanceof PhpParser\Node\Stmt\ClassLike
+                                    && strtolower((string) $stmt->name . '\\' . (string) $namespace_stmt->name)
+                                        === $fq_class_name_lc
+                                ) {
+                                    self::makeImmutable(
+                                        $mut,
+                                        $change,
+                                        $classlike_storage,
+                                        $namespace_stmt,
+                                        $project_analyzer,
+                                    );
+                                }
+                            }
+                        } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassLike
+                            && strtolower((string) $stmt->name) === $fq_class_name_lc
+                        ) {
+                            self::makeImmutable(
+                                $mut,
+                                $change,
+                                $classlike_storage,
+                                $stmt,
+                                $project_analyzer,
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Rebuilds the structural edges of the code use graph and resolves which nodes are used.
+     * Only unused code detection reads the result, see {@see CodeUseGraph::isUsed()}.
+     */
+    private function resolveCodeUseGraph(CodeUseGraph $code_use_graph): void
+    {
         // the class hierarchy and the public API may have changed since the graph was cached
         $code_use_graph->removeEdgesOfTypes(CodeUseGraph::STRUCTURAL_EDGES);
 
@@ -945,134 +1084,6 @@ final class ClassLikes
             return !$owner_storage->location
                 || !$this->config->isInProjectDirs($owner_storage->location->file_path);
         });
-
-        $subclass_capabilities = $this->getSubclassCapabilities($codebase->analyzer->mutable_classes);
-
-        foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
-            try {
-                $classlike_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
-            } catch (InvalidArgumentException) {
-                continue;
-            }
-            if ($classlike_storage->location
-                && $this->config->isInProjectDirs($classlike_storage->location->file_path)
-            ) {
-                if (!$classlike_storage->is_trait) {
-                    if ($find_unused_code) {
-                        $class_node = CodeUseGraph::classNode($fq_class_name_lc);
-
-                        // a class that is only alive because of its own methods
-                        // still has its members unchecked
-                        if ($code_use_graph->isUsed($class_node)
-                            && ($classlike_storage->public_api || $code_use_graph->isReferenced($class_node))
-                        ) {
-                            $this->checkMethodReferences($classlike_storage, $methods);
-                            $this->checkPropertyReferences($classlike_storage);
-                        } else {
-                            IssueBuffer::maybeAdd(
-                                new UnusedClass(
-                                    'Class ' . $classlike_storage->name . ' is never used',
-                                    $classlike_storage->location,
-                                    $classlike_storage->name,
-                                ),
-                                $classlike_storage->suppressed_issues,
-                            );
-                        }
-                        $this->checkMethodParamReferences($classlike_storage);
-                    }
-                    if (!$classlike_storage->public_api
-                        && !$classlike_storage->has_children
-                        && !$classlike_storage->abstract
-                        && !$classlike_storage->final
-                        && !$classlike_storage->is_enum
-                        && !$classlike_storage->is_interface
-                    ) {
-                        $code_issue = new ClassMustBeFinal(
-                            'Class ' . $classlike_storage->name
-                                . ' is never extended and is not part of the public API, and thus must be made final.',
-                            $classlike_storage->location,
-                            $classlike_storage->name,
-                        );
-
-                        IssueBuffer::maybeAdd(
-                            $code_issue,
-                            $classlike_storage->suppressed_issues,
-                            true,
-                        );
-
-                        if ($codebase->alter_code
-                            && $classlike_storage->stmt_location !== null
-                            && !IssueBuffer::isSuppressed($code_issue, $classlike_storage->suppressed_issues)
-                            && isset($project_analyzer->getIssuesToFix()['ClassMustBeFinal'])
-                        ) {
-                            $insert_pos = self::getFinalInsertionPosition($classlike_storage->stmt_location);
-
-                            FileManipulationBuffer::add($classlike_storage->stmt_location->file_path, [
-                                new FileManipulation($insert_pos, $insert_pos, 'final '),
-                            ]);
-                        }
-                    }
-
-                    $this->findPossibleMethodParamTypes($classlike_storage);
-                } elseif (!$classlike_storage->trait_used) {
-                    continue;
-                }
-
-                $mut = Capabilities::toNamedLevel(
-                    ($codebase->analyzer->mutable_classes[$fq_class_name_lc] ?? Capabilities::NONE)
-                    | $this->getRequiredContractCapabilities($classlike_storage)
-                    | ($subclass_capabilities[$fq_class_name_lc] ?? Capabilities::NONE),
-                );
-                if ($mut === Capabilities::NONE) {
-                    foreach ($classlike_storage->properties as $property) {
-                        if (!$property->is_static) {
-                            // a pure class may not use properties: one declaring them is immutable at best
-                            $mut = Capabilities::MUTATION_FREE;
-                            break;
-                        }
-                    }
-                }
-                if ($mut !== Capabilities::ALL
-                    && !$classlike_storage->has_mutations_annotation
-                ) {
-                    $change = $codebase->alter_code
-                        && isset($project_analyzer->getIssuesToFix()['MissingImmutableAnnotation']);
-
-                    $stmts = $codebase->getStatementsForFile(
-                        $classlike_storage->location->file_path,
-                    );
-
-                    foreach ($stmts as $stmt) {
-                        if ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
-                            foreach ($stmt->stmts as $namespace_stmt) {
-                                if ($namespace_stmt instanceof PhpParser\Node\Stmt\ClassLike
-                                    && strtolower((string) $stmt->name . '\\' . (string) $namespace_stmt->name)
-                                        === $fq_class_name_lc
-                                ) {
-                                    self::makeImmutable(
-                                        $mut,
-                                        $change,
-                                        $classlike_storage,
-                                        $namespace_stmt,
-                                        $project_analyzer,
-                                    );
-                                }
-                            }
-                        } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassLike
-                            && strtolower((string) $stmt->name) === $fq_class_name_lc
-                        ) {
-                            self::makeImmutable(
-                                $mut,
-                                $change,
-                                $classlike_storage,
-                                $stmt,
-                                $project_analyzer,
-                            );
-                        }
-                    }
-                }
-            }
-        }
     }
 
     /**
