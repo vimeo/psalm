@@ -178,9 +178,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         string $method_name,
         Context $context,
     ): void {
-        $project_analyzer = $this->getFileAnalyzer()->project_analyzer;
-        $codebase = $project_analyzer->getCodebase();
-
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
                 strtolower($stmt->name->name) === strtolower($method_name)
@@ -191,56 +188,73 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
                 $context->clauses = [];
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
-                foreach ($stmt->traits as $trait) {
-                    $fq_trait_name = $codebase->classlikes->getUnAliasedName(
-                        self::getFQCLNFromNameObject($trait, $this->source->getAliases()),
-                    );
+                $this->getTraitUseMethodMutations($stmt, $this->source->getAliases(), $method_name, $context);
+            }
+        }
+    }
 
-                    $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
-                    $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name);
-                    $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name);
-                    $trait_aliases = $trait_storage->aliases;
+    /**
+     * Collects the mutations of a method defined by a trait used in the class, or by a trait that trait uses
+     */
+    private function getTraitUseMethodMutations(
+        PhpParser\Node\Stmt\TraitUse $stmt,
+        Aliases $aliases,
+        string $method_name,
+        Context $context,
+    ): void {
+        $project_analyzer = $this->getFileAnalyzer()->project_analyzer;
+        $codebase = $project_analyzer->getCodebase();
 
-                    if ($trait_aliases === null) {
-                        continue;
-                    }
+        foreach ($stmt->traits as $trait) {
+            $fq_trait_name = $codebase->classlikes->getUnAliasedName(
+                self::getFQCLNFromNameObject($trait, $aliases),
+            );
 
-                    $trait_analyzer = new TraitAnalyzer(
-                        $trait_node,
-                        $trait_file_analyzer,
-                        $fq_trait_name,
-                        $trait_aliases,
-                    );
+            $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
+            $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name);
+            $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name);
+            $trait_aliases = $trait_storage->aliases;
 
-                    foreach ($trait_node->stmts as $trait_stmt) {
-                        if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
-                            strtolower($trait_stmt->name->name) === strtolower($method_name)
-                        ) {
-                            $method_analyzer = new MethodAnalyzer($trait_stmt, $trait_analyzer);
+            if ($trait_aliases === null) {
+                continue;
+            }
 
-                            $actual_method_id = $method_analyzer->getMethodId();
+            $trait_analyzer = new TraitAnalyzer(
+                $trait_node,
+                $trait_file_analyzer,
+                $fq_trait_name,
+                $trait_aliases,
+            );
 
-                            if ($context->self && $context->self !== $this->fq_class_name) {
-                                $analyzed_method_id = $method_analyzer->getMethodId($context->self);
-                                $declaring_method_id = $codebase->methods->getDeclaringMethodId($analyzed_method_id);
+            foreach ($trait_node->stmts as $trait_stmt) {
+                if ($trait_stmt instanceof PhpParser\Node\Stmt\TraitUse) {
+                    $this->getTraitUseMethodMutations($trait_stmt, $trait_aliases, $method_name, $context);
+                } elseif ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
+                    strtolower($trait_stmt->name->name) === strtolower($method_name)
+                ) {
+                    $method_analyzer = new MethodAnalyzer($trait_stmt, $trait_analyzer);
 
-                                if ((string) $actual_method_id !== (string) $declaring_method_id) {
-                                    break;
-                                }
-                            }
+                    $actual_method_id = $method_analyzer->getMethodId();
 
-                            $method_analyzer->analyze(
-                                $context,
-                                new NodeDataProvider(),
-                                null,
-                                true,
-                            );
+                    if ($context->self && $context->self !== $this->fq_class_name) {
+                        $analyzed_method_id = $method_analyzer->getMethodId($context->self);
+                        $declaring_method_id = $codebase->methods->getDeclaringMethodId($analyzed_method_id);
+
+                        if ((string) $actual_method_id !== (string) $declaring_method_id) {
+                            break;
                         }
                     }
 
-                    $trait_file_analyzer->clearSourceBeforeDestruction();
+                    $method_analyzer->analyze(
+                        $context,
+                        new NodeDataProvider(),
+                        null,
+                        true,
+                    );
                 }
             }
+
+            $trait_file_analyzer->clearSourceBeforeDestruction();
         }
     }
 
