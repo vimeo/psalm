@@ -1194,6 +1194,7 @@ final class TypeExpander
         }
 
         $all_sealed = true;
+        $has_untyped_properties = false;
         $properties = [];
         foreach ([$class_storage->name, ...array_values($class_storage->parent_classes)] as $class) {
             if (!$codebase->classExists($class)) {
@@ -1212,7 +1213,12 @@ final class TypeExpander
                 ) {
                     continue;
                 }
-                if ($property->is_static || !$property->type) {
+                if ($property->is_static) {
+                    continue;
+                }
+                if (!$property->type) {
+                    $has_untyped_properties = true;
+
                     continue;
                 }
                 $type = $return_type->classlike_type instanceof TGenericObject
@@ -1230,7 +1236,15 @@ final class TypeExpander
         }
 
         if ($properties === []) {
-            return [$return_type];
+            if ($has_untyped_properties) {
+                return [$return_type];
+            }
+
+            return [
+                $all_sealed
+                    ? Type::getEmptyArrayAtomic()
+                    : new TArray([Type::getString(), Type::getMixed()]),
+            ];
         }
         return [TKeyedArray::make(
             $properties,
