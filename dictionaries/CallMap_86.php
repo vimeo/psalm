@@ -52731,7 +52731,7 @@ return array (
   ),
   'mysqli::get_warnings' => 
   array (
-    0 => 'mysqli_warning',
+    0 => 'mysqli_warning|false',
   ),
   'mysqli::init' => 
   array (
@@ -53173,7 +53173,7 @@ return array (
   ),
   'mysqli_get_warnings' => 
   array (
-    0 => 'mysqli_warning',
+    0 => 'mysqli_warning|false',
     'mysql' => 'mysqli',
   ),
   'mysqli_info' => 
