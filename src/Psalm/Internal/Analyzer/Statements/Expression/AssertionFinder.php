@@ -963,6 +963,21 @@ final class AssertionFinder
     }
 
     /**
+     * For a `bool` operand `=== true` and `!== false` are plain truthiness, which is what the clauses
+     * of an assignment like `$c = $a && $b` are expressed in.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isBoolVariable(PhpParser\Node\Expr $expr, FileSource $source): bool
+    {
+        if (!$source instanceof StatementsAnalyzer || !($type = $source->node_data->getType($expr))) {
+            return false;
+        }
+
+        return $type->getId() === 'bool' && !$type->possibly_undefined;
+    }
+
+    /**
      * The class named by a string literal or a `Foo::class` constant.
      */
     private static function getLiteralClassName(PhpParser\Node\Expr $expr): ?string
@@ -2291,7 +2306,9 @@ final class AssertionFinder
         );
 
         if ($var_name) {
-            if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
+            if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+                && !self::isBoolVariable($base_conditional, $source)
+            ) {
                 $if_types[$var_name] = [[new IsNotType(new TFalse())]];
             } else {
                 $if_types[$var_name] = [[new Truthy()]];
@@ -2420,7 +2437,9 @@ final class AssertionFinder
             );
 
             if ($var_name) {
-                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
+                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+                    && !self::isBoolVariable($base_conditional, $source)
+                ) {
                     $if_types[$var_name] = [[new IsNotType(new TTrue())]];
                 } else {
                     $if_types[$var_name] = [[new Falsy()]];
@@ -3020,7 +3039,9 @@ final class AssertionFinder
             );
 
             if ($var_name) {
-                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                    && !self::isBoolVariable($base_conditional, $source)
+                ) {
                     $if_types[$var_name] = [[new IsType(new TTrue())]];
                 } else {
                     $if_types[$var_name] = [[new Truthy()]];
@@ -3148,7 +3169,9 @@ final class AssertionFinder
             );
 
             if ($var_name) {
-                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                    && !self::isBoolVariable($base_conditional, $source)
+                ) {
                     $if_types[$var_name] = [[new IsType(new TFalse())]];
                 } else {
                     $if_types[$var_name] = [[new Falsy()]];
