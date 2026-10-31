@@ -203,6 +203,15 @@ final class SwitchAnalyzer
                 }
             }
 
+            // every way through the switch assigns these, as the branches of an if with an else do
+            $assigned_offset = (int) $stmt->getAttribute('startFilePos');
+            $assigned_vars = [...($switch_scope->new_vars_in_scope ?? []), ...($switch_scope->redefined_vars ?? [])];
+
+            foreach ($assigned_vars as $var_id => $_) {
+                $context->assigned_var_ids[$var_id] ??= $assigned_offset;
+                $context->possibly_assigned_var_ids[$var_id] = true;
+            }
+
             $stmt->setAttribute('allMatched', true);
         } elseif ($switch_scope->possibly_redefined_vars) {
             foreach ($switch_scope->possibly_redefined_vars as $var_id => $type) {
