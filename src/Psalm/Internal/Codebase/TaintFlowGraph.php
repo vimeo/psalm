@@ -84,8 +84,8 @@ final class TaintFlowGraph extends DataFlowGraph
     private const GENERATOR_SEND_CALL_DEPTH = 8;
 
     /**
-     * How many call stacks the search for the generators what is sent can be sent to reaches a node with
-     * before any call matches there (see linkGeneratorSends()): the walks through shared nodes multiply them.
+     * Max distinct call stacks per node in linkGeneratorSends(). Past it, any call matches there:
+     * paths through shared functions otherwise multiply the stacks without bound.
      */
     private const GENERATOR_SEND_STACKS = 16;
 
