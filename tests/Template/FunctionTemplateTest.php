@@ -23,6 +23,41 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arithmeticOnATemplateBoundToAnInt' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int|null
+                     * @param T $a
+                     * @return (T is null ? null : int)
+                     */
+                    function add(?int $a, int $b): ?int {
+                        if ($a === null) {
+                            return null;
+                        }
+
+                        return $a + $b;
+                    }
+
+                    /**
+                     * @template T of int
+                     * @param T $a
+                     * @param T $b
+                     */
+                    function twice(int $a, int $b): int {
+                        return $a * 2 - $b;
+                    }
+
+                    /**
+                     * @template T of float
+                     * @param T $a
+                     */
+                    function half(float $a, int $b): float {
+                        return $b / 2 + $a;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'extractTypeParameterValue' => [
                 'code' => '<?php
                     /**
