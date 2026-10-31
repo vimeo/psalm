@@ -32,6 +32,8 @@ use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\MixedArgumentTypeCoercion;
+use Psalm\Issue\RedundantCondition;
+use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\Issue\UndefinedFunction;
 use Psalm\IssueBuffer;
@@ -54,7 +56,9 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_any;
 use function array_filter;
+use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_unique;
@@ -944,6 +948,8 @@ abstract class CallAnalyzer
         if ($type_assertions) {
             $template_type_map = [];
 
+            IssueBuffer::startRecording();
+
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
             [$op_vars_in_scope, $op_references_in_scope] = Reconciler::reconcileKeyedTypes(
@@ -958,6 +964,28 @@ abstract class CallAnalyzer
                 $context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $expr),
             );
+
+            $recorded_issues = IssueBuffer::clearRecordingLevel();
+            IssueBuffer::stopRecording();
+
+            $changes_a_type = array_any(
+                array_keys($type_assertions),
+                static fn(string $var_id): bool => !isset($context->vars_in_scope[$var_id])
+                    || !isset($op_vars_in_scope[$var_id])
+                    || $op_vars_in_scope[$var_id]->getId(true) !== $context->vars_in_scope[$var_id]->getId(true),
+            );
+
+            foreach ($recorded_issues as $recorded_issue) {
+                // a call is only redundant if every assertion it makes is
+                if ($changes_a_type
+                    && ($recorded_issue instanceof RedundantCondition
+                        || $recorded_issue instanceof RedundantConditionGivenDocblockType)
+                ) {
+                    continue;
+                }
+
+                IssueBuffer::bubbleUp($recorded_issue);
+            }
 
             foreach ($changed_var_ids as $var_id => $_) {
                 if (isset($op_vars_in_scope[$var_id])) {
