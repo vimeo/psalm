@@ -569,6 +569,11 @@ final class ArgumentAnalyzer
 
                             $arg_value_type = new Union([$arg_value_type_atomic]);
                         }
+                    } elseif ($unpacked_atomic_array->is_list
+                        && $unpacked_argument_offset >= count($unpacked_atomic_array->properties)
+                    ) {
+                        // the unpacked list ends before this parameter: a later argument supplies it
+                        return null;
                     } else {
                         $arg_value_type = Type::getMixed();
                     }

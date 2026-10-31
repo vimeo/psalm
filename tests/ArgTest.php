@@ -22,6 +22,16 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'multipleUnpackedListsFillParameters' => [
+                'code' => '<?php
+                    function f(float $a, float $b, float $c = 1.0): void {}
+
+                    $x = [1.0];
+                    $y = [2.0];
+
+                    f(...$x, ...$y);
+                    f(...$x, ...$y, ...$x);',
+            ],
             'argumentUnpackingLiteral' => [
                 'code' => '<?php
                     function add(int $a, int $b, int $c) : int {
@@ -386,6 +396,29 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'multipleUnpackedListsLeaveParameterUnfilled' => [
+                'code' => '<?php
+                    function f(float $a, float $b): void {}
+
+                    /** @var list{float} $x */
+                    $x = [1.0];
+                    /** @var list{} $empty */
+                    $empty = [];
+
+                    f(...$x, ...$empty);',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => ['NoValue'],
+            ],
+            'multipleUnpackedListsWrongType' => [
+                'code' => '<?php
+                    function f(float $a, float $b): void {}
+
+                    $x = [1.0];
+                    $y = ["a"];
+
+                    f(...$x, ...$y);',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33',
+            ],
             'arrayPushArgumentUnpackingWithBadArg' => [
                 'code' => '<?php
                     $a = [];
