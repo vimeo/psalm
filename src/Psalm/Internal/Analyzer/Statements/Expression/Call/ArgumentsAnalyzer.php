@@ -60,6 +60,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_any;
 use function array_reduce;
 use function array_reverse;
 use function array_slice;
@@ -2163,7 +2164,10 @@ final class ArgumentsAnalyzer
             return;
         }
 
-        if (count($args) < count($function_params)) {
+        // an unpacked array can give less (or more) than one argument
+        if (count($args) < count($function_params)
+            || array_any($args, static fn(PhpParser\Node\Arg $arg): bool => $arg->unpack)
+        ) {
             //we're gonna loop over given args and unset them from the function_params.
             // If some mandatory params are left at the end, we'll throw an error
             foreach ($args as $arg) {

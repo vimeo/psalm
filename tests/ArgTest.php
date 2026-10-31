@@ -5,8 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_column;
+use function sort;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -15,6 +20,31 @@ final class ArgTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testRequiredParameterNoUnpackedArrayGives(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function foo(int $a, string $b, float $c): void {
+                    echo $a, $b, $c;
+                }
+
+                foo(...["a" => 0], ...["b" => "b"], ...["b" => "c"]);',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $types = array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type');
+        sort($types);
+
+        self::assertSame(['InvalidNamedArgument', 'TooFewArguments'], $types);
+    }
+
     /**
      * @psalm-pure
      */
@@ -22,6 +52,18 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'namedKeysSplitOverSeveralUnpackedArrays' => [
+                'code' => '<?php
+                    function foo(int $a, string $b, float $c): void {
+                        echo $a, $b, $c;
+                    }
+
+                    foo(...["c" => 1.0], ...["a" => 0], ...["b" => "b"]);
+                    foo(...["a" => 0, "b" => "b"], ...["c" => 1.0]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'argumentUnpackingLiteral' => [
                 'code' => '<?php
                     function add(int $a, int $b, int $c) : int {
@@ -386,6 +428,28 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'namedKeyOfUnpackedArrayOfTheWrongType' => [
+                'code' => '<?php
+                    function foo(int $a, string $b, float $c): void {
+                        echo $a, $b, $c;
+                    }
+
+                    foo(...["a" => "wrong"], ...["b" => "b"], ...["c" => 1.0]);',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'namedKeysOfUnpackedArraysMissingAParameter' => [
+                'code' => '<?php
+                    function foo(int $a, string $b, float $c): void {
+                        echo $a, $b, $c;
+                    }
+
+                    foo(...["a" => 0], ...["b" => "b"]);',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'arrayPushArgumentUnpackingWithBadArg' => [
                 'code' => '<?php
                     $a = [];
@@ -556,7 +620,7 @@ final class ArgTest extends TestCase
                     function processUserDataInvalid(array $data) : User {
                         return new User(...$data);
                     }',
-                'error_message' => 'MixedArgument',
+                'error_message' => 'TooFewArguments',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
