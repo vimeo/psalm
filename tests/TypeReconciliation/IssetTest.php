@@ -21,6 +21,52 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'comparisonOfAnItemWithAUnionKeyKeepsTheOtherItemsDefined' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array{asd: int, qwe: int} $p
+                     * @param 'asd'|'qwe' $key
+                     */
+                    function comparison(array $p, string $key): int {
+                        if ($p[$key] < 0) {
+                            /** @psalm-check-type-exact $p = array{asd: int, qwe: int} */
+                            return 1;
+                        }
+
+                        /** @psalm-check-type-exact $p = array{asd: int, qwe: int} */
+                        return 0;
+                    }
+
+                    /**
+                     * @param array{asd: int, qwe: int} $p
+                     * @param list<'asd'|'qwe'> $keys
+                     */
+                    function loop(array $p, array $keys): int {
+                        $negatives = 0;
+                        foreach ($keys as $key) {
+                            if ($p[$key] < 0) {
+                                ++$negatives;
+                            }
+                        }
+
+                        return $negatives;
+                    }
+
+                    /**
+                     * @param array{asd?: int, qwe?: int} $p
+                     * @param 'asd'|'qwe' $key
+                     */
+                    function optional(array $p, string $key): void {
+                        if (isset($p[$key])) {
+                            /** @psalm-check-type-exact $p = array{asd?: int, qwe?: int} */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'ternaryAfterIssetAndTypeCheckOfAnOffsetOfMixed' => [
                 'code' => '<?php
                     /** @var mixed $array */

@@ -1472,7 +1472,16 @@ class Reconciler
                             // do nothing
                         } else {
                             $properties = $base_atomic_type->properties;
-                            $properties[$array_key_offset] = $result_type;
+
+                            // only one of the keys the offset can be holds what the assertion says: the others
+                            // keep the values they have, and are as defined as they were
+                            $properties[$array_key_offset] = count($array_key_offsets) > 1
+                                && isset($properties[$array_key_offset])
+                                ? Type::combineUnionTypes(
+                                    $result_type->setPossiblyUndefined(false),
+                                    $properties[$array_key_offset],
+                                )->setPossiblyUndefined($properties[$array_key_offset]->possibly_undefined)
+                                : $result_type;
                             if ($base_atomic_type->is_list
                             && (($int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset))
                                     === false
