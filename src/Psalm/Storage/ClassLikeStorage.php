@@ -187,6 +187,21 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $trait_alias_map_cased = [];
 
     /**
+     * The trait an alias is qualified with (`use A { A::f as g; }`), by the alias name
+     *
+     * @var array<lowercase-string, lowercase-string>
+     */
+    public array $trait_alias_trait_map = [];
+
+    /**
+     * The traits whose method is not used because of `insteadof` (`use A, B { B::f insteadof A; }`),
+     * by the method name
+     *
+     * @var array<lowercase-string, array<lowercase-string, true>>
+     */
+    public array $trait_excluded_methods = [];
+
+    /**
      * @var array<lowercase-string, bool>
      */
     public array $trait_final_map = [];
