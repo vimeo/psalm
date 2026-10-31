@@ -58,6 +58,8 @@ use function strlen;
 use function strpos;
 use function substr;
 
+use const SORT_STRING;
+
 /**
  * @internal
  */
@@ -80,6 +82,12 @@ final class TaintFlowGraph extends DataFlowGraph
      * linkGeneratorSends()): recursive calls nest without end.
      */
     private const GENERATOR_SEND_CALL_DEPTH = 8;
+
+    /**
+     * Max distinct call stacks per node in linkGeneratorSends(). Past it, any call matches there:
+     * paths through shared functions otherwise multiply the stacks without bound.
+     */
+    private const GENERATOR_SEND_STACKS = 16;
 
     /** @var array<string, DataFlowNode> */
     private array $sources = [];
@@ -860,6 +868,7 @@ final class TaintFlowGraph extends DataFlowGraph
             // [node id, specialization keys of the calls entered through their returns, innermost last]
             $queue = [];
             $visited = [];
+            $stacks_per_node = [];
 
             foreach ($generator_ids as $generator_id => $_) {
                 $queue[] = [$generator_id, []];
@@ -903,10 +912,21 @@ final class TaintFlowGraph extends DataFlowGraph
 
                     $state_key = $from_id . "\0" . implode("\0", $from_calls);
 
-                    if (!isset($visited[$state_key])) {
-                        $visited[$state_key] = true;
-                        $queue[] = [$from_id, $from_calls];
+                    if (!isset($visited[$state_key])
+                        && ($stacks_per_node[$from_id] ?? 0) >= self::GENERATOR_SEND_STACKS
+                    ) {
+                        // a new call stack at a node with too many: any call matches
+                        $from_calls = [];
+                        $state_key = $from_id . "\0";
                     }
+
+                    if (isset($visited[$state_key])) {
+                        continue;
+                    }
+
+                    $visited[$state_key] = true;
+                    $stacks_per_node[$from_id] = ($stacks_per_node[$from_id] ?? 0) + 1;
+                    $queue[] = [$from_id, $from_calls];
                 }
             }
         }
@@ -969,7 +989,7 @@ final class TaintFlowGraph extends DataFlowGraph
      * linkSpecialization()) in both directions, for linkGeneratorSends() (TaintFlowResolution computes its own).
      *
      * @return array<string, array<string, true>>
-     * @psalm-capabilities read-props
+     * @psalm-capabilities read-props|write-refs
      */
     private function getReverseEdges(): array
     {
@@ -990,6 +1010,14 @@ final class TaintFlowGraph extends DataFlowGraph
                 $reverse[$node->unspecialized_id][$node->id] = true;
             }
         }
+
+        // which call stacks a node is reached with first matters to linkGeneratorSends(), and the graphs of the
+        // forked workers are merged in any order
+        foreach ($reverse as &$origins) {
+            ksort($origins, SORT_STRING);
+        }
+
+        unset($origins);
 
         return $reverse;
     }
