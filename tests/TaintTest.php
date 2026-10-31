@@ -4643,6 +4643,34 @@ final class TaintTest extends TestCase
                         echo $model->tags[1];
                     }',
             ],
+            'pseudoPropertiesReadThroughObjectShapeKeepApart' => [
+                'code' => '<?php
+                    /**
+                     * @property string $name
+                     * @property string $other
+                     */
+                    final class Model {
+                        /** @var array<string, mixed> */
+                        private array $attributes = [];
+
+                        public function __get(string $key): mixed {
+                            return $this->attributes[$key] ?? null;
+                        }
+
+                        public function __set(string $key, mixed $value): void {
+                            $this->attributes[$key] = $value;
+                        }
+                    }
+
+                    function source(Model $m): void {
+                        $m->name = (string) $_GET["name"];
+                    }
+
+                    /** @param Model&object{name: string, other: string} $m */
+                    function sink(Model $m): void {
+                        echo $m->other;
+                    }',
+            ],
             'propertyBagElementsKeepTheOtherPropertiesApart' => [
                 'code' => '<?php
                     /** @psalm-taint-property-bag $properties */
@@ -6833,6 +6861,84 @@ final class TaintTest extends TestCase
 
                     function show(Model $model): void {
                         echo $model->getTitle();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'pseudoPropertyReadThroughObjectShapeOnFinalClass' => [
+                'code' => '<?php
+                    /** @property string $name */
+                    final class Model {
+                        /** @var array<string, mixed> */
+                        private array $attributes = [];
+
+                        public function __get(string $key): mixed {
+                            return $this->attributes[$key] ?? null;
+                        }
+
+                        public function __set(string $key, mixed $value): void {
+                            $this->attributes[$key] = $value;
+                        }
+                    }
+
+                    function source(Model $m): void {
+                        $m->name = (string) $_GET["name"];
+                    }
+
+                    /** @param Model&object{name: string} $m */
+                    function sink(Model $m): void {
+                        echo $m->name;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'pseudoPropertyReadThroughObjectShapeOnNonFinalClass' => [
+                'code' => '<?php
+                    /** @property string $name */
+                    class Model {
+                        /** @var array<string, mixed> */
+                        private array $attributes = [];
+
+                        public function __get(string $key): mixed {
+                            return $this->attributes[$key] ?? null;
+                        }
+
+                        public function __set(string $key, mixed $value): void {
+                            $this->attributes[$key] = $value;
+                        }
+                    }
+
+                    function source(Model $m): void {
+                        $m->name = (string) $_GET["name"];
+                    }
+
+                    /** @param Model&object{name: string} $m */
+                    function sink(Model $m): void {
+                        echo $m->name;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'pseudoPropertyWrittenThroughObjectShape' => [
+                'code' => '<?php
+                    /** @property string $name */
+                    final class Model {
+                        /** @var array<string, mixed> */
+                        private array $attributes = [];
+
+                        public function __get(string $key): mixed {
+                            return $this->attributes[$key] ?? null;
+                        }
+
+                        public function __set(string $key, mixed $value): void {
+                            $this->attributes[$key] = $value;
+                        }
+                    }
+
+                    /** @param Model&object{name: string} $m */
+                    function source(Model $m): void {
+                        $m->name = (string) $_GET["name"];
+                    }
+
+                    function sink(Model $m): void {
+                        echo $m->name;
                     }',
                 'error_message' => 'TaintedHtml',
             ],
