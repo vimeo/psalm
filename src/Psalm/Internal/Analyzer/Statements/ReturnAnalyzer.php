@@ -655,7 +655,7 @@ final class ReturnAnalyzer
      *
      * @psalm-mutation-free
      */
-    private static function mustReturnThis(
+    public static function mustReturnThis(
         Codebase $codebase,
         MethodStorage $storage,
         MethodIdentifier $method_id,

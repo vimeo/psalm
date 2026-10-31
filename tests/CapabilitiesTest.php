@@ -30,6 +30,42 @@ final class CapabilitiesTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'parentSelfAndStaticCallsOfMethodReturningThisReturnThis' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Base {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        #[Override]
+                        public function f(): static {
+                            return parent::f();
+                        }
+
+                        /** @return $this */
+                        public function viaSelf(): static {
+                            return self::f();
+                        }
+
+                        /** @return $this */
+                        public function viaStatic(): static {
+                            return static::f();
+                        }
+
+                        /** @return $this */
+                        public function chained(): static {
+                            return parent::f()->f();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'staticReturnOfASubclassOfAPurityTemplatedClassIsTheCalledClass' => [
                 'code' => '<?php
                     /**
@@ -2783,6 +2819,26 @@ final class CapabilitiesTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticCallOfMethodNotReturningThisIsNotThis' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Base {
+                        public function copy(): static {
+                            return clone $this;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @return $this */
+                        public function f(): static {
+                            return parent::copy();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'conditionalCapabilitiesOfAFunctionCalledWithoutTheArgument' => [
                 'code' => '<?php
                     /** @psalm-capabilities ($seed is null ? io : pure) */
