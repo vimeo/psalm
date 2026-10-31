@@ -250,6 +250,24 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'finalConstantFetchedOnNarrowedInstance' => [
+                'code' => '<?php
+                    class Clazz {
+                        /** @var string */
+                        final public const NAME = "string";
+
+                        public function test(object $c): int {
+                            if (!$c instanceof Clazz) {
+                                return 0;
+                            }
+
+                            return strlen($c::NAME);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'constantInFunction' => [
                 'code' => '<?php
                     useTest();
@@ -2365,6 +2383,23 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nonFinalConstantFetchedOnNarrowedInstanceIsMixed' => [
+                'code' => '<?php
+                    class Clazz {
+                        public const NAME = "string";
+
+                        public function test(object $c): int {
+                            if (!$c instanceof Clazz) {
+                                return 0;
+                            }
+
+                            return strlen($c::NAME);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+                'error_levels' => ['MissingClassConstType'],
+                'php_version' => '8.1',
+            ],
             'constantDefinedInFunctionButNotCalled' => [
                 'code' => '<?php
                     /**
