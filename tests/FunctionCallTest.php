@@ -24,6 +24,21 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'filterVarIpGlobalRangeFlagOfBothValues' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-pure */
+                    function isGlobalIp(string $ip): bool
+                    {
+                        // 268435456 up to PHP 8.4, 536870912 from PHP 8.5
+                        return filter_var($ip, FILTER_VALIDATE_IP, 268435456) !== false
+                            || filter_var($ip, FILTER_VALIDATE_IP, 536870912) !== false;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'multibyteLiteralArgument' => [
                 'code' => '<?php
                     function startsWithGreeting(string $s): bool {

@@ -1712,8 +1712,12 @@ final class FilterUtils
         }
 
         if ($codebase->analysis_php_version_id >= 8_02_00) {
+            // the value of FILTER_FLAG_GLOBAL_RANGE is 268435456 up to PHP 8.4 and 536870912 from PHP 8.5, and the
+            // constant is read from the PHP Psalm runs on
             // phpcs:ignore SlevomatCodingStandard.Numbers.RequireNumericLiteralSeparator.RequiredNumericLiteralSeparator
-            $validate_filters[FILTER_VALIDATE_IP]['flags'][] = 268435456; // FILTER_FLAG_GLOBAL_RANGE
+            $validate_filters[FILTER_VALIDATE_IP]['flags'][] = 268435456;
+            // phpcs:ignore SlevomatCodingStandard.Numbers.RequireNumericLiteralSeparator.RequiredNumericLiteralSeparator
+            $validate_filters[FILTER_VALIDATE_IP]['flags'][] = 536870912;
         }
 
         if ($codebase->analysis_php_version_id >= 7_00_00) {
