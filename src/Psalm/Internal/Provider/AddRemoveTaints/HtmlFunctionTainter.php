@@ -46,7 +46,7 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
         if ($function_id === 'html_entity_decode'
             || $function_id === 'htmlspecialchars_decode'
         ) {
-            $second_arg = $item->getArgs()[1]->value ?? null;
+            $second_arg = self::getFlagsArg($item);
 
             if ($second_arg === null) {
                 if ($statements_analyzer->getCodebase()->analysis_php_version_id >= 8_01_00) {
@@ -97,7 +97,7 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
         if ($function_id === 'htmlentities'
             || $function_id === 'htmlspecialchars'
         ) {
-            $second_arg = $item->getArgs()[1]->value ?? null;
+            $second_arg = self::getFlagsArg($item);
 
             if ($second_arg === null) {
                 if ($statements_analyzer->getCodebase()->analysis_php_version_id >= 8_01_00) {
@@ -122,5 +122,21 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
         }
 
         return 0;
+    }
+
+    /**
+     * The `flags` argument, positional or named, of htmlspecialchars() and the like
+     *
+     * @psalm-mutation-free
+     */
+    private static function getFlagsArg(PhpParser\Node\Expr\FuncCall $item): ?PhpParser\Node\Expr
+    {
+        foreach ($item->getArgs() as $offset => $arg) {
+            if ($arg->name !== null ? strtolower($arg->name->name) === 'flags' : $offset === 1) {
+                return $arg->value;
+            }
+        }
+
+        return null;
     }
 }
