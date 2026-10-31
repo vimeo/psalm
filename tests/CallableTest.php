@@ -20,6 +20,36 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'firstClassCallableOfAMethodKeepsTheInheritedReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    abstract class MyClassBase
+                    {
+                        /**
+                         * @return list<int>
+                         * @psalm-impure
+                         */
+                        abstract public function returnsIntArray(): array;
+                    }
+
+                    final class MyClass extends MyClassBase
+                    {
+                        #[\Override]
+                        public function returnsIntArray(): array
+                        {
+                            return [1, 2, 3];
+                        }
+                    }
+
+                    $callable = (new MyClass())->returnsIntArray(...);
+                    $array = $callable();
+                    PHP,
+                'assertions' => [
+                    '$array' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'byRefUseVar' => [
                 'code' => '<?php
                     /** @return void */
