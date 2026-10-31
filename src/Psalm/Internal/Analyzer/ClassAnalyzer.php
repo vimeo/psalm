@@ -852,6 +852,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $codebase,
                     );
 
+                    // an imported type alias is the type it stands for
+                    $guide_property_type = TypeExpander::expandUnion($codebase, $guide_property_type, null, null, null);
+                    $property_type = TypeExpander::expandUnion($codebase, $property_type, null, null, null);
+
                     if ($guide_property_storage->readonly
                         && UnionTypeComparator::isContainedBy(
                             $codebase,
