@@ -1120,6 +1120,7 @@ final class TypeCombiner
             } else {
                 $shared_classlikes = $codebase ? self::getSharedTypes($combination, $codebase) : [];
 
+                $had_literals = $combination->strings !== null;
                 $combination->strings = null;
 
                 if (isset($combination->value_types['string'])
@@ -1136,7 +1137,13 @@ final class TypeCombiner
                     && $combination->value_types['string'] instanceof TNumericString
                     && !$type instanceof TLiteralClassString
                 ) {
-                    if (!is_numeric($type->value)) {
+                    if (!$had_literals
+                        && $type->value === ''
+                        && $combination->value_types['string']::class === TNumericString::class
+                    ) {
+                        // stays beside the numeric-string, as when the literal is combined first
+                        $combination->strings = [$type_key => $type];
+                    } elseif (!is_numeric($type->value)) {
                         $combination->value_types['string'] = $type->value === ''
                             ? new TString()
                             : new TNonEmptyString();
@@ -1385,6 +1392,9 @@ final class TypeCombiner
                     } else {
                         $combination->value_types['string'] = new TString();
                     }
+                } else {
+                    // the literals beside this string type were placed when it was first added
+                    return;
                 }
             }
 
