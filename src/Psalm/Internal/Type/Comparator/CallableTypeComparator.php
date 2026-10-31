@@ -686,6 +686,17 @@ final class CallableTypeComparator
     }
 
     /**
+     * @psalm-mutation-free
+     */
+    private static function classHasMethod(Codebase $codebase, string $class_name, string $method_name): bool
+    {
+        return $codebase->classlike_storage_provider->has($class_name)
+            && isset(
+                $codebase->classlike_storage_provider->get($class_name)->declaring_method_ids[strtolower($method_name)],
+            );
+    }
+
+    /**
      * @return null|'not-callable'|MethodIdentifier
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
@@ -761,6 +772,18 @@ final class CallableTypeComparator
             foreach ($lhs->getAtomicTypes() as $lhs_atomic_type) {
                 if ($lhs_atomic_type instanceof TNamedObject) {
                     $class_name = $lhs_atomic_type->value;
+
+                    // of an intersection, the method is the one of the type that has it
+                    if ($codebase && !self::classHasMethod($codebase, $class_name, $method_name)) {
+                        foreach ($lhs_atomic_type->getIntersectionTypes() as $intersection_type) {
+                            if ($intersection_type instanceof TNamedObject
+                                && self::classHasMethod($codebase, $intersection_type->value, $method_name)
+                            ) {
+                                $class_name = $intersection_type->value;
+                                break;
+                            }
+                        }
+                    }
                 } elseif ($lhs_atomic_type instanceof TTemplateParam) {
                     $lhs_template_type = $lhs_atomic_type->as;
                     if ($lhs_template_type->isSingle()) {
