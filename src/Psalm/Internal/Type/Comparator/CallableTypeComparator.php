@@ -18,6 +18,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -307,6 +308,7 @@ final class CallableTypeComparator
         Codebase $codebase,
         MethodIdentifier $method_id,
         ?TCallable $container_type_part,
+        bool $expand_callable = false,
     ): ?TCallable {
         try {
             $method_storage = $codebase->methods->getStorage($method_id);
@@ -361,10 +363,90 @@ final class CallableTypeComparator
                 }
             }
 
+            if ($expand_callable) {
+                $closure = self::getClosureOfMethod(
+                    $codebase,
+                    $callable->params ?? [],
+                    $callable->return_type,
+                    $callable->getCapabilities(),
+                    $method_storage->defining_fqcln,
+                    $method_fqcln,
+                );
+
+                $callable = $callable->replace($closure->params, $closure->return_type);
+            }
+
             return $callable;
         } catch (UnexpectedValueException) {
             return null;
         }
+    }
+
+    /**
+     * The closure a first-class callable of a method is: its signature with `self`, `static` and `parent`, the
+     * conditional return type, and the templates generated for its parameters resolved, as for a function
+     *
+     * @param array<int, FunctionLikeParameter> $method_params
+     * @param CapabilitySet $capabilities
+     */
+    public static function getClosureOfMethod(
+        Codebase $codebase,
+        array $method_params,
+        ?Union $return_type,
+        int $capabilities,
+        ?string $self_class,
+        string $static_class,
+    ): TClosure {
+        $parent_class = $self_class !== null && $codebase->classlike_storage_provider->has($self_class)
+            ? $codebase->classlike_storage_provider->get($self_class)->parent_class
+            : null;
+
+        $params = [];
+
+        foreach ($method_params as $param) {
+            if ($param->type) {
+                $param = $param->setType(
+                    self::expandForClosure($codebase, $param->type, $self_class, $static_class, $parent_class),
+                );
+            }
+
+            if ($param->out_type) {
+                $param = $param->setOutType(
+                    self::expandForClosure($codebase, $param->out_type, $self_class, $static_class, $parent_class),
+                );
+            }
+
+            $params[] = $param;
+        }
+
+        return new TClosure(
+            $params,
+            $return_type
+                ? self::expandForClosure($codebase, $return_type, $self_class, $static_class, $parent_class)
+                : null,
+            $capabilities,
+        );
+    }
+
+    private static function expandForClosure(
+        Codebase $codebase,
+        Union $type,
+        ?string $self_class,
+        string $static_class,
+        ?string $parent_class,
+    ): Union {
+        return TypeExpander::expandUnion(
+            $codebase,
+            $type,
+            $self_class,
+            $static_class,
+            $parent_class,
+            true,
+            true,
+            false,
+            false,
+            true,
+        );
     }
 
     /**
@@ -521,7 +603,12 @@ final class CallableTypeComparator
         } elseif ($input_type_part instanceof TKeyedArray) {
             $method_id = self::getCallableMethodIdFromTKeyedArray($input_type_part, $codebase);
             if ($method_id && $method_id !== 'not-callable') {
-                $callable = self::getCallableFromMethodId($codebase, $method_id, $container_type_part);
+                $callable = self::getCallableFromMethodId(
+                    $codebase,
+                    $method_id,
+                    $container_type_part,
+                    $expand_callable,
+                );
 
                 if ($callable) {
                     return $callable;

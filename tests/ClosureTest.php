@@ -22,6 +22,39 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'firstClassCallableOfMethodWithParamConditionalReturn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class C {
+                        /** @return ($x is string ? int : bool) */
+                        public function m(string|int $x): int|bool {
+                            return is_string($x) ? 1 : true;
+                        }
+
+                        /** @return ($x is string ? int : bool) */
+                        public static function s(string|int $x): int|bool {
+                            return is_string($x) ? 1 : true;
+                        }
+                    }
+
+                    function check(C $c): void {
+                        $method = $c->m(...);
+                        $viaMethod = $method('a');
+                        /** @psalm-check-type-exact $viaMethod = bool|int */
+
+                        $static = C::s(...);
+                        $viaStatic = $static('a');
+                        /** @psalm-check-type-exact $viaStatic = bool|int */
+
+                        $fromCallable = Closure::fromCallable([$c, 'm']);
+                        $viaFromCallable = $fromCallable('a');
+                        /** @psalm-check-type-exact $viaFromCallable = bool|int */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'paramOutOfMethodClosureResolvesSelfAndStatic' => [
                 'code' => <<<'PHP'
                     <?php

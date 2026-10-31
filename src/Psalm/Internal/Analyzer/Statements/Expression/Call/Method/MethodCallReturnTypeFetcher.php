@@ -24,6 +24,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -33,7 +34,6 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -79,25 +79,13 @@ final class MethodCallReturnTypeFetcher
 
         if ($stmt->isFirstClassCallable()) {
             if ($method_storage) {
-                // what a param-out type says about `self`, `static` and `parent` can't be resolved from the closure
-                $closure_params = $method_storage->params;
-
-                foreach ($closure_params as $offset => $closure_param) {
-                    if ($closure_param->out_type) {
-                        $closure_params[$offset] = $closure_param->setOutType(TypeExpander::expandUnion(
-                            $codebase,
-                            $closure_param->out_type,
-                            $method_storage->defining_fqcln,
-                            $fq_class_name,
-                            $class_storage->parent_class,
-                        ));
-                    }
-                }
-
-                return new Union([new TClosure(
-                    $closure_params,
+                return new Union([CallableTypeComparator::getClosureOfMethod(
+                    $codebase,
+                    $method_storage->params,
                     $method_storage->return_type,
                     $method_storage->capabilities,
+                    $method_storage->defining_fqcln,
+                    $fq_class_name,
                 )]);
             }
 

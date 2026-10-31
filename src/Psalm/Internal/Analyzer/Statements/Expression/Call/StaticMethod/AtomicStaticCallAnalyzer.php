@@ -25,6 +25,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnaly
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedClass;
@@ -253,10 +254,13 @@ final class AtomicStaticCallAnalyzer
                                 $codebase->methods->getDeclaringMethodId($method_identifier) ?? $method_identifier,
                             );
 
-                            $return_type_candidate = new Union([new TClosure(
+                            $return_type_candidate = new Union([CallableTypeComparator::getClosureOfMethod(
+                                $codebase,
                                 $method_storage->params,
                                 $method_storage->return_type,
                                 $method_storage->capabilities,
+                                $method_storage->defining_fqcln,
+                                $method_identifier->fq_class_name,
                             )]);
                         }
                     }
@@ -494,10 +498,13 @@ final class AtomicStaticCallAnalyzer
             if ($found_method_and_class_storage) {
                 [ $method_storage ] = $found_method_and_class_storage;
 
-                $return_type_candidate = new Union([new TClosure(
+                $return_type_candidate = new Union([CallableTypeComparator::getClosureOfMethod(
+                    $codebase,
                     $method_storage->params,
                     $method_storage->return_type,
                     $method_storage->capabilities,
+                    $method_storage->defining_fqcln,
+                    $fq_class_name,
                 )]);
             } else {
                 $method_exists = $naive_method_exists
@@ -508,10 +515,15 @@ final class AtomicStaticCallAnalyzer
                 if ($method_exists) {
                     $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
 
-                    $return_type_candidate = new Union([new TClosure(
+                    $declaring_method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+                    $return_type_candidate = new Union([CallableTypeComparator::getClosureOfMethod(
+                        $codebase,
                         array_values($codebase->getMethodParams($method_id)),
                         $codebase->getMethodReturnType($method_id, $fq_class_name),
-                        $codebase->methods->getStorage($declaring_method_id)->capabilities,
+                        $declaring_method_storage->capabilities,
+                        $declaring_method_storage->defining_fqcln,
+                        $method_id->fq_class_name,
                     )]);
                 } elseif ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->getFirst() === 'parent'
                     && !$statements_analyzer->isStatic()
