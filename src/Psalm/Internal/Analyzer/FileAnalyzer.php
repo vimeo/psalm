@@ -306,8 +306,17 @@ class FileAnalyzer extends SourceAnalyzer
                     $namespace_analyzer->getAliasedClassesFlippedReplaceable();
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 $this->visitUse($stmt);
+
+                // an inline `@var` before the import
+                if ($stmt->getDocComment()) {
+                    $leftover_stmts[] = $stmt;
+                }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
                 $this->visitGroupUse($stmt);
+
+                if ($stmt->getDocComment()) {
+                    $leftover_stmts[] = $stmt;
+                }
             } else {
                 if ($stmt instanceof PhpParser\Node\Stmt\If_) {
                     foreach ($stmt->stmts as $if_stmt) {

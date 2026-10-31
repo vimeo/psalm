@@ -691,6 +691,8 @@ final class StatementsAnalyzer extends SourceAnalyzer
             TraitAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
             // do nothing
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_ || $stmt instanceof PhpParser\Node\Stmt\GroupUse) {
+            // the aliases are registered by the file or namespace analyzer, what is left is an inline `@var`
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Goto_) {
             // do nothing
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Label) {
