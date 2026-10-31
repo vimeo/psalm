@@ -126,6 +126,19 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'floatLiteralKeysOutsideTheRangeOfAnIntAreInts' => [
+                'code' => '<?php
+                    $big = [1.0e30 => 1];
+                    $notANumber = [NAN => 2];
+                    $infinite = [INF => 3, -INF => 4];',
+                'assertions' => [
+                    '$big===' => 'non-empty-array<int, 1>',
+                    '$notANumber===' => 'non-empty-array<int, 2>',
+                    '$infinite===' => 'non-empty-array<int, 3|4>',
+                ],
+                'ignored_issues' => ['InvalidArrayOffset'],
+            ],
+
             'decimalIntStringKeysAreInts' => [
                 'code' => '<?php
                     /** @return decimal-int-string */
