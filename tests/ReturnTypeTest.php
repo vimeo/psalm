@@ -35,6 +35,47 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'neverFunctionWithAnEmptyInfiniteLoop' => [
+                'code' => '<?php
+                    function whileLoop(): never {
+                        while (true) {}
+                    }
+
+                    function forLoop(): never {
+                        for (;;) {}
+                    }
+
+                    function doLoop(): never {
+                        do {} while (true);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'neverFunctionWithAnInfiniteLoopThatMayThrow' => [
+                'code' => '<?php
+                    /** @throws Exception */
+                    function boom(): void {
+                        throw new Exception();
+                    }
+
+                    function run(): never {
+                        while (true) {
+                            if (random_int(0, 100000) === 0) {
+                                boom();
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingThrowsDocblock'],
+                'php_version' => '8.1',
+            ],
+            'intFunctionWithAnEmptyInfiniteLoop' => [
+                'code' => '<?php
+                    function run(): int {
+                        while (true) {}
+                    }',
+            ],
             'nativeNullReturnTypeOfAnInterfaceMethodWithADocblock' => [
                 'code' => '<?php
                     interface I {
@@ -1786,6 +1827,28 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'neverFunctionWithALoopThatBreaks' => [
+                'code' => '<?php
+                    function run(): never {
+                        while (true) {
+                            if (random_int(0, 9) === 0) {
+                                break;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'neverFunctionWithAFiniteLoop' => [
+                'code' => '<?php
+                    function run(): never {
+                        while (random_int(0, 9) > 0) {}
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'unrepresentableScalarIntersection' => [
                 'code' => '<?php
                     /** @return literal-string&non-falsy-string */

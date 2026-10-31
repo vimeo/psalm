@@ -273,7 +273,8 @@ final class ScopeAnalyzer
                     );
 
                     if (!$have_exit_path) {
-                        return array_values(array_unique($control_actions));
+                        // a loop nothing leaves and nothing returns from never ends
+                        return array_values(array_unique($control_actions ?: [self::ACTION_END]));
                     }
                 }
 
@@ -299,7 +300,7 @@ final class ScopeAnalyzer
                         );
 
                         if (!$have_exit_path) {
-                            return array_values(array_unique($control_actions));
+                            return array_values(array_unique($control_actions ?: [self::ACTION_END]));
                         }
                     }
                 }
