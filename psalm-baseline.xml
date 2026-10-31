@@ -54,8 +54,6 @@
       <code><![CDATA[self::$stubbed_constants]]></code>
       <code><![CDATA[self::$stubbed_constants]]></code>
       <code><![CDATA[self::$stubbed_constants]]></code>
-      <code><![CDATA[self::$stubbed_constants]]></code>
-      <code><![CDATA[self::$stubbed_constants]]></code>
     </ImpureStaticProperty>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$function_name]]></code>
@@ -1679,7 +1677,6 @@
   <file src="src/Psalm/Internal/Codebase/Scanner.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$composer_file_path]]></code>
-      <code><![CDATA[$function_storage->cased_name]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Codebase/TaintFlowGraph.php">

@@ -69,6 +69,9 @@ final class FileScannerTest extends TestCase
         $file_storage->functions = [
             'some_function' => $function_storage_some_function,
         ];
+        $file_storage->first_declared_functions = [
+            'some_function' => $function_storage_some_function,
+        ];
         $file_storage->declaring_function_ids = [
             'some_function' => '/dir/file.php',
         ];

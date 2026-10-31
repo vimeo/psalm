@@ -163,6 +163,27 @@ final class Codebase
     private static array $unresolved_stubbed_constants = [];
 
     /**
+     * The global constants the scan of an autoloaded file looked up without finding a type for them, see
+     * Scanner::scanFilePaths
+     *
+     * @var array<string, true>
+     */
+    private static array $missed_global_constants = [];
+
+    /**
+     * The ids of the types an autoloaded file gave each global constant, every one of them and not only the last,
+     * see Scanner::dependsOnScanOrder
+     *
+     * @var array<string, array<string, true>>
+     */
+    private static array $global_constant_definitions = [];
+
+    /**
+     * @var array<string, list<UnresolvedConstantComponent>>
+     */
+    private static array $unresolved_global_constant_definitions = [];
+
+    /**
      * Whether to register autoloaded information
      */
     public bool $register_autoload_files = false;
@@ -340,6 +361,9 @@ final class Codebase
 
         self::$stubbed_constants = [];
         self::$unresolved_stubbed_constants = [];
+        self::$missed_global_constants = [];
+        self::$global_constant_definitions = [];
+        self::$unresolved_global_constant_definitions = [];
 
         $reflection = new Reflection($providers->classlike_storage_provider, $this);
 
@@ -1164,11 +1188,15 @@ final class Codebase
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|read-globals|write-globals
      */
     public function addGlobalConstantType(string $const_id, Union $type): void
     {
         self::$stubbed_constants[$const_id] = $type;
+
+        if ($this->register_autoload_files) {
+            self::$global_constant_definitions[$const_id][$type->getId()] = true;
+        }
     }
 
     /**
@@ -1185,7 +1213,9 @@ final class Codebase
      */
     public function addGlobalConstantTypes(array $stubs): void
     {
-        self::$stubbed_constants += $stubs;
+        foreach ($stubs as $const_id => $type) {
+            self::$stubbed_constants[$const_id] = $type;
+        }
     }
 
     /**
@@ -1200,11 +1230,17 @@ final class Codebase
     /**
      * The value of a global constant whose type depends on classes, e.g. an enum case, resolved when it is fetched
      *
-     * @psalm-capabilities read-globals|write-globals
+     * @psalm-capabilities read-props|read-globals|write-globals
      */
     public function addUnresolvedGlobalConstant(string $const_id, UnresolvedConstantComponent $value): void
     {
         self::$unresolved_stubbed_constants[$const_id] = $value;
+
+        if ($this->register_autoload_files
+            && !in_array($value, self::$unresolved_global_constant_definitions[$const_id] ?? [], false)
+        ) {
+            self::$unresolved_global_constant_definitions[$const_id][] = $value;
+        }
     }
 
     /**
@@ -1221,7 +1257,9 @@ final class Codebase
      */
     public function addUnresolvedGlobalConstants(array $values): void
     {
-        self::$unresolved_stubbed_constants += $values;
+        foreach ($values as $const_id => $value) {
+            self::$unresolved_stubbed_constants[$const_id] = $value;
+        }
     }
 
     /**
@@ -1231,6 +1269,51 @@ final class Codebase
     public function getAllUnresolvedGlobalConstants(): array
     {
         return self::$unresolved_stubbed_constants;
+    }
+
+    /**
+     * @psalm-capabilities read-globals|write-globals
+     */
+    public function recordMissedGlobalConstant(string $const_id): void
+    {
+        self::$missed_global_constants[$const_id] = true;
+    }
+
+    /**
+     * @return array<string, true>
+     * @psalm-capabilities read-globals
+     */
+    public function getMissedGlobalConstants(): array
+    {
+        return self::$missed_global_constants;
+    }
+
+    /**
+     * @return array<string, array<string, true>>
+     * @psalm-capabilities read-globals
+     */
+    public function getGlobalConstantDefinitions(): array
+    {
+        return self::$global_constant_definitions;
+    }
+
+    /**
+     * @return array<string, list<UnresolvedConstantComponent>>
+     * @psalm-capabilities read-globals
+     */
+    public function getUnresolvedGlobalConstantDefinitions(): array
+    {
+        return self::$unresolved_global_constant_definitions;
+    }
+
+    /**
+     * @psalm-capabilities write-globals
+     */
+    public function resetGlobalConstantRecords(): void
+    {
+        self::$missed_global_constants = [];
+        self::$global_constant_definitions = [];
+        self::$unresolved_global_constant_definitions = [];
     }
 
     public function fileExists(string $file_path): bool
