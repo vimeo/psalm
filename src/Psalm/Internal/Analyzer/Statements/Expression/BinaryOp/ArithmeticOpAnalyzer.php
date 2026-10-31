@@ -59,6 +59,8 @@ use function min;
 use function preg_match;
 use function strtolower;
 
+use const PHP_INT_MAX;
+
 /**
  * @internal
  */
@@ -1113,6 +1115,58 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
+     * The range `&`, `|`, `^` or `<<` of two non-negative ranges can give, or null when it can't be bounded
+     * (an operand may be negative, or the result may overflow).
+     *
+     * @psalm-pure
+     */
+    private static function getBitwiseResultOfNonNegativeRanges(
+        PhpParser\Node $parent,
+        TIntRange $left_type_part,
+        TIntRange $right_type_part,
+    ): ?Union {
+        if (!$left_type_part->isPositiveOrZero() || !$right_type_part->isPositiveOrZero()) {
+            return null;
+        }
+
+        $left_max = $left_type_part->max_bound;
+        $right_max = $right_type_part->max_bound;
+
+        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft) {
+            // shifting by 63 or more gives 0 or overflows into the sign bit
+            if ($left_max === null || $right_max === null || $right_max > 62 || $left_max > PHP_INT_MAX >> $right_max) {
+                return null;
+            }
+
+            return Type::getIntRange(
+                $left_type_part->min_bound << $right_type_part->min_bound,
+                $left_max << $right_max,
+            );
+        }
+
+        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
+            // the result has only bits of the operand with fewer of them
+            $max = $left_max === null ? $right_max : ($right_max === null ? $left_max : min($left_max, $right_max));
+
+            return Type::getIntRange(0, $max);
+        }
+
+        if ($left_max === null || $right_max === null) {
+            return null;
+        }
+
+        // the result has at most as many bits as the wider operand
+        $max = max($left_max, $right_max);
+        $bits = 0;
+        while ($max > 0) {
+            $max >>= 1;
+            $bits++;
+        }
+
+        return Type::getIntRange(0, $bits === 63 ? PHP_INT_MAX : (1 << $bits) - 1);
+    }
+
+    /**
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function analyzeOperandsBetweenIntRange(
@@ -1137,19 +1191,18 @@ final class ArithmeticOpAnalyzer
 
         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd ||
             $parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr ||
-            $parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
+            $parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor ||
+            $parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
         ) {
-            //really complex to calculate
             $result_type = Type::combineUnionTypes(
-                Type::getInt(),
+                self::getBitwiseResultOfNonNegativeRanges($parent, $left_type_part, $right_type_part)
+                    ?? Type::getInt(),
                 $result_type,
             );
             return;
         }
 
-        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft ||
-            $parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
-        ) {
+        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight) {
             //really complex to calculate
             $result_type = Type::combineUnionTypes(
                 new Union([new TInt()]),
