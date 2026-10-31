@@ -109,6 +109,41 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertStringContainsString('Usage:', $this->runPsalm(['--help'], self::$tmpDir)['STDOUT']);
     }
 
+    public function testVersionIsPrintedWithoutTheAutoloadersOfTheProject(): void
+    {
+        $project_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndVersion_');
+        assert($project_dir !== false);
+        unlink($project_dir);
+        mkdir($project_dir);
+
+        try {
+            file_put_contents($project_dir . '/composer.json', '{"require": {}}');
+
+            $long = new Process([PHP_BINARY, $this->psalm, '--version'], $project_dir, self::agentEnvVarsToUnset());
+            $long->run();
+            $short = new Process([PHP_BINARY, $this->psalm, '-v'], $project_dir, self::agentEnvVarsToUnset());
+            $short->run();
+            $language_server = new Process(
+                [PHP_BINARY, __DIR__ . '/../../psalm-language-server', '--version'],
+                $project_dir,
+                self::agentEnvVarsToUnset(),
+            );
+            $language_server->run();
+            $analysis = new Process([PHP_BINARY, $this->psalm], $project_dir, self::agentEnvVarsToUnset());
+            $analysis->run();
+        } finally {
+            self::recursiveRemoveDirectory($project_dir);
+        }
+
+        $this->assertSame(0, $long->getExitCode());
+        $this->assertStringStartsWith('Psalm ', $long->getOutput());
+        $this->assertSame('', $long->getErrorOutput());
+        $this->assertSame($long->getOutput(), $short->getOutput());
+        $this->assertSame($long->getOutput(), $language_server->getOutput());
+        $this->assertSame(1, $analysis->getExitCode());
+        $this->assertStringContainsString('Could not find any composer autoloaders', $analysis->getErrorOutput());
+    }
+
     public function testInit(): void
     {
         $this->assertStringContainsString(
