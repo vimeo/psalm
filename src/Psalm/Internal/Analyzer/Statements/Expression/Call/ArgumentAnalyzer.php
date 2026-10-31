@@ -489,6 +489,7 @@ final class ArgumentAnalyzer
             : null;
 
         $unpacked_atomic_array = null;
+        $unpacked_parent_nodes = $arg->unpack ? $arg_value_type->parent_nodes : [];
 
         if ($arg->unpack) {
             if ($arg_value_type->hasMixed()) {
@@ -694,6 +695,9 @@ final class ArgumentAnalyzer
         ) {
             return null;
         }
+
+        // the values of the unpacked iterable carry what the iterable does
+        $arg_value_type = $arg_value_type->addParentNodes($unpacked_parent_nodes);
 
         if (self::verifyType(
             $statements_analyzer,
