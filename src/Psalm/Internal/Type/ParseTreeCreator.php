@@ -157,6 +157,12 @@ final class ParseTreeCreator
                 case 'is not':
                 case 'as':
                 case 'of':
+                    // the key of an array shape (`array{is: int}`) is a name, not a condition
+                    if ($this->isFollowedByColon()) {
+                        $this->handleValue($type_token);
+                        break;
+                    }
+
                     $this->handleIsOrAs($type_token);
                     break;
 
@@ -531,6 +537,22 @@ final class ParseTreeCreator
         }
 
         $this->current_leaf = $context_node;
+    }
+
+    /**
+     * Whether the token being handled is directly followed by `:` or `?:`
+     *
+     * @psalm-capabilities read-props
+     */
+    private function isFollowedByColon(): bool
+    {
+        $next = $this->type_tokens[$this->t + 1][0] ?? null;
+
+        if ($next === '?') {
+            $next = $this->type_tokens[$this->t + 2][0] ?? null;
+        }
+
+        return $next === ':';
     }
 
     /** @param array{0: string, 1: int, 2?: string} $type_token */

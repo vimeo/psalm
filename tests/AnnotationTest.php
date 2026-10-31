@@ -184,6 +184,16 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'shapeKeysNamedLikeConditionKeywordsInTypeAlias' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type PermissionsArray = array{is: array<string, bool>, as?: int}
+                     * @psalm-param PermissionsArray $permissions
+                     */
+                    function can(string $ability, array $permissions): bool {
+                        return $permissions["is"][$ability] ?? false;
+                    }',
+            ],
             'nopType' => [
                 'code' => '<?php
                     $_a = "hello";

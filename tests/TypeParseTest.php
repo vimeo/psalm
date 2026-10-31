@@ -104,6 +104,26 @@ final class TypeParseTest extends TestCase
         $this->assertSame('array{key: static}', (string) Type::parseString('array{key: $this}'));
     }
 
+    public function testKeysOfShapeNamedLikeConditionKeywords(): void
+    {
+        $this->assertSame(
+            'array{as: int, is?: string, of: float}',
+            (string) Type::parseString('array{is?: string, as: int, of: float}'),
+        );
+    }
+
+    public function testConditionalTypeStillParsesNextToKeywordKeys(): void
+    {
+        $this->assertSame(
+            'array{is: int}',
+            (string) Type::parseString('array{is: int}'),
+        );
+        $this->assertSame(
+            '(T is int ? string : float)',
+            (string) Type::parseString('(T is int ? string : float)', null, ['T' => ['fn-foo' => Type::getMixed()]]),
+        );
+    }
+
     public function testThisAsCallableReturnType(): void
     {
         $this->assertSame('Closure[impure](Foo):static', (string) Type::parseString('Closure(Foo): $this'));
