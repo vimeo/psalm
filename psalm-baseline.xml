@@ -1747,11 +1747,6 @@
       <code><![CDATA[$b->stmts]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Internal/Diff/FileDiffer.php">
-    <InvalidArrayOffset>
-      <code><![CDATA[$b[$y]]]></code>
-    </InvalidArrayOffset>
-  </file>
   <file src="src/Psalm/Internal/Diff/FileStatementsDiffer.php">
     <RedundantCondition>
       <code><![CDATA[assert(!empty($name_parts))]]></code>

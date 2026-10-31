@@ -53,7 +53,7 @@ final class FileDiffer
 
                 $y = $x - $k;
 
-                while ($x < $n && $y < $m && $a[$x] === $b[$y]) {
+                while ($x < $n && $y >= 0 && $y < $m && $a[$x] === $b[$y]) {
                     ++$x;
                     ++$y;
                 }
