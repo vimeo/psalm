@@ -132,6 +132,61 @@ final class ReadonlyPropertyTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'foreachByRefOverReadonlyObjectAndMutableArrayProperty' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var list<int> */
+                        public array $items = [1];
+
+                        /** @var ArrayObject<int, int> */
+                        public readonly ArrayObject $bag;
+
+                        public function __construct() {
+                            $this->bag = new ArrayObject([1]);
+                        }
+
+                        public function touch(): void {
+                            foreach ($this->bag as &$item) {
+                                $item = 1;
+                            }
+
+                            foreach ($this->items as &$value) {
+                                $value = 1;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'incrementAndForeachByRefOnPrivateMutationAllowedReadonlyPropertyWithCapabilities' => [
+                'code' => '<?php
+                    final class A {
+                        /**
+                         * @var numeric-string
+                         * @psalm-readonly-allow-private-mutation
+                         */
+                        public string $n = "5";
+
+                        /**
+                         * @var list<int>
+                         * @psalm-readonly-allow-private-mutation
+                         */
+                        public array $items = [1];
+
+                        /** @psalm-capabilities read-props|write-this-props|write-refs */
+                        public function touch(): void {
+                            $this->n++;
+
+                            foreach ($this->items as &$value) {
+                                $value = 1;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'readonlyPropertySetChildClass' => [
                 'code' => '<?php
                     abstract class A {
@@ -358,6 +413,46 @@ final class ReadonlyPropertyTest extends TestCase
                     }',
                 'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:31 - A::$v is marked readonly',
                 'error_levels' => ['StringIncrement'],
+                'php_version' => '8.1',
+            ],
+            'readonlyPropertyForeachByRef' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var list<int> */
+                        public readonly array $items;
+
+                        public function __construct() {
+                            $this->items = [1];
+                        }
+
+                        public function touch(): void {
+                            foreach ($this->items as &$item) {
+                                $item = 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:38 - A::$items is marked readonly',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'readonlyPropertyForeachByRefOutsideClass' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var list<int> */
+                        public readonly array $items;
+
+                        public function __construct() {
+                            $this->items = [1];
+                        }
+                    }
+
+                    function bump(A $a): void {
+                        foreach ($a->items as &$item) {
+                            $item = 1;
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:34 - A::$items is marked readonly',
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'readonlyPropertyWithDefault' => [
