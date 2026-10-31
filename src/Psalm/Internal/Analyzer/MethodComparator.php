@@ -187,7 +187,16 @@ final class MethodComparator
 
         foreach ($guide_method_storage->params as $i => $guide_param) {
             if (!isset($implementer_method_storage->params[$i])) {
-                if (!$prevent_abstract_override && $i >= $guide_method_storage->required_param_count) {
+                // a variadic parameter takes the optional parameters of the parent
+                if ($i >= $guide_method_storage->required_param_count && $implementer_method_storage->variadic) {
+                    continue;
+                }
+
+                // PHP 8 is fatal on an override of an abstract method without an optional parameter of the parent
+                if (!$prevent_abstract_override
+                    && $i >= $guide_method_storage->required_param_count
+                    && $codebase->analysis_php_version_id < 8_00_00
+                ) {
                     continue;
                 }
 
