@@ -60,6 +60,7 @@ use const FILTER_FLAG_ALLOW_OCTAL;
 use const FILTER_FLAG_ALLOW_SCIENTIFIC;
 use const FILTER_FLAG_ALLOW_THOUSAND;
 use const FILTER_FLAG_EMAIL_UNICODE;
+use const FILTER_FLAG_EMPTY_STRING_NULL;
 use const FILTER_FLAG_ENCODE_AMP;
 use const FILTER_FLAG_ENCODE_HIGH;
 use const FILTER_FLAG_ENCODE_LOW;
@@ -1258,6 +1259,15 @@ final class FilterUtils
             case FILTER_DEFAULT:
                 foreach ($input_type->getAtomicTypes() as $atomic_type) {
                     if ($filter_int_used === FILTER_DEFAULT
+                        && self::hasFlag($flags_int_used, FILTER_FLAG_EMPTY_STRING_NULL)
+                        && $atomic_type instanceof TLiteralString
+                        && $atomic_type->value === ''
+                    ) {
+                        $filter_types[] = new TNull();
+                        continue;
+                    }
+
+                    if ($filter_int_used === FILTER_DEFAULT
                         && $flags_int_used === 0
                         && $atomic_type instanceof TString
                     ) {
@@ -1334,6 +1344,24 @@ final class FilterUtils
 
                     $can_fail = true;
                 }
+
+                // an empty string is null with the flag, which FILTER_UNSAFE_RAW (FILTER_DEFAULT) takes
+                if ($filter_int_used === FILTER_DEFAULT
+                    && self::hasFlag($flags_int_used, FILTER_FLAG_EMPTY_STRING_NULL)
+                ) {
+                    $emptiable_filter_types = $filter_types;
+                    $filter_types = [];
+
+                    foreach ($emptiable_filter_types as $filter_type) {
+                        if ($filter_type::class === TString::class) {
+                            $filter_types[] = new TNonEmptyString();
+                            $filter_types[] = new TNull();
+                        } else {
+                            $filter_types[] = $filter_type;
+                        }
+                    }
+                }
+
                 break;
             case 513: // 8.1.0 FILTER_SANITIZE_STRING and FILTER_SANITIZE_STRIPPED (alias) have been deprecated.
                 foreach ($input_type->getAtomicTypes() as $atomic_type) {
@@ -1584,6 +1612,7 @@ final class FilterUtils
             ),
             FILTER_UNSAFE_RAW => array(
                 'flags' => array(
+                    FILTER_FLAG_EMPTY_STRING_NULL,
                     FILTER_FLAG_STRIP_LOW,
                     FILTER_FLAG_STRIP_HIGH,
                     FILTER_FLAG_STRIP_BACKTICK,
