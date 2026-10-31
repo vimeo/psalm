@@ -118,6 +118,43 @@ final class ReturnTypeManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['InvalidFalsableReturnType'],
                 'safe_types' => true,
             ],
+            'fixInvalidFalsableReturnTypeOfAUnionReturnType80' => [
+                'input' => '<?php
+                    class Foo {}
+                    class Bar {}
+                    function foo(): Foo|Bar {
+                        return rand(0, 1) ? new Foo() : false;
+                    }',
+                'output' => '<?php
+                    class Foo {}
+                    class Bar {}
+                    function foo(): Foo|false {
+                        return rand(0, 1) ? new Foo() : false;
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['InvalidFalsableReturnType'],
+                'safe_types' => true,
+            ],
+            'fixInvalidFalsableReturnTypeOfAUnionReturnTypeThatIsNotPhpCompatible74' => [
+                'input' => '<?php
+                    class Foo {}
+                    class Bar {}
+                    function foo(): Foo|Bar {
+                        return rand(0, 1) ? new Foo() : false;
+                    }',
+                'output' => '<?php
+                    class Foo {}
+                    class Bar {}
+                    /**
+                     * @return Foo|false
+                     */
+                    function foo() {
+                        return rand(0, 1) ? new Foo() : false;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['InvalidFalsableReturnType'],
+                'safe_types' => true,
+            ],
             'fixInvalidIntReturnTypeThatIsNotPhpCompatible70' => [
                 'input' => '<?php
                     function foo(): string {
