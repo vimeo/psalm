@@ -92,6 +92,20 @@ final class AttributeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'attributeOfTheClassConstantTargetOnClassConstants' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_CLASS_CONSTANT)]
+                    final class OnConst {}
+
+                    final class K {
+                        #[OnConst]
+                        public const C = 1;
+
+                        #[OnConst]
+                        public const D = 2, E = 3;
+                    }
+                    echo K::C . K::D . K::E;',
+            ],
             'classAndPropertyAttributesExists' => [
                 'code' => '<?php
                     namespace Foo;
@@ -612,6 +626,25 @@ final class AttributeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'missingAttributeOnClassConstant' => [
+                'code' => '<?php
+                    final class K {
+                        #[\Nope]
+                        public const C = 1;
+                    }',
+                'error_message' => 'UndefinedAttributeClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27',
+            ],
+            'attributeOfAnotherTargetOnClassConstant' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_METHOD)]
+                    final class OnlyMethod {}
+
+                    final class K {
+                        #[OnlyMethod]
+                        public const C = 1;
+                    }',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:27',
+            ],
             'attributeClassHasNoAttributeAnnotation' => [
                 'code' => '<?php
                     class A {}
