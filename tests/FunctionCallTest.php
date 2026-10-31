@@ -81,6 +81,19 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'peclFunctionsOfExtensionsThePhp86ImageLacks' => [
+                'code' => '<?php
+                    $session = ssh2_connect("example.com", 22);
+                    $version = swoole_version();
+                    $string = _string("abc");
+                    $serialized = igbinary_serialize([1]);',
+                'assertions' => [
+                    '$version===' => 'string',
+                    '$string===' => 'Swoole\StringObject',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.6',
+            ],
             'callTemplatedFunctionWithUnionArgument' => [
                 'code' => '<?php
                     /** @template T */
