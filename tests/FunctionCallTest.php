@@ -24,6 +24,27 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'filterVarEmptyStringNullOfTheDefaultFilter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param string $s
+                     * @param non-empty-string $non_empty
+                     */
+                    function filter(string $s, string $non_empty): void {
+                        $maybe_empty = filter_var($s, options: FILTER_FLAG_EMPTY_STRING_NULL);
+                        $empty = filter_var('', options: FILTER_FLAG_EMPTY_STRING_NULL);
+                        $filled = filter_var($non_empty, options: FILTER_FLAG_EMPTY_STRING_NULL);
+
+                        /** @psalm-check-type-exact $maybe_empty = non-empty-string|null */
+                        /** @psalm-check-type-exact $empty = null */
+                        /** @psalm-check-type-exact $filled = non-empty-string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'multibyteLiteralArgument' => [
                 'code' => '<?php
                     function startsWithGreeting(string $s): bool {
