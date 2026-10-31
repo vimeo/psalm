@@ -205,6 +205,35 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticCallOfInaccessibleMethodGoesToCallStatic' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Repository
+                    {
+                        /** @param array<mixed> $args */
+                        public static function __callStatic(string $name, array $args): string
+                        {
+                            return $name;
+                        }
+
+                        protected function find(int $id): int
+                        {
+                            return $id;
+                        }
+
+                        private static function secret(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    Repository::find(1);
+                    Repository::secret();
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'notInCallMapTest' => [
                 'code' => '<?php
                     new DOMImplementation();',
@@ -1505,6 +1534,23 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticCallOfInaccessibleMethodWithoutCallStatic' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Repository
+                    {
+                        protected function find(int $id): int
+                        {
+                            return $id;
+                        }
+                    }
+
+                    Repository::find(1);
+                    PHP,
+                'error_message' => 'InvalidStaticInvocation',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'staticInvocation' => [
                 'code' => '<?php
                     class Foo {

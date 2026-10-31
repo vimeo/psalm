@@ -584,7 +584,16 @@ final class AtomicStaticCallAnalyzer
         $with_pseudo = $callstatic_method_exists
             || $codebase->config->use_phpdoc_method_without_magic_or_parent;
 
-        if ($codebase->methods->getDeclaringMethodId($method_id, $with_pseudo)) {
+        // PHP doesn't call a method the caller can't access, but __callStatic()
+        $forwarded_to_callstatic = $naive_method_exists
+            && $callstatic_method_exists
+            && !MethodAnalyzer::isMethodVisible(
+                $method_id,
+                $context,
+                $statements_analyzer->getSource(),
+            );
+
+        if (!$forwarded_to_callstatic && $codebase->methods->getDeclaringMethodId($method_id, $with_pseudo)) {
             if ((!$stmt->class instanceof PhpParser\Node\Name
                     || $stmt->class->getFirst() !== 'parent'
                     || $statements_analyzer->isStatic())
@@ -779,7 +788,9 @@ final class AtomicStaticCallAnalyzer
             }
         }
 
-        if ($naive_method_exists || !$callstatic_method_exists || $class_storage->hasSealedMethods($config)) {
+        if (!$forwarded_to_callstatic
+            && ($naive_method_exists || !$callstatic_method_exists || $class_storage->hasSealedMethods($config))
+        ) {
             $does_method_exist = MethodAnalyzer::checkMethodExists(
                 $codebase,
                 $method_id,
