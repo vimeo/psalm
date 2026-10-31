@@ -15,6 +15,7 @@ use Stringable;
 
 use function count;
 use function ltrim;
+use function max;
 use function str_starts_with;
 use function strlen;
 use function strpos;
@@ -497,9 +498,11 @@ final class DataFlowNode implements Stringable
      * by this rather than by the parameter's position in a given call, so a named argument resolves
      * to the same node as the equivalent positional one -- and as the method body's own parameter
      * node (see {@see FunctionLikeAnalyzer}). For a positional call this is already the call offset,
-     * so nothing changes. Falls back to $fallback (the call offset) for a variadic parameter --
-     * matching the per-call-position nodes the flow path creates -- and when $param cannot be
-     * located, keeping id -> parameter deterministic (see the class invariant).
+     * so nothing changes. For a variadic parameter it is the call offset (matching the per-call-position
+     * nodes the flow path creates), but never before the variadic's own index: an argument written
+     * before it is a named one, which must not take the node of a parameter declared there. Falls back
+     * to $fallback (the call offset) when $param cannot be located, keeping id -> parameter
+     * deterministic (see the class invariant).
      *
      * @psalm-mutation-free
      */
@@ -508,13 +511,9 @@ final class DataFlowNode implements Stringable
         FunctionLikeParameter $param,
         int $fallback,
     ): int {
-        if ($param->is_variadic) {
-            return $fallback;
-        }
-
         foreach ($storage->params as $i => $candidate) {
             if ($candidate->name === $param->name) {
-                return $i;
+                return $param->is_variadic ? max($fallback, $i) : $i;
             }
         }
 

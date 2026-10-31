@@ -510,6 +510,15 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'dontTaintAParameterWithANamedArgumentTheVariadicTakes' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink html $a */
+                    function v(string $a = "", string ...$rest): void {
+                        echo $a;
+                    }
+
+                    v(zzz: (string) $_GET["x"]);',
+            ],
             'taintSourceUnderAKeyOfTheReturnOnly' => [
                 'code' => '<?php // --taint-analysis
                     /**
@@ -4794,6 +4803,25 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'taintAParameterWithItsNamedArgument' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink html $a */
+                    function v(string $a = "", string ...$rest): void {
+                        echo $a;
+                    }
+
+                    v(a: (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheVariadicWithAPositionalArgument' => [
+                'code' => '<?php // --taint-analysis
+                    function v(string $a = "", string ...$rest): void {
+                        echo $rest[0];
+                    }
+
+                    v("", (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintSourceUnderAKeyOfTheReturnOfAFunction' => [
                 'code' => '<?php // --taint-analysis
                     /**
