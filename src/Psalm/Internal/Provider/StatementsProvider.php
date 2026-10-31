@@ -26,9 +26,11 @@ use Throwable;
 
 use function abs;
 use function array_fill_keys;
+use function array_filter;
 use function array_intersect_key;
 use function array_map;
 use function array_merge;
+use function array_values;
 use function count;
 use function md5;
 use function str_starts_with;
@@ -119,6 +121,8 @@ final class StatementsProvider
             $this->diff_map[$file_path] = [];
             $this->deletion_ranges[$file_path] = [];
 
+            $this->reportCachedParseErrors($file_path, $file_contents);
+
             return $stmts;
         }
 
@@ -140,6 +144,8 @@ final class StatementsProvider
             if ($existing_file_contents === $file_contents && $existing_statements !== null) {
                 $this->diff_map[$file_path] = [];
                 $this->deletion_ranges[$file_path] = [];
+
+                $this->reportCachedParseErrors($file_path, $file_contents);
 
                 return $existing_statements;
             }
@@ -167,6 +173,7 @@ final class StatementsProvider
         }
 
         $has_errors = false;
+        $parse_errors = [];
 
         $stmts = self::parseStatements(
             $file_contents,
@@ -176,6 +183,7 @@ final class StatementsProvider
             $existing_file_contents,
             $existing_statements_copy,
             $file_changes,
+            $parse_errors,
         );
 
         if ($existing_file_contents !== null && $existing_statements !== null && (!$has_errors || $stmts)) {
@@ -240,6 +248,20 @@ final class StatementsProvider
         }
 
         $this->parser_cache_provider->saveStatementsToCache($file_path, $file_contents, $stmts);
+
+        if ($has_errors) {
+            $this->parser_cache_provider->saveParseErrorsToCache(
+                $file_path,
+                $file_contents,
+                array_map(
+                    static fn(PhpParser\Error $error): array => [$error->getRawMessage(), $error->getAttributes()],
+                    array_values(array_filter(
+                        $parse_errors,
+                        static fn(PhpParser\Error $error): bool => $error->hasColumnInfo(),
+                    )),
+                ),
+            );
+        }
 
         return $stmts;
     }
@@ -355,9 +377,53 @@ final class StatementsProvider
         $this->deletion_ranges = [];
     }
 
+    private function reportCachedParseErrors(string $file_path, string $file_contents): void
+    {
+        $cached_errors = $this->parser_cache_provider?->loadParseErrorsFromCache($file_path, $file_contents);
+
+        if ($cached_errors === null) {
+            return;
+        }
+
+        self::reportParseErrors(
+            array_map(
+                static fn(array $error): PhpParser\Error => new PhpParser\Error($error[0], $error[1]),
+                $cached_errors,
+            ),
+            $file_contents,
+            $file_path,
+        );
+    }
+
+    /**
+     * @param list<PhpParser\Error> $errors
+     */
+    private static function reportParseErrors(array $errors, string $file_contents, string $file_path): void
+    {
+        $config = Config::getInstance();
+
+        foreach ($errors as $error) {
+            if ($error->hasColumnInfo()) {
+                IssueBuffer::maybeAdd(
+                    new ParseError(
+                        $error->getMessage(),
+                        new ParseErrorLocation(
+                            $error,
+                            $file_contents,
+                            $file_path,
+                            $config->shortenFileName($file_path),
+                        ),
+                    ),
+                );
+            }
+        }
+    }
+
     /**
      * @param  list<Stmt> $existing_statements
      * @param  array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> $file_changes
+     * @param  list<PhpParser\Error> $parse_errors
+     * @param-out list<PhpParser\Error> $parse_errors
      * @return list<Stmt>
      */
     public static function parseStatements(
@@ -368,6 +434,7 @@ final class StatementsProvider
         ?string $existing_file_contents = null,
         ?array  $existing_statements = null,
         ?array  $file_changes = null,
+        array   &$parse_errors = [],
     ): array {
         if (!self::$parser) {
             $major_version = Codebase::transformPhpVersionId($analysis_php_version_id, 10_000);
@@ -417,24 +484,10 @@ final class StatementsProvider
         }
 
         if ($error_handler->hasErrors() && $file_path) {
-            $config = Config::getInstance();
             $has_errors = true;
+            $parse_errors = array_values($error_handler->getErrors());
 
-            foreach ($error_handler->getErrors() as $error) {
-                if ($error->hasColumnInfo()) {
-                    IssueBuffer::maybeAdd(
-                        new ParseError(
-                            $error->getMessage(),
-                            new ParseErrorLocation(
-                                $error,
-                                $file_contents,
-                                $file_path,
-                                $config->shortenFileName($file_path),
-                            ),
-                        ),
-                    );
-                }
-            }
+            self::reportParseErrors($parse_errors, $file_contents, $file_path);
         }
 
         $error_handler->clearErrors();
