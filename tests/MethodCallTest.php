@@ -205,6 +205,17 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'dateTimeInterfaceHasGetMicrosecondSinceEightFour' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function microseconds(DateTimeInterface $date, DateTimeImmutable $immutable): int {
+                        return $date->getMicrosecond() + $immutable->getMicrosecond();
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'notInCallMapTest' => [
                 'code' => '<?php
                     new DOMImplementation();',
