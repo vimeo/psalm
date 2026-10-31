@@ -47,7 +47,7 @@ final class CastTest extends TestCase
                     $five = strval(5);
                     /** @psalm-check-type-exact $five = \'5\' */
                     $concatenated = "id $int";
-                    /** @psalm-check-type-exact $concatenated = non-empty-string */
+                    /** @psalm-check-type-exact $concatenated = non-falsy-string */
                 }
             ',
         ];
