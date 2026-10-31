@@ -694,6 +694,21 @@ final class TypeCombinationTest extends TestCase
                     "'abc'",
                 ],
             ],
+            'combineEmptyLiteralWithRepeatedNumericString' => [
+                "''|numeric-string",
+                [
+                    "''",
+                    'numeric-string',
+                    'numeric-string',
+                ],
+            ],
+            'combineNumericStringWithEmptyLiteral' => [
+                "''|numeric-string",
+                [
+                    'numeric-string',
+                    "''",
+                ],
+            ],
             'combineLowercaseNumericStringWithUppercaseNumericLiteral' => [
                 'numeric-string',
                 [
