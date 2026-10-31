@@ -57,6 +57,30 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'listParamInheritedFromATemplatedParentAcceptsAList' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class P {
+                        /** @param list<string> $x */
+                        abstract public function f(array $x): void;
+
+                        /** @param non-empty-list<string> $x */
+                        abstract public function g(array $x): void;
+                    }
+
+                    /** @extends P<string> */
+                    final class C extends P {
+                        /** @inheritDoc */
+                        public function f(array $x): void {}
+
+                        /** @inheritDoc */
+                        public function g(array $x): void {}
+                    }
+
+                    $c = new C();
+                    $c->f(["a", "b"]);
+                    $c->g(["a", "b"]);',
+            ],
             'staticReturnKeepsTheTypeArgumentsOfTheCalledClass' => [
                 'code' => '<?php
                     /** @template T of object */
@@ -4571,6 +4595,23 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'listParamInheritedFromATemplatedParentRejectsAWrongList' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class P {
+                        /** @param list<string> $x */
+                        abstract public function f(array $x): void;
+                    }
+
+                    /** @extends P<string> */
+                    final class C extends P {
+                        /** @inheritDoc */
+                        public function f(array $x): void {}
+                    }
+
+                    (new C())->f(["a", 1]);',
+                'error_message' => 'InvalidArgument',
+            ],
             'templateInCallableParamOfDocblockMethodOfNamespacedClassRejectsOtherType' => [
                 'code' => '<?php
                     namespace App\Ns;
