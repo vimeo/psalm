@@ -21,6 +21,96 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalReturnTypeOnEmptyIsTheFalsyValues' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is empty ? 1 : 2)
+                     */
+                    function check(mixed $value): int {
+                        return 1;
+                    }
+
+                    function test(): void {
+                        $zero = check(0);
+                        $one = check(1);
+                        $empty = check('');
+                        $word = check('a');
+                        $null = check(null);
+                        $list = check([]);
+
+                        /** @psalm-check-type-exact $zero = 1 */
+                        /** @psalm-check-type-exact $one = 2 */
+                        /** @psalm-check-type-exact $empty = 1 */
+                        /** @psalm-check-type-exact $word = 2 */
+                        /** @psalm-check-type-exact $null = 1 */
+                        /** @psalm-check-type-exact $list = 1 */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalReturnTypeOnFalsyInANamespace' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace App;
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is falsy ? 1 : 2)
+                     */
+                    function check(mixed $value): int {
+                        return 1;
+                    }
+
+                    function test(): void {
+                        $zero = check(0);
+                        $one = check(1);
+
+                        /** @psalm-check-type-exact $zero = 1 */
+                        /** @psalm-check-type-exact $one = 2 */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalReturnTypeOnFalsyIsTheFalsyValues' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is falsy ? 1 : 2)
+                     */
+                    function check(mixed $value): int {
+                        return 1;
+                    }
+
+                    function test(): void {
+                        $zero = check(0);
+                        $one = check(1);
+                        $empty = check('');
+                        $word = check('a');
+                        $null = check(null);
+                        $list = check([]);
+
+                        /** @psalm-check-type-exact $zero = 1 */
+                        /** @psalm-check-type-exact $one = 2 */
+                        /** @psalm-check-type-exact $empty = 1 */
+                        /** @psalm-check-type-exact $word = 2 */
+                        /** @psalm-check-type-exact $null = 1 */
+                        /** @psalm-check-type-exact $list = 1 */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'conditionalReturnTypeSimple' => [
                 'code' => '<?php
 
