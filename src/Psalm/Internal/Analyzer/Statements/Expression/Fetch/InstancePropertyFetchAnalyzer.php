@@ -10,6 +10,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -496,6 +497,23 @@ final class InstancePropertyFetchAnalyzer
                             $statements_analyzer->getFilePath(),
                             $stmt->name,
                             $property_id,
+                        );
+                    }
+
+                    if ($declaring_property_class !== null
+                        && UnsetAnalyzer::writesFetchedProperty($context, $stmt, $stmt_type)
+                        && $codebase->properties->hasStorage($property_id)
+                        && ($property_storage = $codebase->properties->getStorage($property_id))->readonly
+                    ) {
+                        $receiver_type = $statements_analyzer->node_data->getType($stmt->var);
+
+                        InstancePropertyAssignmentAnalyzer::checkReadonlyPropertyWrite(
+                            $statements_analyzer,
+                            $stmt,
+                            $property_id,
+                            $property_storage,
+                            $context,
+                            $receiver_type !== null && $receiver_type->reference_free && $receiver_type->allow_mutations,
                         );
                     }
 
