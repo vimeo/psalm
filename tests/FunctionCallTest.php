@@ -824,6 +824,52 @@ final class FunctionCallTest extends TestCase
                     if (class_exists(Foo::class)) {}
                     PHP,
             ],
+            'classExistsAfterUnrelatedAndOperand' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (rand(0, 1) && class_exists(Foo::class)) {
+                        new Foo();
+                    }
+                    PHP,
+            ],
+            'classExistsBeforeUnrelatedAndOperand' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (class_exists(Foo::class) && rand(0, 1)) {
+                        new Foo();
+                    }
+                    PHP,
+            ],
+            'classExistsBetweenUnrelatedAndOperands' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (rand(0, 1) && class_exists(Foo::class) && rand(0, 1)) {
+                        new Foo();
+                    }
+                    PHP,
+            ],
+            'classExistsInElseifAnd' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (rand(0, 1)) {
+                        echo 1;
+                    } elseif (rand(0, 1) && class_exists(Foo::class)) {
+                        new Foo();
+                    }
+                    PHP,
+            ],
+            'classExistsInAndChainExpression' => [
+                'code' => <<<'PHP'
+                    <?php
+                    echo rand(0, 1) && class_exists(Foo::class) && new Foo();
+                    PHP,
+            ],
+            'classExistsInAndTernary' => [
+                'code' => <<<'PHP'
+                    <?php
+                    echo rand(0, 1) && class_exists(Foo::class) ? json_encode(new Foo()) : '';
+                    PHP,
+            ],
             'allowPossiblyUndefinedClassInInterfaceExists' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2709,6 +2755,25 @@ final class FunctionCallTest extends TestCase
                 'code' => '<?php
                     function f(int $p = false) {}',
                 'error_message' => 'InvalidParamDefault',
+            ],
+            'classExistsInAndDoesNotLeakAfterTheCondition' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (rand(0, 1) && class_exists(Foo::class)) {
+                    }
+                    new Foo();
+                    PHP,
+                'error_message' => 'UndefinedClass',
+            ],
+            'classExistsInStandaloneAndDoesNotLeakAfterTheExpression' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $result = class_exists(Foo::class) && Foo::bar();
+                        new Foo();
+                    }
+                    PHP,
+                'error_message' => 'UndefinedClass',
             ],
             'invalidDocblockParamDefault' => [
                 'code' => '<?php
