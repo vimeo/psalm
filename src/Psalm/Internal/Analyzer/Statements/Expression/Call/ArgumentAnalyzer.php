@@ -1472,9 +1472,19 @@ final class ArgumentAnalyzer
                         }
                     }
                 } elseif ($lhs->isSingle()) {
+                    // a function calling the callback from the class of its method reaches the non-public ones
+                    $non_public_reachable = $potential_method_id->fq_class_name === $context->self
+                        && !($cased_method_id !== null
+                            && !$method_id
+                            && !in_array($cased_method_id, self::PHP_NATIVE_NON_PUBLIC_CB, true))
+                        && !($method_id
+                            && $method_id->fq_class_name !== $context->self
+                            && $method_id->fq_class_name !== 'Closure');
+
                     // instance from e.g. new Foo() or static string like Foo::bar
                     if ((!$method_storage->is_static && !$lhs->hasNamedObjectType())
-                        || $method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
+                        || ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                            && !$non_public_reachable)) {
                         IssueBuffer::maybeAdd(
                             new InvalidArgument(
                                 'Argument ' . ($argument_offset + 1) . $method_identifier
