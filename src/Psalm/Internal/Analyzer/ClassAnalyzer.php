@@ -1008,7 +1008,16 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     if (!UnionTypeComparator::isContainedBy(
                         $codebase,
                         $fleshed_out_type,
-                        $property_storage->signature_type,
+                        TypeExpander::expandUnion(
+                            $codebase,
+                            $property_storage->signature_type,
+                            $fq_class_name,
+                            $fq_class_name,
+                            $parent_fq_class_name,
+                            true,
+                            false,
+                            $storage->final,
+                        ),
                         false,
                         false,
                         $union_comparison_result,
