@@ -24,6 +24,19 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'defineAcceptsAnEnumCaseSinceEightOne' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Foo {
+                        case Bar;
+                    }
+
+                    define('TEST', Foo::Bar);
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'multibyteLiteralArgument' => [
                 'code' => '<?php
                     function startsWithGreeting(string $s): bool {
