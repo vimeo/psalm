@@ -1050,6 +1050,41 @@ final class AssertionFinder
     }
 
     /**
+     * What a call that asserts `A|B` leaves when the assertion holds: one of them.
+     *
+     * @param list<Assertion> $rules
+     * @return list{non-empty-list<Assertion>}
+     * @psalm-pure
+     */
+    private static function anyOfRules(array $rules): array
+    {
+        // a docblock assertion without a type is dropped when it is read
+        assert($rules !== []);
+
+        return [$rules];
+    }
+
+    /**
+     * What a call that asserts `A|B` leaves when the assertion does not hold: neither of them, so one group per rule.
+     *
+     * @param list<Assertion> $rules
+     * @return non-empty-list<non-empty-list<Assertion>>
+     * @psalm-pure
+     */
+    private static function negateRules(array $rules): array
+    {
+        $groups = [];
+
+        foreach ($rules as $rule) {
+            $groups[] = [$rule->getNegation()];
+        }
+
+        // a docblock assertion without a type is dropped when it is read
+        /** @var non-empty-list<non-empty-list<Assertion>> $groups */
+        return $groups;
+    }
+
+    /**
      * @param  PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $expr
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
@@ -1119,7 +1154,7 @@ final class AssertionFinder
                     }
 
                     if ($var_name) {
-                        $if_types[$var_name] = [[$assertion->rule[0]]];
+                        $if_types[$var_name] = self::anyOfRules($assertion->rule);
                     }
                 } elseif ($assertion->var_id === '$this') {
                     if (!$expr instanceof PhpParser\Node\Expr\MethodCall) {
@@ -1139,7 +1174,7 @@ final class AssertionFinder
                     );
 
                     if ($var_id) {
-                        $if_types[$var_id] = [[$assertion->rule[0]]];
+                        $if_types[$var_id] = self::anyOfRules($assertion->rule);
                     }
                 } elseif (is_string($assertion->var_id)) {
                     $is_function = str_ends_with($assertion->var_id, '()');
@@ -1210,7 +1245,7 @@ final class AssertionFinder
                         );
                         continue;
                     }
-                    $if_types[$assertion_var_id] = [[$assertion->rule[0]]];
+                    $if_types[$assertion_var_id] = self::anyOfRules($assertion->rule);
                 }
 
                 if ($if_types) {
@@ -1259,7 +1294,7 @@ final class AssertionFinder
                     }
 
                     if ($var_name) {
-                        $if_types[$var_name] = [[$assertion->rule[0]->getNegation()]];
+                        $if_types[$var_name] = self::negateRules($assertion->rule);
                     }
                 } elseif ($assertion->var_id === '$this' && $expr instanceof PhpParser\Node\Expr\MethodCall) {
                     $var_id = ExpressionIdentifier::getExtendedVarId(
@@ -1269,7 +1304,7 @@ final class AssertionFinder
                     );
 
                     if ($var_id) {
-                        $if_types[$var_id] = [[$assertion->rule[0]->getNegation()]];
+                        $if_types[$var_id] = self::negateRules($assertion->rule);
                     }
                 } elseif (is_string($assertion->var_id)) {
                     $is_function = str_ends_with($assertion->var_id, '()');
@@ -1322,17 +1357,15 @@ final class AssertionFinder
                             }
                         }
 
-                        $rule = $assertion->rule[0]->getNegation();
-
                         $assertion_var_id = str_replace($var_id, $arg_var_id, $assertion->var_id);
 
-                        $if_types[$assertion_var_id] = [[$rule]];
+                        $if_types[$assertion_var_id] = self::negateRules($assertion->rule);
                     } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
                         $var_id = $assertion->var_id;
                         if (str_starts_with($var_id, 'self::')) {
                             $var_id = $this_class_name.'::'.substr($var_id, 6);
                         }
-                        $if_types[$var_id] = [[$assertion->rule[0]->getNegation()]];
+                        $if_types[$var_id] = self::negateRules($assertion->rule);
                     } else {
                         IssueBuffer::maybeAdd(
                             new InvalidDocblock(

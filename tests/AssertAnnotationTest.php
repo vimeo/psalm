@@ -159,6 +159,45 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertIfTrueAndIfFalseOfAUnionTypeKeepEveryMember' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-assert-if-true int|string $value
+                     */
+                    function isIntOrString(mixed $value): bool {
+                        return is_int($value) || is_string($value);
+                    }
+
+                    /**
+                     * @psalm-assert-if-false int|string $value
+                     */
+                    function isNotIntOrString(mixed $value): bool {
+                        return !is_int($value) && !is_string($value);
+                    }
+
+                    function test(mixed $a, int|string|null $b, mixed $c): void {
+                        if (isIntOrString($a)) {
+                            /** @psalm-check-type-exact $a = int|string */
+                        }
+
+                        if (isIntOrString($b)) {
+                            /** @psalm-check-type-exact $b = int|string */
+                        } else {
+                            /** @psalm-check-type-exact $b = null */
+                        }
+
+                        if (isNotIntOrString($c)) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $c = int|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'assertKeyOfAClassConstantNarrowsToItsKeys' => [
                 'code' => '<?php
                     final class OwnerTypes {
@@ -1675,7 +1714,7 @@ final class AssertAnnotationTest extends TestCase
             ],
             'reflectionNameTypeClassStringIfNotBuiltin' => [
                 'code' => '<?php
-                    /** @return class-string|null */
+                    /** @return class-string|"self"|"static"|null */
                     function getPropertyType(\ReflectionProperty $reflectionItem): ?string {
                         $type = $reflectionItem->getType();
                         return ($type instanceof \ReflectionNamedType) && !$type->isBuiltin() ? $type->getName() : null;
