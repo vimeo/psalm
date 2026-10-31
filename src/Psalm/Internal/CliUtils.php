@@ -72,6 +72,7 @@ final class CliUtils
         string $current_dir,
         bool $has_explicit_root,
         string $vendor_dir,
+        bool $project_autoloader_required = true,
     ): array {
         $autoload_roots = [$current_dir];
 
@@ -118,7 +119,7 @@ final class CliUtils
             }
 
             $composer_json_file = Composer::getJsonFilePath($autoload_root);
-            if (!$has_autoloader && file_exists($composer_json_file)) {
+            if ($project_autoloader_required && !$has_autoloader && file_exists($composer_json_file)) {
                 $error_message = 'Could not find any composer autoloaders in ' . $autoload_root;
 
                 if (!$has_explicit_root) {

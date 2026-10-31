@@ -260,7 +260,12 @@ final class Psalm
             // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
             /** @return list<ClassLoader> */
             static fn(): array =>
-                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir),
+                CliUtils::requireAutoloaders(
+                    $current_dir,
+                    isset($options['r']),
+                    $vendor_dir,
+                    !array_key_exists('v', $options),
+                ),
         );
 
         $run_taint_analysis = self::shouldRunTaintAnalysis($options);
