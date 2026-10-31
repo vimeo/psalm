@@ -2062,6 +2062,8 @@ final class AssertionFinder
             } elseif ($first_var_type
                 && $codebase
                 && $assertion_type instanceof IsType
+                // a string passing a ctype check is of the type, but a string of the type may not pass it ("-5")
+                && !str_starts_with($function_name, 'ctype_')
             ) {
                 self::processIrreconcilableFunctionCall(
                     $first_var_type,
