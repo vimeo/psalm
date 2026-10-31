@@ -20,6 +20,23 @@ final class ReferenceConstraintTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'paramOutOnInterfaceMethodWithoutBody' => [
+                'code' => '<?php
+                    interface I {
+                        /** @param-out int $a */
+                        public function a(?int &$a = null): void;
+
+                        /** @param-out array{foo: string, ...} $a */
+                        public function addFoo(array &$a): void;
+                    }',
+            ],
+            'paramOutOnAbstractMethodWithoutBody' => [
+                'code' => '<?php
+                    abstract class A {
+                        /** @param-out int $a */
+                        abstract public function a(?int &$a = null): void;
+                    }',
+            ],
             'functionParameterNoViolation' => [
                 'code' => '<?php
                     /** @return void */
@@ -311,6 +328,14 @@ final class ReferenceConstraintTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'paramOutOnMethodWithBodyThatDoesNotMatchIt' => [
+                'code' => '<?php
+                    class B {
+                        /** @param-out int $a */
+                        public function a(?int &$a = null): void {}
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
+            ],
             'functionParameterViolation' => [
                 'code' => '<?php
                     /** @return void */
