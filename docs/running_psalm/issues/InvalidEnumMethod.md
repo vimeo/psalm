@@ -8,8 +8,12 @@ enum Status: string {
     case Open = 'open';
     case Closed = 'closed';
 
-    public function __toString(): string {
+    public function __toString(): string { // InvalidEnumMethod
         return "SomeStatus";
+    }
+
+    public function __debugInfo(): array { // InvalidEnumMethod before PHP 8.6, no issue from PHP 8.6
+        return [];
     }
 }
 ```
