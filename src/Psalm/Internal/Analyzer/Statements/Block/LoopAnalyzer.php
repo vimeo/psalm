@@ -277,8 +277,9 @@ final class LoopAnalyzer
                         }
 
                         // if we're in a do block we don't want to remove vars before evaluating
-                        // the where conditional
-                        if (!$is_do) {
+                        // the where conditional, but a property or array offset it narrowed was not
+                        // in scope when the loop was entered
+                        if (!$is_do || !self::isLoopVar($var_id)) {
                             $vars_to_remove[] = $var_id;
                         }
                     }
