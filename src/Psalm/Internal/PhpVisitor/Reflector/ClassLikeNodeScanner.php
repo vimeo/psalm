@@ -93,6 +93,7 @@ use function reset;
 use function sprintf;
 use function str_starts_with;
 use function strlen;
+use function strtok;
 use function strtolower;
 use function substr;
 use function trim;
@@ -2343,17 +2344,34 @@ final class ClassLikeNodeScanner
             $parsed_docblock->tags['psalm-type'] ?? [],
         );
 
+        // the templates of the class the alias is declared on are not class names, whatever the namespace
+        $template_names = [];
+
+        foreach (['template', 'psalm-template', 'phpstan-template', 'template-covariant',
+            'psalm-template-covariant', 'phpstan-template-covariant', 'template-contravariant',
+            'psalm-template-contravariant', 'phpstan-template-contravariant'] as $template_tag) {
+            foreach ($parsed_docblock->tags[$template_tag] ?? [] as $template_line) {
+                $template_name = strtok(trim($template_line), " \t\n");
+
+                if ($template_name !== false) {
+                    $template_names[$template_name] = true;
+                }
+            }
+        }
+
         return self::getTypeAliasesFromCommentLines(
             $type_alias_comment_lines,
             $aliases,
             $type_aliases,
             $self_fqcln,
+            $template_names,
         );
     }
 
     /**
      * @param array<string>    $type_alias_comment_lines
      * @param array<string, TypeAlias> $type_aliases
+     * @param array<string, true> $template_names
      * @return array<string, InlineTypeAlias>
      * @throws DocblockParseException if there was a problem parsing the docblock
      * @psalm-external-mutation-free
@@ -2363,6 +2381,7 @@ final class ClassLikeNodeScanner
         Aliases $aliases,
         ?array $type_aliases,
         ?string $self_fqcln,
+        array $template_names,
     ): array {
         $declarations = [];
 
@@ -2390,7 +2409,7 @@ final class ClassLikeNodeScanner
                 $type_tokens = TypeTokenizer::getFullyQualifiedTokens(
                     $type_string,
                     $aliases,
-                    null,
+                    $template_names,
                     $type_alias_tokens + $type_aliases,
                     $self_fqcln,
                 );
