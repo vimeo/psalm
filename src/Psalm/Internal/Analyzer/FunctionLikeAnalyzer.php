@@ -1025,7 +1025,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         true,
                     ),
                 )) {
-                    $input_type = new Union([new TNamedObject($expected_exception)]);
+                    $intersected_types = [];
+
+                    foreach ($storage->throw_intersections[$expected_exception] ?? [] as $intersected_exception) {
+                        $intersected_type = new TNamedObject($intersected_exception);
+                        $intersected_types[$intersected_type->getKey()] = $intersected_type;
+                    }
+
+                    $input_type = new Union([
+                        new TNamedObject($expected_exception, false, false, $intersected_types),
+                    ]);
                     $container_type = new Union([new TNamedObject('Exception'), new TNamedObject('Throwable')]);
 
                     if (!UnionTypeComparator::isContainedBy($codebase, $input_type, $container_type)) {

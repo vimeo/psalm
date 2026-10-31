@@ -140,6 +140,13 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      */
     public array $throw_locations = [];
 
+    /**
+     * The other classes of the intersection type (`A&B`) a thrown class is part of
+     *
+     * @var array<string, list<string>>
+     */
+    public array $throw_intersections = [];
+
     public bool $has_yield = false;
 
     public ?string $return_type_description = null;

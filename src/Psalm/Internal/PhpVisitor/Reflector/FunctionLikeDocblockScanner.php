@@ -57,6 +57,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_any;
+use function array_diff;
 use function array_filter;
 use function array_merge;
 use function array_values;
@@ -227,26 +228,41 @@ final class FunctionLikeDocblockScanner
             // so `@throws Foo<Bar>` is treated like `@throws Foo`
             $throw_classes = preg_replace('/<(?:[^<>]++|(?R))*+>/', '', $throw) ?? $throw;
 
-            foreach (explode('|', $throw_classes) as $throw_class) {
-                $throw_class = trim($throw_class);
+            foreach (explode('|', $throw_classes) as $throw_union_part) {
+                // an exception of an intersection type (`A&B`) is thrown as each of its types
+                $throw_group = [];
 
-                if ($throw_class === '') {
-                    continue;
+                foreach (explode('&', $throw_union_part) as $throw_class) {
+                    $throw_class = trim($throw_class);
+
+                    if ($throw_class === '') {
+                        continue;
+                    }
+
+                    if ($throw_class !== 'self' && $throw_class !== 'static' && $throw_class !== 'parent') {
+                        $exception_fqcln = Type::getFQCLNFromString(
+                            $throw_class,
+                            $aliases,
+                        );
+                    } else {
+                        $exception_fqcln = $throw_class;
+                    }
+
+                    $throw_group[] = $exception_fqcln;
+
+                    $codebase->scanner->queueClassLikeForScanning($exception_fqcln);
+                    $file_storage->referenced_classlikes[strtolower($exception_fqcln)] = $exception_fqcln;
+                    $storage->throws[$exception_fqcln] = true;
+                    $storage->throw_locations[$exception_fqcln] = $throw_location;
                 }
 
-                if ($throw_class !== 'self' && $throw_class !== 'static' && $throw_class !== 'parent') {
-                    $exception_fqcln = Type::getFQCLNFromString(
-                        $throw_class,
-                        $aliases,
-                    );
-                } else {
-                    $exception_fqcln = $throw_class;
+                if (count($throw_group) > 1) {
+                    foreach ($throw_group as $exception_fqcln) {
+                        $storage->throw_intersections[$exception_fqcln] = array_values(
+                            array_diff($throw_group, [$exception_fqcln]),
+                        );
+                    }
                 }
-
-                $codebase->scanner->queueClassLikeForScanning($exception_fqcln);
-                $file_storage->referenced_classlikes[strtolower($exception_fqcln)] = $exception_fqcln;
-                $storage->throws[$exception_fqcln] = true;
-                $storage->throw_locations[$exception_fqcln] = $throw_location;
             }
         }
 
