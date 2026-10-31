@@ -159,6 +159,42 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertAlternativeThatCannotHoldIsNotReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Html {
+                        public function __toString(): string {
+                            return '';
+                        }
+                    }
+
+                    final class Plain {}
+
+                    /**
+                     * @template ExpectedType
+                     * @param ExpectedType $expected
+                     * @psalm-assert =ExpectedType $actual
+                     */
+                    function assertSameish(mixed $expected, mixed $actual): void {}
+
+                    /** @psalm-assert Plain|string $actual */
+                    function isPlainOrString(mixed $actual): void {}
+
+                    function check(Html|string $withToString, Plain|string $plain, string $a, string $b): void {
+                        assertSameish($withToString, $a);
+                        assertSameish($plain, $b);
+                    }
+
+                    /** @param mixed $value */
+                    function narrowed($value): void {
+                        isPlainOrString($value);
+                        /** @psalm-check-type-exact $value = Plain|string */;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'assertKeyOfAClassConstantNarrowsToItsKeys' => [
                 'code' => '<?php
                     final class OwnerTypes {
@@ -3228,6 +3264,22 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertWithNoAlternativeThatCanHold' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Plain {}
+
+                    /** @psalm-assert Plain|string $actual */
+                    function isPlainOrString(mixed $actual): void {}
+
+                    function check(int $number): void {
+                        isPlainOrString($number);
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'assertInstanceOfMultipleInterfaces' => [
                 'code' => '<?php
                     class A {
