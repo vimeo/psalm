@@ -296,7 +296,11 @@ final class ForeachAnalyzer
 
         $foreach_context = clone $context;
 
-        if ($var_id && $foreach_context->hasVariable($var_id)) {
+        // a mixed value stays mixed: the loop analysis would carry its non-emptiness over to after the loop
+        if ($var_id
+            && $foreach_context->hasVariable($var_id)
+            && !$foreach_context->vars_in_scope[$var_id]->hasMixed()
+        ) {
             // refine the type of the array variable we iterate over
             // if we entered loop body, the array cannot be empty
             $foreach_context->vars_in_scope[$var_id] = AssertionReconciler::reconcile(
