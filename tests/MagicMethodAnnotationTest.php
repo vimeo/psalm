@@ -260,6 +260,43 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodTagTemplateIsBoundByAGenericMixin' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @template U
+                     * @method T get()
+                     * @method U other()
+                     */
+                    final class Box
+                    {
+                        public function __call(string $name, array $arguments): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    /** @mixin Box<int, string> */
+                    final class Holder
+                    {
+                        public function __call(string $name, array $arguments): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $first = $holder->get();
+                    $second = $holder->other();
+                    PHP,
+                'assertions' => [
+                    '$first' => 'int',
+                    '$second' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'trailingReturnTypes' => [
                 'code' => '<?php
                     class ParentClass {
