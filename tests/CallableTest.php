@@ -1722,6 +1722,27 @@ final class CallableTest extends TestCase
                         if (is_callable($setter)) {}
                     }',
             ],
+            'privateStaticCallbackOfTheCurrentClassByClassString' => [
+                'code' => '<?php
+                    final class Sorter {
+                        /** @param list<int> $values */
+                        public function sort(array $values): array {
+                            usort($values, [self::class, "compare"]);
+                            usort($values, [static::class, "compare"]);
+                            usort($values, [Sorter::class, "compare"]);
+
+                            return array_map([self::class, "double"], $values);
+                        }
+
+                        private static function compare(int $a, int $b): int {
+                            return $a <=> $b;
+                        }
+
+                        protected static function double(int $a): int {
+                            return $a * 2;
+                        }
+                    }',
+            ],
             'noExceptionOnSelfString' => [
                 'code' => '<?php
                     class Fish {
@@ -2562,6 +2583,33 @@ final class CallableTest extends TestCase
 
                     foo(A::class . "::barr");',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'privateStaticCallbackOfAnotherClassByClassString' => [
+                'code' => '<?php
+                    final class Other {
+                        private static function compare(int $a, int $b): int {
+                            return $a <=> $b;
+                        }
+                    }
+
+                    final class Sorter {
+                        /** @param list<int> $values */
+                        public function sort(array $values): void {
+                            usort($values, [Other::class, "compare"]);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'privateStaticCallbackByClassStringToAFunctionThatCannotCallIt' => [
+                'code' => '<?php
+                    final class Sorter {
+                        public function run(): void {
+                            iterator_apply(new ArrayIterator([]), [self::class, "cleanup"]);
+                        }
+
+                        private static function cleanup(): void {}
+                    }',
+                'error_message' => 'InvalidArgument',
             ],
             'undefinedCallableMethodArray' => [
                 'code' => '<?php
