@@ -739,6 +739,102 @@ final class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'enumCaseValueFromDefinedConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    define('SOME', 1);
+                    enum Foo: int {
+                        case ONE = SOME;
+                    }
+                    $a = Foo::ONE->value;
+                PHP,
+                'assertions' => [
+                    '$a===' => "1",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCaseValueFromDeclaredConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    const SOME = 'some';
+                    enum Foo: string {
+                        case ONE = SOME;
+                    }
+                    $a = Foo::ONE->value;
+                PHP,
+                'assertions' => [
+                    '$a===' => "'some'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCaseValueFromConstantDeclaredAfterTheEnum' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Foo: int {
+                        case ONE = \SOME;
+                    }
+                    const SOME = 2;
+                    $a = Foo::ONE->value;
+                PHP,
+                'assertions' => [
+                    '$a===' => "2",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCaseValueFromConstantReferencingAnotherConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    const BASE = 3;
+                    const SOME = BASE + 1;
+                    enum Foo: int {
+                        case ONE = SOME;
+                    }
+                    $a = Foo::ONE->value;
+                PHP,
+                'assertions' => [
+                    '$a===' => "4",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCaseValueFromNamespacedConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace A;
+                    const SOME = 5;
+                    enum Foo: int {
+                        case ONE = SOME;
+                    }
+                    $a = Foo::ONE->value;
+                    PHP,
+                'assertions' => [
+                    '$a===' => '5',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCaseValueFromGlobalConstantInNamespace' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace {
+                        const SOME = 6;
+                    }
+                    namespace A {
+                        enum Foo: int {
+                            case ONE = SOME;
+                        }
+                        $a = Foo::ONE->value;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$a===' => '6',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'enumWithCasesReferencingAnotherEnumCase' => [
                 'code' => <<<'PHP'
                     <?php
