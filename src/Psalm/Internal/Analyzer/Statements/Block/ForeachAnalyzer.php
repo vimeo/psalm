@@ -316,20 +316,6 @@ final class ForeachAnalyzer
             $foreach_context->branch_point = (int) $stmt->getAttribute('startFilePos');
         }
 
-        if ($stmt->keyVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->keyVar->name)) {
-            $key_type ??= Type::getMixed();
-
-            AssignmentAnalyzer::analyze(
-                $statements_analyzer,
-                $stmt->keyVar,
-                $stmt->expr,
-                $key_type,
-                $foreach_context,
-                $doc_comment,
-                ['$' . $stmt->keyVar->name => true],
-            );
-        }
-
         if ($value_type !== null) {
             $value_type = $value_type->setProperties(['by_ref' => $stmt->byRef]);
         } else {
@@ -366,6 +352,21 @@ final class ForeachAnalyzer
         ) {
             // TODO support references with destructuring
             $foreach_context->references_to_external_scope['$' . $stmt->valueVar->name] = true;
+        }
+
+        // PHP assigns the value first, so a key of the same name wins
+        if ($stmt->keyVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->keyVar->name)) {
+            $key_type ??= Type::getMixed();
+
+            AssignmentAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt->keyVar,
+                $stmt->expr,
+                $key_type,
+                $foreach_context,
+                $doc_comment,
+                ['$' . $stmt->keyVar->name => true],
+            );
         }
 
         foreach ($var_comments as $var_comment) {
