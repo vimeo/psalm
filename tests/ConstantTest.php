@@ -2404,6 +2404,23 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classConstantFromANegativeShiftIsNever' => [
+                'code' => '<?php
+                    enum Color: int
+                    {
+                        case Negative = -1;
+                    }
+
+                    class Card
+                    {
+                        public const int NEGATIVE = 1 << Color::Negative->value;
+                    }
+
+                    $negative = Card::NEGATIVE;',
+                'error_message' => 'NoValue',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'constantDefinedInFunctionButNotCalled' => [
                 'code' => '<?php
                     /**

@@ -42,6 +42,7 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
@@ -63,8 +64,12 @@ final class ConstantTypeResolver
 {
     private static function resolveShift(UnresolvedShift $c, Atomic $left, Atomic $right): Atomic
     {
-        // a negative shift throws at runtime
-        if ($left instanceof TLiteralInt && $right instanceof TLiteralInt && $right->value >= 0) {
+        if ($left instanceof TLiteralInt && $right instanceof TLiteralInt) {
+            // a negative shift throws, as it does in ArithmeticOpAnalyzer
+            if ($right->value < 0) {
+                return new TNever();
+            }
+
             return self::getLiteralTypeFromScalarValue(
                 $c instanceof UnresolvedShiftLeft ? $left->value << $right->value : $left->value >> $right->value,
             );
