@@ -381,6 +381,51 @@ final class BinaryOperationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testLiteralStringLongerThanTheLimitIsStillALiteralString(): void
+    {
+        Config::getInstance()->max_string_length = 20;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    /** @param literal-string $sql */
+                    function query(string $sql): void {
+                        echo $sql;
+                    }
+
+                    $long = "SELECT * FROM some_table WHERE id = 1";
+                    /** @psalm-check-type-exact $long = non-empty-literal-string */
+
+                    query($long);
+                    query("SELECT * FROM some_table WHERE id = 1");',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStringBuiltFromARuntimeValueIsNotALiteralString(): void
+    {
+        Config::getInstance()->max_string_length = 20;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    /** @param literal-string $sql */
+                    function query(string $sql): void {
+                        echo $sql;
+                    }
+
+                    function run(string $table): void {
+                        query("SELECT * FROM some_table WHERE id = " . $table);
+                    }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('ArgumentTypeCoercion');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     /**
      * @psalm-pure
      */

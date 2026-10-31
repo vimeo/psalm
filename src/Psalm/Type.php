@@ -297,7 +297,7 @@ abstract class Type
     }
 
     /**
-     * @return TLiteralString|TNonEmptyString|TNonFalsyString
+     * @return TLiteralString|TNonEmptyNonspecificLiteralString
      * @psalm-taint-specialize
      */
     public static function getAtomicStringFromLiteral(string $value, bool $from_docblock = false): TString
@@ -311,10 +311,9 @@ abstract class Type
         if (!$type) {
             if ($value === '' || strlen($value) < $config->max_string_length) {
                 $type = new TLiteralString($value, $from_docblock);
-            } elseif ($value === '0') {
-                $type = new TNonEmptyString($from_docblock);
             } else {
-                $type = new TNonFalsyString($from_docblock);
+                // the value is not kept, but it is still a literal
+                $type = new TNonEmptyNonspecificLiteralString($from_docblock);
             }
         }
 
