@@ -21,6 +21,66 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullsafeCallFalsyResultDoesNotNarrowReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Box
+                    {
+                        public function get(): ?string { return null; }
+                        public function name(): string { return ''; }
+                    }
+
+                    function makeBox(): ?Box { return null; }
+
+                    function plain(?Box $box): void {
+                        if ($box?->get()) {
+                            /** @psalm-check-type-exact $box = Box */;
+                        } else {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                        /** @psalm-check-type-exact $box = Box|null */;
+                    }
+
+                    function negated(?Box $box): void {
+                        if (!$box?->get()) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        } else {
+                            /** @psalm-check-type-exact $box = Box */;
+                        }
+                    }
+
+                    function assigned(?Box $box): void {
+                        if ($value = $box?->get()) {
+                            echo $value;
+                            /** @psalm-check-type-exact $box = Box */;
+                        } else {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                        /** @psalm-check-type-exact $box = Box|null */;
+                    }
+
+                    function elvis(?Box $box): string {
+                        return $box?->get() ?: $box?->name() ?? "";
+                    }
+
+                    function conjunction(?Box $box): void {
+                        if ($box?->get() && $box->name()) {
+                            echo 1;
+                        }
+                    }
+
+                    function untracked(): void {
+                        if (makeBox()?->get()) {
+                            echo 1;
+                        } else {
+                            echo 2;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.1',
+            ],
             'twoVarLogicSimple' => [
                 'code' => '<?php
                     function foo(?string $a, ?string $b): string {
