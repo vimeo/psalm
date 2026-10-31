@@ -1335,6 +1335,23 @@ final class ArgumentsAnalyzer
             || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
             || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
             || $arg->value instanceof PhpParser\Node\Expr\Ternary
+            || $arg->value instanceof PhpParser\Node\Expr\Assign
+            || $arg->value instanceof PhpParser\Node\Expr\AssignOp
+            || $arg->value instanceof PhpParser\Node\Expr\UnaryMinus
+            || $arg->value instanceof PhpParser\Node\Expr\UnaryPlus
+            || $arg->value instanceof PhpParser\Node\Expr\BooleanNot
+            || $arg->value instanceof PhpParser\Node\Expr\BitwiseNot
+            || $arg->value instanceof PhpParser\Node\Expr\PreInc
+            || $arg->value instanceof PhpParser\Node\Expr\PostInc
+            || $arg->value instanceof PhpParser\Node\Expr\PreDec
+            || $arg->value instanceof PhpParser\Node\Expr\PostDec
+            || $arg->value instanceof PhpParser\Node\Expr\Isset_
+            || $arg->value instanceof PhpParser\Node\Expr\Empty_
+            || $arg->value instanceof PhpParser\Node\Expr\Instanceof_
+            || $arg->value instanceof PhpParser\Node\Expr\Clone_
+            || $arg->value instanceof PhpParser\Node\Expr\Match_
+            || $arg->value instanceof PhpParser\Node\Expr\Closure
+            || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction
             || (
                 (
                 $arg->value instanceof PhpParser\Node\Expr\ConstFetch
