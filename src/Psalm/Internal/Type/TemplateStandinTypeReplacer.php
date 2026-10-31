@@ -889,9 +889,13 @@ final class TemplateStandinTypeReplacer
                 if (isset(
                     $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class],
                 )) {
-                    $existing_lower_bounds = $template_result->lower_bounds
-                        [$param_name_key]
-                        [$atomic_type->defining_class];
+                    // the constraint stands in for an argument only until a real bound arrives
+                    $existing_lower_bounds = array_values(array_filter(
+                        $template_result->lower_bounds
+                            [$param_name_key]
+                            [$atomic_type->defining_class],
+                        static fn(TemplateBound $bound): bool => !$bound->from_constraint_fallback,
+                    ));
 
                     $has_matching_lower_bound = false;
 
@@ -910,16 +914,17 @@ final class TemplateStandinTypeReplacer
                     }
 
                     if (!$has_matching_lower_bound) {
-                        $template_result->lower_bounds
-                            [$param_name_key]
-                            [$atomic_type->defining_class]
-                            [] = new TemplateBound(
-                                $generic_param,
-                                $depth,
-                                $input_arg_offset,
-                                $bound_equality_classlike,
-                            );
+                        $existing_lower_bounds[] = new TemplateBound(
+                            $generic_param,
+                            $depth,
+                            $input_arg_offset,
+                            $bound_equality_classlike,
+                        );
                     }
+
+                    $template_result->lower_bounds
+                        [$param_name_key]
+                        [$atomic_type->defining_class] = $existing_lower_bounds;
                 } else {
                     $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class] = [
                         new TemplateBound(
