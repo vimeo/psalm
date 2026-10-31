@@ -1418,6 +1418,31 @@ final class ArgumentAnalyzer
         return null;
     }
 
+    /**
+     * A `callable` parameter checks the callable in the scope of the function it is declared by, and a protected
+     * method is accessible from that scope when its class and the scope's class are in one hierarchy.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isProtectedCallableAccessibleFromCallee(
+        Codebase $codebase,
+        int $visibility,
+        MethodIdentifier $callable_method_id,
+        ?MethodIdentifier $callee_method_id,
+    ): bool {
+        if ($visibility !== ClassLikeAnalyzer::VISIBILITY_PROTECTED || !$callee_method_id) {
+            return false;
+        }
+
+        $callable_class = $codebase->methods->getDeclaringMethodId($callable_method_id)?->fq_class_name;
+        $callee_class = $codebase->methods->getDeclaringMethodId($callee_method_id)?->fq_class_name;
+
+        return $callable_class !== null
+            && $callee_class !== null
+            && ($codebase->classExtends($callable_class, $callee_class)
+                || $codebase->classExtends($callee_class, $callable_class));
+    }
+
     private static function verifyCallableInContext(
         MethodIdentifier $potential_method_id,
         ?string $cased_method_id,
@@ -1458,7 +1483,14 @@ final class ArgumentAnalyzer
                             && $method_id->fq_class_name !== $context->self
                             && $method_id->fq_class_name !== 'Closure')
                     ) {
-                        if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
+                        if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                            && !self::isProtectedCallableAccessibleFromCallee(
+                                $codebase,
+                                $method_storage->visibility,
+                                $potential_method_id,
+                                $method_id,
+                            )
+                        ) {
                             IssueBuffer::maybeAdd(
                                 new InvalidArgument(
                                     'Argument ' . ($argument_offset + 1) . $method_identifier
