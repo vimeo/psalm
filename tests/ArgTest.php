@@ -408,6 +408,24 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'namedArgumentsRepeatingVariadicParamName' => [
+                'code' => '<?php
+                    function write(string $message, string ...$args): void {}
+
+                    write("Hi", args: "X", args: "Y");',
+                'error_message' => 'InvalidNamedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:44',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackedKeyRepeatedByNamedVariadicParamName' => [
+                'code' => '<?php
+                    function write(string $message, string ...$args): void {}
+
+                    write("Hi", ...["args" => "X"], args: "Y");',
+                'error_message' => 'InvalidNamedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:53',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'namedArgumentUsedTwiceBesideVariadic' => [
                 'code' => '<?php
                     function write(string $message, string ...$args): void {
