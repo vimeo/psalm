@@ -260,14 +260,28 @@ final class TypeParser
 
         $first_class = array_keys($template_type_map[$template_param_name])[0];
 
-        $conditional_type = self::getTypeFromTree(
-            $parse_tree->condition->children[0],
-            $codebase,
-            null,
-            $template_type_map,
-            $type_aliases,
-            $from_docblock,
-        );
+        $condition_tree = $parse_tree->condition->children[0];
+
+        // `T is empty` and `T is falsy` are the values `empty()` is true for, not the empty `never` type
+        $conditional_type = $condition_tree instanceof Value
+            && ($condition_tree->value === 'empty' || $condition_tree->value === 'falsy')
+            ? new Union([
+                new TFalse(),
+                new TLiteralInt(0),
+                new TLiteralFloat(0.0),
+                TLiteralString::make(''),
+                TLiteralString::make('0'),
+                new TNull(),
+                Type::getEmptyArrayAtomic(),
+            ], ['from_docblock' => $from_docblock])
+            : self::getTypeFromTree(
+                $condition_tree,
+                $codebase,
+                null,
+                $template_type_map,
+                $type_aliases,
+                $from_docblock,
+            );
 
         $if_type = self::getTypeFromTree(
             $parse_tree->children[0],
