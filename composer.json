@@ -38,7 +38,7 @@
         "felixfbecker/language-server-protocol": "^1.5.3",
         "fidry/cpu-core-counter": "^1.2",
         "netresearch/jsonmapper": "^5.0",
-        "nikic/php-parser": "^5.2.0",
+        "nikic/php-parser": "^5.9",
         "psalm/plugin-laravel": "^4.17.4",
         "psalm/plugin-mockery": "^1.3.2",
         "psalm/plugin-phpunit": "^0.19.3 || ^0.20 || ^0.21",
