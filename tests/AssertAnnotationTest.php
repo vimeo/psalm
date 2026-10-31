@@ -159,6 +159,29 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertIfTrueOfAConditionalTypeKeepsEveryAlternative' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $foo
+                     * @psalm-assert-if-true (T is string ? numeric-string : int) $foo
+                     */
+                    function foo(string|int $foo): bool
+                    {
+                        return true;
+                    }
+
+                    /** @var string|int $bar */
+                    $bar = rand(0, 1) ? 1 : "a";
+                    $asserted = foo($bar) ? $bar : null;
+                    $rest = foo($bar) ? null : $bar;',
+                'assertions' => [
+                    '$asserted===' => 'int|null|numeric-string',
+                    '$rest===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assertKeyOfAClassConstantNarrowsToItsKeys' => [
                 'code' => '<?php
                     final class OwnerTypes {
