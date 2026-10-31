@@ -926,6 +926,9 @@ final class InstancePropertyAssignmentAnalyzer
             $statements_analyzer,
         );
 
+        // what the messages call the object: its variable id, or else the code of the expression
+        $lhs_name = $lhs_var_id ?? (new PhpParser\PrettyPrinter\Standard())->prettyPrintExpr($stmt->var);
+
         $var_id = ExpressionIdentifier::getVarId(
             $stmt,
             $statements_analyzer->getFQCLN(),
@@ -966,7 +969,7 @@ final class InstancePropertyAssignmentAnalyzer
 
             IssueBuffer::maybeAdd(
                 new MixedPropertyAssignment(
-                    $lhs_var_id . ' of type mixed cannot be assigned to',
+                    $lhs_name . ' of type mixed cannot be assigned to',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -988,7 +991,7 @@ final class InstancePropertyAssignmentAnalyzer
         if ($lhs_type->isNull()) {
             IssueBuffer::maybeAdd(
                 new NullPropertyAssignment(
-                    $lhs_var_id . ' of type null cannot be assigned to',
+                    $lhs_name . ' of type null cannot be assigned to',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -1000,7 +1003,7 @@ final class InstancePropertyAssignmentAnalyzer
         if ($lhs_type->isNullable() && !$lhs_type->ignore_nullable_issues) {
             IssueBuffer::maybeAdd(
                 new PossiblyNullPropertyAssignment(
-                    $lhs_var_id . ' with possibly null type \'' . $lhs_type . '\' cannot be assigned to',
+                    $lhs_name . ' with possibly null type \'' . $lhs_type . '\' cannot be assigned to',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -1069,7 +1072,7 @@ final class InstancePropertyAssignmentAnalyzer
             if (!$has_valid_assignment_type) {
                 IssueBuffer::maybeAdd(
                     new InvalidPropertyAssignment(
-                        $lhs_var_id . ' with non-object type \'' . $invalid_assignment_type .
+                        $lhs_name . ' with non-object type \'' . $invalid_assignment_type .
                         '\' cannot treated as an object',
                         new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                     ),
@@ -1078,7 +1081,7 @@ final class InstancePropertyAssignmentAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidPropertyAssignment(
-                        $lhs_var_id . ' with possible non-object type \'' . $invalid_assignment_type .
+                        $lhs_name . ' with possible non-object type \'' . $invalid_assignment_type .
                         '\' cannot treated as an object',
                         new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                     ),

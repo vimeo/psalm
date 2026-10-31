@@ -2903,6 +2903,40 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'mixedObjectOfPropertyAssignmentIsNamed' => [
+                'code' => '<?php
+                    function f(): mixed { return 1; }
+                    f()->name = "x";',
+                'error_message' => 'MixedPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - f() of type mixed cannot be assigned to',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullObjectOfPropertyAssignmentIsNamed' => [
+                'code' => '<?php
+                    function f(): null { return null; }
+                    f()->name = "x";',
+                'error_message' => 'NullPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - f() of type null cannot be assigned to',
+            ],
+            'nullableObjectOfPropertyAssignmentIsNamed' => [
+                'code' => '<?php
+                    function f(): ?stdClass { return null; }
+                    f()->name = "x";',
+                'error_message' => 'PossiblyNullPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - f() with possibly null type',
+            ],
+            'nonObjectOfPropertyAssignmentIsNamed' => [
+                'code' => '<?php
+                    function f(): int { return 1; }
+                    f()->name = "x";',
+                'error_message' => 'InvalidPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - f() with non-object type',
+            ],
+            'possiblyNonObjectOfPropertyAssignmentIsNamed' => [
+                'code' => '<?php
+                    function f(): int|stdClass { return 1; }
+                    f()->name = "x";',
+                'error_message' => 'PossiblyInvalidPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - f() with possible non-object type',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'undefinedPropertyAssignment' => [
                 'code' => '<?php
                     class A {
