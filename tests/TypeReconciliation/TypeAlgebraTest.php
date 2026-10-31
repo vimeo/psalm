@@ -21,6 +21,63 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'coalesceAssignmentInConditionNarrowsTheVariable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function make(): ?object { return null; }
+
+                    function negated(?object $s): object {
+                        if (!($s ??= make())) {
+                            exit;
+                        }
+
+                        return $s;
+                    }
+
+                    function branches(?object $s): void {
+                        if ($s ??= make()) {
+                            /** @psalm-check-type-exact $s = object */;
+                        } else {
+                            /** @psalm-check-type-exact $s = null */;
+                        }
+                    }
+
+                    /** @param array{k?: object|null} $arr */
+                    function arrayItem(array $arr): object {
+                        if (!($arr['k'] ??= make())) {
+                            exit;
+                        }
+
+                        return $arr['k'];
+                    }
+
+                    final class Holder {
+                        private ?object $item = null;
+                        public ?self $child = null;
+
+                        public function item(): object {
+                            if (!($this->item ??= make())) {
+                                throw new Exception();
+                            }
+
+                            return $this->item;
+                        }
+
+                        public function untracked(): void {
+                            if ($this->self()->child ??= null) {
+                                echo 1;
+                            }
+                        }
+
+                        public function self(): self {
+                            return $this;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'twoVarLogicSimple' => [
                 'code' => '<?php
                     function foo(?string $a, ?string $b): string {

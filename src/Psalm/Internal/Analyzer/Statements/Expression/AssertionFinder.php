@@ -190,6 +190,17 @@ final class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
+        // the value of `$a ??= $b` is the value `$a` has afterwards
+        if ($conditional instanceof PhpParser\Node\Expr\AssignOp\Coalesce) {
+            $coalesce_var_name = ExpressionIdentifier::getExtendedVarId(
+                $conditional->var,
+                $this_class_name,
+                $source,
+            );
+
+            return $coalesce_var_name !== null ? [[$coalesce_var_name => [[new Truthy()]]]] : [];
+        }
+
         $var_name = ExpressionIdentifier::getExtendedVarId(
             $conditional,
             $this_class_name,
