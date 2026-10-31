@@ -22,6 +22,28 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayFindKeyReturnsOneOfTheKeysOrNull' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<int, string> $ints
+                     * @param list<string> $list
+                     * @param array<'a'|'b', int> $literals
+                     */
+                    function find(array $ints, array $list, array $literals): void {
+                        $int = array_find_key($ints, static fn(string $value): bool => $value === 'x');
+                        $index = array_find_key($list, static fn(string $value): bool => $value === 'x');
+                        $literal = array_find_key($literals, static fn(int $value): bool => $value > 1);
+
+                        /** @psalm-check-type-exact $int = int|null */
+                        /** @psalm-check-type-exact $index = int<0, max>|null */
+                        /** @psalm-check-type-exact $literal = 'a'|'b'|null */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'arrayFilter' => [
                 'code' => '<?php
                     $d = array_filter(["a" => rand(0, 10), "b" => rand(0, 10), "c" => null]);
