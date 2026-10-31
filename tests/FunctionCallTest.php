@@ -818,6 +818,35 @@ final class FunctionCallTest extends TestCase
                         return explode($d, $s);
                     }',
             ],
+            'negatedArrayIsListKeepsStringKeyedArray' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $a */
+                    function f(array $a): void {
+                        if (!array_is_list($a)) {
+                            g($a);
+                        }
+                    }
+
+                    /** @param array<string, mixed> $a */
+                    function g(array $a): void {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'negatedArrayIsListOnAssertedAssociativeArray' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $a */
+                    function f(array $a = []): void {
+                        assert(empty($a) || !array_is_list($a));
+                        g($a);
+                    }
+
+                    /** @param array<string, mixed> $a */
+                    function g(array $a): void {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'allowPossiblyUndefinedClassInClassExists' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2709,6 +2738,21 @@ final class FunctionCallTest extends TestCase
                 'code' => '<?php
                     function f(int $p = false) {}',
                 'error_message' => 'InvalidParamDefault',
+            ],
+            'negatedArrayIsListStillWidensArrayWithIntKeys' => [
+                'code' => '<?php
+                    /** @param array<int, string> $a */
+                    function f(array $a): void {
+                        if (!array_is_list($a)) {
+                            g($a);
+                        }
+                    }
+
+                    /** @param list<string> $a */
+                    function g(array $a): void {}',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'invalidDocblockParamDefault' => [
                 'code' => '<?php
