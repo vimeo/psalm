@@ -23,6 +23,24 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'doWhileConditionOnUnsetPropertyIsNotRedundant' => [
+                'code' => '<?php
+                    class Options {
+                        public bool $foo = false;
+                    }
+
+                    $options = new Options();
+
+                    if (random_int(0, 1)) {
+                        $options->foo = true;
+                    }
+
+                    $i = 0;
+                    do {
+                        echo $i;
+                        $i++;
+                    } while ($options->foo && $i < 3);',
+            ],
             'doWhileTrue' => [
                 'code' => '<?php
                     function ret(): int {
@@ -384,6 +402,21 @@ final class DoTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'doWhileConditionOnNarrowedPropertyIsRedundant' => [
+                'code' => '<?php
+                    class Options {
+                        public bool $foo = false;
+                    }
+
+                    $options = new Options();
+                    $options->foo = true;
+
+                    $i = 0;
+                    do {
+                        $i++;
+                    } while ($options->foo && $i < 3);',
+                'error_message' => 'RedundantCondition',
+            ],
             'doWhileVarWithPossibleBreakWithoutDefining' => [
                 'code' => '<?php
                     do {
