@@ -267,6 +267,15 @@ final class ForeachAnalyzer
             $iterator_type = null;
         }
 
+        // iterating an object by reference doesn't write the property: it keeps holding the same object
+        if ($stmt->byRef
+            && $stmt->expr instanceof PhpParser\Node\Expr\PropertyFetch
+            && $iterator_type
+            && !$iterator_type->isObjectType()
+        ) {
+            InstancePropertyAssignmentAnalyzer::trackReadonlyPropertyWrite($statements_analyzer, $stmt->expr, $context);
+        }
+
         $foreach_marker = $iterator_type ? self::getForeachMarker($statements_analyzer, $stmt, $iterator_type) : null;
 
         if ($iterator_type) {
