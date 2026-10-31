@@ -1121,7 +1121,17 @@ class Reconciler
                 $fq_class_name,
             );
 
-            return $declaring_class_storage->pseudo_property_get_types['$' . $property_name] ?? null;
+            $pseudo_property_type = $declaring_class_storage->pseudo_property_get_types['$' . $property_name] ?? null;
+
+            return $pseudo_property_type
+                ? TypeExpander::expandUnion(
+                    $codebase,
+                    $pseudo_property_type,
+                    $declaring_class_storage->name,
+                    $declaring_class_storage->name,
+                    $declaring_class_storage->parent_class,
+                )
+                : null;
         }
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
