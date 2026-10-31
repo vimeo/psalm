@@ -366,9 +366,10 @@ final class TryAnalyzer
                 $context->mergeExceptions($catch_context);
             }
 
-            $catch_doesnt_leave_parent_scope = $catch_actions[$i] !== [ScopeAnalyzer::ACTION_END]
-                && $catch_actions[$i] !== [ScopeAnalyzer::ACTION_CONTINUE]
-                && $catch_actions[$i] !== [ScopeAnalyzer::ACTION_BREAK];
+            // a catch that continues or rethrows depending on a condition doesn't reach the code after the try either
+            $catch_doesnt_leave_parent_scope = $catch_actions[$i] === []
+                || in_array(ScopeAnalyzer::ACTION_NONE, $catch_actions[$i], true)
+                || in_array(ScopeAnalyzer::ACTION_LEAVE_SWITCH, $catch_actions[$i], true);
 
             if ($catch_doesnt_leave_parent_scope) {
                 $definitely_newly_assigned_var_ids = array_intersect_key(
