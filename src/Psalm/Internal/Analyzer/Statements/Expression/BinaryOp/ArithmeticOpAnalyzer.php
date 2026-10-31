@@ -52,12 +52,17 @@ use Psalm\Type\Union;
 use function array_diff_key;
 use function array_values;
 use function count;
+use function floor;
+use function is_finite;
+use function is_float;
 use function is_int;
 use function is_numeric;
 use function max;
 use function min;
 use function preg_match;
 use function strtolower;
+
+use const PHP_INT_MIN;
 
 /**
  * @internal
@@ -907,7 +912,7 @@ final class ArithmeticOpAnalyzer
             }
 
             if ($left_type_part instanceof TFloat && $right_type_part instanceof TFloat) {
-                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                if (self::isIntOnlyOperation($parent)) {
                     $result_type = Type::getInt();
                 } else {
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
@@ -935,7 +940,7 @@ final class ArithmeticOpAnalyzer
                     }
                 }
 
-                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                if (self::isIntOnlyOperation($parent)) {
                     $result_type = Type::getInt();
                 } else {
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
@@ -961,7 +966,7 @@ final class ArithmeticOpAnalyzer
                     }
                 }
 
-                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                if (self::isIntOnlyOperation($parent)) {
                     $result_type = Type::getInt();
                 } else {
                     $result_type = new Union([new TInt, new TFloat]);
@@ -1000,6 +1005,28 @@ final class ArithmeticOpAnalyzer
         float|int $operand2,
         bool $allow_float_result,
     ): ?Union {
+        if (self::isIntOnlyOperation($operation)) {
+            // these operate on ints: a float that isn't an exact int would be a deprecated lossy conversion
+            if (is_float($operand1)) {
+                $operand1 = self::floatToExactInt($operand1);
+            }
+
+            if (is_float($operand2)) {
+                $operand2 = self::floatToExactInt($operand2);
+            }
+
+            if ($operand1 === null || $operand2 === null) {
+                return null;
+            }
+
+            if (($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+                    || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight)
+                && $operand2 < 0
+            ) {
+                return Type::getNever();
+            }
+        }
+
         if ($operation instanceof PhpParser\Node\Expr\BinaryOp\Plus) {
             $result = $operand1 + $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
@@ -1040,6 +1067,37 @@ final class ArithmeticOpAnalyzer
         }
 
         return $calculated_type;
+    }
+
+    /**
+     * Operations whose operands are converted to int and whose result is always an int.
+     *
+     * @psalm-pure
+     */
+    private static function isIntOnlyOperation(PhpParser\Node $operation): bool
+    {
+        return $operation instanceof PhpParser\Node\Expr\BinaryOp\Mod
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function floatToExactInt(float $value): ?int
+    {
+        if (!is_finite($value)
+            || $value !== floor($value)
+            || $value < (float) PHP_INT_MIN
+            || $value >= -(float) PHP_INT_MIN
+        ) {
+            return null;
+        }
+
+        return (int) $value;
     }
 
     /**

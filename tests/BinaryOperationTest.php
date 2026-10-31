@@ -388,6 +388,76 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'floatModuloWithFractionalOperand' => [
+                'code' => '<?php
+                    $a = 25.5 % 2.5;',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+            ],
+            'floatBitwiseWithFractionalOperand' => [
+                'code' => '<?php
+                    $a = 1.5 | 1;
+                    $b = 6 & 3.5;
+                    $c = 5 ^ 0.5;
+                    $d = 3.5 << 1;
+                    $e = 3 >> 1.5;',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                    '$c===' => 'int',
+                    '$d===' => 'int',
+                    '$e===' => 'int',
+                ],
+            ],
+            'floatOperandsOfIntOnlyOperationsGiveInt' => [
+                'code' => '<?php
+                    /**
+                     * @return list{int, int, int, int, int, int}
+                     */
+                    function f(float $f, int $i): array {
+                        return [$f | $i, $i & $f, $f ^ $f, $f << $i, $i >> $f, $f % $i];
+                    }',
+            ],
+            'floatModuloByFractionalZero' => [
+                'code' => '<?php
+                    $a = 5 % 0.5;',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+            ],
+            'floatOperandOutsideIntRange' => [
+                'code' => '<?php
+                    $a = 1e30 & 1;
+                    $b = -1e30 | 1;
+                    $c = 9.3e18 % 7;',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                    '$c===' => 'int',
+                ],
+            ],
+            'floatWithExactIntValueInIntOperations' => [
+                'code' => '<?php
+                    $a = 7.0 % 2.0;
+                    $b = 6.0 | 1;
+                    $c = 6 & 3.0;
+                    $d = 5.0 ^ 1;
+                    $e = 1.0 << 3;
+                    $f = 8.0 >> 1;
+                    $g = -7.0 % 3;
+                    $h = 2.0 << 0;',
+                'assertions' => [
+                    '$a===' => '1',
+                    '$b===' => '7',
+                    '$c===' => '2',
+                    '$d===' => '4',
+                    '$e===' => '8',
+                    '$f===' => '4',
+                    '$g===' => '-1',
+                    '$h===' => '2',
+                ],
+            ],
             'regularAddition' => [
                 'code' => '<?php
                     $a = 5 + 4;',
@@ -1266,6 +1336,16 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'shiftByNegativeLiteral' => [
+                'code' => '<?php
+                    $a = 1 << -1;',
+                'error_message' => 'NoValue',
+            ],
+            'shiftRightByNegativeFloatLiteral' => [
+                'code' => '<?php
+                    $a = 8 >> -2.0;',
+                'error_message' => 'NoValue',
+            ],
             'badAddition' => [
                 'code' => '<?php
                     $a = "b" + 5;',
