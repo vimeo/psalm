@@ -130,6 +130,30 @@ final class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
+    public function testOneInvalidIntersectionAmongSeveralAsThrows(): void
+    {
+        $this->expectExceptionMessage('InvalidThrow');
+        $this->expectException(CodeException::class);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                interface A {}
+                interface B {}
+
+                interface C {
+                    /**
+                     * @throws A&B|A&\Throwable|B&\Throwable
+                     */
+                    public function c(): void;
+                }',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
     public function testInheritedThrowableClassAsThrows(): void
     {
         $this->addFile(

@@ -258,7 +258,7 @@ final class FunctionLikeDocblockScanner
 
                 if (count($throw_group) > 1) {
                     foreach ($throw_group as $exception_fqcln) {
-                        $storage->throw_intersections[$exception_fqcln] = array_values(
+                        $storage->throw_intersections[$exception_fqcln][] = array_values(
                             array_diff($throw_group, [$exception_fqcln]),
                         );
                     }
