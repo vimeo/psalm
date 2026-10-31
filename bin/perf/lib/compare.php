@@ -12,7 +12,7 @@ const LIMIT_HEADROOM = 0.5;
 const EXAMPLES_PER_LIST = 10;
 const MESSAGE_CHARS = 300;
 const STATUSES = ['ok', 'crash', 'timeout', 'error'];
-/** 'skip' (➖, base not ok, not comparable) counts as warn overall. */
+/** 'skip' (💥, base not ok, not comparable) counts as warn overall. */
 const VERDICT_RANK = ['pass' => 0, 'skip' => 1, 'warn' => 1, 'fail' => 2];
 
 /**
@@ -150,7 +150,9 @@ function judgeProject(array $base, array $head, array $plan, string $name, bool 
     }
 
     if ($base['status'] !== 'ok') {
-        return $verdict('skip', "base {$base['status']}: not comparable");
+        $note = 'base ' . failureText($base) . ($head['status'] === 'ok' ? '' : ', head ' . failureText($head));
+
+        return $verdict('skip', $note);
     }
 
     if ($head['status'] !== 'ok') {
@@ -158,6 +160,20 @@ function judgeProject(array $base, array $head, array $plan, string $name, bool 
     }
 
     return judgeMetrics($base, $head, $depsChanged);
+}
+
+/**
+ * "ran out of memory", "timed out" or "crashed (reason)" for a crash or timeout result.
+ *
+ * @param array<string, mixed> $r
+ */
+function failureText(array $r): string
+{
+    return match (true) {
+        $r['status'] === 'timeout' => 'timed out',
+        $r['memory_crash'] ?? false => 'ran out of memory',
+        default => 'crashed (' . ($r['reason'] ?? 'exit ' . ($r['exit_code'] ?? '?')) . ')',
+    };
 }
 
 /**
@@ -177,7 +193,7 @@ function headFailure(array $base, array $head, array $plan, string $name): array
         $baseSize = (float) $base['psalm_mb'];
         $what = 'ran out of memory (limit %.0f MB), base used %.0f MB';
     } else {
-        return ['fail', 'head crashed (' . ($head['reason'] ?? 'exit ' . ($head['exit_code'] ?? '?')) . ')'];
+        return ['fail', 'head ' . failureText($head)];
     }
 
     $note = 'head ' . sprintf($what, $limit, $baseSize);
@@ -197,8 +213,6 @@ function judgeMetrics(array $base, array $head, bool $depsChanged): array
     $wall = pctDelta((float) $base['wall'], (float) $head['wall']);
     $result = ['verdict' => 'pass', 'notes' => [], 'mb_delta' => $mb, 'wall_delta' => $wall];
     if ($depsChanged) {
-        $result['notes'][] = 'composer.json changed: deltas are informational';
-
         return $result;
     }
 
