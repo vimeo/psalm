@@ -53,6 +53,7 @@ use function end;
 use function implode;
 use function ksort;
 use function min;
+use function str_contains;
 use function strcmp;
 use function strlen;
 use function strpos;
@@ -80,6 +81,13 @@ final class TaintFlowGraph extends DataFlowGraph
      * linkGeneratorSends()): recursive calls nest without end.
      */
     private const GENERATOR_SEND_CALL_DEPTH = 8;
+
+    /**
+     * How many different nestings of calls the search for the generators what is sent can be sent to
+     * reaches a node with before it searches on from that node matching any call (see
+     * linkGeneratorSends()): the nestings multiply along paths through code that many calls share.
+     */
+    private const GENERATOR_SEND_CALL_CONTEXTS = 16;
 
     /** @var array<string, DataFlowNode> */
     private array $sources = [];
@@ -836,9 +844,12 @@ final class TaintFlowGraph extends DataFlowGraph
      * Which function-likes a generator can come from is only known once the whole graph is built: they
      * are the generator function-likes whose return nodes reach the parent nodes of the generator. The
      * search for them goes backwards from those parent nodes, matching the calls it leaves through
-     * their arguments with the ones it entered through their returns, as the resolution walk does. It
-     * stops at the first such return node of each path: a generator a generator yields is not linked,
-     * nor one from a function-like without a body (unknown origin).
+     * their arguments with the ones it entered through their returns, as the resolution walk does,
+     * until more than GENERATOR_SEND_CALL_CONTEXTS nestings reach a node: from there it matches any
+     * call, as it does from a node already searched from that a link made during the search gives a
+     * predecessor. Either may link a send to more generators, never to fewer. It stops at the first
+     * such return node of each path: a generator a generator yields is not linked, nor one from a
+     * function-like without a body (unknown origin).
      *
      * What is sent to the generator of a specialized call goes into its specialization, so that it only
      * reaches that call's body walk.
@@ -857,56 +868,98 @@ final class TaintFlowGraph extends DataFlowGraph
 
             $send_node = $this->nodes[$send_id];
 
-            // [node id, specialization keys of the calls entered through their returns, innermost last]
+            // [node id, specialization keys of the calls entered through their returns, innermost last,
+            // or null once any call matches]
             $queue = [];
+            // node id => calls entered (see $queue) => true
             $visited = [];
+            // node ids searched from matching any call
+            $widened = [];
 
             foreach ($generator_ids as $generator_id => $_) {
                 $queue[] = [$generator_id, []];
-                $visited[$generator_id . "\0"] = true;
+                $visited[$generator_id][''] = true;
             }
 
             while ($queue) {
                 [$id, $calls] = array_pop($queue);
 
+                if ($calls !== null && isset($widened[$id])) {
+                    // searched from matching any call, which includes this nesting
+                    continue;
+                }
+
                 [$unspecialized_id, $specialization_key] = self::splitSpecializedId($id);
 
                 if (isset($this->generator_sent_nodes[$unspecialized_id])) {
-                    $this->linkGeneratorSend($reverse, $send_node, $unspecialized_id, $specialization_key);
+                    $linked_ids = $this->linkGeneratorSend(
+                        $reverse,
+                        $send_node,
+                        $unspecialized_id,
+                        $specialization_key,
+                    );
+
+                    foreach ($linked_ids as $linked_id) {
+                        // A node already searched from skips the states that reach it later, so the
+                        // predecessor it just got would be missed. Search it again matching any call
+                        // rather than replaying every nesting it was reached with.
+                        if (isset($visited[$linked_id]) || isset($widened[$linked_id])) {
+                            $widened[$linked_id] = true;
+                            unset($visited[$linked_id]);
+                            $queue[] = [$linked_id, null];
+                        }
+                    }
 
                     continue;
                 }
 
                 foreach ($reverse[$id] ?? [] as $from_id => $_) {
-                    $from_calls = $calls;
+                    if (isset($widened[$from_id])) {
+                        continue;
+                    }
 
-                    if ($specialization_key !== null && $from_id === $unspecialized_id) {
-                        // into the body of a call through its return
-                        $from_calls[] = $specialization_key;
+                    if ($calls !== null) {
+                        $from_calls = $calls;
 
-                        if (count($from_calls) > self::GENERATOR_SEND_CALL_DEPTH) {
-                            // too deep (recursion): any call matches
-                            $from_calls = [];
-                        }
-                    } else {
-                        [$from_unspecialized_id, $from_specialization_key] = self::splitSpecializedId($from_id);
+                        if ($specialization_key !== null && $from_id === $unspecialized_id) {
+                            // into the body of a call through its return
+                            $from_calls[] = $specialization_key;
 
-                        if ($from_unspecialized_id === $id) {
-                            // out of a body through the arguments of a call: the one entered, if any
-                            if ($from_calls && end($from_calls) !== $from_specialization_key) {
-                                continue;
+                            if (count($from_calls) > self::GENERATOR_SEND_CALL_DEPTH) {
+                                // too deep (recursion): any call matches
+                                $from_calls = [];
                             }
+                        } else {
+                            [$from_unspecialized_id, $from_specialization_key] = self::splitSpecializedId($from_id);
 
-                            array_pop($from_calls);
+                            if ($from_unspecialized_id === $id) {
+                                // out of a body through the arguments of a call: the one entered, if any
+                                if ($from_calls && end($from_calls) !== $from_specialization_key) {
+                                    continue;
+                                }
+
+                                array_pop($from_calls);
+                            }
+                        }
+
+                        $calls_key = implode("\0", $from_calls);
+
+                        if (isset($visited[$from_id][$calls_key])) {
+                            continue;
+                        }
+
+                        if (count($visited[$from_id] ?? []) < self::GENERATOR_SEND_CALL_CONTEXTS) {
+                            $visited[$from_id][$calls_key] = true;
+                            $queue[] = [$from_id, $from_calls];
+
+                            continue;
                         }
                     }
 
-                    $state_key = $from_id . "\0" . implode("\0", $from_calls);
-
-                    if (!isset($visited[$state_key])) {
-                        $visited[$state_key] = true;
-                        $queue[] = [$from_id, $from_calls];
-                    }
+                    // reached with too many nestings, or from a node that was: search on matching any call
+                    $widened[$from_id] = true;
+                    unset($visited[$from_id]);
+                    $queue[] = [$from_id, null];
                 }
             }
         }
@@ -914,10 +967,12 @@ final class TaintFlowGraph extends DataFlowGraph
 
     /**
      * Links $send_node to what is sent to the generators of the function-like with the return node
-     * $return_node_id, in the specialization $specialization_key if given.
+     * $return_node_id, in the specialization $specialization_key if given, and returns the ids of the
+     * nodes that got a new predecessor in $reverse.
      *
      * @param array<string, array<string, true>> $reverse see getReverseEdges()
      * @param-out array<string, array<string, true>> $reverse
+     * @return list<string>
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private function linkGeneratorSend(
@@ -925,23 +980,43 @@ final class TaintFlowGraph extends DataFlowGraph
         DataFlowNode $send_node,
         string $return_node_id,
         ?string $specialization_key,
-    ): void {
+    ): array {
         $sent_node = $this->generator_sent_nodes[$return_node_id];
+        $linked_ids = [];
+        $sent_node_linked = false;
 
         if ($specialization_key !== null) {
+            $unspecialized_id = $sent_node->id;
+
             $sent_node = $sent_node->withSpecialization(
-                $sent_node->id . self::SPECIALIZATION_SEPARATOR . $specialization_key,
-                $sent_node->id,
+                $unspecialized_id . self::SPECIALIZATION_SEPARATOR . $specialization_key,
+                $unspecialized_id,
                 $specialization_key,
                 null,
             );
+
+            if (!isset($reverse[$unspecialized_id][$sent_node->id])) {
+                $linked_ids[] = $unspecialized_id;
+            }
+
+            $sent_node_linked = !isset($reverse[$sent_node->id][$unspecialized_id]);
 
             $this->addNode($sent_node);
             self::linkSpecialization($reverse, $sent_node->id);
         }
 
         $this->addPath($send_node, $sent_node, 'generator-send');
-        $reverse[$sent_node->id][$send_node->id] = true;
+
+        if (!isset($reverse[$sent_node->id][$send_node->id])) {
+            $reverse[$sent_node->id][$send_node->id] = true;
+            $sent_node_linked = true;
+        }
+
+        if ($sent_node_linked) {
+            $linked_ids[] = $sent_node->id;
+        }
+
+        return $linked_ids;
     }
 
     /**
@@ -974,21 +1049,35 @@ final class TaintFlowGraph extends DataFlowGraph
     private function getReverseEdges(): array
     {
         $reverse = [];
+        $specialized_ids = [];
 
         foreach ($this->forward_edges as $from_id => $destinations) {
-            self::linkSpecialization($reverse, $from_id);
+            if (str_contains($from_id, self::SPECIALIZATION_SEPARATOR)) {
+                $specialized_ids[$from_id] = true;
+            }
 
             foreach ($destinations as $to_id => $_) {
                 $reverse[$to_id][$from_id] = true;
-                self::linkSpecialization($reverse, $to_id);
+
+                if (str_contains($to_id, self::SPECIALIZATION_SEPARATOR)) {
+                    $specialized_ids[$to_id] = true;
+                }
             }
         }
 
         foreach ($this->nodes as $node) {
             if ($node->unspecialized_id !== null) {
-                $reverse[$node->id][$node->unspecialized_id] = true;
-                $reverse[$node->unspecialized_id][$node->id] = true;
+                $specialized_ids[$node->id] = true;
             }
+        }
+
+        // the order of the destinations of a node and of the nodes depends on the order the graphs of the forked
+        // workers are merged in, and the search in linkGeneratorSends() keeps the first nestings of calls that
+        // reach a node
+        ksort($specialized_ids);
+
+        foreach ($specialized_ids as $id => $_) {
+            self::linkSpecialization($reverse, $id);
         }
 
         return $reverse;
@@ -1016,7 +1105,8 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
-     * Reports the flow of taints $taints from $predecessor into $sink.
+     * Reports the flow of taints $taints from $predecessor into $sink, and returns whether an issue was added: none
+     * is where the issues aren't reported, or are suppressed.
      */
     public function reportTaintedFlow(
         DataFlowNode $predecessor,
@@ -1024,7 +1114,7 @@ final class TaintFlowGraph extends DataFlowGraph
         int $taints,
         Config $config,
         Codebase $codebase,
-    ): void {
+    ): bool {
         if ($sink->code_location
             && $config->reportIssueInFile('TaintedInput', $sink->code_location->file_path)
         ) {
@@ -1043,13 +1133,14 @@ final class TaintFlowGraph extends DataFlowGraph
                 $issue_location = $argument_location;
             }
         } else {
-            return;
+            return false;
         }
 
         $issue_trace = $this->getIssueTrace($predecessor);
         $path = $this->getPredecessorPath($predecessor)
             . ' -> ' . $this->getSuccessorPath($sink);
 
+        $added = false;
         $max = $codebase->taint_count;
         for ($x = 0; $x < $max; $x++) {
             $t = 1 << $x;
@@ -1197,7 +1288,9 @@ final class TaintFlowGraph extends DataFlowGraph
                 ),
             };
 
-            IssueBuffer::maybeAdd($issue);
+            $added = IssueBuffer::accepts($issue) || $added;
         }
+
+        return $added;
     }
 }

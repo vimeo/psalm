@@ -34,6 +34,7 @@ use function strlen;
 use function strpos;
 use function substr;
 
+use const PHP_EOL;
 use const PHP_INT_MAX;
 use const SORT_STRING;
 
@@ -183,6 +184,15 @@ final class TaintFlowResolution
      * it would tell apart.
      */
     private const WIDENING_STATES = 16;
+
+    /**
+     * How many states a node must have for the flows reaching it in more to forget all their open assignments, not
+     * only those below their innermost one (see widenOpenAssignments()). Widened flows are still told apart by the
+     * key of their innermost open array assignment: a node of the code that handles a render array of any keys (a
+     * Drupal `$form`, passed through many functions) is reached with each of them, in each of the contexts reaching
+     * it. Past those, a fetch takes the flows of a node whatever the key it was assigned under.
+     */
+    private const FORGETTING_STATES = 64;
 
     /**
      * How many filters an entry has at most (see getFilter()): each fact a filter knows about the calls entering
@@ -388,9 +398,11 @@ final class TaintFlowResolution
     private array $open_assignment_truncations = [];
 
     /**
-     * Open assignments key => the open assignments widened (see widenOpenAssignments())
+     * Widening depth (1 at WIDENING_STATES, 0 at FORGETTING_STATES: how many of their innermost open assignments of
+     * each expression type the flows keep) => open assignments key => the open assignments widened to that depth
+     * (see widenOpenAssignments())
      *
-     * @var array<int, int>
+     * @var array<int, array<int, int>>
      */
     private array $open_assignment_widenings = [];
 
@@ -741,6 +753,23 @@ final class TaintFlowResolution
     private array $reported_flows = [];
 
     /**
+     * Ids of the states that only flows widened by widenOpenAssignments() reached, or flows from such a state: they
+     * pass fetches of keys other than those they were assigned under, so a sink they reach is reported once per
+     * taint kind (see reportFlow())
+     *
+     * @var array<int, true>
+     */
+    private array $widened_states = [];
+
+    /**
+     * Sink id => taints of the issues added for it so far (not those of flows into a sink where issues aren't
+     * reported, or that were suppressed)
+     *
+     * @var array<string, int>
+     */
+    private array $reported_sink_taints = [];
+
+    /**
      * @param array<string, array<string, Path>> $forward_edges
      * @param array<string, DataFlowNode> $nodes
      * @param array<string, DataFlowNode> $sources
@@ -811,6 +840,8 @@ final class TaintFlowResolution
 
             $progress->taskDone(0);
         }
+
+        $progress->debug('Taint flow resolution reached ' . count($this->state_nodes) . ' states' . PHP_EOL);
     }
 
     /**
@@ -1746,15 +1777,21 @@ final class TaintFlowResolution
     /**
      * The open assignments $open_assignments of a flow reaching a node with WIDENING_STATES states: only their
      * innermost open assignment of each expression type, and none of those of the call entering their context
-     * known. A fetch only ignores an open assignment the flow knows, so forgetting some only lets the flow go
-     * on through more fetches.
+     * known; of a flow reaching a node with FORGETTING_STATES states ($depth 0): none at all. A fetch only ignores
+     * an open assignment the flow knows, so forgetting some only lets the flow go on through more fetches.
      *
+     * Nor does a widened flow know its element slot: without it, an assignment of the element of a loop under its
+     * key (see applyPathType()) is one under a key not known, which every fetch takes. The slots of a node's flows
+     * would otherwise multiply with their innermost open assignment, by the loops of the code they go through.
+     *
+     * @param int $depth how many of their innermost open assignments of each expression type the flows keep: 1 at
+     *     WIDENING_STATES, 0 at FORGETTING_STATES
      * @psalm-external-mutation-free
      */
-    private function widenOpenAssignments(int $open_assignments): int
+    private function widenOpenAssignments(int $open_assignments, int $depth): int
     {
-        if (isset($this->open_assignment_widenings[$open_assignments])) {
-            return $this->open_assignment_widenings[$open_assignments];
+        if (isset($this->open_assignment_widenings[$depth][$open_assignments])) {
+            return $this->open_assignment_widenings[$depth][$open_assignments];
         }
 
         [$made, $closed] = $this->open_assignments[$open_assignments];
@@ -1762,18 +1799,19 @@ final class TaintFlowResolution
         foreach (self::FAMILIES as $family => $_) {
             $made[$family] ??= [];
             $closed[$family] ??= self::NO_CALL;
-            self::capOpenAssignments($made, $closed, $family, 1);
+            self::capOpenAssignments($made, $closed, $family, $depth);
 
             if ($closed[$family] !== self::NO_CALL) {
                 $closed[$family] = self::FORGOTTEN;
             }
         }
 
-        // the slot is that of the innermost ones
-        return $this->open_assignment_widenings[$open_assignments] = $this->internOpenAssignments(
+        $slot = $this->open_assignment_slots[$open_assignments];
+
+        return $this->open_assignment_widenings[$depth][$open_assignments] = $this->internOpenAssignments(
             $made,
             $closed,
-            $this->open_assignment_slots[$open_assignments],
+            $slot >= 0 ? self::NO_SLOT : $slot,
         );
     }
 
@@ -1874,10 +1912,22 @@ final class TaintFlowResolution
 
         $copied_position = $this->copied_position;
 
-        if (isset($this->state_ids[$node_id])
-            && count($this->state_ids[$node_id]) >= self::WIDENING_STATES
-        ) {
-            $open_assignments = $this->widenOpenAssignments($open_assignments);
+        $widened = $predecessor !== -1 && isset($this->widened_states[$predecessor]);
+
+        if (isset($this->state_ids[$node_id])) {
+            $node_states = count($this->state_ids[$node_id]);
+
+            if ($node_states >= self::WIDENING_STATES) {
+                $widened_assignments = $this->widenOpenAssignments(
+                    $open_assignments,
+                    $node_states >= self::FORGETTING_STATES ? 0 : 1,
+                );
+
+                if ($widened_assignments !== $open_assignments) {
+                    $open_assignments = $widened_assignments;
+                    $widened = true;
+                }
+            }
         }
 
         $key = (($context + 1) << 32) | $open_assignments;
@@ -1917,10 +1967,19 @@ final class TaintFlowResolution
             $this->queue[] = $state;
             $this->queued[$state] = true;
 
+            if ($widened) {
+                $this->widened_states[$state] = true;
+            }
+
             return;
         }
 
         $state = $this->state_ids[$node_id][$key];
+
+        if (!$widened) {
+            unset($this->widened_states[$state]);
+        }
+
         $new_kept = $kept & ~$this->state_kept[$state];
         $new_added = $added & ~$this->state_added[$state];
 
@@ -3707,6 +3766,10 @@ final class TaintFlowResolution
      * A flow is identified by its origin and by the node it enters the sink from: the origin keeps distinct
      * sources apart where they share that node (e.g. two calls to a specialized function), the node keeps
      * distinct call sites of the same source apart. Each taint kind is reported once per flow.
+     *
+     * A flow from a state of $widened_states passes the fetches of the keys it doesn't know: each of the many
+     * sources of a node widened that way would be reported as a flow of its own, though a sink they all reach is
+     * one finding. So such a flow is only reported if none of that taint kind was reported into the sink before.
      */
     private function reportFlow(string $sink_id, int $state, int $caller, int $link, int $taints): void
     {
@@ -3741,6 +3804,12 @@ final class TaintFlowResolution
             }
 
             $taints &= ~$taint;
+
+            if (isset($this->widened_states[$state])
+                && (($this->reported_sink_taints[$sink_id] ?? 0) & $taint) !== 0
+            ) {
+                continue;
+            }
 
             $trace = $this->buildTrace($state, $link, $taint);
 
@@ -3780,8 +3849,10 @@ final class TaintFlowResolution
                     );
             }
 
-            if ($predecessor !== null) {
-                $this->graph->reportTaintedFlow($predecessor, $sink, $taint, $this->config, $this->codebase);
+            if ($predecessor !== null
+                && $this->graph->reportTaintedFlow($predecessor, $sink, $taint, $this->config, $this->codebase)
+            ) {
+                $this->reported_sink_taints[$sink_id] = ($this->reported_sink_taints[$sink_id] ?? 0) | $taint;
             }
         }
     }

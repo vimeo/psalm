@@ -6,13 +6,20 @@ namespace Psalm\Tests;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use Psalm\CodeLocation\Raw;
 use Psalm\Config;
 use Psalm\Config\IssueHandler;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
+use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
+use Psalm\Tests\Progress\DebugMessagesProgress;
 use Psalm\Type\TaintKind;
 
 use function array_fill;
@@ -22,8 +29,10 @@ use function array_map;
 use function array_values;
 use function implode;
 use function in_array;
+use function preg_match;
 use function range;
 use function sort;
+use function sprintf;
 use function str_starts_with;
 use function strpos;
 use function trim;
@@ -422,6 +431,156 @@ final class TaintTest extends TestCase
         sort($taint_issues);
 
         self::assertSame($expected_issues, $taint_issues);
+    }
+
+    /**
+     * Each of the keys of an array a flow of its own makes a state at each node the array goes through, and each
+     * loop that puts the element of the array back under its key an element slot of its own per key: a node
+     * reached with many of them has its states widened (see TaintFlowResolution::WIDENING_STATES) so that they do not
+     * multiply with the keys. Its findings are still those of the flows widened, which pass any fetch.
+     */
+    public function testTaintFlowOfManyKeysPutBackUnderEachInManyLoopsReachesFewStates(): void
+    {
+        [$taint_issues, $states] = $this->analyzeForTaintIssues(
+            '<?php
+            $form = [];
+' . implode('', array_map(
+                static fn(int $i): string => 'if (rand(0, 1)) { $form = ["k' . $i . '" => (string) $_GET["q"]]; }' . "\n",
+                range(1, 400),
+            )) . implode('', array_fill(0, 30, '
+            foreach ($form as $key => $element) {
+                $form[$key] = $element;
+            }
+')) . '
+            echo $form["k1"];',
+        );
+
+        self::assertSame(['TaintedHtml', 'TaintedTextWithQuotes'], $taint_issues);
+        // 400 keys in each of 30 loops take 18000 states of the resolution when they are not widened
+        self::assertLessThan(12_000, $states);
+    }
+
+    /**
+     * A flow reaching a node widened past the fetch of the key of another is reported with the flows of the other keys
+     * widened too, each from its own source: but they are one finding of the sink.
+     */
+    public function testTaintFlowsOfManyKeysReachingASinkThroughAWidenedNodeAreReportedOnce(): void
+    {
+        [$taint_issues] = $this->analyzeForTaintIssues(
+            '<?php
+            function render(array $form): array {
+                foreach ($form as $key => $element) {
+                    $form[$key] = $element;
+                }
+
+                return $form;
+            }
+
+            $form = [];
+' . implode('', array_map(
+                static fn(int $i): string => 'if (rand(0, 1)) { $form = ["k' . $i . '" => (string) $_GET["q"]]; }' . "\n",
+                range(1, 100),
+            )) . '
+            $form = render($form);
+            echo $form["k100"];',
+        );
+
+        self::assertSame(['TaintedHtml', 'TaintedTextWithQuotes'], $taint_issues);
+    }
+
+    /**
+     * The flows of many sources through a node widened reach a sink one of whose flows is of a file where issues aren't
+     * reported: that one adds no issue, so it must not stop the others from being reported.
+     */
+    public function testWidenedFlowsAreReportedIntoASinkWhoseFirstFlowIsNotReported(): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $external_path = '/external/vendor/somefile.php';
+        $text = '<?php echo $x;';
+        $this->file_provider->registerFile($file_path, $text);
+        $this->file_provider->registerFile($external_path, $text);
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+
+        $location = new Raw($text, $file_path, 'somefile.php', 6, 13);
+        $external_location = new Raw($text, $external_path, 'vendor/somefile.php', 6, 13);
+
+        $graph = new TaintFlowGraph();
+        $codebase->taint_flow_graph = $graph;
+
+        $sink = DataFlowNode::getForTaint('sink', $external_location, TaintKind::INPUT_SHELL);
+        $unreported_source = DataFlowNode::getForTaint('a-unreported', $external_location, TaintKind::INPUT_SHELL);
+        $hub = DataFlowNode::getForAssignment('hub', $location);
+        $argument = DataFlowNode::getForAssignment('argument', $location);
+        $graph->addSink($sink);
+        $graph->addSource($unreported_source);
+        $graph->addNode($hub);
+        $graph->addNode($argument);
+        $graph->addPath($unreported_source, $sink, '=');
+
+        // more keys than a node has states for before its flows are widened, none of them the one fetched
+        for ($i = 0; $i < 100; ++$i) {
+            $source = DataFlowNode::getForTaint(sprintf('z-source-%03d', $i), $location, TaintKind::INPUT_SHELL);
+            $graph->addSource($source);
+            $graph->addPath($source, $hub, "arrayvalue-assignment-'k" . $i . "'");
+        }
+
+        $graph->addPath($hub, $argument, "arrayvalue-fetch-'other'");
+        $graph->addPath($argument, $sink, '=');
+        $graph->connectSinksAndSources($codebase->progress);
+
+        self::assertSame(
+            ['TaintedShell'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    /**
+     * @return array{list<string>, int} the taint issues reported, and the states the taint flow resolution reached
+     */
+    private function analyzeForTaintIssues(string $code): array
+    {
+        $progress = new DebugMessagesProgress();
+
+        $this->project_analyzer = new ProjectAnalyzer(
+            $this->testConfig,
+            new Providers($this->file_provider, new FakeParserCacheProvider()),
+            progress: $progress,
+        );
+        $this->project_analyzer->setPhpVersion('7.4', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testConfig->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, $code);
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $taint_issues = array_values(array_filter(
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+            static fn(string $issue): bool => str_starts_with($issue, 'Tainted'),
+        ));
+        sort($taint_issues);
+
+        $states = null;
+
+        foreach ($progress->messages as $message) {
+            if (preg_match('/^Taint flow resolution reached (\d+) states/', $message, $matches) === 1) {
+                $states = (int) $matches[1];
+            }
+        }
+
+        self::assertNotNull($states, 'The taint flow resolution reported no states');
+
+        return [$taint_issues, $states];
     }
 
     /**
@@ -7875,6 +8034,23 @@ final class TaintTest extends TestCase
                     echo $tainted->current();',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintWhatIsSentToAGeneratorSentToItselfThroughAnotherGenerator' => [
+                'code' => '<?php // --taint-analysis
+                    function receiver(): Generator {
+                        $received = yield 1;
+                        echo $received;
+                    }
+
+                    function relay(): Generator {
+                        $sent = yield 1;
+                        $own = relay();
+                        /** @var Generator $target */
+                        $target = rand() ? $sent : $own;
+                        // what is sent here reaches `$sent`, so it may be a generator too: the one of `receiver()`
+                        $target->send(rand() ? receiver() : (string) $_GET["value"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintWhatAGeneratorYields' => [
                 'code' => '<?php // --taint-analysis
                     /** @return Generator<int, string> */
@@ -8952,6 +9128,28 @@ final class TaintTest extends TestCase
                     keep(["k19" => $t19]);
                     exec(keep(["k20" => $t20])["k20"]);',
                 'error_message' => 'TaintedShell',
+            ],
+            'taintFlowReachingANodeWithManyKeysOfAnArrayPutBackUnderEachInALoop' => [
+                // the flows of the 100 keys reaching render() share the states of its nodes, widened past the keys they
+                // were assigned under: the echo of "k100" is reported, through the flow of the first key that reached
+                // the widened state, not necessarily that of "k100"
+                'code' => '<?php // --taint-analysis
+                    function render(array $form): array {
+                        foreach ($form as $key => $element) {
+                            $form[$key] = $element;
+                        }
+
+                        return $form;
+                    }
+
+                    $form = [];
+' . implode('', array_map(
+                    static fn(int $i): string => 'if (rand(0, 1)) { $form = ["k' . $i . '" => (string) $_GET["q"]]; }' . "\n",
+                    range(1, 100),
+                )) . '
+                    $form = render($form);
+                    echo $form["k100"];',
+                'error_message' => 'TaintedHtml',
             ],
             'taintArrayItemWrittenByAForeachByReferenceBeforeABreak' => [
                 'code' => '<?php // --taint-analysis
