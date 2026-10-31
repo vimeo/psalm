@@ -36,6 +36,7 @@ use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClosedResource;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -280,6 +281,11 @@ final class CastAnalyzer
                         || $type instanceof TKeyedArray
                     ) {
                         $permissible_atomic_types[] = $type;
+                    } elseif ($type instanceof TClosure
+                        || ($type instanceof TNamedObject && strtolower($type->value) === 'closure')
+                    ) {
+                        // a closure has no properties: it becomes the only element
+                        $permissible_atomic_types[] = TKeyedArray::make([new Union([$type])], null, null, true);
                     } elseif ($type instanceof TObjectWithProperties) {
                         $array_type = $type->properties === []
                             ? Type::getArrayAtomic()
