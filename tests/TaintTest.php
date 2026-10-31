@@ -296,6 +296,46 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * json_encode() escapes every control character, so its output can't split a header, unless it pretty prints.
+     */
+    public function testJsonEncodeRemovesTheHeaderTaintUnlessItPrettyPrints(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            function f(int $flags): void {
+                header("A: " . json_encode($_GET["a"]));
+                header("A: " . json_encode($_GET["b"], JSON_THROW_ON_ERROR));
+                header("A: " . json_encode($_GET["c"], JSON_PRETTY_PRINT));
+                header("A: " . json_encode($_GET["d"], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+                header("A: " . json_encode($_GET["e"], $flags));
+                $args = [$_GET["f"], JSON_THROW_ON_ERROR];
+                header("A: " . json_encode(...$args));
+                header("A: " . json_encode(flags: JSON_UNESCAPED_UNICODE, value: $_GET["g"]));
+            }
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [5, 'TaintedHeader'],
+                [6, 'TaintedHeader'],
+                [7, 'TaintedHeader'],
+                [9, 'TaintedHeader'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
+    /**
      * What a plugin removes from one returned expression is not removed from the other returns of the function, nor
      * from what its calls give.
      */
