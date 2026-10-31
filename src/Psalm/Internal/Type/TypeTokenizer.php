@@ -441,10 +441,14 @@ final class TypeTokenizer
                 continue;
             }
 
+            // a key of a shape, optional or not
             if (isset($type_tokens[$i + 1])
-                && $type_tokens[$i + 1][0] === ':'
                 && isset($type_tokens[$i - 1])
                 && ($type_tokens[$i - 1][0] === '{' || $type_tokens[$i - 1][0] === ',')
+                && ($type_tokens[$i + 1][0] === ':'
+                    || ($type_tokens[$i + 1][0] === '?'
+                        && isset($type_tokens[$i + 2])
+                        && $type_tokens[$i + 2][0] === ':'))
             ) {
                 continue;
             }
@@ -496,21 +500,6 @@ final class TypeTokenizer
             ) {
                 $template_type_map[$string_type_token[0]] = true;
                 continue;
-            }
-
-            if (isset($type_tokens[$i + 1])
-                && isset($type_tokens[$i - 1])
-                && ($type_tokens[$i - 1][0] === '{' || $type_tokens[$i - 1][0] === ',')
-            ) {
-                $next_char = $type_tokens[$i + 1][0];
-
-                if ($next_char === ':') {
-                    continue;
-                }
-
-                if ($next_char === '?' && isset($type_tokens[$i + 2]) && $type_tokens[$i + 2][0] === ':') {
-                    continue;
-                }
             }
 
             if ($string_type_token[0][0] === '$' || $string_type_token[0][0] === ' ') {
