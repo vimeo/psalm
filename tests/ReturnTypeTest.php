@@ -28,6 +28,22 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'iterableDocblockReturnTypeOfNativeArrayOrObject' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     */
+                    interface FooInterface {
+                        /**
+                         * @return T|iterable<T>|null
+                         */
+                        public function foo(): object|array|null;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nativeNullReturnTypeOfAnInterfaceMethodWithADocblock' => [
                 'code' => '<?php
                     interface I {

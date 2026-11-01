@@ -197,6 +197,14 @@ final class TypeComparatorTest extends TestCase
                 'iterable',
                 'array',
             ],
+            'arrayOrObjectAcceptsIterable' => [
+                'array|object',
+                'iterable<int>',
+            ],
+            'arrayOrObjectOrNullAcceptsIterable' => [
+                'array|object|null',
+                'iterable<string, int>',
+            ],
             'listAcceptsEmptyArray' => [
                 'list',
                 'array<never, never>',
@@ -342,6 +350,14 @@ final class TypeComparatorTest extends TestCase
      */
     public static function getUnsuccessfulComparisons(): iterable
     {
+        yield 'objectOrStringDoesNotAcceptIterable' => [
+            'object|string',
+            'iterable<int>',
+        ];
+        yield 'arrayOrIntDoesNotAcceptIterable' => [
+            'array|int',
+            'iterable<int>',
+        ];
         yield 'nonFalsyLowercaseStringDoesNotAcceptFalsyLiteral' => [
             'lowercase-string&non-falsy-string',
             "'0'",
