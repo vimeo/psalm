@@ -141,6 +141,26 @@ trait CanAlias
     }
 
     /**
+     * @param list<PhpParser\Node\Stmt> $leftover_stmts
+     * @param-out list<PhpParser\Node\Stmt> $leftover_stmts
+     */
+    private function visitAnyUse(
+        PhpParser\Node\Stmt\Use_|PhpParser\Node\Stmt\GroupUse $stmt,
+        array &$leftover_stmts,
+    ): void {
+        if ($stmt instanceof PhpParser\Node\Stmt\Use_) {
+            $this->visitUse($stmt);
+        } else {
+            $this->visitGroupUse($stmt);
+        }
+
+        // Use statements are not analyzed, so a Nop carries their docblock (e.g. `@var Type $var`) instead
+        if ($stmt->getDocComment() !== null) {
+            $leftover_stmts[] = new PhpParser\Node\Stmt\Nop($stmt->getAttributes());
+        }
+    }
+
+    /**
      * @psalm-mutation-free
      * @return array<lowercase-string, string>
      */
