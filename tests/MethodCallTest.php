@@ -205,6 +205,21 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'mysqliGetWarningsMayReturnFalse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function warnings(mysqli $link): void {
+                        $object = $link->get_warnings();
+                        $procedural = mysqli_get_warnings($link);
+
+                        /** @psalm-check-type-exact $object = false|mysqli_warning */
+                        /** @psalm-check-type-exact $procedural = false|mysqli_warning */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'notInCallMapTest' => [
                 'code' => '<?php
                     new DOMImplementation();',
