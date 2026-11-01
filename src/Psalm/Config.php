@@ -16,6 +16,9 @@ use InvalidArgumentException;
 use JsonException;
 use LogicException;
 use OutOfBoundsException;
+use PhpParser\Node\Stmt\ClassLike;
+use PhpParser\Node\Stmt\Namespace_;
+use PhpParser\NodeFinder;
 use Psalm\CodeLocation\Raw;
 use Psalm\Config\IssueHandler;
 use Psalm\Config\ProjectFileFilter;
@@ -33,6 +36,7 @@ use Psalm\Internal\GzipSerializer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Lz4Serializer;
 use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
+use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Issue\ArgumentIssue;
 use Psalm\Issue\ClassConstantIssue;
@@ -2348,6 +2352,9 @@ final class Config
             $progress = new VoidProgress();
         }
 
+        // A stub redeclaring an autoloadable class must merge into the real class, so scan the real file first.
+        $this->scanAutoloadableClassesRedeclaredByStubs($codebase);
+
         $codebase->register_stub_files = true;
 
         $dir_lvl_2 = dirname(__DIR__, 2);
@@ -2441,6 +2448,51 @@ final class Config
         $progress->debug('Finished registering stub files' . "\n");
 
         $codebase->register_stub_files = false;
+    }
+
+    private function scanAutoloadableClassesRedeclaredByStubs(Codebase $codebase): void
+    {
+        $queued = false;
+        $node_finder = new NodeFinder();
+
+        foreach ($this->stub_files as $stub_path) {
+            $has_errors = false;
+            $statements = StatementsProvider::parseStatements(
+                $codebase->file_provider->getContents($stub_path),
+                $codebase->analysis_php_version_id,
+                $has_errors,
+            );
+
+            foreach ($statements as $stmt) {
+                $namespace = '';
+                $nodes = [$stmt];
+
+                if ($stmt instanceof Namespace_) {
+                    $namespace = $stmt->name ? $stmt->name->toString() . '\\' : '';
+                    $nodes = $stmt->stmts;
+                }
+
+                foreach ($node_finder->findInstanceOf($nodes, ClassLike::class) as $classlike) {
+                    if ($classlike->name === null) {
+                        continue;
+                    }
+
+                    $fq_classlike_name = $namespace . $classlike->name->name;
+                    $fq_classlike_name_lc = strtolower($fq_classlike_name);
+
+                    if (!$codebase->classlike_storage_provider->has($fq_classlike_name_lc)
+                        && !$codebase->classlikes->doesClassLikeExist($fq_classlike_name_lc)
+                    ) {
+                        $codebase->scanner->queueClassLikeForScanning($fq_classlike_name, false, false);
+                        $queued = true;
+                    }
+                }
+            }
+        }
+
+        if ($queued) {
+            $codebase->scanFiles();
+        }
     }
 
     public function getCacheDirectory(): ?string
