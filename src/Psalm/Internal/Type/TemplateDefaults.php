@@ -314,7 +314,7 @@ final class TemplateDefaults
      * The templates a default uses, also through `key-of<T>`, `value-of<T>`, `properties-of<T>` and `T[K]`
      *
      * @return list<TTemplateParam>
-     * @psalm-external-mutation-free
+     * @psalm-pure
      */
     private static function getUsedTemplates(Union $default): array
     {
