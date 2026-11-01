@@ -13,8 +13,11 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Tests\TestCase;
 
+use function array_intersect_key;
 use function array_keys;
 use function array_map;
+use function array_reverse;
+use function array_values;
 use function getcwd;
 use function strtolower;
 
@@ -25,6 +28,15 @@ use const DIRECTORY_SEPARATOR;
  */
 final class ScannerStorageMergeTest extends TestCase
 {
+    private const POLYFILL_SOURCES = [
+        'a' => '<?php
+class Foo {}',
+        'b' => '<?php
+class Foo {}',
+        'c' => '<?php
+class COnly {}',
+    ];
+
     private string $dir;
 
     #[Override]
@@ -314,6 +326,164 @@ class COnly {}',
     {
         yield 'process that scanned the file finishes first' => [['w1', 'w2']];
         yield 'process that scanned the file finishes last' => [['w2', 'w1']];
+    }
+
+    /**
+     * The stubs are registered before the pool starts, so the processes (which start empty) never carry one:
+     * the declaration that wins the merge reaches the codebase's stub as a project definition would.
+     *
+     * @param list<string> $scan_order the files, in the order of the files the scanner was given
+     * @param list<string> $arrival the processes, in the order they finished in (w1 took c and b, w2 took a)
+     */
+    #[DataProvider('providerPolyfill')]
+    public function testPolyfillScannedByTheProcessesReplacesTheStub(
+        array $scan_order,
+        array $arrival,
+        string $winner,
+        ?string $loser,
+    ): void {
+        [$stub_file_storage, $stub_storages] = $this->scanAlone($this->dir . 'known.php', '<?php class Foo {}');
+
+        // the file that is scanned last is the one the process that scanned it reports last
+        $scanned = [];
+
+        foreach (array_reverse($scan_order) as $key) {
+            $scanned[$key] = $this->scanAlone($this->dir . $key . '.php', self::POLYFILL_SOURCES[$key]);
+        }
+
+        $this->registerStub($stub_file_storage, $stub_storages);
+
+        $processes = [
+            'w1' => $this->poolData(array_values(array_intersect_key($scanned, ['b' => true, 'c' => true]))),
+            'w2' => $this->poolData(array_values(array_intersect_key($scanned, ['a' => true]))),
+        ];
+
+        $this->merge(
+            array_map(static fn(string $process): array => $processes[$process], $arrival),
+            $this->filesToScan($scan_order),
+        );
+
+        $this->assertPolyfillOutcome($winner, $loser);
+        self::assertSame($scanned[$winner][1]['foo'], ClassLikeStorageProvider::getAll()['foo']);
+    }
+
+    /**
+     * What a single process does with the same files and stub, which the pool must match.
+     *
+     * @param list<string> $scan_order
+     * @param list<string> $arrival
+     */
+    #[DataProvider('providerPolyfill')]
+    public function testPolyfillScannedInProcessReplacesTheStub(
+        array $scan_order,
+        array $arrival,
+        string $winner,
+        ?string $loser,
+    ): void {
+        unset($arrival);
+
+        $codebase = $this->project_analyzer->getCodebase();
+
+        [$stub_file_storage, $stub_storages] = $this->scanAlone($this->dir . 'known.php', '<?php class Foo {}');
+        $this->registerStub($stub_file_storage, $stub_storages);
+
+        foreach ($scan_order as $key) {
+            $this->file_provider->registerFile($this->dir . $key . '.php', self::POLYFILL_SOURCES[$key]);
+            $codebase->scanner->addFileToShallowScan($this->dir . $key . '.php');
+        }
+
+        $codebase->scanner->scanFiles($codebase->classlikes);
+
+        $this->assertPolyfillOutcome($winner, $loser);
+    }
+
+    /**
+     * @return iterable<string, array{list<string>, list<string>, string, ?string}>
+     * @psalm-pure
+     */
+    public static function providerPolyfill(): iterable
+    {
+        yield 'polyfill alone, its process finishes last' => [['a', 'c'], ['w1', 'w2'], 'a', null];
+        yield 'polyfill alone, its process finishes first' => [['a', 'c'], ['w2', 'w1'], 'a', null];
+        yield 'polyfill first, a second declaration after it, its process finishes last' => [
+            ['a', 'b', 'c'], ['w1', 'w2'], 'a', 'b',
+        ];
+        yield 'polyfill first, a second declaration after it, its process finishes first' => [
+            ['a', 'b', 'c'], ['w2', 'w1'], 'a', 'b',
+        ];
+        yield 'second declaration first, the polyfill after it, its process finishes last' => [
+            ['b', 'a', 'c'], ['w1', 'w2'], 'b', 'a',
+        ];
+        yield 'second declaration first, the polyfill after it, its process finishes first' => [
+            ['b', 'a', 'c'], ['w2', 'w1'], 'b', 'a',
+        ];
+    }
+
+    private function assertPolyfillOutcome(string $winner, ?string $loser): void
+    {
+        $winner_file = $this->dir . $winner . '.php';
+
+        $foo = ClassLikeStorageProvider::getAll()['foo'];
+        self::assertTrue($foo->user_defined);
+        self::assertFalse($foo->stubbed);
+        self::assertSame($winner_file, $foo->location?->file_path);
+        self::assertSame(
+            $winner_file,
+            $this->project_analyzer->getCodebase()->scanner->getClassLikeFilePath('foo'),
+        );
+
+        $issues = IssueBuffer::getIssuesData();
+
+        if ($loser === null) {
+            self::assertSame([], $issues);
+
+            return;
+        }
+
+        $loser_file = $this->dir . $loser . '.php';
+
+        self::assertSame([$loser_file], array_keys($issues));
+        self::assertCount(1, $issues[$loser_file]);
+        self::assertSame('DuplicateClass', $issues[$loser_file][0]->type);
+        self::assertSame(
+            'Class Foo has already been defined in ' . $winner_file,
+            $issues[$loser_file][0]->message,
+        );
+    }
+
+    /**
+     * A native class the stubs date after the analysed PHP version, as the codebase holds it once the stubs are
+     * registered.
+     *
+     * @param array<string, ClassLikeStorage> $stub_storages
+     */
+    private function registerStub(FileStorage $stub_file_storage, array $stub_storages): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $stub = $stub_storages['foo'];
+        $stub->stubbed = true;
+        $stub->user_defined = false;
+        $stub->since_php_version_id = 999_900;
+
+        $codebase->classlike_storage_provider->addMore($stub_storages);
+        $codebase->file_storage_provider->addMore([strtolower($stub_file_storage->file_path) => $stub_file_storage]);
+    }
+
+    /**
+     * @param list<string> $scan_order
+     * @return array<string, string>
+     * @psalm-capabilities read-props
+     */
+    private function filesToScan(array $scan_order): array
+    {
+        $files_to_scan = [];
+
+        foreach ($scan_order as $key) {
+            $files_to_scan[$this->dir . $key . '.php'] = $this->dir . $key . '.php';
+        }
+
+        return $files_to_scan;
     }
 
     /**
