@@ -491,7 +491,7 @@ final class MethodCallPurityAnalyzer
                 ) {
                     IssueBuffer::maybeAdd(
                         new UnusedMethodCall(
-                            'The call to ' . $cased_method_id . ' is not used',
+                            'The call to ' . $cased_method_id . ' seems to have no effect, its result is not used',
                             new CodeLocation($statements_analyzer, $stmt->name),
                             (string) $method_id,
                         ),

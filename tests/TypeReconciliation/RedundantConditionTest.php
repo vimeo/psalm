@@ -1045,6 +1045,16 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'negatedTypeCheckOfAKnownTypeExplainsThatItCanNeverBeTrue' => [
+                'code' => '<?php
+                    $a = "some";
+
+                    if (!is_string($a)) {
+                        throw new Exception();
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:26 - '
+                    . 'Type \'some\' for $a is always string, so its negation can never be true',
+            ],
             'instanceofOfATemplateParamAlreadyNarrowedToTheClass' => [
                 'code' => '<?php
                     interface Node {}
