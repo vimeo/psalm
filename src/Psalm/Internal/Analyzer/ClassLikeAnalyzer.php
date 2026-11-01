@@ -15,6 +15,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityArguments;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
@@ -760,6 +761,32 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         return $emit_issues ? null : true;
     }
 
+    /**
+     * Reports the docblock issues found when the class-like was scanned, and the template defaults outside their
+     * bounds, which can only be checked once the codebase is populated.
+     *
+     * @param array<string> $suppressed_issues
+     */
+    protected static function reportDocblockIssues(
+        Codebase $codebase,
+        ClassLikeStorage $storage,
+        array $suppressed_issues,
+    ): void {
+        foreach ($storage->docblock_issues as $docblock_issue) {
+            IssueBuffer::maybeAdd($docblock_issue);
+        }
+
+        TemplateDefaults::checkBounds(
+            $codebase,
+            $storage->template_types ?? [],
+            $storage->template_defaults,
+            $storage->template_default_locations,
+            $storage->name,
+            $storage->name,
+            $suppressed_issues,
+        );
+    }
+
     protected function checkTemplateParams(
         Codebase $codebase,
         ClassLikeStorage $storage,
@@ -775,7 +802,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             IssueBuffer::maybeAdd(
                 new MissingTemplateParam(
                     $storage->name . ' has missing template params when extending ' . $parent_storage->name
-                        . ', expecting ' . $expected_param_count,
+                        . ', expecting ' . TemplateDefaults::getExpectedParamCount($parent_storage),
                     $code_location,
                 ),
                 $storage->suppressed_issues + $this->getSuppressedIssues(),
@@ -915,7 +942,10 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                         }
                     }
 
-                    if (!$template_type->isMixed()) {
+                    // a parent template left to its default is checked where the default is declared
+                    if (!$template_type->isMixed()
+                        && !isset($storage->template_extended_defaults[$parent_storage->name][$template_name])
+                    ) {
                         $template_result = new TemplateResult(
                             $previous_extended ?: [],
                             [],

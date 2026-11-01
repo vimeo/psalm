@@ -26,6 +26,7 @@ use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -73,6 +74,7 @@ use Psalm\Type\Atomic\TUnknownClassString;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
+use function array_key_first;
 use function array_map;
 use function array_values;
 use function count;
@@ -618,114 +620,14 @@ final class NewAnalyzer extends CallAnalyzer
             $self_out_candidate = null;
 
             if ($storage->template_types) {
-                $unconstrainable_templates = null;
-
-                foreach ($storage->template_types as $template_name => $base_type) {
-                    if (isset($template_result->lower_bounds[$template_name][$fq_class_name])) {
-                        $generic_param_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-                            $template_result->lower_bounds[$template_name][$fq_class_name],
-                            $codebase,
-                        );
-
-                        // The constructor arguments bound this template, but PHP has no
-                        // constructor type arguments to pin it: later code may still widen
-                        // it within its declared constraint (Hack's `new Foo<_>(...)` local
-                        // inference). Mint a type variable seeded with the arg-inferred
-                        // bounds as lower bounds and the declared constraint as an upper
-                        // bound; the bounds reconcile when the surrounding function-like
-                        // has been analyzed.
-                        // the constraint may name the class's other templates
-                        // (`TIterator as Traversable<TKey, TValue>`): those are what the
-                        // arguments bound them to
-                        $constraint = TemplateInferredTypeReplacer::replace(
-                            array_values($base_type)[0],
-                            $template_result,
-                            $codebase,
-                        );
-                        $unconstrainable_templates ??= self::getUnconstrainableTemplates($storage);
-
-                        // An argument typed `mixed` binds the template to `mixed` from
-                        // below, which no later bound can narrow: the variable would
-                        // only ever resolve to `mixed` while the class template stays
-                        // opaque to reads (`class-string<T>` returns, `self<T&X>`
-                        // assertions, the constraint clamp on later calls). Keep the
-                        // plain parameter instead, as for an explicit `Foo<mixed>`.
-                        if (!isset($unconstrainable_templates[$template_name])
-                            && !$generic_param_type->hasMixed()
-                        ) {
-                            $generic_param_type = self::mintTypeVariable(
-                                $statements_analyzer,
-                                $stmt,
-                                $template_result->lower_bounds[$template_name][$fq_class_name],
-                                $constraint,
-                                $method_storage
-                                    && self::templateBoundThroughClassString($method_storage, $template_name),
-                            );
-                        }
-                    } elseif (self::isGivenToBoundParentTemplate(
-                        $fq_class_name,
-                        $template_name,
-                        $storage->template_extended_params,
-                        $template_result->lower_bounds,
-                    )) {
-                        $generic_param_type = self::getGenericParamForOffset(
-                            $fq_class_name,
-                            $template_name,
-                            $storage->template_extended_params,
-                            array_map(
-                                static fn(array $type_map): array => array_map(
-                                    static fn(array $bounds): Union
-                                        => TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-                                            $bounds,
-                                            $codebase,
-                                        ),
-                                    $type_map,
-                                ),
-                                $template_result->lower_bounds,
-                            ),
-                        );
-                    } else {
-                        $generic_param_type = array_values($base_type)[0];
-
-                        // The constructor arguments did not bind this template, but later
-                        // code may still constrain it (Hack's `new Foo<_>(...)` model):
-                        // mint a fresh type variable whose upper bound is the template's
-                        // declared constraint. Constraints recorded while the variable
-                        // flows through the rest of the body are reconciled when the
-                        // surrounding function-like has been analyzed.
-                        //
-                        // A template with no public mutation channel (named only in the
-                        // constructor) can never be constrained later, so no variable is
-                        // minted and the template resolves eagerly to its constraint.
-                        $unconstrainable_templates ??= self::getUnconstrainableTemplates($storage);
-
-                        if (!isset($unconstrainable_templates[$template_name])) {
-                            $type_variable_bounds = new TypeVariableBounds(
-                                [],
-                                [new TemplateBound(
-                                    $generic_param_type,
-                                    0,
-                                    null,
-                                    null,
-                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                ),
-                                ],
-                            );
-
-                            $type_variable_name = $statements_analyzer->type_variable_tracker->addVariable(
-                                $type_variable_bounds,
-                            );
-
-                            $generic_param_type = new Union([
-                                new TTypeVariable($type_variable_name, $type_variable_bounds),
-                            ]);
-                        }
-                    }
-
-                    $generic_param_types[] = $generic_param_type->setProperties([
-                        'had_template' => true,
-                    ]);
-                }
+                $generic_param_types = self::getGenericParamTypes(
+                    $statements_analyzer,
+                    $stmt,
+                    $storage,
+                    $template_result,
+                    $fq_class_name,
+                    $method_storage,
+                );
 
                 $self_out_candidate = self::getSelfOutType(
                     $statements_analyzer,
@@ -742,7 +644,7 @@ final class NewAnalyzer extends CallAnalyzer
             }
 
             // XXX: what if we need both?
-            if ($generic_param_types && !$self_out_candidate) {
+            if ($generic_param_types !== null && $generic_param_types !== [] && !$self_out_candidate) {
                 $result_atomic_type = new TGenericObject(
                     $fq_class_name,
                     $generic_param_types,
@@ -764,18 +666,8 @@ final class NewAnalyzer extends CallAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
-        } elseif ($storage->template_types) {
-            $result_atomic_type = new TGenericObject(
-                $fq_class_name,
-                array_values(
-                    array_map(
-                        static fn($map) => reset($map),
-                        $storage->template_types,
-                    ),
-                ),
-                false,
-                $from_static,
-            );
+        } elseif (($type_params = array_values(TemplateDefaults::bindOmitted($storage, [], true, false))) !== []) {
+            $result_atomic_type = new TGenericObject($fq_class_name, $type_params, false, $from_static);
 
             $statements_analyzer->node_data->setType(
                 $stmt,
@@ -1895,15 +1787,195 @@ final class NewAnalyzer extends CallAnalyzer
      */
     private static function hasTemplatesInferredByConstructor(Codebase $codebase, ClassLikeStorage $storage): bool
     {
-        // every purity template the class declares has a default (its upper bound without one),
-        // which tells it apart from a type template bounded by a type alias or a purity template
         foreach ($storage->template_types ?? [] as $template_name => $_) {
-            if (!isset($storage->template_defaults[$template_name])) {
+            if (!isset($storage->purity_templates[$template_name])) {
                 return true;
             }
         }
 
         return self::getConstructorParamTemplates($codebase, $storage) !== [];
+    }
+
+    /**
+     * The type arguments of the new object: what the constructor arguments bound each template to, directly or
+     * through a parent template, or else what the unbound template stands for.
+     *
+     * @return list<Union>
+     */
+    private static function getGenericParamTypes(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\New_ $stmt,
+        ClassLikeStorage $storage,
+        TemplateResult $template_result,
+        string $fq_class_name,
+        ?MethodStorage $method_storage,
+    ): array {
+        $codebase = $statements_analyzer->getCodebase();
+        $unconstrainable_templates = self::getUnconstrainableTemplates($storage);
+        $inferred_lower_bounds = self::getInferredLowerBounds($template_result);
+        $generic_param_types = [];
+
+        foreach ($storage->template_types ?? [] as $template_name => $base_type) {
+            // a type template with a default that later code cannot constrain only takes bounds from arguments
+            // that said something about it
+            $lower_bounds = isset($storage->template_defaults[$template_name])
+                && !isset($storage->purity_templates[$template_name])
+                && isset($unconstrainable_templates[$template_name])
+                    ? $inferred_lower_bounds
+                    : $template_result->lower_bounds;
+
+            if (isset($lower_bounds[$template_name][$fq_class_name])) {
+                $generic_param_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                    $lower_bounds[$template_name][$fq_class_name],
+                    $codebase,
+                );
+
+                // PHP has no constructor type arguments, so later code may still widen this template within its
+                // constraint (as Hack's `new Foo<_>()`): mint a type variable with the argument bounds below and the
+                // constraint above, the other templates it names (`TIterator as Traversable<TKey, TValue>`) resolved
+                $constraint = TemplateInferredTypeReplacer::replace(
+                    array_values($base_type)[0],
+                    $template_result,
+                    $codebase,
+                );
+
+                // a `mixed` argument binds the template to `mixed`, which no later bound can narrow, while a type
+                // variable would hide the template from reads (`class-string<T>` returns, `self<T&X>` assertions, the
+                // constraint clamp on later calls): keep the plain parameter, as for an explicit `Foo<mixed>`
+                if (!isset($unconstrainable_templates[$template_name])
+                    && !$generic_param_type->hasMixed()
+                ) {
+                    $generic_param_type = self::mintTypeVariable(
+                        $statements_analyzer,
+                        $stmt,
+                        $lower_bounds[$template_name][$fq_class_name],
+                        $constraint,
+                        $method_storage
+                            && self::templateBoundThroughClassString($method_storage, $template_name),
+                    );
+                }
+            } elseif (self::isGivenToBoundParentTemplate(
+                $fq_class_name,
+                $template_name,
+                $storage->template_extended_params,
+                $lower_bounds,
+            )) {
+                $generic_param_type = self::getGenericParamForOffset(
+                    $fq_class_name,
+                    $template_name,
+                    $storage->template_extended_params,
+                    array_map(
+                        static fn(array $type_map): array => array_map(
+                            static fn(array $bounds): Union
+                                => TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                    $bounds,
+                                    $codebase,
+                                ),
+                            $type_map,
+                        ),
+                        $lower_bounds,
+                    ),
+                );
+            } else {
+                $generic_param_type = self::getUninferredTemplateParam(
+                    $statements_analyzer,
+                    $stmt,
+                    $storage,
+                    $template_name,
+                    $base_type,
+                    $generic_param_types,
+                    $unconstrainable_templates,
+                );
+            }
+
+            $generic_param_types[] = $generic_param_type->setProperties([
+                'had_template' => true,
+            ]);
+        }
+
+        return $generic_param_types;
+    }
+
+    /**
+     * The lower bounds of the template result, without those of the templates the arguments said nothing about
+     * ({@see TemplateDefaults::isUninferred()}).
+     *
+     * @return array<string, array<string, non-empty-list<TemplateBound>>>
+     * @psalm-mutation-free
+     */
+    private static function getInferredLowerBounds(TemplateResult $template_result): array
+    {
+        $inferred_lower_bounds = [];
+
+        foreach ($template_result->lower_bounds as $template_name => $type_map) {
+            foreach ($type_map as $defining_class => $lower_bounds) {
+                if (!TemplateDefaults::isUninferred($template_result, $template_name, $defining_class)) {
+                    $inferred_lower_bounds[$template_name][$defining_class] = $lower_bounds;
+                }
+            }
+        }
+
+        return $inferred_lower_bounds;
+    }
+
+    /**
+     * What a template the constructor arguments did not bind stands for. Later code may still constrain it (Hack's
+     * `new Foo<_>()`), so it gets a type variable bounded above by its constraint and reconciled once the enclosing
+     * function-like is analyzed, unless only the constructor names it: then it is a type template's default, with
+     * the earlier templates bound as in the new object, or else its constraint.
+     *
+     * @param non-empty-array<string, Union> $type_map the constraint of the template, by its class
+     * @param list<Union> $generic_param_types those of the templates before it
+     * @param array<string, true> $unconstrainable_templates computed once for the `new` expression
+     */
+    private static function getUninferredTemplateParam(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\New_ $stmt,
+        ClassLikeStorage $storage,
+        string $template_name,
+        array $type_map,
+        array $generic_param_types,
+        array $unconstrainable_templates,
+    ): Union {
+        $constraint = reset($type_map);
+        $default = $storage->template_defaults[$template_name] ?? null;
+
+        if ($default !== null
+            && !isset($storage->purity_templates[$template_name])
+            && isset($unconstrainable_templates[$template_name])
+        ) {
+            $bound = [];
+
+            foreach ($storage->template_types ?? [] as $name => $earlier_type_map) {
+                if (!isset($generic_param_types[count($bound)])) {
+                    break;
+                }
+
+                $bound[$name][array_key_first($earlier_type_map)] = $generic_param_types[count($bound)];
+            }
+
+            $codebase = $statements_analyzer->getCodebase();
+
+            return TemplateDefaults::expandDefault(
+                $codebase,
+                TemplateDefaults::resolve($default, new TemplateResult([], $bound), $codebase),
+                $storage,
+                $template_name,
+            );
+        }
+
+        if (isset($unconstrainable_templates[$template_name])) {
+            return $constraint;
+        }
+
+        $type_variable_bounds = new TypeVariableBounds(
+            [],
+            [new TemplateBound($constraint, 0, null, null, new CodeLocation($statements_analyzer->getSource(), $stmt))],
+        );
+
+        $type_variable_name = $statements_analyzer->type_variable_tracker->addVariable($type_variable_bounds);
+
+        return new Union([new TTypeVariable($type_variable_name, $type_variable_bounds)]);
     }
 
     /**
