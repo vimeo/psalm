@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -14,6 +17,25 @@ final class ArrayFunctionCallTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testArrayFindNullableResultIsReportedWithoutIgnoringInternalNullableIssues(): void
+    {
+        Config::getInstance()->ignore_internal_nullable_issues = false;
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyNullArgument');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @var list<string> $list */
+                $list = [];
+                echo strlen(array_find($list, fn (string $v): bool => $v === "x"));',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 
     /**
      * @psalm-pure
@@ -684,6 +706,113 @@ final class ArrayFunctionCallTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'arrayFindReturnsTheValueTypeOrNull' => [
+                'code' => '<?php
+                    class Account {
+                        public function __construct(public string $iban) {}
+                    }
+
+                    /** @var list<Account> $accounts */
+                    $accounts = [];
+                    $account = array_find($accounts, fn (Account $account): bool => $account->iban === "abc");
+
+                    $shape = array_find(["a" => 1, "b" => "x"], fn (int|string $v): bool => $v === "x");
+
+                    /** @var list<int>|array<string, bool> $union */
+                    $union = [];
+                    $fromUnion = array_find($union, fn (int|bool $v): bool => (bool) $v);',
+                'assertions' => [
+                    '$account===' => 'Account|null',
+                    '$shape===' => '\'x\'|1|null',
+                    '$fromUnion===' => 'bool|int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayFindKeyReturnsTheKeyTypeOrNull' => [
+                'code' => '<?php
+                    /** @var list<string> $list */
+                    $list = [];
+                    $listKey = array_find_key($list, fn (string $v): bool => $v === "x");
+
+                    /** @var array<string, int> $map */
+                    $map = [];
+                    $mapKey = array_find_key($map, fn (int $v): bool => $v > 1);
+
+                    $shapeKey = array_find_key(["a" => 1, "b" => 2], fn (int $v): bool => $v > 1);
+
+                    /** @var list<int>|array<string, bool> $union */
+                    $union = [];
+                    $fromUnion = array_find_key($union, fn (int|bool $v): bool => (bool) $v);',
+                'assertions' => [
+                    '$listKey===' => 'int<0, max>|null',
+                    '$mapKey===' => 'null|string',
+                    '$shapeKey===' => '\'a\'|\'b\'|null',
+                    '$fromUnion===' => 'int<0, max>|null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayFindWithNamedArguments' => [
+                'code' => '<?php
+                    /** @var list<string> $list */
+                    $list = [];
+                    $found = array_find(callback: fn (string $v): bool => $v === "x", array: $list);
+                    $key = array_find_key(callback: fn (string $v): bool => $v === "x", array: $list);',
+                'assertions' => [
+                    '$found===' => 'null|string',
+                    '$key===' => 'int<0, max>|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayFindFallsBackWhenTheArrayIsUnknown' => [
+                'code' => '<?php
+                    /** @var mixed $mixed */
+                    $mixed = [];
+                    /** @var list<array{list<string>, callable(string): bool}> $args */
+                    $args = [];
+
+                    $fromMixed = array_find($mixed, fn (mixed $v): bool => true);
+                    $unpacked = array_find(...$args[0]);',
+                'assertions' => [
+                    '$fromMixed===' => 'mixed',
+                    '$unpacked===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+                'php_version' => '8.4',
+            ],
+            'arrayFindNullableResultIsIgnoredByDefaultInTests' => [
+                'code' => '<?php
+                    /** @var list<string> $list */
+                    $list = [];
+                    echo strlen(array_find($list, fn (string $v): bool => $v === "x"));',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayFirstAndLastReturnTheValueTypeOrNull' => [
+                'code' => '<?php
+                    /** @var list<int> $list */
+                    $list = [];
+                    /** @var non-empty-list<string> $nonEmpty */
+                    $nonEmpty = ["a"];
+
+                    $first = array_first($list);
+                    $last = array_last($list);
+                    $firstOfNonEmpty = array_first($nonEmpty);
+                    $lastOfNonEmpty = array_last($nonEmpty);
+                    $firstOfEmpty = array_first([]);',
+                'assertions' => [
+                    '$first===' => 'int|null',
+                    '$last===' => 'int|null',
+                    '$firstOfNonEmpty===' => 'string',
+                    '$lastOfNonEmpty===' => 'string',
+                    '$firstOfEmpty===' => 'null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
             ],
             'arrayPopMixed' => [
                 'code' => '<?php
@@ -2972,6 +3101,13 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayFirstIsUndefinedBeforePhp85' => [
+                'code' => '<?php
+                    echo array_first([1]);',
+                'error_message' => 'UndefinedFunction',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
             'arrayFilterUseMethodOnInferableInt' => [
                 'code' => '<?php
                     $a = array_filter([1, 2, 3, 4], function ($i) { return $i->foo(); });',
