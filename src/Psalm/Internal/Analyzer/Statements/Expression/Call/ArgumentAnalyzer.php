@@ -1170,21 +1170,25 @@ final class ArgumentAnalyzer
 
             foreach ($input_type->getAtomicTypes() as $input_type_part) {
                 if ($input_type_part instanceof TKeyedArray) {
-                    // If the param accept an array, we don't report arrays as wrong callbacks.
-                    if (null !== $param_type_without_callable && UnionTypeComparator::isContainedBy(
-                        $codebase,
-                        $input_type,
-                        $param_type_without_callable,
-                    )) {
-                        continue;
-                    }
-
                     $potential_method_id = CallableTypeComparator::getCallableMethodIdFromTKeyedArray(
                         $input_type_part,
                         $codebase,
                         $context->calling_method_id,
                         $statements_analyzer->getFilePath(),
                     );
+
+                    // If the param accept an array, we don't report arrays as wrong callbacks.
+                    if (null !== $param_type_without_callable && UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $input_type,
+                        $param_type_without_callable,
+                    )) {
+                        if ($potential_method_id && $potential_method_id !== 'not-callable') {
+                            $potential_method_ids[] = $potential_method_id;
+                        }
+
+                        continue;
+                    }
 
                     if ($potential_method_id === null && $codebase->analysis_php_version_id >= 8_02_00) {
                         [$lhs,] = $input_type_part->properties;

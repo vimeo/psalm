@@ -812,6 +812,38 @@ final class UnusedCodeTest extends TestCase
 
                     takesCallable([C::class, "foo"]);',
             ],
+            'methodUsedAsCallableArrayForArrayOrCallableParam' => [
+                'code' => '<?php
+                    final class C {
+                        private static int $x = 1;
+
+                        public static function foo() : void {
+                            echo self::$x;
+                        }
+                    }
+
+                    /** @param array|callable $c */
+                    function takesUnion($c) : void {
+                        if (is_callable($c)) {
+                            $c();
+                        }
+                    }
+
+                    takesUnion([C::class, "foo"]);',
+            ],
+            'plainArrayForArrayOrCallableParam' => [
+                'code' => '<?php
+                    /** @param array|callable $c */
+                    function takesUnion($c) : void {
+                        if (is_callable($c)) {
+                            $c();
+                        }
+                    }
+
+                    takesUnion(["Nope", "foo"]);
+                    takesUnion([1, 2]);',
+                'ignored_issues' => ['UndefinedClass'],
+            ],
             'propertyAndMethodOverriddenDownstream' => [
                 'code' => '<?php
                     class A {
