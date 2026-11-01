@@ -187,15 +187,20 @@ final class DataFlowNode implements Stringable
      * overrides of the classes extending it: shared by all those calls, so it has no location. The calls
      * specialized to their location have one of their own, which only goes to the overrides.
      *
+     * A named argument that a variadic collects has a node per name, as what an override takes of it depends on
+     * the name.
+     *
      * @psalm-pure
      */
     public static function getForDispatch(
         string $cased_method_id,
         int $argument_offset,
         bool $specialized_calls = false,
+        ?string $named_argument = null,
     ): self {
         $label = ($specialized_calls ? 'specialized ' : '') . 'dispatch of ' . $cased_method_id
-            . '#' . ($argument_offset + 1);
+            . '#' . ($argument_offset + 1)
+            . ($named_argument !== null ? ' named ' . $named_argument : '');
 
         return self::make(strtolower($label), $label, null);
     }
@@ -518,6 +523,29 @@ final class DataFlowNode implements Stringable
         }
 
         return $fallback;
+    }
+
+    /**
+     * The declared index of the parameter of $storage that takes the named argument $name: the one of that name,
+     * else the variadic one, else none (the call throws).
+     *
+     * @psalm-mutation-free
+     */
+    public static function getParameterOffsetOfNamedArgument(FunctionLikeStorage $storage, string $name): ?int
+    {
+        $variadic_offset = null;
+
+        foreach ($storage->params as $i => $candidate) {
+            if ($candidate->name === $name) {
+                return $i;
+            }
+
+            if ($candidate->is_variadic) {
+                $variadic_offset = $i;
+            }
+        }
+
+        return $variadic_offset;
     }
 
     /**

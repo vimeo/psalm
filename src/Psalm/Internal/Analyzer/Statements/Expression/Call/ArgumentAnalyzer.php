@@ -511,6 +511,7 @@ final class ArgumentAnalyzer
                         $context,
                         $specialize_taint,
                         $in_call_map,
+                        $arg->name?->name,
                     );
                 }
 
@@ -695,6 +696,7 @@ final class ArgumentAnalyzer
             $specialize_taint,
             $in_call_map,
             $function_call_location,
+            $arg->name?->name,
         ) === false) {
             return false;
         }
@@ -845,6 +847,7 @@ final class ArgumentAnalyzer
         bool $specialize_taint,
         bool $in_call_map,
         CodeLocation $function_call_location,
+        ?string $named_argument = null,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -883,6 +886,7 @@ final class ArgumentAnalyzer
                     $context,
                     $specialize_taint,
                     $in_call_map,
+                    $named_argument,
                 );
             }
 
@@ -967,6 +971,7 @@ final class ArgumentAnalyzer
                     $context,
                     $specialize_taint,
                     $in_call_map,
+                    $named_argument,
                 );
             }
 
@@ -1146,6 +1151,7 @@ final class ArgumentAnalyzer
                 $context,
                 $specialize_taint,
                 $in_call_map,
+                $named_argument,
             );
 
             if ($function_param->assert_untainted) {
@@ -1929,6 +1935,7 @@ final class ArgumentAnalyzer
         Context $context,
         bool $specialize_taint,
         bool $in_call_map,
+        ?string $named_argument = null,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -2049,7 +2056,14 @@ final class ArgumentAnalyzer
                     ? DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset)
                     : $argument_offset;
 
-                $dispatch_node = DataFlowNode::getForDispatch($cased_method_id, $param_offset, $specialize_taint);
+                // what an override takes of a named argument the variadic collects depends on its name
+                $collected_name = $function_param->is_variadic ? $named_argument : null;
+                $dispatch_node = DataFlowNode::getForDispatch(
+                    $cased_method_id,
+                    $param_offset,
+                    $specialize_taint,
+                    $collected_name,
+                );
 
                 if ($taint_flow_graph->isEmptyDispatch($dispatch_node)) {
                     $dispatch_node = null;
@@ -2089,6 +2103,26 @@ final class ArgumentAnalyzer
                         // location of the method, which the dispatch of its returns leaves (see
                         // MethodCallReturnTypeFetcher::getReturnDispatchNode()): what its body returns of the
                         // argument then reaches the call.
+                        $dependent_offset = $param_offset;
+                        $dependent_param = $function_param;
+
+                        if ($function_param->is_variadic) {
+                            // the declared variadic's name says nothing about the parameter of an override that
+                            // takes the argument: a positional one by its position, a named one by its name
+                            $dependent_param = null;
+
+                            if ($collected_name !== null && $dependent_storage) {
+                                $dependent_offset = DataFlowNode::getParameterOffsetOfNamedArgument(
+                                    $dependent_storage,
+                                    $collected_name,
+                                );
+
+                                if ($dependent_offset === null) {
+                                    continue;
+                                }
+                            }
+                        }
+
                         if ($is_override
                             && $dependent_storage
                             && $dependent_storage->location
@@ -2101,7 +2135,7 @@ final class ArgumentAnalyzer
                         ) {
                             $new_sink = DataFlowNode::getForMethodArgument(
                                 FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $dependent_method_id),
-                                $param_offset,
+                                $dependent_offset,
                                 $dependent_storage,
                                 $dependent_storage->location,
                             );
@@ -2113,9 +2147,9 @@ final class ArgumentAnalyzer
                             $new_sink = DataFlowNode::getForMethodArgumentById(
                                 $codebase->methods,
                                 $dependent_classlike_storage->name . '::' . $cased_method_name,
-                                $param_offset,
+                                $dependent_offset,
                                 null,
-                                $function_param,
+                                $dependent_param,
                             ) ?? DataFlowNode::getForCallableArg(
                                 'inherited-method',
                                 $dependent_classlike_storage->name . '::' . $cased_method_name,
