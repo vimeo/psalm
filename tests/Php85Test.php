@@ -395,6 +395,44 @@ final class Php85Test extends TestCase
                 'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.5',
             ],
+            'pipeNarrowsAPropertyOrAnOffset' => [
+                'code' => '<?php
+                    class C {
+                        public ?string $x = null;
+                        public static ?string $s = null;
+
+                        /**
+                         * @psalm-assert-if-true string $v
+                         */
+                        private function isString(mixed $v): bool { return is_string($v); }
+
+                        public function property(): string {
+                            return $this->x |> is_string(...) ? $this->x : "";
+                        }
+
+                        public function method(): string {
+                            return $this->x |> $this->isString(...) ? $this->x : "";
+                        }
+
+                        public static function staticProperty(): string {
+                            return self::$s |> is_string(...) ? self::$s : "";
+                        }
+                    }
+
+                    /**
+                     * @param array<string, mixed> $a
+                     */
+                    function offset(array $a): int {
+                        while ($a["k"] |> is_int(...)) {
+                            return $a["k"];
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 

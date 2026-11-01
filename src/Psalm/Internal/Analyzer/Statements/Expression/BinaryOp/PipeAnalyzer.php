@@ -20,12 +20,15 @@ use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\NullsafeMethodCall;
+use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Expr\StaticPropertyFetch;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Scalar;
 use PhpParser\Node\Scalar\InterpolatedString;
+use PhpParser\Node\VarLikeIdentifier;
 use PhpParser\Node\VariadicPlaceholder;
 use PhpParser\NodeAbstract;
 use PhpParser\NodeFinder;
@@ -332,7 +335,9 @@ final class PipeAnalyzer
         }
 
         if (!self::isWriteFree($left, $context)) {
-            return false;
+            // reading a property or an offset may run code (`__get()`, a hook, `offsetGet()`), which cannot change
+            // what a right-hand side reading nothing changeable evaluates to
+            return self::isFetch($left) && self::readsNothingChangeable($right);
         }
 
         if (!$right instanceof CallLike || !$right->isPartialFunctionApplication()) {
@@ -350,6 +355,51 @@ final class PipeAnalyzer
 
         foreach ($right->getRawArgs() as $raw_arg) {
             if ($raw_arg instanceof Arg && !self::isWriteFree($raw_arg->value, $context)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether the expression reads a property, a static property or an offset of a variable.
+     */
+    private static function isFetch(Expr $expr): bool
+    {
+        return ($expr instanceof PropertyFetch && $expr->var instanceof Variable && $expr->name instanceof Identifier)
+            || ($expr instanceof StaticPropertyFetch && $expr->class instanceof Name
+                && $expr->name instanceof VarLikeIdentifier)
+            || ($expr instanceof ArrayDimFetch && $expr->var instanceof Variable && $expr->dim !== null
+                && self::isWriteFree($expr->dim, null));
+    }
+
+    /**
+     * Whether the right-hand side names its callee, a function, a static method or a method of `$this`, and binds
+     * only constants.
+     */
+    private static function readsNothingChangeable(Expr $right): bool
+    {
+        if ((!$right instanceof FuncCall || !$right->name instanceof Name)
+            && (!$right instanceof StaticCall || !$right->class instanceof Name
+                || !$right->name instanceof Identifier)
+            && (!$right instanceof MethodCall || !$right->var instanceof Variable || $right->var->name !== 'this'
+                || !$right->name instanceof Identifier)
+        ) {
+            return false;
+        }
+
+        if (!$right->isPartialFunctionApplication()) {
+            return false;
+        }
+
+        foreach ($right->getRawArgs() as $raw_arg) {
+            if ($raw_arg instanceof Arg
+                && !($raw_arg->value instanceof Scalar && !$raw_arg->value instanceof InterpolatedString)
+                && !$raw_arg->value instanceof ConstFetch
+                && !($raw_arg->value instanceof ClassConstFetch && $raw_arg->value->class instanceof Name
+                    && $raw_arg->value->name instanceof Identifier)
+            ) {
                 return false;
             }
         }
