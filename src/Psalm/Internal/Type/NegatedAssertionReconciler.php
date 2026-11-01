@@ -261,6 +261,15 @@ final class NegatedAssertionReconciler extends Reconciler
                             ) {
                                 $existing_var_type->removeType($part_name);
                             }
+                        } elseif ($existing_var_type_part instanceof TTemplateParam
+                            && UnionTypeComparator::isContainedBy(
+                                $codebase,
+                                $existing_var_type_part->as,
+                                new Union([$assertion_type]),
+                            )
+                        ) {
+                            // every value of a template is of its bound
+                            $existing_var_type->removeType($part_name);
                         } elseif (AtomicTypeComparator::isContainedBy(
                             $codebase,
                             $assertion_type,
