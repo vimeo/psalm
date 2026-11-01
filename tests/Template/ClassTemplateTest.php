@@ -4995,6 +4995,42 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.0',
             ],
+            'newLeavesATemplateWithADefaultToLaterCodeThatCanBindIt' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template TValue = mixed
+                     */
+                    final class Promise {
+                        public function __construct(?callable $wait = null) {}
+
+                        /** @param TValue $value */
+                        public function resolve(mixed $value): void {}
+                    }
+
+                    /**
+                     * @template T
+                     * @param callable(): T $task
+                     * @return Promise<T>
+                     */
+                    function task(callable $task): Promise {
+                        $promise = new Promise(fn() => null);
+                        $promise->resolve($task());
+
+                        return $promise;
+                    }
+
+                    /** @return Promise<string> */
+                    function resolved(): Promise {
+                        $promise = new Promise();
+                        $promise->resolve("x");
+
+                        return $promise;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'newWithTemplateFreeConstructorArgumentUsesTheDefault' => [
                 'code' => '<?php
                     /**
