@@ -6250,6 +6250,32 @@ final class ClassTemplateExtendsTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'propertyLocalizationKeepsTemplateIntersectionThroughExtends' => [
+                'code' => '<?php
+                    /**
+                     * @template T as object
+                     * @psalm-suppress MissingConstructor
+                     */
+                    class Box {
+                        /** @var T&Countable */
+                        public $value;
+                    }
+
+                    class Payload {}
+
+                    /**
+                     * @extends Box<Payload>
+                     * @psalm-suppress MissingConstructor
+                     */
+                    class PayloadBox extends Box {}
+
+                    function test(PayloadBox $box): void {
+                        $box->value = new Payload();
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 }
