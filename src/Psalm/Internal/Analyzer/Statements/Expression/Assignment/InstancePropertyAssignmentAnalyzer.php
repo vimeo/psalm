@@ -554,7 +554,32 @@ final class InstancePropertyAssignmentAnalyzer
         return $can_set_readonly_property;
     }
 
-    /** Checks a write that bypasses analyze() (string `++`, by-reference `foreach`) to a readonly property. */
+    /** Checks a write that bypasses analyze() (unset(), string `++`, by-reference `foreach`) to a readonly property. */
+    public static function trackReadonlyWrite(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        string $property_id,
+        Context $context,
+    ): void {
+        $properties = $statements_analyzer->getCodebase()->properties;
+
+        if ($properties->hasStorage($property_id)
+            && ($property_storage = $properties->getStorage($property_id))->readonly
+        ) {
+            $receiver_type = $statements_analyzer->node_data->getType($stmt->var);
+
+            self::checkReadonlyPropertyWrite(
+                $statements_analyzer,
+                $stmt,
+                $property_id,
+                $property_storage,
+                $context,
+                $receiver_type !== null && $receiver_type->reference_free && $receiver_type->allow_mutations,
+            );
+        }
+    }
+
+    /** Checks a write that bypasses analyze() (string `++`, by-reference `foreach`) to a property of a fetch. */
     public static function trackReadonlyPropertyWrite(
         StatementsAnalyzer $statements_analyzer,
         PropertyFetch $fetch,
@@ -566,35 +591,19 @@ final class InstancePropertyAssignmentAnalyzer
             return;
         }
 
-        $codebase = $statements_analyzer->getCodebase();
-        $prop_name = $fetch->name->name;
+        $atomic_types = $receiver_type->getAtomicTypes();
 
-        foreach ($receiver_type->getAtomicTypes() as $atomic_type) {
-            if (!$atomic_type instanceof TNamedObject) {
-                continue;
-            }
+        while ($atomic_types) {
+            $atomic_type = array_pop($atomic_types);
 
-            $property_id = $atomic_type->value . '::$' . $prop_name;
-            $declaring_class = $codebase->properties->getDeclaringClassForProperty(
-                $property_id,
-                true,
-                $statements_analyzer,
-            );
-            if ($declaring_class === null) {
-                continue;
-            }
-
-            $property_storage = $codebase->classlike_storage_provider->get($declaring_class)
-                ->properties[$prop_name] ?? null;
-
-            if ($property_storage !== null && $property_storage->readonly) {
-                self::checkReadonlyPropertyWrite(
+            if ($atomic_type instanceof TTemplateParam) {
+                $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
+            } elseif ($atomic_type instanceof TNamedObject) {
+                self::trackReadonlyWrite(
                     $statements_analyzer,
                     $fetch,
-                    $property_id,
-                    $property_storage,
+                    $atomic_type->value . '::$' . $fetch->name->name,
                     $context,
-                    $receiver_type->reference_free && $receiver_type->allow_mutations,
                 );
             }
         }
