@@ -9,6 +9,11 @@ on:
 permissions:
   contents: read
 
+# A new push to a pull request cancels its previous run; pushes to branches always run to the end.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   chunk-matrix:
     permissions:
@@ -17,7 +22,8 @@ jobs:
 
     runs-on: ubuntu-latest
     env:
-      CHUNK_COUNT: 8
+      # more runners than on Linux (8): the tests take about a quarter longer on Windows
+      CHUNK_COUNT: 12
 
     outputs:
       count: ${{ steps.chunk-matrix.outputs.count }}
@@ -106,5 +112,6 @@ jobs:
       - name: Generate test suits
         run: php bin/ci/generate_testsuites.php $env:CHUNK_COUNT
 
+      # --order-by=default: see bin/ci/tests-github-actions.sh
       - name: Run unit tests
-        run: vendor/bin/paratest --max-batch-size=1 --processes=$env:NUMBER_OF_PROCESSORS --testsuite=chunk_$env:CHUNK_NUMBER --log-junit build/phpunit/phpunit.xml
+        run: vendor/bin/paratest --max-batch-size=1 --processes=$env:NUMBER_OF_PROCESSORS --order-by=default --testsuite=chunk_$env:CHUNK_NUMBER --log-junit build/phpunit/phpunit.xml

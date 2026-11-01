@@ -19,6 +19,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\ArrayType;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
@@ -408,7 +409,7 @@ final class ArrayFunctionArgumentsAnalyzer
             && $offset_arg_type->hasLiteralValue() && $offset_arg_type->isSingleLiteral()
         ) {
             $offset_literal_value = $offset_arg_type->getSingleLiteral()->value;
-            $offset_arg_is_zero = is_numeric($offset_literal_value) && ((int) $offset_literal_value)===0;
+            $offset_arg_is_zero = is_numeric($offset_literal_value) && LiteralCast::toInt($offset_literal_value) === 0;
         }
 
         if (!isset($args[2])) {
@@ -465,7 +466,7 @@ final class ArrayFunctionArgumentsAnalyzer
                 if ($length_arg_type->isSingleLiteral()) {
                     $length_literal =  $length_arg_type->getSingleLiteral();
                     if ($length_literal->isNumericType()) {
-                        $length_min = (int) $length_literal->value;
+                        $length_min = LiteralCast::toInt($length_literal->value);
                     }
                 } else {
                     foreach ([
@@ -474,7 +475,7 @@ final class ArrayFunctionArgumentsAnalyzer
                         ...$length_arg_type->getLiteralFloats(),
                     ] as $literal) {
                         if ($literal->isNumericType()
-                            && ($literal_val = (int) $literal->value)
+                            && ($literal_val = LiteralCast::toInt($literal->value) ?? 0)
                             && ((isset($length_min) && $length_min> $literal_val) || !isset($length_min))) {
                             $length_min = $literal_val;
                         }

@@ -39,6 +39,7 @@ use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\PurityWildcardPaths;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -334,6 +335,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         foreach ($storage->docblock_issues as $docblock_issue) {
             IssueBuffer::maybeAdd($docblock_issue);
         }
+
+        TemplateDefaults::checkBounds(
+            $this,
+            $storage->template_types ?? [],
+            $storage->template_defaults,
+            $storage->template_default_locations,
+            $context->self,
+            $context->parent,
+            ($storage instanceof MethodStorage ? $storage->defining_fqcln . '::' : '') . $storage->cased_name,
+            $this->getSuppressedIssues(),
+        );
 
         $function_information = $this->getFunctionInformation(
             $context,
@@ -2893,7 +2905,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             MethodAnalyzer::checkMethodSignatureMustOmitReturnType($storage, $codeLocation);
 
             if ($appearing_class_storage->is_enum) {
-                MethodAnalyzer::checkForbiddenEnumMethod($storage, $appearing_class_storage);
+                MethodAnalyzer::checkForbiddenEnumMethod(
+                    $storage,
+                    $appearing_class_storage,
+                    $codebase->analysis_php_version_id,
+                );
             }
 
             if (!$context->calling_method_id || !$context->collect_initializations) {

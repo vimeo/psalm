@@ -1478,6 +1478,20 @@ final class PurityTemplateTest extends TestCase
                     '$r===' => "'a'",
                 ],
             ],
+            'fiberGetCurrentIsPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function currentFiber(): ?Fiber {
+                        return Fiber::getCurrent();
+                    }
+
+                    $fiber = currentFiber();',
+                'assertions' => [
+                    '$fiber===' => 'Fiber[impure]|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'fiberInheritsTheCallbacksPurity' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -4232,6 +4246,21 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-import-type Item from Items
                      * @template T as Item
+                     * @psalm-consistent-constructor
+                     */
+                    abstract class Repo {
+                        public function __construct() {}
+
+                        public static function make(): static {
+                            return new static();
+                        }
+                    }',
+                'error_message' => 'UnsafeGenericInstantiation',
+            ],
+            'newStaticOfClassWithTypeTemplateWithADefault' => [
+                'code' => '<?php
+                    /**
+                     * @template T = int
                      * @psalm-consistent-constructor
                      */
                     abstract class Repo {

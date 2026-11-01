@@ -86,8 +86,8 @@ final class TernaryAnalyzer
 
         $mixed_var_ids = [];
 
-        foreach ($context->vars_in_scope as $var_id => $type) {
-            if ($type->hasMixed()) {
+        foreach ($if_context->vars_in_scope as $var_id => $type) {
+            if ($type->isMixed() && isset($context->vars_in_scope[$var_id])) {
                 $mixed_var_ids[] = $var_id;
             }
         }

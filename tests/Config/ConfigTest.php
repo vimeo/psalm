@@ -34,6 +34,7 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use Throwable;
+use UnexpectedValueException;
 
 use function array_map;
 use function dirname;
@@ -1903,6 +1904,29 @@ final class ConfigTest extends TestCase
         $root = __DIR__ . '/../fixtures/ComposerPhp64bitVersion';
         $cfg = Config::loadFromXML($root, "<?xml version=\"1.0\"?><psalm></psalm>");
         $this->assertSame('8.1', $cfg->getPhpVersion());
+    }
+
+    public function testReadsComposerJsonForPhp86Version(): void
+    {
+        $root = __DIR__ . '/../fixtures/ComposerPhp86Version';
+        $cfg = Config::loadFromXML($root, "<?xml version=\"1.0\"?><psalm></psalm>");
+        $php_version = (string) $cfg->getPhpVersion();
+        $this->assertSame('8.6', $php_version);
+
+        $project_analyzer = $this->getProjectAnalyzerWithConfig($cfg);
+        $project_analyzer->setPhpVersion($php_version, 'composer');
+        $this->assertSame(8_06_00, $project_analyzer->getCodebase()->analysis_php_version_id);
+    }
+
+    public function testRejectsUnreleasedPhpVersion(): void
+    {
+        $project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(dirname(__DIR__, 2), '<?xml version="1.0"?><psalm></psalm>'),
+        );
+
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage('is either not supported or doesn\'t exist');
+        $project_analyzer->setPhpVersion('8.7', 'tests');
     }
 
     /**

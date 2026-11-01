@@ -1,0 +1,6 @@
+<?php
+
+class DateTime implements DateTimeInterface
+{
+    public function format(string $format): string {}
+}

@@ -33,6 +33,16 @@ Configuration file may be split into several files using [XInclude](https://www.
 </projectFiles>
 ```
 
+## Keep the configuration private
+
+`psalm.xml` lists the layout of your code, and a [baseline](dealing_with_code_issues.md#using-a-baseline-file) lists the issues Psalm found, with taint analysis the places that are vulnerable. Don't leave them where a web server serves them (the document root of a web project):
+
+```nginx
+location ~ /(psalm.*|.*baseline.*)\.xml$ {
+    deny all;
+}
+```
+
 ## Different configuration file
 
 You can also create a different configuration file, then run Psalm with:
@@ -61,6 +71,22 @@ This corresponds to Psalm‘s [error-detection level](error_levels.md).
 />
 ```
 Setting this to `"false"` hides all issues with `Mixed` types in Psalm’s output. If not given, this defaults to `"false"` when `errorLevel` is 3 or higher, and `"true"` when the error level is 1 or 2.
+
+`"true"` only stops Psalm from hiding them: above level 2 they are reported as `info`, so give the issue the error level you want in `<issueHandlers>`. For a `mixed` value passed to `strtolower()` (`MixedArgument`; `MixedAssignment` behaves the same):
+
+```xml
+<psalm errorLevel="1" />                                  <!-- MixedArgument: error -->
+<psalm errorLevel="2" />                                  <!-- MixedArgument: info -->
+<psalm errorLevel="5" />                                  <!-- nothing -->
+<psalm errorLevel="5" reportMixedIssues="true" />         <!-- MixedArgument: info -->
+<psalm errorLevel="5" reportMixedIssues="true">           <!-- MixedArgument: error -->
+  <issueHandlers><MixedArgument errorLevel="error" /></issueHandlers>
+</psalm>
+<psalm errorLevel="5" reportMixedIssues="false">          <!-- nothing, even with the handler -->
+  <issueHandlers><MixedArgument errorLevel="error" /></issueHandlers>
+</psalm>
+<psalm errorLevel="1" reportMixedIssues="false" />        <!-- nothing -->
+```
 
 #### totallyTyped
 
@@ -151,6 +177,16 @@ If true we force strict typing on numerical and string operations (see https://g
 ```
 
 If false, disallows comparing a boolean to a literal boolean (mostly a codestyle rule, not a bug detection rule; see [RedundantIdentityWithTrue](https://psalm.dev/docs/running_psalm/issues/RedundantIdentityWithTrue/)). Defaults to `true`.
+
+#### strictNullableComparison
+
+```xml
+<psalm
+  strictNullableComparison="[bool]"
+>
+```
+
+If true, `<`, `>`, `<=` and `>=` report [PossiblyNullOperand](https://psalm.dev/docs/running_psalm/issues/PossiblyNullOperand/) (or [NullOperand](https://psalm.dev/docs/running_psalm/issues/NullOperand/)) for an operand that can be `null`, so the `null` case has to be handled explicitly. Defaults to `false`.
 
 #### rememberPropertyAssignmentsAfterCall
 
@@ -696,6 +732,7 @@ Optional. A list of extensions to enable. By default, only extensions required b
 ```xml
 <enableExtensions>
   <extension name="decimal"/>
+  <extension name="imagick"/>
   <extension name="pdo"/>
 </enableExtensions>
 ```

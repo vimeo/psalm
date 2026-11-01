@@ -24,7 +24,7 @@ use function strpos;
  */
 abstract class TaintCasesTestCase extends TestCase
 {
-    protected const SHARDS = 4;
+    protected const SHARDS = 8;
 
     /**
      * @return array<string, array{code: string}>

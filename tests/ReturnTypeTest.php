@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
-use Composer\InstalledVersions;
 use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
-
-use function version_compare;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -20,12 +17,8 @@ final class ReturnTypeTest extends TestCase
 
     public function testVoidParameterType(): void
     {
-        // PHP-Parser 5.8 rejects void parameters before Psalm analyzes the body.
-        $parser_version = InstalledVersions::getVersion('nikic/php-parser') ?? '5.0.0';
-        $this->testInvalidCode(
-            '<?php function f(void $p): void {}',
-            version_compare($parser_version, '5.8.0', '>=') ? 'ParseError' : 'ParadoxicalCondition',
-        );
+        // PHP-Parser rejects void parameters before Psalm analyzes the body.
+        $this->testInvalidCode('<?php function f(void $p): void {}', 'ParseError');
     }
 
     /**
@@ -35,6 +28,55 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'iterableDocblockReturnTypeOfNativeArrayOrObject' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     */
+                    interface FooInterface {
+                        /**
+                         * @return T|iterable<T>|null
+                         */
+                        public function foo(): object|array|null;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nativeNullReturnTypeOfAnInterfaceMethodWithADocblock' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @param string[] $params
+                         */
+                        public function method(array $params): null;
+                    }
+
+                    final class C implements I {
+                        public function method(array $params): null {
+                            return null;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'docblockNullReturnTypeOfAnInterfaceMethodIsVoid' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @return null
+                         */
+                        public function method();
+                    }
+
+                    final class C implements I {
+                        public function method() {
+                            return;
+                        }
+                    }',
+            ],
             'wordPressHashNotationAfterReturnAndVarType' => [
                 'code' => '<?php
                     /**
@@ -1753,6 +1795,35 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'iterableDocblockReturnTypeOfNativeObjectRejectsANonIterableObject' => [
+                'code' => '<?php
+                    interface FooInterface {
+                        /**
+                         * @return iterable
+                         */
+                        public function foo(): object|array {
+                            return new A();
+                        }
+                    }
+
+                    final class A {}',
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'objectIsNotAcceptedWhereAnIterableIsExpected' => [
+                'code' => '<?php
+                    function takesIterable(iterable $items): void {
+                        foreach ($items as $_) {
+                            echo 1;
+                        }
+                    }
+
+                    function test(object $object): void {
+                        takesIterable($object);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'unrepresentableScalarIntersection' => [
                 'code' => '<?php
                     /** @return literal-string&non-falsy-string */

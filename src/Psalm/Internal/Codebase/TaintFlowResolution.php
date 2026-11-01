@@ -185,6 +185,14 @@ final class TaintFlowResolution
     private const WIDENING_STATES = 16;
 
     /**
+     * How many states a node must have for the flows reaching it in more to forget all their open assignments (see
+     * forgetOpenAssignments()). Widening keeps the innermost open assignment of each expression type, and arrays
+     * with many literal keys, passed by reference through functions called from many places, still make a state
+     * for each key: the flows a node holds are mostly told apart by those alone.
+     */
+    private const FORGETTING_STATES = 256;
+
+    /**
      * How many filters an entry has at most (see getFilter()): each fact a filter knows about the calls entering
      * it can be combined with the others, in a filter of the filter, so they grow with the product of the keys
      * fetched at each depth (a constructor of a value object reading every property of its arguments, ...). Past
@@ -393,6 +401,13 @@ final class TaintFlowResolution
      * @var array<int, int>
      */
     private array $open_assignment_widenings = [];
+
+    /**
+     * Open assignments key => the open assignments forgotten (see forgetOpenAssignments())
+     *
+     * @var array<int, int>
+     */
+    private array $open_assignment_forgettings = [];
 
     /*
      * The states, as parallel lists indexed by state id
@@ -1778,6 +1793,23 @@ final class TaintFlowResolution
     }
 
     /**
+     * The open assignments $open_assignments, widened already (see widenOpenAssignments()), of a flow reaching a node
+     * with FORGETTING_STATES states: none, those of the call entering their context stay unknown. A fetch only
+     * ignores an open assignment the flow knows, so forgetting them all only lets the flow go on through more
+     * fetches.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function forgetOpenAssignments(int $open_assignments): int
+    {
+        return $this->open_assignment_forgettings[$open_assignments] ??= $this->internOpenAssignments(
+            [],
+            $this->open_assignments[$open_assignments][1],
+            $this->open_assignment_slots[$open_assignments],
+        );
+    }
+
+    /**
      * The open assignment at depth $depth of the open assignments of a call, made $call_made and with $call_closed
      * of those of its own call closed (see $open_assignments): as a path type id, minus its depth in those of its
      * own call, or the unkeyed array value assignment if the call doesn't know it.
@@ -1878,6 +1910,10 @@ final class TaintFlowResolution
             && count($this->state_ids[$node_id]) >= self::WIDENING_STATES
         ) {
             $open_assignments = $this->widenOpenAssignments($open_assignments);
+
+            if (count($this->state_ids[$node_id]) >= self::FORGETTING_STATES) {
+                $open_assignments = $this->forgetOpenAssignments($open_assignments);
+            }
         }
 
         $key = (($context + 1) << 32) | $open_assignments;

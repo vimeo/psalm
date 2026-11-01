@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use AssertionError;
 use Psalm\Codebase;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Storage\ClassLikeStorage;
@@ -96,13 +97,20 @@ final class ClassTemplateParamCollector
 
         if ($lhs_type_part instanceof TGenericObject) {
             if ($class_storage === $static_class_storage && $class_storage->template_types) {
+                $lhs_type_params = TemplateDefaults::fillTypeArguments(
+                    $lhs_type_part->type_params,
+                    $class_storage,
+                    $codebase,
+                    $lhs_type_part->from_docblock,
+                );
                 $i = 0;
 
                 foreach ($class_storage->template_types as $type_name => $_) {
-                    if (isset($lhs_type_part->type_params[$i])) {
-                        $class_template_params[$type_name][$class_storage->name]
-                            = $lhs_type_part->type_params[$i];
-                    } elseif (isset($class_storage->template_defaults[$type_name])) {
+                    if (isset($lhs_type_params[$i])) {
+                        $class_template_params[$type_name][$class_storage->name] = $lhs_type_params[$i];
+                    } elseif (isset($class_storage->purity_templates[$type_name])
+                        && isset($class_storage->template_defaults[$type_name])
+                    ) {
                         // a purity template left out (`Box<int>`) has its default
                         $class_template_params[$type_name][$class_storage->name]
                             = $class_storage->template_defaults[$type_name];

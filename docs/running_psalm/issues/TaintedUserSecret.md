@@ -4,6 +4,12 @@ This is a **security issue**, reported by [security analysis](https://psalm.dev/
 
 Emitted when tainted input detection is turned on and data marked as a user secret is detected somewhere it shouldn’t be.
 
+## Risk
+
+A secret of the user (a password, a token, personal data) that reaches output, a log or a response is disclosed to whoever can read it.
+
+## Example
+
 ```php
 <?php
 
@@ -20,3 +26,11 @@ function showUserPassword(User $user) {
     echo $user->getPassword();
 }
 ```
+
+## Mitigations
+
+- Don't print or log the value; if it must leave the system, redact it first.
+
+## Further resources
+
+- [CWE-200](https://cwe.mitre.org/data/definitions/200.html)

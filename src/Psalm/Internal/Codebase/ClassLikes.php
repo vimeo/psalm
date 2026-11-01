@@ -2002,7 +2002,7 @@ final class ClassLikes
         bool $late_static_binding = false,
         bool $in_value_of_context = false,
     ): ?Union {
-        $class_name = strtolower($class_name);
+        $class_name = strtolower($this->getUnAliasedName($class_name));
 
         if (!$this->classlike_storage_provider->has($class_name)) {
             return null;

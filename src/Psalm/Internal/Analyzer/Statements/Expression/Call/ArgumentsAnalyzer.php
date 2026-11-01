@@ -31,6 +31,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\ArrayMapReturnTypeProvider;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -42,6 +43,7 @@ use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualPipeValue;
 use Psalm\Node\VirtualArg;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
@@ -226,6 +228,7 @@ final class ArgumentsAnalyzer
                     || $arg->value instanceof PhpParser\Node\Expr\Array_
                     || $arg->value instanceof PhpParser\Node\Expr\Ternary
                     || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
+                    || $arg->value instanceof VirtualPipeValue
                 )
             ) {
                 if (self::handleByRefFunctionArg(
@@ -1305,6 +1308,10 @@ final class ArgumentsAnalyzer
             $code_location,
         );
 
+        if ($template_result && $function_storage && $function_storage->template_defaults) {
+            TemplateDefaults::bindUninferred($template_result, $function_storage, $codebase);
+        }
+
         return null;
     }
 
@@ -1329,7 +1336,9 @@ final class ArgumentsAnalyzer
         CodeLocation $call_location,
         array $args,
     ): ?bool {
-        if ($arg->value instanceof PhpParser\Node\Scalar
+        if (($arg->value instanceof VirtualPipeValue
+                && self::phpTakesArgumentByReference($method_id, $argument_offset))
+            || $arg->value instanceof PhpParser\Node\Scalar
             || $arg->value instanceof PhpParser\Node\Expr\Cast
             || $arg->value instanceof PhpParser\Node\Expr\Array_
             || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
@@ -1349,7 +1358,10 @@ final class ArgumentsAnalyzer
         ) {
             IssueBuffer::maybeAdd(
                 new InvalidPassByReference(
-                    'Parameter ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects a variable',
+                    'Parameter ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                        . ($arg->value instanceof VirtualPipeValue
+                            ? ' is passed by reference, but the pipe operator passes its left-hand side by value'
+                            : ' expects a variable'),
                     new CodeLocation($statements_analyzer->getSource(), $arg->value),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -1793,6 +1805,29 @@ final class ArgumentsAnalyzer
     ): void {
         $property_id = $fq_class_name . '::$' . $prop_name;
 
+        $declaring_class_storage = self::getDeclaringClassStorage($statements_analyzer, $property_id, $prop_name);
+
+        if ($declaring_class_storage !== null) {
+            InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
+                $statements_analyzer,
+                $stmt,
+                $property_id,
+                $declaring_class_storage->properties[$prop_name],
+                $declaring_class_storage,
+                $context,
+                $lhs_var_id,
+            );
+        }
+    }
+
+    /**
+     * The storage of the class declaring the property, null when it is unknown
+     */
+    public static function getDeclaringClassStorage(
+        StatementsAnalyzer $statements_analyzer,
+        string $property_id,
+        string $prop_name,
+    ): ?ClassLikeStorage {
         $codebase = $statements_analyzer->getCodebase();
         $declaring_property_class = (string) $codebase->properties->getDeclaringClassForProperty(
             $property_id,
@@ -1803,22 +1838,10 @@ final class ArgumentsAnalyzer
         try {
             $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
         } catch (InvalidArgumentException) {
-            return;
+            return null;
         }
 
-        if (isset($declaring_class_storage->properties[$prop_name])) {
-            $property_storage = $declaring_class_storage->properties[$prop_name];
-
-            InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
-                $statements_analyzer,
-                $stmt,
-                $property_id,
-                $property_storage,
-                $declaring_class_storage,
-                $context,
-                $lhs_var_id,
-            );
-        }
+        return isset($declaring_class_storage->properties[$prop_name]) ? $declaring_class_storage : null;
     }
 
     /**

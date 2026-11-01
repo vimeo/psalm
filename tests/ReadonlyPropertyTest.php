@@ -135,6 +135,90 @@ final class ReadonlyPropertyTest extends TestCase
 
                     echo (new B)->bar;',
             ],
+            'readonlyPropertyWithDefaultOnPhp86' => [
+                'code' => '<?php
+                    class A {
+                        public readonly string $s = "a";
+                    }
+
+                    echo (new A)->s;',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'readonlyPropertyWithDefaultSetInCloneOnPhp86' => [
+                'code' => '<?php
+                    class A {
+                        public readonly string $s = "a";
+
+                        public function __clone() {
+                            $this->s = "b";
+                        }
+                    }
+
+                    echo (clone new A)->s;',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'docblockReadonlyPropertyWithDefaultSetInConstructorOnPhp86' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @readonly
+                         */
+                        public string $s = "a";
+
+                        public function __construct() {
+                            $this->s = "b";
+                        }
+                    }
+
+                    echo (new A)->s;',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'computedNameWritesOnMutableProperty' => [
+                'code' => '<?php
+                    function change(int &$i): void {
+                        $i = 2;
+                    }
+
+                    final class A {
+                        public array $arr = [];
+                        public int $n = 1;
+
+                        public function run(): void {
+                            $this->{"arr"}[] = 1;
+                            change($this->{"n"});
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'computedNameArrayPushOnInterfacePropertyWithSetHook' => [
+                'code' => '<?php
+                    interface I {
+                        public array $items { get; set; }
+                    }
+
+                    final class Impl implements I {
+                        public array $items = [];
+                    }
+
+                    function f(I $i): void {
+                        if ($i->items === []) {
+                            $i->{"items"}[] = 1;
+                        }
+                    }
+
+                    f(new Impl());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
@@ -285,6 +369,81 @@ final class ReadonlyPropertyTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'readonlyPropertyWithDefaultOnPhp85' => [
+                'code' => '<?php
+                    class A {
+                        public readonly string $s = "a";
+                    }',
+                'error_message' => 'InvalidPropertyAssignment',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'staticReadonlyPropertyWithDefaultOnPhp86' => [
+                'code' => '<?php
+                    class A {
+                        public static readonly int $x = 1;
+                    }',
+                'error_message' => 'InvalidPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:57'
+                    . ' - Readonly property A::$x cannot have a default',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'readonlyPropertyWithDefaultSetInConstructorOnPhp86' => [
+                'code' => '<?php
+                    class A {
+                        public readonly string $s = "a";
+
+                        public function __construct() {
+                            $this->s = "b";
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29'
+                    . ' - A::$s is readonly and already initialised by its default',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'readonlyPropertyWithDefaultSetInMethodOnPhp86' => [
+                'code' => '<?php
+                    class A {
+                        public readonly string $s = "a";
+
+                        public function set(): void {
+                            $this->s = "b";
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'readonlyPropertyWithDefaultSetInChildConstructorOnPhp86' => [
+                'code' => '<?php
+                    class A {
+                        public readonly string $s = "a";
+                    }
+
+                    class B extends A {
+                        public function __construct() {
+                            $this->s = "b";
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29'
+                    . ' - B::$s is readonly and already initialised by its default',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'readonlyClassPropertyWithDefaultSetInConstructorOnPhp86' => [
+                'code' => '<?php
+                    readonly class A {
+                        public string $s = "a";
+
+                        public function __construct() {
+                            $this->s = "b";
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
             'readonlyPromotedPropertyAssignOperator' => [
                 'code' => '<?php
                     class A {
@@ -330,6 +489,36 @@ final class ReadonlyPropertyTest extends TestCase
                         }
                     }',
                 'error_message' => 'InaccessibleProperty',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'readonlyPropertyComputedNameArrayPush' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public readonly array $arr) {}
+
+                        public function add(): void {
+                            $this->{"arr"}[] = 1;
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29 - A::$arr is marked readonly',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'readonlyPropertyComputedNameByRefArgument' => [
+                'code' => '<?php
+                    function change(int &$i): void {
+                        $i = 2;
+                    }
+
+                    final class A {
+                        public function __construct(public readonly int $x) {}
+
+                        public function run(): void {
+                            change($this->{"x"});
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36 - A::$x is marked readonly',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],

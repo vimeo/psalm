@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\NonComparisonOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\OrAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\PipeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
@@ -22,6 +23,8 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidOperand;
+use Psalm\Issue\NullOperand;
+use Psalm\Issue\PossiblyNullOperand;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainType;
@@ -113,6 +116,10 @@ final class BinaryOpAnalyzer
             );
 
             return $expr_result;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Pipe) {
+            return PipeAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp) {
@@ -217,6 +224,42 @@ final class BinaryOpAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
+            }
+
+            if (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual)
+                && $statements_analyzer->getCodebase()->config->strict_nullable_comparison
+            ) {
+                $operands = [
+                    ['Left', $stmt->left, $stmt_left_type],
+                    ['Right', $stmt->right, $stmt_right_type],
+                ];
+
+                foreach ($operands as [$side, $operand_expr, $operand_type]) {
+                    if (!$operand_type || $operand_type->ignore_nullable_issues) {
+                        continue;
+                    }
+
+                    if ($operand_type->isNull()) {
+                        IssueBuffer::maybeAdd(
+                            new NullOperand(
+                                $side . ' operand cannot be null',
+                                new CodeLocation($statements_analyzer, $operand_expr),
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    } elseif ($operand_type->isNullable()) {
+                        IssueBuffer::maybeAdd(
+                            new PossiblyNullOperand(
+                                $side . ' operand cannot be nullable, got ' . $operand_type->getId(),
+                                new CodeLocation($statements_analyzer, $operand_expr),
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
+                }
             }
 
             if (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal

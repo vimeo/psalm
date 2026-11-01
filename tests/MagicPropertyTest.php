@@ -929,6 +929,77 @@ final class MagicPropertyTest extends TestCase
                         }
                     }',
             ],
+            'pseudoPropertyFetchOnNullableReceiverInCoalesce' => [
+                'code' => '<?php
+                    /**
+                     * @property string $value
+                     */
+                    class Foo {
+                        public function __set(string $name, mixed $value): void {}
+                        public function __get(string $name): mixed { return null; }
+                    }
+
+                    function coalesce(?Foo $foo): string {
+                        return $foo->value ?? "default";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'pseudoPropertyReadFetchOnNullableReceiverInCoalesce' => [
+                'code' => '<?php
+                    /**
+                     * @property-read string $value
+                     */
+                    class Foo {
+                        public function __get(string $name): mixed { return null; }
+                    }
+
+                    function coalesce(?Foo $foo): string {
+                        return $foo->value ?? "default";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'pseudoPropertyWithoutMagicGetOnNullableReceiverInCoalesce' => [
+                'code' => '<?php
+                    /**
+                     * @property string $value
+                     */
+                    #[AllowDynamicProperties]
+                    class Foo {}
+
+                    function coalesce(?Foo $foo): string {
+                        return $foo->value ?? "default";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'pseudoPropertyFetchKeepsDeclaredPropertyTypeOnUnionReceiver' => [
+                'code' => '<?php
+                    class Real {
+                        public int $value = 0;
+                    }
+
+                    /**
+                     * @property string $value
+                     */
+                    class Pseudo {
+                        public function __set(string $name, mixed $value): void {}
+                        public function __get(string $name): mixed { return null; }
+                    }
+
+                    /** @var Real|Pseudo $x */
+                    $x = new Real();
+                    $y = $x->value;',
+                'assertions' => [
+                    '$y' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 

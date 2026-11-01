@@ -101,14 +101,39 @@ foreach (glob(__DIR__."/../../dictionaries/autogen/CallMap_*.php") as $file) {
 ksort($baseMaps);
 $last = array_key_last($baseMaps);
 
-// the images of PHP 8.6 are thread safe builds, which lack chroot
+// The image of a version lacks the extensions that don't build on it yet (build_docker.php --excludes): their
+// entries are carried over from the previous version, rather than dropped as if the version had removed them.
+/** @var array<string, list<string>> $excludes */
+$excludes = json_decode(
+    (string) shell_exec(
+        escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__DIR__ . '/build_docker.php') . ' --excludes',
+    ),
+    true,
+    512,
+    JSON_THROW_ON_ERROR,
+);
+
 $previous = null;
+$previousExtensions = [];
 foreach ($baseMaps as $version => &$baseMap) {
-    if ($previous !== null && !isset($baseMap['chroot']) && isset($baseMaps[$previous]['chroot'])) {
-        $baseMap['chroot'] = $baseMaps[$previous]['chroot'];
+    /** @var array<string, string> $extensions */
+    $extensions = require __DIR__ . "/../../dictionaries/autogen/CallMapExtensions_$version.php";
+    if ($previous !== null) {
+        $unbuilt = $excludes[intdiv((int) $version, 10) . '.' . ((int) $version % 10)] ?? [];
+        foreach ($baseMaps[$previous] as $func => $params) {
+            if (!isset($baseMap[$func]) && in_array($previousExtensions[$func] ?? null, $unbuilt, true)) {
+                $baseMap[$func] = $params;
+                $extensions[$func] = $previousExtensions[$func];
+            }
+        }
+        // the images of PHP 8.6 are thread safe builds, which lack chroot
+        if (!isset($baseMap['chroot']) && isset($baseMaps[$previous]['chroot'])) {
+            $baseMap['chroot'] = $baseMaps[$previous]['chroot'];
+        }
         $baseMap = normalizeCallMap($baseMap);
     }
     $previous = $version;
+    $previousExtensions = $extensions;
 } unset($baseMap);
 
 // Load+normalize hand-written diff maps
@@ -151,24 +176,7 @@ foreach ($customDiffs as $version => $customDiff) {
 }
 krsort($customMaps);
 
-// The image of a version lacks the extensions that don't build on it yet (build_docker.php --excludes): the
-// overrides of their functions are kept, rather than dropped as if the version had removed them.
-/** @var array<string, list<string>> $excludes */
-$excludes = json_decode(
-    (string) shell_exec(
-        escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__DIR__ . '/build_docker.php') . ' --excludes',
-    ),
-    true,
-    512,
-    JSON_THROW_ON_ERROR,
-);
-$extensionOf = [];
-foreach (glob(__DIR__ . '/../../dictionaries/autogen/CallMapExtensions_*.php') as $file) {
-    $extensionOf += require $file;
-}
-
 foreach ($customMaps as $version => &$data) {
-    $unbuilt = $excludes[intdiv((int) $version, 10) . '.' . ((int) $version % 10)] ?? [];
     foreach ($data as $func => &$params) {
         if (isset($baseMaps[$version][$func])) {
             $baseParams = $baseMaps[$version][$func];
@@ -178,7 +186,6 @@ foreach ($customMaps as $version => &$data) {
             && !str_starts_with($func, 'ftp')
             && !str_starts_with($func, 'db2')
             && isset($allFuncs[$func])
-            && !in_array($extensionOf[$func] ?? null, $unbuilt, true)
         ) {
             unset($data[$func]);
         }

@@ -1,6 +1,11 @@
 name: Check backward compatibility
 
 on: pull_request
+# A new push to a pull request cancels its previous run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   bcc:
     name: Check backward compatibility

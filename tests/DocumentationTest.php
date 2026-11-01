@@ -19,12 +19,14 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Issue\CodeIssue;
 use Psalm\Issue\UnusedBaselineEntry;
 use Psalm\Issue\UnusedIssueHandlerSuppression;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use SebastianBergmann\Exporter\Exporter;
 use UnexpectedValueException;
 
+use function array_count_values;
 use function array_diff;
 use function array_filter;
 use function array_keys;
@@ -41,6 +43,7 @@ use function glob;
 use function implode;
 use function in_array;
 use function preg_match;
+use function preg_match_all;
 use function preg_quote;
 use function scandir;
 use function sort;
@@ -92,7 +95,6 @@ final class DocumentationTest extends TestCase
         '@psalm-override-property-visibility',
         '@psalm-scope-this',
         '@psalm-seal-methods',
-        '@psalm-stub-override',
     ];
 
     protected ProjectAnalyzer $project_analyzer;
@@ -100,6 +102,9 @@ final class DocumentationTest extends TestCase
     private static string $docContents = '';
 
     /**
+     * Takes the first ```php block of each issue page. It is analysed as-is, so it must start
+     * with `<?php` (otherwise it is inline HTML and raises no issue) and must raise the issue.
+     *
      * @return array<string, array<int, string>>
      */
     private static function getCodeBlocksFromDocs(): array
@@ -209,6 +214,71 @@ final class DocumentationTest extends TestCase
         sort($documented_issues);
 
         $this->assertSame(implode("\n", $all_issues), implode("\n", $documented_issues));
+    }
+
+    public function testAllIssuesAreListedOnceInErrorLevels(): void
+    {
+        $docs = file_get_contents(dirname(__DIR__) . '/docs/running_psalm/error_levels.md');
+        assert($docs !== false);
+
+        preg_match_all('/\(issues\/([A-Za-z0-9]+)\.md\)/', $docs, $matches);
+        $listed = $matches[1];
+
+        $all_issues = IssueHandler::getAllIssueTypes();
+        sort($all_issues);
+
+        $this->assertSame([], array_diff($all_issues, $listed), 'Issues missing from error_levels.md');
+        $this->assertSame([], array_diff($listed, $all_issues), 'error_levels.md lists unknown issues');
+        $this->assertSame(
+            [],
+            array_keys(array_filter(array_count_values($listed), static fn(int $count): bool => $count > 1)),
+            'Issues listed more than once in error_levels.md',
+        );
+    }
+
+    public function testIssuesAreListedUnderTheirErrorLevelInErrorLevels(): void
+    {
+        $docs = file_get_contents(dirname(__DIR__) . '/docs/running_psalm/error_levels.md');
+        assert($docs !== false);
+
+        $section = '';
+        $sections = [];
+
+        foreach (explode("\n", $docs) as $line) {
+            if (preg_match('/^## (.+)$/', $line, $heading)) {
+                $section = $heading[1];
+            } elseif (preg_match_all('/\(issues\/([A-Za-z0-9]+)\.md\)/', $line, $listed) > 0) {
+                foreach ($listed[1] as $issue) {
+                    $sections[$issue] = $section;
+                }
+            }
+        }
+
+        $misplaced = [];
+
+        foreach (IssueHandler::getAllIssueTypes() as $issue_name) {
+            $section = $sections[$issue_name] ?? '';
+
+            /** @var class-string<CodeIssue> $issue_class */
+            $issue_class = 'Psalm\\Issue\\' . $issue_name;
+            /** @var int $level */
+            $level = $issue_class::ERROR_LEVEL;
+
+            // an issue of level 8 is an error at every level
+            $expected = $level === -2
+                ? 'Feature-specific errors'
+                : ($level === -1 || $level >= 8
+                    ? 'Always treated as errors'
+                    : ($level === 1
+                        ? 'Errors that only appear at level 1'
+                        : 'Errors at level ' . $level . ' and below'));
+
+            if ($section !== $expected) {
+                $misplaced[$issue_name] = $section . ' (should be: ' . $expected . ')';
+            }
+        }
+
+        $this->assertSame([], $misplaced, 'Issues listed under the wrong level in error_levels.md');
     }
 
     /**

@@ -1093,6 +1093,34 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'safe_types' => false,
                 'allow_backwards_incompatible_changes' => true,
             ],
+            'neverNative81' => [
+                'input' => '<?php
+                    function f() {
+                        exit(1);
+                    }
+
+                    class A {
+                        public function g() {
+                            throw new Exception("x");
+                        }
+                    }
+                ',
+                'output' => '<?php
+                    function f(): never {
+                        exit(1);
+                    }
+
+                    class A {
+                        public function g(): never {
+                            throw new Exception("x");
+                        }
+                    }
+                ',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
+            ],
             'WithAttributes' => [
                 'input' => '<?php
 

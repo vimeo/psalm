@@ -1140,6 +1140,42 @@ final class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testPreloadedStubOfBuiltinClassKeepsUndeclaredMethods(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/partial_builtin_class.phpstub" preloadClasses="true" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->visitPreloadedStubFiles($codebase);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return DateTime|false */
+                function create() {
+                    return DateTime::createFromFormat("Y", "2020");
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testStubFileWithPartialClassDefinitionWithMoreMethods(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

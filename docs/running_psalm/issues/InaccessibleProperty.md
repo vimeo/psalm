@@ -25,3 +25,19 @@ class A {
 $a = new A();
 $a->foo = 'baz';
 ```
+
+It is also emitted when a `readonly` property is written anywhere but in a constructor (or `__clone`, `unserialize`) of its class:
+
+```php
+<?php
+
+class Test {}
+
+class A {
+    public function __construct(private readonly Test $test) {}
+
+    public function change(Test $test): void {
+        $this->test = $test; // InaccessibleProperty: A::$test is marked readonly
+    }
+}
+```

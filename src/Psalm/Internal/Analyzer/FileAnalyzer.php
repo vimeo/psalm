@@ -12,7 +12,6 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\UnpreparedAnalysisException;
 use Psalm\Internal\Codebase\Functions;
-use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\Reflection;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
@@ -256,7 +255,9 @@ class FileAnalyzer extends SourceAnalyzer
                         continue;
                     }
 
-                    $referenced_class_storage = $codebase->classlike_storage_provider->get($fq_source_classlike);
+                    $referenced_class_storage = $codebase->classlike_storage_provider->get(
+                        $codebase->classlikes->getUnAliasedName($fq_source_classlike),
+                    );
                     if (!isset($referenced_class_storage->type_aliases[$alias->alias_name])) {
                         IssueBuffer::maybeAdd(
                             new InvalidTypeImport(
@@ -507,7 +508,6 @@ class FileAnalyzer extends SourceAnalyzer
         ClassLikeStorageProvider::deleteAll();
         FileStorageProvider::deleteAll();
         FileReferenceProvider::clearCache();
-        InternalCallMapHandler::clearCache();
     }
 
     /** @psalm-mutation-free */

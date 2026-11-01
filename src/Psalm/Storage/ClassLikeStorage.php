@@ -68,6 +68,13 @@ final class ClassLikeStorage implements HasAttributesInterface
     public bool $deprecated = false;
 
     /**
+     * The literal message of a native #[\Deprecated] attribute, if any.
+     *
+     * @var non-empty-string|null
+     */
+    public ?string $deprecated_message = null;
+
+    /**
      * @var list<non-empty-string>
      */
     public array $internal = [];
@@ -267,6 +274,13 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $declaring_pseudo_method_ids = [];
 
     /**
+     * Same as $declaring_pseudo_method_ids, but for static pseudo methods
+     *
+     * @var array<lowercase-string, MethodIdentifier>
+     */
+    public array $declaring_pseudo_static_method_ids = [];
+
+    /**
      * @var array<lowercase-string, MethodIdentifier>
      */
     public array $declaring_method_ids = [];
@@ -356,12 +370,28 @@ final class ClassLikeStorage implements HasAttributesInterface
     public ?array $template_covariants = null;
 
     /**
-     * The default value of each purity template that has one (`@psalm-purity-template C(pure) <= io`):
-     * what a subclass that does not bind the template gets.
+     * The templates declared with `@psalm-purity-template` (capability sets); the others are type templates.
+     *
+     * @var array<string, true>
+     */
+    public array $purity_templates = [];
+
+    /**
+     * What a template left out of a use of the class stands for: the declared default of a type template, in which
+     * earlier templates stand for their arguments (`@template T of Bound = Default`), or the default of a purity
+     * template (`@psalm-purity-template C(pure) <= io`), else its upper bound. Subclasses not binding it get it, as do
+     * uses like `Foo<A>` leaving out trailing type templates, but not a use without type arguments (`Foo`).
      *
      * @var array<string, Union>
      */
     public array $template_defaults = [];
+
+    /**
+     * Where each declared type template default is, for the issues about it.
+     *
+     * @var array<string, CodeLocation>
+     */
+    public array $template_default_locations = [];
 
     /**
      * The lower bound of each purity template that has one (`@psalm-purity-template write-props <= C`):
@@ -543,8 +573,7 @@ final class ClassLikeStorage implements HasAttributesInterface
     }
 
     /**
-     * How many template params a use of this class must give: all of them, except trailing purity
-     * templates with a default, which need not be given.
+     * How many template params a use of this class must give: all but the trailing ones with a default.
      *
      * @psalm-mutation-free
      */

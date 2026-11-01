@@ -9,6 +9,7 @@ use Psalm\Config;
 use Psalm\Exception\ConfigCreationException;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Composer;
+use Symfony\Component\Filesystem\Path;
 
 use function array_filter;
 use function array_keys;
@@ -268,6 +269,10 @@ final class Creator
                 }
 
                 $path = (string) preg_replace('@[/\\\]$@', '', $path, 1);
+
+                if (!is_dir(Path::isAbsolute($path) ? $path : $current_dir . DIRECTORY_SEPARATOR . $path)) {
+                    continue;
+                }
 
                 if ($path !== 'tests') {
                     $nodes[] = '<directory name="' . $path . '" />';

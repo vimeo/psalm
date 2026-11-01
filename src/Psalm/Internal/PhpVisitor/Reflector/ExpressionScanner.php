@@ -234,7 +234,7 @@ final class ExpressionScanner
             }
         }
 
-        if ($node->isFirstClassCallable()) {
+        if ($node->isPartialFunctionApplication()) {
             return;
         }
 

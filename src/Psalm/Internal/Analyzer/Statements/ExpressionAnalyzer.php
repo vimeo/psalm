@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\BooleanNotAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\PartialApplicationAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
@@ -52,7 +53,9 @@ use Psalm\Issue\RiskyTruthyFalsyComparison;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\Issue\UnsupportedReferenceUsage;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\PartialApplication;
 use Psalm\Node\Expr\VirtualFuncCall;
+use Psalm\Node\Expr\VirtualPipeValue;
 use Psalm\Node\Scalar\VirtualInterpolatedString;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualName;
@@ -223,6 +226,10 @@ final class ExpressionAnalyzer
 
         if ($stmt instanceof PhpParser\Node\Expr\StaticCall) {
             return StaticCallAnalyzer::analyze($statements_analyzer, $stmt, $context, $template_result);
+        }
+
+        if ($stmt instanceof PartialApplication) {
+            return PartialApplicationAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
@@ -471,6 +478,12 @@ final class ExpressionAnalyzer
             && $analysis_php_version_id >= 8_00_00
         ) {
             return NullsafeAnalyzer::analyze($statements_analyzer, $stmt, $context);
+        }
+
+        if ($stmt instanceof VirtualPipeValue) {
+            $statements_analyzer->node_data->setType($stmt, $stmt->value_type);
+
+            return true;
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Error) {

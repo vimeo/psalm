@@ -28,11 +28,13 @@ use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedMultiplicationOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -100,19 +102,25 @@ final class ConstantTypeResolver
                         || $right instanceof TLiteralFloat
                         || $right instanceof TLiteralInt)
                 ) {
-                    return Type::getAtomicStringFromLiteral($left->value . $right->value);
+                    return Type::getAtomicStringFromLiteral(
+                        LiteralCast::toString($left->value) . LiteralCast::toString($right->value),
+                    );
                 }
 
                 return new TString();
+            }
+
+            if ($c instanceof UnresolvedBitwiseOr
+                || $c instanceof UnresolvedBitwiseXor
+                || $c instanceof UnresolvedBitwiseAnd
+            ) {
+                return self::resolveBitwiseOp($c, $left, $right);
             }
 
             if ($c instanceof UnresolvedAdditionOp
                 || $c instanceof UnresolvedSubtractionOp
                 || $c instanceof UnresolvedDivisionOp
                 || $c instanceof UnresolvedMultiplicationOp
-                || $c instanceof UnresolvedBitwiseOr
-                || $c instanceof UnresolvedBitwiseXor
-                || $c instanceof UnresolvedBitwiseAnd
             ) {
                 if (($left instanceof TLiteralFloat || $left instanceof TLiteralInt)
                     && ($right instanceof TLiteralFloat || $right instanceof TLiteralInt)
@@ -127,18 +135,6 @@ final class ConstantTypeResolver
 
                     if ($c instanceof UnresolvedDivisionOp) {
                         return self::getLiteralTypeFromScalarValue($left->value / $right->value);
-                    }
-
-                    if ($c instanceof UnresolvedBitwiseOr) {
-                        return self::getLiteralTypeFromScalarValue($left->value | $right->value);
-                    }
-
-                    if ($c instanceof UnresolvedBitwiseXor) {
-                        return self::getLiteralTypeFromScalarValue($left->value ^ $right->value);
-                    }
-
-                    if ($c instanceof UnresolvedBitwiseAnd) {
-                        return self::getLiteralTypeFromScalarValue($left->value & $right->value);
                     }
 
                     return self::getLiteralTypeFromScalarValue($left->value * $right->value);
@@ -361,6 +357,37 @@ final class ConstantTypeResolver
         }
 
         return new TMixed;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function resolveBitwiseOp(UnresolvedBinaryOp $c, Atomic $left, Atomic $right): Atomic
+    {
+        if (!($left instanceof TInt || $left instanceof TLiteralFloat)
+            || !($right instanceof TInt || $right instanceof TLiteralFloat)
+        ) {
+            return new TMixed;
+        }
+
+        if (!($left instanceof TLiteralInt || $left instanceof TLiteralFloat)
+            || !($right instanceof TLiteralInt || $right instanceof TLiteralFloat)
+        ) {
+            return new TInt();
+        }
+
+        $left_int = LiteralCast::toInt($left->value);
+        $right_int = LiteralCast::toInt($right->value);
+
+        if ($left_int === null || $right_int === null) {
+            return new TInt();
+        }
+
+        return new TLiteralInt(match (true) {
+            $c instanceof UnresolvedBitwiseOr => $left_int | $right_int,
+            $c instanceof UnresolvedBitwiseXor => $left_int ^ $right_int,
+            default => $left_int & $right_int,
+        });
     }
 
     /**
