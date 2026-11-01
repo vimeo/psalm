@@ -15,6 +15,7 @@ use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
+use Psalm\Internal\TypeVisitor\TypeLocalizer;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\UndefinedTrait;
 use Psalm\IssueBuffer;
@@ -891,8 +892,7 @@ final class Populator
 
         self::extendTemplateParams($storage, $trait_storage, false);
 
-        $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
-        $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
+        self::inheritPseudoPropertyTypes($storage, $trait_storage);
 
         $storage->pseudo_static_methods += $trait_storage->pseudo_static_methods;
         $storage->declaring_pseudo_static_method_ids += $trait_storage->declaring_pseudo_static_method_ids;
@@ -933,6 +933,36 @@ final class Populator
         }
 
         return new Union($extended_types);
+    }
+
+    /**
+     * Copies `@property` types the child does not declare itself, mapping the donor's template params
+     * through the child's `@use`/`@extends`.
+     */
+    private static function inheritPseudoPropertyTypes(ClassLikeStorage $storage, ClassLikeStorage $donor): void
+    {
+        if ($storage->template_extended_params === null || $storage->template_extended_params === []) {
+            $storage->pseudo_property_get_types += $donor->pseudo_property_get_types;
+            $storage->pseudo_property_set_types += $donor->pseudo_property_set_types;
+
+            return;
+        }
+
+        $localizer = new TypeLocalizer($storage->template_extended_params, $donor->name);
+
+        foreach ($donor->pseudo_property_get_types as $name => $type) {
+            if (!isset($storage->pseudo_property_get_types[$name])) {
+                $localizer->traverse($type);
+                $storage->pseudo_property_get_types[$name] = $type;
+            }
+        }
+
+        foreach ($donor->pseudo_property_set_types as $name => $type) {
+            if (!isset($storage->pseudo_property_set_types[$name])) {
+                $localizer->traverse($type);
+                $storage->pseudo_property_set_types[$name] = $type;
+            }
+        }
     }
 
     private function populateDataFromParentClass(
@@ -1009,8 +1039,7 @@ final class Populator
             }
         }
 
-        $storage->pseudo_property_get_types += $parent_storage->pseudo_property_get_types;
-        $storage->pseudo_property_set_types += $parent_storage->pseudo_property_set_types;
+        self::inheritPseudoPropertyTypes($storage, $parent_storage);
 
         $parent_storage->dependent_classlikes[strtolower($storage->name)] = true;
 

@@ -4884,6 +4884,51 @@ final class ClassTemplateExtendsTest extends TestCase
                     /** @template-extends ParentHolder<static> */
                     final class TemplateExtendsStatic extends ParentHolder {}',
             ],
+            'pseudoPropertyTemplateMappedThroughExtends' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @property T $value
+                     */
+                    class Box {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @extends Box<T>
+                     */
+                    class ChildBox extends Box {}
+
+                    /** @extends Box<int> */
+                    class IntBox extends Box {}
+
+                    /** @extends ChildBox<string> */
+                    class StringChildBox extends ChildBox {}
+
+                    /**
+                     * @extends Box<int>
+                     * @property string $value
+                     */
+                    class OwnDeclarationBox extends Box {}
+
+                    /** @var ChildBox<int> $childBoxOfInt */
+                    $childBoxOfInt = new ChildBox();
+                    $a = $childBoxOfInt->value;
+                    $b = (new IntBox())->value;
+                    $c = (new StringChildBox())->value;
+                    $d = (new OwnDeclarationBox())->value;',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                    '$c===' => 'string',
+                    '$d===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -6185,6 +6230,25 @@ final class ClassTemplateExtendsTest extends TestCase
                         }
                     }',
                 'error_message' => 'UnsafeGenericInstantiation',
+            ],
+            'pseudoPropertyWriteTemplateMappedThroughExtends' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @property-write T $value
+                     */
+                    class Box {
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    /** @extends Box<int> */
+                    class IntBox extends Box {}
+
+                    $box = new IntBox();
+                    $box->value = "a";',
+                'error_message' => "with declared type 'int' cannot be assigned",
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
