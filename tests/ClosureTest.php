@@ -1414,15 +1414,85 @@ final class ClosureTest extends TestCase
                         {
                             return $this;
                         }
+                    }
 
-                        public function viaCallable(): static
+                    /** @return Box<stdClass> */
+                    function makeBox(): Box
+                    {
+                        throw new Exception();
+                    }
+
+                    $identity = makeBox()->identity(...);
+                    $result = $identity();
+                ',
+                'assertions' => [
+                    '$result===' => 'Box<stdClass>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:ParamOutStatic' => [
+                'code' => '<?php
+                    class Base
+                    {
+                        /** @param-out static $out */
+                        public function fill(?self &$out): void
                         {
-                            return ($this->identity(...))();
+                            $out = $this;
                         }
                     }
+
+                    final class FinalChild extends Base {}
+
+                    $open = (new Base())->fill(...);
+                    $openOut = null;
+                    $open($openOut);
+
+                    $final = (new FinalChild())->fill(...);
+                    $finalOut = null;
+                    $final($finalOut);
                 ',
-                'assertions' => [],
-                'ignored_issues' => ['MissingTemplateParam'],
+                'assertions' => [
+                    '$openOut===' => 'Base&static',
+                    '$finalOut===' => 'FinalChild',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:StaticMethod:ParamOutStatic' => [
+                'code' => '<?php
+                    class Base
+                    {
+                        /** @param-out static $out */
+                        public static function make(?self &$out): void
+                        {
+                            $out = new static();
+                        }
+
+                        public static function viaStatic(): void
+                        {
+                            $make = static::make(...);
+                            $made = null;
+                            $make($made);
+                            /** @psalm-check-type-exact $made = Base&static */
+
+                            $make = self::make(...);
+                            $made = null;
+                            $make($made);
+                            /** @psalm-check-type-exact $made = Base&static */
+                        }
+                    }
+
+                    class Child extends Base {}
+
+                    $make = Child::make(...);
+                    $made = null;
+                    $make($made);
+                ',
+                'assertions' => [
+                    '$made===' => 'Child',
+                ],
+                'ignored_issues' => ['UnsafeInstantiation'],
                 'php_version' => '8.1',
             ],
             'FirstClassCallable:InstanceMethod:BackedEnumFromOnEnumCase' => [
