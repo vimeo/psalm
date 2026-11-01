@@ -294,67 +294,40 @@ Psalm uses the default when the type argument is left out:
 
 * in `@extends`, `@implements` and `@use` that leave out trailing templates, if each of them has a default;
 * when a class is extended, implemented or used without one of those tags (templates without a default get their bound);
-* in a generic type with only its first arguments given, such as `Factory<User>` in a `@param`, `@return`, `@var` or property type;
+* in a generic type with only its first arguments given, such as `Result<string>` in a `@param`, `@return`, `@var` or property type;
 * in `new`, for templates the constructor arguments don't infer.
 
 ```php
 <?php
 /**
- * @template TModel of object
- * @template TCount of int|null = null
+ * @template TValue = null
+ * @template TError of Throwable = RuntimeException
  */
-abstract class Factory {
-    /** @return TCount */
-    public function count(): ?int {
-        return null;
-    }
-
-    /** @return (TCount is null ? TModel : list<TModel>) */
-    public function create(): object|array {
-        throw new RuntimeException();
-    }
+class Result {
+    /** @var TError|null */
+    public ?Throwable $error = null;
 }
 
-final class User {}
+/** @extends Result<int> */
+final class IntResult extends Result {}
+final class VoidResult extends Result {}
 
-/** @extends Factory<User> */
-final class UserFactory extends Factory {}
+$result = new Result(); // Result<null, RuntimeException>
+$error = (new IntResult())->error; // RuntimeException|null
+$error = (new VoidResult())->error; // RuntimeException|null
 
-$factory = new UserFactory();
-$count = $factory->count(); // null
-$user = $factory->create(); // User
-
-/** @param Factory<User> $factory */
-function createUser(Factory $factory): User {
-    return $factory->create(); // User
+/** @param Result<string> $partial */
+function check(Result $partial, Result $bare): void {
+    $error = $partial->error; // RuntimeException|null
+    $error = $bare->error; // Throwable|null
 }
-
-/** @param Factory $factory */
-function countAny(Factory $factory): ?int {
-    return $factory->count(); // int|null
-}
-
-/**
- * @template T = int
- */
-class Box {
-    /** @return T */
-    public function get(): mixed {
-        throw new RuntimeException();
-    }
-}
-
-final class IntBox extends Box {}
-
-$box = new Box(); // Box<int>
-$int = (new IntBox())->get(); // int
 ```
 
-Defaults don't apply to a class name without type arguments (PHPStan applies them there). `Factory` alone still stands for its bounds, `Factory<object, int|null>`, compared with the usual variance rules, and templates bounded by `mixed` or a set of capabilities stay open. Templates without a default are unaffected.
+Defaults don't apply to a class name without type arguments (PHPStan applies them there). `Result` alone still stands for its bounds, compared with the usual variance rules: `TError` is `Throwable`, and `TValue`, bounded by `mixed`, stays open, as does a template bounded by a set of capabilities. Templates without a default are unaffected.
 
 A default must be within its template's bound and may only use templates declared before it. Otherwise Psalm reports [InvalidDocblock](../running_psalm/issues/InvalidDocblock.md) on the template line.
 
-A default that names its own class (`@template TNext of Node = Node<T>`) expands one level only: `Node<int>` is `Node<int, Node<int>>`. Comparing it with a type written out more levels deep can report a coercion.
+A default that names its own class (`@template TNext of Node = Node<T>`) expands one level only: `Node<int>` is `Node<int, Node<int>>`, and if another default is computed, such as `@template TKey of array-key = key-of<self::MAP>`, passing a `Node<int>` where `Node<int, Node<int>, 'a'>` is written out reports MixedArgumentTypeCoercion.
 
 ## Template covariance
 
