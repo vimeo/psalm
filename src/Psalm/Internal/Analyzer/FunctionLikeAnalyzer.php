@@ -784,7 +784,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if ($this->function->getStmts() === null) {
-                if ($codebase->config->suggest_purity_annotations
+                if ($project_analyzer->suggestsPurityAnnotations()
                     && !$storage->has_mutations_annotation
                     && $storage->location
                 ) {
@@ -799,7 +799,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     );
                 }
             } elseif ($storage->location
-                && ($codebase->config->suggest_purity_annotations || $codebase->taint_flow_graph !== null)
+                && ($project_analyzer->suggestsPurityAnnotations() || $codebase->taint_flow_graph !== null)
                 && ($node_id = $this->getMutationNodeId()) !== null
             ) {
                 // the final level depends on the callees' levels: resolved after analysis, which reports
@@ -833,7 +833,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         && !($storage->has_mutations_annotation
                             && ($storage->capabilities === Capabilities::ALL
                                 || ($storage instanceof MethodStorage && $storage->overridden_somewhere))),
-                    'wildcards' => $codebase->config->suggest_purity_annotations
+                    'wildcards' => $project_analyzer->suggestsPurityAnnotations()
                         ? array_map(
                             static fn(array $paths): array => array_keys($paths),
                             $this->purity_wildcard_candidates,

@@ -946,7 +946,7 @@ final class ClassLikes
                 || !$this->config->isInProjectDirs($owner_storage->location->file_path);
         });
 
-        $suggest_purity_annotations = $this->config->suggest_purity_annotations;
+        $suggest_purity_annotations = $project_analyzer->suggestsPurityAnnotations();
         $benefit = MutationLevelResolver::getSuggestionBenefit($codebase);
         $subclass_capabilities = $suggest_purity_annotations
             ? $this->getSubclassCapabilities($codebase->analyzer->mutable_classes)

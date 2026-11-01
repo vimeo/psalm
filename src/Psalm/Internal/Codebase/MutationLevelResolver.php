@@ -213,7 +213,7 @@ final class MutationLevelResolver
     {
         $codebase = $project_analyzer->getCodebase();
 
-        if (!$codebase->config->suggest_purity_annotations) {
+        if (!$project_analyzer->suggestsPurityAnnotations()) {
             return;
         }
 

@@ -50,7 +50,6 @@ abstract class FileManipulationTestCase extends TestCase
         }
 
         $config = new TestConfig();
-        $config->suggest_purity_annotations = true;
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
