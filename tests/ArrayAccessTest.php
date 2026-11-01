@@ -66,6 +66,77 @@ final class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testEnsureArrayOffsetsExistForOffsetsPassedByReference(): void
+    {
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @param array<string, int>|null $dst
+                 * @param-out array<string, int> $dst
+                 */
+                function fill(?array &$dst): void {
+                    $dst = ["n" => 1];
+                }
+
+                /**
+                 * @param array<string, array<string, int>> $loc
+                 * @param list<array<string, int>> $list
+                 */
+                function f(array $loc, array $list, string $k): void {
+                    fill($loc["a"]);
+                    fill($loc[$k]);
+                    fill($list[0]);
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testOffsetPassedByReferenceIsNullWhenItMayBeMissing(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyNullArgument');
+
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param array<string, int> $dst */
+                function sortIt(array &$dst): void {}
+
+                /** @param array<string, array<string, int>> $loc */
+                function f(array $loc): void {
+                    sortIt($loc["a"]);
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testOffsetPassedByReferenceOnlyByAStubIsStillChecked(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
+
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param array<int, resource> $pipes */
+                function f(array $pipes): void {
+                    fclose($pipes[1]);
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testDontEnsureArrayOffsetsExist(): void
     {
         Config::getInstance()->ensure_array_string_offsets_exist = false;
@@ -479,6 +550,31 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'missingOffsetPassedByReferenceIsNull' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int>|null $dst
+                     * @param-out array<string, int> $dst
+                     */
+                    function fill(?array &$dst): void {
+                        $dst = ["n" => 1];
+                    }
+
+                    /** @param list<int> $dst */
+                    function sortIt(array &$dst): void {}
+
+                    function f(): void {
+                        $empty = [];
+                        fill($empty["x"]);
+
+                        $nested = [];
+                        fill($nested["a"]["b"]);
+
+                        $shape = ["present" => [1]];
+                        fill($shape["missing"]);
+                        sortIt($shape["present"]);
+                    }',
+            ],
             'issetArrayAccessOffsetHasTheValueTypeOfTheObject' => [
                 'code' => '<?php
                     /**
@@ -1380,6 +1476,15 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'missingOffsetPassedByReferenceToANonNullableParam' => [
+                'code' => '<?php
+                    /** @param list<int> $dst */
+                    function sortIt(array &$dst): void {}
+
+                    $shape = ["present" => [1]];
+                    sortIt($shape["missing"]);',
+                'error_message' => 'NullArgument',
+            ],
             'issetArrayAccessOffsetOfFalsyValueType' => [
                 'code' => '<?php
                     /** @param ArrayAccess<string, int> $a */

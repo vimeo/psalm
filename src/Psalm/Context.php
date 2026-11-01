@@ -177,6 +177,11 @@ final class Context
     public bool $inside_unset = false;
 
     /**
+     * Whether we're inside an array offset passed by reference, which PHP creates (as null) when it is missing
+     */
+    public bool $inside_by_ref_offset = false;
+
+    /**
      * Whether or not we're inside a class_exists call, where
      * we don't care about possibly undefined classes
      */
