@@ -2778,6 +2778,7 @@ final class Config
 
         if ($codebase->analysis_php_version_id >= 8_06_00) {
             $this->internal_stubs[] = $stubsDir . 'Php86.phpstub';
+            $this->internal_stubs[] = $stubsDir . 'Php86Functions.phpstub';
         }
 
         $ext_stubs_dir = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs" . DIRECTORY_SEPARATOR . "extensions";
