@@ -45,6 +45,7 @@ use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 
 use function is_numeric;
+use function ltrim;
 use function strtolower;
 
 /**
@@ -464,6 +465,27 @@ final class ScalarTypeComparator
                 $allow_interface_equality,
                 $atomic_comparison_result,
             );
+        }
+
+        if ($input_type_part instanceof TClassString
+            && $container_type_part instanceof TLiteralString
+            && !$container_type_part instanceof TLiteralClassString
+        ) {
+            $class_name = ltrim($container_type_part->value, '\\');
+
+            if ($atomic_comparison_result
+                && $codebase->classOrInterfaceExists($class_name)
+                && (!$input_type_part->as_type
+                    || AtomicTypeComparator::isContainedBy(
+                        $codebase,
+                        new TNamedObject($class_name),
+                        $input_type_part->as_type,
+                    ))
+            ) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+
+            return false;
         }
 
         if ($container_type_part instanceof TString && $input_type_part instanceof TTraitString) {
