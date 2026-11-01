@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -263,11 +264,13 @@ final class ArrayAssignmentAnalyzer
             && $root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch
             && !$root_type->isObjectType()
         ) {
-            if ($root_array_expr->name instanceof PhpParser\Node\Identifier) {
+            $prop_name = InstancePropertyFetchAnalyzer::getPropertyName($statements_analyzer, $root_array_expr);
+
+            if ($prop_name !== null) {
                 InstancePropertyAssignmentAnalyzer::analyze(
                     $statements_analyzer,
                     $root_array_expr,
-                    $root_array_expr->name->name,
+                    $prop_name,
                     null,
                     $root_type,
                     $context,
@@ -276,6 +279,8 @@ final class ArrayAssignmentAnalyzer
 
                 self::trackPropertyElementImpurity($statements_analyzer, $root_array_expr, $context);
             } else {
+                assert(!$root_array_expr->name instanceof PhpParser\Node\Identifier);
+
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $root_array_expr->name, $context) === false) {
                     return false;
                 }

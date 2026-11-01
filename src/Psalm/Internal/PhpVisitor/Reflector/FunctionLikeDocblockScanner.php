@@ -23,9 +23,11 @@ use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityWildcard;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\PossiblyInvalidDocblockTag;
 use Psalm\Storage\Assertion;
@@ -57,6 +59,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_any;
+use function array_fill_keys;
 use function array_filter;
 use function array_merge;
 use function array_values;
@@ -275,6 +278,9 @@ final class FunctionLikeDocblockScanner
                 $file_scanner,
                 $stmt,
                 $cased_function_id,
+                $codebase,
+                $file_storage,
+                $classlike_storage,
             );
 
             foreach ($docblock_info->purity_templates as $purity_template) {
@@ -1965,6 +1971,9 @@ final class FunctionLikeDocblockScanner
         FileScanner $file_scanner,
         PhpParser\Node\FunctionLike $stmt,
         string $cased_function_id,
+        Codebase $codebase,
+        FileStorage $file_storage,
+        ?ClassLikeStorage $classlike_storage,
     ): array {
         $storage->template_types = [];
 
@@ -2024,6 +2033,31 @@ final class FunctionLikeDocblockScanner
                 ];
             }
         }
+
+        // the defaults are read in the order the templates are declared, which the docblock groups by tag form
+        $declared_template_types = [];
+
+        foreach ($docblock_info->template_order as $template_name) {
+            if (isset($storage->template_types[$template_name])) {
+                $declared_template_types[$template_name] = $storage->template_types[$template_name];
+            }
+        }
+
+        [$storage->template_defaults, $storage->template_default_locations, $default_issues]
+            = TemplateDefaults::parseDefaults(
+                $docblock_info->template_defaults,
+                $declared_template_types,
+                $storage->template_types + ($template_types ?? []),
+                array_fill_keys($docblock_info->purity_templates, true),
+                $aliases,
+                $type_aliases,
+                $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null,
+                $classlike_storage?->parent_class,
+                new CodeLocation($file_scanner, $stmt, null, true),
+                $cased_function_id,
+                new TypeScanner($codebase->scanner, $file_storage, $storage->template_types),
+            );
+        $storage->docblock_issues = [...$storage->docblock_issues, ...$default_issues];
 
         return array_merge($template_types ?: [], $storage->template_types);
     }

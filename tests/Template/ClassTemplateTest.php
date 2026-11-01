@@ -4561,6 +4561,1030 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'partialGenericTypeFillsTemplateDefaults' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template TA
+                     * @template TB of string = \'pivot\'
+                     */
+                    abstract class Rel {
+                        /** @return TA */
+                        public function a(): mixed {
+                            throw new Exception();
+                        }
+
+                        /** @return TB */
+                        public function acc(): string {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @psalm-mutable
+                     * @template T
+                     * @template U = list<T>
+                     */
+                    abstract class Pair {
+                        /** @return U */
+                        public function u(): mixed {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    class Pivot {}
+
+                    /** @psalm-immutable */
+                    final class MorphPivot extends Pivot {}
+
+                    /**
+                     * @psalm-mutable
+                     * @template TRelated of object
+                     * @template TDeclaring of object
+                     * @template-covariant TPivot of Pivot = Pivot
+                     */
+                    class BelongsToMany {
+                        /** @return TPivot */
+                        public function pivot(): object {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @psalm-mutable
+                     * @template TRelated of object
+                     * @template TDeclaring of object
+                     * @template-covariant TPivot of Pivot = MorphPivot
+                     * @extends BelongsToMany<TRelated, TDeclaring, TPivot>
+                     */
+                    class MorphToMany extends BelongsToMany {}
+
+                    /** @psalm-mutable */
+                    final class Team {
+                        /** @return BelongsToMany<Team, $this> */
+                        public function users(): BelongsToMany {
+                            throw new Exception();
+                        }
+
+                        /** @return MorphToMany<Team, $this> */
+                        public function tags(): MorphToMany {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @return Rel<int> */
+                    function rel(): Rel {
+                        throw new Exception();
+                    }
+
+                    /** @var Pair<string> $pair */
+                    $pair = null;
+
+                    $a = rel()->a();
+                    $acc = rel()->acc();
+                    $u = $pair->u();
+                    $pivot = (new Team())->users()->pivot();
+                    $morph_pivot = (new Team())->tags()->pivot();',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$acc===' => '\'pivot\'',
+                    '$u===' => 'list<string>',
+                    '$pivot===' => 'Pivot',
+                    '$morph_pivot===' => 'MorphPivot',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'partialGenericPropertiesAndIterationUseTemplateDefaults' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template TK of array-key = int
+                     * @template TV = string
+                     * @implements IteratorAggregate<TK, TV>
+                     * @property TV $magic
+                     */
+                    class Coll implements IteratorAggregate {
+                        /** @var TV|null */
+                        public mixed $last = null;
+
+                        /** @return Iterator<TK, TV> */
+                        public function getIterator(): Iterator {
+                            throw new Exception();
+                        }
+
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @psalm-mutable
+                     * @template TK of array-key = int
+                     * @template TV = string
+                     * @extends Coll<TK, TV>
+                     */
+                    final class ChildColl extends Coll {}
+
+                    /** @return Coll<int> */
+                    function coll(): Coll {
+                        throw new Exception();
+                    }
+
+                    /** @return ChildColl<int> */
+                    function childColl(): ChildColl {
+                        throw new Exception();
+                    }
+
+                    $last = coll()->last;
+                    $magic = coll()->magic;
+                    $child_last = childColl()->last;
+
+                    $key = null;
+                    $value = null;
+
+                    foreach (coll() as $key => $value) {}',
+                'assertions' => [
+                    '$last===' => 'null|string',
+                    '$magic===' => 'string',
+                    '$child_last===' => 'null|string',
+                    '$key===' => 'int|null',
+                    '$value===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templatesInferredFromPartialGenericArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template TA
+                     * @template TB of string = \'pivot\'
+                     */
+                    final class Rel {}
+
+                    /**
+                     * @template X
+                     * @template Y of string
+                     * @param Rel<X, Y> $r
+                     * @return array{X, Y}
+                     */
+                    function unpackRel(Rel $r): array {
+                        throw new Exception();
+                    }
+
+                    /** @return Rel<int> */
+                    function rel(): Rel {
+                        throw new Exception();
+                    }
+
+                    $unpacked = unpackRel(rel());',
+                'assertions' => [
+                    '$unpacked===' => 'list{int, \'pivot\'}',
+                ],
+            ],
+            'newOfClassWithTemplateDefaults' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template T = int
+                     */
+                    final class Box {}
+
+                    /**
+                     * @psalm-mutable
+                     * @template T of object = stdClass
+                     */
+                    final class OBox {
+                        /** @param T|null $t */
+                        public function __construct(?object $t = null) {}
+                    }
+
+                    /**
+                     * @psalm-mutable
+                     * @template TA
+                     * @template TB = string
+                     */
+                    final class Pair {
+                        /** @param TA $a */
+                        public function __construct(mixed $a) {}
+                    }
+
+                    /**
+                     * @psalm-mutable
+                     * @template T of int = int
+                     * @psalm-purity-template C(pure) <= io
+                     */
+                    final class Gen {
+                        /** @param T $t */
+                        public function __construct(int $t) {}
+                    }
+
+                    $box = new Box();
+                    $obox = new OBox();
+                    $inferred_obox = new OBox(new Exception());
+                    $pair = new Pair(1);
+                    $gen = new Gen(5);',
+                'assertions' => [
+                    '$box===' => 'Box<int>',
+                    '$obox===' => 'OBox<stdClass>',
+                    '$inferred_obox===' => 'OBox<Exception>',
+                    '$pair===' => 'Pair<1, string>',
+                    '$gen===' => 'Gen[io]<5>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classTemplateDefaultUsingKeyOfAnEarlierTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T of array
+                     * @template K of array-key = key-of<T>
+                     */
+                    final class Keyed {
+                        /** @return K */
+                        public function key(): int|string {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @param Keyed<array{a: int}> $keyed */
+                    function keyOf(Keyed $keyed): string {
+                        return $keyed->key();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'selfReferencingTemplateDefault' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template T
+                     * @template TNext of Node = Node<T>
+                     * @template TKey of array-key = key-of<self::MAP>
+                     */
+                    final class Node {
+                        public const MAP = ["a" => 1];
+
+                        /** @return TNext */
+                        public function next(): Node {
+                            throw new Exception();
+                        }
+
+                        /** @return T */
+                        public function value(): mixed {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @return Node<int> */
+                    function node(): Node {
+                        throw new Exception();
+                    }
+
+                    $node = node();
+                    $value = node()->next()->next()->value();',
+                'assertions' => [
+                    '$node===' => 'Node<int, Node<int>, \'a\'>',
+                    '$value===' => 'int',
+                ],
+                'ignored_issues' => ['MissingClassConstType'],
+                'php_version' => '8.0',
+            ],
+            'selfReferencingTemplateDefaultIsExpandedOneLevelDeep' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T
+                     * @template TNext of Node = Node<T>
+                     * @template TKey of string = key-of<self::MAP>
+                     */
+                    final class Node {
+                        public const MAP = ["a" => 1];
+
+                        /** @return TNext */
+                        public function next(): Node {
+                            throw new Exception();
+                        }
+
+                        /** @return TKey */
+                        public function key(): string {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @return Node<int> */
+                    function node(): Node {
+                        throw new Exception();
+                    }
+
+                    $next = node()->next();
+                    $key = node()->key();
+                    $next_next = $next->next();
+                    $next_key = $next->key();',
+                'assertions' => [
+                    '$next===' => 'Node<int, Node<int>, \'a\'>',
+                    '$key===' => '\'a\'',
+                    '$next_next===' => 'Node<int, Node<int>, \'a\'>',
+                    '$next_key===' => '\'a\'',
+                ],
+                'ignored_issues' => ['MissingClassConstType'],
+                'php_version' => '8.0',
+            ],
+            'partialGenericRepeatingItsClassIsFilledAtEachLevel' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T
+                     * @template U = string
+                     */
+                    final class Pair {}
+
+                    class Base {
+                        /** @var Pair<Pair<int>, bool>|null */
+                        public ?Pair $value = null;
+                    }
+
+                    final class Child extends Base {
+                        /** @var Pair<Pair<int, string>, bool>|null */
+                        public ?Pair $value = null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'newThroughAnInheritedConstructorUsesTheDefault' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T
+                     */
+                    class Base {
+                        /** @param (callable(): T)|null $cb */
+                        public function __construct(?callable $cb = null) {}
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     * @template U = int
+                     * @extends Base<U>
+                     */
+                    final class Child extends Base {}
+
+                    $omitted = new Child();
+                    $null = new Child(null);
+                    $inferred = new Child(fn(): string => "x");',
+                'assertions' => [
+                    '$omitted===' => 'Child<int>',
+                    '$null===' => 'Child<int>',
+                    '$inferred===' => 'Child<\'x\'>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'partialGenericTypeGetsExpandedDefaults' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template TModel
+                     * @template TAcc of string = self::ACC
+                     * @template TKey of array-key = key-of<self::MAP>
+                     */
+                    final class Rel {
+                        public const ACC = "pivot";
+                        public const MAP = ["x" => 1, "y" => 2];
+                    }
+
+                    /** @var Rel<int> $rel */
+                    $rel = null;',
+                'assertions' => [
+                    '$rel===' => 'Rel<int, \'pivot\', \'x\'|\'y\'>',
+                ],
+                'ignored_issues' => ['MissingClassConstType'],
+                'php_version' => '8.0',
+            ],
+            'newIgnoresWhatAnArgumentSaysAboutOtherTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T = int
+                     * @template U
+                     */
+                    final class Box {
+                        /** @param (callable(): T)|list<U> $value */
+                        public function __construct(callable|array $value) {}
+                    }
+
+                    $box = new Box([true]);',
+                'assertions' => [
+                    '$box===' => 'Box<int, true>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'newInfersFromAnArgumentThatMayBeForTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T = int
+                     * @template U
+                     */
+                    final class Either {
+                        /** @param (callable(): T)|U $value */
+                        public function __construct(mixed $value) {}
+                    }
+
+                    /** @var callable $callable */
+                    $callable = null;
+                    /** @var mixed $mixed */
+                    $mixed = null;
+                    /** @var Closure|int $closure_or_int */
+                    $closure_or_int = null;
+
+                    $from_callable = new Either($callable);
+                    $from_mixed = new Either($mixed);
+                    $from_int = new Either(5);
+                    $from_closure_or_int = new Either($closure_or_int);',
+                'assertions' => [
+                    '$from_callable===' => 'Either<mixed, callable[impure]>',
+                    '$from_mixed===' => 'Either<mixed, mixed>',
+                    '$from_int===' => 'Either<int, 5>',
+                    '$from_closure_or_int===' => 'Either<mixed, Closure[impure]|int>',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'newLeavesATemplateWithADefaultToLaterCodeThatCanBindIt' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template TValue = mixed
+                     */
+                    final class Promise {
+                        public function __construct(?callable $wait = null) {}
+
+                        /** @param TValue $value */
+                        public function resolve(mixed $value): void {}
+                    }
+
+                    /**
+                     * @template T
+                     * @param callable(): T $task
+                     * @return Promise<T>
+                     */
+                    function task(callable $task): Promise {
+                        $promise = new Promise(fn() => null);
+                        $promise->resolve($task());
+
+                        return $promise;
+                    }
+
+                    /** @return Promise<string> */
+                    function resolved(): Promise {
+                        $promise = new Promise();
+                        $promise->resolve("x");
+
+                        return $promise;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'newLeavesATemplateWithADefaultToLaterCodeAfterATemplateFreeArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template T = int
+                     */
+                    final class Lazy {
+                        /** @param (callable(): T)|null $factory */
+                        public function __construct(?callable $factory = null) {}
+
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @return Lazy<string> */
+                    function lazy(): Lazy {
+                        $lazy = new Lazy(null);
+                        $lazy->set("x");
+
+                        return $lazy;
+                    }
+
+                    $unbound = new Lazy(null);',
+                'assertions' => [
+                    '$unbound===' => 'Lazy<`_0:mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'newLeavesATemplateWithADefaultThatLaterCodeNeverFixesToItsBound' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template TError of Throwable = RuntimeException
+                     */
+                    final class Result {
+                        public function __construct() {}
+
+                        /** @param TError $error */
+                        public function fail(Throwable $error): void {}
+
+                        /** @return TError|null */
+                        public function error(): ?Throwable {
+                            return null;
+                        }
+                    }
+
+                    $error = (new Result())->error();',
+                'assertions' => [
+                    '$error===' => 'Throwable|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'newLeavesATemplateWithADefaultNamedInAPublicPropertyToLaterCode' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template T = int
+                     */
+                    final class Holder {
+                        /** @var T|null */
+                        public mixed $value = null;
+
+                        public function __construct() {}
+                    }
+
+                    /** @return Holder<string> */
+                    function holder(): Holder {
+                        $holder = new Holder();
+                        $holder->value = "x";
+
+                        return $holder;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'newUsesTheDefaultOfATemplateOnlyAnInheritedMethodTakes' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template T
+                     */
+                    abstract class Setter {
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /**
+                     * @psalm-mutable
+                     * @template T = int
+                     * @extends Setter<T>
+                     */
+                    final class Inherited extends Setter {
+                        public function __construct() {}
+                    }
+
+                    /** @template T */
+                    trait SetsIt {
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /**
+                     * @psalm-mutable
+                     * @template T = int
+                     */
+                    final class FromTrait {
+                        /** @use SetsIt<T> */
+                        use SetsIt;
+
+                        public function __construct() {}
+                    }
+
+                    $inherited = new Inherited();
+                    $from_trait = new FromTrait();',
+                'assertions' => [
+                    '$inherited===' => 'Inherited<int>',
+                    '$from_trait===' => 'FromTrait<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'newWithTemplateFreeConstructorArgumentUsesTheDefault' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T = int
+                     */
+                    final class Lazy {
+                        /** @param (callable(): T)|null $f */
+                        public function __construct(?callable $f = null) {}
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     * @template T of object = stdClass
+                     */
+                    final class OBox {
+                        /** @param T|null $t */
+                        public function __construct(?object $t = null) {}
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     * @template T = int
+                     */
+                    final class ByName {
+                        /** @param class-string<T>|string|null $c */
+                        public function __construct(?string $c = null) {}
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     * @template T = int
+                     */
+                    final class Two {
+                        /**
+                         * @param (callable(): T)|null $a
+                         * @param (callable(): T)|null $b
+                         */
+                        public function __construct(?callable $a, ?callable $b) {}
+                    }
+
+                    /** @var callable $callable */
+                    $callable = null;
+
+                    $omitted = new Lazy();
+                    $null = new Lazy(null);
+                    $bare_callable = new Lazy($callable);
+                    $null_object = new OBox(null);
+                    $name = new ByName("foo");
+                    $nulls = new Two(null, null);
+                    $null_then_bare = new Two(null, $callable);
+                    $bare_then_null = new Two($callable, null);',
+                'assertions' => [
+                    '$omitted===' => 'Lazy<int>',
+                    '$null===' => 'Lazy<int>',
+                    '$bare_callable===' => 'Lazy<mixed>',
+                    '$null_object===' => 'OBox<stdClass>',
+                    '$name===' => 'ByName<int>',
+                    '$nulls===' => 'Two<int>',
+                    '$null_then_bare===' => 'Two<mixed>',
+                    '$bare_then_null===' => 'Two<mixed>',
+                ],
+                'ignored_issues' => ['MixedArgumentTypeCoercion'],
+                'php_version' => '8.0',
+            ],
+            'propertyRedeclaredWithTheDefaultsWrittenOutIsInvariant' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template TModel
+                     * @template TAcc of string = \'pivot\'
+                     */
+                    final class Rel {}
+
+                    /**
+                     * @psalm-mutable
+                     * @template T
+                     */
+                    abstract class Base {
+                        /** @var T|null */
+                        public mixed $p = null;
+
+                        /** @var Rel<int>|null */
+                        public ?Rel $q = null;
+                    }
+
+                    /**
+                     * @psalm-mutable
+                     * @extends Base<Rel<int>>
+                     */
+                    final class Sub extends Base {
+                        /** @var Rel<int, \'pivot\'>|null */
+                        public mixed $p = null;
+
+                        /** @var Rel<int, \'pivot\'>|null */
+                        public ?Rel $q = null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'partialGenericWithARequiredArgumentLeftOutKeepsArgumentPositions' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template A
+                     * @template B
+                     * @template C = int
+                     */
+                    final class Foo {}
+
+                    /**
+                     * @template T1
+                     * @template T2
+                     * @template T3
+                     * @param Foo<T1, T2, T3> $f
+                     * @return array{T1, T2, T3}
+                     */
+                    function unpackFoo(Foo $f): array {
+                        throw new Exception();
+                    }
+
+                    /** @var Foo<string> $foo */
+                    $foo = null;
+
+                    $unpacked = unpackFoo($foo);',
+                'assertions' => [
+                    '$unpacked===' => 'list{string, mixed, mixed}',
+                ],
+                'ignored_issues' => ['MissingTemplateParam'],
+            ],
+            'emptyTemplateDefaultKeepsTheRestOfTheDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T of int =
+                     * @template U = string
+                     */
+                    final class A {
+                        /** @return T */
+                        public function t(): int {
+                            throw new Exception();
+                        }
+
+                        /** @return U */
+                        public function u(): mixed {
+                            throw new Exception();
+                        }
+                    }
+
+                    $t = (new A())->t();
+                    $u = (new A())->u();',
+                'assertions' => [
+                    '$t===' => 'int',
+                    '$u===' => 'string',
+                ],
+                'ignored_issues' => ['InvalidDocblock'],
+                'php_version' => '8.0',
+            ],
+            'bareGenericTypeIgnoresTemplateDefaults' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template TM of object = stdClass
+                     * @template TN = int
+                     */
+                    abstract class Res {
+                        /** @return TM */
+                        public function m(): object {
+                            throw new Exception();
+                        }
+
+                        /** @return TN */
+                        public function n(): mixed {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @psalm-mutable
+                     * @template TAsync of bool = false
+                     */
+                    final class PendingRequest {
+                        /** @return (TAsync is true ? int : string) */
+                        public function get(): mixed {
+                            throw new Exception();
+                        }
+
+                        /** @return PendingRequest<true> */
+                        public function async(): PendingRequest {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @psalm-mutable
+                     * @template T of string|null = null
+                     */
+                    abstract class A {
+                        /** @var T */
+                        public $foo;
+                    }
+
+                    function res(): Res {
+                        throw new Exception();
+                    }
+
+                    function a(): A {
+                        throw new Exception();
+                    }
+
+                    /** @psalm-mutable */
+                    function withAuth(PendingRequest $r): int|string {
+                        return $r->get();
+                    }
+
+                    $m = res()->m();
+                    $n = res()->n();
+                    $foo = a()->foo;
+                    $plain = withAuth(new PendingRequest());
+                    $async = withAuth((new PendingRequest())->async());',
+                'assertions' => [
+                    '$m===' => 'object',
+                    '$n===' => 'mixed',
+                    '$foo===' => 'null|string',
+                    '$plain===' => 'int|string',
+                    '$async===' => 'int|string',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'methodTemplateDefaultNamingClassTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template T
+                     */
+                    interface Promise {
+                        /**
+                         * @psalm-impure
+                         * @template TResult1 = T
+                         * @template TResult2 = never
+                         * @param (callable(T): TResult1)|null $a
+                         * @param (callable(mixed): TResult2)|null $b
+                         * @return Promise<TResult1|TResult2>
+                         */
+                        public function then(?callable $a = null, ?callable $b = null): Promise;
+                    }
+
+                    /** @var Promise<int> $p */
+                    $p = null;
+
+                    $nulls = $p->then(null, null);
+                    $omitted = $p->then();
+                    $first = $p->then(fn(int $i): string => (string) $i);
+                    $second = $p->then(null, fn(mixed $e): float => 1.0);',
+                'assertions' => [
+                    '$nulls===' => 'Promise<int>',
+                    '$omitted===' => 'Promise<int>',
+                    '$first===' => 'Promise<decimal-int-string>',
+                    '$second===' => 'Promise<float(1)|int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'methodTemplateDefaultNamingClassTemplateGivenANonCallableArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template TValue
+                     */
+                    final class Coll {
+                        /**
+                         * @template TResult = TValue
+                         * @param (callable(TValue): TResult)|string|null $callback
+                         * @return TResult|null
+                         */
+                        public function max(callable|string|null $callback = null): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @var Coll<int> $c */
+                    $c = null;
+
+                    $omitted = $c->max();
+                    $key = $c->max("price");
+                    $callback = $c->max(fn(int $i): string => "x");',
+                'assertions' => [
+                    '$omitted===' => 'int|null',
+                    '$key===' => 'int|null',
+                    '$callback===' => '\'x\'|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inheritedMethodTemplateDefault' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template T
+                     */
+                    abstract class Base {
+                        /**
+                         * @template R = T
+                         * @param (callable(T): R)|null $cb
+                         * @return list<R>
+                         */
+                        public function map(?callable $cb = null): array {
+                            return [];
+                        }
+                    }
+
+                    /** @extends Base<int> */
+                    final class Child extends Base {
+                        public function map(?callable $cb = null): array {
+                            return [];
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     */
+                    trait MapsT {
+                        /**
+                         * @template R = T
+                         * @param (callable(T): R)|null $cb
+                         * @return list<R>
+                         */
+                        public function tmap(?callable $cb = null): array {
+                            return [];
+                        }
+                    }
+
+                    /** @psalm-mutable */
+                    final class UsesT {
+                        /** @use MapsT<string> */
+                        use MapsT;
+                    }
+
+                    $overridden = (new Child())->map();
+                    $from_trait = (new UsesT())->tmap();',
+                'assertions' => [
+                    '$overridden===' => 'list<int>',
+                    '$from_trait===' => 'list<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'methodTemplateDefaultLeavesTemplateInferredFromParamDefault' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template TModel of object
+                     */
+                    abstract class Factory {
+                        /**
+                         * @template TV = TModel
+                         * @param TV|null $v
+                         * @return TV
+                         */
+                        public static function pick(mixed $v = null): mixed {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @psalm-mutable */
+                    final class Req {
+                        /**
+                         * @template TDefault = null
+                         * @param TDefault $default
+                         * @return string|TDefault
+                         */
+                        public function input(string $k, mixed $default = null): mixed {
+                            throw new Exception();
+                        }
+
+                        /**
+                         * @template TAsync of bool = false
+                         * @param TAsync $async
+                         * @return (TAsync is true ? int : string)
+                         */
+                        public function send(bool $async = false): mixed {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    final class User {}
+
+                    /** @extends Factory<User> */
+                    final class UserFactory extends Factory {}
+
+                    $picked = UserFactory::pick();
+                    $input = (new Req())->input("x");
+                    $input_with_default = (new Req())->input("x", 5);
+                    $sent = (new Req())->send();
+                    $sent_async = (new Req())->send(true);',
+                'assertions' => [
+                    '$picked===' => 'null',
+                    '$input===' => 'null|string',
+                    '$input_with_default===' => '5|string',
+                    '$sent===' => 'string',
+                    '$sent_async===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -4571,6 +5595,41 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classTemplateDefaultNamingAnUndefinedClass' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T = Missing
+                     */
+                    final class C {}',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33 - Class, interface or enum named Missing does not exist',
+            ],
+            'partialGenericNextToASelfNamingDefaultChecksItsDefaults' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template A
+                     * @template B of string = "pivot"
+                     */
+                    final class Rel {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template X
+                     * @template Y = Rel<int>
+                     * @template Next = Outer<X>
+                     */
+                    final class Outer {}
+
+                    /** @param Outer<int> $o */
+                    function takes(Outer $o): void {}
+
+                    /** @param Outer<int, Rel<int, "other">, Outer<int>> $o */
+                    function badDefault(Outer $o): void {
+                        takes($o);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'templateInCallableParamOfDocblockMethodOfNamespacedClassRejectsOtherType' => [
                 'code' => '<?php
                     namespace App\Ns;
@@ -5362,6 +6421,222 @@ final class ClassTemplateTest extends TestCase
                 class C {}
                 PHP,
                 'error_message' => 'InvalidDocblock',
+            ],
+            'partialGenericArgumentIsCheckedAgainstTemplateDefault' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template TA
+                     * @template TB of string = \'pivot\'
+                     */
+                    final class Rel {}
+
+                    /** @param Rel<int> $r */
+                    function takes(Rel $r): void {}
+
+                    /** @param Rel<int, \'other\'> $r */
+                    function f(Rel $r): void {
+                        takes($r);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:31 - Argument 1 of takes expects Rel<int, \'pivot\'>, but Rel<int, \'other\'> provided',
+            ],
+            'partialGenericPropertyIsCheckedAgainstTemplateDefault' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template TA
+                     * @template TB of string = \'pivot\'
+                     */
+                    final class Rel {}
+
+                    /** @psalm-mutable */
+                    final class Holder {
+                        /** @var Rel<int> */
+                        public Rel $r;
+
+                        /** @param Rel<int, \'pivot\'> $ok */
+                        public function __construct(Rel $ok) {
+                            $this->r = $ok;
+                        }
+
+                        /** @param Rel<int, \'other\'> $other */
+                        public function set(Rel $other): void {
+                            $this->r = $other;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:21:40 - $this->r with declared type \'Rel<int, \'pivot\'>\' cannot be assigned type',
+            ],
+            'classTemplateDefaultOutsideItsBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int = string
+                     */
+                    abstract class Bad {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:36 - The default string of template T is not within its bound int',
+            ],
+            'classTemplateDefaultUsingLaterTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T = U
+                     * @template U = int
+                     */
+                    abstract class Fwd {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:36 - The default of template T uses template U, which is not declared before it',
+            ],
+            'interfaceTemplateDefaultOutsideBoundNamingEarlierTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @template U of T = stdClass
+                     */
+                    interface Corr {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31 - The default stdClass of template U is not within its bound T:Corr as object',
+            ],
+            'traitTemplateDefaultUsingItself' => [
+                'code' => '<?php
+                    /**
+                     * @template T = list<T>
+                     */
+                    trait SelfRef {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27 - The default of template T uses template T, which is not declared before it',
+            ],
+            'partialGenericArgumentIsCheckedAgainstNestedDefault' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template A
+                     * @template B of string = \'pivot\'
+                     */
+                    final class Rel {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template X
+                     * @template Y = Rel<int>
+                     */
+                    final class Outer {}
+
+                    /** @param Outer<int> $o */
+                    function takes(Outer $o): void {}
+
+                    /** @param Outer<int, Rel<int, \'other\'>> $o */
+                    function f(Outer $o): void {
+                        takes($o);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:21:31 - Argument 1 of takes expects Outer<int, Rel<int, \'pivot\'>>, but Outer<int, Rel<int, \'other\'>> provided',
+            ],
+            'partialGenericArgumentIsCheckedAgainstComputedDefault' => [
+                'code' => '<?php
+                    final class Options {
+                        /** @var array<string, int> */
+                        public const MAP = ["x" => 1, "y" => 2];
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     * @template T
+                     * @template U of string = key-of<Options::MAP>
+                     */
+                    final class Opts {}
+
+                    /** @param Opts<int> $o */
+                    function takes(Opts $o): void {}
+
+                    /** @param Opts<int, \'z\'> $o */
+                    function f(Opts $o): void {
+                        takes($o);
+                    }',
+                'error_message' => 'Argument 1 of takes expects Opts<int, \'x\'|\'y\'>, but Opts<int, \'z\'> provided',
+            ],
+            'ancestorBindingWithAPartialGenericIsCheckedOnPropertyAssignment' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template TModel
+                     * @template TAcc of string = \'pivot\'
+                     */
+                    final class Rel {}
+
+                    /**
+                     * @psalm-mutable
+                     * @template T
+                     */
+                    abstract class Base {
+                        /** @var T|null */
+                        public mixed $p = null;
+                    }
+
+                    /**
+                     * @psalm-mutable
+                     * @extends Base<Rel<int>>
+                     */
+                    final class Part extends Base {}
+
+                    /** @param Rel<int, \'other\'> $other */
+                    function f(Part $part, Rel $other): void {
+                        $part->p = $other;
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:26:36 - $part->p with declared type \'Rel<int, \'pivot\'>|null\' cannot be assigned type',
+            ],
+            'ancestorBindingWithAPartialGenericIsCheckedOnOverride' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template TModel
+                     * @template TAcc of string = \'pivot\'
+                     */
+                    final class Rel {}
+
+                    /**
+                     * @psalm-mutable
+                     * @template T
+                     */
+                    abstract class Base {
+                        /** @return T */
+                        abstract public function get(): mixed;
+                    }
+
+                    /**
+                     * @psalm-mutable
+                     * @extends Base<Rel<int>>
+                     */
+                    final class Part extends Base {
+                        /** @return Rel<int, \'other\'> */
+                        public function get(): mixed {
+                            throw new Exception();
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:37 - The inherited return type \'Rel<int, \'pivot\'>\' for Base::get is different to the implemented return type for Part::get',
+                'php_version' => '8.0',
+            ],
+            'filledTemplateDefaultIsADocblockType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template TModel
+                     * @template TAcc of string = \'pivot\'
+                     */
+                    final class Rel {
+                        /** @return TAcc */
+                        public function acc(): string {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @param Rel<int> $r */
+                    function f(Rel $r): void {
+                        if ($r->acc() === "pivot") {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'emptyTemplateDefaultIsReportedForItsTemplateOnly' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T of int =
+                     */
+                    final class A {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33 - Missing default after = for template T in docblock for A',
             ],
         ];
     }
