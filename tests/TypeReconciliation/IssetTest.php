@@ -21,6 +21,37 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetRemovesNullFromTheBoundOfATemplateProperty' => [
+                'code' => '<?php
+                    interface Item {
+                        public function name(): string;
+                    }
+
+                    /**
+                     * @template T of Item|null
+                     */
+                    final class Holder {
+                        /** @var T */
+                        public $item;
+
+                        /** @param T $item */
+                        public function __construct($item) {
+                            $this->item = $item;
+                        }
+
+                        public function viaCoalesce(): Item {
+                            return $this->item ?? throw new Exception("none");
+                        }
+
+                        public function viaIsset(): string {
+                            if (isset($this->item)) {
+                                return $this->item->name();
+                            }
+
+                            return "";
+                        }
+                    }',
+            ],
             'variableIsSetAfterCoalesceThrowStatement' => [
                 'code' => '<?php
                     class H {
