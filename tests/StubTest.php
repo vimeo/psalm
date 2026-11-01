@@ -1282,6 +1282,113 @@ final class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testRedeclaredExtendsMappingRebuildsInheritedPseudoPropertyTypes(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/redeclared_extends_mapping.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        // stubs only override classes declared outside the project directories
+        $file_path = (string) getcwd() . '/vendor/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Foo;
+
+                /**
+                 * @template T
+                 * @property T $value
+                 */
+                class BaseBox {
+                    /** @var T */
+                    public $value;
+
+                    /** @param T $value */
+                    public function __construct($value) {
+                        $this->value = $value;
+                    }
+                }
+
+                /** @extends BaseBox<int> */
+                class MiddleBox extends BaseBox {}
+
+                class AppBox extends MiddleBox {}
+
+                function middle(MiddleBox $box): string {
+                    return $box->value;
+                }
+
+                function app(AppBox $box): string {
+                    return $box->value;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testRedeclaredPseudoPropertyReplacesInheritedPseudoPropertyTypes(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/redeclared_pseudo_property.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        // stubs only override classes declared outside the project directories
+        $file_path = (string) getcwd() . '/vendor/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Foo;
+
+                /**
+                 * @property int $value
+                 */
+                class PseudoPropertyBase {
+                    /** @return mixed */
+                    public function __get(string $name) {
+                        return null;
+                    }
+                }
+
+                class PseudoPropertyChild extends PseudoPropertyBase {}
+
+                function child(PseudoPropertyChild $child): string {
+                    return $child->value;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testExtendOnlyStubbedClass(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

@@ -541,6 +541,8 @@ final class Populator
 
         $dependent_classlikes[$fq_classlike_name_lc] = true;
 
+        self::forgetInheritedPseudoPropertyTypes($storage);
+
         foreach ($storage->used_traits as $used_trait_lc => $_) {
             $this->populateDataFromTrait($storage, $storage_provider, $dependent_classlikes, $used_trait_lc);
         }
@@ -941,28 +943,47 @@ final class Populator
      */
     private static function inheritPseudoPropertyTypes(ClassLikeStorage $storage, ClassLikeStorage $donor): void
     {
-        if ($storage->template_extended_params === null || $storage->template_extended_params === []) {
-            $storage->pseudo_property_get_types += $donor->pseudo_property_get_types;
-            $storage->pseudo_property_set_types += $donor->pseudo_property_set_types;
-
-            return;
-        }
-
-        $localizer = new TypeLocalizer($storage->template_extended_params, $donor->name);
+        $localizer = $storage->template_extended_params !== null && $storage->template_extended_params !== []
+            ? new TypeLocalizer($storage->template_extended_params, $donor->name)
+            : null;
 
         foreach ($donor->pseudo_property_get_types as $name => $type) {
             if (!isset($storage->pseudo_property_get_types[$name])) {
-                $localizer->traverse($type);
+                $localizer?->traverse($type);
                 $storage->pseudo_property_get_types[$name] = $type;
+                $storage->inherited_pseudo_property_get_types[$name] = $type;
             }
         }
 
         foreach ($donor->pseudo_property_set_types as $name => $type) {
             if (!isset($storage->pseudo_property_set_types[$name])) {
-                $localizer->traverse($type);
+                $localizer?->traverse($type);
                 $storage->pseudo_property_set_types[$name] = $type;
+                $storage->inherited_pseudo_property_set_types[$name] = $type;
             }
         }
+    }
+
+    /**
+     * Drops the `@property` types a previous population inherited, keeping the class's own declarations,
+     * so that a repeated population rebuilds them from the current `@use`/`@extends` mappings.
+     */
+    private static function forgetInheritedPseudoPropertyTypes(ClassLikeStorage $storage): void
+    {
+        foreach ($storage->inherited_pseudo_property_get_types as $name => $type) {
+            if (($storage->pseudo_property_get_types[$name] ?? null) === $type) {
+                unset($storage->pseudo_property_get_types[$name]);
+            }
+        }
+
+        foreach ($storage->inherited_pseudo_property_set_types as $name => $type) {
+            if (($storage->pseudo_property_set_types[$name] ?? null) === $type) {
+                unset($storage->pseudo_property_set_types[$name]);
+            }
+        }
+
+        $storage->inherited_pseudo_property_get_types = [];
+        $storage->inherited_pseudo_property_set_types = [];
     }
 
     private function populateDataFromParentClass(
