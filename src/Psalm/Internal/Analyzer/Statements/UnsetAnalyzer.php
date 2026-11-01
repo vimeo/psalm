@@ -68,9 +68,10 @@ final class UnsetAnalyzer
 
             while ($node instanceof PhpParser\Node\Expr\ArrayDimFetch
                 || $node instanceof PhpParser\Node\Expr\PropertyFetch
+                || $node instanceof PhpParser\Node\Expr\StaticPropertyFetch
             ) {
                 $node->setAttribute(self::TARGET_ATTRIBUTE, $is_target);
-                $node = $node->var;
+                $node = $node instanceof PhpParser\Node\Expr\StaticPropertyFetch ? null : $node->var;
                 $is_target = false;
             }
 
