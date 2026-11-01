@@ -743,7 +743,6 @@ abstract class CallAnalyzer
                     continue;
                 }
 
-                /** @var PhpParser\Node\Expr\Variable $arg_value */
                 $arg_value = $args[$var_id]->value;
 
                 $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $statements_analyzer);
@@ -764,6 +763,7 @@ abstract class CallAnalyzer
                         $statements_analyzer->getNodeTypeProvider(),
                         $statements_analyzer->getCodebase()->classlike_storage_provider,
                         $arg_value,
+                        $arg_var_id,
                     );
 
                     if (null !== $failedMessage) {
