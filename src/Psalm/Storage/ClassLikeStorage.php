@@ -187,6 +187,13 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $trait_alias_map_cased = [];
 
     /**
+     * The trait an alias is explicitly taken from (`TraitA::foo as bar`)
+     *
+     * @var array<lowercase-string, lowercase-string>
+     */
+    public array $trait_alias_trait_map = [];
+
+    /**
      * @var array<lowercase-string, bool>
      */
     public array $trait_final_map = [];
