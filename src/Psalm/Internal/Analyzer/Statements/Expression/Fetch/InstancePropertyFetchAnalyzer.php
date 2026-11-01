@@ -28,6 +28,7 @@ use Psalm\Issue\UninitializedProperty;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -260,11 +261,24 @@ final class InstancePropertyFetchAnalyzer
         $has_valid_fetch_type = false;
 
         $var_atomic_types = $stmt_var_type->getAtomicTypes();
+        $reads_enum_cases = $prop_name === 'name' || $prop_name === 'value';
+        $analyzed_enums = [];
 
         while ($lhs_type_part = array_shift($var_atomic_types)) {
             if ($lhs_type_part instanceof TTemplateParam) {
                 $var_atomic_types = array_merge($var_atomic_types, $lhs_type_part->as->getAtomicTypes());
                 continue;
+            }
+
+            // the fetch on an enum reads the cases of every atomic of that enum in the receiver at once
+            if ($reads_enum_cases && $lhs_type_part instanceof TEnumCase) {
+                $enum_key = strtolower($lhs_type_part->value);
+
+                if (isset($analyzed_enums[$enum_key])) {
+                    continue;
+                }
+
+                $analyzed_enums[$enum_key] = true;
             }
 
             AtomicPropertyFetchAnalyzer::analyze(

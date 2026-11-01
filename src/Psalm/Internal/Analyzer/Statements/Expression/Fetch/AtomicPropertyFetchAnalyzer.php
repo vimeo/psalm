@@ -53,6 +53,7 @@ use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\EnumCaseStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TEnumCase;
@@ -68,7 +69,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
-use function array_filter;
+use function array_intersect_key;
 use function array_keys;
 use function array_map;
 use function array_search;
@@ -76,8 +77,6 @@ use function count;
 use function explode;
 use function in_array;
 use function strtolower;
-
-use const ARRAY_FILTER_USE_KEY;
 
 /**
  * @internal
@@ -224,10 +223,13 @@ final class AtomicPropertyFetchAnalyzer
                 $has_valid_fetch_type = true;
                 $statements_analyzer->node_data->setType(
                     $stmt,
-                    new Union([
-                        new TString(),
-                        new TInt(),
-                    ]),
+                    Type::combineUnionTypes(
+                        new Union([
+                            new TString(),
+                            new TInt(),
+                        ]),
+                        $statements_analyzer->node_data->getType($stmt),
+                    ),
                 );
             } elseif ($prop_name === 'value' && $class_storage->enum_type !== null && $class_storage->enum_cases) {
                 $has_valid_fetch_type = true;
@@ -1130,33 +1132,54 @@ final class AtomicPropertyFetchAnalyzer
         }
     }
 
+    /**
+     * The cases of the enum the receiver can be: the ones its `TEnumCase` atomics name, or all of them when it
+     * also holds the enum as a whole or none of its cases.
+     *
+     * @psalm-capabilities read-props
+     * @return array<string, EnumCaseStorage>
+     */
+    private static function getReceiverEnumCases(Union $stmt_var_type, ClassLikeStorage $class_storage): array
+    {
+        $enum_name = strtolower($class_storage->name);
+        $case_names = [];
+
+        foreach ($stmt_var_type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TNamedObject || strtolower($atomic->value) !== $enum_name) {
+                continue;
+            }
+
+            if (!$atomic instanceof TEnumCase) {
+                return $class_storage->enum_cases;
+            }
+
+            $case_names[$atomic->case_name] = true;
+        }
+
+        $cases = array_intersect_key($class_storage->enum_cases, $case_names);
+
+        return $cases === [] ? $class_storage->enum_cases : $cases;
+    }
+
     private static function handleEnumName(
         StatementsAnalyzer $statements_analyzer,
         PropertyFetch $stmt,
         Union $stmt_var_type,
         ClassLikeStorage $class_storage,
     ): void {
-        $relevant_enum_cases = array_filter(
-            $stmt_var_type->getAtomicTypes(),
-            static fn(Atomic $type): bool => $type instanceof TEnumCase,
-        );
-        $relevant_enum_case_names = array_map(
-            static fn(TEnumCase $enumCase): string => $enumCase->case_name,
-            $relevant_enum_cases,
-        );
-
-        if (empty($relevant_enum_case_names)) {
-            $relevant_enum_case_names = array_keys($class_storage->enum_cases);
-        }
+        $case_names = array_keys(self::getReceiverEnumCases($stmt_var_type, $class_storage));
 
         $statements_analyzer->node_data->setType(
             $stmt,
-            empty($relevant_enum_case_names)
-                ? Type::getNonEmptyString()
-                : new Union(array_map(
-                    static fn(string $name): TString => Type::getAtomicStringFromLiteral($name),
-                    $relevant_enum_case_names,
-                )),
+            Type::combineUnionTypes(
+                $case_names === []
+                    ? Type::getNonEmptyString()
+                    : new Union(array_map(
+                        static fn(string $name): TString => Type::getAtomicStringFromLiteral($name),
+                        $case_names,
+                    )),
+                $statements_analyzer->node_data->getType($stmt),
+            ),
         );
     }
 
@@ -1166,28 +1189,9 @@ final class AtomicPropertyFetchAnalyzer
         Union $stmt_var_type,
         ClassLikeStorage $class_storage,
     ): void {
-        $relevant_enum_cases = array_filter(
-            $stmt_var_type->getAtomicTypes(),
-            static fn(Atomic $type): bool => $type instanceof TEnumCase,
-        );
-        $relevant_enum_case_names = array_map(
-            static fn(TEnumCase $enumCase): string => $enumCase->case_name,
-            $relevant_enum_cases,
-        );
-
-        $enum_cases = $class_storage->enum_cases;
-        if (!empty($relevant_enum_case_names)) {
-            // If we have a known subset of enum cases, include only those
-            $enum_cases = array_filter(
-                $enum_cases,
-                static fn(string $key) => in_array($key, $relevant_enum_case_names, true),
-                ARRAY_FILTER_USE_KEY,
-            );
-        }
-
         $case_values = [];
 
-        foreach ($enum_cases as $enum_case) {
+        foreach (self::getReceiverEnumCases($stmt_var_type, $class_storage) as $enum_case) {
             $case_value = $enum_case->getValue($statements_analyzer->getCodebase()->classlikes);
             $case_values[] = $case_value ?? new TMixed();
         }
@@ -1195,7 +1199,7 @@ final class AtomicPropertyFetchAnalyzer
         /** @psalm-suppress ArgumentTypeCoercion */
         $statements_analyzer->node_data->setType(
             $stmt,
-            new Union($case_values),
+            Type::combineUnionTypes(new Union($case_values), $statements_analyzer->node_data->getType($stmt)),
         );
     }
 

@@ -3537,8 +3537,6 @@
             500,
             $possibly_undefined,
         )]]></code>
-      <code><![CDATA[Type::combineUnionTypes($property, $value_type)]]></code>
-      <code><![CDATA[Type::combineUnionTypes($property, $value_type)]]></code>
       <code><![CDATA[Type::combineUnionTypes($this->fallback_params[0], $key_type)]]></code>
       <code><![CDATA[Type::combineUnionTypes($this->fallback_params[0], $key_type)]]></code>
       <code><![CDATA[Type::combineUnionTypes($this->fallback_params[1], $value_type)]]></code>
