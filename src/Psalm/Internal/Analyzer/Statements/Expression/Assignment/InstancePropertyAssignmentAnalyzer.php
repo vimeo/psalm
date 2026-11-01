@@ -428,6 +428,19 @@ final class InstancePropertyAssignmentAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
+            } elseif ($property_storage->readonly_default
+                && $codebase->analysis_php_version_id >= 8_06_00
+                && !str_ends_with((string) $context->calling_method_id, '::unserialize')
+                && !str_ends_with((string) $context->calling_method_id, '::__unserialize')
+                && !str_ends_with((string) $context->calling_method_id, '::__clone')
+            ) {
+                IssueBuffer::maybeAdd(
+                    new InaccessibleProperty(
+                        $property_id . ' is readonly and already initialised by its default',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
         }
         
@@ -510,7 +523,9 @@ final class InstancePropertyAssignmentAnalyzer
     ): void {
         foreach ($stmt->props as $prop) {
             if ($prop->default) {
-                if ($stmt->isReadonly()) {
+                if ($stmt->isReadonly()
+                    && ($stmt->isStatic() || $statements_analyzer->getCodebase()->analysis_php_version_id < 8_06_00)
+                ) {
                     IssueBuffer::maybeAdd(
                         new InvalidPropertyAssignment(
                             'Readonly property ' . $context->self . '::$' . $prop->name->name

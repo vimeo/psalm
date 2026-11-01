@@ -226,7 +226,9 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         true,
                         $context->insideUse(),
                     )) {
-                        $method_storage = $codebase->methods->getStorage($method_identifier);
+                        $method_storage = $codebase->methods->getStorage(
+                            $codebase->methods->getDeclaringMethodId($method_identifier) ?? $method_identifier,
+                        );
 
                         $return_type_candidate = new Union([new TClosure(
                             $method_storage->params,

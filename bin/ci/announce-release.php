@@ -98,7 +98,7 @@ if (!$force && strtotime($release['publishedAt']) < time() - 86_400) {
     exit(0);
 }
 
-$text = "Psalm {$release['tagName']} has been released: {$release['url']}";
+$text = "Psalm {$release['tagName']} has been released: {$release['url']} #psalm";
 echo $text . PHP_EOL;
 
 $platforms = [

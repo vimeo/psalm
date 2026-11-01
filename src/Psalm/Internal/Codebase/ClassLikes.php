@@ -1245,7 +1245,7 @@ final class ClassLikes
             return;
         }
 
-        $progress->debug('Refactoring methods ' . PHP_EOL);
+        $progress->debug('Refactoring methods' . PHP_EOL);
 
         $code_migrations = [];
 
@@ -1413,7 +1413,7 @@ final class ClassLikes
             return;
         }
 
-        $progress->debug('Refacting properties ' . PHP_EOL);
+        $progress->debug('Refactoring properties' . PHP_EOL);
 
         $code_migrations = [];
 
@@ -1511,7 +1511,7 @@ final class ClassLikes
             return;
         }
 
-        $progress->debug('Refacting constants ' . PHP_EOL);
+        $progress->debug('Refactoring constants' . PHP_EOL);
 
         $code_migrations = [];
 
@@ -2013,7 +2013,7 @@ final class ClassLikes
         bool $late_static_binding = false,
         bool $in_value_of_context = false,
     ): ?Union {
-        $class_name = strtolower($class_name);
+        $class_name = strtolower($this->getUnAliasedName($class_name));
 
         if (!$this->classlike_storage_provider->has($class_name)) {
             return null;
