@@ -20,6 +20,54 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayCallableOfAnIntersectionWithTheMethodInTheFirstPart' => [
+                'code' => '<?php
+                    interface A
+                    {
+                        public function doSomething(mixed $value): void;
+                    }
+
+                    interface B {}
+
+                    final class MyClass
+                    {
+                        public function __construct(private readonly A&B $ab)
+                        {
+                        }
+
+                        public function run(array $values): void
+                        {
+                            array_walk($values, [$this->ab, "doSomething"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayCallableOfAnIntersectionWithTheMethodInAnyPart' => [
+                'code' => '<?php
+                    interface A {}
+
+                    interface B
+                    {
+                        public function doSomething(mixed $value): void;
+                    }
+
+                    final class MyClass
+                    {
+                        public function __construct(private readonly A&B $ab)
+                        {
+                        }
+
+                        public function run(array $values): void
+                        {
+                            array_walk($values, [$this->ab, "doSomething"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'byRefUseVar' => [
                 'code' => '<?php
                     /** @return void */
@@ -2516,6 +2564,30 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayCallableOfAnIntersectionWithoutTheMethod' => [
+                'code' => '<?php
+                    interface A {}
+
+                    interface B
+                    {
+                        public function doSomething(mixed $value): void;
+                    }
+
+                    final class MyClass
+                    {
+                        public function __construct(private readonly A&B $ab)
+                        {
+                        }
+
+                        public function run(array $values): void
+                        {
+                            array_walk($values, [$this->ab, "nope"]);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'undefinedCallableClass' => [
                 'code' => '<?php
                     class A {

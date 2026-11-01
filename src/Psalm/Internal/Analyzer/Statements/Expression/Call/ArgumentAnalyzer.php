@@ -1755,7 +1755,12 @@ final class ArgumentAnalyzer
                                 }
                             }
 
-                            if ($non_existent_method_ids && !$param_type->hasString() && !$param_type->hasArray()) {
+                            // of an intersection, one of the types having the method is enough
+                            if ($non_existent_method_ids
+                                && count($non_existent_method_ids) === count($function_id_parts)
+                                && !$param_type->hasString()
+                                && !$param_type->hasArray()
+                            ) {
                                 if (MethodAnalyzer::checkMethodExists(
                                     $codebase,
                                     $non_existent_method_ids[0],
