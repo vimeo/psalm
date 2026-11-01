@@ -22,6 +22,38 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'aliasesOfTheSameMethodOfDifferentTraitsKeepTheirOwnTrait' => [
+                'code' => '<?php
+                    trait TraitA {
+                        public function make(string $value): string {
+                            return $value;
+                        }
+                    }
+
+                    trait TraitB {
+                        public function make(int $value): int {
+                            return $value;
+                        }
+                    }
+
+                    class Foo {
+                        use TraitA {
+                            TraitA::make as makeString;
+                        }
+                        use TraitB {
+                            TraitA::make insteadof TraitB;
+                            TraitB::make as makeInt;
+                        }
+                    }
+
+                    $foo = new Foo();
+                    $string = $foo->makeString("a");
+                    $int = $foo->makeInt(1);',
+                'assertions' => [
+                    '$string' => 'string',
+                    '$int' => 'int',
+                ],
+            ],
             'accessiblePrivateMethodFromTrait' => [
                 'code' => '<?php
                     trait T {
@@ -1224,6 +1256,33 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'aliasOfTheSecondTraitTakesItsArgumentTypes' => [
+                'code' => '<?php
+                    trait TraitA {
+                        public function make(string $value): string {
+                            return $value;
+                        }
+                    }
+
+                    trait TraitB {
+                        public function make(int $value): int {
+                            return $value;
+                        }
+                    }
+
+                    class Foo {
+                        use TraitA {
+                            TraitA::make as makeString;
+                        }
+                        use TraitB {
+                            TraitA::make insteadof TraitB;
+                            TraitB::make as makeInt;
+                        }
+                    }
+
+                    (new Foo())->makeInt("a");',
+                'error_message' => 'InvalidScalarArgument',
+            ],
             'inaccessiblePrivateMethodFromInheritedTrait' => [
                 'code' => '<?php
                     trait T {

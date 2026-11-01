@@ -866,6 +866,25 @@ final class Populator
         }
     }
 
+    /**
+     * @param lowercase-string $method_name_lc
+     * @return list<lowercase-string>
+     * @psalm-capabilities read-props
+     */
+    private static function getAliasesOfTraitMethod(
+        ClassLikeStorage $storage,
+        ClassLikeStorage $trait_storage,
+        string $method_name_lc,
+    ): array {
+        $trait_name_lc = strtolower($trait_storage->name);
+
+        return array_values(array_filter(
+            array_keys($storage->trait_alias_map, $method_name_lc, true),
+            static fn(string $alias): bool => ($storage->trait_alias_trait_map[$alias] ?? $trait_name_lc)
+                === $trait_name_lc,
+        ));
+    }
+
     private function populateDataFromTrait(
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
@@ -1539,7 +1558,7 @@ final class Populator
             ) {
                 $aliased_method_names = [
                     ...$aliased_method_names,
-                    ...array_keys($storage->trait_alias_map, $method_name_lc, true),
+                    ...self::getAliasesOfTraitMethod($storage, $parent_storage, $method_name_lc),
                 ];
             }
 
@@ -1634,7 +1653,7 @@ final class Populator
             ) {
                 $aliased_method_names = [
                     ...$aliased_method_names,
-                    ...array_keys($storage->trait_alias_map, $method_name_lc, true),
+                    ...self::getAliasesOfTraitMethod($storage, $parent_storage, $method_name_lc),
                 ];
             }
 
