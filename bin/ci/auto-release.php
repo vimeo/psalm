@@ -1,12 +1,15 @@
 <?php
 
 /**
- * Releases the given branches of Psalm when they have unreleased commits and every check of their head passed.
+ * Releases the given branches of Psalm once a day, when they have unreleased commits and every check of their head
+ * passed.
  *
  * Usage: php bin/ci/auto-release.php [--dry-run] <branch>...
  *
  * Run hourly by .github/workflows/auto-release.yml. For each branch:
  *  - the last release is the highest version tagged on the branch (master also contains the 6.x tags);
+ *  - a branch is released at most once a day (UTC): nothing happens if its last release was published today, so
+ *    the first run of the day whose head passed every check releases it;
  *  - nothing happens if the branch has no commits since, or if a workflow run (on a push, or dispatched in its
  *    stead) or a commit status of its head is still running, failed, or the unit tests haven't run yet. A failed
  *    check is reported as a warning, and fails the run once the head has been blocked for a day, so that the
@@ -185,6 +188,17 @@ $getNextVersion = static function (string $tag, bool $minor) use ($version_patte
 
 $isPrerelease = static fn(string $version): bool => preg_match('/-(alpha|beta|rc)/', $version) === 1;
 
+// the UTC day the release of $tag was published, or null if the tag has no release
+$getReleaseDay = static function (string $tag) use ($api): ?string {
+    try {
+        $published = $api('releases/tags/' . rawurlencode($tag))['published_at'] ?? null;
+    } catch (RuntimeException) {
+        return null;
+    }
+
+    return is_string($published) ? substr($published, 0, 10) : null;
+};
+
 $generateNotes = static fn(string $tag, string $target, string $previous_tag): string => $run([
     'gh', 'api', "repos/$repository/releases/generate-notes",
     '-f', "tag_name=$tag",
@@ -214,6 +228,11 @@ foreach ($branches as $branch) {
     $unreleased = (int) trim($run(['git', 'rev-list', '--count', "$last_tag..$head"]));
     if ($unreleased === 0) {
         echo "Nothing to release since $last_tag" . PHP_EOL;
+        continue;
+    }
+
+    if ($getReleaseDay($last_tag) === gmdate('Y-m-d')) {
+        echo "Not releasing $unreleased commits since $last_tag until tomorrow: $last_tag was released today" . PHP_EOL;
         continue;
     }
 
