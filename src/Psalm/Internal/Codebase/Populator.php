@@ -509,6 +509,13 @@ final class Populator
 
         $this->populateClassLikeStorage($parent_storage, $dependent_classlikes);
 
+        // The parent was named by a class_alias() that is only scanned after this class
+        if ($storage->parent_class !== null && strtolower($storage->parent_class) !== $parent_storage_class) {
+            unset($storage->parent_classes[strtolower($storage->parent_class)]);
+            $storage->parent_class = $parent_storage->name;
+            $storage->parent_classes = [$parent_storage_class => $parent_storage->name, ...$storage->parent_classes];
+        }
+
         $storage->parent_classes = [...$storage->parent_classes, ...$parent_storage->parent_classes];
 
         self::extendTemplateParams($storage, $parent_storage, true);
