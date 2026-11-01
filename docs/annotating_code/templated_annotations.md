@@ -330,64 +330,59 @@ Method templates take defaults too, and a default can use the templates of its c
 
 ```php
 <?php
-/**
- * @template T
- */
-interface Promise {
+/** @template T */
+interface Option {
     /**
-     * @template TResult1 = T
-     * @template TResult2 = never
-     * @param (callable(T): TResult1)|null $onFulfilled
-     * @param (callable(mixed): TResult2)|null $onRejected
-     * @return Promise<TResult1|TResult2>
+     * @template TResult = T
+     * @param (callable(T): TResult)|null $map
+     * @return Option<TResult>
      */
-    public function then(?callable $onFulfilled = null, ?callable $onRejected = null): Promise;
+    public function map(?callable $map = null): Option;
 }
 
-/** @param Promise<int> $promise */
-function handle(Promise $promise): void {
-    $same = $promise->then(); // Promise<int>
-    $mapped = $promise->then(fn(int $i): bool => $i > 0); // Promise<bool>
+/** @param Option<int> $option */
+function check(Option $option): void {
+    $same = $option->map(); // Option<int>
+    $mapped = $option->map(fn(int $i): bool => $i > 0); // Option<bool>
 }
 ```
 
-A call still infers a template from its arguments and parameter defaults where it can. A `null` for `T|null` infers `null` if the bound admits it, and an argument that doesn't say what `T` is (a bare `callable` for `callable(): T`, a bare `Coll` for `Coll<T>`) infers the bound, not the default:
+A call still infers a template from its arguments and parameter defaults where it can. A `null` for `T|null` infers `null` if the bound admits it, and an argument that doesn't say what `T` is (a bare `Setting` for `Setting<T>`, a bare `callable` for `callable(): T`) infers the bound, not the default:
 
 ```php
 <?php
-/**
- * @template T = string
- * @param T|null $value
- * @return T
- */
-function orNull(mixed $value = null): mixed {
-    return $value;
+/** @template T of int */
+interface Setting {}
+
+interface Timeouts {
+    /**
+     * @template T of int = 30
+     * @param T|null $seconds
+     * @return T
+     */
+    public function connect(?int $seconds = null): int;
+
+    /**
+     * @template T of int|null = 30
+     * @param T|null $seconds
+     * @return T
+     */
+    public function idle(?int $seconds = null): ?int;
+
+    /**
+     * @template T of int = 30
+     * @param Setting<T> $setting
+     * @return T
+     */
+    public function configured(Setting $setting): int;
 }
 
-/**
- * @template T of object = stdClass
- * @param T|null $value
- * @return T
- */
-function orObject(?object $value = null): object {
-    throw new RuntimeException();
-}
-
-/**
- * @template T of scalar = int
- * @param callable(): T $make
- * @return T
- */
-function make(callable $make): mixed {
-    return $make();
-}
-
-function test(callable $callable): void {
-    $null = orNull(); // null
-    $null = orNull(null); // null
-    $object = orObject(); // stdClass
-    $object = orObject(null); // stdClass
-    $made = make($callable); // scalar
+function check(Timeouts $timeouts, Setting $setting): void {
+    $seconds = $timeouts->connect(); // 30
+    $seconds = $timeouts->connect(null); // 30
+    $seconds = $timeouts->idle(); // null
+    $seconds = $timeouts->idle(null); // null
+    $seconds = $timeouts->configured($setting); // int
 }
 ```
 
