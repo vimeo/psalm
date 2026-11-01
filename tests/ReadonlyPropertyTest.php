@@ -159,6 +159,40 @@ final class ReadonlyPropertyTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'writesThroughUndefinedDocblockClassReceiver' => [
+                'code' => '<?php
+                    final class H {
+                        /** @var Unknown */
+                        public $u;
+
+                        /** @param Unknown $u */
+                        public function __construct($u) {
+                            $this->u = $u;
+                        }
+                    }
+
+                    function viaPropertyType(H $h): void {
+                        foreach ($h->u->arr as &$item) {
+                            $item = 1;
+                        }
+                    }
+
+                    function viaVarAnnotation(): void {
+                        /** @var Unknown $u */
+                        $u = $GLOBALS["u"];
+
+                        foreach ($u->arr as &$item) {
+                            $item = 1;
+                        }
+
+                        if (is_string($u->s)) {
+                            $u->s++;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedDocblockClass', 'MixedAssignment', 'StringIncrement'],
+                'php_version' => '8.1',
+            ],
             'foreachByRefOverReadonlyArrayObjectPropertyNarrowedFromUnion' => [
                 'code' => '<?php
                     final class A {
