@@ -561,9 +561,12 @@ final class InstancePropertyAssignmentAnalyzer
         string $property_id,
         Context $context,
     ): void {
-        $properties = $statements_analyzer->getCodebase()->properties;
+        $codebase = $statements_analyzer->getCodebase();
+        $properties = $codebase->properties;
 
-        if ($properties->hasStorage($property_id)
+        // a receiver typed by an undefined docblock class has no storage
+        if ($codebase->classlike_storage_provider->has(explode('::', $property_id)[0])
+            && $properties->hasStorage($property_id)
             && ($property_storage = $properties->getStorage($property_id))->readonly
         ) {
             $receiver_type = $statements_analyzer->node_data->getType($stmt->var);
