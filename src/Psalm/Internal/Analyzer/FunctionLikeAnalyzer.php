@@ -815,6 +815,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     'class' => $storage instanceof MethodStorage ? $storage->defining_fqcln : null,
                     'start' => (int) $this->function->getAttribute('startFilePos'),
                     'fresh' => true,
+                    // see CodeUseGraph::replacesMutationInfo(): a function-like of an included file is analysed
+                    // once per including file, and an inherited method once per class inheriting it
+                    'root' => $this->getRootFilePath(),
+                    'inherited' => DataFlowNode::$body_suffix !== null,
                     // inline callbacks are not worth annotating, closures assigned to a variable are;
                     // an explicit `@psalm-impure` is a deliberate choice (e.g. a hook overrides may use
                     // freely), not a missing annotation, and so is the explicit annotation of an

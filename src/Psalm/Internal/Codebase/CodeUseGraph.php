@@ -14,11 +14,18 @@ use Psalm\Storage\MethodStorage;
 
 use function array_intersect_key;
 use function array_pop;
+use function implode;
+use function json_encode;
+use function ksort;
 use function md5;
+use function sprintf;
 use function str_contains;
+use function strcmp;
 use function strpos;
 use function strtolower;
 use function substr;
+
+use const JSON_THROW_ON_ERROR;
 
 /**
  * A directed graph of "uses" between code elements (classes, function-likes,
@@ -526,8 +533,9 @@ final class CodeUseGraph
             }
         }
 
-        $this->mutation_info = $other->mutation_info + $this->mutation_info;
-        $this->mutation_levels = null;
+        foreach ($other->mutation_info as $node_id => $info) {
+            $this->addMutationInfo($node_id, $info);
+        }
     }
 
     /**
@@ -558,8 +566,87 @@ final class CodeUseGraph
      */
     public function addMutationInfo(string $node_id, array $info): void
     {
-        $this->mutation_info[$node_id] = $info;
-        $this->mutation_levels = null;
+        $existing = $this->mutation_info[$node_id] ?? null;
+
+        if ($existing === null || self::replacesMutationInfo($info, $existing)) {
+            $this->mutation_info[$node_id] = $info;
+            $this->mutation_levels = null;
+        }
+    }
+
+    /**
+     * Whether $info, of a function-like analysed more than once, replaces $existing, whatever the order the analyses
+     * came in (they come from any process of a parallel run). In decreasing precedence:
+     * - the analysis in the file declaring it: what it does there is not up to the including file;
+     * - the analysis when included, by the including file with the greatest path;
+     * - the analysis of its body for an object of an inheriting class, which has the callees of that class.
+     *
+     * @param MutationInfo $info
+     * @param MutationInfo $existing
+     * @psalm-pure
+     */
+    private static function replacesMutationInfo(array $info, array $existing): bool
+    {
+        // what a previous run found is not analysed again
+        if (!$info['fresh']) {
+            return false;
+        }
+
+        if (!$existing['fresh']) {
+            return true;
+        }
+
+        return strcmp(self::precedenceKey($info), self::precedenceKey($existing)) > 0;
+    }
+
+    /**
+     * A trait method is analysed once per class using it, with what that class has: of those, the same one
+     * has to win whichever is analysed first. The key orders the analyses by precedence, then by every
+     * other value MutationLevelResolver reads, so that two analyses with the same key can't be told apart.
+     *
+     * @param MutationInfo $info
+     * @psalm-pure
+     */
+    private static function precedenceKey(array $info): string
+    {
+        $precedence = $info['inherited']
+            ? 0
+            : ($info['root'] === $info['location']->file_path ? 2 : 1);
+
+        return implode("\0", [
+            $precedence,
+            $info['root'],
+            sprintf('%020d', $info['intrinsic']),
+            sprintf('%020d', $info['allowed']),
+            self::calleesKey($info['callees']),
+            sprintf('%020d', $info['default_intrinsic']),
+            self::calleesKey($info['default_callees']),
+            json_encode($info['wildcards'] ?? [], JSON_THROW_ON_ERROR),
+            $info['report'] ? 1 : 0,
+            $info['class'] ?? '',
+            $info['cased_name'],
+            implode(',', $info['suppressed_issues']),
+            sprintf('%020d', $info['start']),
+            $info['location']->file_path,
+            sprintf('%020d', $info['location']->raw_file_start),
+        ]);
+    }
+
+    /**
+     * @param array<string, bool> $callees
+     * @psalm-pure
+     */
+    private static function calleesKey(array $callees): string
+    {
+        ksort($callees);
+
+        $key = '';
+
+        foreach ($callees as $callee_id => $internal_mutations_ok) {
+            $key .= $callee_id . ($internal_mutations_ok ? '=1,' : '=0,');
+        }
+
+        return $key;
     }
 
     /**
