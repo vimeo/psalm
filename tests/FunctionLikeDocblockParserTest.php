@@ -136,6 +136,48 @@ final class FunctionLikeDocblockParserTest extends BaseTestCase
         $this->assertSame([['T', 'of', 'string', false]], $function_docblock->templates);
     }
 
+    public function testTemplateDefaults(): void
+    {
+        $doc = <<<'DOC'
+            /**
+             * @psalm-template T of string = 'a'
+             * @phpstan-template T = int
+             * @template U of callable(int=): void = callable(int=): void
+             * @template V
+             * @template W of 'b\'=c'
+             * @template X of "d\"=e" = "d\"=e"
+             * @template Y of int =
+             */
+            DOC;
+        $php_parser_doc = new Doc($doc, 20);
+        $function_docblock = FunctionLikeDocblockParser::parse(
+            ProjectAnalyzer::getInstance()->getCodebase(),
+            $php_parser_doc,
+            $this->test_code_location,
+            $this->test_cased_function_id,
+        );
+        $this->assertSame(
+            [
+                ['U', 'of', 'callable(int=): void', false],
+                ['V', null, null, false],
+                ['W', 'of', '\'b\\\'=c\'', false],
+                ['X', 'of', '"d\\"=e"', false],
+                ['Y', 'of', 'int', false],
+                ['T', 'of', 'string', false],
+            ],
+            $function_docblock->templates,
+        );
+        $this->assertSame(
+            [
+                'U' => ['type' => 'callable(int=): void', 'line_number' => 23],
+                'X' => ['type' => '"d\\"=e"', 'line_number' => 26],
+                'Y' => ['type' => '', 'line_number' => 27],
+                'T' => ['type' => '\'a\'', 'line_number' => 21],
+            ],
+            $function_docblock->template_defaults,
+        );
+    }
+
     public function testReturnsUnexpectedTags(): void
     {
         $doc = '/**
