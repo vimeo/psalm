@@ -390,6 +390,14 @@ final class KeyedArrayComparator
             $properties[$property_name] = $property_type ?? Type::getMixed();
         }
 
+        foreach ($container_type_part->properties as $property_name => $_) {
+            if (!isset($properties[$property_name])
+                && isset($storage->pseudo_property_get_types['$' . $property_name])
+            ) {
+                $properties[$property_name] = $storage->pseudo_property_get_types['$' . $property_name];
+            }
+        }
+
         $replaced_object = TemplateInferredTypeReplacer::replace(
             new Union([
                 new TObjectWithProperties($properties),
