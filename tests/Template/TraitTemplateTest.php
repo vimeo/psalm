@@ -590,6 +590,31 @@ final class TraitTemplateTest extends TestCase
                     }',
                 'php_version' => '8.0',
             ],
+            'pseudoPropertyKeepsCallableObjectWithTemplateIntersectionThroughUse' => [
+                'code' => '<?php
+                    /**
+                     * @template T as object
+                     * @property T&Countable $value
+                     */
+                    trait MagicValue {}
+
+                    class Holder {
+                        /** @use MagicValue<callable-object> */
+                        use MagicValue;
+
+                        public function __get(string $name) {
+                            return 0;
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $value = $holder->value;
+                    $count = count($value);',
+                'assertions' => [
+                    '$value===' => 'Countable&callable-object',
+                ],
+                'php_version' => '8.0',
+            ],
             'pseudoPropertyOwnDeclarationWinsOverUsedTrait' => [
                 'code' => '<?php
                     /**

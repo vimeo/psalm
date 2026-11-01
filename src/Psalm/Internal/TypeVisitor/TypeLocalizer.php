@@ -128,8 +128,17 @@ final class TypeLocalizer extends MutableTypeVisitor
         if ($replacement instanceof TObject) {
             $first_extra_type = array_shift($extra_types);
 
+            if ($replacement instanceof TCallableObject) {
+                // the comparators only honour a `callable-object` that is a member of another type's intersection
+                $extra_types = array_merge(
+                    $extra_types,
+                    $replacement->extra_types,
+                    [$replacement->getKey() => $replacement],
+                );
+            }
+
             return $extra_types
-                ? $first_extra_type->setIntersectionTypes($extra_types)
+                ? $first_extra_type->setIntersectionTypes(array_merge($first_extra_type->extra_types, $extra_types))
                 : $first_extra_type;
         }
 
