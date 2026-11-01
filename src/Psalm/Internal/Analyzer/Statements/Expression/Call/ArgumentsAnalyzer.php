@@ -789,7 +789,10 @@ final class ArgumentsAnalyzer
     }
 
     /**
-     * @param   list<PhpParser\Node\Arg>  $args
+     * With $partial_application, $args are the arguments a partial application binds, by offset in it: PHP checks them
+     * when it creates the closure, and passes no reference then. The arguments of the later call aren't known.
+     *
+     * @param   array<int, PhpParser\Node\Arg>  $args
      * @param   array<int,FunctionLikeParameter>        $function_params
      * @return  false|null
      * @psalm-suppress ComplexMethod there's just not much that can be done about this
@@ -804,6 +807,7 @@ final class ArgumentsAnalyzer
         TemplateResult $template_result,
         CodeLocation $code_location,
         Context $context,
+        bool $partial_application = false,
     ): ?bool {
         $in_call_map = $method_id ? InternalCallMapHandler::inCallMap((string) $method_id) : false;
 
@@ -913,7 +917,7 @@ final class ArgumentsAnalyzer
 
         $function_param_count = count($function_params);
 
-        if (count($function_params) > count($args) && !$has_packed_var) {
+        if (!$partial_application && count($function_params) > count($args) && !$has_packed_var) {
             for ($i = count($args), $iMax = count($function_params); $i < $iMax; $i++) {
                 if ($function_params[$i]->default_type
                     && $function_params[$i]->type
@@ -1093,7 +1097,8 @@ final class ArgumentsAnalyzer
                 continue;
             }
 
-            if ($arg_function_params[$argument_offset][0]->by_ref
+            if (!$partial_application
+                && $arg_function_params[$argument_offset][0]->by_ref
                 && $method_id !== 'extract'
             ) {
                 if (self::handlePossiblyMatchingByRefParam(
@@ -1241,6 +1246,10 @@ final class ArgumentsAnalyzer
                     }
                 }
             }
+        }
+
+        if ($partial_application) {
+            return null;
         }
 
         $f = in_array($method_id, self::ARRAY_FILTERLIKE, true);
@@ -2052,7 +2061,7 @@ final class ArgumentsAnalyzer
     }
 
     /**
-     * @param   list<PhpParser\Node\Arg> $args
+     * @param   array<int, PhpParser\Node\Arg> $args
      * @param   array<int,FunctionLikeParameter>        $function_params
      * @param   array<string, array<string, Union>>  $class_generic_params
      */

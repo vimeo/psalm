@@ -741,6 +741,84 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * The arguments a partial application binds reach the sinks of their parameters as those of a call do, with what
+     * they go through first: the cases with no issue, which an invalid provider case can't show. The issues are listed
+     * by the line their taint comes from.
+     *
+     * @param list<string> $expected_issues
+     */
+    #[DataProvider('providerPartialApplicationSinks')]
+    public function testPartialApplicationSinks(string $code, array $expected_issues, bool $track_unused_variables): void
+    {
+        if ($track_unused_variables) {
+            $this->trackUnusedVariables();
+        }
+
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, $code);
+        $this->project_analyzer->setPhpVersion('8.6', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $taint_issues = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $origin = $issue->taint_trace[0] ?? null;
+
+            if (str_starts_with($issue->type, 'Tainted') && $origin instanceof DataFlowNodeData) {
+                $taint_issues[] = $issue->type . ' from line ' . $origin->line_from;
+            }
+        }
+
+        sort($taint_issues);
+
+        self::assertSame($expected_issues, $taint_issues);
+    }
+
+    /**
+     * @return array<string, array{string, list<string>, bool}>
+     * @psalm-pure
+     */
+    public static function providerPartialApplicationSinks(): array
+    {
+        $cases = [
+            'escapedArgument' => [
+                '<?php
+                    /** @psalm-taint-sink html $s */
+                    function show(string $s, int $n): void {}
+
+                    $escaped = show(htmlspecialchars((string) $_GET["x"]), ?);
+                    $tainted = show((string) $_GET["x"], ?);
+                    $literal = show("literal", ?);',
+                ['TaintedHtml from line 6'],
+            ],
+            'applicationsOfAPureFunctionInDifferentPlaces' => [
+                '<?php
+                    /** @psalm-taint-sink shell $cmd */
+                    function run(string $cmd, int $n): int {
+                        return $n;
+                    }
+
+                    $literal = run("ls", ?);
+                    $tainted = run((string) $_GET["x"], ?);',
+                ['TaintedShell from line 8'],
+            ],
+        ];
+
+        $data = [];
+
+        foreach ($cases as $name => [$code, $expected_issues]) {
+            $data[$name] = [$code, $expected_issues, false];
+            $data[$name . ' tracking unused variables'] = [$code, $expected_issues, true];
+        }
+
+        return $data;
+    }
+
+    /**
      * @return array<string, array{code:string}>
      * @psalm-pure
      */
@@ -14724,6 +14802,79 @@ final class TaintTest extends TestCase
                         echo $named->name();
                     }',
                 'error_message' => 'TaintedHtml',
+            ],
+            'partialApplicationBindsATaintedArgumentToASink' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink shell $cmd */
+                    function sink(string $cmd, string $other): void {}
+
+                    $closure = sink((string) $_GET["x"], ?);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationBindsATaintedArgumentToASinkByName' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink shell $cmd */
+                    function sink(string $other, string $cmd): void {}
+
+                    $closure = sink(cmd: (string) $_GET["x"], other: ?);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationBindsATaintedArgumentToAVariadicParameter' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink shell $cmd */
+                    function sink(int $safe, string ...$cmd): void {}
+
+                    $closure = sink(?, (string) $_GET["cmd"]);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationBindsATaintedArgumentToABuiltinSink' => [
+                'code' => '<?php
+                    $closure = exec((string) $_GET["cmd"], ?);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationThunkOfABuiltinSink' => [
+                'code' => '<?php
+                    $closure = shell_exec((string) $_GET["cmd"], ...);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationBindsATaintedArgumentToAMethodSink' => [
+                'code' => '<?php
+                    final class Runner {
+                        /** @psalm-taint-sink shell $cmd */
+                        public function run(string $cmd, int $n): void {}
+                    }
+
+                    function f(Runner $runner): void {
+                        $closure = $runner->run((string) $_GET["cmd"], ?);
+                    }',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationBindsATaintedArgumentToAStaticMethodSink' => [
+                'code' => '<?php
+                    final class Runner {
+                        /** @psalm-taint-sink shell $cmd */
+                        public static function run(string $cmd, int $n): void {}
+                    }
+
+                    $closure = Runner::run((string) $_GET["cmd"], ?);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationBindsATaintedArgumentToAParameterTheBodyPassesToASink' => [
+                'code' => '<?php
+                    function run(string $cmd, int $n): void {
+                        shell_exec($cmd);
+                    }
+
+                    $closure = run((string) $_GET["cmd"], ?);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
             ],
         ];
     }

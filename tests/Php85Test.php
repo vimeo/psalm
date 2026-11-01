@@ -350,6 +350,15 @@ final class Php85Test extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],
+            'pipeIntoPartialApplicationChecksItsBoundArguments' => [
+                'code' => '<?php
+                    function add(int $a, int $b): int { return $a + $b; }
+
+                    $r = 3 |> add([], ?, ...);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
             'pipeIntoPartialApplicationOfNew' => [
                 'code' => '<?php
                     final class N {
