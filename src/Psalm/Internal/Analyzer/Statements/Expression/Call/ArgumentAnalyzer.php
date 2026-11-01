@@ -447,6 +447,19 @@ final class ArgumentAnalyzer
                 $arg_type_param,
             );
 
+            // an empty unpack (`...[]`) passes no argument: the `never` it binds says nothing about the templates
+            if ($arg->unpack && $arg_type_param->isNever()) {
+                foreach ($bindable_template_params as $template_type) {
+                    foreach ($template_result->lower_bounds[$template_type->param_name][$template_type->defining_class]
+                        ?? [] as $lower_bound
+                    ) {
+                        if ($lower_bound->arg_offset === $argument_offset && $lower_bound->type->isNever()) {
+                            $lower_bound->from_template_free_argument = true;
+                        }
+                    }
+                }
+            }
+
             $param_type = TypeExpander::expandUnion(
                 $codebase,
                 $param_type,
