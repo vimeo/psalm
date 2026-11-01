@@ -179,6 +179,46 @@ final class ReadonlyPropertyTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.6',
             ],
+            'computedNameWritesOnMutableProperty' => [
+                'code' => '<?php
+                    function change(int &$i): void {
+                        $i = 2;
+                    }
+
+                    final class A {
+                        public array $arr = [];
+                        public int $n = 1;
+
+                        public function run(): void {
+                            $this->{"arr"}[] = 1;
+                            change($this->{"n"});
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'computedNameArrayPushOnInterfacePropertyWithSetHook' => [
+                'code' => '<?php
+                    interface I {
+                        public array $items { get; set; }
+                    }
+
+                    final class Impl implements I {
+                        public array $items = [];
+                    }
+
+                    function f(I $i): void {
+                        if ($i->items === []) {
+                            $i->{"items"}[] = 1;
+                        }
+                    }
+
+                    f(new Impl());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
@@ -449,6 +489,36 @@ final class ReadonlyPropertyTest extends TestCase
                         }
                     }',
                 'error_message' => 'InaccessibleProperty',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'readonlyPropertyComputedNameArrayPush' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public readonly array $arr) {}
+
+                        public function add(): void {
+                            $this->{"arr"}[] = 1;
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29 - A::$arr is marked readonly',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'readonlyPropertyComputedNameByRefArgument' => [
+                'code' => '<?php
+                    function change(int &$i): void {
+                        $i = 2;
+                    }
+
+                    final class A {
+                        public function __construct(public readonly int $x) {}
+
+                        public function run(): void {
+                            change($this->{"x"});
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36 - A::$x is marked readonly',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
