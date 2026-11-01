@@ -13,12 +13,10 @@ abstract class CallLike extends Expr {
      */
     abstract public function getRawArgs(): array;
 
-    public function isFirstClassCallable(): bool {}
-
     /**
      * @psalm-pure
      */
-    public function isPartialFunctionApplication(): bool {}
+    public function isFirstClassCallable(): bool {}
 
     /**
      * @psalm-pure

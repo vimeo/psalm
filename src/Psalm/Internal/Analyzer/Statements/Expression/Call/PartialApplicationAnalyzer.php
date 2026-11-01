@@ -23,6 +23,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
@@ -624,17 +625,28 @@ final class PartialApplicationAnalyzer
         // PHP refuses a reference to a readonly property or to an item of one
         if ($root instanceof PropertyFetch
             && ($prop_name = InstancePropertyFetchAnalyzer::getPropertyName($statements_analyzer, $root)) !== null
+            && ($object_type = $statements_analyzer->node_data->getType($root->var)) !== null
         ) {
-            foreach ($statements_analyzer->node_data->getType($root->var)?->getAtomicTypes() ?? [] as $atomic) {
-                if ($atomic instanceof TNamedObject) {
-                    ArgumentsAnalyzer::handleByRefReadonlyArg(
+            foreach ($object_type->getAtomicTypes() as $atomic) {
+                if (!$atomic instanceof TNamedObject) {
+                    continue;
+                }
+
+                $property_id = $atomic->value . '::$' . $prop_name;
+                $declaring_class_storage = ArgumentsAnalyzer::getDeclaringClassStorage(
+                    $statements_analyzer,
+                    $property_id,
+                    $prop_name,
+                );
+
+                if ($declaring_class_storage !== null) {
+                    InstancePropertyAssignmentAnalyzer::checkReadonlyPropertyWrite(
                         $statements_analyzer,
-                        $context,
                         $root,
-                        $atomic->value,
-                        $prop_name,
-                        null,
-                        false,
+                        $property_id,
+                        $declaring_class_storage->properties[$prop_name],
+                        $context,
+                        $object_type->reference_free && $object_type->allow_mutations,
                     );
                 }
             }

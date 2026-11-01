@@ -1788,21 +1788,39 @@ final class ArgumentsAnalyzer
         return null;
     }
 
-    /**
-     * @param bool $is_call false when the reference is only taken (a partial application binds it): nothing is
-     *     written yet, but PHP already refuses a reference to a readonly property
-     */
-    public static function handleByRefReadonlyArg(
+    private static function handleByRefReadonlyArg(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         string $fq_class_name,
         string $prop_name,
         ?string $lhs_var_id,
-        bool $is_call = true,
     ): void {
         $property_id = $fq_class_name . '::$' . $prop_name;
 
+        $declaring_class_storage = self::getDeclaringClassStorage($statements_analyzer, $property_id, $prop_name);
+
+        if ($declaring_class_storage !== null) {
+            InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
+                $statements_analyzer,
+                $stmt,
+                $property_id,
+                $declaring_class_storage->properties[$prop_name],
+                $declaring_class_storage,
+                $context,
+                $lhs_var_id,
+            );
+        }
+    }
+
+    /**
+     * The storage of the class declaring the property, null when it is unknown
+     */
+    public static function getDeclaringClassStorage(
+        StatementsAnalyzer $statements_analyzer,
+        string $property_id,
+        string $prop_name,
+    ): ?ClassLikeStorage {
         $codebase = $statements_analyzer->getCodebase();
         $declaring_property_class = (string) $codebase->properties->getDeclaringClassForProperty(
             $property_id,
@@ -1813,36 +1831,10 @@ final class ArgumentsAnalyzer
         try {
             $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
         } catch (InvalidArgumentException) {
-            return;
+            return null;
         }
 
-        if (!isset($declaring_class_storage->properties[$prop_name])) {
-            return;
-        }
-
-        $property_storage = $declaring_class_storage->properties[$prop_name];
-
-        if (!$is_call) {
-            InstancePropertyAssignmentAnalyzer::checkReadonlyPropertyWrite(
-                $statements_analyzer,
-                $stmt,
-                $property_id,
-                $property_storage,
-                $context,
-            );
-
-            return;
-        }
-
-        InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
-            $statements_analyzer,
-            $stmt,
-            $property_id,
-            $property_storage,
-            $declaring_class_storage,
-            $context,
-            $lhs_var_id,
-        );
+        return isset($declaring_class_storage->properties[$prop_name]) ? $declaring_class_storage : null;
     }
 
     /**

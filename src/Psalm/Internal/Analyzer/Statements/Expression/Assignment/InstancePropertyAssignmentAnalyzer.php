@@ -408,6 +408,7 @@ final class InstancePropertyAssignmentAnalyzer
             $property_id,
             $property_storage,
             $context,
+            $property_var_pure_compatible,
         );
 
         // writing the property of an object reached from global state writes global state
@@ -491,14 +492,9 @@ final class InstancePropertyAssignmentAnalyzer
         string $property_id,
         PropertyStorage $property_storage,
         Context $context,
+        bool $property_var_pure_compatible,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
-
-        $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
-
-        $property_var_pure_compatible = $stmt_var_type
-            && $stmt_var_type->reference_free
-            && $stmt_var_type->allow_mutations;
 
         $appearing_property_class = $codebase->properties->getAppearingClassForProperty(
             $property_id,
