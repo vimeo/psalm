@@ -1816,11 +1816,10 @@ final class NewAnalyzer extends CallAnalyzer
         $generic_param_types = [];
 
         foreach ($storage->template_types ?? [] as $template_name => $base_type) {
-            // a type template with a default that later code cannot constrain only takes bounds from arguments
-            // that said something about it
+            // a type template with a default only takes bounds from arguments that said something about it, as an
+            // argument that says nothing (`null` for `(callable(): T)|null`) leaves the template out
             $lower_bounds = isset($storage->template_defaults[$template_name])
                 && !isset($storage->purity_templates[$template_name])
-                && isset($unconstrainable_templates[$template_name])
                     ? $inferred_lower_bounds
                     : $template_result->lower_bounds;
 

@@ -5031,6 +5031,35 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'newLeavesATemplateWithADefaultToLaterCodeAfterATemplateFreeArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template T = int
+                     */
+                    final class Lazy {
+                        /** @param (callable(): T)|null $factory */
+                        public function __construct(?callable $factory = null) {}
+
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @return Lazy<string> */
+                    function lazy(): Lazy {
+                        $lazy = new Lazy(null);
+                        $lazy->set("x");
+
+                        return $lazy;
+                    }
+
+                    $unbound = new Lazy(null);',
+                'assertions' => [
+                    '$unbound===' => 'Lazy<`_0:mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'newWithTemplateFreeConstructorArgumentUsesTheDefault' => [
                 'code' => '<?php
                     /**
