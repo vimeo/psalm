@@ -15,6 +15,7 @@ use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\NosqlEqualityOperand;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\DuplicateArrayKey;
 use Psalm\Issue\InvalidArrayOffset;
@@ -46,8 +47,6 @@ use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
-use function array_merge;
-use function array_values;
 use function count;
 use function is_int;
 use function is_string;
@@ -191,7 +190,8 @@ final class ArrayAnalyzer
                         $good_types[] = new TLiteralInt(0);
                         $good_types[] = new TLiteralInt(1);
                     } elseif ($atomic_key_type instanceof TLiteralFloat) {
-                        $good_types[] = new TLiteralInt((int) $atomic_key_type->value);
+                        $int = LiteralCast::toInt($atomic_key_type->value);
+                        $good_types[] = $int === null ? new TInt : new TLiteralInt($int);
                     } elseif ($atomic_key_type instanceof TFloat) {
                         $good_types[] = new TInt;
                     } else {
@@ -614,14 +614,8 @@ final class ArrayAnalyzer
                 $array_creation_info->property_types[$item_key_value] = $item_value_type;
             } else {
                 $array_creation_info->can_create_objectlike = false;
-                $array_creation_info->item_key_atomic_types = array_merge(
-                    $array_creation_info->item_key_atomic_types,
-                    array_values($key_type->getAtomicTypes()),
-                );
-                $array_creation_info->item_value_atomic_types = array_merge(
-                    $array_creation_info->item_value_atomic_types,
-                    array_values($item_value_type->getAtomicTypes()),
-                );
+                $array_creation_info->addItemKeyTypes($key_type);
+                $array_creation_info->addItemValueTypes($item_value_type);
             }
         } else {
             if ($item_key_value !== null
@@ -630,10 +624,7 @@ final class ArrayAnalyzer
                 $array_creation_info->property_types[$item_key_value] = Type::getMixed();
             } else {
                 $array_creation_info->can_create_objectlike = false;
-                $array_creation_info->item_key_atomic_types = array_merge(
-                    $array_creation_info->item_key_atomic_types,
-                    array_values($key_type->getAtomicTypes()),
-                );
+                $array_creation_info->addItemKeyTypes($key_type);
                 $array_creation_info->item_value_atomic_types[] = new TMixed();
             }
         }
@@ -767,10 +758,7 @@ final class ArrayAnalyzer
                                 $array_creation_info->int_offset + 1,
                                 null,
                             );
-                            $array_creation_info->item_value_atomic_types = array_merge(
-                                $array_creation_info->item_value_atomic_types,
-                                array_values($property_value->getAtomicTypes()),
-                            );
+                            $array_creation_info->addItemValueTypes($property_value);
                             continue;
                         }
                         $new_offset = ++$array_creation_info->int_offset;
@@ -869,14 +857,8 @@ final class ArrayAnalyzer
                 }
             }
 
-            $array_creation_info->item_key_atomic_types = array_merge(
-                $array_creation_info->item_key_atomic_types,
-                array_values($iterable_type->type_params[0]->getAtomicTypes()),
-            );
-            $array_creation_info->item_value_atomic_types = array_merge(
-                $array_creation_info->item_value_atomic_types,
-                array_values($iterable_type->type_params[1]->getAtomicTypes()),
-            );
+            $array_creation_info->addItemKeyTypes($iterable_type->type_params[0]);
+            $array_creation_info->addItemValueTypes($iterable_type->type_params[1]);
         }
 
         if ($all_non_empty) {

@@ -831,17 +831,11 @@
       <code><![CDATA[$right_type_part]]></code>
     </ImplicitToStringCast>
     <InvalidOperand>
-      <code><![CDATA[$operand1 % $operand2]]></code>
-      <code><![CDATA[$operand1 & $operand2]]></code>
       <code><![CDATA[$operand1 * $operand2]]></code>
       <code><![CDATA[$operand1 ** $operand2]]></code>
       <code><![CDATA[$operand1 + $operand2]]></code>
       <code><![CDATA[$operand1 - $operand2]]></code>
       <code><![CDATA[$operand1 / $operand2]]></code>
-      <code><![CDATA[$operand1 << $operand2]]></code>
-      <code><![CDATA[$operand1 >> $operand2]]></code>
-      <code><![CDATA[$operand1 ^ $operand2]]></code>
-      <code><![CDATA[$operand1 | $operand2]]></code>
     </InvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$invalid_left_messages[0]]]></code>
@@ -857,10 +851,6 @@
       <code><![CDATA[$operand_type]]></code>
       <code><![CDATA[$operand_type]]></code>
     </ImplicitToStringCast>
-    <InvalidOperand>
-      <code><![CDATA[$left_type_part->value]]></code>
-      <code><![CDATA[$right_type_part->value]]></code>
-    </InvalidOperand>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/OrAnalyzer.php">
     <RiskyTruthyFalsyComparison>
@@ -1065,10 +1055,6 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/Method/MissingMethodCallHandler.php">
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$found_generic_params]]></code>
-      <code><![CDATA[$found_generic_params]]></code>
-      <code><![CDATA[$found_generic_params]]></code>
-      <code><![CDATA[$found_generic_params]]></code>
       <code><![CDATA[$intersection_method_id]]></code>
       <code><![CDATA[$intersection_method_id]]></code>
     </RiskyTruthyFalsyComparison>
@@ -1559,18 +1545,11 @@
   </file>
   <file src="src/Psalm/Internal/Codebase/ConstantTypeResolver.php">
     <InvalidOperand>
-      <code><![CDATA[$left->value & $right->value]]></code>
       <code><![CDATA[$left->value * $right->value]]></code>
       <code><![CDATA[$left->value + $right->value]]></code>
       <code><![CDATA[$left->value - $right->value]]></code>
       <code><![CDATA[$left->value / $right->value]]></code>
-      <code><![CDATA[$left->value ^ $right->value]]></code>
-      <code><![CDATA[$left->value | $right->value]]></code>
     </InvalidOperand>
-    <PossiblyInvalidOperand>
-      <code><![CDATA[$left->value]]></code>
-      <code><![CDATA[$right->value]]></code>
-    </PossiblyInvalidOperand>
   </file>
   <file src="src/Psalm/Internal/Codebase/Functions.php">
     <ImpureStaticProperty>
@@ -3939,9 +3918,6 @@
       <code><![CDATA[public function __construct()]]></code>
       <code><![CDATA[public function __construct()]]></code>
     </MethodSignatureMismatch>
-    <MutableDependency>
-      <code><![CDATA[ParserCacheProvider]]></code>
-    </MutableDependency>
   </file>
   <file src="tests/ProjectCheckerTest.php">
     <ImpureStaticProperty>
@@ -3964,6 +3940,7 @@
       <code><![CDATA[Config]]></code>
     </InvalidExtendClass>
     <MethodSignatureMismatch>
+      <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[public function __construct()]]></code>

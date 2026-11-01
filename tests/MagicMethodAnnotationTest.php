@@ -1286,6 +1286,67 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$d' => 'SingleQuoteChild',
                 ],
             ],
+            'conditionalReturnTypeInMethodTag' => [
+                'code' => '<?php
+                    /**
+                     * @method ($asText is true ? string : list<string>) words(int $nb = 3, bool $asText = false)
+                     * @method static ($asText is true ? string : list<string>) staticWords(bool $asText = false)
+                     */
+                    class Gen {
+                        public function __call(string $name, array $arguments) { return null; }
+                        public static function __callStatic(string $name, array $arguments) { return null; }
+                    }
+
+                    $g = new Gen();
+                    $a = $g->words(3, false);
+                    $b = $g->words(3, true);
+                    $c = Gen::staticWords(false);
+                    $d = Gen::staticWords(true);
+                    $e = $g->words();
+                    $f = $g->words(asText: true);
+                    $h = Gen::staticWords();',
+                'assertions' => [
+                    '$a' => 'list<string>',
+                    '$b' => 'string',
+                    '$c' => 'list<string>',
+                    '$d' => 'string',
+                    '$e' => 'list<string>',
+                    '$f' => 'string',
+                    '$h' => 'list<string>',
+                ],
+            ],
+            'conditionalReturnTypeWithClassTemplateInInheritedMethodTag' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @method ($flag is true ? T : null) get(bool $flag)
+                     * @method static ($flag is true ? T : null) staticGet(bool $flag)
+                     * @method static list<T> staticList()
+                     */
+                    class Box {
+                        public function __call(string $name, array $arguments) { return null; }
+                        public static function __callStatic(string $name, array $arguments) { return null; }
+                    }
+
+                    /** @extends Box<int> */
+                    final class IntBox extends Box {
+                        /** @return array{int, null} */
+                        public function fromInside(): array {
+                            return [static::staticGet(true), self::staticGet(false)];
+                        }
+                    }
+
+                    $a = (new IntBox())->get(true);
+                    $b = IntBox::staticGet(true);
+                    $c = IntBox::staticGet(false);
+                    $d = IntBox::staticList();',
+                'assertions' => [
+                    '$a' => 'int',
+                    '$b' => 'int',
+                    '$c' => 'null',
+                    '$d' => 'list<int>',
+                ],
+            ],
         ];
     }
 

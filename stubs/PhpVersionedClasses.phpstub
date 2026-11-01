@@ -248,6 +248,13 @@ namespace {
         public function isTerminated(): bool {}
 
         /**
+         * The fiber running the caller, which stays the same for the whole call.
+         *
+         * @psalm-pure
+         */
+        public static function getCurrent(): ?Fiber {}
+
+        /**
          * Hands control back to whoever started or resumed the current fiber, like `yield`: what
          * that code does until it resumes this fiber is its own effect.
          *
@@ -291,6 +298,17 @@ namespace {
     }
 
     /**
+     * Defers the target validation of internal attributes on the same element to runtime.
+     *
+     * @psalm-immutable
+     * @since 8.5
+     */
+    #[\Attribute(\Attribute::TARGET_ALL)]
+    final class DelayedTargetValidation
+    {
+    }
+
+    /**
      * Persistent cURL share handle resource.
      *
      * @since 8.5
@@ -298,6 +316,173 @@ namespace {
     final class CurlSharePersistentHandle
     {
     }
+
+    /**
+     * @since 8.6
+     */
+    final class StreamPollHandle implements Io\Poll\Handle
+    {
+        /** @param resource $stream */
+        public function __construct($stream) {}
+
+        /** @return resource */
+        public function getStream() {}
+
+        public function isValid(): bool {}
+    }
+}
+
+namespace Time {
+    /** @since 8.6 */
+    class TimeException extends \Exception {}
+
+    /**
+     * @psalm-immutable
+     * @since 8.6
+     */
+    final class Duration
+    {
+        public int $seconds;
+
+        public int $nanoseconds;
+
+        public bool $negative;
+
+        private function __construct() {}
+
+        public function __unserialize(array $data): void {}
+
+        /** @psalm-pure */
+        public static function fromSeconds(int $seconds, int $nanoseconds = 0): Duration {}
+
+        /** @psalm-pure */
+        public static function fromNanoseconds(int $nanoseconds): Duration {}
+
+        /** @psalm-pure */
+        public static function fromMicroseconds(int $microseconds): Duration {}
+
+        /** @psalm-pure */
+        public static function fromMilliseconds(int $milliseconds): Duration {}
+
+        /** @psalm-pure */
+        public static function fromMinutes(int $minutes): Duration {}
+
+        /** @psalm-pure */
+        public static function fromHours(int $hours): Duration {}
+
+        /** @psalm-pure */
+        public static function fromIso8601DurationString(string $specification): Duration {}
+
+        public function negate(): Duration {}
+
+        public function absolute(): Duration {}
+
+        public function add(Duration $duration): Duration {}
+
+        public function sub(Duration $duration): Duration {}
+
+        public function multiplyBy(int $factor): Duration {}
+
+        public function divideBy(int $divisor): Duration {}
+
+        /** @psalm-pure */
+        public static function compare(Duration $a, Duration $b): int {}
+    }
+}
+
+namespace Io {
+    /** @since 8.6 */
+    class IoException extends \Exception {}
+}
+
+namespace Io\Poll {
+    /** @since 8.6 */
+    interface Handle {}
+
+    /** @since 8.6 */
+    final class Watcher
+    {
+        final private function __construct() {}
+
+        public function getHandle(): Handle {}
+
+        /** @return list<Event> */
+        public function getWatchedEvents(): array {}
+
+        /** @return list<Event> */
+        public function getTriggeredEvents(): array {}
+
+        public function getData(): mixed {}
+
+        public function hasTriggered(Event $event): bool {}
+
+        public function isActive(): bool {}
+
+        public function modify(array $events, mixed $data = null): void {}
+
+        public function modifyEvents(array $events): void {}
+
+        public function modifyData(mixed $data): void {}
+
+        public function remove(): void {}
+    }
+
+    /** @since 8.6 */
+    final class Context
+    {
+        public function __construct(Backend $backend = Backend::Auto) {}
+
+        public function add(Handle $handle, array $events, mixed $data = null): Watcher {}
+
+        /** @return list<Watcher> */
+        public function wait(?\Time\Duration $timeout = null, ?int $maxEvents = null): array {}
+
+        public function getBackend(): Backend {}
+    }
+
+    /** @since 8.6 */
+    class PollException extends \Io\IoException {}
+
+    /** @since 8.6 */
+    abstract class FailedPollOperationException extends PollException
+    {
+        public const ERROR_NONE = 0;
+        public const ERROR_SYSTEM = 1;
+        public const ERROR_NOMEM = 2;
+        public const ERROR_INVALID = 3;
+        public const ERROR_EXISTS = 4;
+        public const ERROR_NOTFOUND = 5;
+        public const ERROR_TIMEOUT = 6;
+        public const ERROR_INTERRUPTED = 7;
+        public const ERROR_PERMISSION = 8;
+        public const ERROR_TOOBIG = 9;
+        public const ERROR_AGAIN = 10;
+        public const ERROR_NOSUPPORT = 11;
+    }
+
+    /** @since 8.6 */
+    class FailedContextInitializationException extends FailedPollOperationException {}
+
+    /** @since 8.6 */
+    class FailedHandleAddException extends FailedPollOperationException {}
+
+    /** @since 8.6 */
+    class FailedWatcherModificationException extends FailedPollOperationException {}
+
+    /** @since 8.6 */
+    class FailedPollWaitException extends FailedPollOperationException {}
+
+    /** @since 8.6 */
+    class BackendUnavailableException extends PollException {}
+
+    /** @since 8.6 */
+    class InactiveWatcherException extends PollException {}
+
+    /** @since 8.6 */
+    class HandleAlreadyWatchedException extends PollException {}
+
+    /** @since 8.6 */
+    class InvalidHandleException extends PollException {}
 }
 
 namespace FTP {

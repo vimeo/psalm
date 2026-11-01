@@ -57454,36 +57454,69 @@ return array (
   array (
     0 => 'array<string, array<string, mixed>>|false',
   ),
+  'newrelic_accept_distributed_trace_headers' => 
+  array (
+    0 => 'bool',
+    'headers' => 'array<array-key, mixed>',
+    'transport_type=' => 'string',
+  ),
+  'newrelic_accept_distributed_trace_payload' => 
+  array (
+    0 => 'bool',
+    'payload' => 'string',
+    'transport_type=' => 'string',
+  ),
+  'newrelic_accept_distributed_trace_payload_httpsafe' => 
+  array (
+    0 => 'bool',
+    'payload' => 'string',
+    'transport_type=' => 'string',
+  ),
   'newrelic_add_custom_parameter' => 
   array (
     0 => 'bool',
+    'parameter' => 'string',
+    'value' => 'null|scalar',
+  ),
+  'newrelic_add_custom_span_parameter' => 
+  array (
+    0 => 'bool',
     'key' => 'string',
-    'value' => 'scalar',
+    'value' => 'null|scalar',
   ),
   'newrelic_add_custom_tracer' => 
   array (
     0 => 'bool',
-    'function_name' => 'string',
+    'functionname' => 'string',
   ),
   'newrelic_background_job' => 
   array (
     0 => 'void',
-    'flag=' => 'bool',
+    'background=' => 'bool',
   ),
   'newrelic_capture_params' => 
   array (
     0 => 'void',
     'enable=' => 'bool',
   ),
+  'newrelic_create_distributed_trace_payload' => 
+  array (
+    0 => 'object',
+  ),
   'newrelic_custom_metric' => 
   array (
     0 => 'bool',
-    'metric_name' => 'string',
+    'metric' => 'string',
     'value' => 'float',
   ),
   'newrelic_disable_autorum' => 
   array (
-    0 => 'true',
+    0 => 'null|true',
+  ),
+  'newrelic_enable_params' => 
+  array (
+    0 => 'void',
+    'enable=' => 'bool',
   ),
   'newrelic_end_of_transaction' => 
   array (
@@ -57497,12 +57530,20 @@ return array (
   'newrelic_get_browser_timing_footer' => 
   array (
     0 => 'string',
-    'include_tags=' => 'bool',
+    'with_tags=' => 'bool',
   ),
   'newrelic_get_browser_timing_header' => 
   array (
     0 => 'string',
-    'include_tags=' => 'bool',
+    'with_tags=' => 'bool',
+  ),
+  'newrelic_get_linking_metadata' => 
+  array (
+    0 => 'array<string, string>',
+  ),
+  'newrelic_get_trace_metadata' => 
+  array (
+    0 => 'array{span_id?: string, trace_id?: string}',
   ),
   'newrelic_ignore_apdex' => 
   array (
@@ -57512,6 +57553,15 @@ return array (
   array (
     0 => 'void',
   ),
+  'newrelic_insert_distributed_trace_headers' => 
+  array (
+    0 => 'bool',
+    '&rw headers' => 'array<array-key, mixed>',
+  ),
+  'newrelic_is_sampled' => 
+  array (
+    0 => 'bool',
+  ),
   'newrelic_name_transaction' => 
   array (
     0 => 'bool',
@@ -57520,36 +57570,41 @@ return array (
   'newrelic_notice_error' => 
   array (
     0 => 'void',
-    'message' => 'string',
-    'exception=' => 'Exception|Throwable',
+    'exception' => 'Throwable|string',
+    'errstr=' => 'Throwable|null',
   ),
   'newrelic_notice_error\'1' => 
   array (
     0 => 'void',
-    'unused_1' => 'string',
-    'message' => 'string',
-    'unused_2' => 'string',
-    'unused_3' => 'int',
-    'unused_4=' => 'mixed',
+    'exception' => 'int',
+    'errstr' => 'string',
+    'fname' => 'string',
+    'line_nr' => 'int',
+    'ctx=' => 'mixed',
   ),
   'newrelic_record_custom_event' => 
   array (
     0 => 'void',
-    'name' => 'string',
-    'attributes' => 'array<array-key, mixed>',
+    'event_type' => 'string',
+    'parameters' => 'array<string, null|scalar>',
   ),
   'newrelic_record_datastore_segment' => 
   array (
     0 => 'mixed',
-    'func' => 'callable[impure]',
-    'parameters' => 'array<array-key, mixed>',
+    'callback' => 'callable[impure]',
+    'parameters' => 'array{collection?: null|scalar, databaseName?: null|scalar, host?: null|scalar, inputQuery?: null|scalar, inputQueryLabel?: null|scalar, operation?: null|scalar, portPathOrId?: null|scalar, product: string, query?: null|scalar, ...<array-key, mixed>}',
   ),
   'newrelic_set_appname' => 
   array (
     0 => 'bool',
-    'name' => 'string',
-    'license=' => 'string',
+    'appname' => 'string',
+    'license_key=' => 'string',
     'xmit=' => 'bool',
+  ),
+  'newrelic_set_error_group_callback' => 
+  array (
+    0 => 'bool',
+    'callback' => 'callable[impure](array<string, mixed>, array<string, mixed>):string',
   ),
   'newrelic_set_user_attributes' => 
   array (
@@ -57558,11 +57613,16 @@ return array (
     'account' => 'string',
     'product' => 'string',
   ),
+  'newrelic_set_user_id' => 
+  array (
+    0 => 'bool',
+    'uuid' => 'string',
+  ),
   'newrelic_start_transaction' => 
   array (
     0 => 'bool',
     'appname' => 'string',
-    'license=' => 'string',
+    'license_key=' => 'string',
   ),
   'next' => 
   array (
@@ -112561,11 +112621,478 @@ return array (
   array (
     0 => 'false|string',
   ),
+  'zmq::__construct' => 
+  array (
+    0 => 'void',
+  ),
+  'zmq::clock' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmq::curvekeypair' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmq::z85decode' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'zmq::z85encode' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'zmqcontext::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqcontext::__construct' => 
+  array (
+    0 => 'void',
+    'io_threads=' => 'mixed',
+    'persistent=' => 'mixed',
+  ),
+  'zmqcontext::acquire' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqcontext::getopt' => 
+  array (
+    0 => 'mixed',
+    'option' => 'mixed',
+  ),
+  'zmqcontext::getsocket' => 
+  array (
+    0 => 'mixed',
+    'type' => 'mixed',
+    'dsn' => 'mixed',
+    'on_new_socket=' => 'mixed',
+  ),
+  'zmqcontext::getsocketcount' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqcontext::ispersistent' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqcontext::setopt' => 
+  array (
+    0 => 'mixed',
+    'option' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'zmqcontextexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'string',
+    'code=' => 'int',
+    'previous=' => 'Throwable|null',
+  ),
+  'zmqcontextexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'zmqcontextexception::__wakeup' => 
+  array (
+    0 => 'void',
+  ),
+  'zmqcontextexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqcontextexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'zmqcontextexception::getline' => 
+  array (
+    0 => 'int',
+  ),
+  'zmqcontextexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'zmqcontextexception::getprevious' => 
+  array (
+    0 => 'Throwable|null',
+  ),
+  'zmqcontextexception::gettrace' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'zmqcontextexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'zmqdevice::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqdevice::__construct' => 
+  array (
+    0 => 'void',
+    'frontend' => 'ZMQSocket',
+    'backend' => 'ZMQSocket',
+    'capture=' => 'ZMQSocket',
+  ),
+  'zmqdevice::getidletimeout' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqdevice::gettimertimeout' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqdevice::run' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqdevice::setidlecallback' => 
+  array (
+    0 => 'mixed',
+    'idle_callback' => 'mixed',
+    'timeout' => 'mixed',
+    'user_data=' => 'mixed',
+  ),
+  'zmqdevice::setidletimeout' => 
+  array (
+    0 => 'mixed',
+    'timeout' => 'mixed',
+  ),
+  'zmqdevice::settimercallback' => 
+  array (
+    0 => 'mixed',
+    'idle_callback' => 'mixed',
+    'timeout' => 'mixed',
+    'user_data=' => 'mixed',
+  ),
+  'zmqdevice::settimertimeout' => 
+  array (
+    0 => 'mixed',
+    'timeout' => 'mixed',
+  ),
+  'zmqdeviceexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'string',
+    'code=' => 'int',
+    'previous=' => 'Throwable|null',
+  ),
+  'zmqdeviceexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'zmqdeviceexception::__wakeup' => 
+  array (
+    0 => 'void',
+  ),
+  'zmqdeviceexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqdeviceexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'zmqdeviceexception::getline' => 
+  array (
+    0 => 'int',
+  ),
+  'zmqdeviceexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'zmqdeviceexception::getprevious' => 
+  array (
+    0 => 'Throwable|null',
+  ),
+  'zmqdeviceexception::gettrace' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'zmqdeviceexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'zmqexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'string',
+    'code=' => 'int',
+    'previous=' => 'Throwable|null',
+  ),
+  'zmqexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'zmqexception::__wakeup' => 
+  array (
+    0 => 'void',
+  ),
+  'zmqexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'zmqexception::getline' => 
+  array (
+    0 => 'int',
+  ),
+  'zmqexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'zmqexception::getprevious' => 
+  array (
+    0 => 'Throwable|null',
+  ),
+  'zmqexception::gettrace' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'zmqexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'zmqpoll::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqpoll::add' => 
+  array (
+    0 => 'mixed',
+    'entry' => 'mixed',
+    'type' => 'mixed',
+  ),
+  'zmqpoll::clear' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqpoll::count' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqpoll::getlasterrors' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqpoll::items' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqpoll::poll' => 
+  array (
+    0 => 'mixed',
+    '&readable' => 'mixed',
+    '&writable' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'zmqpoll::remove' => 
+  array (
+    0 => 'mixed',
+    'remove' => 'mixed',
+  ),
+  'zmqpollexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'string',
+    'code=' => 'int',
+    'previous=' => 'Throwable|null',
+  ),
+  'zmqpollexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'zmqpollexception::__wakeup' => 
+  array (
+    0 => 'void',
+  ),
+  'zmqpollexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqpollexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'zmqpollexception::getline' => 
+  array (
+    0 => 'int',
+  ),
+  'zmqpollexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'zmqpollexception::getprevious' => 
+  array (
+    0 => 'Throwable|null',
+  ),
+  'zmqpollexception::gettrace' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'zmqpollexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'zmqsocket::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqsocket::__construct' => 
+  array (
+    0 => 'void',
+    'ZMQContext' => 'ZMQContext',
+    'type' => 'mixed',
+    'persistent_id=' => 'mixed',
+    'on_new_socket=' => 'mixed',
+  ),
+  'zmqsocket::bind' => 
+  array (
+    0 => 'mixed',
+    'dsn' => 'mixed',
+    'force=' => 'mixed',
+  ),
+  'zmqsocket::connect' => 
+  array (
+    0 => 'mixed',
+    'dsn' => 'mixed',
+    'force=' => 'mixed',
+  ),
+  'zmqsocket::disconnect' => 
+  array (
+    0 => 'mixed',
+    'dsn' => 'mixed',
+  ),
+  'zmqsocket::getendpoints' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqsocket::getpersistentid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqsocket::getsockettype' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqsocket::getsockopt' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'zmqsocket::ispersistent' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqsocket::monitor' => 
+  array (
+    0 => 'mixed',
+    'dsn' => 'mixed',
+    'events=' => 'mixed',
+  ),
+  'zmqsocket::recv' => 
+  array (
+    0 => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'zmqsocket::recvevent' => 
+  array (
+    0 => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'zmqsocket::recvmsg' => 
+  array (
+    0 => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'zmqsocket::recvmulti' => 
+  array (
+    0 => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'zmqsocket::send' => 
+  array (
+    0 => 'mixed',
+    'message' => 'mixed',
+    'mode=' => 'mixed',
+  ),
   'zmqsocket::send\'1' => 
   array (
     0 => 'ZMQSocket',
     'message' => 'string',
     'mode=' => 'int',
+  ),
+  'zmqsocket::sendmsg' => 
+  array (
+    0 => 'mixed',
+    'message' => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'zmqsocket::sendmulti' => 
+  array (
+    0 => 'mixed',
+    'message' => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'zmqsocket::setsockopt' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'zmqsocket::unbind' => 
+  array (
+    0 => 'mixed',
+    'dsn' => 'mixed',
+  ),
+  'zmqsocketexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'string',
+    'code=' => 'int',
+    'previous=' => 'Throwable|null',
+  ),
+  'zmqsocketexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'zmqsocketexception::__wakeup' => 
+  array (
+    0 => 'void',
+  ),
+  'zmqsocketexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zmqsocketexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'zmqsocketexception::getline' => 
+  array (
+    0 => 'int',
+  ),
+  'zmqsocketexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'zmqsocketexception::getprevious' => 
+  array (
+    0 => 'Throwable|null',
+  ),
+  'zmqsocketexception::gettrace' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'zmqsocketexception::gettraceasstring' => 
+  array (
+    0 => 'string',
   ),
   'zookeeper::__construct' => 
   array (

@@ -175,6 +175,11 @@ final class ClassLikeNodeScanner
 
             $class_name = $node->name->name;
 
+            // A stub refines the native declaration, so the methods it leaves out still come from reflection
+            if ($this->codebase->register_stub_files && $this->codebase->scanner->isStubFile($this->file_path)) {
+                $this->codebase->scanner->registerReflectedClassLikeStorage($fq_classlike_name);
+            }
+
             if ($this->codebase->classlike_storage_provider->has($fq_classlike_name_lc)) {
                 $duplicate_storage = $this->codebase->classlike_storage_provider->get($fq_classlike_name_lc);
 
@@ -811,6 +816,10 @@ final class ClassLikeNodeScanner
 
                 if ($pseudo_method_storage->is_static) {
                     $storage->pseudo_static_methods[$lc_method_name] = $pseudo_method_storage;
+                    $storage->declaring_pseudo_static_method_ids[$lc_method_name] = new MethodIdentifier(
+                        $fq_classlike_name,
+                        $lc_method_name,
+                    );
                 } else {
                     $storage->pseudo_methods[$lc_method_name] = $pseudo_method_storage;
                     $storage->declaring_pseudo_method_ids[$lc_method_name] = new MethodIdentifier(
@@ -1019,6 +1028,21 @@ final class ClassLikeNodeScanner
                     || $attribute->fq_class_name === 'Deprecated'
                 ) {
                     $storage->deprecated = true;
+                }
+
+                if ($attribute->fq_class_name === 'Deprecated') {
+                    foreach ($attribute->args as $i => $arg) {
+                        if (($arg->name ?? ($i === 0 ? 'message' : null)) === 'message'
+                            && $arg->type instanceof Union
+                            && $arg->type->isSingleStringLiteral()
+                        ) {
+                            $message = $arg->type->getSingleStringLiteral()->value;
+
+                            if ($message !== '') {
+                                $storage->deprecated_message = $message;
+                            }
+                        }
+                    }
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\Internal' && !$storage->internal) {
@@ -1708,7 +1732,13 @@ final class ClassLikeNodeScanner
         ClassLikeStorage $storage,
         string $fq_classlike_name,
     ): void {
-        if (isset($storage->constants[$stmt->name->name])) {
+        $existing_constant = $storage->constants[$stmt->name->name] ?? null;
+
+        // A reflected constant has no location: a stub refining a natively reflected enum replaces
+        // it with the declared case instead of losing the case
+        if ($existing_constant !== null && $existing_constant->location === null) {
+            unset($storage->constants[$stmt->name->name]);
+        } elseif ($existing_constant !== null) {
             IssueBuffer::maybeAdd(new DuplicateConstant(
                 'Constant names should be unique',
                 new CodeLocation($this->file_scanner, $stmt),
@@ -1957,6 +1987,9 @@ final class ClassLikeNodeScanner
             $property_storage->readonly = $storage->readonly
                 || $stmt->isReadonly()
                 || ($var_comment && $var_comment->readonly);
+            $property_storage->readonly_default = ($storage->readonly || $stmt->isReadonly())
+                && !$stmt->isStatic()
+                && $property->default !== null;
             $property_storage->allow_private_mutation = $var_comment ? $var_comment->allow_private_mutation : false;
             $property_storage->description = $var_comment ? $var_comment->description : null;
 
