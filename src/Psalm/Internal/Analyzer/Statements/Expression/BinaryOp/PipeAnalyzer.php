@@ -209,6 +209,7 @@ final class PipeAnalyzer
         }
 
         $attributes = $stmt->getAttributes();
+        unset($attributes[self::CALL_ATTRIBUTE]);
 
         if ($start !== null) {
             $attributes['startLine'] = $start->getStartLine();
