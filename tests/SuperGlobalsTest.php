@@ -32,6 +32,15 @@ final class SuperGlobalsTest extends TestCase
             'assertions' => [],
         ];
 
+        yield 'COOKIE keys can be ints' => [
+            'code' => '<?php
+                $cookies = $_COOKIE;
+            ',
+            'assertions' => [
+                '$cookies===' => 'array<int|non-empty-string, string>',
+            ],
+        ];
+
         yield 'ENV has scalar entries only' => [
             'code' => '<?php
                 /** @return array<array-key, scalar> */
