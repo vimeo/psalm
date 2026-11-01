@@ -989,7 +989,7 @@ class DOMXPath
     public function __construct(DOMDocument $document, bool $registerNodeNS = true) {}
 
     /**
-     * @return DOMNodeList<DOMNode>|false
+     * @return DOMNodeList<DOMNode>|string|float|bool
      * @psalm-taint-sink xpath $expression
      */
     public function evaluate(string $expression, ?DOMNode $contextNode = null, bool $registerNodeNS = true): mixed {}
