@@ -68,6 +68,7 @@ final class MissingMethodCallHandler
                     $statements_analyzer,
                     $codebase,
                     $context,
+                    $stmt,
                     $method_id,
                     $found_method_and_class_storage[0],
                     $found_method_and_class_storage[1],
@@ -395,6 +396,7 @@ final class MissingMethodCallHandler
                     $statements_analyzer,
                     $codebase,
                     $context,
+                    $stmt,
                     $method_id,
                     $pseudo_method_storage,
                     $defining_class_storage,
@@ -536,6 +538,7 @@ final class MissingMethodCallHandler
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         Context $context,
+        PhpParser\Node\Expr\MethodCall $stmt,
         MethodIdentifier $method_id,
         MethodStorage $pseudo_method_storage,
         ClassLikeStorage $defining_class_storage,
@@ -553,6 +556,7 @@ final class MissingMethodCallHandler
 
         return MethodCallReturnTypeFetcher::getFirstClassCallableType(
             $codebase,
+            $stmt,
             new TClosure(
                 $pseudo_method_storage->params,
                 $pseudo_method_storage->return_type,
