@@ -604,66 +604,16 @@ final class ExistingAtomicStaticCallAnalyzer
                 }
             }
 
-            $context_final = false;
-
-            if ($lhs_type_part instanceof TTemplateParam) {
-                $static_type = $lhs_type_part;
-            } elseif ($lhs_type_part instanceof TTemplateParamClass) {
-                $static_type = new TTemplateParam(
-                    $lhs_type_part->param_name,
-                    $lhs_type_part->as_type
-                        ? new Union([$lhs_type_part->as_type])
-                        : Type::getObject(),
-                    $lhs_type_part->defining_class,
-                );
-            } elseif ($stmt->class instanceof PhpParser\Node\Name
-                && count($stmt->class->getParts()) === 1
-                && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
-                && $lhs_type_part instanceof TNamedObject
-                && $context->self
-            ) {
-                $static_type = $context->self;
-                $context_final = $codebase->classlike_storage_provider->get($context->self)->final;
-            } elseif ($context->calling_method_id !== null) {
-                // differentiate between these cases:
-                //   1. "static" comes from the CALLED static method - use $fq_class_name.
-                //   2. "static" in return type comes from return type of the
-                //   method CALLING the currently analyzed static method - use $context->self.
-                $static_type = self::hasStaticInType($return_type_candidate)
-                    ? $fq_class_name
-                    : $context->self;
-            } else {
-                $static_type = $fq_class_name;
-            }
-
-            if ($template_result->lower_bounds) {
-                $return_type_candidate = TypeExpander::expandUnion(
-                    $codebase,
-                    $return_type_candidate,
-                    null,
-                    null,
-                    null,
-                );
-
-                $return_type_candidate = TemplateInferredTypeReplacer::replace(
-                    $return_type_candidate,
-                    $template_result,
-                    $codebase,
-                );
-            }
-
-            $return_type_candidate = TypeExpander::expandUnion(
+            $return_type_candidate = self::expandDeclaredType(
                 $codebase,
+                $stmt,
                 $return_type_candidate,
                 $self_fq_class_name,
-                $static_type,
-                $class_storage->parent_class,
-                true,
-                false,
-                is_string($static_type)
-                && ($static_type !== $context->self
-                    || $class_storage->final
-                    || $context_final),
+                $lhs_type_part,
+                $context,
+                $fq_class_name,
+                $class_storage,
+                $template_result,
             );
 
             $secondary_return_type_location = null;
@@ -694,6 +644,84 @@ final class ExistingAtomicStaticCallAnalyzer
         }
 
         return $return_type_candidate;
+    }
+
+    /**
+     * Resolves `self`, `static` and `parent` in a type declared by the statically called method,
+     * for a regular call and for a first-class callable alike.
+     */
+    public static function expandDeclaredType(
+        Codebase $codebase,
+        StaticCall $stmt,
+        Union $type,
+        ?string $self_fq_class_name,
+        Atomic $lhs_type_part,
+        Context $context,
+        string $fq_class_name,
+        ClassLikeStorage $class_storage,
+        ?TemplateResult $template_result = null,
+    ): Union {
+        $context_final = false;
+
+        if ($lhs_type_part instanceof TTemplateParam) {
+            $static_type = $lhs_type_part;
+        } elseif ($lhs_type_part instanceof TTemplateParamClass) {
+            $static_type = new TTemplateParam(
+                $lhs_type_part->param_name,
+                $lhs_type_part->as_type
+                    ? new Union([$lhs_type_part->as_type])
+                    : Type::getObject(),
+                $lhs_type_part->defining_class,
+            );
+        } elseif ($stmt->class instanceof PhpParser\Node\Name
+            && count($stmt->class->getParts()) === 1
+            && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
+            && $lhs_type_part instanceof TNamedObject
+            && $context->self
+        ) {
+            $static_type = $context->self;
+            $context_final = $codebase->classlike_storage_provider->get($context->self)->final;
+        } elseif ($context->calling_method_id !== null) {
+            // differentiate between these cases:
+            //   1. "static" comes from the CALLED static method - use $fq_class_name.
+            //   2. "static" in return type comes from return type of the
+            //   method CALLING the currently analyzed static method - use $context->self.
+            $static_type = self::hasStaticInType($type)
+                ? $fq_class_name
+                : $context->self;
+        } else {
+            $static_type = $fq_class_name;
+        }
+
+        if ($template_result !== null && $template_result->lower_bounds) {
+            $type = TypeExpander::expandUnion(
+                $codebase,
+                $type,
+                null,
+                null,
+                null,
+            );
+
+            $type = TemplateInferredTypeReplacer::replace(
+                $type,
+                $template_result,
+                $codebase,
+            );
+        }
+
+        return TypeExpander::expandUnion(
+            $codebase,
+            $type,
+            $self_fq_class_name,
+            $static_type,
+            $class_storage->parent_class,
+            true,
+            false,
+            is_string($static_type)
+            && ($static_type !== $context->self
+                || $class_storage->final
+                || $context_final),
+        );
     }
 
     /**
