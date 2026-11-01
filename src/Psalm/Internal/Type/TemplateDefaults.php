@@ -493,8 +493,8 @@ final class TemplateDefaults
 
     /**
      * How many type arguments a use of the class must give, as issues about missing ones word it: at least
-     * those before the trailing defaults when the class declares type template defaults that may be left out,
-     * all of them otherwise.
+     * those before the trailing defaults (of type or purity templates) when some may be left out, all of them
+     * otherwise.
      *
      * @psalm-mutation-free
      */
@@ -503,12 +503,8 @@ final class TemplateDefaults
         $param_count = count($storage->template_types ?? []);
         $required_param_count = $storage->getRequiredTemplateParamCount();
 
-        foreach ($storage->template_defaults as $template_name => $_) {
-            if ($required_param_count < $param_count && !isset($storage->purity_templates[$template_name])) {
-                return 'at least ' . $required_param_count;
-            }
-        }
-
-        return (string) $param_count;
+        return $required_param_count < $param_count
+            ? 'at least ' . $required_param_count
+            : (string) $param_count;
     }
 }
