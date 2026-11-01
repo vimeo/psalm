@@ -42,8 +42,8 @@ use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualPipeValue;
 use Psalm\Node\VirtualArg;
-use Psalm\Node\VirtualPipeArg;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
@@ -115,13 +115,11 @@ final class ArgumentsAnalyzer
             ? $function_params[count($function_params) - 1]
             : null;
 
-        // if this modifies the array type based on further args (not the piped value: it is passed by value, so the
-        // generic path rejects the call)
+        // if this modifies the array type based on further args
         if (in_array($method_id, ['array_push', 'array_unshift'], true)
             && $function_params
             && isset($args[0])
             && isset($args[1])
-            && !$args[0] instanceof VirtualPipeArg
         ) {
             if (ArrayFunctionArgumentsAnalyzer::handleAddition(
                 $statements_analyzer,
@@ -136,11 +134,7 @@ final class ArgumentsAnalyzer
             return null;
         }
 
-        if ($method_id === 'array_splice'
-            && $function_params
-            && count($args) > 1
-            && !$args[0] instanceof VirtualPipeArg
-        ) {
+        if ($method_id === 'array_splice' && $function_params && count($args) > 1) {
             if (ArrayFunctionArgumentsAnalyzer::handleSplice($statements_analyzer, $args, $context) === false) {
                 return false;
             }
@@ -220,10 +214,8 @@ final class ArgumentsAnalyzer
                 $by_ref_type = $param->type ?: Type::getMixed();
             }
 
-            // the piped value is passed by value: handlePossiblyMatchingByRefParam() rejects it
             if ($by_ref
                 && $by_ref_type
-                && !$arg instanceof VirtualPipeArg
                 && !($arg->value instanceof PhpParser\Node\Expr\Closure
                     || $arg->value instanceof PhpParser\Node\Expr\ConstFetch
                     || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
@@ -1338,13 +1330,12 @@ final class ArgumentsAnalyzer
         CodeLocation $call_location,
         array $args,
     ): ?bool {
-        if ($arg instanceof VirtualPipeArg
+        if ($arg->value instanceof VirtualPipeValue
             || $arg->value instanceof PhpParser\Node\Scalar
             || $arg->value instanceof PhpParser\Node\Expr\Cast
             || $arg->value instanceof PhpParser\Node\Expr\Array_
             || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
-            || ($arg->value instanceof PhpParser\Node\Expr\BinaryOp
-                && !$arg->value instanceof PhpParser\Node\Expr\BinaryOp\Pipe)
+            || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
             || $arg->value instanceof PhpParser\Node\Expr\Ternary
             || (
                 (
@@ -1352,7 +1343,6 @@ final class ArgumentsAnalyzer
                     || $arg->value instanceof PhpParser\Node\Expr\FuncCall
                     || $arg->value instanceof PhpParser\Node\Expr\MethodCall
                     || $arg->value instanceof PhpParser\Node\Expr\StaticCall
-                    || $arg->value instanceof PhpParser\Node\Expr\BinaryOp\Pipe
                 ) && (
                     !($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
                     || !$arg_value_type->by_ref
@@ -1362,7 +1352,7 @@ final class ArgumentsAnalyzer
             IssueBuffer::maybeAdd(
                 new InvalidPassByReference(
                     'Parameter ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                        . ($arg instanceof VirtualPipeArg
+                        . ($arg->value instanceof VirtualPipeValue
                             ? ' is passed by reference, but the pipe operator passes its left-hand side by value'
                             : ' expects a variable'),
                     new CodeLocation($statements_analyzer->getSource(), $arg->value),
@@ -1697,16 +1687,6 @@ final class ArgumentsAnalyzer
         PhpParser\Node\Arg $arg,
         Context $context,
     ): ?bool {
-        // whatever the callee, the piped value is passed by value
-        if ($arg instanceof VirtualPipeArg) {
-            $was_inside_call = $context->inside_call;
-            $context->inside_call = true;
-            $result = ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context);
-            $context->inside_call = $was_inside_call;
-
-            return $result === false ? false : null;
-        }
-
         // there are a bunch of things we want to evaluate even when we don't
         // know what function/method is being called
         if ($arg->value instanceof PhpParser\Node\Expr\Closure

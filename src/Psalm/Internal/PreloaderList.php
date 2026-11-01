@@ -1585,7 +1585,6 @@ final class PreloaderList {
         \Psalm\Node\VirtualNode::class,
         \Psalm\Node\VirtualNullableType::class,
         \Psalm\Node\VirtualParam::class,
-        \Psalm\Node\VirtualPipeArg::class,
         \Psalm\Node\VirtualPropertyItem::class,
         \Psalm\Node\VirtualStaticVar::class,
         \Psalm\Node\VirtualUnionType::class,

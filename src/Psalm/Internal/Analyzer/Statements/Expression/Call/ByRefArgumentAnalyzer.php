@@ -10,7 +10,6 @@ use PhpParser\Node\Expr;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Node\VirtualPipeArg;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
 
@@ -94,8 +93,7 @@ final class ByRefArgumentAnalyzer
         $capabilities &= ~Capabilities::WRITE_REFS;
 
         foreach ($args as $arg) {
-            // the piped value is passed by value
-            if (!$arg instanceof Arg || $arg instanceof VirtualPipeArg) {
+            if (!$arg instanceof Arg) {
                 continue;
             }
 

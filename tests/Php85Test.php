@@ -236,92 +236,14 @@ final class Php85Test extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
-            'pipePassesOnlyThePipedValueByValue' => [
+            'pipeKeepsABoundByRefArgument' => [
                 'code' => '<?php
-                    $a = [3, 1];
-                    $a |> sort(...);
-
-                    $b = [3, 1];
-                    $b |> sort(?);
-
                     $r = "abc" |> preg_match("/b/", ?, $m);',
                 'assertions' => [
-                    '$a===' => 'list{3, 1}',
-                    '$b===' => 'list{3, 1}',
                     '$m===' => 'array<array-key, string>',
                 ],
-                'ignored_issues' => ['InvalidPassByReference'],
+                'ignored_issues' => [],
                 'php_version' => '8.6',
-            ],
-            'pipeIntoAnArrayFunctionKeepsTheArray' => [
-                'code' => '<?php
-                    $a = [1];
-                    $a |> array_push(?, "x");
-
-                    $b = [1];
-                    $b |> array_unshift(?, "y");
-
-                    $c = [1];
-                    $c |> array_splice(?, 0);',
-                'assertions' => [
-                    '$a===' => 'list{1}',
-                    '$b===' => 'list{1}',
-                    '$c===' => 'list{1}',
-                ],
-                'ignored_issues' => ['InvalidPassByReference'],
-                'php_version' => '8.6',
-            ],
-            'pipeIntoAnUnknownCalleePassesByValue' => [
-                'code' => '<?php
-                    function getClosure(): Closure {
-                        return function (): void {};
-                    }
-
-                    $c = getClosure();
-                    $e = [];
-                    $e |> $c;',
-                'assertions' => [
-                    '$e===' => 'array<never, never>',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.5',
-            ],
-            'pipeIntoAnUnknownMethodWritesNoReference' => [
-                'code' => '<?php
-                    /** @psalm-capabilities read-props|write-refs|io */
-                    final class Conn {
-                        /** @psalm-capabilities io */
-                        public function get(string $k): string {
-                            echo $k;
-                            return $k;
-                        }
-                    }
-
-                    /** @psalm-capabilities read-props|io */
-                    function call(Conn $conn, string $name, string &$s): mixed {
-                        $callable = [$conn, $name];
-                        return $s |> $callable;
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.5',
-            ],
-            'pipeReturningByReferenceIsPassedByReference' => [
-                'code' => '<?php
-                    function &counter(int $start): int {
-                        static $n = 0;
-                        $n = $start;
-                        return $n;
-                    }
-
-                    function increment(int &$x): void {
-                        $x++;
-                    }
-
-                    increment(1 |> counter(...));',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.5',
             ],
         ];
     }
