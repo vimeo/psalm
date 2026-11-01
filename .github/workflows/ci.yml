@@ -8,6 +8,11 @@ on:
 permissions:
   contents: read
 
+# A new push to a pull request cancels its previous run; pushes to branches always run to the end.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   lint:
     name: Check PHP syntax
@@ -16,7 +21,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
-          php-version: '8.1'
+          php-version: '8.2'
           tools: composer:v2
           coverage: none
         env:
@@ -67,7 +72,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
-          php-version: '8.1'
+          php-version: '8.2'
           tools: composer:v2
           coverage: none
         env:
@@ -135,7 +140,6 @@ jobs:
       fail-fast: false
       matrix:
         php-version:
-          - "8.1"
           - "8.2"
           - "8.3"
           - "8.4"

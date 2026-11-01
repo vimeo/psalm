@@ -25,6 +25,7 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use SebastianBergmann\Exporter\Exporter;
 use UnexpectedValueException;
 
+use function array_count_values;
 use function array_diff;
 use function array_filter;
 use function array_keys;
@@ -41,6 +42,7 @@ use function glob;
 use function implode;
 use function in_array;
 use function preg_match;
+use function preg_match_all;
 use function preg_quote;
 use function scandir;
 use function sort;
@@ -209,6 +211,26 @@ final class DocumentationTest extends TestCase
         sort($documented_issues);
 
         $this->assertSame(implode("\n", $all_issues), implode("\n", $documented_issues));
+    }
+
+    public function testAllIssuesAreListedOnceInErrorLevels(): void
+    {
+        $docs = file_get_contents(dirname(__DIR__) . '/docs/running_psalm/error_levels.md');
+        assert($docs !== false);
+
+        preg_match_all('/\(issues\/([A-Za-z0-9]+)\.md\)/', $docs, $matches);
+        $listed = $matches[1];
+
+        $all_issues = IssueHandler::getAllIssueTypes();
+        sort($all_issues);
+
+        $this->assertSame([], array_diff($all_issues, $listed), 'Issues missing from error_levels.md');
+        $this->assertSame([], array_diff($listed, $all_issues), 'error_levels.md lists unknown issues');
+        $this->assertSame(
+            [],
+            array_keys(array_filter(array_count_values($listed), static fn(int $count): bool => $count > 1)),
+            'Issues listed more than once in error_levels.md',
+        );
     }
 
     /**

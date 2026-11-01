@@ -57,6 +57,33 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticReturnKeepsTheTypeArgumentsOfTheCalledClass' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    class Coll {
+                        /** @param list<T> $items */
+                        public function __construct(public array $items) {}
+
+                        public function copy(): static {
+                            return clone $this;
+                        }
+                    }
+
+                    /** @extends Coll<stdClass> */
+                    final class StdColl extends Coll {}
+
+                    /** @return Coll<stdClass> */
+                    function getColl(): Coll {
+                        return new Coll([]);
+                    }
+
+                    $copy = getColl()->copy();
+                    $std_copy = (new StdColl([]))->copy();',
+                'assertions' => [
+                    '$copy===' => 'Coll<stdClass>&static',
+                    '$std_copy===' => 'StdColl',
+                ],
+            ],
             'templateIntersection' => [
                 'code' => '<?php
                     interface EntityInterface

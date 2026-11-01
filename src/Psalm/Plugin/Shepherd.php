@@ -11,25 +11,34 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\VersionUtils;
 use Psalm\Plugin\EventHandler\AfterAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
+use Psalm\Progress\DebugProgress;
+use Psalm\Progress\Progress;
 
 use function array_filter;
 use function array_key_exists;
+use function array_keys;
+use function array_map;
 use function array_merge;
 use function array_values;
 use function assert;
+use function curl_error;
 use function curl_exec;
 use function curl_getinfo;
 use function curl_init;
 use function curl_setopt;
+use function explode;
 use function function_exists;
-use function fwrite;
 use function is_array;
 use function is_string;
 use function json_encode;
 use function parse_url;
+use function preg_replace;
+use function rawurldecode;
 use function sprintf;
+use function str_replace;
 use function strip_tags;
 use function strlen;
+use function usort;
 use function var_export;
 
 use const CURLINFO_HEADER_OUT;
@@ -43,7 +52,6 @@ use const CURLOPT_TIMEOUT;
 use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
 use const PHP_URL_HOST;
-use const STDERR;
 
 /**
  * @api
@@ -57,8 +65,10 @@ final class Shepherd implements AfterAnalysisInterface
     public static function afterAnalysis(
         AfterAnalysisEvent $event,
     ): void {
+        $progress = $event->getCodebase()->progress;
+
         if (!function_exists('curl_init')) {
-            fwrite(STDERR, "No curl found, cannot send data to shepherd server.\n");
+            $progress->warning('Results not sent to Shepherd: ext-curl is missing');
 
             return;
         }
@@ -71,7 +81,7 @@ final class Shepherd implements AfterAnalysisInterface
 
         $config = $event->getCodebase()->config;
 
-        self::sendPayload($config->shepherd_endpoint, $rawPayload);
+        self::sendPayload($config->shepherd_endpoint, $rawPayload, $progress);
     }
 
     /**
@@ -128,7 +138,7 @@ final class Shepherd implements AfterAnalysisInterface
         ];
     }
 
-    private static function sendPayload(string $endpoint, array $rawPayload): void
+    private static function sendPayload(string $endpoint, array $rawPayload, Progress $progress): void
     {
         $payload = json_encode($rawPayload, JSON_THROW_ON_ERROR);
 
@@ -157,32 +167,95 @@ final class Shepherd implements AfterAnalysisInterface
         // Submit the POST request
         $curl_result = curl_exec($ch);
 
-        /** @var array{http_code: int, ssl_verify_result: int} $curl_info */
+        /** @var array{http_code: int, ssl_verify_result: int, ...<string, mixed>} $curl_info */
         $curl_info = curl_getinfo($ch);
+
+        // The endpoint may hold a secret (e.g. a token in its query): only its host is shown
+        $shepherd_host = (string) parse_url($endpoint, PHP_URL_HOST);
 
         $response_status_code = $curl_info['http_code'];
         if ($response_status_code >= 200 && $response_status_code < 300) {
-            $shepherd_host = parse_url($endpoint, PHP_URL_HOST);
-
-            fwrite(STDERR, "🐑 results sent to $shepherd_host 🐑" . PHP_EOL);
+            $progress->write("Results sent to Shepherd ($shepherd_host)" . PHP_EOL);
             return;
         }
 
-        $is_ssl_error = $curl_info['ssl_verify_result'] > 1;
-        if ($is_ssl_error) {
-            fwrite(STDERR, self::getCurlSslErrorMessage($curl_info['ssl_verify_result']) . PHP_EOL);
-            return;
+        if ($curl_info['ssl_verify_result'] > 1) {
+            $problem = 'SSL error: ' . self::getCurlSslErrorMessage($curl_info['ssl_verify_result']);
+        } elseif ($response_status_code === 0) {
+            $problem = curl_error($ch) ?: 'no response';
+        } elseif ($response_status_code >= 300 && $response_status_code < 400) {
+            $problem = "HTTP $response_status_code redirect";
+        } else {
+            $problem = "HTTP $response_status_code";
         }
 
-        $output = "Shepherd error: $endpoint endpoint responded with $response_status_code HTTP status code.\n";
-        $response_content = is_string($curl_result) ? strip_tags($curl_result) : 'n/a';
-        $output .= "Shepherd response: $response_content\n";
-        if ($response_status_code === 0) {
-            $output .= "Please check shepherd endpoint — it should be a valid URL.\n";
+        $progress->warning("Results not sent to Shepherd ($shepherd_host): $problem"
+            . ($progress instanceof DebugProgress ? '' : '. Run with --debug for details'));
+        // each value is masked before it's formatted: var_export() would escape quotes inside a secret
+        $secrets = self::getEndpointSecrets($endpoint);
+        $progress->debug(sprintf(
+            "Shepherd endpoint: %s\nShepherd response: %s\ncURL info:\n%s\n",
+            self::redact($endpoint, $secrets),
+            is_string($curl_result) ? self::redact(strip_tags($curl_result), $secrets) : 'n/a',
+            var_export(array_map(
+                static fn(mixed $value): mixed => is_string($value) ? self::redact($value, $secrets) : $value,
+                $curl_info,
+            ), true),
+        ));
+    }
+
+    /**
+     * Masks credentials (in the user info of URLs and in the authentication and cookie headers curl sends, see
+     * CURLINFO_HEADER_OUT), query values, and the given secrets wherever they appear (e.g. echoed in a response),
+     * as debug output often ends up in CI logs
+     *
+     * @param list<non-empty-string> $secrets
+     * @psalm-pure
+     */
+    private static function redact(string $text, array $secrets): string
+    {
+        $text = str_replace($secrets, '***', $text);
+
+        return (string) preg_replace(
+            [
+                '#(://)[^/\s]*@#',
+                '#([?&][^=&\s\#]+)=[^&\s\#]*#',
+                '#^((?:proxy-)?authorization|cookie)\s*:.*$#mi',
+            ],
+            ['$1***@', '$1=***', '$1: ***'],
+            $text,
+        );
+    }
+
+    /**
+     * The user, password and query values of the endpoint, as given and decoded, longest first (so that a value
+     * isn't masked only in part, through a shorter one it contains)
+     *
+     * @return list<non-empty-string>
+     * @psalm-pure
+     */
+    private static function getEndpointSecrets(string $endpoint): array
+    {
+        $parts = parse_url($endpoint);
+        $values = [$parts['user'] ?? '', $parts['pass'] ?? ''];
+
+        foreach (explode('&', $parts['query'] ?? '') as $pair) {
+            $values[] = explode('=', $pair, 2)[1] ?? '';
         }
 
-        $output .= sprintf("cURL Debug info:\n%s\n", var_export($curl_info, true));
-        fwrite(STDERR, $output);
+        $secrets = [];
+        foreach ($values as $value) {
+            // too short to be a secret, and masking it would mangle the rest of the output
+            if (strlen($value) >= 4) {
+                $secrets[$value] = true;
+                $secrets[rawurldecode($value)] = true;
+            }
+        }
+
+        $secrets = array_keys($secrets);
+        usort($secrets, static fn(string $a, string $b): int => strlen($b) <=> strlen($a));
+
+        return array_values(array_filter($secrets, static fn(string $secret): bool => $secret !== ''));
     }
 
     /**

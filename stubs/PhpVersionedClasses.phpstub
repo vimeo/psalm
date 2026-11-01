@@ -248,6 +248,13 @@ namespace {
         public function isTerminated(): bool {}
 
         /**
+         * The fiber running the caller, which stays the same for the whole call.
+         *
+         * @psalm-pure
+         */
+        public static function getCurrent(): ?Fiber {}
+
+        /**
          * Hands control back to whoever started or resumed the current fiber, like `yield`: what
          * that code does until it resumes this fiber is its own effect.
          *
@@ -288,6 +295,17 @@ namespace {
         public ?string $message;
 
         public function __construct(?string $message = null) {}
+    }
+
+    /**
+     * Defers the target validation of internal attributes on the same element to runtime.
+     *
+     * @psalm-immutable
+     * @since 8.5
+     */
+    #[\Attribute(\Attribute::TARGET_ALL)]
+    final class DelayedTargetValidation
+    {
     }
 
     /**
