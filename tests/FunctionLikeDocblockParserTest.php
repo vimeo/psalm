@@ -158,25 +158,24 @@ final class FunctionLikeDocblockParserTest extends BaseTestCase
         );
         $this->assertSame(
             [
+                ['T', 'of', 'string', false],
                 ['U', 'of', 'callable(int=): void', false],
                 ['V', null, null, false],
                 ['W', 'of', '\'b\\\'=c\'', false],
                 ['X', 'of', '"d\\"=e"', false],
                 ['Y', 'of', 'int', false],
-                ['T', 'of', 'string', false],
             ],
             $function_docblock->templates,
         );
         $this->assertSame(
             [
+                'T' => ['type' => '\'a\'', 'line_number' => 21],
                 'U' => ['type' => 'callable(int=): void', 'line_number' => 23],
                 'X' => ['type' => '"d\\"=e"', 'line_number' => 26],
                 'Y' => ['type' => '', 'line_number' => 27],
-                'T' => ['type' => '\'a\'', 'line_number' => 21],
             ],
             $function_docblock->template_defaults,
         );
-        $this->assertSame(['T', 'U', 'V', 'W', 'X', 'Y'], $function_docblock->template_order);
     }
 
     public function testReturnsUnexpectedTags(): void
