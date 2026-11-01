@@ -1811,14 +1811,16 @@ final class NewAnalyzer extends CallAnalyzer
         ?MethodStorage $method_storage,
     ): array {
         $codebase = $statements_analyzer->getCodebase();
-        $unconstrainable_templates = null;
+        $unconstrainable_templates = self::getUnconstrainableTemplates($storage);
         $inferred_lower_bounds = self::getInferredLowerBounds($template_result);
         $generic_param_types = [];
 
         foreach ($storage->template_types ?? [] as $template_name => $base_type) {
-            // a type template with a default only takes bounds from arguments that said something about it
+            // a type template with a default that later code cannot constrain only takes bounds from arguments
+            // that said something about it
             $lower_bounds = isset($storage->template_defaults[$template_name])
                 && !isset($storage->purity_templates[$template_name])
+                && isset($unconstrainable_templates[$template_name])
                     ? $inferred_lower_bounds
                     : $template_result->lower_bounds;
 
@@ -1836,7 +1838,6 @@ final class NewAnalyzer extends CallAnalyzer
                     $template_result,
                     $codebase,
                 );
-                $unconstrainable_templates ??= self::getUnconstrainableTemplates($storage);
 
                 // a `mixed` argument binds the template to `mixed`, which no later bound can narrow, while a type
                 // variable would hide the template from reads (`class-string<T>` returns, `self<T&X>` assertions, the
@@ -1918,14 +1919,14 @@ final class NewAnalyzer extends CallAnalyzer
     }
 
     /**
-     * What a template the constructor arguments did not bind stands for: a type template's default, with the earlier
-     * templates bound as in the new object. Otherwise later code may still constrain it (Hack's `new Foo<_>()`), so
-     * it gets a type variable bounded above by its constraint and reconciled once the enclosing function-like is
-     * analyzed, unless only the constructor names it: then it is its constraint.
+     * What a template the constructor arguments did not bind stands for. Later code may still constrain it (Hack's
+     * `new Foo<_>()`), so it gets a type variable bounded above by its constraint and reconciled once the enclosing
+     * function-like is analyzed, unless only the constructor names it: then it is a type template's default, with
+     * the earlier templates bound as in the new object, or else its constraint.
      *
      * @param non-empty-array<string, Union> $type_map the constraint of the template, by its class
      * @param list<Union> $generic_param_types those of the templates before it
-     * @param array<string, true>|null $unconstrainable_templates computed once for the `new` expression
+     * @param array<string, true> $unconstrainable_templates computed once for the `new` expression
      */
     private static function getUninferredTemplateParam(
         StatementsAnalyzer $statements_analyzer,
@@ -1934,12 +1935,15 @@ final class NewAnalyzer extends CallAnalyzer
         string $template_name,
         array $type_map,
         array $generic_param_types,
-        ?array &$unconstrainable_templates,
+        array $unconstrainable_templates,
     ): Union {
         $constraint = reset($type_map);
         $default = $storage->template_defaults[$template_name] ?? null;
 
-        if ($default !== null && !isset($storage->purity_templates[$template_name])) {
+        if ($default !== null
+            && !isset($storage->purity_templates[$template_name])
+            && isset($unconstrainable_templates[$template_name])
+        ) {
             $bound = [];
 
             foreach ($storage->template_types ?? [] as $name => $earlier_type_map) {
@@ -1959,8 +1963,6 @@ final class NewAnalyzer extends CallAnalyzer
                 $template_name,
             );
         }
-
-        $unconstrainable_templates ??= self::getUnconstrainableTemplates($storage);
 
         if (isset($unconstrainable_templates[$template_name])) {
             return $constraint;

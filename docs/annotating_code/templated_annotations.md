@@ -295,7 +295,7 @@ Psalm uses the default when the type argument is left out:
 * in `@extends`, `@implements` and `@use` that leave out trailing templates, if each of them has a default;
 * when a class is extended, implemented or used without one of those tags (templates without a default get their bound);
 * in a generic type with only its first arguments given, such as `Result<string>` in a `@param`, `@return`, `@var` or property type;
-* in `new`, for templates the constructor arguments don't infer.
+* in `new`, for templates the constructor arguments don't infer, unless the class has a constructor and later code in the function can still fix the template through a public method or property, which `new` then waits for.
 
 ```php
 <?php
