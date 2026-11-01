@@ -25,6 +25,7 @@ use function preg_replace;
 use function readdir;
 use function rmdir;
 use function str_replace;
+use function substr_count;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
@@ -190,6 +191,26 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
         $this->assertStringContainsString('2 errors', $result['STDOUT']);
         $this->assertSame(2, $result['CODE']);
+    }
+
+    public function testParseErrorIsReportedOnEveryRunWithAWarmCache(): void
+    {
+        $this->runPsalmInit(1);
+        file_put_contents(self::$tmpDir . '/src/Clean.php', "<?php\nfunction clean(): void {}\n");
+        $broken_file = self::$tmpDir . '/src/Broken.php';
+        file_put_contents($broken_file, "<?php\nfunction f() {\n    echo 1\n}\n");
+
+        for ($run = 1; $run <= 3; $run++) {
+            $result = $this->runPsalm(['--no-progress'], self::$tmpDir, true);
+
+            $this->assertSame(1, substr_count($result['STDOUT'], 'ParseError'), "run $run");
+        }
+
+        file_put_contents($broken_file, "<?php\nfunction f() {\n    echo 1;\n}\n");
+
+        $result = $this->runPsalm(['--no-progress'], self::$tmpDir, true);
+
+        $this->assertSame(0, substr_count($result['STDOUT'], 'ParseError'));
     }
 
     public function testPsalmWithPHPVersionOverride(): void
