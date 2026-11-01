@@ -4553,8 +4553,26 @@ final class ClassTemplateTest extends TestCase
                     function takesIntKeys(KeyedCollection $c): void {}
 
                     $fromList = new KeyedCollection(["a", "b"]);
-                    takesIntKeys($fromList);
-                    takesIntKeys(new KeyedCollection(["a"]));',
+                    takesIntKeys($fromList);',
+            ],
+            'closedIntRangeInAGeneralizedArrayParamIsAcceptedLikeALiteral' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /** @param Box<array<int, Throwable>> $box */
+                    function takesBox(Box $box): void {}
+
+                    /** @param Box<array<int<0, 1>, Exception>> $box */
+                    function passes(Box $box): void {
+                        takesBox($box);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'nullReturnAgainstTemplatedTypeSilent' => [
                 'code' => '<?php
@@ -4586,6 +4604,23 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'openIntRangeIsStillRejectedForAnInvariantParam' => [
+                'code' => '<?php
+                    /** @template TKey */
+                    final class KeyedCollection {
+                        /** @param array<TKey, mixed> $items */
+                        public function __construct(array $items) {}
+                    }
+
+                    /** @param KeyedCollection<int> $c */
+                    function takesIntKeys(KeyedCollection $c): void {}
+
+                    /** @param list<string> $items */
+                    function fromListVariable(array $items): void {
+                        takesIntKeys(new KeyedCollection($items));
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'templateInCallableParamOfDocblockMethodOfNamespacedClassRejectsOtherType' => [
                 'code' => '<?php
                     namespace App\Ns;
