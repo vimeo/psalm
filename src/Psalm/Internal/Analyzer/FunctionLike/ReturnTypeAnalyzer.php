@@ -1105,11 +1105,13 @@ final class ReturnTypeAnalyzer
             $function_like_analyzer instanceof MethodAnalyzer,
         );
 
-        $checker->traverseArray($type->getAtomicTypes());
+        if (!$checker->check($type->getAtomicTypes())) {
+            return false;
+        }
 
         /** @psalm-suppress InaccessibleProperty Does not affect anything else */
         $type->checked = true;
 
-        return !$checker->hasErrors();
+        return true;
     }
 }
