@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
@@ -353,7 +354,34 @@ final class ExistingAtomicStaticCallAnalyzer
                 'method ' . $cased_method_id,
             );
 
-            if (NoDiscardAnalyzer::isDiscardReported(
+            if ($codebase->find_unused_variables
+                && $call_capabilities === Capabilities::NONE
+                && $method_storage->isMutationFree()
+                && !$stmt->isFirstClassCallable()
+                && !$context->inside_unset
+                && !$context->inside_conditional
+                && !$context->inside_general_use
+                && !$context->inside_throw
+                && !$context->inside_assignment
+                && !$context->inside_call
+                && !$context->inside_return
+                && !$method_storage->assertions
+                && !$method_storage->if_true_assertions
+                && !$method_storage->if_false_assertions
+                && !$method_storage->throws
+                && !$method_storage->return_type?->isNever()
+                && !$method_storage->signature_return_type?->isNever()
+                && !MethodCallPurityAnalyzer::isCalledForItsTemplatesEffects($method_storage)
+            ) {
+                IssueBuffer::maybeAdd(
+                    new UnusedMethodCall(
+                        'The call to ' . $cased_method_id . ' is not used',
+                        new CodeLocation($statements_analyzer, $stmt_name),
+                        (string) $method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            } elseif (NoDiscardAnalyzer::isDiscardReported(
                 $context,
                 $method_storage,
                 $stmt->isFirstClassCallable(),
