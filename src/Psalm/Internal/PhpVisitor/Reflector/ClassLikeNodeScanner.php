@@ -696,31 +696,11 @@ final class ClassLikeNodeScanner
             }
 
             if ($docblock_info->extension_requirement !== null) {
-                $storage->extension_requirement = (string) TypeParser::parseTokens(
-                    TypeTokenizer::getFullyQualifiedTokens(
-                        $docblock_info->extension_requirement,
-                        $this->aliases,
-                        $this->class_template_types,
-                        $this->type_aliases,
-                    ),
-                    null,
-                    $this->class_template_types,
-                    $this->type_aliases,
-                );
+                $storage->extension_requirement = $this->getRequirementName($docblock_info->extension_requirement);
             }
 
             foreach ($docblock_info->implementation_requirements as $implementation_requirement) {
-                $storage->implementation_requirements[] = (string) TypeParser::parseTokens(
-                    TypeTokenizer::getFullyQualifiedTokens(
-                        $implementation_requirement,
-                        $this->aliases,
-                        $this->class_template_types,
-                        $this->type_aliases,
-                    ),
-                    null,
-                    $this->class_template_types,
-                    $this->type_aliases,
-                );
+                $storage->implementation_requirements[] = $this->getRequirementName($implementation_requirement);
             }
 
             $storage->sealed_properties = $docblock_info->sealed_properties;
@@ -2573,5 +2553,28 @@ final class ClassLikeNodeScanner
         }
 
         return $referenced_names;
+    }
+
+    /**
+     * The class or interface named by a `@psalm-require-extends` or `@psalm-require-implements` type: its type
+     * arguments don't change which class is required
+     */
+    private function getRequirementName(string $docblock_type): string
+    {
+        $type = TypeParser::parseTokens(
+            TypeTokenizer::getFullyQualifiedTokens(
+                $docblock_type,
+                $this->aliases,
+                $this->class_template_types,
+                $this->type_aliases,
+            ),
+            null,
+            $this->class_template_types,
+            $this->type_aliases,
+        );
+
+        $atomic_type = $type->isSingle() ? $type->getSingleAtomic() : null;
+
+        return $atomic_type instanceof TNamedObject ? $atomic_type->value : (string) $type;
     }
 }

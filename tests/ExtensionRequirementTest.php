@@ -50,6 +50,22 @@ final class ExtensionRequirementTest extends TestCase
                 trait ImposesPhpstanExtensionRequirements { }
             ',
         );
+
+        $this->addFile(
+            'generic_trait.php',
+            '<?php
+                namespace ExtensionRequirements\Generic;
+
+                /** @template T */
+                class GenericBase { }
+
+                /**
+                 * @template T
+                 * @psalm-require-extends GenericBase<T>
+                 */
+                trait ImposesGenericExtensionRequirement { }
+            ',
+        );
     }
 
     /**
@@ -76,6 +92,21 @@ final class ExtensionRequirementTest extends TestCase
 
                     class Valid extends MyBaseClass {
                         use ImposesPhpstanExtensionRequirements;
+                    }
+                ',
+            ],
+            'extendsGenericBaseClass' => [
+                'code' => '<?php
+                    use ExtensionRequirements\Generic\GenericBase;
+                    use ExtensionRequirements\Generic\ImposesGenericExtensionRequirement;
+
+                    /**
+                     * @template T
+                     * @extends GenericBase<T>
+                     */
+                    class Valid extends GenericBase {
+                        /** @use ImposesGenericExtensionRequirement<T> */
+                        use ImposesGenericExtensionRequirement;
                     }
                 ',
             ],
@@ -108,6 +139,18 @@ final class ExtensionRequirementTest extends TestCase
                     }
                 ',
                 'error_message' => 'requires using class to extend',
+            ],
+            'doesNotExtendGenericBaseClass' => [
+                'code' => '<?php
+                    use ExtensionRequirements\Generic\ImposesGenericExtensionRequirement;
+
+                    /** @template T */
+                    class Invalid {
+                        /** @use ImposesGenericExtensionRequirement<T> */
+                        use ImposesGenericExtensionRequirement;
+                    }
+                ',
+                'error_message' => 'requires using class to extend ExtensionRequirements\Generic\GenericBase',
             ],
         ];
     }
