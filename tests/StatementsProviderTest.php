@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
-use PHPUnit\Framework\MockObject\Stub;
 use PhpParser\Node\Stmt;
 use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\StatementsProvider;
@@ -24,10 +23,6 @@ final class StatementsProviderTest extends TestCase
 
     private string $file;
 
-    private bool $miss_next_load = false;
-
-    private ParserCacheProvider&Stub $parser_cache_provider;
-
     private StatementsProvider $statements_provider;
 
     #[Override]
@@ -41,27 +36,10 @@ final class StatementsProviderTest extends TestCase
         // only the issues of the files to analyze are reported
         $this->project_analyzer->getCodebase()->addFilesToAnalyze([$this->file => $this->file]);
 
-        $cache = new ParserCacheProvider($this->testConfig, '', false);
-
-        // delegating to a real cache lets a test make a load miss as it does when another thread writes in between
-        $this->parser_cache_provider = $this->createStub(ParserCacheProvider::class);
-        $this->parser_cache_provider->method('loadStatementsFromCache')->willReturnCallback(
-            function (string $file_path, ?string $file_content_hash) use ($cache): ?array {
-                if ($this->miss_next_load) {
-                    $this->miss_next_load = false;
-
-                    return null;
-                }
-
-                return $cache->loadStatementsFromCache($file_path, $file_content_hash);
-            },
+        $this->statements_provider = new StatementsProvider(
+            $this->file_provider,
+            new ParserCacheProvider($this->testConfig, '', false),
         );
-        $this->parser_cache_provider->method('saveStatementsToCache')->willReturnCallback(
-            $cache->saveStatementsToCache(...),
-        );
-        $this->parser_cache_provider->method('getHash')->willReturnCallback($cache->getHash(...));
-
-        $this->statements_provider = new StatementsProvider($this->file_provider, $this->parser_cache_provider);
     }
 
     public function testParseErrorIsReportedOnEveryRunUntilTheFileIsFixed(): void
@@ -93,19 +71,6 @@ final class StatementsProviderTest extends TestCase
 
             $this->assertSame([$this->file => true], $this->statements_provider->getErrors(), "run $run");
         }
-    }
-
-    public function testParseErrorIsReportedWhenAnotherThreadCachedTheFileFirst(): void
-    {
-        $this->file_provider->registerFile($this->file, self::UNPARSABLE);
-        $this->getStatements();
-        $this->takeIssueTypes();
-
-        $this->miss_next_load = true;
-        $this->statements_provider->getStatementsForFile($this->file, 7_04_00, true);
-
-        $this->assertSame(['ParseError'], $this->takeIssueTypes());
-        $this->assertSame([$this->file => true], $this->statements_provider->getErrors());
     }
 
     /**

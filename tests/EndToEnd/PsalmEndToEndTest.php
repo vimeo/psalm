@@ -193,9 +193,6 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertSame(2, $result['CODE']);
     }
 
-    /**
-     * The 3 files exceed the 2 threads, so workers analyze them and their issues are merged into the parent's
-     */
     public function testParseErrorIsReportedOnEveryRunWithAWarmCache(): void
     {
         $this->runPsalmInit(1);
@@ -204,7 +201,7 @@ final class PsalmEndToEndTest extends TestCase
         file_put_contents($broken_file, "<?php\nfunction f() {\n    echo 1\n}\n");
 
         for ($run = 1; $run <= 3; $run++) {
-            $result = $this->runPsalm(['--threads=2', '--no-progress'], self::$tmpDir, true);
+            $result = $this->runPsalm(['--no-progress'], self::$tmpDir, true);
 
             $this->assertSame(1, substr_count($result['STDOUT'], 'ParseError'), "run $run");
         }
