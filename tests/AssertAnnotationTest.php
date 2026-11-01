@@ -3375,6 +3375,48 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'assertionAboutAPropertyOfAPropertyArgument' => [
+                'code' => '<?php
+                    final class HasP {
+                        public ?string $p = null;
+                    }
+
+                    final class Holder {
+                        public function __construct(public HasP $h) {}
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $h->p
+                     */
+                    function hasP(HasP $h): bool { return $h->p !== null; }
+
+                    /**
+                     * @psalm-assert-if-false !null $h->p
+                     */
+                    function lacksP(HasP $h): bool { return $h->p === null; }
+
+                    /**
+                     * @psalm-assert !null $h->p
+                     */
+                    function assertHasP(HasP $h): void { if ($h->p === null) { throw new Exception(); } }
+
+                    function ifTrue(Holder $hd): string {
+                        return hasP($hd->h) ? $hd->h->p : "";
+                    }
+
+                    function ifFalse(Holder $hd): string {
+                        return lacksP($hd->h) ? "" : $hd->h->p;
+                    }
+
+                    function asserted(Holder $hd): string {
+                        assertHasP($hd->h);
+
+                        return $hd->h->p;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -3793,6 +3835,38 @@ final class AssertAnnotationTest extends TestCase
                     function takesOne(int $_arg): void {}
                 ',
                 'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:40',
+            ],
+            'assertionAboutAPropertyOfANonVariableArgument' => [
+                'code' => '<?php
+                    final class HasP {
+                        public ?string $p = null;
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $h->p
+                     */
+                    function hasP(HasP $h): bool { return $h->p !== null; }
+
+                    if (hasP(new HasP())) {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:25 - Variable being asserted',
+            ],
+            'assertionAboutAPropertyOfANullableStaticPropertyArgument' => [
+                'code' => '<?php
+                    final class HasP {
+                        public ?string $p = null;
+                    }
+
+                    final class Holder {
+                        public static ?HasP $sh = null;
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $h->p
+                     */
+                    function hasP(?HasP $h): bool { return $h !== null && $h->p !== null; }
+
+                    if (hasP(Holder::$sh)) {}',
+                'error_message' => 'Variable Holder::$sh is not an object so the assertion cannot be applied',
             ],
         ];
     }
