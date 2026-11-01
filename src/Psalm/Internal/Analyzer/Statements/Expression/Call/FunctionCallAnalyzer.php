@@ -1520,7 +1520,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 ) {
                     IssueBuffer::maybeAdd(
                         new UnusedFunctionCall(
-                            'The call to ' . $function_call_info->function_id . ' is not used',
+                            'The call to ' . $function_call_info->function_id
+                                . ' seems to have no effect, its result is not used',
                             new CodeLocation($statements_analyzer, $function_name),
                             $function_call_info->function_id,
                         ),

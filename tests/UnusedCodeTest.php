@@ -2226,6 +2226,31 @@ final class UnusedCodeTest extends TestCase
                     }',
                 'error_message' => 'UnusedMethodCall',
             ],
+            'unusedPureFunctionCallExplainsThatItHasNoEffect' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(string $s): void {
+                        strlen($s);
+                    }',
+                'error_message' => 'UnusedFunctionCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:4:25 - The call to strlen seems to have no effect, its result is not used',
+            ],
+            'unusedMutationFreeMethodCallExplainsThatItHasNoEffect' => [
+                'code' => '<?php
+                    final class Reader {
+                        /** @psalm-pure */
+                        public function read(): string {
+                            return "x";
+                        }
+                    }
+
+                    /** @psalm-api */
+                    function f(Reader $reader): void {
+                        $reader->read();
+                    }',
+                'error_message' => 'UnusedMethodCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:11:34 - The call to Reader::read seems to have no effect, its result is not used',
+            ],
             'unusedNewException' => [
                 'code' => '<?php
                     /** @psalm-api */
