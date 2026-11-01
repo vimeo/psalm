@@ -27,7 +27,7 @@ jobs:
   symfony: [symfony]
   orm-psl: [doctrine-orm, psl]
   phpunit-parser: [phpunit, php-parser]
-  small: [amphp-amp, webmozarts-assert]
+  small: [amphp-amp, webmozarts-assert, guzzle-promises]
   drupal: [drupal]
 
 projects:
@@ -130,3 +130,13 @@ projects:
     psalm:
       dirs: [src, tests/static-analysis]
       attributes: {phpVersion: "8.2"}
+
+  guzzle-promises:
+    repo: https://github.com/guzzle/promises
+    ref: "094d0ec418eb3b1411ea271a180ec95cae6ae933"
+    tag: 3.1.0
+    timeout: 60
+    exercises: template defaults (@template T = mixed), conditional return types over templates and nullable callables, PromiseInterface<TValue, TReason> generics through then/otherwise chains, small and fast
+    psalm:
+      dirs: [src]
+      attributes: {phpVersion: "7.4"}
