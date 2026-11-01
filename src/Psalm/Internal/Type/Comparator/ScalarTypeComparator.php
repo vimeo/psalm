@@ -474,13 +474,13 @@ final class ScalarTypeComparator
             $class_name = ltrim($container_type_part->value, '\\');
 
             if ($atomic_comparison_result
-                && $codebase->classOrInterfaceExists($class_name)
-                && (!$input_type_part->as_type
-                    || AtomicTypeComparator::isContainedBy(
-                        $codebase,
-                        new TNamedObject($class_name),
-                        $input_type_part->as_type,
-                    ))
+                && $codebase->classlike_storage_provider->has($class_name)
+                && ClassLikeStringComparator::isContainedBy(
+                    $codebase,
+                    new TLiteralClassString($class_name),
+                    $input_type_part,
+                    $allow_interface_equality,
+                )
             ) {
                 $atomic_comparison_result->type_coerced = true;
             }
