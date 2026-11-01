@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\PurityWildcardInference;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\PipeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
@@ -462,7 +463,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         if ($function_call_info->function_storage) {
             if ($function_call_info->function_storage->assertions && $function_name instanceof PhpParser\Node\Name) {
                 self::applyAssertionsToContext(
-                    $function_name,
+                    PipeAnalyzer::getAssertionLocationNode($stmt, $function_name),
                     null,
                     $function_call_info->function_storage->assertions,
                     $stmt->getArgs(),

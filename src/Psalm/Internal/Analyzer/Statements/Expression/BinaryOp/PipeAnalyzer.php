@@ -27,6 +27,7 @@ use PhpParser\Node\Name;
 use PhpParser\Node\Scalar;
 use PhpParser\Node\Scalar\InterpolatedString;
 use PhpParser\Node\VariadicPlaceholder;
+use PhpParser\NodeAbstract;
 use PhpParser\NodeFinder;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
@@ -50,6 +51,16 @@ use function is_string;
  */
 final class PipeAnalyzer
 {
+    /**
+     * The call a pipe made when it was last analysed
+     */
+    private const CALL_ATTRIBUTE = 'pipeCall';
+
+    /**
+     * The pipe that makes a call
+     */
+    private const PIPE_ATTRIBUTE = 'pipe';
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         Pipe $stmt,
@@ -85,6 +96,8 @@ final class PipeAnalyzer
         }
 
         $call = self::createCall($right, $value, self::getCallAttributes($stmt));
+        $call->setAttribute(self::PIPE_ATTRIBUTE, $stmt);
+        $stmt->setAttribute(self::CALL_ATTRIBUTE, $call);
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $call, $context) === false) {
             return false;
@@ -100,6 +113,48 @@ final class PipeAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * The call the pipe makes: the one it made when it was last analysed or, before then, the call that reads the
+     * left-hand side in place. None where the pipe makes no call, or passes a value it reads first, which asserts
+     * nothing about a variable.
+     */
+    public static function getCall(Pipe $stmt): ?Expr
+    {
+        /** @var Expr|null $call */
+        $call = $stmt->getAttribute(self::CALL_ATTRIBUTE);
+
+        if ($call !== null) {
+            return $call;
+        }
+
+        $right = $stmt->right;
+
+        if (($right instanceof CallLike && $right->isPartialFunctionApplication() && !self::isDirectCall($right))
+            || !self::isEvaluationOrderIrrelevant($stmt->left, $right, null)
+        ) {
+            return null;
+        }
+
+        return self::createCall($right, $stmt->left, self::getCallAttributes($stmt));
+    }
+
+    /**
+     * Where what a function call asserts about its arguments is reported, the call or its name otherwise. The call of a
+     * pipe is reported at the pipe, which stands where the hand-written call (and its name) would: a condition the
+     * pipe is reports the same issue there, once.
+     *
+     * @template TNode of NodeAbstract
+     * @param TNode $node
+     * @return TNode|Pipe
+     */
+    public static function getAssertionLocationNode(FuncCall $call, NodeAbstract $node): NodeAbstract
+    {
+        /** @var Pipe|null $pipe */
+        $pipe = $call->getAttribute(self::PIPE_ATTRIBUTE);
+
+        return $pipe ?? $node;
     }
 
     /**
@@ -268,9 +323,9 @@ final class PipeAnalyzer
 
     /**
      * Whether analysing the right-hand side before the left-hand side, as a call does, gives the same result as
-     * PHP's left-to-right evaluation.
+     * PHP's left-to-right evaluation. Without a context, before the pipe is analysed, only where no type decides.
      */
-    private static function isEvaluationOrderIrrelevant(Expr $left, Expr $right, Context $context): bool
+    private static function isEvaluationOrderIrrelevant(Expr $left, Expr $right, ?Context $context): bool
     {
         if (self::capturesNothing($left)) {
             return true;
@@ -334,7 +389,7 @@ final class PipeAnalyzer
     /**
      * Whether evaluating the expression cannot change any state the other side of the pipe may read.
      */
-    private static function isWriteFree(Expr $expr, Context $context): bool
+    private static function isWriteFree(Expr $expr, ?Context $context): bool
     {
         if ($expr instanceof Closure) {
             foreach ($expr->uses as $use) {
@@ -372,7 +427,7 @@ final class PipeAnalyzer
             $var_id = '$' . $expr->var->name;
 
             // an offset of an `ArrayAccess` object is read by calling `offsetGet()`
-            return isset($context->vars_in_scope[$var_id])
+            return $context !== null && isset($context->vars_in_scope[$var_id])
                 ? $context->vars_in_scope[$var_id]->isArray()
                 : VariableFetchAnalyzer::isSuperGlobal($var_id);
         }

@@ -25,6 +25,7 @@ use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\PipeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -188,6 +189,22 @@ final class AssertionFinder
             }
 
             return $if_types ? [$if_types] : [];
+        }
+
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Pipe) {
+            $pipe_call = PipeAnalyzer::getCall($conditional);
+
+            return $pipe_call !== null
+                ? self::scrapeAssertions(
+                    $pipe_call,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    $inside_negation,
+                    $cache,
+                    $inside_conditional,
+                )
+                : [];
         }
 
         $var_name = ExpressionIdentifier::getExtendedVarId(

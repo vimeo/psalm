@@ -10,6 +10,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\PipeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
@@ -551,7 +552,10 @@ final class NamedFunctionCallHandler
                     $statements_analyzer,
                     [],
                     $context->inside_loop,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    new CodeLocation(
+                        $statements_analyzer->getSource(),
+                        PipeAnalyzer::getAssertionLocationNode($stmt, $stmt),
+                    ),
                 );
             }
 

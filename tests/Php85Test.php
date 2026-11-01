@@ -45,6 +45,45 @@ final class Php85Test extends TestCase
         );
     }
 
+    public function testAConditionReportsWhatAPipeAssertsAsTheCallItMakes(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            /**
+             * @psalm-assert int $x
+             */
+            function assertInt(mixed $x): void { if (!is_int($x)) { throw new Exception(); } }
+
+            function f(int $i): void {
+                if ($i |> is_int(...)) {}
+                if (!($i |> is_int(...))) {}
+                echo $i |> is_int(...) ? 1 : 2;
+                assert($i |> is_int(...));
+                $i |> assertInt(...);
+            }
+        ');
+        $this->project_analyzer->setPhpVersion('8.5', 'tests');
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                [8, 21, 'RedundantCondition'],
+                [9, 23, 'TypeDoesNotContainType'],
+                [10, 22, 'RedundantCondition'],
+                [10, 46, 'TypeDoesNotContainType'],
+                [11, 24, 'RedundantCondition'],
+                [11, 17, 'RedundantCondition'],
+                [12, 17, 'RedundantConditionGivenDocblockType'],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->column_from, $issue->type],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     /**
      * @psalm-pure
      */
@@ -248,6 +287,112 @@ final class Php85Test extends TestCase
                     '$s===' => 'string',
                 ],
                 'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'pipeNarrowsAsTheCallItMakes' => [
+                'code' => '<?php
+                    final class A {
+                        /**
+                         * @psalm-assert-if-true int $x
+                         */
+                        public function isInt(mixed $x): bool { return is_int($x); }
+
+                        /**
+                         * @psalm-assert-if-true string $x
+                         */
+                        public static function isString(mixed $x): bool { return is_string($x); }
+                    }
+
+                    /**
+                     * @psalm-assert-if-true int $x
+                     */
+                    function isInt(mixed $x): bool { return is_int($x); }
+
+                    /**
+                     * @psalm-assert int $x
+                     */
+                    function assertInt(mixed $x): void { if (!is_int($x)) { throw new Exception(); } }
+
+                    function m(): mixed { return 1; }
+
+                    $o = new A();
+
+                    $a = m();
+                    if ($a |> isInt(...)) { $if = $a; } else { $if = 0; }
+
+                    $b = m();
+                    if (!($b |> is_string(...))) { $b = ""; }
+                    $not = $b;
+
+                    $c = m();
+                    $ternary = $c |> is_int(...) ? $c : 0;
+
+                    $d = m();
+                    $and = $d |> is_int(...) && $d > 0 ? $d : 1;
+
+                    $e = m();
+                    $match = match (true) { $e |> is_int(...) => $e, default => 0 };
+
+                    $f = m();
+                    assert($f |> is_int(...));
+                    $assert = $f;
+
+                    $g = m();
+                    while (!($g |> is_int(...))) { $g = m(); }
+                    $while = $g;
+
+                    $h = m();
+                    $h |> assertInt(...);
+                    $statement = $h;
+
+                    $i = m();
+                    $method = $i |> $o->isInt(...) ? $i : 0;
+
+                    $j = m();
+                    $static = $j |> A::isString(...) ? $j : "";',
+                'assertions' => [
+                    '$if===' => 'int',
+                    '$not===' => 'string',
+                    '$ternary===' => 'int',
+                    '$and===' => 'int<1, max>',
+                    '$match===' => 'int',
+                    '$assert===' => 'int',
+                    '$while===' => 'int',
+                    '$statement===' => 'int',
+                    '$method===' => 'int',
+                    '$static===' => 'string',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.5',
+            ],
+            'pipeIntoPartialApplicationNarrows' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert-if-true int $x
+                     */
+                    function isInt(mixed $x): bool { return is_int($x); }
+
+                    function m(): mixed { return 1; }
+
+                    $a = m();
+                    $r = $a |> isInt(?) ? $a : 0;',
+                'assertions' => [
+                    '$r===' => 'int',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.6',
+            ],
+            'pipeAssignedToAVariableNarrowsNothingAsTheCallItMakes' => [
+                'code' => '<?php
+                    function m(): mixed { return 1; }
+
+                    $a = m();
+                    $isInt = $a |> is_int(...);
+                    $r = $isInt ? $a : 0;',
+                'assertions' => [
+                    '$r===' => '0|mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.5',
             ],
         ];

@@ -2129,10 +2129,14 @@ final class AssignmentAnalyzer
                     );
                 }
 
+                // a pipe is the call it makes, and what a call assigned to a variable asserts is not kept
                 if ($assign_value_type->getId() === 'bool'
                     && ($assign_value instanceof PhpParser\Node\Expr\BinaryOp
                         || ($assign_value instanceof PhpParser\Node\Expr\BooleanNot
                             && $assign_value->expr instanceof PhpParser\Node\Expr\BinaryOp))
+                    && !$assign_value instanceof PhpParser\Node\Expr\BinaryOp\Pipe
+                    && !($assign_value instanceof PhpParser\Node\Expr\BooleanNot
+                        && $assign_value->expr instanceof PhpParser\Node\Expr\BinaryOp\Pipe)
                 ) {
                     $var_object_id = spl_object_id($assign_var);
                     $cond_object_id = spl_object_id($assign_value);

@@ -671,7 +671,7 @@ abstract class CallAnalyzer
     }
 
     /**
-     * @param Identifier|Name $expr
+     * @param Identifier|Name|PhpParser\Node\Expr\BinaryOp\Pipe $expr
      * @param  Possibilities[] $var_assertions
      * @param  list<PhpParser\Node\Arg> $args
      */
