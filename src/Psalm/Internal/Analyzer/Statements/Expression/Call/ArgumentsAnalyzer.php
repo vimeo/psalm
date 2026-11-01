@@ -1783,13 +1783,18 @@ final class ArgumentsAnalyzer
         return null;
     }
 
-    private static function handleByRefReadonlyArg(
+    /**
+     * @param bool $is_call false when the reference is only taken (a partial application binds it): nothing is
+     *     written yet, but PHP already refuses a reference to a readonly property
+     */
+    public static function handleByRefReadonlyArg(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         string $fq_class_name,
         string $prop_name,
         ?string $lhs_var_id,
+        bool $is_call = true,
     ): void {
         $property_id = $fq_class_name . '::$' . $prop_name;
 
@@ -1806,19 +1811,33 @@ final class ArgumentsAnalyzer
             return;
         }
 
-        if (isset($declaring_class_storage->properties[$prop_name])) {
-            $property_storage = $declaring_class_storage->properties[$prop_name];
+        if (!isset($declaring_class_storage->properties[$prop_name])) {
+            return;
+        }
 
-            InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
+        $property_storage = $declaring_class_storage->properties[$prop_name];
+
+        if (!$is_call) {
+            InstancePropertyAssignmentAnalyzer::checkReadonlyPropertyWrite(
                 $statements_analyzer,
                 $stmt,
                 $property_id,
                 $property_storage,
-                $declaring_class_storage,
                 $context,
-                $lhs_var_id,
             );
+
+            return;
         }
+
+        InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
+            $statements_analyzer,
+            $stmt,
+            $property_id,
+            $property_storage,
+            $declaring_class_storage,
+            $context,
+            $lhs_var_id,
+        );
     }
 
     /**

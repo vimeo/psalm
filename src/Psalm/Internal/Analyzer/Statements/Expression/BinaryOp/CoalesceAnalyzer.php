@@ -9,6 +9,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Node\Expr\PartialApplication;
 use Psalm\Node\Expr\VirtualIsset;
 use Psalm\Node\Expr\VirtualTernary;
 use Psalm\Node\Expr\VirtualVariable;
@@ -48,7 +49,8 @@ final class CoalesceAnalyzer
             || $root_expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch
             || $root_expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
             || $root_expr instanceof PhpParser\Node\Expr\Ternary
-            || $root_expr instanceof PhpParser\Node\Expr\BinaryOp\Pipe;
+            || $root_expr instanceof PhpParser\Node\Expr\BinaryOp\Pipe
+            || $root_expr instanceof PartialApplication;
 
         $has_untracked_offset = !$has_call_root
             && $left_expr instanceof PhpParser\Node\Expr\ArrayDimFetch

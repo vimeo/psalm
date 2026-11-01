@@ -17,6 +17,11 @@ abstract class CallLike extends Expr {
 
     /**
      * @psalm-pure
+     */
+    public function isPartialFunctionApplication(): bool {}
+
+    /**
+     * @psalm-pure
      * @return list<Arg>
      */
     public function getArgs(): array {}

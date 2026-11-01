@@ -13,6 +13,8 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_map;
 
+use const DIRECTORY_SEPARATOR;
+
 final class Php85Test extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -193,29 +195,67 @@ final class Php85Test extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.6',
             ],
-            'pipeIntoUnsupportedPartialApplication' => [
+            'pipeIntoPartialApplicationWithANamedArgumentBeforeTheVariadicPlaceholder' => [
                 'code' => '<?php
                     final class A {
                         public function two(int $a, string $b): string { return $b . $a; }
                     }
 
-                    final class N {
-                        public function __construct(public int $x) {}
-                    }
-
-                    function add(int $a, int $b): int { return $a + $b; }
-
                     $o = new A();
 
-                    $twoPlaceholders = 3 |> add(?, ?);
-                    $namedBeforeVariadic = "z" |> $o->two(a: 1, ...);
-                    $new = 3 |> new N(?);',
+                    $namedBeforeVariadic = "z" |> $o->two(a: 1, ...);',
                 'assertions' => [
-                    '$twoPlaceholders===' => 'mixed',
-                    '$namedBeforeVariadic===' => 'mixed',
-                    '$new===' => 'mixed',
+                    '$namedBeforeVariadic===' => 'string',
                 ],
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'pipeCreatesThePartialApplicationAfterTheLeftHandSide' => [
+                'code' => '<?php
+                    function add(int $a, int $b): int { return $a + $b; }
+
+                    $r = ($i = 5) |> add(b: $i, ...);',
+                'assertions' => [
+                    '$r===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'pipeIntoDirectPartialApplicationsPhpCompiles' => [
+                'code' => '<?php
+                    final class Q {
+                        public function m(int $x): int { return $x; }
+                    }
+
+                    final class O {
+                        public function __construct(public Q $p) {}
+                    }
+
+                    function two(int $a, int $b = 0): int { return $a + $b; }
+
+                    function f(?O $o): void {
+                        $unpacking = 3 |> two(?, ...[1]);
+                        $nullsafe = 3 |> $o?->p->m(?);
+                        /** @psalm-check-type-exact $unpacking = int */
+                        /** @psalm-check-type-exact $nullsafe = int|null */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'pipeIntoPartialApplicationWithTheVariadicPlaceholderFirst' => [
+                'code' => '<?php
+                    function two(int $a, int $b = 0): int { return $a + $b; }
+
+                    $positional = 3 |> two(..., 1);
+                    $named = 3 |> two(..., b: 1);
+                    $unpacking = 3 |> two(..., ...[1]);',
+                'assertions' => [
+                    '$positional===' => 'int',
+                    '$named===' => 'int',
+                    '$unpacking===' => 'int',
+                ],
+                'ignored_issues' => [],
                 'php_version' => '8.6',
             ],
             'pipeKeepsTheContextOfACallableLiteral' => [
@@ -287,6 +327,62 @@ final class Php85Test extends TestCase
                 'error_message' => 'InvalidFunctionCall',
                 'error_levels' => [],
                 'php_version' => '8.5',
+            ],
+            'pipeIntoPartialApplicationWithTwoPlaceholders' => [
+                'code' => '<?php
+                    function add(int $a, int $b): int { return $a + $b; }
+
+                    $twoPlaceholders = 3 |> add(?, ?);',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'pipeIntoPartialApplicationOfNew' => [
+                'code' => '<?php
+                    final class N {
+                        public function __construct(public int $x) {}
+                    }
+
+                    $new = 3 |> new N(?);',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33 - Cannot create Closure for new expression',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'pipeIntoPartialApplicationBeforePhp86' => [
+                'code' => '<?php
+                    function add(int $a, int $b): int { return $a + $b; }
+
+                    $r = 3 |> add(1, ?);',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31 - Partial function application requires PHP 8.6',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'pipeIntoPartialApplicationWithTheVariadicPlaceholderTwice' => [
+                'code' => '<?php
+                    function one(int $a): int { return $a; }
+
+                    $r = 3 |> one(?, ..., ...);',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31 - Variadic placeholder may only appear once',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'pipeIntoPartialApplicationWithAPlaceholderAfterTheVariadicPlaceholder' => [
+                'code' => '<?php
+                    function two(int $a, int $b = 0): int { return $a + $b; }
+
+                    $r = 3 |> two(..., ?);',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31 - Variadic placeholder must be last',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'pipeIntoPartialApplicationWithAPlaceholderAfterANamedArgument' => [
+                'code' => '<?php
+                    function two(int $a, int $b = 0): int { return $a + $b; }
+
+                    $r = 3 |> two(b: 1, ?);',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31 - Cannot use positional argument after named argument',
+                'error_levels' => [],
+                'php_version' => '8.6',
             ],
             'pipeChecksPurity' => [
                 'code' => '<?php
