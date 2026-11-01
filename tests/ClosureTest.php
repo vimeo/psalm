@@ -1117,6 +1117,257 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'FirstClassCallable:InstanceMethod:ClassTemplatesAndStatic' => [
+                'code' => '<?php
+                    class Model {}
+
+                    /** @template TModel of Model */
+                    final class Builder {
+                        /** @return Builder<TModel> */
+                        public function has(string $relation): self { return $this; }
+
+                        /** @param TModel $model */
+                        public function save(Model $model): void {}
+                    }
+
+                    /** @template T */
+                    class Collection {
+                        public function filter(): static { return $this; }
+                    }
+
+                    /** @extends Collection<int> */
+                    final class FinalCollection extends Collection {}
+
+                    /** @var Builder<Model> $builder */;
+                    /** @var Collection<int> $collection */;
+                    /** @var FinalCollection $final_collection */;
+                    $has = $builder->has(...);
+                    $save = $builder->save(...);
+                    $filter = $collection->filter(...);
+                    $final_filter = $final_collection->filter(...);
+                ',
+                'assertions' => [
+                    '$has===' => 'Closure[impure](string):Builder<Model>',
+                    '$save===' => 'Closure[impure](Model):void',
+                    '$filter===' => 'Closure[impure]():Collection<int>&static',
+                    '$final_filter===' => 'Closure[impure]():FinalCollection',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:MethodTemplatesStayUnbound' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return array{T, U}
+                         */
+                        public function pair(mixed $u): array { throw new Exception(); }
+                    }
+
+                    /** @var Box<int> $box */;
+                    $pair = $box->pair(...);
+                ',
+                'assertions' => [
+                    '$pair===' => 'Closure[impure](U:fn-box::pair as mixed):list{int, U:fn-box::pair as mixed}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:UnresolvedClassTemplates' => [
+                'code' => '<?php
+                    /** @template T of scalar */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(private mixed $v) {}
+
+                        /** @return T */
+                        public function get(): mixed { return $this->v; }
+
+                        /** @return Closure():T */
+                        public function getter(): Closure { return $this->get(...); }
+                    }
+
+                    /**
+                     * @template T of scalar
+                     * @param Box<T> $box
+                     * @return Closure():T
+                     */
+                    function getter(Box $box): Closure {
+                        return $box->get(...);
+                    }
+
+                    /** @var Box $raw */;
+                    $raw_get = $raw->get(...);
+                ',
+                'assertions' => [
+                    '$raw_get===' => 'Closure[read-props]():scalar',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:InheritedTemplatesAndInterface' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Collection {
+                        /** @return T */
+                        public function first(): mixed { throw new Exception(); }
+                    }
+
+                    /** @extends Collection<string> */
+                    final class Strings extends Collection {}
+
+                    /** @template T */
+                    interface Repository {
+                        /** @return T */
+                        public function find(int $id): mixed;
+
+                        public function fresh(): static;
+                    }
+
+                    /** @var Strings $strings */;
+                    /** @var Repository<int> $repository */;
+                    $first = $strings->first(...);
+                    $find = $repository->find(...);
+                    $fresh = $repository->fresh(...);
+                ',
+                'assertions' => [
+                    '$first===' => 'Closure[impure]():string',
+                    '$find===' => 'Closure[impure](int):int',
+                    '$fresh===' => 'Closure[impure]():Repository<int>&static',
+                ],
+                'ignored_issues' => ['MissingAbstractPureAnnotation'],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:PassedToTemplatedCallableParam' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @return T */
+                        public function get(): mixed { throw new Exception(); }
+                    }
+
+                    /**
+                     * @template R
+                     * @param callable():R $f
+                     * @return R
+                     */
+                    function call(callable $f): mixed { return $f(); }
+
+                    /** @var Box<int> $box */;
+                    $result = call($box->get(...));
+                ',
+                'assertions' => [
+                    '$result===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:LiteralName' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @return T */
+                        public function get(): mixed { throw new Exception(); }
+                    }
+
+                    /** @var Box<int> $box */;
+                    $get = $box->{"get"}(...);
+                ',
+                'assertions' => [
+                    '$get===' => 'Closure[impure]():int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:StaticMethod:ClassTemplatesAndStatic' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Collection {
+                        /** @return T */
+                        public static function one(): mixed { throw new Exception(); }
+
+                        public static function make(): static { throw new Exception(); }
+                    }
+
+                    /** @extends Collection<int> */
+                    class Ints extends Collection {
+                        public function test(): void {
+                            $static_make = static::make(...);
+                            /** @psalm-check-type-exact $static_make = Closure():(Collection&static) */;
+                            $self_make = self::make(...);
+                            /** @psalm-check-type-exact $self_make = Closure():(Collection&static) */;
+                            $parent_one = parent::one(...);
+                            /** @psalm-check-type-exact $parent_one = Closure():int */;
+                        }
+                    }
+
+                    final class FinalInts extends Ints {}
+
+                    $one = Ints::one(...);
+                    $literal_one = Ints::{"one"}(...);
+                    $make = Ints::make(...);
+                    $final_make = FinalInts::make(...);
+                ',
+                'assertions' => [
+                    '$one===' => 'Closure[impure]():int',
+                    '$literal_one===' => 'Closure[impure]():int',
+                    '$make===' => 'Closure[impure]():Ints',
+                    '$final_make===' => 'Closure[impure]():FinalInts',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:MixinAndPseudoMethods' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Inner {
+                        /** @return T */
+                        public function get(): mixed { throw new Exception(); }
+
+                        /** @param T $t */
+                        public function put(mixed $t): void {}
+                    }
+
+                    /**
+                     * @template T
+                     * @mixin Inner<T>
+                     */
+                    final class Outer {
+                        public function __call(string $name, array $args): mixed { return null; }
+                    }
+
+                    /**
+                     * @template T
+                     * @method T pseudoGet()
+                     * @method static T pseudoOne()
+                     */
+                    class Magic {
+                        public function __call(string $name, array $args): mixed { return null; }
+                        public static function __callStatic(string $name, array $args): mixed { return null; }
+                    }
+
+                    /** @extends Magic<int> */
+                    final class IntMagic extends Magic {}
+
+                    /** @var Outer<float> $outer */;
+                    /** @var IntMagic $magic */;
+                    $mixin_get = $outer->get(...);
+                    $mixin_put = $outer->put(...);
+                    $pseudo_get = $magic->pseudoGet(...);
+                    $pseudo_one = IntMagic::pseudoOne(...);
+                ',
+                'assertions' => [
+                    '$mixin_get===' => 'Closure[impure]():float',
+                    '$mixin_put===' => 'Closure[impure](float):void',
+                    '$pseudo_get===' => 'Closure[impure]():int',
+                    '$pseudo_one===' => 'Closure[impure]():int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'arrowFunctionReturnsNeverImplicitly' => [
                 'code' => '<?php
                     $bar = ["foo", "bar"];

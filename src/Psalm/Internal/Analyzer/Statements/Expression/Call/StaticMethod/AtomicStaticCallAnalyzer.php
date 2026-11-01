@@ -251,15 +251,30 @@ final class AtomicStaticCallAnalyzer
                             true,
                             $context->insideUse(),
                         )) {
-                            $method_storage = $codebase->methods->getStorage(
-                                $codebase->methods->getDeclaringMethodId($method_identifier) ?? $method_identifier,
-                            );
+                            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_identifier)
+                                ?? $method_identifier;
+                            $method_storage = $codebase->methods->getStorage($declaring_method_id);
+                            $self_fq_class_name = $stmt->class instanceof PhpParser\Node\Name
+                                && $stmt->class->getParts() === ['parent']
+                                ? (string) $statements_analyzer->getFQCLN()
+                                : $fq_class_name;
 
-                            $return_type_candidate = new Union([new TClosure(
-                                $method_storage->params,
-                                $method_storage->return_type,
-                                $method_storage->capabilities,
-                            )]);
+                            $return_type_candidate = self::getFirstClassCallableType(
+                                $statements_analyzer,
+                                $stmt,
+                                $context,
+                                $lhs_type_part,
+                                $method_identifier,
+                                $codebase->classlike_storage_provider->get($declaring_method_id->fq_class_name),
+                                $codebase->classlike_storage_provider->get($fq_class_name),
+                                new TClosure(
+                                    $method_storage->params,
+                                    $method_storage->return_type,
+                                    $method_storage->capabilities,
+                                ),
+                                $self_fq_class_name,
+                                $self_fq_class_name,
+                            );
                         }
                     }
                 }
@@ -493,14 +508,25 @@ final class AtomicStaticCallAnalyzer
 
 
         if ($stmt->isFirstClassCallable()) {
-            if ($found_method_and_class_storage) {
-                [ $method_storage ] = $found_method_and_class_storage;
+            $self_fq_class_name = $stmt->class instanceof PhpParser\Node\Name && $stmt->class->getParts() === ['parent']
+                ? (string) $statements_analyzer->getFQCLN()
+                : $fq_class_name;
+            $called_fq_class_name = $self_fq_class_name;
+            $declaring_class_storage = $class_storage;
 
-                $return_type_candidate = new Union([new TClosure(
+            if ($found_method_and_class_storage) {
+                [$method_storage, $defining_class_storage] = $found_method_and_class_storage;
+                $declaring_method_id = $defining_class_storage->declaring_pseudo_static_method_ids[$method_name_lc]
+                    ?? null;
+                $declaring_class_storage = $declaring_method_id
+                    ? $codebase->classlike_storage_provider->get($declaring_method_id->fq_class_name)
+                    : $defining_class_storage;
+
+                $closure = new TClosure(
                     $method_storage->params,
                     $method_storage->return_type,
                     $method_storage->capabilities,
-                )]);
+                );
             } else {
                 $method_exists = $naive_method_exists
                     || $fake_method_exists
@@ -509,12 +535,15 @@ final class AtomicStaticCallAnalyzer
 
                 if ($method_exists) {
                     $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
+                    $declaring_class_storage = $codebase->classlike_storage_provider->get(
+                        $declaring_method_id->fq_class_name,
+                    );
 
-                    $return_type_candidate = new Union([new TClosure(
+                    $closure = new TClosure(
                         array_values($codebase->getMethodParams($method_id)),
-                        $codebase->getMethodReturnType($method_id, $fq_class_name),
+                        $codebase->getMethodReturnType($method_id, $self_fq_class_name),
                         $codebase->methods->getStorage($declaring_method_id)->capabilities,
-                    )]);
+                    );
                 } elseif ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->getFirst() === 'parent'
                     && !$statements_analyzer->isStatic()
                     && isset($class_storage->pseudo_methods[$method_name_lc])
@@ -526,24 +555,24 @@ final class AtomicStaticCallAnalyzer
                     // Same instance-context fallback as ordinary parent::xxx() calls below:
                     // the closure is bound to $this and dispatches through __call
                     $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
-                    $return_type_candidate = new Union([new TClosure(
+                    $closure = new TClosure(
                         $pseudo_method_storage->params,
                         $pseudo_method_storage->return_type,
                         $pseudo_method_storage->capabilities,
-                    )]);
+                    );
                 } elseif ($codebase->methodExists(
                     $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
                     null,
                     new CodeLocation($statements_analyzer, $stmt),
                     is_used: false,
                 )) {
-                    $return_type_candidate = new Union([new TClosure(
+                    $closure = new TClosure(
                         null,
-                        $codebase->getMethodReturnType($call_static_method_id, $fq_class_name),
+                        $codebase->getMethodReturnType($call_static_method_id, $self_fq_class_name),
                         $codebase->methods->getStorage(
                             $codebase->methods->getDeclaringMethodId($call_static_method_id) ?? $call_static_method_id,
                         )->capabilities,
-                    )]);
+                    );
                 } else {
                     if (IssueBuffer::accepts(
                         new UndefinedMethod(
@@ -556,22 +585,27 @@ final class AtomicStaticCallAnalyzer
                         return false;
                     }
 
-                    $return_type_candidate = Type::getClosure();
+                    $statements_analyzer->node_data->setType($stmt, Type::getClosure());
+
+                    return true;
                 }
             }
 
-            $expanded_return_type = TypeExpander::expandUnion(
-                $codebase,
-                $return_type_candidate,
-                $context->self,
-                $class_storage->name,
-                $context->parent,
-                true,
-                false,
-                true,
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                self::getFirstClassCallableType(
+                    $statements_analyzer,
+                    $stmt,
+                    $context,
+                    $lhs_type_part,
+                    $method_id,
+                    $declaring_class_storage,
+                    $class_storage,
+                    $closure,
+                    $called_fq_class_name,
+                    $self_fq_class_name,
+                ),
             );
-
-            $statements_analyzer->node_data->setType($stmt, $expanded_return_type);
 
             return true;
         }
@@ -1117,6 +1151,56 @@ final class AtomicStaticCallAnalyzer
                 (string) $lhs_type_part,
             ),
             $statements_analyzer->getSuppressedIssues(),
+        );
+    }
+
+    /**
+     * The closure of a first-class callable of a static call, typed as the call (see
+     * MethodCallReturnTypeFetcher::getFirstClassCallableType())
+     */
+    private static function getFirstClassCallableType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\StaticCall $stmt,
+        Context $context,
+        Atomic $lhs_type_part,
+        MethodIdentifier $method_id,
+        ClassLikeStorage $declaring_class_storage,
+        ClassLikeStorage $class_storage,
+        TClosure $closure,
+        string $called_fq_class_name,
+        ?string $self_fq_class_name,
+    ): Union {
+        $codebase = $statements_analyzer->getCodebase();
+
+        [$static_type, $final] = ExistingAtomicStaticCallAnalyzer::getStaticClassType(
+            $codebase,
+            $stmt,
+            $lhs_type_part,
+            $context,
+            $called_fq_class_name,
+            $class_storage,
+            $closure,
+        );
+
+        $found_generic_params = ExistingAtomicStaticCallAnalyzer::collectClassTemplateParams(
+            $statements_analyzer,
+            $codebase,
+            $stmt,
+            $context,
+            $lhs_type_part,
+            $method_id,
+            $declaring_class_storage,
+            $class_storage,
+        );
+
+        return MethodCallReturnTypeFetcher::getFirstClassCallableType(
+            $codebase,
+            $closure,
+            new TemplateResult([], $found_generic_params ?? []),
+            $self_fq_class_name,
+            $static_type,
+            $class_storage->parent_class,
+            $final,
         );
     }
 

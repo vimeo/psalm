@@ -79,11 +79,21 @@ final class MethodCallReturnTypeFetcher
 
         if ($stmt->isFirstClassCallable()) {
             if ($method_storage) {
-                return new Union([new TClosure(
-                    $method_storage->params,
-                    $method_storage->return_type,
-                    $method_storage->capabilities,
-                )]);
+                return self::getFirstClassCallableType(
+                    $codebase,
+                    new TClosure(
+                        $method_storage->params,
+                        $method_storage->return_type,
+                        $method_storage->capabilities,
+                    ),
+                    $template_result,
+                    $fq_class_name,
+                    $static_type,
+                    $class_storage->parent_class,
+                    $static_type instanceof TNamedObject
+                    && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                    true,
+                );
             }
 
             return Type::getClosure();
@@ -838,6 +848,44 @@ final class MethodCallReturnTypeFetcher
         }
 
         return $call_node;
+    }
+
+    /**
+     * The closure of a first-class callable of a method, typed as a call of the method on the same receiver: with its
+     * template bounds (those of the class, from the receiver) and `static`. The templates of the method itself are left
+     * unbound, for the calls of the closure.
+     */
+    public static function getFirstClassCallableType(
+        Codebase $codebase,
+        TClosure $closure,
+        TemplateResult $template_result,
+        ?string $self_class,
+        string|TNamedObject|TTemplateParam|null $static_class_type,
+        ?string $parent_class,
+        bool $final,
+        bool $expand_generic = false,
+    ): Union {
+        $closure_type = new Union([$closure]);
+
+        if ($template_result->lower_bounds) {
+            $closure_type = TemplateInferredTypeReplacer::replace(
+                TypeExpander::expandUnion($codebase, $closure_type, null, null, null),
+                $template_result,
+                $codebase,
+            );
+        }
+
+        return TypeExpander::expandUnion(
+            $codebase,
+            $closure_type,
+            $self_class,
+            $static_class_type,
+            $parent_class,
+            true,
+            false,
+            $final,
+            $expand_generic,
+        );
     }
 
     public static function replaceTemplateTypes(
