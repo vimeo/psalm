@@ -1510,6 +1510,19 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'FirstClassCallable:ComparedToAMixedValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                        function useIt(mixed $x, Closure $callback): void {
+                            if ($x === $callback(...)) {
+                                $x();
+                            }
+                        }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
             'arrowFunctionReturnsNeverImplicitly' => [
                 'code' => '<?php
                     $bar = ["foo", "bar"];
@@ -2112,6 +2125,20 @@ final class ClosureTest extends TestCase
                         new stdClass(...);
                     PHP,
                 'error_message' => 'ParseError',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:AsAttributeArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                        #[Attribute]
+                        final class Attr {
+                            public function __construct(public mixed $a = null) {}
+                        }
+                        #[Attr(...)]
+                        function f(): void {}
+                    PHP,
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:7 - Cannot create Closure as attribute argument',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],

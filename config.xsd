@@ -70,6 +70,7 @@
         <xs:attribute name="resolveFromConfigFile" type="xs:boolean" default="true" />
         <xs:attribute name="strictBinaryOperands" type="xs:boolean" default="true" />
         <xs:attribute name="allowBoolToLiteralBoolComparison" type="xs:boolean" default="true" />
+        <xs:attribute name="strictNullableComparison" type="xs:boolean" default="false" />
         <xs:attribute name="throwExceptionOnError" type="xs:boolean" default="false" />
         <xs:attribute name="disableVarParsing" type="xs:boolean" default="false" />
         <xs:attribute name="errorLevel" type="xs:integer" default="2" />

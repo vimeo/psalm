@@ -160,7 +160,7 @@ final class UnionTypeComparator
             if ($input_type_part instanceof TIterable
                 && !$input_type_part->extra_types
                 && $container_type->hasArray()
-                && $container_type->containsClassLike('traversable')
+                && ($container_type->hasObject() || $container_type->containsClassLike('traversable'))
             ) {
                 // an iterable is an array or a Traversable
                 [$key_type, $value_type] = $input_type_part->type_params;

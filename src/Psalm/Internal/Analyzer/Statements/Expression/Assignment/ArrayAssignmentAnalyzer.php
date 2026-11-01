@@ -112,6 +112,8 @@ final class ArrayAssignmentAnalyzer
 
     /**
      * @param bool $is_assignment whether $assign_value is the value assigned, not an operand of it
+     * @param bool $assigns_root_property false when a reference to the item is only taken: a property holding the
+     *     array then only has its type updated, it isn't assigned
      * @return false|null
      */
     public static function updateArrayType(
@@ -121,6 +123,7 @@ final class ArrayAssignmentAnalyzer
         Union $assignment_type,
         Context $context,
         bool $is_assignment = false,
+        bool $assigns_root_property = true,
     ): ?bool {
         $root_array_expr = $stmt;
 
@@ -257,7 +260,10 @@ final class ArrayAssignmentAnalyzer
 
         // an element of an object (an ArrayAccess) is written by its offsetSet(), charged as that call: the
         // property keeps holding the same object, so it isn't assigned
-        if ($root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch && !$root_type->isObjectType()) {
+        if ($assigns_root_property
+            && $root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch
+            && !$root_type->isObjectType()
+        ) {
             $prop_name = InstancePropertyFetchAnalyzer::getPropertyName($statements_analyzer, $root_array_expr);
 
             if ($prop_name !== null) {
@@ -283,7 +289,8 @@ final class ArrayAssignmentAnalyzer
                     return false;
                 }
             }
-        } elseif ($root_array_expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        } elseif ($assigns_root_property
+            && $root_array_expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
             && $root_array_expr->name instanceof PhpParser\Node\Identifier
         ) {
             if (StaticPropertyAssignmentAnalyzer::analyze(
