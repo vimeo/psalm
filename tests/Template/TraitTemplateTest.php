@@ -566,6 +566,30 @@ final class TraitTemplateTest extends TestCase
                     '$status===' => "'a'|'b'|'c'",
                 ],
             ],
+            'pseudoPropertyReadKeepsTemplateIntersectionThroughUse' => [
+                'code' => '<?php
+                    /**
+                     * @template T as object
+                     * @property T&Countable $value
+                     */
+                    trait MagicValue {}
+
+                    class Payload {}
+
+                    class Holder {
+                        /** @use MagicValue<Payload> */
+                        use MagicValue;
+
+                        public function __get(string $name) {
+                            return 0;
+                        }
+                    }
+
+                    function test(Holder $holder): int {
+                        return count($holder->value);
+                    }',
+                'php_version' => '8.0',
+            ],
             'pseudoPropertyOwnDeclarationWinsOverUsedTrait' => [
                 'code' => '<?php
                     /**
@@ -837,6 +861,29 @@ final class TraitTemplateTest extends TestCase
                     $a = new A();
                     $a->status = "d";',
                 'error_message' => "with declared type ''a'|'b'|'c'' cannot be assigned",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'pseudoPropertyWriteKeepsTemplateIntersectionThroughUse' => [
+                'code' => '<?php
+                    /**
+                     * @template T as object
+                     * @property-write T&Countable $value
+                     */
+                    trait MagicValue {}
+
+                    class Payload {}
+
+                    class Holder {
+                        /** @use MagicValue<Payload> */
+                        use MagicValue;
+
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    $holder = new Holder();
+                    $holder->value = new Payload();',
+                'error_message' => 'InvalidPropertyAssignmentValue',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
