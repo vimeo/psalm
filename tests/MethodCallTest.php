@@ -205,6 +205,62 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'inheritedThisDocblockKeepsNativeStaticOfSubclass' => [
+                'code' => '<?php
+                    class Form {}
+
+                    interface BuilderInterface {
+                        /**
+                         * @return $this
+                         */
+                        public function setCompound(): static;
+                    }
+
+                    class Builder implements BuilderInterface {
+                        public function setCompound(): static {
+                            return $this;
+                        }
+                    }
+
+                    class FormBuilder extends Builder {
+                        public function getForm(): Form {
+                            return new Form();
+                        }
+                    }
+
+                    $form = (new FormBuilder())->setCompound()->getForm();',
+                'assertions' => ['$form' => 'Form'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inheritedStaticDocblockKeepsNativeStaticOfSubclass' => [
+                'code' => '<?php
+                    class Form {}
+
+                    interface BuilderInterface {
+                        /**
+                         * @return static
+                         */
+                        public function setCompound(): static;
+                    }
+
+                    class Builder implements BuilderInterface {
+                        public function setCompound(): static {
+                            return $this;
+                        }
+                    }
+
+                    class FormBuilder extends Builder {
+                        public function getForm(): Form {
+                            return new Form();
+                        }
+                    }
+
+                    $form = (new FormBuilder())->setCompound()->getForm();',
+                'assertions' => ['$form' => 'Form'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'notInCallMapTest' => [
                 'code' => '<?php
                     new DOMImplementation();',
