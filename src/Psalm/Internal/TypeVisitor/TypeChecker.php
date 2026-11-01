@@ -250,6 +250,8 @@ final class TypeChecker extends TypeVisitor
         if (!$this->inherited
             && $codebase->classlike_storage_provider->has($fq_class_name_lc)
             && $this->source->getFQCLN() !== $atomic->value
+            // a method of a trait is checked as a method of the class that uses it
+            && $this->context?->self !== $atomic->value
         ) {
             $class_storage = $codebase->classlike_storage_provider->get($fq_class_name_lc);
 

@@ -40,7 +40,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
-          php-version: '8.1'
+          php-version: '8.2'
           coverage: none
 
       # The PHP version matrix is derived from the single VERSIONS constant in the build script.
@@ -81,7 +81,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
-          php-version: '8.1'
+          php-version: '8.2'
           coverage: none
 
       # composer/semver matches the PHP version against the PIE packages' constraints
@@ -117,7 +117,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
-          php-version: '8.1'
+          php-version: '8.2'
           tools: composer:v2
           coverage: none
 

@@ -98,6 +98,7 @@
 
 - [BC] Method finish() of class Psalm\Progress\Progress changed from concrete to abstract
 
+- [BC] `Psalm\Config::loadFromXMLFile()` throws a `Psalm\Exception\ConfigException` instead of an `InvalidArgumentException` when the file can't be read or is empty, so the CLI reports it as a config error rather than a crash.
 - [BC] The return type of Psalm\Type::getListAtomic() changed from Psalm\Type\Atomic\TKeyedArray to the non-covariant Psalm\Type\Atomic\TKeyedArray|Psalm\Type\Atomic\TArray
 
 - [BC] The return type of Psalm\Type::getListAtomic() changed from Psalm\Type\Atomic\TKeyedArray to Psalm\Type\Atomic\TKeyedArray|Psalm\Type\Atomic\TArray
