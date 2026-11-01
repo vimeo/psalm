@@ -126,6 +126,39 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assignToTheArrayAFunctionReturnsByReference' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int> $what
+                     * @return array<string, int>
+                     */
+                    function &ensureArray(array &$what): array {
+                        return $what;
+                    }
+
+                    class Box {
+                        /** @var array<string, int> */
+                        private array $items = [];
+
+                        /** @return array<string, int> */
+                        public function &items(): array {
+                            return $this->items;
+                        }
+
+                        /** @return array<string, int> */
+                        public static function &shared(): array {
+                            return self::$shared;
+                        }
+
+                        /** @var array<string, int> */
+                        private static array $shared = [];
+                    }
+
+                    $f = [];
+                    ensureArray($f)["foo"] = 1;
+                    (new Box())->items()["k"] = 1;
+                    Box::shared()["k"] = 1;',
+            ],
             'floatLiteralKeysOutsideTheRangeOfAnIntAreInts' => [
                 'code' => '<?php
                     $big = [1.0e30 => 1];
@@ -2681,6 +2714,21 @@ final class ArrayAssignmentTest extends TestCase
                     class A {}
                     (new A)["b"] = 1;',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'assignToTheArrayAMethodReturnsByValue' => [
+                'code' => '<?php
+                    class Box {
+                        /** @var array<string, int> */
+                        private array $items = [];
+
+                        /** @return array<string, int> */
+                        public function items(): array {
+                            return $this->items;
+                        }
+                    }
+
+                    (new Box())->items()["k"] = 1;',
+                'error_message' => 'InvalidArrayAssignment',
             ],
             'invalidArrayAccess' => [
                 'code' => '<?php
