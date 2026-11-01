@@ -6487,6 +6487,17 @@ final class ClassTemplateExtendsTest extends TestCase
                     final class NoArgs extends Two {}',
                 'error_message' => 'NoArgs has missing template params when extending Two, expecting at least 1',
             ],
+            'extendsWithoutParamsLeavingOutTemplateBeforeAPurityTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @psalm-purity-template C(pure) <= io
+                     */
+                    abstract class Box {}
+
+                    final class NoArgs extends Box {}',
+                'error_message' => 'NoArgs has missing template params when extending Box, expecting at least 1',
+            ],
             'extendsLeavingOutTemplateWithoutDefaultAfterOneWithDefault' => [
                 'code' => '<?php
                     /**
