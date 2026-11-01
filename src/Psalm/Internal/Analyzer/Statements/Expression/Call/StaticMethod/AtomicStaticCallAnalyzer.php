@@ -583,6 +583,19 @@ final class AtomicStaticCallAnalyzer
 
         $callstatic_method_exists = $codebase->methodExists($callstatic_id);
 
+        // a method that is not declared is reached through __callStatic(), which that call uses
+        if ($callstatic_method_exists && !$codebase->methods->getDeclaringMethodId($method_id)) {
+            $codebase->methodExists(
+                $callstatic_id,
+                $context->calling_method_id,
+                $codebase->collect_locations ? new CodeLocation($statements_analyzer, $stmt->name) : null,
+                null,
+                $statements_analyzer->getFilePath(),
+                true,
+                $context->insideUse(),
+            );
+        }
+
         $with_pseudo = $callstatic_method_exists
             || $codebase->config->use_phpdoc_method_without_magic_or_parent;
 
