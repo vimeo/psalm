@@ -1510,6 +1510,34 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'FirstClassCallable:InheritedMethodReturningParent' => [
+                'code' => '<?php
+                    class Base {}
+
+                    class A extends Base {
+                        public function m(): parent { return new Base; }
+
+                        /** @return list<parent> */
+                        public function l(): array { return [new Base]; }
+                    }
+
+                    final class B extends A {}
+
+                    /** @var B $b */;
+                    $direct = $b->m();
+                    $fcc = $b->m(...);
+                    $literal = $b->{"m"}(...);
+                    $literal_list = $b->{"l"}(...);
+                ',
+                'assertions' => [
+                    '$direct===' => 'Base',
+                    '$fcc===' => 'Closure[impure]():Base',
+                    '$literal===' => 'Closure[impure]():Base',
+                    '$literal_list===' => 'Closure[impure]():list<Base>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'FirstClassCallable:ComparedToAMixedValue' => [
                 'code' => <<<'PHP'
                     <?php
