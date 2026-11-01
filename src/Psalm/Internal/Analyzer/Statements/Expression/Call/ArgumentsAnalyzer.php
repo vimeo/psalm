@@ -115,11 +115,13 @@ final class ArgumentsAnalyzer
             ? $function_params[count($function_params) - 1]
             : null;
 
-        // if this modifies the array type based on further args
+        // if this modifies the array type based on further args (not the piped value: it is passed by value, so the
+        // generic path rejects the call)
         if (in_array($method_id, ['array_push', 'array_unshift'], true)
             && $function_params
             && isset($args[0])
             && isset($args[1])
+            && !$args[0] instanceof VirtualPipeArg
         ) {
             if (ArrayFunctionArgumentsAnalyzer::handleAddition(
                 $statements_analyzer,
@@ -134,7 +136,11 @@ final class ArgumentsAnalyzer
             return null;
         }
 
-        if ($method_id === 'array_splice' && $function_params && count($args) > 1) {
+        if ($method_id === 'array_splice'
+            && $function_params
+            && count($args) > 1
+            && !$args[0] instanceof VirtualPipeArg
+        ) {
             if (ArrayFunctionArgumentsAnalyzer::handleSplice($statements_analyzer, $args, $context) === false) {
                 return false;
             }

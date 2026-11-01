@@ -267,6 +267,24 @@ final class Php85Test extends TestCase
                 'ignored_issues' => ['InvalidPassByReference'],
                 'php_version' => '8.6',
             ],
+            'pipeIntoAnArrayFunctionKeepsTheArray' => [
+                'code' => '<?php
+                    $a = [1];
+                    $a |> array_push(?, "x");
+
+                    $b = [1];
+                    $b |> array_unshift(?, "y");
+
+                    $c = [1];
+                    $c |> array_splice(?, 0);',
+                'assertions' => [
+                    '$a===' => 'list{1}',
+                    '$b===' => 'list{1}',
+                    '$c===' => 'list{1}',
+                ],
+                'ignored_issues' => ['InvalidPassByReference'],
+                'php_version' => '8.6',
+            ],
             'pipeReturningByReferenceIsPassedByReference' => [
                 'code' => '<?php
                     function &counter(int $start): int {

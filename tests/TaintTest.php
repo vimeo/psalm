@@ -454,6 +454,33 @@ final class TaintTest extends TestCase
         );
     }
 
+    public function testTaintPushedOntoThePipedArrayDoesNotFlowIntoIt(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            $t = (string) $_GET["t"];
+            $a = ["safe"];
+            $a |> array_push(?, $t);
+            echo implode(",", $a);
+        ');
+        $this->project_analyzer->setPhpVersion('8.6', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertSame(
+            [[4, 'InvalidPassByReference']],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
     public function testTaintFlowThroughNestedSpecializedCallsAndStaticProperty(): void
     {
         $depth = 20;
