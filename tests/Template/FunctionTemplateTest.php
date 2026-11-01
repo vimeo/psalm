@@ -2260,39 +2260,20 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.0',
             ],
-            'templatesDeclaredAcrossTagFormsKeepTheirOrderInStorage' => [
+            'templateDefaultsFollowTheDeclarationOrderWhenAPrefixedTagComesLater' => [
                 'code' => '<?php
                     /**
-                     * @template T
-                     * @template U of T
-                     * @psalm-template T of string
-                     * @param T $a
-                     * @param U $b
+                     * @template T = int
+                     * @psalm-template U = list<T>
                      * @return U
                      */
-                    function pick(string $a, string $b): string {
-                        return $b;
+                    function f(): mixed {
+                        throw new Exception();
                     }
 
-                    /**
-                     * @psalm-template T of U
-                     * @template U of object
-                     * @param T $t
-                     * @param U $u
-                     * @return T
-                     */
-                    function crossGroup(object $t, object $u): object {
-                        return $t;
-                    }
-
-                    final class Foo {}
-
-                    $picked = pick("a", "b");
-                    $foo = new Foo();
-                    $crossed = crossGroup($foo, $foo);',
+                    $value = f();',
                 'assertions' => [
-                    '$picked===' => '\'b\'',
-                    '$crossed===' => 'Foo',
+                    '$value===' => 'list<int>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
