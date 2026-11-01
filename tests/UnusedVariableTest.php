@@ -2654,16 +2654,45 @@ final class UnusedVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
-            'pipeIntoUnsupportedPartialApplicationUsesItsOperands' => [
+            'pipeIntoPartialApplicationUsesItsOperands' => [
                 'code' => '<?php
                     final class A {
                         public function two(int $a, string $b): string { return $b . $a; }
                     }
 
-                    function f(A $o): mixed {
+                    function f(A $o): string {
                         $method = "two";
 
-                        return 3 |> $o->$method(?, ?);
+                        return "z" |> $o->$method(a: 3, ...);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'partialApplicationUsesTheArrayOfAnItemBoundByReference' => [
+                'code' => '<?php
+                    function readRef(string &$v, int $n): string { return $v . $n; }
+
+                    function f(): string {
+                        $items = ["before"];
+                        $p = readRef($items[0], ?);
+
+                        return $p(2);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'partialApplicationUsesAVariableBoundByReference' => [
+                'code' => '<?php
+                    /** @param-out list<int> $out */
+                    function fill(int $x, ?array &$out, int $y): void { $out = [$x, $y]; }
+
+                    function f(): Closure {
+                        $v = ["a"];
+                        $f = fill(1, $v, ?);
+
+                        return $f;
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
