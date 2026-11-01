@@ -853,8 +853,8 @@ final class MethodCallReturnTypeFetcher
     }
 
     /**
-     * The node attribute set on a first-class callable given directly as an argument: the call may bind the templates
-     * of its method (array_map(), a templated callable parameter), which then stay in its closure
+     * The node attribute set on a first-class callable given as the callback of array_map(), which binds the templates
+     * of its method itself: they then stay in its closure. Other calls bind them through the inferred template result.
      */
     public const CALL_ARGUMENT_ATTRIBUTE = 'first_class_callable_argument';
 

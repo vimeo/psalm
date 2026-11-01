@@ -1260,6 +1260,34 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'FirstClassCallable:MethodTemplatesBoundWhenTheArgumentEscapes' => [
+                'code' => '<?php
+                    final class O {
+                        /**
+                         * @template T
+                         * @param T $t
+                         * @return T
+                         */
+                        public function ident(mixed $t): mixed { return $t; }
+                    }
+
+                    /**
+                     * @template F
+                     * @param F $f
+                     * @return F
+                     */
+                    function tap(mixed $f): mixed { return $f; }
+
+                    $o = new O();
+                    $t = tap($o->ident(...));
+                    $t(5);
+                ',
+                'assertions' => [
+                    '$t===' => 'Closure[impure](mixed):mixed',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'FirstClassCallable:ChainedMethodTemplateBounds' => [
                 'code' => '<?php
                     final class Model {}
