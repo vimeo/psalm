@@ -273,9 +273,9 @@ final class ArrayAssignmentAnalyzer
 
                 self::trackPropertyElementImpurity($statements_analyzer, $root_array_expr, $context);
             } else {
-                if (!$root_array_expr->name instanceof PhpParser\Node\Identifier
-                    && ExpressionAnalyzer::analyze($statements_analyzer, $root_array_expr->name, $context) === false
-                ) {
+                assert(!$root_array_expr->name instanceof PhpParser\Node\Identifier);
+
+                if (ExpressionAnalyzer::analyze($statements_analyzer, $root_array_expr->name, $context) === false) {
                     return false;
                 }
 

@@ -198,6 +198,27 @@ final class ReadonlyPropertyTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'computedNameArrayPushOnInterfacePropertyWithSetHook' => [
+                'code' => '<?php
+                    interface I {
+                        public array $items { get; set; }
+                    }
+
+                    final class Impl implements I {
+                        public array $items = [];
+                    }
+
+                    function f(I $i): void {
+                        if ($i->items === []) {
+                            $i->{"items"}[] = 1;
+                        }
+                    }
+
+                    f(new Impl());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
