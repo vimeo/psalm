@@ -69,6 +69,17 @@ final class CoalesceAnalyzer
 
             if ($has_untracked_offset) {
                 $context->inside_isset = $was_inside_isset;
+            } else {
+                // the call is evaluated unconditionally: what it assigns is set on the right too
+                foreach ($cloned->assigned_var_ids as $assigned_var_id => $assigned_offset) {
+                    if (($context->assigned_var_ids[$assigned_var_id] ?? null) !== $assigned_offset
+                        && isset($cloned->vars_in_scope[$assigned_var_id])
+                    ) {
+                        $context->vars_in_scope[$assigned_var_id] = $cloned->vars_in_scope[$assigned_var_id];
+                        $context->assigned_var_ids[$assigned_var_id] = $assigned_offset;
+                        $context->vars_possibly_in_scope[$assigned_var_id] = true;
+                    }
+                }
             }
 
             if ($root_expr !== $left_expr) {
