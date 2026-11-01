@@ -5386,6 +5386,87 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.0',
             ],
+            'propertyReadLocalizedOnInterfaceFirstIntersection' => [
+                'code' => '<?php
+                    /** @template U */
+                    interface I {}
+
+                    /**
+                     * @template T
+                     * @property T $magic
+                     */
+                    class Box {
+                        /** @var T */
+                        public $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+
+                        public function __get(string $name): mixed {
+                            return $this->value;
+                        }
+                    }
+
+                    /**
+                     * @param I<string>&Box<int> $box
+                     */
+                    function readReal(I $box): int {
+                        return $box->value;
+                    }
+
+                    /**
+                     * @param I<string>&Box<int> $box
+                     */
+                    function readMagic(I $box): int {
+                        return $box->magic;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyReadKeepsFullReceiverForMagicGetOnIntersection' => [
+                'code' => '<?php
+                    /** @template U */
+                    interface I {
+                        public function __get(string $name): int;
+                    }
+
+                    /** @template T */
+                    class Box {
+                        /** @var T */
+                        protected $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+
+                        public function __get(string $name): mixed {
+                            return $this->value;
+                        }
+                    }
+
+                    /**
+                     * @param I<string>&Box<float> $box
+                     * @return float|int
+                     */
+                    function interfaceFirst(I $box) {
+                        return $box->value;
+                    }
+
+                    /**
+                     * @param Box<float>&I<string> $box
+                     * @return float|int
+                     */
+                    function classFirst(Box $box) {
+                        return $box->value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InaccessibleProperty'],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -6429,6 +6510,73 @@ final class ClassTemplateTest extends TestCase
                      */
                     final class A {}',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33 - Missing default after = for template T in docblock for A',
+            ],
+            'pseudoPropertyWriteLocalizedOnGenericReceiver' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @property-write T $value
+                     */
+                    class Box {
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    /** @param Box<int> $box */
+                    function test(Box $box): void {
+                        $box->value = "a";
+                    }',
+                'error_message' => "with declared type 'int' cannot be assigned",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'pseudoPropertyWriteLocalizedOnInterfaceFirstIntersection' => [
+                'code' => '<?php
+                    /** @template U */
+                    interface I {}
+
+                    /**
+                     * @template T
+                     * @property-write T $value
+                     */
+                    class Box {
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    /**
+                     * @param I<string>&Box<int> $box
+                     */
+                    function test(I $box): void {
+                        $box->value = "a";
+                    }',
+                'error_message' => "with declared type 'int' cannot be assigned",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'realPropertyWriteLocalizedOnInterfaceFirstIntersection' => [
+                'code' => '<?php
+                    /** @template U */
+                    interface I {}
+
+                    /** @template T */
+                    class Box {
+                        /** @var T */
+                        public $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /**
+                     * @param I<string>&Box<int> $box
+                     */
+                    function test(I $box): void {
+                        $box->value = "a";
+                    }',
+                'error_message' => "with declared type 'int' cannot be assigned",
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

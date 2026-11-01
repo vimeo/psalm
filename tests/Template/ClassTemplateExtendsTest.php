@@ -5071,6 +5071,51 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'pseudoPropertyTemplateMappedThroughExtends' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @property T $value
+                     */
+                    class Box {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @extends Box<T>
+                     */
+                    class ChildBox extends Box {}
+
+                    /** @extends Box<int> */
+                    class IntBox extends Box {}
+
+                    /** @extends ChildBox<string> */
+                    class StringChildBox extends ChildBox {}
+
+                    /**
+                     * @extends Box<int>
+                     * @property string $value
+                     */
+                    class OwnDeclarationBox extends Box {}
+
+                    /** @var ChildBox<int> $childBoxOfInt */
+                    $childBoxOfInt = new ChildBox();
+                    $a = $childBoxOfInt->value;
+                    $b = (new IntBox())->value;
+                    $c = (new StringChildBox())->value;
+                    $d = (new OwnDeclarationBox())->value;',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                    '$c===' => 'string',
+                    '$d===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -6509,6 +6554,51 @@ final class ClassTemplateExtendsTest extends TestCase
                     /** @extends Two<string> */
                     final class OneArg extends Two {}',
                 'error_message' => 'OneArg has missing template params when extending Two, expecting 2',
+            ],
+            'pseudoPropertyWriteTemplateMappedThroughExtends' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @property-write T $value
+                     */
+                    class Box {
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    /** @extends Box<int> */
+                    class IntBox extends Box {}
+
+                    $box = new IntBox();
+                    $box->value = "a";',
+                'error_message' => "with declared type 'int' cannot be assigned",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyLocalizationKeepsTemplateIntersectionThroughExtends' => [
+                'code' => '<?php
+                    /**
+                     * @template T as object
+                     * @psalm-suppress MissingConstructor
+                     */
+                    class Box {
+                        /** @var T&Countable */
+                        public $value;
+                    }
+
+                    class Payload {}
+
+                    /**
+                     * @extends Box<Payload>
+                     * @psalm-suppress MissingConstructor
+                     */
+                    class PayloadBox extends Box {}
+
+                    function test(PayloadBox $box): void {
+                        $box->value = new Payload();
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

@@ -330,6 +330,23 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $pseudo_property_get_types = [];
 
     /**
+     * The entries of {@see self::$pseudo_property_get_types} copied from a parent class or used trait, so they can be
+     * told apart from the class's own declarations and rebuilt when the class is populated again.
+     *
+     * @internal
+     * @var array<string, Union>
+     */
+    public array $inherited_pseudo_property_get_types = [];
+
+    /**
+     * Same as {@see self::$inherited_pseudo_property_get_types}, for {@see self::$pseudo_property_set_types}.
+     *
+     * @internal
+     * @var array<string, Union>
+     */
+    public array $inherited_pseudo_property_set_types = [];
+
+    /**
      * @var array<string, string>
      */
     public array $declaring_property_ids = [];
