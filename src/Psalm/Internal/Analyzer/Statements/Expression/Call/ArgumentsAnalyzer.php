@@ -1337,7 +1337,8 @@ final class ArgumentsAnalyzer
             || $arg->value instanceof PhpParser\Node\Expr\Cast
             || $arg->value instanceof PhpParser\Node\Expr\Array_
             || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
-            || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
+            || ($arg->value instanceof PhpParser\Node\Expr\BinaryOp
+                && !$arg->value instanceof PhpParser\Node\Expr\BinaryOp\Pipe)
             || $arg->value instanceof PhpParser\Node\Expr\Ternary
             || (
                 (
@@ -1345,6 +1346,7 @@ final class ArgumentsAnalyzer
                     || $arg->value instanceof PhpParser\Node\Expr\FuncCall
                     || $arg->value instanceof PhpParser\Node\Expr\MethodCall
                     || $arg->value instanceof PhpParser\Node\Expr\StaticCall
+                    || $arg->value instanceof PhpParser\Node\Expr\BinaryOp\Pipe
                 ) && (
                     !($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
                     || !$arg_value_type->by_ref

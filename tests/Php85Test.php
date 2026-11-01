@@ -267,6 +267,23 @@ final class Php85Test extends TestCase
                 'ignored_issues' => ['InvalidPassByReference'],
                 'php_version' => '8.6',
             ],
+            'pipeReturningByReferenceIsPassedByReference' => [
+                'code' => '<?php
+                    function &counter(int $start): int {
+                        static $n = 0;
+                        $n = $start;
+                        return $n;
+                    }
+
+                    function increment(int &$x): void {
+                        $x++;
+                    }
+
+                    increment(1 |> counter(...));',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
