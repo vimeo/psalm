@@ -98,7 +98,6 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_filter;
 use function assert;
 use function count;
 use function is_int;
@@ -109,8 +108,6 @@ use function str_contains;
 use function str_starts_with;
 use function strpos;
 use function strtolower;
-
-use const ARRAY_FILTER_USE_KEY;
 
 /**
  * @internal
@@ -1129,13 +1126,15 @@ final class AssignmentAnalyzer
 
             // Remove old reference parent node so previously referenced variable usage doesn't count as reference usage
             $old_type = $context->vars_in_scope[$lhs_var_id];
+            $parent_nodes = $old_type->parent_nodes;
+            foreach ($parent_nodes as $old_parent_node_id => $_) {
+                if (str_starts_with($old_parent_node_id, "$lhs_var_id from ")) {
+                    unset($parent_nodes[$old_parent_node_id]);
+                }
+            }
             // The slot is a reference to the old referenced variable, so this updates that variable's type
             $context->vars_in_scope[$lhs_var_id] = $old_type->setParentNodes(
-                array_filter(
-                    $old_type->parent_nodes,
-                    static fn(int|string $id): bool => !str_starts_with((string) $id, "$lhs_var_id from "),
-                    ARRAY_FILTER_USE_KEY,
-                ),
+                $parent_nodes,
                 $old_type->propagate_parent_nodes,
             );
         }
