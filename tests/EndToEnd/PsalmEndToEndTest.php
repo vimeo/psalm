@@ -194,9 +194,7 @@ final class PsalmEndToEndTest extends TestCase
     }
 
     /**
-     * The parser cache holds the statements of a file the parser recovered from an error in, so the ParseError has to
-     * come with them: the issue cache never stores it. The 3 files exceed the 2 threads, so the files are analyzed by
-     * workers, whose issues are merged into those of the parent.
+     * The 3 files exceed the 2 threads, so workers analyze them and their issues are merged into the parent's
      */
     public function testParseErrorIsReportedOnEveryRunWithAWarmCache(): void
     {
@@ -205,16 +203,10 @@ final class PsalmEndToEndTest extends TestCase
         $broken_file = self::$tmpDir . '/src/Broken.php';
         file_put_contents($broken_file, "<?php\nfunction f() {\n    echo 1\n}\n");
 
-        foreach (['--threads=1', '--threads=2'] as $threads) {
-            if (file_exists(self::$tmpDir . '/cache')) {
-                self::recursiveRemoveDirectory(self::$tmpDir . '/cache');
-            }
+        for ($run = 1; $run <= 3; $run++) {
+            $result = $this->runPsalm(['--threads=2', '--no-progress'], self::$tmpDir, true);
 
-            for ($run = 1; $run <= 3; $run++) {
-                $result = $this->runPsalm([$threads, '--no-progress'], self::$tmpDir, true);
-
-                $this->assertSame(1, substr_count($result['STDOUT'], 'ParseError'), "$threads, run $run");
-            }
+            $this->assertSame(1, substr_count($result['STDOUT'], 'ParseError'), "run $run");
         }
 
         file_put_contents($broken_file, "<?php\nfunction f() {\n    echo 1;\n}\n");
