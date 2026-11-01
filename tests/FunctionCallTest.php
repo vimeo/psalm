@@ -24,6 +24,27 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayFilterWithAStringCallableNarrowsTheResultOfACall' => [
+                'code' => '<?php
+                    /** @return list<object|null> */
+                    function objects(): array {
+                        return [];
+                    }
+
+                    /** @return list<int|string|null> */
+                    function scalars(): array {
+                        return [];
+                    }
+
+                    $objects = array_values(array_filter(objects(), "is_object"));
+                    $ints = array_filter(scalars(), "is_int");
+                    $unchanged = array_filter(objects(), "boolval");',
+                'assertions' => [
+                    '$objects===' => 'list<object>',
+                    '$ints===' => 'array<int<0, max>, int>',
+                    '$unchanged===' => 'array<int<0, max>, null|object>',
+                ],
+            ],
             'filterVarIntWithFloatLiteralsOutsideTheRangeOfAnInt' => [
                 'code' => '<?php
                     $big = filter_var(1e30, FILTER_VALIDATE_INT);
