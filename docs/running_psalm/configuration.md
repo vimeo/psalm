@@ -62,6 +62,22 @@ This corresponds to Psalm‘s [error-detection level](error_levels.md).
 ```
 Setting this to `"false"` hides all issues with `Mixed` types in Psalm’s output. If not given, this defaults to `"false"` when `errorLevel` is 3 or higher, and `"true"` when the error level is 1 or 2.
 
+`"true"` only stops Psalm from hiding them: above level 2 they are reported as `info`, so give the issue the error level you want in `<issueHandlers>`. For a `mixed` value passed to `strtolower()` (`MixedArgument`; `MixedAssignment` behaves the same):
+
+```xml
+<psalm errorLevel="1" />                                  <!-- MixedArgument: error -->
+<psalm errorLevel="2" />                                  <!-- MixedArgument: info -->
+<psalm errorLevel="5" />                                  <!-- nothing -->
+<psalm errorLevel="5" reportMixedIssues="true" />         <!-- MixedArgument: info -->
+<psalm errorLevel="5" reportMixedIssues="true">           <!-- MixedArgument: error -->
+  <issueHandlers><MixedArgument errorLevel="error" /></issueHandlers>
+</psalm>
+<psalm errorLevel="5" reportMixedIssues="false">          <!-- nothing, even with the handler -->
+  <issueHandlers><MixedArgument errorLevel="error" /></issueHandlers>
+</psalm>
+<psalm errorLevel="1" reportMixedIssues="false" />        <!-- nothing -->
+```
+
 #### totallyTyped
 
 \(Deprecated\) This setting has been replaced by `reportMixedIssues` which is automatically enabled when `errorLevel` is 1.
@@ -361,6 +377,25 @@ When `true`, Psalm will report class and interface methods that override a metho
 >
 ```
 When `true`, Psalm loads the stubs it ships for the libraries your code uses (in `stubs/libraries`), which declare how their methods pass taints along and what they may do (their [capabilities](../annotating_code/purity_model.md)). A stub is only loaded when the scan finds one of the classes it declares, or the scanned code (e.g. the files your autoloader includes) declares one of its functions, and it only refines what it declares of them. Defaults to `true`.
+
+#### loadLibraryPlugins
+```xml
+<psalm
+  loadLibraryPlugins="[bool]"
+>
+```
+When `true`, Psalm enables these plugins without listing them in [`<plugins>`](plugins/using_plugins.md). Defaults to `true`.
+
+| Plugin | Enabled when |
+|---|---|
+| `psalm/plugin-phpunit` | `composer.json` requires `phpunit/phpunit` |
+| `psalm/plugin-mockery` | `composer.json` requires `mockery/mockery` |
+| `psalm/plugin-symfony` | `composer.json` requires `symfony/framework-bundle` |
+| `psalm/plugin-laravel` | `composer.json` requires `laravel/framework` or `orchestra/testbench` |
+| `psalm/plugin-sabre-event` | `composer.json` requires `sabre/event` |
+| the plugin of `webmozart/assert` (2.4 and later) | `webmozart/assert` is installed |
+
+Psalm itself requires the `psalm/*` plugins, so they don't need installing.
 
 #### phpVersion
 ```xml
@@ -677,6 +712,7 @@ Optional. A list of extensions to enable. By default, only extensions required b
 ```xml
 <enableExtensions>
   <extension name="decimal"/>
+  <extension name="imagick"/>
   <extension name="pdo"/>
 </enableExtensions>
 ```

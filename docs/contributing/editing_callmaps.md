@@ -6,29 +6,56 @@ One of the first things most contributors start with is proposing changes to
 callmaps.
 
 Callmap is a data file (formatted as a PHP file returning an array) that tells
-Psalm what arguments function/method takes and what it returns.
+Psalm what arguments function/method takes and what it returns. Psalm loads
+`dictionaries/CallMap_<PHP major version><PHP minor version>.php` for the analyzed
+PHP version (`CallMap_84.php` for PHP 8.4).
 
-There is a partial callmap file in `dictionaries/override/CallMap.php` folder, and
-a number of delta files that provide information on
-how signatures changed in various PHP versions in `dictionaries/override/CallMap_*_delta.php`. 
+These files are generated: never edit them by hand. `bin/stubs/gen_callmap.php` builds
+them from two sources:
 
-To alter info for a function, edit the signatures in `dictionaries/override/CallMap*` (adding the function if missing, copying it from `dictionaries/autogen/CallMap_$latest.php`).  
+* `dictionaries/autogen/CallMap_*.php`: the signatures read by reflection from PHP and
+  a set of extensions, one file per PHP version;
+* `dictionaries/override/`: hand written corrections. `CallMap.php` holds the
+  signatures of the newest PHP version, and the delta files `CallMap_*_delta.php`
+  hold how they changed in each version.
 
-When editing info for a function, don't forget to alter all revisions of the same function in `dictionaries/override/CallMap_*_delta.php`.
+An override entry wins over the reflected one. Overrides equal to the reflected
+signature in every version are dropped.
 
-The callmap files in the `override` subfolder are then used, in conjunction with the
-automatically-generated reflection callmaps in `dictionaries/autogen`, to generate the
-final callmaps in `dictionaries/CallMap_*`, which are the actual callmaps in use by Psalm.
+## Changing a signature
 
-After editing an override callmap, run `bin/gen_callmap.php` to regenerate the final callmap file.
+1. Edit the entry in `dictionaries/override/CallMap.php` (to add a missing one, copy it
+   from `dictionaries/autogen/CallMap_$latest.php`).
+2. Run `php -d memory_limit=-1 bin/stubs/gen_callmap.php`. It regenerates
+   `dictionaries/CallMap_*.php` and rewrites the delta files.
 
-To also regenerate the base callmaps, run `bin/gen_callmap.sh`: it will use the dockerfiles in `bin/` 
-to extract types from PHP and a set of extensions.  
-To add types from an extension to the callmap, edit all versions of the Dockerfiles.  
+The edit applies to every older version up to the first delta that changes the
+function. Narrowing the parameter of `array_key_first` this way changes
+`CallMap_80.php` to `CallMap_86.php` and the `new` side of its `changed` entry in
+`CallMap_80_delta.php`, while `CallMap_74.php` keeps the `old` side. To change an
+older signature, edit the `old` side of the entry in that delta.
+
+## Regenerating the reflected callmaps
+
+`bin/stubs/gen_callmap.sh` (`composer gen_callmap`, part of `composer build`) runs
+`bin/stubs/gen_base_callmap.php` inside one Docker image per PHP version
+(`ghcr.io/<owner>/psalm:internal_stubs_<version>`), then `gen_callmap.php`.
+`bin/stubs/build_docker.php` builds those images and generates their Dockerfile on
+the fly.
+
+To add the types of an extension, add it to `EXTENSIONS` in `bin/stubs/build_docker.php`
+(or to `INCLUDES`, for some PHP versions only) with its version source in `SOURCES`.
+`PIE_PACKAGES` lists the extensions installed with PIE, and `EXCLUDES` the ones that
+don't build on a PHP version yet.
+
+Every push runs the "Build docker image for stubs" workflow: it builds the images,
+runs `composer build`, and fails when a committed file is out of date, uploading the
+difference as the `composer-build-patch` artifact. `bin/ci/apply-composer-build-patch.sh`
+applies it to your checkout (set `PSALM_REPO=<you>/psalm` for a run on your fork).
 
 ## Full callmap format
 
-The full callmap (`CallMap.php`) has function/method
+A callmap (`dictionaries/CallMap_*.php`, and `dictionaries/override/CallMap.php`) has function/method
 names as keys and an array representing the corresponding signature as a value.
 
 First element of that value is a return type (it also doesn't have a key), and
@@ -85,7 +112,7 @@ The second usort fails (equivalent to the non-split return type of `version_comp
 
 When you have multifaceted functions like these, it's a very good idea to at least define a templated stub in `stubs/` for them, or a custom return type provider for even more complex logic, not representable with templates/conditional types/etc in a stub.
 
-Also note that `bin/gen_callmap.php` has some validation logic which will re-add back removed parameters in overridden aliased callmaps: to avoid this, explicitly whitelist aliased functions by editing `assertParameter` in `bin/gen_callmap_utils.php`, and eventually `bin/gen_callmap.php` as needed.
+Also note that `bin/stubs/gen_callmap.php` has some validation logic which will re-add back removed parameters in overridden aliased callmaps: to avoid this, explicitly whitelist aliased functions by editing `assertParameter` in `bin/stubs/gen_callmap_utils.php`, and eventually `bin/stubs/gen_callmap.php` as needed.
 
 ## Delta file format
 
@@ -98,47 +125,21 @@ were added in that PHP version), `removed` (for those that were removed) and
 Entry format for `removed` and `added` section matches that of a full callmap,
 while `changed` entries list `old` and `new` signatures.
 
-## How Psalm uses delta files
+## How the generator uses delta files
 
-When the current PHP version is set to something other than the latest PHP
-version supported by Psalm, it needs to process delta files to arrive at a
-version of callmap matching the one that is used during analysis. Psalm uses
-the following process to do that:
+`bin/stubs/gen_callmap.php` starts from `dictionaries/override/CallMap.php` (the
+newest PHP version) and applies each delta in reverse to get the overrides of the
+version before it: entries in `added` are removed, those in `removed` are added
+back, and `changed.new` signatures are replaced with `changed.old`. It merges the
+overrides of each version over the reflected callmap of that version, then rewrites
+the delta files from the result, so they always match `override/CallMap.php`.
 
-1. Read `CallMap.php` (Note: it's the one having the latest signatures).
-2. If it matches configured PHP version, use it.
-3. If the callmap delta for previous PHP version exists, read that.
-4. Take previous callmap delta and apply it in reverse order. That is, entries
-   in `removed` section are added, those in `added` section are removed and
-   `changed.new` signatures in the current callamp are replaced with
-   `changed.old`.
-5. Goto 2
+The "Build docker image for stubs" workflow fails when a committed callmap differs
+from what the generator produces.
 
-## Consistent histories
+## Adding a function
 
-To make sure there are no mismatches in deltas and the callmap, CI validates
-that all function/method entries have consistent histories. E.g. that the
-signature in `changed.new` matches the one in `CallMap.php`, the `removed`
-entries are actually absent from `CallMap.php` and so on.
-
-## Typical changes
-
-To put that into practical perspective, let's see how a couple of typical
-callmap changes may look like.
-
-### Adding a new function
-
-Say, there's a function added in PHP 8.1, e.g. `array_is_list()`. Add it to the
-`CallMap_81_delta.php` (as it was introduced in PHP 8.1), and `CallMap.php` (as
-it exists in the latest PHP version). Here's [the PR that does it](https://github.com/vimeo/psalm/pull/6398/files).
-
-### Correcting the function signature
-
-Assume you found an incorrect signature, the one that was always different to what
-we currently have in Psalm. This will need a change to `CallMap.php` (as the signature is
-still valid). Here's [the PR that does it](https://github.com/vimeo/psalm/pull/6359/files).
-
-If function signature is correct for an older version but has changed since you
-will need to edit the delta for PHP version where signature changed and
-`CallMap.php` (as this new signature is still valid).  Here's
-[the PR that does it (makes `timestamp` nullable)](https://github.com/vimeo/psalm/pull/6244/files).
+The functions and methods of PHP and of the extensions in the stub images come from
+reflection, so a new one reaches the callmaps without an override: `array_is_list()`
+(PHP 8.1) has no override entry. Add one only to refine its types, as described in
+[Changing a signature](#changing-a-signature).

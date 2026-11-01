@@ -111,11 +111,40 @@ final class PsalmEndToEndTest extends TestCase
 
     public function testInit(): void
     {
-        $this->assertStringStartsWith(
-            'Calculating best config level based on project files',
+        $this->assertStringContainsString(
+            'Created psalm.xml with errorLevel ',
             $this->runPsalmInit()['STDOUT'],
         );
         $this->assertFileExists(self::$tmpDir . '/psalm.xml');
+    }
+
+    public function testInitReportsMissingAutoloadDirectoriesWithoutCrashing(): void
+    {
+        $project_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndMissingAutoload_');
+        assert($project_dir !== false);
+        unlink($project_dir);
+        mkdir($project_dir);
+
+        try {
+            file_put_contents(
+                $project_dir . '/composer.json',
+                '{"autoload": {"psr-4": {"App\\\\": "missing/"}}}',
+            );
+            mkdir($project_dir . '/vendor');
+            file_put_contents($project_dir . '/vendor/autoload.php', "<?php\n");
+
+            $process = new Process([PHP_BINARY, $this->psalm, '--init'], $project_dir, self::agentEnvVarsToUnset());
+            $process->run();
+        } finally {
+            self::recursiveRemoveDirectory($project_dir);
+        }
+
+        $this->assertSame(1, $process->getExitCode());
+        $this->assertStringContainsString(
+            'Could not located any PSR-0 or PSR-4-compatible paths',
+            $process->getErrorOutput(),
+        );
+        $this->assertStringNotContainsString('Uncaught', $process->getErrorOutput());
     }
 
     public function testAlter(): void
@@ -179,6 +208,26 @@ final class PsalmEndToEndTest extends TestCase
         $result = $this->runPsalm([], self::$tmpDir, true);
         $this->assertStringContainsString(
             'Target PHP version: 7.4 (set by config file)',
+            $result['STDERR'],
+        );
+    }
+
+    public function testPsalmWithPHP86VersionOverride(): void
+    {
+        $this->runPsalmInit(1);
+        $result = $this->runPsalm(['--php-version=8.6'], self::$tmpDir, true);
+        $this->assertStringContainsString(
+            'Target PHP version: 8.6 (set by CLI argument)',
+            $result['STDERR'],
+        );
+    }
+
+    public function testPsalmWithPHP86VersionFromConfig(): void
+    {
+        $this->runPsalmInit(1, '8.6');
+        $result = $this->runPsalm([], self::$tmpDir, true);
+        $this->assertStringContainsString(
+            'Target PHP version: 8.6 (set by config file)',
             $result['STDERR'],
         );
     }

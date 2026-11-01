@@ -26,23 +26,6 @@ These come first, before every other rule here:
    ones: other callers of the changed code, subclasses and overrides, both analysis
    modes, other PHP versions, caching, ordering. Check each one by adding a test.
 3. **Add an explicit test case for each of those cases**, not only for the reported bug.
-4. **Get 100% mutation coverage of the modified and added code** with Infection
-   (`vendor-bin/infection`; first `composer bin infection install`). Infection needs a
-   coverage driver; load Xdebug for that run only if it isn't enabled:
-
-   ```sh
-   composer mutation -- --test-framework-options=--filter=UnionTest \
-       --initial-tests-php-options="-d zend_extension=xdebug.so -d xdebug.mode=coverage"
-   ```
-
-   `composer mutation` mutates only the lines changed against `origin/master` and fails
-   unless every mutant is killed, uncovered ones included. The "Mutation testing" CI job
-   runs it on every PR that changes `src/`, against the coverage of the whole test suite
-   (collected in 8 chunks and merged). Locally, restrict it to the test classes that cover
-   the change. Restrict the tests to the test classes that cover the
-   change with `--filter` (a plain class name; escaped namespaces don't survive the
-   quoting). Every escaped mutant needs a new test or a simpler change. Running the
-   covering tests this way is the one exception to running only single test cases.
 
 ## Validating changes: CI, not local test runs
 
@@ -56,7 +39,7 @@ These come first, before every other rule here:
   showing that a new test fails on the base and passes on the branch. Run just that one
   case, never the whole file:
   - provider case: `vendor/bin/phpunit tests/CapabilitiesTest.php --filter 'testValidCode@caseName'`;
-  - TaintTest provider case (sharded over `tests/Taint/TaintCases{1..4}Test.php`):
+  - TaintTest provider case (sharded over `tests/Taint/TaintCases{1..8}Test.php`):
     `vendor/bin/phpunit tests/Taint --filter '@caseName'`. This runs the case in both modes
     (plain and `TrackingUnusedVariables`);
   - test method: `vendor/bin/phpunit tests/TaintTest.php --filter 'testMethodName$'`.
@@ -172,9 +155,8 @@ workaround explicitly in the report.
 - **Tests must assert the change.** Every test case a PR adds or changes for the bug or
   feature itself must fail on the base branch and pass on the PR, because it checks the
   exact behaviour being fixed or added. Prove it by running that single test case on
-  both (see above). Edge-case tests that guard the change may pass on the base, but each
-  must kill a mutant of the change (Infection confirms it). Ways a test silently asserts
-  nothing:
+  both (see above). Edge-case tests that guard the change may pass on the base. Ways a
+  test silently asserts nothing:
   - a valid-code case for a missed-issue fix (it passes on master too): use an invalid
     case asserting the issue;
   - an inferred-type fix without `'assertions' => ['$x' => 'expected type']` (key

@@ -693,6 +693,65 @@ final class ClosureTest extends TestCase
                     '$result' => 'int',
                 ],
             ],
+            'FirstClassCallable:StringStaticMethod' => [
+                'code' => '<?php
+                    class C {
+                        public static function sm(int $i): string {
+                            return (string) $i;
+                        }
+
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public static function id($value) {
+                            return $value;
+                        }
+                    }
+
+                    $closure = "C::sm"(...);
+                    $result = $closure(1);
+                    $namespaced = "\\C::sm"(...);
+                    $other_case = "c::SM"(...);
+                    $generic = "C::id"(...);',
+                'assertions' => [
+                    '$closure' => 'Closure[impure](int):string',
+                    '$result' => 'string',
+                    '$namespaced' => 'Closure[impure](int):string',
+                    '$other_case' => 'Closure[impure](int):string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:StringStaticMethodOfAliasedClass' => [
+                'code' => '<?php
+                    class C {
+                        public static function sm(int $i): string {
+                            return (string) $i;
+                        }
+                    }
+
+                    class_alias(C::class, "Alias");
+
+                    $closure = "Alias::sm"(...);',
+                'assertions' => [
+                    '$closure' => 'Closure[impure](int):string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:UndefinedStringStaticMethod' => [
+                'code' => '<?php
+                    class C {}
+
+                    $closure = "C::missing"(...);',
+                'assertions' => [
+                    '$closure' => 'Closure[impure]',
+                ],
+                'ignored_issues' => ['InvalidFunctionCall', 'UndefinedMethod'],
+                'php_version' => '8.1',
+            ],
             'FirstClassCallable:NamedFunction:is_int' => [
                 'code' => '<?php
                     $closure = is_int(...);
@@ -893,6 +952,48 @@ final class ClosureTest extends TestCase
                     }
                 ',
                 'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InheritedMagicStaticMethod' => [
+                'code' => '<?php
+                    class ParentClass {
+                        public static function __callStatic(string $name, array $args): int { return 1; }
+                    }
+                    final class Child extends ParentClass {}
+                    $c = Child::foo(...);
+                ',
+                'assertions' => [
+                    '$c===' => 'Closure[impure]:int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InheritedStaticMethod:LiteralExpr' => [
+                'code' => '<?php
+                    class ParentClass {
+                        public static function inherited(string $s): int { return strlen($s); }
+                    }
+                    final class Child extends ParentClass {}
+                    $c = Child::{"inherited"}(...);
+                ',
+                'assertions' => [
+                    '$c===' => 'Closure[impure](string):int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InheritedInstanceMethod:LiteralExpr' => [
+                'code' => '<?php
+                    class ParentClass {
+                        public function inherited(string $s): int { return strlen($s); }
+                    }
+                    final class Child extends ParentClass {}
+                    $c = (new Child)->{"inherited"}(...);
+                ',
+                'assertions' => [
+                    '$c===' => 'Closure[impure](string):int',
+                ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
