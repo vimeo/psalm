@@ -24,6 +24,26 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'domXPathEvaluateReturnsATypedResult' => [
+                'code' => '<?php
+                    $xpath = new DOMXPath(new DOMDocument());
+                    $value = $xpath->evaluate("count(//a)");
+
+                    if (is_numeric($value)) {
+                        echo "number";
+                    }
+
+                    if (is_string($value)) {
+                        echo "string";
+                    }
+
+                    if ($value instanceof DOMNodeList) {
+                        echo "nodes";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'filterVarIntWithFloatLiteralsOutsideTheRangeOfAnInt' => [
                 'code' => '<?php
                     $big = filter_var(1e30, FILTER_VALIDATE_INT);
