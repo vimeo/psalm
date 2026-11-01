@@ -24,6 +24,36 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'filterVarIntWithFloatLiteralsOutsideTheRangeOfAnInt' => [
+                'code' => '<?php
+                    $big = filter_var(1e30, FILTER_VALIDATE_INT);
+                    $notANumber = filter_var(NAN, FILTER_VALIDATE_INT);
+                    $whole = filter_var(5.0, FILTER_VALIDATE_INT);
+                    $bigMin = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["min_range" => 1e30]]);
+                    $notANumberMax = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["max_range" => NAN]]);
+                    $knownMinAndNotANumberMax = filter_var(
+                        5,
+                        FILTER_VALIDATE_INT,
+                        ["options" => ["min_range" => 0, "max_range" => NAN]],
+                    );
+                    $bigMinAndKnownMax = filter_var(
+                        5,
+                        FILTER_VALIDATE_INT,
+                        ["options" => ["min_range" => 1e30, "max_range" => 10]],
+                    );
+                    $knownRange = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["min_range" => 0, "max_range" => 10]]);',
+                'assertions' => [
+                    '$big===' => 'false',
+                    '$notANumber===' => 'false',
+                    '$whole===' => '5',
+                    '$bigMin===' => 'false|int',
+                    '$notANumberMax===' => 'false|int',
+                    '$knownMinAndNotANumberMax===' => 'false|int',
+                    '$bigMinAndKnownMax===' => 'false|int',
+                    '$knownRange===' => '5',
+                ],
+            ],
+
             'multibyteLiteralArgument' => [
                 'code' => '<?php
                     function startsWithGreeting(string $s): bool {
@@ -50,6 +80,72 @@ final class FunctionCallTest extends TestCase
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.4',
+            ],
+            'peclFunctionsOfExtensionsThePhp86ImageLacks' => [
+                'code' => '<?php
+                    $session = ssh2_connect("example.com", 22);
+                    $version = swoole_version();
+                    $string = _string("abc");
+                    $serialized = igbinary_serialize([1]);',
+                'assertions' => [
+                    '$version===' => 'string',
+                    '$string===' => 'Swoole\StringObject',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.6',
+            ],
+            'clampOfIntegers' => [
+                'code' => '<?php
+                    /** @var int $i */;
+                    $result = clamp($i, 0, 100);',
+                'assertions' => [
+                    '$result===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'clampOfFloats' => [
+                'code' => '<?php
+                    /** @var float $f */;
+                    $result = clamp($f, 0.0, 1.0);',
+                'assertions' => [
+                    '$result===' => 'float',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'clampOfMixedIntAndFloat' => [
+                'code' => '<?php
+                    /** @var int $i */;
+                    /** @var float $f */;
+                    $result = clamp($i, 0.5, $f);',
+                'assertions' => [
+                    '$result===' => 'float|int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'clampOfObjects' => [
+                'code' => '<?php
+                    $d = new DateTimeImmutable();
+                    $min = new DateTimeImmutable("yesterday");
+                    $max = new DateTimeImmutable("tomorrow");
+                    $result = clamp($d, $min, $max);',
+                'assertions' => [
+                    '$result===' => 'DateTimeImmutable',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'clampOfStrings' => [
+                'code' => '<?php
+                    /** @var string $s */;
+                    $result = clamp($s, "a", "z");',
+                'assertions' => [
+                    '$result===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
             ],
             'callTemplatedFunctionWithUnionArgument' => [
                 'code' => '<?php
@@ -2207,6 +2303,69 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'array_is_list_keeps_keyed_array_shape' => [
+                'code' => '<?php
+                    /** @param array{0: string, 1: string[]} $arr */
+                    function f(array $arr): string {
+                        if (!array_is_list($arr)) {
+                            throw new Exception();
+                        }
+                        [$a0, $a1] = $arr;
+                        return $a0 . implode("", $a1);
+                    }
+
+                    /** @var array{0: string, 1: int} $s */
+                    $s = [];
+                    assert(array_is_list($s));
+                    ',
+                'assertions' => [
+                    '$s===' => 'list{string, int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'array_is_list_keeps_optional_keys_of_keyed_array' => [
+                'code' => '<?php
+                    /** @var array{0: string, 1?: int} $s */
+                    $s = [];
+                    assert(array_is_list($s));
+
+                    /** @var array{0?: string, 1: int} $t */
+                    $t = [];
+                    assert(array_is_list($t));
+                    ',
+                'assertions' => [
+                    '$s===' => 'list{0: string, 1?: int}',
+                    '$t===' => 'list{string, int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'array_is_list_keeps_callable_keyed_array' => [
+                'code' => '<?php
+                    /** @var array $c */
+                    $c = [];
+                    assert(is_callable($c));
+                    assert(array_is_list($c));
+                    ',
+                'assertions' => [
+                    '$c===' => 'callable-list{array-key, mixed}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'array_is_list_on_keyed_array_with_extra_keys' => [
+                'code' => '<?php
+                    /** @var array{0: string, ...<int, bool>} $s */
+                    $s = [];
+                    assert(array_is_list($s));
+                    ',
+                'assertions' => [
+                    '$s===' => 'non-empty-list<bool|string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'possiblyUndefinedArrayDestructurationOnOptionalArg' => [
                 'code' => '<?php
                     class A
@@ -2687,6 +2846,13 @@ final class FunctionCallTest extends TestCase
                     'RedundantConditionGivenDocblockType',
                 ],
             ],
+            'clampIsUndefinedBeforePhp86' => [
+                'code' => '<?php
+                    $result = clamp(5, 0, 10);',
+                'error_message' => 'UndefinedFunction',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
             'undefinedFunctionInArrayMap' => [
                 'code' => '<?php
                     array_map(
@@ -3086,6 +3252,60 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'array_is_list_on_list_shape' => [
+                'code' => '<?php
+                    /** @param list{string, int} $arr */
+                    function f(array $arr): void {
+                        assert(array_is_list($arr));
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'array_is_list_keyed_array_with_string_keys' => [
+                'code' => '<?php
+                    /** @param array{a: string, b: int} $arr */
+                    function f(array $arr): void {
+                        assert(array_is_list($arr));
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'array_is_list_keyed_array_without_first_key' => [
+                'code' => '<?php
+                    /** @param array{1: string, 2: int} $arr */
+                    function f(array $arr): void {
+                        assert(array_is_list($arr));
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'array_is_list_keyed_array_with_required_key_after_gap' => [
+                'code' => '<?php
+                    /** @param array{0: string, 2: int} $arr */
+                    function f(array $arr): void {
+                        assert(array_is_list($arr));
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'keyed_array_asserted_as_list_of_other_values' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert list<int> $value
+                     */
+                    function assertIntList($value): void {}
+
+                    /** @param array{0: string} $arr */
+                    function f(array $arr): void {
+                        assertIntList($arr);
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'passingObjectToStringableObjectParam' => [
                 'code' => '<?php

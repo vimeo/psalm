@@ -1,0 +1,45 @@
+<?php
+
+// The PHP 8.6 enums. They live apart from PhpVersionedClasses.phpstub, which is parsed with the grammar of every
+// analysis version and so cannot contain `enum` declarations without failing to parse below PHP 8.1.
+
+namespace {
+    /** @since 8.6 */
+    enum SortDirection
+    {
+        case Ascending;
+        case Descending;
+    }
+}
+
+namespace Io\Poll {
+    /** @since 8.6 */
+    enum Backend
+    {
+        case Auto;
+        case Poll;
+        case Epoll;
+        case Kqueue;
+        case EventPorts;
+        case WSAPoll;
+
+        /** @return list<Backend> */
+        public static function getAvailableBackends(): array {}
+
+        public function isAvailable(): bool {}
+
+        public function supportsEdgeTriggering(): bool {}
+    }
+
+    /** @since 8.6 */
+    enum Event
+    {
+        case Read;
+        case Write;
+        case Error;
+        case HangUp;
+        case ReadHangUp;
+        case OneShot;
+        case EdgeTriggered;
+    }
+}

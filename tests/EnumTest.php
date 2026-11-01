@@ -756,6 +756,17 @@ final class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'debugInfoAllowedOnPhp86' => [
+                'code' => '<?php
+                    enum Foo {
+                        case A;
+                        public function __debugInfo(): array { return []; }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
         ];
     }
 
@@ -1008,6 +1019,28 @@ final class EnumTest extends TestCase
                 'error_message' => 'InvalidEnumMethod',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'debugInfoForbiddenOnPhp85' => [
+                'code' => '<?php
+                    enum Foo {
+                        case A;
+                        public function __debugInfo(): array { return []; }
+                    }
+                ',
+                'error_message' => 'InvalidEnumMethod',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'forbiddenMethodOnPhp86' => [
+                'code' => '<?php
+                    enum Foo {
+                        case A;
+                        public function __get() {}
+                    }
+                ',
+                'error_message' => 'InvalidEnumMethod',
+                'error_levels' => [],
+                'php_version' => '8.6',
             ],
             'forbiddenUnitEnumImplementation' => [
                 'code' => '<?php

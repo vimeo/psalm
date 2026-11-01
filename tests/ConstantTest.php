@@ -250,6 +250,42 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'bitwiseOperationsOnFloatConstantsOutsideTheRangeOfAnIntAreNotFolded' => [
+                'code' => '<?php
+                    class A {
+                        public const BIG = 1e30;
+                        public const NOT_A_NUMBER = NAN;
+                        public const WHOLE = 5.0;
+                    }
+
+                    class B {
+                        public const OR = A::BIG | 1;
+                        public const AND = A::NOT_A_NUMBER & 1;
+                        public const XOR = A::WHOLE ^ 1;
+                        public const NESTED = (A::BIG | 1) | 2;
+                    }
+
+                    class C {
+                        public const FROM_INTERMEDIATE = B::OR ^ 2;
+                        public const FROM_NOT_A_NUMBER = B::AND & A::WHOLE;
+                    }
+
+                    $or = B::OR;
+                    $and = B::AND;
+                    $xor = B::XOR;
+                    $nested = B::NESTED;
+                    $fromIntermediate = C::FROM_INTERMEDIATE;
+                    $fromNotANumber = C::FROM_NOT_A_NUMBER;',
+                'assertions' => [
+                    '$or===' => 'int',
+                    '$and===' => 'int',
+                    '$xor===' => '4',
+                    '$nested===' => 'int',
+                    '$fromIntermediate===' => 'int',
+                    '$fromNotANumber===' => 'int',
+                ],
+            ],
+
             'constantInFunction' => [
                 'code' => '<?php
                     useTest();
