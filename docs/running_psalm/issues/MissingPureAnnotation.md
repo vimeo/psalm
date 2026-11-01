@@ -1,6 +1,6 @@
 # MissingPureAnnotation
 
-Emitted when a potentially pure function or method does not have a `@psalm-pure` or `@psalm-capabilities` declaration: the issue suggests the capabilities it was inferred to need.  
+Emitted when the config flag `suggestPurityAnnotations` is set to `true` and a potentially pure function or method does not have a `@psalm-pure` or `@psalm-capabilities` declaration: the issue suggests the capabilities it was inferred to need.  
 
 A function-like explicitly marked `@psalm-impure` is left alone: for example a hook that overriding methods may implement freely.  
 
@@ -8,9 +8,7 @@ No annotation is suggested for an unannotated method that is overridden, nor for
 
 No annotation is suggested for a function-like whose parameter default values need capabilities the annotation would not give them (see [parameter default values](../../annotating_code/purity_model.md#parameter-default-values)).  
 
-To automatically add pure annotations where needed, run Psalm with `--alter --issues=MissingPureAnnotation`.  
-
-This issue is emitted to aid [security analysis](https://psalm.dev/docs/security_analysis/), which works best when all explicitly pure functions and methods are marked as pure.  
+To automatically add pure annotations where needed, run Psalm with `--alter --issues=MissingPureAnnotation` (it does not need the config flag).  
 
 ```php
 <?php
@@ -37,5 +35,19 @@ function applyAll(array $fs, int $x): int {
 ```
 
 Only what the function-like's own body does counts, not what the closures it creates do: those may be returned or stored rather than called. The parameter must not be assigned in the body, and the `_` must be writable where the parameter's type is written (not behind a `@psalm-type` alias, and not where another purity is written).
+
+## Why this is useful
+
+The annotation documents what the function may do, and Psalm then enforces it: a later change that adds a side effect is reported as `ImpureFunctionCall` instead of silently making every caller impure.
+
+It also helps [taint analysis](https://psalm.dev/docs/security_analysis/), which keeps the taint of the arguments of each call to a pure function apart. Psalm infers that for functions and for methods that cannot be overridden (`private` or `final` methods, and methods of `final` classes). For an overridable method or a constructor the annotation is the only way to say it: see [specializing taints in functions](../../security_analysis/avoiding_false_positives.md#specializing-taints-in-functions).
+
+## How to enable
+
+The suggestion is off by default. Opt in in `psalm.xml`:
+
+```xml
+<psalm suggestPurityAnnotations="true">
+```
 
 See [inferring annotations](../../annotating_code/purity_model.md#inferring-annotations) in the purity model for how purity is inferred.

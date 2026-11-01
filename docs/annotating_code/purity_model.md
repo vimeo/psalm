@@ -1157,7 +1157,8 @@ Psalm infers the capabilities of unannotated code from its body and the callees 
 so as a fixpoint over the call graph, after the whole codebase has been analysed: a function-like
 that only calls pure function-likes, annotated or inferred, is pure itself, whatever the order in
 which they are declared, and mutual recursion, recursive closures and closures assigned to a
-variable are handled. It reports code that could be annotated:
+variable are handled. When [`suggestPurityAnnotations`](../running_psalm/configuration.md#suggestpurityannotations)
+is enabled, it reports code that could be annotated:
 
 - [MissingPureAnnotation](../running_psalm/issues/MissingPureAnnotation.md): a function or method
   that could have `@psalm-pure` or `@psalm-capabilities`;
@@ -1168,13 +1169,26 @@ variable are handled. It reports code that could be annotated:
 - [MissingInterfaceImmutableAnnotation](../running_psalm/issues/MissingInterfaceImmutableAnnotation.md):
   an interface with no annotation.
 
-The first two can be fixed automatically:
+The suggestions are off by default. Enable them in `psalm.xml`:
+
+```xml
+<psalm suggestPurityAnnotations="true">
+```
+
+The first two can be fixed automatically, with or without the flag in the config:
 
 ```bash
 vendor/bin/psalm --alter --issues=MissingPureAnnotation,MissingImmutableAnnotation
 ```
 
-Given this code:
+Inference itself always runs, whether or not the suggestions are enabled: capability checks and
+[taint analysis](../security_analysis/avoiding_false_positives.md#specializing-taints-in-functions)
+use the inferred purity of unannotated code. Taint analysis can only rely on inference for functions
+and for methods that cannot be overridden, so an annotation still adds precision to an overridable
+method, an abstract or interface method, and a constructor.
+
+Given this code (the reason ends with "to aid security analysis" when taint analysis runs, which it does
+by default, and with "to document what it may do and let Psalm enforce it" otherwise):
 
 ```php
 <?php
@@ -1251,16 +1265,16 @@ when you want a contract. It doesn't suggest one either when the function-like's
 [parameter default values](#parameter-default-values) need capabilities the annotation wouldn't
 give them. A function-like marked `@psalm-impure` is never reported.
 
-These issues are always reported as errors. To turn them off, or to adopt them gradually, use
-`issueHandlers`:
+Once enabled, these issues are reported as errors. To adopt them gradually, silence the ones you
+are not ready for with `issueHandlers`:
 
 ```xml
-<issueHandlers>
-    <MissingPureAnnotation errorLevel="suppress" />
-    <MissingImmutableAnnotation errorLevel="suppress" />
-    <MissingAbstractPureAnnotation errorLevel="suppress" />
-    <MissingInterfaceImmutableAnnotation errorLevel="suppress" />
-</issueHandlers>
+<psalm suggestPurityAnnotations="true">
+    <issueHandlers>
+        <MissingAbstractPureAnnotation errorLevel="suppress" />
+        <MissingInterfaceImmutableAnnotation errorLevel="suppress" />
+    </issueHandlers>
+</psalm>
 ```
 
 ## Migrating from Psalm 6
@@ -1289,9 +1303,10 @@ What changes for your code:
 - **`MissingImmutableAnnotation` has a new meaning.** In Psalm 6 it reported a mutable class
   inheriting from an immutable one; that is now `ImmutableDependency`. `MissingImmutableAnnotation`
   now reports a class that *could* be annotated. Review existing suppressions of it.
-- **New issues are reported by default:** `MissingPureAnnotation`, `MissingImmutableAnnotation`,
-  `MissingAbstractPureAnnotation` and `MissingInterfaceImmutableAnnotation`. Run `--alter` once,
-  or suppress them (see [Inferring annotations](#inferring-annotations)).
+- **New suggestions are opt-in:** `MissingPureAnnotation`, `MissingImmutableAnnotation`,
+  `MissingAbstractPureAnnotation` and `MissingInterfaceImmutableAnnotation` are only reported with
+  `suggestPurityAnnotations="true"`. Run `--alter` once to adopt them (see
+  [Inferring annotations](#inferring-annotations)).
 - **More is checked.** Implicit calls (`__toString`, `__clone`, `__invoke`, `ArrayAccess`,
   destructors), `throw new`, `new $className` and `call_user_func` are now checked for purity.
   Builtins with side effects need specific capabilities: `io` for I/O and random numbers,

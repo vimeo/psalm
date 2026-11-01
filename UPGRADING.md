@@ -115,6 +115,8 @@
 
 - [BC] Class Psalm\Type\Atomic\TCallableInterface has been deleted, use `\Psalm\Type\Atomic::isCallableType()` instead
 
+- `MissingPureAnnotation`, `MissingImmutableAnnotation`, `MissingAbstractPureAnnotation` and `MissingInterfaceImmutableAnnotation` are suggestions that are off by default: they are only reported with the new config attribute `suggestPurityAnnotations="true"` (`Psalm\Config#$suggest_purity_annotations`), and their `ERROR_LEVEL` is now `-2` (feature-specific errors). Purity is still inferred, and taint analysis and capability checks use it as before. `psalm --alter --issues=MissingPureAnnotation` and `--issues=MissingImmutableAnnotation` work without the attribute. If your baseline contains these issues, either set the attribute, or run `--update-baseline` to drop their entries (`UnusedBaselineEntry` reports them otherwise). A `@psalm-suppress` of one of them, or a nested `<errorLevel>` handler for it, is reported as unused while the attribute is off (`UnusedPsalmSuppress`, `UnusedIssueHandlerSuppression`).
+
 ## Removed
 
 - [BC] Constant Psalm\Type\Atomic\TKeyedArray::NAME_ARRAY was removed

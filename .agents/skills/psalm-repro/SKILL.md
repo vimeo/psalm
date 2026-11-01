@@ -23,8 +23,7 @@ description: Use when reproducing a Psalm bug from the CLI, showing a test fails
    - For taint modes see skill `taint-analysis`.
 2. Run
    `cd <dir> && php /path/to/worktree/psalm --no-cache --output-format=compact`
-   (or `-c <dir>/psalm.xml --root=<dir>`). Suppress `MissingPureAnnotation` /
-   `ClassMustBeFinal` noise.
+   (or `-c <dir>/psalm.xml --root=<dir>`). Suppress `ClassMustBeFinal` noise.
 3. `ls` the repro files first: an unmatched glob can abort the rest of the command (zsh)
    or be passed on literally so the command acts on a nonexistent path (bash), and a missing file looks exactly like
    "no issue". Empty output means Psalm didn't run.
