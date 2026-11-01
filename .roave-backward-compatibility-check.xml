@@ -8,5 +8,7 @@
         <ignored-regex>#^\[BC\] CHANGED: Value of constant Psalm\\DocComment::PSALM_ANNOTATIONS changed from #</ignored-regex>
         <!-- The list of the extensions Psalm has stubs for grows with each new stub (zstd). -->
         <ignored-regex>#^\[BC\] CHANGED: Property Psalm\\Config\#\$php_extensions changed default value from #</ignored-regex>
+        <!-- Making a suggestion opt-in moves its issue from -1 to -2 (feature-specific errors): both are reported as errors, so severity is unchanged. -->
+        <ignored-regex>#^\[BC\] CHANGED: Value of constant Psalm\\Issue\\CodeIssue::ERROR_LEVEL changed from -1 to -2$#</ignored-regex>
     </baseline>
 </roave-bc-check>
