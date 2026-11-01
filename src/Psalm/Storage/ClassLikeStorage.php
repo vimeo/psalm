@@ -429,15 +429,6 @@ final class ClassLikeStorage implements HasAttributesInterface
     public ?array $template_extended_params = null;
 
     /**
-     * By ancestor name, the templates with a default this class leaves out (`U` in `@extends Foo<A>` of a `Foo`
-     * declaring `T` and `U = int`, or with no `@extends`): their $template_extended_params entry is that default,
-     * checked against their bound where it is declared.
-     *
-     * @var array<string, array<string, true>>
-     */
-    public array $template_extended_defaults = [];
-
-    /**
      * @var array<string, int>|null
      */
     public ?array $template_type_extends_count = null;
