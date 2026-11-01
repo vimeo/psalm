@@ -1839,7 +1839,13 @@ final class InstancePropertyAssignmentAnalyzer
             }
         }
 
-        return $lhs_type_part instanceof TGenericObject ? $lhs_type_part : null;
+        if (!$lhs_type_part instanceof TNamedObject) {
+            return null;
+        }
+
+        $class_part = AtomicPropertyFetchAnalyzer::getIntersectionMemberOfClass($lhs_type_part, $fq_class_name);
+
+        return $class_part instanceof TGenericObject ? $class_part : null;
     }
 
     private static function analyzeSetCall(
