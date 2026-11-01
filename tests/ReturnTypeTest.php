@@ -28,6 +28,104 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'narrowerNativeReturnTypeWinsOverInheritedDocblockWithStringable' => [
+                'code' => '<?php
+                    abstract class A {
+                        /**
+                         * @return string|Stringable
+                         */
+                        abstract public function render(): string|Stringable;
+                    }
+
+                    final class B extends A {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $s = (new B())->render();',
+                'assertions' => ['$s===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inheritedDocblockStillRefinesNativeReturnType' => [
+                'code' => '<?php
+                    abstract class A {
+                        /**
+                         * @return non-empty-string
+                         */
+                        abstract public function render(): string;
+                    }
+
+                    final class B extends A {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $s = (new B())->render();',
+                'assertions' => ['$s===' => 'non-empty-string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowerNativeReturnTypeWinsOverInheritedDocblockWithStringableOrInt' => [
+                'code' => '<?php
+                    abstract class C {
+                        /** @return Stringable|int */
+                        abstract public function render(): Stringable|int|string;
+                    }
+
+                    final class D extends C {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $t = (new D())->render();',
+                'assertions' => ['$t===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'narrowerNativeReturnTypeWinsOverInheritedStringableDocblock' => [
+                'code' => '<?php
+                    abstract class E {
+                        /** @return Stringable */
+                        abstract public function render(): Stringable|string;
+                    }
+
+                    final class F extends E {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $u = (new F())->render();',
+                'assertions' => ['$u===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nativeStringableReturnTypeKeepsStringableOverInheritedStringOrStringable' => [
+                'code' => '<?php
+                    abstract class A {
+                        /**
+                         * @return string|Stringable
+                         */
+                        abstract public function render(): string|Stringable;
+                    }
+
+                    final class B extends A {
+                        public function render(): Stringable {
+                            return new class implements Stringable {
+                                public function __toString(): string { return "x"; }
+                            };
+                        }
+                    }
+
+                    $s = (new B())->render();',
+                'assertions' => ['$s===' => 'Stringable'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nativeNullReturnTypeOfAnInterfaceMethodWithADocblock' => [
                 'code' => '<?php
                     interface I {
