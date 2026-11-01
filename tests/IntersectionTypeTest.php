@@ -20,6 +20,46 @@ final class IntersectionTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'intersectionElementOfAnArrayKeepsItsInterfacesInAnArrayMapClosure' => [
+                'code' => '<?php
+                    interface A {}
+                    interface B {}
+
+                    final class Wrapper {
+                        public function __construct(public B $input) {}
+                    }
+
+                    /**
+                     * @param array<int, A&B> $filtered
+                     * @return array<int, Wrapper>
+                     */
+                    function wrap(array $filtered): array {
+                        return array_map(fn ($x) => new Wrapper($x), $filtered);
+                    }',
+            ],
+            'intersectionBoundOfATemplateKeepsItsInterfacesInAClosureParam' => [
+                'code' => '<?php
+                    interface A {}
+                    interface B {}
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @param callable(T):void $callback
+                     */
+                    function with($value, callable $callback): void {
+                        $callback($value);
+                    }
+
+                    function takesB(B $b): void {}
+
+                    /** @param A&B $value */
+                    function test($value): void {
+                        with($value, function ($x) {
+                            takesB($x);
+                        });
+                    }',
+            ],
             'callableObject' => [
                 'code' => '<?php
                     /**
