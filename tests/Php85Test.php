@@ -250,6 +250,23 @@ final class Php85Test extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'pipePassesOnlyThePipedValueByValue' => [
+                'code' => '<?php
+                    $a = [3, 1];
+                    $a |> sort(...);
+
+                    $b = [3, 1];
+                    $b |> sort(?);
+
+                    $r = "abc" |> preg_match("/b/", ?, $m);',
+                'assertions' => [
+                    '$a===' => 'list{3, 1}',
+                    '$b===' => 'list{3, 1}',
+                    '$m===' => 'array<array-key, string>',
+                ],
+                'ignored_issues' => ['InvalidPassByReference'],
+                'php_version' => '8.6',
+            ],
         ];
     }
 
@@ -354,6 +371,48 @@ final class Php85Test extends TestCase
                 'error_message' => 'PossiblyNullArgument',
                 'error_levels' => [],
                 'php_version' => '8.6',
+            ],
+            'pipeRejectsAByRefParameter' => [
+                'code' => '<?php
+                    $a = [3, 1];
+                    $a |> sort(...);',
+                'error_message' => 'Parameter 1 of sort is passed by reference, but the pipe operator passes its left-hand side by value',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'pipeRejectsAByRefParameterForALiteral' => [
+                'code' => '<?php
+                    [3, 1] |> sort(...);',
+                'error_message' => 'Parameter 1 of sort is passed by reference, but the pipe operator passes its left-hand side by value',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'pipeRejectsAByRefParameterInThePlaceOfAPlaceholder' => [
+                'code' => '<?php
+                    /** @return list<int> */
+                    function ints(): array { return [1, 2]; }
+
+                    ints() |> array_push(?, 4);',
+                'error_message' => 'Parameter 1 of array_push is passed by reference, but the pipe operator passes its left-hand side by value',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'pipeRejectsAByRefParameterOfACallable' => [
+                'code' => '<?php
+                    $f = function (array &$x): void {};
+                    $a = [3, 1];
+                    $a |> $f;',
+                'error_message' => 'is passed by reference, but the pipe operator passes its left-hand side by value',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'pipeIntoArrayMultisortSortsACopy' => [
+                'code' => '<?php
+                    $a = [2, 1];
+                    $a |> array_multisort(...);',
+                'error_message' => 'At least 1 array argument of array_multisort must be a variable',
+                'error_levels' => [],
+                'php_version' => '8.5',
             ],
         ];
     }

@@ -36,7 +36,7 @@ use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Node\Expr\VirtualPipeValue;
 use Psalm\Node\Expr\VirtualStaticCall;
-use Psalm\Node\VirtualArg;
+use Psalm\Node\VirtualPipeArg;
 use Psalm\Type;
 
 use function assert;
@@ -174,7 +174,7 @@ final class PipeAnalyzer
         if (!$right instanceof CallLike || !$right->isPartialFunctionApplication()) {
             return new VirtualFuncCall(
                 $right,
-                [new VirtualArg($value, false, false, $value->getAttributes())],
+                [new VirtualPipeArg($value, false, false, $value->getAttributes())],
                 $attributes,
             );
         }
@@ -189,10 +189,10 @@ final class PipeAnalyzer
 
         foreach ($right->getRawArgs() as $raw_arg) {
             if ($raw_arg instanceof ArgPlaceholder) {
-                $args[] = new VirtualArg($value, false, false, $raw_arg->getAttributes(), $raw_arg->name);
+                $args[] = new VirtualPipeArg($value, false, false, $raw_arg->getAttributes(), $raw_arg->name);
             } elseif ($raw_arg instanceof VariadicPlaceholder) {
                 if (!$has_placeholder) {
-                    $args[] = new VirtualArg($value, false, false, $raw_arg->getAttributes());
+                    $args[] = new VirtualPipeArg($value, false, false, $raw_arg->getAttributes());
                 }
             } else {
                 $args[] = $raw_arg;
