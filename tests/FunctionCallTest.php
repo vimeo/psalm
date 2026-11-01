@@ -94,6 +94,59 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.6',
             ],
+            'clampOfIntegers' => [
+                'code' => '<?php
+                    /** @var int $i */;
+                    $result = clamp($i, 0, 100);',
+                'assertions' => [
+                    '$result===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'clampOfFloats' => [
+                'code' => '<?php
+                    /** @var float $f */;
+                    $result = clamp($f, 0.0, 1.0);',
+                'assertions' => [
+                    '$result===' => 'float',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'clampOfMixedIntAndFloat' => [
+                'code' => '<?php
+                    /** @var int $i */;
+                    /** @var float $f */;
+                    $result = clamp($i, 0.5, $f);',
+                'assertions' => [
+                    '$result===' => 'float|int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'clampOfObjects' => [
+                'code' => '<?php
+                    $d = new DateTimeImmutable();
+                    $min = new DateTimeImmutable("yesterday");
+                    $max = new DateTimeImmutable("tomorrow");
+                    $result = clamp($d, $min, $max);',
+                'assertions' => [
+                    '$result===' => 'DateTimeImmutable',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'clampOfStrings' => [
+                'code' => '<?php
+                    /** @var string $s */;
+                    $result = clamp($s, "a", "z");',
+                'assertions' => [
+                    '$result===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
             'callTemplatedFunctionWithUnionArgument' => [
                 'code' => '<?php
                     /** @template T */
@@ -2792,6 +2845,13 @@ final class FunctionCallTest extends TestCase
                     'MixedArrayAccess',
                     'RedundantConditionGivenDocblockType',
                 ],
+            ],
+            'clampIsUndefinedBeforePhp86' => [
+                'code' => '<?php
+                    $result = clamp(5, 0, 10);',
+                'error_message' => 'UndefinedFunction',
+                'error_levels' => [],
+                'php_version' => '8.5',
             ],
             'undefinedFunctionInArrayMap' => [
                 'code' => '<?php

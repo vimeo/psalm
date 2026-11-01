@@ -1753,7 +1753,13 @@ final class ClassLikeNodeScanner
         ClassLikeStorage $storage,
         string $fq_classlike_name,
     ): void {
-        if (isset($storage->constants[$stmt->name->name])) {
+        $existing_constant = $storage->constants[$stmt->name->name] ?? null;
+
+        // A reflected constant has no location: a stub refining a natively reflected enum replaces
+        // it with the declared case instead of losing the case
+        if ($existing_constant !== null && $existing_constant->location === null) {
+            unset($storage->constants[$stmt->name->name]);
+        } elseif ($existing_constant !== null) {
             IssueBuffer::maybeAdd(new DuplicateConstant(
                 'Constant names should be unique',
                 new CodeLocation($this->file_scanner, $stmt),
