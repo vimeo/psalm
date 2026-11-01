@@ -212,6 +212,23 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'php_version' => '8.0',
         ];
 
+        // PhpVersionedClasses.phpstub is parsed with the target version's grammar, so it must stay free of
+        // syntax (enums) that older targets cannot parse, or all its stubs would be lost.
+        yield 'versionedClassStubsLoadOnPhp74' => [
+            'code' => '<?php
+                function f(): ?int {
+                    if (class_exists(SensitiveParameterValue::class)) {
+                        return (new SensitiveParameterValue(123))->getValue();
+                    }
+
+                    return null;
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
+
         yield 'php86DurationAvailable' => [
             'code' => '<?php
                 function f(Time\Duration $a): int {
@@ -425,15 +442,6 @@ final class NativeSymbolAvailabilityTest extends TestCase
         yield 'php86DurationBelowItsVersion' => [
             'code' => '<?php
                 function f(Time\Duration $d): void {}
-            ',
-            'error_message' => 'UndefinedClass',
-            'error_levels' => [],
-            'php_version' => '8.5',
-        ];
-
-        yield 'php86SortDirectionBelowItsVersion' => [
-            'code' => '<?php
-                function f(SortDirection $d): void {}
             ',
             'error_message' => 'UndefinedClass',
             'error_levels' => [],

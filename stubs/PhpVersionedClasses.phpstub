@@ -317,13 +317,6 @@ namespace {
     {
     }
 
-    /** @since 8.6 */
-    enum SortDirection
-    {
-        case Ascending;
-        case Descending;
-    }
-
     /**
      * @since 8.6
      */
@@ -403,36 +396,6 @@ namespace Io {
 }
 
 namespace Io\Poll {
-    /** @since 8.6 */
-    enum Backend
-    {
-        case Auto;
-        case Poll;
-        case Epoll;
-        case Kqueue;
-        case EventPorts;
-        case WSAPoll;
-
-        /** @return list<Backend> */
-        public static function getAvailableBackends(): array {}
-
-        public function isAvailable(): bool {}
-
-        public function supportsEdgeTriggering(): bool {}
-    }
-
-    /** @since 8.6 */
-    enum Event
-    {
-        case Read;
-        case Write;
-        case Error;
-        case HangUp;
-        case ReadHangUp;
-        case OneShot;
-        case EdgeTriggered;
-    }
-
     /** @since 8.6 */
     interface Handle {}
 
