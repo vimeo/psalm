@@ -87,6 +87,7 @@ final class MethodCallReturnTypeFetcher
                         $method_storage->capabilities,
                     ),
                     $template_result,
+                    $method_storage->template_types ?? [],
                     $fq_class_name,
                     $static_type,
                     $class_storage->parent_class,
@@ -852,25 +853,43 @@ final class MethodCallReturnTypeFetcher
 
     /**
      * The closure of a first-class callable of a method, typed as a call of the method on the same receiver: with its
-     * template bounds (those of the class, from the receiver) and `static`. The templates of the method itself are left
-     * unbound, for the calls of the closure.
+     * template bounds (those of the class, from the receiver) and `static`. The templates of the method itself that are
+     * left unbound stand for their bounds, as those of a function do in its closure: calling it doesn't bind them.
+     *
+     * @param array<string, non-empty-array<string, Union>> $method_template_types
      */
     public static function getFirstClassCallableType(
         Codebase $codebase,
         TClosure $closure,
         TemplateResult $template_result,
+        array $method_template_types,
         ?string $self_class,
         string|TNamedObject|TTemplateParam|null $static_class_type,
         ?string $parent_class,
         bool $final,
         bool $expand_generic = false,
     ): Union {
+        $method_template_bounds = [];
+
+        foreach ($method_template_types as $template_name => $bounds) {
+            foreach ($bounds as $defining_class => $bound) {
+                if (!isset($template_result->lower_bounds[$template_name][$defining_class])) {
+                    $method_template_bounds[$template_name][$defining_class] = $template_result->lower_bounds
+                        ? TemplateInferredTypeReplacer::replace($bound, $template_result, $codebase)
+                        : $bound;
+                }
+            }
+        }
+
         $closure_type = new Union([$closure]);
 
-        if ($template_result->lower_bounds) {
+        if ($template_result->lower_bounds || $method_template_bounds) {
+            $bounds_result = new TemplateResult([], $method_template_bounds);
+            $bounds_result->lower_bounds += $template_result->lower_bounds;
+
             $closure_type = TemplateInferredTypeReplacer::replace(
                 TypeExpander::expandUnion($codebase, $closure_type, null, null, null),
-                $template_result,
+                $bounds_result,
                 $codebase,
             );
         }

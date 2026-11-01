@@ -1155,23 +1155,48 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
-            'FirstClassCallable:InstanceMethod:MethodTemplatesStayUnbound' => [
+            'FirstClassCallable:MethodTemplatesStandForTheirBounds' => [
                 'code' => '<?php
                     /** @template T */
-                    final class Box {
+                    final class Coll {
+                        /** @param list<T> $items */
+                        public function __construct(private array $items) {}
+
                         /**
                          * @template U
-                         * @param U $u
-                         * @return array{T, U}
+                         * @param callable(T): U $f
+                         * @return list<U>
                          */
-                        public function pair(mixed $u): array { throw new Exception(); }
+                        public function map(callable $f): array { return array_map($f, $this->items); }
+
+                        /**
+                         * @template U of T
+                         * @param U $u
+                         * @return list<U>
+                         */
+                        public function wrap(mixed $u): array { return [$u]; }
+
+                        /**
+                         * @template V
+                         * @param V $v
+                         * @return list<V>
+                         */
+                        public static function listOf(mixed $v): array { return [$v]; }
                     }
 
-                    /** @var Box<int> $box */;
-                    $pair = $box->pair(...);
+                    /** @var Coll<int> $coll */;
+                    $map = $coll->map(...);
+                    $mapped = $map(fn(int $i): string => (string) $i);
+                    $wrap = $coll->wrap(...);
+                    $wrapped = $wrap(5);
+                    $list_of = Coll::listOf(...);
                 ',
                 'assertions' => [
-                    '$pair===' => 'Closure[impure](U:fn-box::pair as mixed):list{int, U:fn-box::pair as mixed}',
+                    '$map===' => 'Closure[impure](callable[impure](int):mixed):list<mixed>',
+                    '$mapped===' => 'list<mixed>',
+                    '$wrap===' => 'Closure[impure](int):list<int>',
+                    '$wrapped===' => 'list<int>',
+                    '$list_of===' => 'Closure[impure](mixed):list<mixed>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -1247,6 +1272,13 @@ final class ClosureTest extends TestCase
                     final class Box {
                         /** @return T */
                         public function get(): mixed { throw new Exception(); }
+
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return list<U>
+                         */
+                        public function wrap(mixed $u): array { return [$u]; }
                     }
 
                     /**
@@ -1256,11 +1288,23 @@ final class ClosureTest extends TestCase
                      */
                     function call(callable $f): mixed { return $f(); }
 
+                    /**
+                     * @template A
+                     * @template B
+                     * @param list<A> $list
+                     * @param callable(A):B $f
+                     * @return list<B>
+                     */
+                    function mapList(array $list, callable $f): array { return array_map($f, $list); }
+
                     /** @var Box<int> $box */;
+                    /** @var list<int> $ints */;
                     $result = call($box->get(...));
+                    $lists = mapList($ints, $box->wrap(...));
                 ',
                 'assertions' => [
                     '$result===' => 'int',
+                    '$lists===' => 'list<list<int>>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',

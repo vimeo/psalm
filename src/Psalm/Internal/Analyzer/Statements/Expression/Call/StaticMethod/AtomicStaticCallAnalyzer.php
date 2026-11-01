@@ -272,6 +272,7 @@ final class AtomicStaticCallAnalyzer
                                     $method_storage->return_type,
                                     $method_storage->capabilities,
                                 ),
+                                $method_storage->template_types ?? [],
                                 $self_fq_class_name,
                                 $self_fq_class_name,
                             );
@@ -527,6 +528,7 @@ final class AtomicStaticCallAnalyzer
                     $method_storage->return_type,
                     $method_storage->capabilities,
                 );
+                $method_template_types = $method_storage->template_types ?? [];
             } else {
                 $method_exists = $naive_method_exists
                     || $fake_method_exists
@@ -539,11 +541,14 @@ final class AtomicStaticCallAnalyzer
                         $declaring_method_id->fq_class_name,
                     );
 
+                    $declaring_method_storage = $codebase->methods->getStorage($declaring_method_id);
+
                     $closure = new TClosure(
                         array_values($codebase->getMethodParams($method_id)),
                         $codebase->getMethodReturnType($method_id, $self_fq_class_name),
-                        $codebase->methods->getStorage($declaring_method_id)->capabilities,
+                        $declaring_method_storage->capabilities,
                     );
+                    $method_template_types = $declaring_method_storage->template_types ?? [];
                 } elseif ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->getFirst() === 'parent'
                     && !$statements_analyzer->isStatic()
                     && isset($class_storage->pseudo_methods[$method_name_lc])
@@ -560,19 +565,22 @@ final class AtomicStaticCallAnalyzer
                         $pseudo_method_storage->return_type,
                         $pseudo_method_storage->capabilities,
                     );
+                    $method_template_types = $pseudo_method_storage->template_types ?? [];
                 } elseif ($codebase->methodExists(
                     $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
                     null,
                     new CodeLocation($statements_analyzer, $stmt),
                     is_used: false,
                 )) {
+                    $call_static_storage = $codebase->methods->getStorage(
+                        $codebase->methods->getDeclaringMethodId($call_static_method_id) ?? $call_static_method_id,
+                    );
                     $closure = new TClosure(
                         null,
                         $codebase->getMethodReturnType($call_static_method_id, $self_fq_class_name),
-                        $codebase->methods->getStorage(
-                            $codebase->methods->getDeclaringMethodId($call_static_method_id) ?? $call_static_method_id,
-                        )->capabilities,
+                        $call_static_storage->capabilities,
                     );
+                    $method_template_types = $call_static_storage->template_types ?? [];
                 } else {
                     if (IssueBuffer::accepts(
                         new UndefinedMethod(
@@ -602,6 +610,7 @@ final class AtomicStaticCallAnalyzer
                     $declaring_class_storage,
                     $class_storage,
                     $closure,
+                    $method_template_types,
                     $called_fq_class_name,
                     $self_fq_class_name,
                 ),
@@ -1157,6 +1166,8 @@ final class AtomicStaticCallAnalyzer
     /**
      * The closure of a first-class callable of a static call, typed as the call (see
      * MethodCallReturnTypeFetcher::getFirstClassCallableType())
+     *
+     * @param array<string, non-empty-array<string, Union>> $method_template_types
      */
     private static function getFirstClassCallableType(
         StatementsAnalyzer $statements_analyzer,
@@ -1167,6 +1178,7 @@ final class AtomicStaticCallAnalyzer
         ClassLikeStorage $declaring_class_storage,
         ClassLikeStorage $class_storage,
         TClosure $closure,
+        array $method_template_types,
         string $called_fq_class_name,
         ?string $self_fq_class_name,
     ): Union {
@@ -1197,6 +1209,7 @@ final class AtomicStaticCallAnalyzer
             $codebase,
             $closure,
             new TemplateResult([], $found_generic_params ?? []),
+            $method_template_types,
             $self_fq_class_name,
             $static_type,
             $class_storage->parent_class,

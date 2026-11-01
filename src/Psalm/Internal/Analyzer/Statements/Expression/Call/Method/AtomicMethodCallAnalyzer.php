@@ -248,6 +248,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                                 $lhs_type_part,
                                 $lhs_var_id === '$this',
                             ) ?? []),
+                            $method_storage->template_types ?? [],
                             $fq_class_name,
                             $static_type,
                             $declaring_class_storage->parent_class,

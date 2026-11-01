@@ -559,6 +559,7 @@ final class MissingMethodCallHandler
                 $pseudo_method_storage->capabilities,
             ),
             new TemplateResult([], $found_generic_params ?? []),
+            $pseudo_method_storage->template_types ?? [],
             $defining_class_storage->name,
             $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $method_id->fq_class_name,
             $defining_class_storage->parent_class,
