@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 use Psalm\Type\TaintKind;
 
+use function array_diff;
 use function array_fill;
 use function array_filter;
 use function array_flip;
@@ -22,6 +23,11 @@ use function array_map;
 use function array_values;
 use function implode;
 use function in_array;
+use function ini_get;
+use function ini_set;
+use function memory_get_peak_usage;
+use function memory_get_usage;
+use function memory_reset_peak_usage;
 use function range;
 use function sort;
 use function str_starts_with;
@@ -390,6 +396,169 @@ final class TaintTest extends TestCase
         ));
 
         self::assertSame(array_fill(0, $call_sites, 'TaintedShell'), $taint_issue_types);
+    }
+
+    /**
+     * Each write of a literal key makes the flow of its value reach every node after it with its own open
+     * assignment: one state per key, up to a state of every key at every node. Past FORGETTING_STATES states a node
+     * keeps no open assignments of the flows reaching it in more.
+     */
+    public function testKeyWritesDontMakeAStateOfEveryKeyAtEveryNodeAfterThem(): void
+    {
+        $writes = implode('', array_map(
+            static fn(int $i): string => "    \$form['k$i'] = \$value;\n",
+            range(1, 4000),
+        ));
+
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            "<?php\n"
+            . "/** @psalm-taint-specialize */\n"
+            . "function build(string \$value, mixed \$form): void {\n"
+            . $writes
+            . "    echo \$form['k4000'];\n"
+            . "}\n"
+            . "build((string) \$_GET['q'], []);\n",
+        );
+        $this->project_analyzer->trackTaintedInputs();
+
+        memory_reset_peak_usage();
+        $memory_before = memory_get_usage();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $memory_used = memory_get_peak_usage() - $memory_before;
+
+        $taint_issue_types = array_values(array_filter(
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+            static fn(string $type): bool => !in_array($type, self::IGNORE, true),
+        ));
+
+        self::assertSame(['TaintedHtml', 'TaintedTextWithQuotes'], $taint_issue_types);
+        self::assertLessThan(768 * 1024 * 1024, $memory_used);
+    }
+
+    /**
+     * What is sent to a generator delegating to another one that a chain of functions returns, each calling the next
+     * one from many call sites, is linked to the latter: the search for it reaches the deepest functions with a call
+     * stack per path through the chain.
+     */
+    public function testGeneratorSendThroughManyCallStacks(): void
+    {
+        $layers = 8;
+        $call_sites = 12;
+
+        $code = "<?php\n"
+            . "function inner(): Generator { \$sent = yield 1; echo \$sent; }\n";
+
+        for ($layer = 1; $layer <= $layers; $layer++) {
+            $next = $layer < $layers ? 'layer' . ($layer + 1) : 'inner';
+            $args = $layer < $layers ? '$n' : '';
+            $returned = "$next($args)";
+
+            for ($site = $call_sites - 1; $site >= 1; $site--) {
+                $returned = "\$n === $site ? $next($args) : ($returned)";
+            }
+
+            $code .= "function layer$layer(int \$n): Generator { return $returned; }\n";
+        }
+
+        $code .= "function outer(): Generator { yield from layer1(1); }\n"
+            . "\$values = outer();\n"
+            . "\$values->current();\n"
+            . "\$values->send((string) \$_GET['value']);\n";
+
+        // without the cap on the call stacks per node, the search takes gigabytes
+        $memory_limit = (string) ini_get('memory_limit');
+        ini_set('memory_limit', (string) (memory_get_usage() + 256 * 1024 * 1024));
+
+        try {
+            self::assertSame([2], $this->getTaintedHtmlLines($code));
+        } finally {
+            ini_set('memory_limit', $memory_limit);
+        }
+    }
+
+    /**
+     * `pass()` is called from one call site per stack that reaches its nodes. Up to 16 distinct call stacks at a node,
+     * only the generators that are sent to are linked. Past that, any call matches there, and they all stay linked.
+     */
+    #[DataProvider('providerGeneratorSendCallStackCap')]
+    public function testGeneratorSendCallStackCap(int $call_sites): void
+    {
+        $code = "<?php\n"
+            . "function pass(Generator \$generator): Generator { return \$generator; }\n";
+        $expected_lines = [];
+
+        for ($site = 0; $site < $call_sites; $site++) {
+            $code .= "function gen$site(): Generator { \$sent = yield 1; echo \$sent; }\n";
+            $expected_lines[] = $site + 3;
+        }
+
+        $code .= "function other(): Generator { \$sent = yield 1; echo \$sent; }\n"
+            . "function relay(): Generator { yield from pass(other()); }\n";
+
+        $returned = 'pass(gen' . ($call_sites - 1) . '())';
+
+        for ($site = $call_sites - 2; $site >= 0; $site--) {
+            $returned = "\$n === $site ? pass(gen$site()) : ($returned)";
+        }
+
+        $code .= "function run(int \$n): Generator { yield from $returned; }\n"
+            . "\$values = run(1);\n"
+            . "\$values->current();\n"
+            . "\$values->send((string) \$_GET['value']);\n";
+
+        $lines = $this->getTaintedHtmlLines($code);
+
+        if ($call_sites > 16) {
+            // past the cap, `other()` may be linked too
+            $lines = array_values(array_diff($lines, [$call_sites + 3]));
+        }
+
+        self::assertSame($expected_lines, $lines);
+    }
+
+    /**
+     * @return array<string, array{int}>
+     * @psalm-pure
+     */
+    public static function providerGeneratorSendCallStackCap(): array
+    {
+        return [
+            'sixteenCallStacks' => [16],
+            'seventeenCallStacks' => [17],
+        ];
+    }
+
+    /**
+     * @return list<int> the lines of the TaintedHtml issues of $code, sorted
+     */
+    private function getTaintedHtmlLines(string $code): array
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, $code);
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $lines = array_values(array_map(
+            static fn(IssueData $issue): int => $issue->line_from,
+            array_filter(
+                IssueBuffer::getIssuesDataForFile($file_path),
+                static fn(IssueData $issue): bool => $issue->type === 'TaintedHtml',
+            ),
+        ));
+        sort($lines);
+
+        return $lines;
     }
 
     /**
@@ -839,6 +1008,47 @@ final class TaintTest extends TestCase
                     static fn(int $i): string => 'echo tag(["k' . $i . '" => (string) $_GET["q"]]);' . "\n",
                     range(1, 1100),
                 )),
+            ],
+            'keyFetchAfterKeyWritesOfAsManyFlowsAsANodeHoldsBeforeForgettingIgnoresThem' => [
+                // the 256 flows of the writes are as many states as FORGETTING_STATES at the node of the last one
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function build(string $value, mixed $form): void {
+' . implode('', array_map(
+                    static fn(int $i): string => '$form["k' . $i . '"] = $value;' . "\n",
+                    range(1, 256),
+                )) . '
+                        echo $form["other"];
+                    }
+
+                    build((string) $_GET["q"], []);',
+            ],
+            'keyOfAForeachElementKeptByAFlowThatForgotItsOpenAssignmentsInACall' => [
+                // the last of the 257 flows of the writes to reach build()'s return forgets its key, but not the element
+                // of the loop it came from, which puts it back under its own key: "other" isn't "a"
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function build(string $value, array $form): string {
+' . implode('', array_map(
+                    static fn(int $i): string => '$form["k' . $i . '"] = $value;' . "\n",
+                    range(1, 257),
+                )) . '
+                        return $form["other"] ?? "";
+                    }
+
+                    /**
+                     * @param array<string, string> $data
+                     * @psalm-taint-specialize
+                     */
+                    function show(array $data): void {
+                        $copy = [];
+                        foreach ($data as $key => $value) {
+                            $copy[$key] = build(trim($value), []);
+                        }
+                        echo $copy["other"] ?? "";
+                    }
+
+                    show(["a" => (string) $_GET["q"]]);',
             ],
             'keyFetchInACallOfACallMadeWhereTheFlowsObservedTwoOpenAssignmentsIgnoresValues' => [
                 'code' => '<?php
@@ -2061,6 +2271,16 @@ final class TaintTest extends TestCase
                     $hasStreet = array_key_exists("street", $data) ? 1 : 0;
                     if (array_key_exists("city", $data)) {
                         $data["city"] = htmlspecialchars((string) $data["city"], ENT_QUOTES);
+                    }
+                    echo (string) ($data["city"] ?? "");',
+            ],
+            'dontTaintTheValueOfAKeyAWholeArrayDoesNotHaveInALoopThatChecksIt' => [
+                'code' => '<?php // --taint-analysis
+                    $data = $_GET;
+                    foreach ([1, 2] as $_) {
+                        if (array_key_exists("city", $data)) {
+                            $data["city"] = htmlspecialchars((string) $data["city"], ENT_QUOTES);
+                        }
                     }
                     echo (string) ($data["city"] ?? "");',
             ],
@@ -5440,6 +5660,42 @@ final class TaintTest extends TestCase
                     echo tag([(string) $_GET["q"] => "x"]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'keyFetchAfterKeyWritesOfMoreFlowsThanANodeHoldsBeforeForgettingTakesThem' => [
+                // the last of the 257 flows of the writes to reach the node of the last one is past FORGETTING_STATES: it
+                // forgets its key, which the fetch of another key then doesn't ignore
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function build(string $value, mixed $form): void {
+' . implode('', array_map(
+                    static fn(int $i): string => '$form["k' . $i . '"] = $value;' . "\n",
+                    range(1, 257),
+                )) . '
+                        echo $form["other"];
+                    }
+
+                    build((string) $_GET["q"], []);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'overwriteOfAKeyDoesntStopAFlowThatForgotItsOpenAssignments' => [
+                // the last of the 257 flows of the writes to reach the fetch forgets that it is anywhere in an array:
+                // the overwrite of "z" in the array it takes from "other" doesn't stop it, which the fetch of "z" then
+                // doesn't ignore
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function build(string $value, string $clean, array $form): void {
+' . implode('', array_map(
+                    static fn(int $i): string => '$form["k' . $i . '"] = $value;' . "\n",
+                    range(1, 257),
+                )) . '
+                        /** @var array<string, string> $sub */
+                        $sub = $form["other"] ?? [];
+                        $sub["z"] = $clean;
+                        echo $sub["z"];
+                    }
+
+                    build((string) $_GET["q"], "x", []);',
+                'error_message' => 'TaintedHtml',
+            ],
             'keyFetchInACallOfACallMadeWhereTheFlowsObservedTwoOpenAssignmentsTakesKeys' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -7865,6 +8121,40 @@ final class TaintTest extends TestCase
                     echo $tainted->current();',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintWhatIsSentToAGeneratorSentToItselfThroughAnotherGenerator' => [
+                'code' => '<?php // --taint-analysis
+                    function receiver(): Generator {
+                        $received = yield 1;
+                        echo $received;
+                    }
+
+                    function relay(): Generator {
+                        $sent = yield 1;
+                        $own = relay();
+                        /** @var Generator $target */
+                        $target = rand() ? $sent : $own;
+                        // what is sent here reaches `$sent`, so it may be a generator too: the one of `receiver()`
+                        $target->send(rand() ? receiver() : (string) $_GET["value"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatIsSentToAnUnspecializedGeneratorSentToItselfThroughAnotherGenerator' => [
+                'code' => '<?php // --taint-analysis
+                    function receiver(): Generator {
+                        $received = yield 1;
+                        echo $received;
+                    }
+
+                    /** @psalm-impure */
+                    function relay(): Generator {
+                        $sent = yield 1;
+                        $own = relay();
+                        /** @var Generator $target */
+                        $target = rand() ? $sent : $own;
+                        $target->send(rand() ? receiver() : (string) $_GET["value"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintWhatAGeneratorYields' => [
                 'code' => '<?php // --taint-analysis
                     /** @return Generator<int, string> */
@@ -8704,6 +8994,24 @@ final class TaintTest extends TestCase
                     $data = $_GET;
                     $hasCity = array_key_exists("city", $data) ? 1 : 0;
                     echo (string) ($data["city"] ?? "");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheKeysOfAWholeArrayCheckedAgainOverManyStatements' => [
+                'code' => '<?php
+                    function f(array $a): void {
+                        if (isset($a["x"])) {
+                            return;
+                        }
+                        $r1 = array_map("strval", is_array($a["k1"] ?? null) ? $a["k1"] : []);
+                        $r2 = array_map("strval", is_array($a["k2"] ?? null) ? $a["k2"] : []);
+                        $r3 = array_map("strval", is_array($a["k3"] ?? null) ? $a["k3"] : []);
+                        $r4 = array_map("strval", is_array($a["k4"] ?? null) ? $a["k4"] : []);
+                        $r5 = array_map("strval", is_array($a["k5"] ?? null) ? $a["k5"] : []);
+                        $r6 = array_map("strval", is_array($a["k6"] ?? null) ? $a["k6"] : []);
+                        echo $r6[0];
+                    }
+
+                    f($_GET);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintTheOtherValuesOfAWholeArrayIteratedOverNotHavingSetAKey' => [

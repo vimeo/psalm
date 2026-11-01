@@ -38,7 +38,7 @@ final class TNever extends Atomic
         ?string $this_class,
         int $analysis_php_version_id,
     ): ?string {
-        return null;
+        return $analysis_php_version_id >= 8_01_00 ? 'never' : null;
     }
 
     /**
@@ -47,6 +47,6 @@ final class TNever extends Atomic
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return false;
+        return $analysis_php_version_id >= 8_01_00;
     }
 }

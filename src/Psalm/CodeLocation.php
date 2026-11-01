@@ -371,11 +371,12 @@ class CodeLocation
         }
 
         // reset preview start to beginning of line
-        $this->preview_start = (int)strrpos(
+        $preview_newline_pos = strrpos(
             $file_contents,
             "\n",
             min($this->preview_start, $this->selection_start) - strlen($file_contents),
-        ) + 1;
+        );
+        $this->preview_start = $preview_newline_pos === false ? 0 : $preview_newline_pos + 1;
 
         $this->selection_start = max($this->preview_start, $this->selection_start);
         $this->selection_end = min($this->preview_end, $this->selection_end);
@@ -402,12 +403,13 @@ class CodeLocation
         $selection_length = $this->selection_end - $this->selection_start;
         $this->text = mb_strcut($this->snippet, $this->selection_start - $this->preview_start, $selection_length);
 
-        // reset preview start to beginning of line
+        // column is 1-based, relative to the start of the selection's line
         if ($file_contents !== '') {
-            $this->column_from = $this->selection_start -
-                (int)strrpos($file_contents, "\n", $this->selection_start - strlen($file_contents));
+            $selection_newline_pos = strrpos($file_contents, "\n", $this->selection_start - strlen($file_contents));
+            $selection_line_start = $selection_newline_pos === false ? 0 : $selection_newline_pos + 1;
+            $this->column_from = $this->selection_start - $selection_line_start + 1;
         } else {
-            $this->column_from = $this->selection_start;
+            $this->column_from = $this->selection_start + 1;
         }
 
         $newlines = substr_count($this->text, "\n");
