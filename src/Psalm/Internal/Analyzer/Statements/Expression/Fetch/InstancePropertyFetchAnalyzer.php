@@ -42,6 +42,26 @@ use function strtolower;
  */
 final class InstancePropertyFetchAnalyzer
 {
+    /**
+     * The property an already analyzed fetch names: an identifier or a single string literal.
+     *
+     * @psalm-capabilities read-props
+     */
+    public static function getPropertyName(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+    ): ?string {
+        if ($stmt->name instanceof PhpParser\Node\Identifier) {
+            return $stmt->name->name;
+        }
+
+        $name_type = $statements_analyzer->node_data->getType($stmt->name);
+
+        return $name_type && $name_type->isSingleStringLiteral()
+            ? $name_type->getSingleStringLiteral()->value
+            : null;
+    }
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt,
@@ -72,15 +92,7 @@ final class InstancePropertyFetchAnalyzer
 
         $receiver_state = NullsafeChainState::of($stmt->var);
 
-        if ($stmt->name instanceof PhpParser\Node\Identifier) {
-            $prop_name = $stmt->name->name;
-        } elseif (($stmt_name_type = $statements_analyzer->node_data->getType($stmt->name))
-            && $stmt_name_type->isSingleStringLiteral()
-        ) {
-            $prop_name = $stmt_name_type->getSingleStringLiteral()->value;
-        } else {
-            $prop_name = null;
-        }
+        $prop_name = self::getPropertyName($statements_analyzer, $stmt);
 
         $codebase = $statements_analyzer->getCodebase();
 

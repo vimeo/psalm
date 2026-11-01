@@ -9,7 +9,6 @@ use Override;
 use PhpParser\Node\Stmt\Trait_;
 use Psalm\Aliases;
 use Psalm\Context;
-use Psalm\IssueBuffer;
 use Psalm\Type;
 
 use function assert;
@@ -94,8 +93,10 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
             $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues(),
         );
 
-        foreach ($storage->docblock_issues as $docblock_issue) {
-            IssueBuffer::maybeAdd($docblock_issue);
-        }
+        self::reportDocblockIssues(
+            $statements_analyzer,
+            $storage,
+            $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues(),
+        );
     }
 }

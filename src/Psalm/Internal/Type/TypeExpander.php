@@ -555,13 +555,20 @@ final class TypeExpander
                 $type_params[0] = ArrayAnalyzer::castArrayKeyType($type_params[0]);
             }
 
-            // `Foo[pure]` for a class with type templates
+            // `Foo<A>` leaving out trailing templates with a default, `Foo[pure]` for a class with type templates
             if ($return_type instanceof TGenericObject
                 && $codebase->classlike_storage_provider->has($return_type->value)
             ) {
+                $class_storage = $codebase->classlike_storage_provider->get($return_type->value);
+
                 $type_params = PurityArguments::align(
-                    $type_params,
-                    $codebase->classlike_storage_provider->get($return_type->value),
+                    TemplateDefaults::fillAndExpandTypeArguments(
+                        $type_params,
+                        $class_storage,
+                        $codebase,
+                        $return_type->from_docblock,
+                    ),
+                    $class_storage,
                 );
             }
 

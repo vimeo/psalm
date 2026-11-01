@@ -102,6 +102,9 @@ final class DocumentationTest extends TestCase
     private static string $docContents = '';
 
     /**
+     * Takes the first ```php block of each issue page. It is analysed as-is, so it must start
+     * with `<?php` (otherwise it is inline HTML and raises no issue) and must raise the issue.
+     *
      * @return array<string, array<int, string>>
      */
     private static function getCodeBlocksFromDocs(): array
