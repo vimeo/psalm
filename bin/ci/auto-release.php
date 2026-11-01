@@ -188,16 +188,14 @@ $getNextVersion = static function (string $tag, bool $minor) use ($version_patte
 
 $isPrerelease = static fn(string $version): bool => preg_match('/-(alpha|beta|rc)/', $version) === 1;
 
-// the UTC day the release of $tag was published, or null if the tag has no release
-$getReleaseDay = static function (string $tag) use ($api): ?string {
-    try {
-        $published = $api('releases/tags/' . rawurlencode($tag))['published_at'] ?? null;
-    } catch (RuntimeException) {
-        return null;
+// the UTC day each of the latest releases was published, by tag; a tag missing from it either has no release, or one
+// published long before today. Not reading it fails the run, rather than risking a second release in a day
+$release_days = [];
+foreach ($api('releases?per_page=100') as $release) {
+    if (is_string($release['published_at'] ?? null)) {
+        $release_days[(string) $release['tag_name']] = substr($release['published_at'], 0, 10);
     }
-
-    return is_string($published) ? substr($published, 0, 10) : null;
-};
+}
 
 $generateNotes = static fn(string $tag, string $target, string $previous_tag): string => $run([
     'gh', 'api', "repos/$repository/releases/generate-notes",
@@ -231,11 +229,6 @@ foreach ($branches as $branch) {
         continue;
     }
 
-    if ($getReleaseDay($last_tag) === gmdate('Y-m-d')) {
-        echo "Not releasing $unreleased commits since $last_tag until tomorrow: $last_tag was released today" . PHP_EOL;
-        continue;
-    }
-
     $failure = $getChecksFailure($head);
     if ($failure !== null) {
         [$failed, $reason] = $failure;
@@ -249,6 +242,12 @@ foreach ($branches as $branch) {
         $stuck = $stuck || $level === 'error';
         echo "::$level::Not releasing $branch at $head ($unreleased commits since $last_tag, committed "
             . intdiv($blocked_seconds, 3600) . " hours ago): $reason" . PHP_EOL;
+        continue;
+    }
+
+    // after the checks, so that failing ones are still reported
+    if (($release_days[$last_tag] ?? null) === gmdate('Y-m-d')) {
+        echo "Not releasing $unreleased commits since $last_tag until tomorrow: $last_tag was released today" . PHP_EOL;
         continue;
     }
 
