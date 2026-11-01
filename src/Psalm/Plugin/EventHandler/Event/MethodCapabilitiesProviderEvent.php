@@ -66,12 +66,14 @@ final class MethodCapabilitiesProviderEvent
     }
 
     /**
+     * The arguments of an invocation; empty for a first-class callable or partial application, which call nothing
+     *
      * @return list<PhpParser\Node\Arg>
      * @psalm-mutation-free
      */
     public function getCallArgs(): array
     {
-        return $this->stmt->getArgs();
+        return $this->stmt->isPartialFunctionApplication() ? [] : $this->stmt->getArgs();
     }
 
     public function getContext(): Context

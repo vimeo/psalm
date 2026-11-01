@@ -58,12 +58,14 @@ final class DynamicFunctionStorageProviderEvent
     }
 
     /**
+     * The arguments of an invocation; empty for a first-class callable or partial application, which call nothing
+     *
      * @return list<PhpParser\Node\Arg>
      * @psalm-mutation-free
      */
     public function getArgs(): array
     {
-        return $this->func_call->getArgs();
+        return $this->func_call->isPartialFunctionApplication() ? [] : $this->func_call->getArgs();
     }
 
     public function getContext(): Context
