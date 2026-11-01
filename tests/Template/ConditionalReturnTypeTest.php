@@ -21,6 +21,17 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayAccessOnAParamWithAConditionalType' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string|null
+                     * @param T $str
+                     * @param (T is null ? non-empty-list<string> : list<string>) $items
+                     */
+                    function test(array $items, ?string $str = null): string {
+                        return $str ?? $items[0] ?? "";
+                    }',
+            ],
             'conditionalReturnTypeSimple' => [
                 'code' => '<?php
 
