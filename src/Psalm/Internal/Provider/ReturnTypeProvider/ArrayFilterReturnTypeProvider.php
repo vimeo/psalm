@@ -16,6 +16,8 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualVariable;
+use Psalm\Node\VirtualArg;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Storage\Assertion\Truthy;
@@ -206,20 +208,37 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
                     // Deterministic discriminator (see ArrayMapReturnTypeProvider) so the synthetic offset
                     // variable — and the taint-graph nodes derived from it — stay stable across runs/threads.
                     $fake_var_discriminator = $function_call_arg->getStartFilePos();
+                    $extended_var_id = ExpressionIdentifier::getExtendedVarId(
+                        $array_arg,
+                        null,
+                        $statements_source,
+                    );
+
+                    $fake_array_args = array_slice($call_args, 0, 1);
+
+                    // an array that is not a variable (a call) is stood in for by one, so its offsets can be asserted
+                    $array_arg_type = $statements_source->node_data->getType($array_arg);
+
+                    if ($extended_var_id === null && $array_arg_type) {
+                        $fake_array_var_name = "__fake_{$fake_var_discriminator}_array_var__";
+                        $context->vars_in_scope['$' . $fake_array_var_name] = $array_arg_type;
+                        $fake_array_args = [new VirtualArg(
+                            new VirtualVariable($fake_array_var_name, $array_arg->getAttributes()),
+                            false,
+                            false,
+                            $call_args[0]->getAttributes(),
+                        )];
+                        $extended_var_id = '$' . $fake_array_var_name;
+                    }
+
                     ArrayMapReturnTypeProvider::getReturnTypeFromMappingIds(
                         $statements_source,
                         $mapping_function_ids,
                         $context,
                         $function_call_arg,
-                        array_slice($call_args, 0, 1),
+                        $fake_array_args,
                         $assertions,
                         $fake_var_discriminator,
-                    );
-
-                    $extended_var_id = ExpressionIdentifier::getExtendedVarId(
-                        $array_arg,
-                        null,
-                        $statements_source,
                     );
 
                     $assertion_id = $extended_var_id . "[\$__fake_{$fake_var_discriminator}_offset_var__]";
