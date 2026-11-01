@@ -22,6 +22,54 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'constructorInitializesPropertyThroughMethodOfNestedTrait' => [
+                'code' => '<?php
+                    class MyClass {
+                        use Outer;
+
+                        public function __construct(string $text) {
+                            $this->setContent($text);
+                        }
+                    }
+
+                    trait Outer {
+                        use Inner;
+                    }
+
+                    trait Inner {
+                        protected string $content;
+
+                        public function setContent(string $text): void {
+                            $this->content = $text;
+                        }
+                    }',
+            ],
+            'constructorInitializesPropertyThroughMethodOfTwiceNestedTrait' => [
+                'code' => '<?php
+                    class MyClass {
+                        use Outer;
+
+                        public function __construct(string $text) {
+                            $this->setContent($text);
+                        }
+                    }
+
+                    trait Outer {
+                        use Middle;
+                    }
+
+                    trait Middle {
+                        use Inner;
+                    }
+
+                    trait Inner {
+                        protected string $content;
+
+                        public function setContent(string $text): void {
+                            $this->content = $text;
+                        }
+                    }',
+            ],
             'accessiblePrivateMethodFromTrait' => [
                 'code' => '<?php
                     trait T {
@@ -1224,6 +1272,29 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constructorCallsMethodOfNestedTraitThatDoesNotInitializeProperty' => [
+                'code' => '<?php
+                    class MyClass {
+                        use Outer;
+
+                        public function __construct(string $text) {
+                            $this->setContent($text);
+                        }
+                    }
+
+                    trait Outer {
+                        use Inner;
+                    }
+
+                    trait Inner {
+                        protected string $content;
+
+                        public function setContent(string $text): void {
+                            echo $text;
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
             'inaccessiblePrivateMethodFromInheritedTrait' => [
                 'code' => '<?php
                     trait T {
