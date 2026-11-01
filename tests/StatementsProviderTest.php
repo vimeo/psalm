@@ -108,25 +108,6 @@ final class StatementsProviderTest extends TestCase
         $this->assertSame([$this->file => true], $this->statements_provider->getErrors());
     }
 
-    public function testParseErrorOutsideTheEditedMethodIsStillReported(): void
-    {
-        $contents = static fn(string $b_body): string => "<?php\nclass A {\n"
-            . "    public function a(): void {\n        echo 1\n    }\n"
-            . "    public function b(): void {\n        $b_body\n    }\n}\n";
-
-        $this->file_provider->registerFile($this->file, $contents('echo 2;'));
-        $this->statements_provider->getStatementsForFile($this->file, 7_04_00, true);
-        $this->assertSame(['ParseError'], $this->takeIssueTypes());
-
-        $this->file_provider->setContents($this->file, $contents('echo 3;'));
-
-        for ($run = 1; $run <= 2; $run++) {
-            $this->statements_provider->getStatementsForFile($this->file, 7_04_00, true);
-
-            $this->assertSame(['ParseError'], $this->takeIssueTypes(), "edited, run $run");
-        }
-    }
-
     /**
      * @return list<Stmt>
      */

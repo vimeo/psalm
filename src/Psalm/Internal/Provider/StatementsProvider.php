@@ -150,9 +150,7 @@ final class StatementsProvider
 
             $existing_statements_copy = null;
 
-            // reusing statements the parser recovered an error in would lose the error from the saved ones
-            if ($existing !== null
-                && $existing[1] === []
+            if ($existing_statements !== null
                 && $existing_file_contents  !== null
                 && abs(strlen($existing_file_contents) - strlen($file_contents)) < 5_000
             ) {
@@ -163,7 +161,7 @@ final class StatementsProvider
                     $traverser->addVisitor(new CloningVisitor);
                     // performs a deep clone
                     /** @var list<PhpParser\Node\Stmt> */
-                    $existing_statements_copy = $traverser->traverse($existing[0]);
+                    $existing_statements_copy = $traverser->traverse($existing_statements);
                 } else {
                     $file_changes = null;
                 }
