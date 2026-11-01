@@ -1086,9 +1086,6 @@ final class ArgumentsAnalyzer
             }
         }
 
-        // the by-reference arguments whose type names a template with a default, assigned once the call binds it
-        $by_ref_args_after_defaults = [];
-
         foreach ($args as $argument_offset => $arg) {
             if (!isset($arg_function_params[$argument_offset])) {
                 continue;
@@ -1097,11 +1094,6 @@ final class ArgumentsAnalyzer
             if ($arg_function_params[$argument_offset][0]->by_ref
                 && $method_id !== 'extract'
             ) {
-                $assigned_after_defaults = $template_result
-                    && $function_storage
-                    && !$in_call_map
-                    && self::namesTemplateWithDefault($arg_function_params[$argument_offset][0], $function_storage);
-
                 if (self::handlePossiblyMatchingByRefParam(
                     $statements_analyzer,
                     $codebase,
@@ -1117,13 +1109,8 @@ final class ArgumentsAnalyzer
                     $in_call_map ? null : $function_storage,
                     $code_location,
                     $args,
-                    $assigned_after_defaults,
                 ) === false) {
                     return null;
-                }
-
-                if ($assigned_after_defaults) {
-                    $by_ref_args_after_defaults[$argument_offset] = $arg;
                 }
             }
 
@@ -1319,62 +1306,87 @@ final class ArgumentsAnalyzer
             $code_location,
         );
 
-        if ($template_result && $function_storage && $function_storage->template_defaults) {
-            TemplateDefaults::bindUninferred($template_result, $function_storage, $codebase);
-        }
-
-        foreach ($by_ref_args_after_defaults as $argument_offset => $arg) {
-            if (self::handlePossiblyMatchingByRefParam(
+        if ($template_result
+            && $function_storage
+            && $function_storage->template_defaults
+            && TemplateDefaults::bindUninferred($template_result, $function_storage, $codebase)
+        ) {
+            self::assignByRefArgsWithDefaults(
                 $statements_analyzer,
-                $codebase,
-                (string) $method_id,
-                $cased_method_id,
-                $last_param,
-                $function_params,
-                $argument_offset,
-                $arg,
-                $context,
-                $template_result,
-                $method_id instanceof MethodIdentifier ? $method_id : null,
-                $function_storage,
-                $code_location,
                 $args,
-            ) === false) {
-                return null;
-            }
+                $arg_function_params,
+                $template_result,
+                $function_storage,
+                $method_id instanceof MethodIdentifier ? $method_id : null,
+                $context,
+            );
         }
 
         return null;
     }
 
     /**
-     * Whether the type or the out type of the parameter names a template of the function-like with a default
+     * Assigns the by-reference arguments again, now that the templates the call left out are bound to their default:
+     * their out type was resolved with each argument, before later ones could still infer those templates.
+     *
+     * @param array<int, PhpParser\Node\Arg> $args
+     * @param array<int, non-empty-list<FunctionLikeParameter>> $arg_function_params
      */
-    private static function namesTemplateWithDefault(
-        FunctionLikeParameter $function_param,
+    private static function assignByRefArgsWithDefaults(
+        StatementsAnalyzer $statements_analyzer,
+        array $args,
+        array $arg_function_params,
+        TemplateResult $template_result,
         FunctionLikeStorage $function_storage,
-    ): bool {
-        if (!$function_storage->template_defaults) {
-            return false;
-        }
+        ?MethodIdentifier $method_identifier,
+        Context $context,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        $self_class = $function_storage instanceof MethodStorage ? $function_storage->defining_fqcln : null;
+        $static_class = $method_identifier?->fq_class_name ?? $self_class;
 
-        foreach ([$function_param->type, $function_param->out_type] as $type) {
-            foreach ($type ? TemplateDefaults::getUsedTemplates($type) : [] as $template) {
-                if (isset($function_storage->template_defaults[$template->param_name])
-                    && isset($function_storage->template_types[$template->param_name][$template->defining_class])
-                ) {
-                    return true;
-                }
+        foreach ($args as $argument_offset => $arg) {
+            $function_param = $arg_function_params[$argument_offset][0] ?? null;
+            $out_type = $function_param?->out_type ?? $function_param?->type;
+
+            if ($function_param === null
+                || !$function_param->by_ref
+                || $out_type === null
+                || $out_type->getTemplateTypes() === []
+                || ($function_param->is_variadic && $arg->unpack)
+            ) {
+                continue;
             }
-        }
 
-        return false;
+            $in_type = $function_param->type ?? Type::getMixed();
+
+            AssignmentAnalyzer::assignByRefParam(
+                $statements_analyzer,
+                $arg->value,
+                TypeExpander::expandUnion(
+                    $codebase,
+                    TemplateInferredTypeReplacer::replace($in_type, $template_result, $codebase),
+                    $self_class,
+                    $static_class,
+                    null,
+                ),
+                TypeExpander::expandUnion(
+                    $codebase,
+                    TemplateInferredTypeReplacer::replace($out_type, $template_result, $codebase),
+                    $self_class,
+                    $static_class,
+                    null,
+                ),
+                $context,
+                true,
+                !$in_type->isNullable(),
+            );
+        }
     }
 
     /**
      * @param  array<int, FunctionLikeParameter> $function_params
      * @param  array<int, PhpParser\Node\Arg> $args
-     * @param bool $infer_only whether to only infer the templates the argument binds, leaving the assignment for later
      * @return false|null
      */
     private static function handlePossiblyMatchingByRefParam(
@@ -1392,7 +1404,6 @@ final class ArgumentsAnalyzer
         ?FunctionLikeStorage $function_storage,
         CodeLocation $call_location,
         array $args,
-        bool $infer_only = false,
     ): ?bool {
         if ($arg->value instanceof PhpParser\Node\Scalar
             || $arg->value instanceof PhpParser\Node\Expr\Cast
@@ -1538,10 +1549,6 @@ final class ArgumentsAnalyzer
                         ]),
                     ]);
                 }
-            }
-
-            if ($infer_only) {
-                return null;
             }
 
             // the declared types as the caller sees them, with e.g. the class constants, int-masks and
