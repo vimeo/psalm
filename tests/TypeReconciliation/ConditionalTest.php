@@ -21,6 +21,42 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedInstanceofRemovesTheClassFromTheBoundOfAConditionalReturnTypeParam' => [
+                'code' => '<?php
+                    /**
+                     * @return ($value is null ? null : DateTimeImmutable)
+                     */
+                    function convert(null|DateTimeInterface|string $value): ?DateTimeImmutable {
+                        if (null === $value || $value instanceof DateTimeImmutable) {
+                            return $value;
+                        }
+
+                        if ($value instanceof DateTimeInterface) {
+                            return DateTimeImmutable::createFromInterface($value);
+                        }
+
+                        $result = DateTimeImmutable::createFromFormat(DATE_ATOM, $value);
+
+                        return $result === false ? null : $result;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'negatedInstanceofRemovesTheClassFromTheBoundOfATemplateParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T of DateTimeInterface|string
+                     * @param T $value
+                     */
+                    function takeString($value): string {
+                        if ($value instanceof DateTimeInterface) {
+                            return "";
+                        }
+
+                        return strtoupper($value);
+                    }',
+            ],
             'nonStrictConditionOnMixedOrNull' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $owners */
@@ -3475,6 +3511,21 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'negatedInstanceofKeepsAnUnrelatedClassInTheBoundOfATemplateParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T of DateTimeInterface|string
+                     * @param T $value
+                     */
+                    function takeString($value): string {
+                        if ($value instanceof Countable) {
+                            return "";
+                        }
+
+                        return strtoupper($value);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
             'makeNonNullableNull' => [
                 'code' => '<?php
                     class A { }
