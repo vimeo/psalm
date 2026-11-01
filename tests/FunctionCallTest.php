@@ -63,6 +63,42 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'classHierarchyFunctionsOfAnObjectNeverReturnFalse' => [
+                'code' => '<?php
+                    /** @var mixed $mixed */
+                    $mixed = null;
+                    /** @var object $object */
+                    $object = new stdClass();
+                    /** @var string $string */
+                    $string = "";
+                    /** @var object|string $either */
+                    $either = "";
+                    /** @var bool $autoload */
+                    $autoload = true;
+
+                    if (!is_object($mixed)) {
+                        throw new Exception();
+                    }
+
+                    $parents = class_parents($mixed);
+                    $interfaces = class_implements($object, $autoload);
+                    $traits = class_uses(object_or_class: $object, autoload: false);
+                    $parents_of_name = class_parents($string);
+                    $interfaces_of_name = class_implements($string, false);
+                    $traits_of_name = class_uses($string);
+                    $parents_of_either = class_parents($either);',
+                'assertions' => [
+                    '$parents===' => 'array<class-string, class-string>',
+                    '$interfaces===' => 'array<interface-string, interface-string>',
+                    '$traits===' => 'array<trait-string, trait-string>',
+                    '$parents_of_name===' => 'array<class-string, class-string>|false',
+                    '$interfaces_of_name===' => 'array<interface-string, interface-string>|false',
+                    '$traits_of_name===' => 'array<trait-string, trait-string>|false',
+                    '$parents_of_either===' => 'array<class-string, class-string>|false',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'errorGetLastHasBacktraceSincePhp85' => [
                 'code' => '<?php
                     $error = error_get_last();',
