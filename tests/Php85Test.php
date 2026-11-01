@@ -303,6 +303,19 @@ final class Php85Test extends TestCase
                 'ignored_issues' => ['InvalidPassByReference'],
                 'php_version' => '8.5',
             ],
+            'closureInParameterDefault' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(
+                        callable $c = static function (string $s): string { return $s; },
+                        ?callable $d = strlen(...),
+                        Closure $e = strtoupper(...),
+                    ): void {}
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
