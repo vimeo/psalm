@@ -295,7 +295,8 @@ Psalm uses the default when the type argument is left out:
 * in `@extends`, `@implements` and `@use` that leave out trailing templates, if each of them has a default;
 * when a class is extended, implemented or used without one of those tags (templates without a default get their bound);
 * in a generic type with only its first arguments given, such as `Result<string>` in a `@param`, `@return`, `@var` or property type;
-* in `new`, for templates the constructor arguments don't infer. If the class has a constructor and one of its own public methods or properties (not an inherited, trait, `@method` or `@property` one) takes the template, `new` leaves it to later code in the function instead, and it stands for its bound if that code never fixes it.
+* in `new`, for templates the constructor arguments don't infer. If the class has a constructor and one of its own public methods or properties (not an inherited, trait, `@method` or `@property` one) takes the template, `new` leaves it to later code in the function instead, and it stands for its bound if that code never fixes it;
+* in a function or method call, for templates the arguments don't infer.
 
 ```php
 <?php
@@ -324,6 +325,66 @@ function check(Result $partial, Result $bare): void {
 ```
 
 Defaults don't apply to a class name without type arguments (PHPStan applies them there). `Result` alone still stands for its bounds, compared with the usual variance rules: `TError` is `Throwable`, and `TValue`, bounded by `mixed`, stays open, as does a template bounded by a set of capabilities. Templates without a default are unaffected.
+
+Method templates take defaults too, and a default can use the templates of its class:
+
+```php
+<?php
+/** @template T */
+interface Option {
+    /**
+     * @template TResult = T
+     * @param (callable(T): TResult)|null $map
+     * @return Option<TResult>
+     */
+    public function map(?callable $map = null): Option;
+}
+
+/** @param Option<int> $option */
+function check(Option $option): void {
+    $same = $option->map(); // Option<int>
+    $mapped = $option->map(fn(int $i): bool => $i > 0); // Option<bool>
+}
+```
+
+A call still infers a template from its arguments and parameter defaults where it can. A `null` for `T|null` infers `null` if the bound admits it, and an argument that doesn't say what `T` is (a bare `Setting` for `Setting<T>`, a bare `callable` for `callable(): T`) infers the bound, not the default:
+
+```php
+<?php
+/** @template T of int */
+interface Setting {}
+
+interface Timeouts {
+    /**
+     * @template T of int = 30
+     * @param T|null $seconds
+     * @return T
+     */
+    public function connect(?int $seconds = null): int;
+
+    /**
+     * @template T of int|null = 30
+     * @param T|null $seconds
+     * @return T
+     */
+    public function idle(?int $seconds = null): ?int;
+
+    /**
+     * @template T of int = 30
+     * @param Setting<T> $setting
+     * @return T
+     */
+    public function configured(Setting $setting): int;
+}
+
+function check(Timeouts $timeouts, Setting $setting): void {
+    $seconds = $timeouts->connect(); // 30
+    $seconds = $timeouts->connect(null); // 30
+    $seconds = $timeouts->idle(); // null
+    $seconds = $timeouts->idle(null); // null
+    $seconds = $timeouts->configured($setting); // int
+}
+```
 
 A default must be within its template's bound and may only use templates declared before it. Otherwise Psalm reports [InvalidDocblock](../running_psalm/issues/InvalidDocblock.md) on the template line.
 

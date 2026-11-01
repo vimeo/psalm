@@ -31,6 +31,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\ArrayMapReturnTypeProvider;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -1304,6 +1305,10 @@ final class ArgumentsAnalyzer
             $cased_method_id,
             $code_location,
         );
+
+        if ($template_result && $function_storage && $function_storage->template_defaults) {
+            TemplateDefaults::bindUninferred($template_result, $function_storage, $codebase);
+        }
 
         return null;
     }

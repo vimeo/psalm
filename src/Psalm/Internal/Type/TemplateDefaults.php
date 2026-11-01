@@ -13,10 +13,15 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\TypeVisitor\TemplateDefaultFiller;
+use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\IssueBuffer;
+use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Type;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_key_first;
@@ -26,8 +31,8 @@ use function reset;
 use function strtolower;
 
 /**
- * What a template with a default (`@template T of Bound = Default`) stands for when a use of its class leaves it out:
- * the default, with the templates declared before it standing for their arguments in that use.
+ * What a template with a default (`@template T of Bound = Default`) stands for when a use of its class leaves it out
+ * or a call of its function-like doesn't infer it: the default, with the earlier templates standing for what they are.
  *
  * @internal
  */
@@ -252,13 +257,49 @@ final class TemplateDefaults
     }
 
     /**
+     * Binds the templates the call left to their default ({@see self::isUninferred()}) in declaration order, the order
+     * of $template_defaults, so each default sees those before it. Like a constraint fallback, a default is a
+     * placeholder that reconciliation does not check.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public static function bindUninferred(
+        TemplateResult $template_result,
+        FunctionLikeStorage $storage,
+        Codebase $codebase,
+    ): void {
+        $template_types = $storage->template_types ?? [];
+
+        foreach ($storage->template_defaults as $template_name => $default) {
+            $defining_id = array_key_first($template_types[$template_name] ?? []);
+
+            if ($defining_id === null || !self::isUninferred($template_result, $template_name, $defining_id)) {
+                continue;
+            }
+
+            // a template the call leaves unbound and without a default is `never` in the return type, so in the default
+            $resolving_result = clone $template_result;
+
+            foreach ($template_types as $name => $other_type_map) {
+                $resolving_result->lower_bounds[$name][array_key_first($other_type_map)]
+                    ??= [new TemplateBound(Type::getNever())];
+            }
+
+            $default_bound = new TemplateBound(self::resolve($default, $resolving_result, $codebase));
+            $default_bound->from_constraint_fallback = true;
+
+            $template_result->lower_bounds[$template_name][$defining_id] = [$default_bound];
+        }
+    }
+
+    /**
      * The default with the templates it uses replaced by what they are bound to
      *
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function resolve(Union $default, TemplateResult $template_result, ?Codebase $codebase): Union
     {
-        if ($template_result->lower_bounds === [] || $default->getTemplateTypes() === []) {
+        if ($template_result->lower_bounds === [] || self::getUsedTemplates($default) === []) {
             return $default;
         }
 
@@ -266,8 +307,22 @@ final class TemplateDefaults
     }
 
     /**
-     * Reports the defaults outside their template's bound, where they are declared. Earlier templates stay templates
-     * there, so `@template U of T = T` is within its bound.
+     * The templates a default uses, also through `key-of<T>`, `value-of<T>`, `properties-of<T>` and `T[K]`
+     *
+     * @return list<TTemplateParam>
+     * @psalm-pure
+     */
+    private static function getUsedTemplates(Union $default): array
+    {
+        $collector = new TemplateTypeCollector(true);
+        $collector->traverseArray($default->getAtomicTypes());
+
+        return $collector->getTemplateTypes();
+    }
+
+    /**
+     * Reports the defaults naming undefined classes, as for bounds, and those outside their template's bound, where
+     * they are declared. Earlier templates stay templates there, so `@template U of T = T` is within its bound.
      *
      * @param array<string, non-empty-array<string, Union>> $template_types
      * @param array<string, Union> $template_defaults
@@ -275,24 +330,30 @@ final class TemplateDefaults
      * @param array<string> $suppressed_issues
      */
     public static function checkBounds(
-        Codebase $codebase,
+        StatementsSource $source,
         array $template_types,
         array $template_defaults,
         array $locations,
         ?string $self_class,
+        ?string $parent_class,
         string $owner,
         array $suppressed_issues,
     ): void {
+        $codebase = $source->getCodebase();
+
         foreach ($locations as $template_name => $location) {
             $bound = reset($template_types[$template_name]);
             $default = $template_defaults[$template_name] ?? null;
 
-            if ($default === null || $bound->isMixed()) {
+            if ($default === null
+                || !$default->check($source, $location, $suppressed_issues, [], false)
+                || $bound->isMixed()
+            ) {
                 continue;
             }
 
-            $default = TypeExpander::expandUnion($codebase, $default, $self_class, $self_class, null);
-            $bound = TypeExpander::expandUnion($codebase, $bound, $self_class, $self_class, null);
+            $default = TypeExpander::expandUnion($codebase, $default, $self_class, $self_class, $parent_class);
+            $bound = TypeExpander::expandUnion($codebase, $bound, $self_class, $self_class, $parent_class);
 
             if (!UnionTypeComparator::isContainedBy($codebase, $default, $bound)) {
                 IssueBuffer::maybeAdd(
@@ -383,7 +444,7 @@ final class TemplateDefaults
 
             $type_scanner->traverseArray($default->getAtomicTypes());
 
-            foreach ($default->getTemplateTypes() as $used_template) {
+            foreach (self::getUsedTemplates($default) as $used_template) {
                 if ($used_template->defining_class === array_key_first($type_map)
                     && !isset($declared_before[$used_template->param_name])
                     && !isset($purity_templates[$used_template->param_name])

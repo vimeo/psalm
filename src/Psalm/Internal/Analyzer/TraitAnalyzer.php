@@ -94,7 +94,7 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
         );
 
         self::reportDocblockIssues(
-            $codebase,
+            $statements_analyzer,
             $storage,
             $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues(),
         );
