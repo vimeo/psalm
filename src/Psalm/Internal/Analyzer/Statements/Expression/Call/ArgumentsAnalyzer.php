@@ -228,6 +228,7 @@ final class ArgumentsAnalyzer
                     || $arg->value instanceof PhpParser\Node\Expr\Array_
                     || $arg->value instanceof PhpParser\Node\Expr\Ternary
                     || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
+                    || $arg->value instanceof VirtualPipeValue
                 )
             ) {
                 if (self::handleByRefFunctionArg(
@@ -1335,7 +1336,8 @@ final class ArgumentsAnalyzer
         CodeLocation $call_location,
         array $args,
     ): ?bool {
-        if ($arg->value instanceof VirtualPipeValue
+        if (($arg->value instanceof VirtualPipeValue
+                && self::phpTakesArgumentByReference($method_id, $argument_offset))
             || $arg->value instanceof PhpParser\Node\Scalar
             || $arg->value instanceof PhpParser\Node\Expr\Cast
             || $arg->value instanceof PhpParser\Node\Expr\Array_

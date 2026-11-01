@@ -236,14 +236,32 @@ final class Php85Test extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
-            'pipeKeepsABoundByRefArgument' => [
+            'pipeIntoAParameterOnlyTheStubTakesByReference' => [
                 'code' => '<?php
-                    $r = "abc" |> preg_match("/b/", ?, $m);',
-                'assertions' => [
-                    '$m===' => 'array<array-key, string>',
-                ],
+                    $h = fopen("php://memory", "r");
+
+                    if ($h !== false) {
+                        $closed = $h |> fclose(...);
+                    }',
+                'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.6',
+                'php_version' => '8.5',
+            ],
+            'pipeIntoAByRefParameterKeepsTheCallType' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param list<T> $a
+                     * @return T|null
+                     */
+                    function first(array &$a): mixed { return $a[0] ?? null; }
+
+                    $r = [1, 2] |> first(...);',
+                'assertions' => [
+                    '$r===' => '1|2|null',
+                ],
+                'ignored_issues' => ['InvalidPassByReference'],
+                'php_version' => '8.5',
             ],
         ];
     }
@@ -325,13 +343,6 @@ final class Php85Test extends TestCase
                 'code' => '<?php
                     $a = [3, 1];
                     $a |> sort(...);',
-                'error_message' => 'Parameter 1 of sort is passed by reference, but the pipe operator passes its left-hand side by value',
-                'error_levels' => [],
-                'php_version' => '8.5',
-            ],
-            'pipeRejectsAByRefParameterForALiteral' => [
-                'code' => '<?php
-                    [3, 1] |> sort(...);',
                 'error_message' => 'Parameter 1 of sort is passed by reference, but the pipe operator passes its left-hand side by value',
                 'error_levels' => [],
                 'php_version' => '8.5',
