@@ -160,7 +160,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
         );
 
         self::reportDocblockIssues(
-            $codebase,
+            $this,
             $class_storage,
             $class_storage->suppressed_issues + $this->getSuppressedIssues(),
         );
