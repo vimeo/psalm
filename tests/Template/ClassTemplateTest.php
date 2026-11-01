@@ -6825,6 +6825,24 @@ final class ClassTemplateTest extends TestCase
                     final class A {}',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33 - Missing default after = for template T in docblock for A',
             ],
+            'pseudoPropertyWriteLocalizedOnGenericReceiver' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @property-write T $value
+                     */
+                    class Box {
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    /** @param Box<int> $box */
+                    function test(Box $box): void {
+                        $box->value = "a";
+                    }',
+                'error_message' => "with declared type 'int' cannot be assigned",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 }
