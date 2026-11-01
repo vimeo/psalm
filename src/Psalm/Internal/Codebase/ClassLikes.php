@@ -946,7 +946,11 @@ final class ClassLikes
                 || !$this->config->isInProjectDirs($owner_storage->location->file_path);
         });
 
-        $subclass_capabilities = $this->getSubclassCapabilities($codebase->analyzer->mutable_classes);
+        $suggest_purity_annotations = $this->config->suggest_purity_annotations;
+        $benefit = MutationLevelResolver::getSuggestionBenefit($codebase);
+        $subclass_capabilities = $suggest_purity_annotations
+            ? $this->getSubclassCapabilities($codebase->analyzer->mutable_classes)
+            : [];
 
         foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
             try {
@@ -1018,6 +1022,10 @@ final class ClassLikes
                     continue;
                 }
 
+                if (!$suggest_purity_annotations) {
+                    continue;
+                }
+
                 $mut = Capabilities::toNamedLevel(
                     ($codebase->analyzer->mutable_classes[$fq_class_name_lc] ?? Capabilities::NONE)
                     | $this->getRequiredContractCapabilities($classlike_storage)
@@ -1055,6 +1063,7 @@ final class ClassLikes
                                         $classlike_storage,
                                         $namespace_stmt,
                                         $project_analyzer,
+                                        $benefit,
                                     );
                                 }
                             }
@@ -1067,6 +1076,7 @@ final class ClassLikes
                                 $classlike_storage,
                                 $stmt,
                                 $project_analyzer,
+                                $benefit,
                             );
                         }
                     }
@@ -1178,7 +1188,7 @@ final class ClassLikes
         ClassLikeStorage $storage,
         ClassLike $class_stmt,
         ProjectAnalyzer $project_analyzer,
-        ?string $msg = null,
+        string $benefit,
     ): void {
         if ($class_stmt instanceof VirtualNode || $storage->location === null) {
             return;
@@ -1191,7 +1201,7 @@ final class ClassLikes
                 new MissingInterfaceImmutableAnnotation(
                     $storage->name
                     . ' must be marked with either @psalm-pure, @psalm-immutable, @psalm-capabilities or @psalm-mutable'
-                    . ' to aid security analysis',
+                    . ' ' . $benefit,
                     $storage->location,
                 ),
                 $storage->suppressed_issues,
@@ -1212,9 +1222,9 @@ final class ClassLikes
 
         IssueBuffer::maybeAdd(
             new MissingImmutableAnnotation(
-                $msg ?? ($storage->name . ' must be marked @' . Capabilities::toClassAnnotation($capabilities)
-                    . ' to aid security analysis,'
-                    .' run with --alter --issues=MissingImmutableAnnotation to fix this'),
+                $storage->name . ' must be marked @' . Capabilities::toClassAnnotation($capabilities)
+                    . ' ' . $benefit
+                    . ', run with --alter --issues=MissingImmutableAnnotation to fix this',
                 $storage->location,
             ),
             $storage->suppressed_issues,

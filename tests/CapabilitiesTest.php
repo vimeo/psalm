@@ -355,7 +355,7 @@ final class CapabilitiesTest extends TestCase
                         return $sum;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingPureAnnotation'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'splWrappingIteratorsRequireWhatTheirInnerIteratorsDo' => [

@@ -435,6 +435,11 @@ final class Psalter
             }
         }
 
+        // the fixes of these issues are queued while suggesting the annotations
+        if (isset($keyed_issues['MissingPureAnnotation']) || isset($keyed_issues['MissingImmutableAnnotation'])) {
+            $config->suggest_purity_annotations = true;
+        }
+
         if ($find_unused_code) {
             $project_analyzer->getCodebase()->reportUnusedCode();
         }

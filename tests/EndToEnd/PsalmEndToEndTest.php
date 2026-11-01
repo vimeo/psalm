@@ -174,6 +174,22 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertSame(0, $this->runPsalm([], self::$tmpDir)['CODE']);
     }
 
+    public function testPsalterAddsPurityAnnotationsWithoutTheConfigFlag(): void
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(
+            self::$tmpDir . '/src/Slug.php',
+            "<?php\n\nfunction slug(string \$text): string\n{\n    return strtolower(trim(\$text));\n}\n",
+        );
+
+        (new Process([PHP_BINARY, $this->psalter, '--alter', '--issues=MissingPureAnnotation'], self::$tmpDir))->mustRun();
+
+        $this->assertStringContainsString('@psalm-pure', (string) file_get_contents(self::$tmpDir . '/src/Slug.php'));
+    }
+
     public function testPsalm(): void
     {
         $this->runPsalmInit(1);

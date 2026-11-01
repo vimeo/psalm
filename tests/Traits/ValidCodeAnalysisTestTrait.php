@@ -87,22 +87,7 @@ trait ValidCodeAnalysisTestTrait
             || $this instanceof PureAnnotationAdditionTest
             || $this instanceof ImmutableAnnotationTest
         ) {
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingImmutableAnnotation',
-                Config::REPORT_ERROR,
-            );
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingInterfaceImmutableAnnotation',
-                Config::REPORT_ERROR,
-            );
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingPureAnnotation',
-                Config::REPORT_ERROR,
-            );
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingAbstractPureAnnotation',
-                Config::REPORT_ERROR,
-            );
+            Config::getInstance()->suggest_purity_annotations = true;
         }
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {

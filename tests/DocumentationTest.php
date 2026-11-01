@@ -264,29 +264,22 @@ final class DocumentationTest extends TestCase
         foreach ($ignored_issues as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
-        if ($error_message === 'MissingImmutableAnnotation') {
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingImmutableAnnotation',
-                Config::REPORT_ERROR,
-            );
-        }
-        if ($error_message === 'MissingPureAnnotation') {
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingPureAnnotation',
-                Config::REPORT_ERROR,
-            );
-        }
-        if ($error_message === 'MissingAbstractPureAnnotation') {
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingAbstractPureAnnotation',
-                Config::REPORT_ERROR,
-            );
-        }
-        if ($error_message === 'MissingInterfaceImmutableAnnotation') {
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingInterfaceImmutableAnnotation',
-                Config::REPORT_ERROR,
-            );
+        $purity_suggestions = [
+            'MissingAbstractPureAnnotation',
+            'MissingImmutableAnnotation',
+            'MissingInterfaceImmutableAnnotation',
+            'MissingPureAnnotation',
+        ];
+
+        if (in_array($error_message, $purity_suggestions, true)) {
+            $this->project_analyzer->getConfig()->suggest_purity_annotations = true;
+
+            // the example of a page is about its own issue, not the other suggestions it triggers
+            foreach ($purity_suggestions as $purity_suggestion) {
+                if ($purity_suggestion !== $error_message) {
+                    $this->project_analyzer->getConfig()->setCustomErrorLevel($purity_suggestion, Config::REPORT_SUPPRESS);
+                }
+            }
         }
 
         $this->expectException(CodeException::class);

@@ -635,7 +635,7 @@ final class ArrayAccessTest extends TestCase
                     '$first===' => 'string',
                     '$second===' => 'string',
                 ],
-                'ignored_issues' => ['MissingPureAnnotation', 'MissingImmutableAnnotation', 'MissingOverrideAttribute'],
+                'ignored_issues' => ['MissingOverrideAttribute'],
             ],
             'allowEmptyList' => [
                 'code' => '<?php
