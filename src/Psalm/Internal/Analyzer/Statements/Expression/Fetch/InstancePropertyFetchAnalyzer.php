@@ -10,6 +10,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -487,8 +488,19 @@ final class InstancePropertyFetchAnalyzer
                         );
                     }
 
+                    $writes_property = UnsetAnalyzer::writesFetchedProperty($context, $stmt, $stmt_type);
+
+                    if ($writes_property) {
+                        InstancePropertyAssignmentAnalyzer::trackReadonlyWrite(
+                            $statements_analyzer,
+                            $stmt,
+                            $property_id,
+                            $context,
+                        );
+                    }
+
                     if (!AtomicPropertyFetchAnalyzer::isFreeToAccess($statements_analyzer, $stmt, $class_storage)) {
-                        if (UnsetAnalyzer::writesFetchedProperty($context, $stmt, $stmt_type)) {
+                        if ($writes_property) {
                             $statements_analyzer->signalMutation(
                                 $stmt_var_id === '$this'
                                     ? Capabilities::WRITE_THIS_PROPS

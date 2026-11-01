@@ -68,6 +68,131 @@ final class ReadonlyPropertyTest extends TestCase
 
                     echo (new A)->bar;',
             ],
+            'unsetElementOfPrivateMutationAllowedReadonlyProperty' => [
+                'code' => '<?php
+                    final class A {
+                        /**
+                         * @psalm-readonly-allow-private-mutation
+                         */
+                        public array $arr = ["a" => 1, "b" => 2];
+
+                        public function drop(): void {
+                            unset($this->arr["a"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unsetPrivateMutationAllowedReadonlyPropertyWithWriteThisPropsCapability' => [
+                'code' => '<?php
+                    final class A {
+                        /**
+                         * @psalm-readonly-allow-private-mutation
+                         */
+                        public string $s = "a";
+
+                        /**
+                         * @psalm-readonly-allow-private-mutation
+                         */
+                        public array $arr = ["a" => 1];
+
+                        /** @psalm-capabilities write-this-props */
+                        public function dropProperty(): void {
+                            unset($this->s);
+                        }
+
+                        /** @psalm-capabilities write-this-props */
+                        public function dropElement(): void {
+                            unset($this->arr["a"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unsetKeyAndNameTakenFromRestrictedPropertiesOfAnotherObject' => [
+                'code' => '<?php
+                    final class Key {
+                        public function __construct(
+                            public readonly string $name,
+                            public private(set) string $key,
+                        ) {}
+                    }
+
+                    final class Target {
+                        public ?int $dyn = 1;
+                    }
+
+                    function dropByKey(Key $o, Target $target): void {
+                        unset($target->{strtoupper($o->key)});
+                    }
+
+                    function dropByName(Key $o, Target $target): void {
+                        unset($target->{strtoupper($o->name)});
+                    }
+
+                    /** @param array<string, int> $arr */
+                    function dropElement(Key $o, array $arr): void {
+                        unset($arr[strtoupper($o->key)], $arr[strtoupper($o->name)]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'unsetPropertyNamedByReadonlyProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public ?int $dyn = 1;
+
+                        public function __construct(public readonly string $name) {}
+
+                        public function drop(A $obj): void {
+                            unset($obj->{$this->name});
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unsetPropertyOfObjectReturnedFromCallWithReadonlyArgument' => [
+                'code' => '<?php
+                    final class B {
+                        public ?int $value = 1;
+                    }
+
+                    function lookup(int $id): B {
+                        return new B();
+                    }
+
+                    final class A {
+                        public function __construct(public readonly int $id) {}
+
+                        public function drop(): void {
+                            unset(lookup($this->id)->value);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unsetMutablePropertyOfReadonlyObjectProperty' => [
+                'code' => '<?php
+                    final class B {
+                        public ?int $p = 1;
+                    }
+
+                    final class A {
+                        public function __construct(public readonly B $o) {}
+
+                        public function drop(): void {
+                            unset($this->o->p);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'readonlyPublicPropertySetInAnotherMethod' => [
                 'code' => '<?php
                     class A {
@@ -206,6 +331,32 @@ final class ReadonlyPropertyTest extends TestCase
                         }
                     }',
                 'error_message' => 'InaccessibleProperty',
+            ],
+            'readonlyPropertyUnsetInMethod' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public readonly int|string $s) {}
+
+                        public function drop(): void {
+                            unset($this->s);
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:35 - A::$s is marked readonly',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'readonlyPropertyUnsetArrayElement' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public readonly array $arr) {}
+
+                        public function drop(): void {
+                            unset($this->arr[0]);
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:35 - A::$arr is marked readonly',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'readonlyPropertySetInConstructorAndAlsoAnotherMethodInSubclass' => [
                 'code' => '<?php
