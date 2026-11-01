@@ -184,6 +184,38 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'inlineVarBeforeAUseStatement' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var int|null $a */
+                    use Foo\Bar;
+
+                    $b = $a;
+                    PHP,
+                'assertions' => [
+                    '$b' => 'int|null',
+                ],
+                'ignored_issues' => ['UndefinedClass', 'UnusedVariable'],
+            ],
+            'inlineVarsBeforeUseStatementsInANamespace' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace App;
+
+                    /** @var int|null $a */
+                    use Foo\Baz;
+                    /** @var string $s */
+                    use Foo\{One, Two};
+
+                    $x = $a;
+                    $y = $s;
+                    PHP,
+                'assertions' => [
+                    '$x' => 'int|null',
+                    '$y' => 'string',
+                ],
+                'ignored_issues' => ['UndefinedClass', 'UnusedVariable'],
+            ],
             'nopType' => [
                 'code' => '<?php
                     $_a = "hello";
