@@ -30,12 +30,14 @@ use function is_dir;
 use function is_int;
 use function mkdir;
 use function pack;
+use function serialize;
 use function stream_get_contents;
 use function strlen;
 use function substr;
 use function substr_compare;
 use function unlink;
 use function unpack;
+use function unserialize;
 use function usleep;
 
 use const DIRECTORY_SEPARATOR;
@@ -55,6 +57,14 @@ final class Cache
 
     /** @var array<string, list{string, T}> */
     private array $cache = [];
+    /**
+     * Entries of the consolidated file that nothing has asked for yet, as [hash, serialized item]. They stay
+     * serialized, so that a process only pays for the items it actually uses, and the memory the forked workers
+     * share with it is not filled with objects that they would then dirty by touching reference counts.
+     *
+     * @var array<string, list{string, string}>
+     */
+    private array $consolidated = [];
     /** @var resource */
     private mixed $lock;
 
@@ -108,8 +118,13 @@ final class Cache
         $this->lock = $lock;
 
         if (file_exists($this->dir.'consolidated') && $this->arrayCache) {
-            /** @var array<string, list{string, T}> */
-            $this->cache = $this->serializer->unserialize(Providers::safeFileGetContents($this->dir.'consolidated'));
+            // The entries are already serialized (and compressed) by $this->serializer, so the file around them is
+            // plain: running the whole blob through the compressor again would cost time and save nothing.
+            /** @var array<string, list{string, string}> */
+            $this->consolidated = unserialize(
+                Providers::safeFileGetContents($this->dir.'consolidated'),
+                ['allowed_classes' => false],
+            );
         }
     }
 
@@ -128,14 +143,23 @@ final class Cache
                 $hashLen = unpack('V', $key)[1];
                 $hash = substr($key, 4, $hashLen);
                 $key = substr($key, 4+$hashLen);
-                Assert::notNull($this->getItem($key, $hash));
+                $path = substr($f->getPathname(), 0, -5);
+                // The file holds exactly what $this->serializer->serialize() returned for the item,
+                // which is also how consolidated entries are stored: no need to unserialize and serialize again.
+                $serialized = file_get_contents($path);
+                Assert::notFalse($serialized);
+                unset($this->cache[$key]);
+                $this->consolidated[$key] = [$hash, $serialized];
                 unlink($f->getPathname());
-                unlink(substr($f->getPathname(), 0, -5));
+                unlink($path);
             }
         }
-        $consolidated = $this->serializer->serialize($this->cache);
+        $entries = $this->consolidated;
+        foreach ($this->cache as $key => [$hash, $item]) {
+            $entries[$key] = [$hash, $this->serializer->serialize($item)];
+        }
 
-        file_put_contents($this->dir . 'consolidated', $consolidated, LOCK_EX);
+        file_put_contents($this->dir . 'consolidated', serialize($entries), LOCK_EX);
         flock($this->lock, LOCK_UN);
         flock($this->lock, LOCK_SH);
     }
@@ -144,6 +168,10 @@ final class Cache
     {
         if (isset($this->cache[$key])) {
             return $this->cache[$key][0];
+        }
+
+        if (isset($this->consolidated[$key])) {
+            return $this->consolidated[$key][0];
         }
 
         if (!$this->persistent) {
@@ -166,6 +194,17 @@ final class Cache
             $combined = $this->cache[$key];
             if ($hash === null || $combined[0] === $hash) {
                 return $combined[1];
+            }
+        }
+
+        if (isset($this->consolidated[$key])) {
+            [$consolidated_hash, $serialized] = $this->consolidated[$key];
+            if ($hash === null || $consolidated_hash === $hash) {
+                unset($this->consolidated[$key]);
+                /** @var T $item */
+                $item = $this->serializer->unserialize($serialized);
+                $this->cache[$key] = [$consolidated_hash, $item];
+                return $item;
             }
         }
 
@@ -230,6 +269,7 @@ final class Cache
         /** @var T */
         $content = $this->serializer->unserialize($content);
         if ($this->arrayCache) {
+            unset($this->consolidated[$key]);
             $this->cache[$key] = [$hash, $content];
         }
         return $content;
@@ -242,7 +282,9 @@ final class Cache
         // If the assumption is wrong, it will get fixed on the next run.
         if ($hash === null) {
             $hash = '';
-        } elseif (isset($this->cache[$key]) && $this->cache[$key][0] === $hash) {
+        } elseif ((isset($this->cache[$key]) && $this->cache[$key][0] === $hash)
+            || (isset($this->consolidated[$key]) && $this->consolidated[$key][0] === $hash)
+        ) {
             return;
         }
         if ($this->persistent) {
@@ -262,6 +304,7 @@ final class Cache
         // Without a disk cache the array is the only copy. With one, keep it only if arrayCache is on,
         // otherwise a cold run holds every parsed AST and storage object in memory for nothing.
         if (!$this->persistent || $this->arrayCache) {
+            unset($this->consolidated[$key]);
             $this->cache[$key] = [$hash, $item];
         }
     }
