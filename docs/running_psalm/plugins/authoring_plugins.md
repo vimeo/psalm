@@ -128,30 +128,6 @@ You can also specify an absolute path to your plugin:
     </plugins>
 ```
 
-### Partial function application
-
-Psalm replaces each PHP 8.6 partial function application with a `Psalm\Node\Expr\PartialApplication` node when it parses a file, so no call node a plugin sees holds a `?` placeholder:
-
-```php
-<?php
-$addTwo = add(2, ?);
-// Psalm\Node\Expr\PartialApplication
-//   $call: FuncCall add(...)            $call->isFirstClassCallable() === true
-//   $args: [Arg 2, ArgPlaceholder ?]    the arguments as written
-
-$addTwo(3);
-// FuncCall $addTwo(3)                   an ordinary call
-```
-
-Creating the closure calls nothing, so the argument accessors of the provider events return no arguments for it:
-
-```php
-<?php
-$event->getCallArgs(); // [] for f(...) and f(2, ?) in FunctionReturnTypeProviderEvent,
-                       // MethodReturnTypeProviderEvent and MethodCapabilitiesProviderEvent
-$event->getArgs();     // [] for f(...) and f(2, ?) in DynamicFunctionStorageProviderEvent
-```
-
 ### Using Xdebug
 
 As Psalm disables _Xdebug_ at runtime, if you need to debug your code step-by-step when authoring a plugin, you can allow the extension by running Psalm as following:
