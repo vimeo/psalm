@@ -443,6 +443,22 @@ final class InstancePropertyAssignmentAnalyzer
         return $can_set_readonly_property;
     }
 
+    /** Checks a write that bypasses analyze() (unset(), string `++`, by-reference `foreach`) to a readonly property. */
+    public static function trackReadonlyWrite(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        string $property_id,
+        Context $context,
+    ): void {
+        $properties = $statements_analyzer->getCodebase()->properties;
+
+        if ($properties->hasStorage($property_id)
+            && ($property_storage = $properties->getStorage($property_id))->readonly
+        ) {
+            self::trackReadonlyViolation($statements_analyzer, $stmt, $property_id, $property_storage, $context);
+        }
+    }
+
     /** @psalm-capabilities read-props */
     private static function isFreshReceiver(
         StatementsAnalyzer $statements_analyzer,

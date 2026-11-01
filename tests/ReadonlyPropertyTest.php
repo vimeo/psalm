@@ -111,6 +111,59 @@ final class ReadonlyPropertyTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'unsetPropertyNamedByReadonlyProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public ?int $dyn = 1;
+
+                        public function __construct(public readonly string $name) {}
+
+                        public function drop(A $obj): void {
+                            unset($obj->{$this->name});
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unsetPropertyOfObjectReturnedFromCallWithReadonlyArgument' => [
+                'code' => '<?php
+                    final class B {
+                        public ?int $value = 1;
+                    }
+
+                    function lookup(int $id): B {
+                        return new B();
+                    }
+
+                    final class A {
+                        public function __construct(public readonly int $id) {}
+
+                        public function drop(): void {
+                            unset(lookup($this->id)->value);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unsetMutablePropertyOfReadonlyObjectProperty' => [
+                'code' => '<?php
+                    final class B {
+                        public ?int $p = 1;
+                    }
+
+                    final class A {
+                        public function __construct(public readonly B $o) {}
+
+                        public function drop(): void {
+                            unset($this->o->p);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'readonlyPublicPropertySetInAnotherMethod' => [
                 'code' => '<?php
                     class A {
