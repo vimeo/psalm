@@ -406,8 +406,8 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'code' => '<?php
                 function h(Uri\Rfc3986\UriBuilder $b, StreamError $e, Openssl\Session $s): void {}
 
-                function rfc3986(Uri\Rfc3986\UriBuilder $builder, ?Uri\Rfc3986\Uri $base): Uri\Rfc3986\Uri {
-                    return $builder->reset()
+                function rfc3986(Uri\Rfc3986\UriBuilder $builder): void {
+                    $builder->reset()
                         ->setScheme("https")
                         ->setUserInfo("user:secret")
                         ->setHost("example.com")
@@ -415,11 +415,11 @@ final class NativeSymbolAvailabilityTest extends TestCase
                         ->setPath("/a")
                         ->setQuery(null)
                         ->setFragment("top")
-                        ->build($base);
+                        ->build(null);
                 }
 
-                function whatwg(Uri\WhatWg\UrlBuilder $builder, ?Uri\WhatWg\Url $base): Uri\WhatWg\Url {
-                    $url = $builder->reset()
+                function whatwg(Uri\WhatWg\UrlBuilder $builder): void {
+                    $builder->reset()
                         ->setScheme("https")
                         ->setUsername("user")
                         ->setPassword("secret")
@@ -428,9 +428,8 @@ final class NativeSymbolAvailabilityTest extends TestCase
                         ->setPath("/a")
                         ->setQuery("q=1")
                         ->setFragment(null)
-                        ->build($base, $softErrors);
+                        ->build(null, $softErrors);
                     echo count($softErrors ?? []);
-                    return $url;
                 }
 
                 function rfc3986HostType(Uri\Rfc3986\UriHostType $type): string {
