@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 use Psalm\Type\TaintKind;
 
+use function array_count_values;
 use function array_diff;
 use function array_fill;
 use function array_filter;
@@ -25,11 +26,13 @@ use function implode;
 use function in_array;
 use function ini_get;
 use function ini_set;
+use function ksort;
 use function memory_get_peak_usage;
 use function memory_get_usage;
 use function memory_reset_peak_usage;
 use function range;
 use function sort;
+use function str_repeat;
 use function str_starts_with;
 use function strpos;
 use function trim;
@@ -534,6 +537,102 @@ final class TaintTest extends TestCase
         return [
             'sixteenCallStacks' => [16],
             'seventeenCallStacks' => [17],
+        ];
+    }
+
+    /**
+     * A helper that isn't specialized (an impure one, or one despecialized for being impure) called in the body of a
+     * specialized call, with many callers each echoing its result, keeps the memory of the analysis bounded and still
+     * reports every sink.
+     */
+    #[DataProvider('providerHelpersThatAreNotSpecialized')]
+    public function testSinksPastAHelperThatIsNotSpecializedDontBlowUpWithTheNumberOfCallers(string $helper): void
+    {
+        $pages = 600;
+
+        $functions = implode('', array_map(
+            static fn(int $i): string => <<<PHP
+
+                function page$i(string \$a, Str \$o): void {
+                    echo html(\$a);
+                    echo html(\$o);
+                    \$t = new Str(Cfg::\$v);
+                    echo html(\$t);
+                    echo "<p>" . \$t . "</p>";
+                    echo (string) \$o;
+                }
+
+                PHP,
+            range(1, $pages),
+        ));
+
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            <<<PHP
+                <?php
+                /** @psalm-taint-specialize */
+                final class Str {
+                    public function __construct(private string \$s) {}
+
+                    public function __toString(): string {
+                        return html(\$this->s);
+                    }
+                }
+
+                $helper
+
+                final class Cfg {
+                    public static string \$v = '';
+
+                    public static function init(): void {
+                        self::\$v = (string) \$_GET['v'];
+                    }
+                }
+                PHP . $functions,
+        );
+        $this->project_analyzer->trackTaintedInputs();
+
+        memory_reset_peak_usage();
+        $memory_before = memory_get_usage();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $memory_used = memory_get_peak_usage() - $memory_before;
+
+        $taint_issue_types = array_count_values(array_filter(
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+            static fn(string $type): bool => str_starts_with($type, 'Tainted'),
+        ));
+        ksort($taint_issue_types);
+
+        self::assertSame(['TaintedHtml' => 5 * $pages, 'TaintedTextWithQuotes' => 5 * $pages], $taint_issue_types);
+        self::assertLessThan(400 * 1024 * 1024, $memory_used);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerHelpersThatAreNotSpecialized(): array
+    {
+        return [
+            'helperDespecializedForBeingImpure' => [
+                'function html(string|\Stringable|null $s): string {
+                    return htmlspecialchars((string) $s);
+                }',
+            ],
+            'helperDeclaredImpure' => [
+                '/** @psalm-impure */
+                function html(string|Str|null $s): string {
+                    return htmlspecialchars((string) $s);
+                }',
+            ],
         ];
     }
 
@@ -4993,6 +5092,268 @@ final class TaintTest extends TestCase
                             echo (string) $_GET["file"];
                         }
                     }',
+            ],
+            'specializedCallsStayApartThroughADespecializedHelper' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function f(string $x): string {
+                        return html($x);
+                    }
+
+                    function html(string|\Stringable $s): string {
+                        return trim((string) $s);
+                    }
+
+                    $t = f($_GET["a"]);
+                    echo f("safe");',
+            ],
+            'specializedCallsStayApartThroughNestedDespecializedHelpers' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function f(string $x): string {
+                        return g($x);
+                    }
+
+                    function g(string|\Stringable $s): string {
+                        return html($s);
+                    }
+
+                    function html(string|\Stringable $s): string {
+                        return trim((string) $s);
+                    }
+
+                    $t = f($_GET["a"]);
+                    echo f("safe");',
+            ],
+            'specializedCallsStayApartThroughAnImpureHelper' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function f(string $x): string {
+                        return html($x);
+                    }
+
+                    /** @psalm-impure */
+                    function html(string $s): string {
+                        return trim($s);
+                    }
+
+                    $t = f($_GET["a"]);
+                    echo f("safe");',
+            ],
+            'specializedCallsStayApartThroughNestedImpureHelpers' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function f(string $x): string {
+                        return g($x);
+                    }
+
+                    /** @psalm-impure */
+                    function g(string $s): string {
+                        return html($s);
+                    }
+
+                    /** @psalm-impure */
+                    function html(string $s): string {
+                        return trim($s);
+                    }
+
+                    $t = f($_GET["a"]);
+                    echo f("safe");',
+            ],
+            'specializedCallDoesntPassTheSafeKeyOfAnArrayWithATaintedOneThroughAnImpureHelperToASink' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @psalm-taint-specialize
+                     * @param array{bad: string, safe: string} $input
+                     */
+                    function f(array $input): void {
+                        $s = helper($input["safe"]);
+                        sink(json_decode($s, true));
+                    }
+
+                    /** @psalm-impure */
+                    function helper(string $s): string {
+                        return $s;
+                    }
+
+                    /** @psalm-taint-sink nosql $v */
+                    function sink(mixed $v): void {}
+
+                    f(["bad" => (string) $_GET["x"], "safe" => "{}"]);',
+            ],
+            'specializedCallDoesntPassTheSafeKeyOfAnArrayWithATaintedOneThroughADespecializedHelperToASink' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @psalm-taint-specialize
+                     * @param array{bad: string, safe: string} $input
+                     */
+                    function f(array $input): void {
+                        $s = helper($input["safe"]);
+                        sink(json_decode($s, true));
+                    }
+
+                    function helper(string|\Stringable $s): string {
+                        return (string) $s;
+                    }
+
+                    /** @psalm-taint-sink nosql $v */
+                    function sink(mixed $v): void {}
+
+                    f(["bad" => (string) $_GET["x"], "safe" => "{}"]);',
+            ],
+            'fetchesOfSafeKeysPastAnImpureHelperDontExhaustTheFiltersOfASpecializedCall' => [
+                // 40 fetches before and as many after the helper: more than the filters a specialized call has
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @psalm-taint-specialize
+                     * @param array<string, string> $a
+                     */
+                    function f(array $a): void {
+' . implode('', array_map(
+                    static fn(int $i): string => 'echo $a["k' . $i . '"];' . "\n",
+                    range(1, 40),
+                )) . '
+                        $b = helper($a);
+' . implode('', array_map(
+                    static fn(int $i): string => 'echo $b["k' . $i . '"];' . "\n",
+                    range(1, 40),
+                )) . '
+                    }
+
+                    /**
+                     * @psalm-impure
+                     * @param array<string, string> $a
+                     * @return array<string, string>
+                     */
+                    function helper(array $a): array {
+                        return $a;
+                    }
+
+                    f(["bad" => (string) $_GET["x"]' . implode('', array_map(
+                    static fn(int $i): string => ', "k' . $i . '" => "safe"',
+                    range(1, 40),
+                )) . ']);',
+            ],
+            'fetchesOfSafeKeysPastAnImpureHelperAtTheMostFiltersOfASpecializedCall' => [
+                // 64 fetches before the helper and as many after it, the most filters a specialized call has
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @psalm-taint-specialize
+                     * @param array<string, string> $a
+                     */
+                    function f(array $a): void {
+' . implode('', array_map(
+                    static fn(int $i): string => 'echo $a["k' . $i . '"];' . "\n",
+                    range(1, 64),
+                )) . '
+                        $b = helper($a);
+' . implode('', array_map(
+                    static fn(int $i): string => 'echo $b["k' . $i . '"];' . "\n",
+                    range(1, 64),
+                )) . '
+                    }
+
+                    /**
+                     * @psalm-impure
+                     * @param array<string, string> $a
+                     * @return array<string, string>
+                     */
+                    function helper(array $a): array {
+                        return $a;
+                    }
+
+                    f(["bad" => (string) $_GET["x"]' . implode('', array_map(
+                    static fn(int $i): string => ', "k' . $i . '" => "safe"',
+                    range(1, 64),
+                )) . ']);',
+            ],
+            'specializedCallDoesntPassTheSafeKeyOfAnArrayWithATaintedOneThroughAnImpureHelperOfANestedSpecializedCall' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @psalm-taint-specialize
+                     * @param array{bad: string, safe: string} $input
+                     */
+                    function f(array $input): void {
+                        g($input["safe"]);
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function g(string $s): void {
+                        $r = helper($s);
+                        sink(json_decode($r, true));
+                    }
+
+                    /** @psalm-impure */
+                    function helper(string $s): string {
+                        return $s;
+                    }
+
+                    /** @psalm-taint-sink nosql $v */
+                    function sink(mixed $v): void {}
+
+                    f(["bad" => (string) $_GET["x"], "safe" => "{}"]);',
+            ],
+            'specializedCallDoesntPassTheSafeKeyOfAnArrayWithATaintedOneThroughADespecializedHelperOfANestedSpecializedCall' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @psalm-taint-specialize
+                     * @param array{bad: string, safe: string} $input
+                     */
+                    function f(array $input): void {
+                        g($input["safe"]);
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function g(string $s): void {
+                        $r = helper($s);
+                        sink(json_decode($r, true));
+                    }
+
+                    function helper(string|\Stringable $s): string {
+                        return (string) $s;
+                    }
+
+                    /** @psalm-taint-sink nosql $v */
+                    function sink(mixed $v): void {}
+
+                    f(["bad" => (string) $_GET["x"], "safe" => "{}"]);',
+            ],
+            'fetchesOfSafeKeysOfANestedArrayAfterAnImpureHelperAndAfterACopyChainOfTheArray' => [
+                // 63 fetches past the helper and as many past 20 copies of the array: the tainted key reaches none
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @psalm-taint-specialize
+                     * @param array{outer: array<string, string>} $a
+                     */
+                    function f(array $a): void {
+                        $b = helper($a);
+' . implode('', array_map(
+                    static fn(int $i): string => 'echo $b["outer"]["k' . $i . '"];' . "\n",
+                    range(1, 63),
+                )) . '
+                        $z0 = $a;
+' . implode('', array_map(
+                    static fn(int $i): string => '$z' . $i . ' = $z' . ($i - 1) . ';' . "\n",
+                    range(1, 20),
+                )) . implode('', array_map(
+                    static fn(int $i): string => 'echo $z20["outer"]["k' . $i . '"];' . "\n",
+                    range(1, 63),
+                )) . '
+                    }
+
+                    /**
+                     * @psalm-impure
+                     * @param array{outer: array<string, string>} $a
+                     * @return array{outer: array<string, string>}
+                     */
+                    function helper(array $a): array {
+                        return $a;
+                    }
+
+                    f(["outer" => ["bad" => (string) $_GET["x"]' . implode('', array_map(
+                    static fn(int $i): string => ', "k' . $i . '" => "safe"',
+                    range(1, 63),
+                )) . ']]);',
             ],
         ];
     }
@@ -14629,6 +14990,223 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintedCallOfASpecializedFunctionThroughADespecializedHelper' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function f(string $x): string {
+                        return html($x);
+                    }
+
+                    function html(string|\Stringable $s): string {
+                        return trim((string) $s);
+                    }
+
+                    echo f($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedCallOfASpecializedFunctionThroughNestedDespecializedHelpers' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function f(string $x): string {
+                        return g($x);
+                    }
+
+                    function g(string|\Stringable $s): string {
+                        return html($s);
+                    }
+
+                    function html(string|\Stringable $s): string {
+                        return trim((string) $s);
+                    }
+
+                    echo f($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'sinkAfterADespecializedHelperCallInASpecializedFunctionReachedByATaintedCall' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function f(string $x): void {
+                        $h = html($x);
+                        echo $h;
+                    }
+
+                    function html(string|\Stringable $s): string {
+                        return trim((string) $s);
+                    }
+
+                    f($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'aDespecializedHelperReturnsWhatAnotherCallGaveIt' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function f(string $x): string {
+                        return html($x);
+                    }
+
+                    function html(string|\Stringable $s): string {
+                        return trim((string) $s);
+                    }
+
+                    f($_GET["a"]);
+                    echo html("other");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'aDespecializedHelperReturnsWhatReachedItThroughASpecializedFunctionInALaterRound' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function f(string $x): string {
+                        return html($x);
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function pass(string $x): string {
+                        return $x;
+                    }
+
+                    function html(string|\Stringable $s): string {
+                        return trim((string) $s);
+                    }
+
+                    f(pass($_GET["a"]));
+                    echo html("other");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'aDespecializedHelperReturnsWhatReachedItThroughAStaticPropertyInALaterRound' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function f(string $x): string {
+                        return html($x);
+                    }
+
+                    final class Cfg {
+                        public static string $v = "";
+                    }
+
+                    function load(): void {
+                        Cfg::$v = (string) $_GET["a"];
+                    }
+
+                    function html(string|\Stringable $s): string {
+                        return trim((string) $s);
+                    }
+
+                    f(Cfg::$v);
+                    echo html("other");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedCallOfASpecializedFunctionThroughAnImpureHelper' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function f(string $x): string {
+                        return html($x);
+                    }
+
+                    /** @psalm-impure */
+                    function html(string $s): string {
+                        return trim($s);
+                    }
+
+                    echo f($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedCallOfASpecializedFunctionThroughNestedImpureHelpers' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function f(string $x): string {
+                        return g($x);
+                    }
+
+                    /** @psalm-impure */
+                    function g(string $s): string {
+                        return html($s);
+                    }
+
+                    /** @psalm-impure */
+                    function html(string $s): string {
+                        return trim($s);
+                    }
+
+                    echo f($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'sinkAfterAnImpureHelperCallInASpecializedFunctionReachedByATaintedCall' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function f(string $x): void {
+                        $h = html($x);
+                        echo $h;
+                    }
+
+                    /** @psalm-impure */
+                    function html(string $s): string {
+                        return trim($s);
+                    }
+
+                    f($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'anImpureHelperReturnsWhatAnotherCallGaveIt' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function f(string $x): string {
+                        return html($x);
+                    }
+
+                    /** @psalm-impure */
+                    function html(string $s): string {
+                        return trim($s);
+                    }
+
+                    f($_GET["a"]);
+                    echo html("other");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'anImpureHelperReturnsWhatReachedItThroughASpecializedFunctionInALaterRound' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function f(string $x): string {
+                        return html($x);
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function pass(string $x): string {
+                        return $x;
+                    }
+
+                    /** @psalm-impure */
+                    function html(string $s): string {
+                        return trim($s);
+                    }
+
+                    f(pass($_GET["a"]));
+                    echo html("other");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'anImpureHelperReturnsWhatReachedItThroughAStaticPropertyInALaterRound' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function f(string $x): string {
+                        return html($x);
+                    }
+
+                    final class Cfg {
+                        public static string $v = "";
+                    }
+
+                    function load(): void {
+                        Cfg::$v = (string) $_GET["a"];
+                    }
+
+                    /** @psalm-impure */
+                    function html(string $s): string {
+                        return trim($s);
+                    }
+
+                    f(Cfg::$v);
+                    echo html("other");',
+                'error_message' => 'TaintedHtml',
+            ],
         ];
     }
 
@@ -15343,6 +15921,83 @@ final class TaintTest extends TestCase
                     'TaintedSystemSecret{ var_dump(systemSecret()); }',
                     'TaintedUserSecret{ var_export(userSecret()); }',
                     'TaintedSystemSecret{ debug_zval_dump(systemSecret()); }',
+                ],
+            ],
+            'sinkReachedByARealTaintThroughSpecializedCallsIsntReportedForAnUnrelatedTaintedKeyOfACaller' => [
+                // only $_POST reaches sink() from the call of g() at the end, not the other key of the array f() gets
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-specialize
+                     * @param array{bad: string, safe: string} $input
+                     */
+                    function f(array $input): void {
+                        $s = stringHelper($input["safe"]);
+                        g(json_decode($s, true));
+                    }
+
+                    /**
+                     * @psalm-taint-specialize
+                     * @param mixed $value
+                     */
+                    function g($value): void {
+                        $v = arrayHelper($value);
+                        sink($v);
+                    }
+
+                    /** @psalm-impure */
+                    function stringHelper(string $s): string {
+                        return $s;
+                    }
+
+                    /**
+                     * @psalm-impure
+                     * @param mixed $s
+                     * @return mixed
+                     */
+                    function arrayHelper($s) {
+                        return $s;
+                    }
+
+                    /** @psalm-taint-sink nosql $v */
+                    function sink($v): void {}
+
+                    /** @psalm-taint-specialize */
+                    function pass(string $s): string {
+                        return $s;
+                    }
+
+                    f(["bad" => (string) $_GET["unrelated"], "safe" => "{}"]);
+                    $real = (string) $_POST["real"];
+' . str_repeat('$real = pass($real);' . "\n", 12) . '
+                    g(json_decode($real, true));',
+                'expectedIssueTypes' => [
+                    'TaintedNosql{ function sink($v): void {} }',
+                ],
+                'expectedSourceLines' => [43],
+            ],
+            'urlKindsSuppressedBySsrfThroughSpecializedCalls' => [
+                // SSRF hides url_component at the same sink, however the calls reach it
+                'code' => '<?php
+                    /** @psalm-taint-source ssrf */
+                    function sourceA(): string { return ""; }
+
+                    /** @psalm-taint-source url_component */
+                    function sourceB(): string { return ""; }
+
+                    /** @psalm-taint-specialize */
+                    function f(string $x): void { file_get_contents($x); }
+
+                    /** @psalm-taint-specialize */
+                    function g(string $x): void { f($x); f($x . "/"); }
+
+                    $a = sourceA();
+                    $b = sourceB();
+                    f($a);
+                    f($a . $b);
+                    g($a);
+                    g($a . $b);',
+                'expectedIssueTypes' => [
+                    'TaintedSSRF{ function f(string $x): void { file_get_contents($x); } }',
                 ],
             ],
         ];
