@@ -6,13 +6,16 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Node\Expr\VirtualIsset;
 use Psalm\Node\Expr\VirtualTernary;
 use Psalm\Node\Expr\VirtualVariable;
+use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Type;
 use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function substr;
@@ -93,6 +96,35 @@ final class CoalesceAnalyzer
         $statements_analyzer->node_data = $old_node_data;
 
         $statements_analyzer->node_data->setType($stmt, $ternary_type);
+
+        // `$a ?? throw …` ends unless $a is set, so it is set afterwards
+        if ($stmt->right instanceof PhpParser\Node\Expr\Throw_) {
+            $coalesced_var_id = ExpressionIdentifier::getExtendedVarId(
+                $stmt->left,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($coalesced_var_id !== null && isset($context->vars_in_scope[$coalesced_var_id])) {
+                $changed_var_ids = [];
+
+                [$context->vars_in_scope, $context->references_in_scope] = Reconciler::reconcileKeyedTypes(
+                    [$coalesced_var_id => [[new IsIsset()]]],
+                    [],
+                    $context->vars_in_scope,
+                    $context->references_in_scope,
+                    $changed_var_ids,
+                    [],
+                    $statements_analyzer,
+                    [],
+                    $context->inside_loop,
+                );
+
+                foreach ($changed_var_ids as $changed_var_id => $_) {
+                    $context->removeVarFromConflictingClauses($changed_var_id);
+                }
+            }
+        }
 
         return true;
     }

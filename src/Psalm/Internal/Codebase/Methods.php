@@ -668,7 +668,10 @@ final class Methods
             $overridden_storage = $this->getStorage($overridden_method_id);
 
             if ($overridden_storage->return_type) {
-                if ($overridden_storage->return_type->isNull()) {
+                // a docblock `@return null` stands for void, a native `null` return type is a type of its own
+                if ($overridden_storage->return_type->isNull()
+                    && !$overridden_storage->signature_return_type?->isNull()
+                ) {
                     return Type::getVoid();
                 }
 
@@ -795,7 +798,9 @@ final class Methods
             $overridden_storage = $this->getStorage($overridden_method_id);
 
             if ($overridden_storage->return_type) {
-                if ($overridden_storage->return_type->isNull()) {
+                if ($overridden_storage->return_type->isNull()
+                    && !$overridden_storage->signature_return_type?->isNull()
+                ) {
                     if ($candidate_type && !$candidate_type->isVoid()) {
                         return null;
                     }
