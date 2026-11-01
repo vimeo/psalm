@@ -57,6 +57,32 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalConstructorParamBeforeTheTemplateParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T of self::*
+                     */
+                    class SomeTemplatedClass {
+                        public const TYPE1 = "type1";
+                        public const TYPE2 = "type2";
+
+                        /**
+                         * @param (T is self::TYPE1 ? string : null) $someParam
+                         * @param T $type
+                         */
+                        public function __construct(
+                            private ?string $someParam,
+                            private string $type,
+                        ) {}
+
+                        /**
+                         * @return self<self::TYPE1>
+                         */
+                        public static function type1(): self {
+                            return new self("some-string", self::TYPE1);
+                        }
+                    }',
+            ],
             'staticReturnKeepsTheTypeArgumentsOfTheCalledClass' => [
                 'code' => '<?php
                     /** @template T of object */
