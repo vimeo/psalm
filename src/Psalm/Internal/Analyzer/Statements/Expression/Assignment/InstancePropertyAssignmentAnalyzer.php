@@ -1317,6 +1317,25 @@ final class InstancePropertyAssignmentAnalyzer
                         $class_storage->parent_class,
                     );
 
+                    $localizing_type_part = self::getLocalizingTypePart(
+                        $statements_analyzer,
+                        $codebase,
+                        $context,
+                        $lhs_var_id,
+                        $lhs_type_part,
+                        $fq_class_name,
+                    );
+
+                    if ($localizing_type_part !== null) {
+                        $class_property_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
+                            $codebase,
+                            $class_property_type,
+                            $localizing_type_part,
+                            $class_storage,
+                            $class_storage,
+                        );
+                    }
+
                     $has_regular_setter = true;
 
                     if (!$context->collect_initializations && !$context->collect_mutations) {
