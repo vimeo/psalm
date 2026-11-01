@@ -236,6 +236,33 @@ final class Php85Test extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'pipeIntoAParameterOnlyTheStubTakesByReference' => [
+                'code' => '<?php
+                    $h = fopen("php://memory", "r");
+
+                    if ($h !== false) {
+                        $closed = $h |> fclose(...);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'pipeIntoAByRefParameterKeepsTheCallType' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param list<T> $a
+                     * @return T|null
+                     */
+                    function first(array &$a): mixed { return $a[0] ?? null; }
+
+                    $r = [1, 2] |> first(...);',
+                'assertions' => [
+                    '$r===' => '1|2|null',
+                ],
+                'ignored_issues' => ['InvalidPassByReference'],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -311,6 +338,23 @@ final class Php85Test extends TestCase
                 'error_message' => 'PossiblyNullArgument',
                 'error_levels' => [],
                 'php_version' => '8.6',
+            ],
+            'pipeRejectsAByRefParameter' => [
+                'code' => '<?php
+                    $a = [3, 1];
+                    $a |> sort(...);',
+                'error_message' => 'Parameter 1 of sort is passed by reference, but the pipe operator passes its left-hand side by value',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'pipeRejectsAByRefParameterOfACallable' => [
+                'code' => '<?php
+                    $f = function (array &$x): void {};
+                    $a = [3, 1];
+                    $a |> $f;',
+                'error_message' => 'is passed by reference, but the pipe operator passes its left-hand side by value',
+                'error_levels' => [],
+                'php_version' => '8.5',
             ],
         ];
     }

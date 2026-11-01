@@ -43,6 +43,7 @@ use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualPipeValue;
 use Psalm\Node\VirtualArg;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
@@ -227,6 +228,7 @@ final class ArgumentsAnalyzer
                     || $arg->value instanceof PhpParser\Node\Expr\Array_
                     || $arg->value instanceof PhpParser\Node\Expr\Ternary
                     || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
+                    || $arg->value instanceof VirtualPipeValue
                 )
             ) {
                 if (self::handleByRefFunctionArg(
@@ -1334,7 +1336,9 @@ final class ArgumentsAnalyzer
         CodeLocation $call_location,
         array $args,
     ): ?bool {
-        if ($arg->value instanceof PhpParser\Node\Scalar
+        if (($arg->value instanceof VirtualPipeValue
+                && self::phpTakesArgumentByReference($method_id, $argument_offset))
+            || $arg->value instanceof PhpParser\Node\Scalar
             || $arg->value instanceof PhpParser\Node\Expr\Cast
             || $arg->value instanceof PhpParser\Node\Expr\Array_
             || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
@@ -1354,7 +1358,10 @@ final class ArgumentsAnalyzer
         ) {
             IssueBuffer::maybeAdd(
                 new InvalidPassByReference(
-                    'Parameter ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects a variable',
+                    'Parameter ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                        . ($arg->value instanceof VirtualPipeValue
+                            ? ' is passed by reference, but the pipe operator passes its left-hand side by value'
+                            : ' expects a variable'),
                     new CodeLocation($statements_analyzer->getSource(), $arg->value),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
