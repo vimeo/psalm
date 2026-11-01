@@ -1697,6 +1697,16 @@ final class ArgumentsAnalyzer
         PhpParser\Node\Arg $arg,
         Context $context,
     ): ?bool {
+        // whatever the callee, the piped value is passed by value
+        if ($arg instanceof VirtualPipeArg) {
+            $was_inside_call = $context->inside_call;
+            $context->inside_call = true;
+            $result = ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context);
+            $context->inside_call = $was_inside_call;
+
+            return $result === false ? false : null;
+        }
+
         // there are a bunch of things we want to evaluate even when we don't
         // know what function/method is being called
         if ($arg->value instanceof PhpParser\Node\Expr\Closure

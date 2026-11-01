@@ -285,6 +285,41 @@ final class Php85Test extends TestCase
                 'ignored_issues' => ['InvalidPassByReference'],
                 'php_version' => '8.6',
             ],
+            'pipeIntoAnUnknownCalleePassesByValue' => [
+                'code' => '<?php
+                    function getClosure(): Closure {
+                        return function (): void {};
+                    }
+
+                    $c = getClosure();
+                    $e = [];
+                    $e |> $c;',
+                'assertions' => [
+                    '$e===' => 'array<never, never>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'pipeIntoAnUnknownMethodWritesNoReference' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-refs|io */
+                    final class Conn {
+                        /** @psalm-capabilities io */
+                        public function get(string $k): string {
+                            echo $k;
+                            return $k;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|io */
+                    function call(Conn $conn, string $name, string &$s): mixed {
+                        $callable = [$conn, $name];
+                        return $s |> $callable;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'pipeReturningByReferenceIsPassedByReference' => [
                 'code' => '<?php
                     function &counter(int $start): int {
