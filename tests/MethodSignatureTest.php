@@ -301,6 +301,32 @@ final class MethodSignatureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticReturnOfAnInheritedMethodSatisfiesAnInterface' => [
+                'code' => '<?php
+                    interface ModelInterface {
+                        public function setId(?string $value): static;
+                    }
+
+                    abstract class BaseModel {
+                        public function setId(?string $value): static {
+                            return $this;
+                        }
+                    }
+
+                    class ConcreteModel extends BaseModel implements ModelInterface {}
+
+                    interface SelfInterface {
+                        public function make(): self;
+                    }
+
+                    class Maker {
+                        public function make(): static {
+                            return $this;
+                        }
+                    }
+
+                    class ConcreteMaker extends Maker implements SelfInterface {}',
+            ],
             'overrideDateTimeDiffWithTheNativeParameterName' => [
                 'code' => '<?php
                     class Date extends DateTime {
@@ -1137,6 +1163,23 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticReturnOfAnInheritedMethodDoesNotSatisfyAnUnrelatedInterface' => [
+                'code' => '<?php
+                    interface OtherInterface {
+                        public function make(): Other;
+                    }
+
+                    class Other {}
+
+                    class Maker {
+                        public function make(): static {
+                            return $this;
+                        }
+                    }
+
+                    class ConcreteMaker extends Maker implements OtherInterface {}',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
             'oneParam' => [
                 'code' => '<?php
                     interface I {

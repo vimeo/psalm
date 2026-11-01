@@ -39,6 +39,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -1106,9 +1107,8 @@ final class MethodComparator
                 $implementer_classlike_storage->is_trait
                     ? $implementer_called_class_name
                     : $implementer_classlike_storage->name,
-                $implementer_classlike_storage->is_trait
-                    ? $implementer_called_class_name
-                    : $implementer_classlike_storage->name,
+                // an inherited method returns `static` of the class it is called on
+                new TNamedObject($implementer_called_class_name),
                 $implementer_classlike_storage->parent_class,
             ) : null;
 
