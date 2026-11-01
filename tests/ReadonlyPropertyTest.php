@@ -159,6 +159,28 @@ final class ReadonlyPropertyTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'foreachByRefOverReadonlyArrayObjectPropertyNarrowedFromUnion' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var array<int, int>|ArrayObject<int, int> */
+                        public readonly array|ArrayObject $bag;
+
+                        public function __construct() {
+                            $this->bag = new ArrayObject([1]);
+                        }
+
+                        public function touch(): void {
+                            if ($this->bag instanceof ArrayObject) {
+                                foreach ($this->bag as &$item) {
+                                    $item = 1;
+                                }
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'incrementAndForeachByRefOnPrivateMutationAllowedReadonlyPropertyWithCapabilities' => [
                 'code' => '<?php
                     final class A {
@@ -399,6 +421,23 @@ final class ReadonlyPropertyTest extends TestCase
                         }
                     }',
                 'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29 - A::$s is marked readonly',
+                'error_levels' => ['StringIncrement'],
+                'php_version' => '8.1',
+            ],
+            'readonlyStringPropertyIncrementThroughTemplateReceiver' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public readonly string $s) {}
+                    }
+
+                    /**
+                     * @template T of A
+                     * @param T $t
+                     */
+                    function bump(A $t): void {
+                        $t->s++;
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:25 - A::$s is marked readonly',
                 'error_levels' => ['StringIncrement'],
                 'php_version' => '8.1',
             ],
