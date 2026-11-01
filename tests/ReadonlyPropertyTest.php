@@ -111,6 +111,35 @@ final class ReadonlyPropertyTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'unsetKeyAndNameTakenFromRestrictedPropertiesOfAnotherObject' => [
+                'code' => '<?php
+                    final class Key {
+                        public function __construct(
+                            public readonly string $name,
+                            public private(set) string $key,
+                        ) {}
+                    }
+
+                    final class Target {
+                        public ?int $dyn = 1;
+                    }
+
+                    function dropByKey(Key $o, Target $target): void {
+                        unset($target->{strtoupper($o->key)});
+                    }
+
+                    function dropByName(Key $o, Target $target): void {
+                        unset($target->{strtoupper($o->name)});
+                    }
+
+                    /** @param array<string, int> $arr */
+                    function dropElement(Key $o, array $arr): void {
+                        unset($arr[strtoupper($o->key)], $arr[strtoupper($o->name)]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'unsetPropertyNamedByReadonlyProperty' => [
                 'code' => '<?php
                     final class A {
