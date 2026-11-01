@@ -138,6 +138,13 @@ final class TemplateStandinTypeReplacer
             } else {
                 return $union_type;
             }
+        } elseif ($input_type
+            && count($original_atomic_types) > 1
+            && isset($original_atomic_types[$input_type->getId()])
+        ) {
+            // the whole input is one of the union's own atomic types (`null` for `T|null`):
+            // it says nothing about the template
+            $input_type = Type::getNever();
         }
 
         $had_template = false;

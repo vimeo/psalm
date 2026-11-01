@@ -489,6 +489,11 @@ final class ArgumentsAnalyzer
                     $lower_bounds,
                     $codebase,
                 );
+
+                // nothing was inferred for the template yet: the closure parameter is not `never`
+                if ($new_bounds[$k][$kk]->isNever() && isset($template_result->template_types[$k][$kk])) {
+                    $new_bounds[$k][$kk] = $template_result->template_types[$k][$kk];
+                }
             }
         }
         $replace_template_result = new TemplateResult(
