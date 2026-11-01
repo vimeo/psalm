@@ -94,10 +94,9 @@ final class PipeAnalyzer
     }
 
     /**
-     * The callee and the arguments as written, when PHP calls the callee of the right-hand side directly with the
-     * piped value in the place of the placeholder: a first-class callable, or a partial application with a single
-     * `?` or `...` and no named or unpacked argument before a `...`. A positional argument after a named one is a
-     * compile error, reported by the partial application when it is analysed as one.
+     * The callee and arguments when PHP calls the callee directly with the piped value as its placeholder: a single
+     * `?` or `...`, no named or unpacked argument before a `...`. A positional argument after a named one is not direct
+     * because it is a compile error, which the partial application reports.
      *
      * @return array{FuncCall|MethodCall|StaticCall, list<Arg|ArgPlaceholder|VariadicPlaceholder>}|null
      */
