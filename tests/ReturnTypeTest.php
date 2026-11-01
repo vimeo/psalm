@@ -28,6 +28,68 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'narrowerNativeReturnTypeWinsOverInheritedDocblockWithStringable' => [
+                'code' => '<?php
+                    abstract class A {
+                        /**
+                         * @return string|Stringable
+                         */
+                        abstract public function render(): string|Stringable;
+                    }
+
+                    final class B extends A {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $s = (new B())->render();',
+                'assertions' => ['$s===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inheritedDocblockStillRefinesNativeReturnTypeWithStringable' => [
+                'code' => '<?php
+                    abstract class A {
+                        /**
+                         * @return non-empty-string
+                         */
+                        abstract public function render(): string;
+                    }
+
+                    final class B extends A {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $s = (new B())->render();',
+                'assertions' => ['$s===' => 'non-empty-string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nativeStringableReturnTypeKeepsStringableOverInheritedStringOrStringable' => [
+                'code' => '<?php
+                    abstract class A {
+                        /**
+                         * @return string|Stringable
+                         */
+                        abstract public function render(): string|Stringable;
+                    }
+
+                    final class B extends A {
+                        public function render(): Stringable {
+                            return new class implements Stringable {
+                                public function __toString(): string { return "x"; }
+                            };
+                        }
+                    }
+
+                    $s = (new B())->render();',
+                'assertions' => ['$s' => 'Stringable'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nativeNullReturnTypeOfAnInterfaceMethodWithADocblock' => [
                 'code' => '<?php
                     interface I {
