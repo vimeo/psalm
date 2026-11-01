@@ -417,6 +417,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             }
 
             if (!$interface_has_method
+                && !$all_intersection_existent_method_ids
                 && $codebase->methodExists(
                     new MethodIdentifier($fq_class_name, '__call'),
                     $context->calling_method_id,

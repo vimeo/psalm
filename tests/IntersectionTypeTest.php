@@ -20,6 +20,28 @@ final class IntersectionTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodOfIntersectedInterfaceIsNotRoutedThroughMagicCall' => [
+                'code' => '<?php
+                    interface MockObject {
+                        public function expects(): string;
+                    }
+
+                    class Client {
+                        /**
+                         * @deprecated
+                         * @param list<mixed> $arguments
+                         */
+                        public function __call(string $method, array $arguments): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @param Client&MockObject $client */
+                    function test($client): string {
+                        $result = $client->expects();
+                        return $result;
+                    }',
+            ],
             'callableObject' => [
                 'code' => '<?php
                     /**
@@ -278,6 +300,28 @@ final class IntersectionTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'methodMissingInAllIntersectedTypesGoesThroughMagicCall' => [
+                'code' => '<?php
+                    interface MockObject {
+                        public function expects(): string;
+                    }
+
+                    class Client {
+                        /**
+                         * @deprecated
+                         * @param list<mixed> $arguments
+                         */
+                        public function __call(string $method, array $arguments): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @param Client&MockObject $client */
+                    function test($client): int {
+                        return $client->other();
+                    }',
+                'error_message' => 'UndefinedMagicMethod',
+            ],
             'callableObjectWithMissingStringArgument' => [
                 'code' => '<?php
                     /**
