@@ -30,6 +30,7 @@ use function array_fill_keys;
 use function array_intersect_key;
 use function array_map;
 use function array_merge;
+use function array_values;
 use function count;
 use function md5;
 use function str_starts_with;
@@ -106,21 +107,22 @@ final class StatementsProvider
         ) {
             $progress->debug('Parsing ' . $file_path . " because we cannot use cache\n");
 
-            $has_errors = false;
+            $parse_errors = [];
 
-            return self::parseStatements($file_contents, $analysis_php_version_id, $has_errors, $file_path);
+            $stmts = self::parseStatements($file_contents, $analysis_php_version_id, $parse_errors);
+
+            self::reportParseErrors($parse_errors, $file_contents, $file_path);
+
+            return $stmts;
         }
 
-        $stmts = $this->parser_cache_provider->loadStatementsFromCache(
+        $cached = $this->parser_cache_provider->loadStatementsFromCache(
             $file_path,
             $file_contents,
         );
 
-        if ($stmts !== null) {
-            $this->diff_map[$file_path] = [];
-            $this->deletion_ranges[$file_path] = [];
-
-            return $stmts;
+        if ($cached !== null) {
+            return $this->useCachedStatements($file_path, $file_contents, ...$cached);
         }
 
         $progress->debug("Parsing $file_path because the cache is absent or outdated\n");
@@ -132,17 +134,16 @@ final class StatementsProvider
         if ($do_diff) {
             $existing_file_contents = $this->parser_cache_provider->getHash($file_path);
 
-            $existing_statements = $this->parser_cache_provider->loadStatementsFromCache(
+            $existing = $this->parser_cache_provider->loadStatementsFromCache(
                 $file_path,
                 $existing_file_contents,
             );
 
-            // Race condition, another thread wrote the same data we already have
-            if ($existing_file_contents === $file_contents && $existing_statements !== null) {
-                $this->diff_map[$file_path] = [];
-                $this->deletion_ranges[$file_path] = [];
+            $existing_statements = $existing[0] ?? null;
 
-                return $existing_statements;
+            // Race condition, another thread wrote the same data we already have
+            if ($existing_file_contents === $file_contents && $existing !== null) {
+                return $this->useCachedStatements($file_path, $file_contents, ...$existing);
             }
 
             $file_changes = null;
@@ -167,19 +168,20 @@ final class StatementsProvider
             }
         }
 
-        $has_errors = false;
+        $parse_errors = [];
 
         $stmts = self::parseStatements(
             $file_contents,
             $analysis_php_version_id,
-            $has_errors,
-            $file_path,
+            $parse_errors,
             $existing_file_contents,
             $existing_statements_copy,
             $file_changes,
         );
 
-        if ($existing_file_contents !== null && $existing_statements !== null && (!$has_errors || $stmts)) {
+        self::reportParseErrors($parse_errors, $file_contents, $file_path);
+
+        if ($existing_file_contents !== null && $existing_statements !== null && ($parse_errors === [] || $stmts)) {
             [$unchanged_members, $unchanged_signature_members, $changed_members, $diff_map, $deletion_ranges]
                 = FileStatementsDiffer::diff(
                     $existing_statements,
@@ -236,11 +238,11 @@ final class StatementsProvider
 
             $this->diff_map[$file_path] = $diff_map;
             $this->deletion_ranges[$file_path] = $deletion_ranges;
-        } elseif ($has_errors && !$stmts) {
+        } elseif ($parse_errors !== [] && !$stmts) {
             $this->errors[$file_path] = true;
         }
 
-        $this->parser_cache_provider->saveStatementsToCache($file_path, $file_contents, $stmts);
+        $this->parser_cache_provider->saveStatementsToCache($file_path, $file_contents, $stmts, $parse_errors);
 
         return $stmts;
     }
@@ -357,6 +359,8 @@ final class StatementsProvider
     }
 
     /**
+     * @param  list<PhpParser\Error>|null $parse_errors the errors the parser recovered from
+     * @param-out list<PhpParser\Error> $parse_errors
      * @param  list<Stmt> $existing_statements
      * @param  array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> $file_changes
      * @return list<Stmt>
@@ -364,8 +368,7 @@ final class StatementsProvider
     public static function parseStatements(
         string  $file_contents,
         int     $analysis_php_version_id,
-        bool    &$has_errors,
-        ?string $file_path = null,
+        ?array  &$parse_errors = null,
         ?string $existing_file_contents = null,
         ?array  $existing_statements = null,
         ?array  $file_changes = null,
@@ -417,26 +420,7 @@ final class StatementsProvider
             }
         }
 
-        if ($error_handler->hasErrors() && $file_path) {
-            $config = Config::getInstance();
-            $has_errors = true;
-
-            foreach ($error_handler->getErrors() as $error) {
-                if ($error->hasColumnInfo()) {
-                    IssueBuffer::maybeAdd(
-                        new ParseError(
-                            $error->getMessage(),
-                            new ParseErrorLocation(
-                                $error,
-                                $file_contents,
-                                $file_path,
-                                $config->shortenFileName($file_path),
-                            ),
-                        ),
-                    );
-                }
-            }
-        }
+        $parse_errors = array_values($error_handler->getErrors());
 
         $error_handler->clearErrors();
 
@@ -450,6 +434,59 @@ final class StatementsProvider
         $resolving_traverser->traverse($stmts);
 
         return $stmts;
+    }
+
+    /**
+     * @param list<Stmt> $stmts
+     * @param list<PhpParser\Error> $parse_errors
+     * @return list<Stmt>
+     */
+    private function useCachedStatements(
+        string $file_path,
+        string $file_contents,
+        array $stmts,
+        array $parse_errors,
+    ): array {
+        self::reportParseErrors($parse_errors, $file_contents, $file_path);
+
+        if ($parse_errors !== [] && !$stmts) {
+            $this->errors[$file_path] = true;
+        }
+
+        $this->diff_map[$file_path] = [];
+        $this->deletion_ranges[$file_path] = [];
+
+        return $stmts;
+    }
+
+    /**
+     * The parse errors of a file are reported on every run, as the issue cache never stores ParseError
+     *
+     * @param list<PhpParser\Error> $parse_errors
+     */
+    private static function reportParseErrors(array $parse_errors, string $file_contents, string $file_path): void
+    {
+        if ($parse_errors === []) {
+            return;
+        }
+
+        $config = Config::getInstance();
+
+        foreach ($parse_errors as $error) {
+            if ($error->hasColumnInfo()) {
+                IssueBuffer::maybeAdd(
+                    new ParseError(
+                        $error->getMessage(),
+                        new ParseErrorLocation(
+                            $error,
+                            $file_contents,
+                            $file_path,
+                            $config->shortenFileName($file_path),
+                        ),
+                    ),
+                );
+            }
+        }
     }
 
     /**
