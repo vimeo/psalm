@@ -500,25 +500,19 @@ final class InstancePropertyFetchAnalyzer
                         );
                     }
 
-                    if ($declaring_property_class !== null
-                        && UnsetAnalyzer::writesFetchedProperty($context, $stmt, $stmt_type)
-                        && $codebase->properties->hasStorage($property_id)
-                        && ($property_storage = $codebase->properties->getStorage($property_id))->readonly
-                    ) {
-                        $receiver_type = $statements_analyzer->node_data->getType($stmt->var);
+                    $writes_property = UnsetAnalyzer::writesFetchedProperty($context, $stmt, $stmt_type);
 
-                        InstancePropertyAssignmentAnalyzer::checkReadonlyPropertyWrite(
+                    if ($writes_property) {
+                        InstancePropertyAssignmentAnalyzer::trackReadonlyWrite(
                             $statements_analyzer,
                             $stmt,
                             $property_id,
-                            $property_storage,
                             $context,
-                            $receiver_type !== null && $receiver_type->reference_free && $receiver_type->allow_mutations,
                         );
                     }
 
                     if (!AtomicPropertyFetchAnalyzer::isFreeToAccess($statements_analyzer, $stmt, $class_storage)) {
-                        if (UnsetAnalyzer::writesFetchedProperty($context, $stmt, $stmt_type)) {
+                        if ($writes_property) {
                             $statements_analyzer->signalMutation(
                                 $stmt_var_id === '$this'
                                     ? Capabilities::WRITE_THIS_PROPS

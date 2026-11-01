@@ -554,6 +554,31 @@ final class InstancePropertyAssignmentAnalyzer
         return $can_set_readonly_property;
     }
 
+    /** Checks a write that bypasses analyze() (unset(), string `++`, by-reference `foreach`) to a readonly property. */
+    public static function trackReadonlyWrite(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        string $property_id,
+        Context $context,
+    ): void {
+        $properties = $statements_analyzer->getCodebase()->properties;
+
+        if ($properties->hasStorage($property_id)
+            && ($property_storage = $properties->getStorage($property_id))->readonly
+        ) {
+            $receiver_type = $statements_analyzer->node_data->getType($stmt->var);
+
+            self::checkReadonlyPropertyWrite(
+                $statements_analyzer,
+                $stmt,
+                $property_id,
+                $property_storage,
+                $context,
+                $receiver_type !== null && $receiver_type->reference_free && $receiver_type->allow_mutations,
+            );
+        }
+    }
+
     public static function analyzeStatement(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Property $stmt,
