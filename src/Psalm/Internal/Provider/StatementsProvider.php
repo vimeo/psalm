@@ -150,7 +150,9 @@ final class StatementsProvider
 
             $existing_statements_copy = null;
 
-            if ($existing_statements !== null
+            // reusing statements the parser recovered an error in would lose the error from the saved ones
+            if ($existing !== null
+                && $existing[1] === []
                 && $existing_file_contents  !== null
                 && abs(strlen($existing_file_contents) - strlen($file_contents)) < 5_000
             ) {
@@ -161,7 +163,7 @@ final class StatementsProvider
                     $traverser->addVisitor(new CloningVisitor);
                     // performs a deep clone
                     /** @var list<PhpParser\Node\Stmt> */
-                    $existing_statements_copy = $traverser->traverse($existing_statements);
+                    $existing_statements_copy = $traverser->traverse($existing[0]);
                 } else {
                     $file_changes = null;
                 }
@@ -359,16 +361,16 @@ final class StatementsProvider
     }
 
     /**
-     * @param  list<PhpParser\Error> $parse_errors the errors the parser recovered from
+     * @param  list<PhpParser\Error>|null $parse_errors the errors the parser recovered from
+     * @param-out list<PhpParser\Error> $parse_errors
      * @param  list<Stmt> $existing_statements
      * @param  array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> $file_changes
      * @return list<Stmt>
-     * @param-out list<PhpParser\Error> $parse_errors
      */
     public static function parseStatements(
         string  $file_contents,
         int     $analysis_php_version_id,
-        array   &$parse_errors,
+        ?array  &$parse_errors = null,
         ?string $existing_file_contents = null,
         ?array  $existing_statements = null,
         ?array  $file_changes = null,
@@ -466,6 +468,10 @@ final class StatementsProvider
      */
     private static function reportParseErrors(array $parse_errors, string $file_contents, string $file_path): void
     {
+        if ($parse_errors === []) {
+            return;
+        }
+
         $config = Config::getInstance();
 
         foreach ($parse_errors as $error) {
