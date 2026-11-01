@@ -2868,6 +2868,24 @@ final class ClosureTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],
+            'PartialApplication:BoundReadonlyPropertyNamedByALiteralOfAReferenceParameter' => [
+                'code' => <<<'PHP'
+                    <?php
+                        /** @param-out int $x */
+                        function fill(mixed &$x, int $v): void {
+                            $x = $v;
+                        }
+                        final class R {
+                            public function __construct(public readonly int $v = 1) {}
+                        }
+                        function f(R $r): void {
+                            $closure = fill($r->{'v'}, ?);
+                        }
+                    PHP,
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25 - R::$v is marked readonly',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
             'returnByReferenceNonVariableInClosure' => [
                 'code' => '<?php
                     function &(): int {

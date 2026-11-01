@@ -25,6 +25,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
@@ -621,7 +622,9 @@ final class PartialApplicationAnalyzer
         }
 
         // PHP refuses a reference to a readonly property or to an item of one
-        if ($root instanceof PropertyFetch && $root->name instanceof Identifier) {
+        if ($root instanceof PropertyFetch
+            && ($prop_name = InstancePropertyFetchAnalyzer::getPropertyName($statements_analyzer, $root)) !== null
+        ) {
             foreach ($statements_analyzer->node_data->getType($root->var)?->getAtomicTypes() ?? [] as $atomic) {
                 if ($atomic instanceof TNamedObject) {
                     ArgumentsAnalyzer::handleByRefReadonlyArg(
@@ -629,7 +632,7 @@ final class PartialApplicationAnalyzer
                         $context,
                         $root,
                         $atomic->value,
-                        $root->name->name,
+                        $prop_name,
                         null,
                         false,
                     );
