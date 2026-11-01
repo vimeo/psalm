@@ -68,6 +68,22 @@ function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction, string 
     return $res;
 }
 
+/**
+ * The extension of a function or class, '' if none. Extensions that embed PHP code (swoole's library) evaluate it
+ * under an "@<extension>/..." file name.
+ *
+ * @psalm-param ReflectionFunction|ReflectionClass $reflection
+ */
+function extensionOf($reflection): string
+{
+    $extension = $reflection->getExtensionName();
+    if ($extension !== false) {
+        return strtolower($extension);
+    }
+
+    return preg_match('~^@(\w+)/~', (string) $reflection->getFileName(), $matches) ? strtolower($matches[1]) : '';
+}
+
 // TEMP: not recommended, install the extension in the Dockerfile, instead
 foreach ([
     'couchbase/couchbase.php',
@@ -97,13 +113,17 @@ foreach (get_defined_functions() as $sub) {
         if ($name === 'namedtypename') {
             continue;
         }
+        if ($name === 'extensionof') {
+            continue;
+        }
         $func = new ReflectionFunction($name);
 
         $args = paramsToEntries($func, 'mixed');
 
         $callmap[$name] = $args;
-        if ($func->getExtensionName() !== false) {
-            $extensions[$name] = strtolower($func->getExtensionName());
+        $extension = extensionOf($func);
+        if ($extension !== '') {
+            $extensions[$name] = $extension;
         }
     }
 }
@@ -115,8 +135,9 @@ foreach (get_declared_classes() as $class) {
         $args = paramsToEntries($method, $method->getName() === '__construct' ? 'void' : 'mixed');
     
         $callmap[strtolower($class.'::'.$method->getName())] = $args;
-        if ($refl->getExtensionName() !== false) {
-            $extensions[strtolower($class.'::'.$method->getName())] = strtolower($refl->getExtensionName());
+        $extension = extensionOf($refl);
+        if ($extension !== '') {
+            $extensions[strtolower($class.'::'.$method->getName())] = $extension;
         }
     }
 }

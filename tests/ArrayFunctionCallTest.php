@@ -22,6 +22,19 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arraySpliceWithALengthOutsideTheRangeOfAnInt' => [
+                'code' => '<?php
+                    $big = [1, 2, 3];
+                    array_splice($big, 0, 1e30);
+                    $notANumber = [1, 2, 3];
+                    array_splice($notANumber, 0, NAN);',
+                'assertions' => [
+                    '$big===' => 'list<1|2|3>',
+                    '$notANumber===' => 'list<1|2|3>',
+                ],
+                'ignored_issues' => ['InvalidScalarArgument'],
+            ],
+
             'arrayFilter' => [
                 'code' => '<?php
                     $d = array_filter(["a" => rand(0, 10), "b" => rand(0, 10), "c" => null]);

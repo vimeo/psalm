@@ -727,13 +727,15 @@ function fetch(): Promise {
     return new Success('{"data":[]}');
 }
 
-function (): Generator {
+function decode(): Generator {
     $data = yield fetch();
-    
+
     // this is fine, Psalm knows that $data is a string
     return json_decode($data);
-};
+}
 ```
+Psalm only reads the types: at runtime a coroutine runner (for instance the one of amphp or Revolt) has to resume the generator with the value of the yielded object.
+
 This annotation supports only generic types, meaning that e.g. `@psalm-yield string` would be ignored.
 
 ### `@api`, `@psalm-api`

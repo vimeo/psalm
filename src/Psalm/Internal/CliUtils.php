@@ -9,6 +9,7 @@ use JsonException;
 use Phar;
 use Psalm\Config;
 use Psalm\Config\Creator;
+use Psalm\Exception\ConfigCreationException;
 use Psalm\Exception\ConfigException;
 use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -441,7 +442,7 @@ final class CliUtils
                     );
                 }
             }
-        } catch (ConfigException $e) {
+        } catch (ConfigException | ConfigCreationException $e) {
             fwrite(
                 STDERR,
                 $e->getMessage() . PHP_EOL,
@@ -467,7 +468,7 @@ final class CliUtils
         }
 
         if (!$config_file) {
-            fwrite(STDERR, "Don't forget to set errorBaseline=\"{$baseline_path}\" to your config.");
+            fwrite(STDERR, "Add errorBaseline=\"{$baseline_path}\" to the config to use it" . PHP_EOL);
 
             return;
         }
@@ -485,7 +486,7 @@ final class CliUtils
             $end_psalm_open_tag = strpos($config_file_contents, '>', (int)strpos($config_file_contents, '<psalm'));
 
             if (!$end_psalm_open_tag) {
-                fwrite(STDERR, " Don't forget to set errorBaseline=\"{$baseline_path}\" in your config.");
+                fwrite(STDERR, "Add errorBaseline=\"{$baseline_path}\" to the config to use it" . PHP_EOL);
                 return;
             }
 
@@ -696,7 +697,6 @@ final class CliUtils
 
         $major_minor = PHP_VERSION_ID - (PHP_VERSION_ID % 100);
         foreach ([
-            8_01_31 => '8.1.31',
             8_02_27 => '8.2.27',
             8_03_16 => '8.3.16',
             8_04_03 => '8.4.3',

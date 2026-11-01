@@ -192,9 +192,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 $context->clauses = [];
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 foreach ($stmt->traits as $trait) {
-                    $fq_trait_name = self::getFQCLNFromNameObject(
-                        $trait,
-                        $this->source->getAliases(),
+                    $fq_trait_name = $codebase->classlikes->getUnAliasedName(
+                        self::getFQCLNFromNameObject($trait, $this->source->getAliases()),
                     );
 
                     $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);

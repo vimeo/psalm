@@ -41,7 +41,6 @@ use Psalm\Type\Union;
 
 use function in_array;
 use function is_string;
-use function time;
 
 /**
  * @internal
@@ -828,12 +827,8 @@ final class VariableFetchAnalyzer
                 Type::getNonEmptyListAtomic(Type::getString()),
             ], ['possibly_undefined' => true]);
 
-            $argc_helper = new Union([
+            $positive_int_helper = new Union([
                 new TIntRange(1, null),
-            ], ['possibly_undefined' => true]);
-
-            $request_time_helper = new Union([
-                new TIntRange(time(), null),
             ], ['possibly_undefined' => true]);
 
             $request_time_float_helper = new Union([
@@ -851,7 +846,7 @@ final class VariableFetchAnalyzer
                 'SERVER_SOFTWARE'      => $non_empty_string_helper,
                 'SERVER_PROTOCOL'      => $non_empty_string_helper,
                 'REQUEST_METHOD'       => $non_empty_string_helper,
-                'REQUEST_TIME'         => $request_time_helper,
+                'REQUEST_TIME'         => $positive_int_helper,
                 'REQUEST_TIME_FLOAT'   => $request_time_float_helper,
                 'QUERY_STRING'         => $string_helper,
                 'DOCUMENT_ROOT'        => $non_empty_string_helper,
@@ -921,7 +916,7 @@ final class VariableFetchAnalyzer
 
             if ($var_id === '$_SERVER') {
                 $arr['argv'] = $argv_helper;
-                $arr['argc'] = $argc_helper;
+                $arr['argc'] = $positive_int_helper;
             }
 
             $detailed_type = TKeyedArray::make(

@@ -76,6 +76,56 @@ final class WebmozartAssertLibraryStubTypesTest extends LibraryStubsTestCase
                     }',
                 [],
             ],
+            'allAssertionsOfOtherParametersReturnTheListOrArrayTheyAreGiven' => [
+                '<?php
+                    use Webmozart\Assert\Assert;
+
+                    /**
+                     * @param list<mixed> $l
+                     * @return list<array>
+                     */
+                    function f(array $l): array {
+                        return Assert::allKeyExists($l, "k");
+                    }
+
+                    /** @param array<string, mixed> $a */
+                    function g(array $a): int {
+                        return count(Assert::allUniqueValues($a));
+                    }
+
+                    /**
+                     * @param list<mixed> $l
+                     * @return list<string|object>
+                     */
+                    function h(array $l): array {
+                        return Assert::allPropertyExists($l, "p");
+                    }
+
+                    /**
+                     * @param list<mixed> $l
+                     * @return list<Closure|callable-string>
+                     */
+                    function i(array $l): array {
+                        return Assert::allIsStatic($l);
+                    }
+
+                    /**
+                     * @param list<mixed> $l
+                     * @return list<array|null>
+                     */
+                    function j(array $l): array {
+                        return Assert::allNullOrKeyNotExists($l, "k");
+                    }
+
+                    /**
+                     * @param iterable<mixed> $i
+                     * @return iterable<array>
+                     */
+                    function k(iterable $i): iterable {
+                        return Assert::allKeyExists($i, "k");
+                    }',
+                [],
+            ],
             'allAssertionsReturnAnIterableForAnIterable' => [
                 '<?php
                     use Webmozart\Assert\Assert;
