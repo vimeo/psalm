@@ -5,17 +5,22 @@ declare(strict_types=1);
 namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
+use Psalm\Codebase;
 use Psalm\Exception\CircularReferenceException;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayOffsetFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArraySpread;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayValue;
 use Psalm\Internal\Scanner\UnresolvedConstant\ClassConstant;
+use Psalm\Internal\Scanner\UnresolvedConstant\ClosureValue;
 use Psalm\Internal\Scanner\UnresolvedConstant\Constant;
 use Psalm\Internal\Scanner\UnresolvedConstant\EnumNameFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\EnumPropertyFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\EnumValueFetch;
+use Psalm\Internal\Scanner\UnresolvedConstant\FirstClassCallable;
 use Psalm\Internal\Scanner\UnresolvedConstant\ScalarValue;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedAdditionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBinaryOp;
@@ -28,10 +33,13 @@ use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedMultiplicationOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\LiteralCast;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
@@ -48,12 +56,14 @@ use Psalm\Type\Union;
 use ReflectionProperty;
 use UnitEnum;
 
+use function array_values;
 use function ctype_digit;
 use function is_array;
 use function is_float;
 use function is_int;
 use function is_string;
 use function spl_object_id;
+use function strtolower;
 
 /**
  * @internal
@@ -74,6 +84,10 @@ final class ConstantTypeResolver
 
         if ($c instanceof ScalarValue) {
             return self::getLiteralTypeFromScalarValue($c->value);
+        }
+
+        if ($c instanceof ClosureValue || $c instanceof FirstClassCallable) {
+            return self::resolveClosure($c, $statements_analyzer);
         }
 
         if ($c instanceof UnresolvedBinaryOp) {
@@ -357,6 +371,80 @@ final class ConstantTypeResolver
         }
 
         return new TMixed;
+    }
+
+    private static function resolveClosure(
+        ClosureValue|FirstClassCallable $c,
+        ?StatementsAnalyzer $statements_analyzer,
+    ): TClosure {
+        $codebase = ProjectAnalyzer::getInstance()->getCodebase();
+
+        if ($c instanceof ClosureValue) {
+            $storage = $codebase->getClosureStorage($c->file_path, $c->closure_id);
+
+            return new TClosure(
+                $storage->params,
+                $storage->return_type ?? Type::getMixed(),
+                $storage->capabilities,
+                $storage->byref_uses,
+                callable_id: $c->closure_id,
+            );
+        }
+
+        if ($c->fqcln !== null) {
+            return self::resolveStaticMethodClosure($codebase, $c->fqcln, $c->name);
+        }
+
+        foreach ([$c->name, $c->global_fallback_name] as $function_id) {
+            $closure = $function_id !== null
+                ? CallableTypeComparator::getClosureFromFunctionId($codebase, $function_id, $statements_analyzer)
+                : null;
+
+            if ($closure) {
+                return $closure;
+            }
+        }
+
+        return new TClosure();
+    }
+
+    /**
+     * Like the closure that a static method call with a first-class callable creates
+     */
+    private static function resolveStaticMethodClosure(Codebase $codebase, string $fqcln, string $name): TClosure
+    {
+        if (!$codebase->classlikes->classOrInterfaceOrEnumExists($fqcln)
+            && !$codebase->classlikes->traitExists($fqcln)
+        ) {
+            return new TClosure();
+        }
+
+        $method_id = new MethodIdentifier($fqcln, strtolower($name));
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+        if ($declaring_method_id === null) {
+            return new TClosure();
+        }
+
+        // getMethodReturnType() replaces it with the class declaring the method
+        $self_class = $fqcln;
+
+        $expanded = TypeExpander::expandUnion(
+            $codebase,
+            new Union([new TClosure(
+                array_values($codebase->getMethodParams($method_id)),
+                $codebase->getMethodReturnType($method_id, $self_class),
+                $codebase->methods->getStorage($declaring_method_id)->capabilities,
+            )]),
+            $declaring_method_id->fq_class_name,
+            $fqcln,
+            $codebase->classlike_storage_provider->get($declaring_method_id->fq_class_name)->parent_class,
+            false,
+            false,
+            true,
+        )->getSingleAtomic();
+
+        return $expanded instanceof TClosure ? $expanded : new TClosure();
     }
 
     /**

@@ -7,6 +7,7 @@ namespace Psalm\Internal\Codebase;
 use Exception;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\Closure as ClosureNode;
+use Psalm\Aliases;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
@@ -19,7 +20,6 @@ use Psalm\Internal\Provider\FunctionExistenceProvider;
 use Psalm\Internal\Provider\FunctionParamsProvider;
 use Psalm\Internal\Provider\FunctionReturnTypeProvider;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
-use Psalm\StatementsSource;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Type\Atomic\TNamedObject;
@@ -264,8 +264,9 @@ final class Functions
     /**
      * @param  non-empty-string         $function_name
      * @return non-empty-string
+     * @psalm-capabilities read-props
      */
-    public function getFullyQualifiedFunctionNameFromString(string $function_name, StatementsSource $source): string
+    public static function getFullyQualifiedFunctionNameFromString(string $function_name, Aliases $aliases): string
     {
         if ($function_name[0] === '\\') {
             $function_name = substr($function_name, 1);
@@ -278,8 +279,6 @@ final class Functions
         }
 
         $function_name_lcase = strtolower($function_name);
-
-        $aliases = $source->getAliases();
 
         $imported_function_namespaces = $aliases->functions;
         $imported_namespaces = $aliases->uses;
@@ -301,7 +300,7 @@ final class Functions
             return $imported_function_namespaces[$function_name_lcase];
         }
 
-        $namespace = $source->getNamespace();
+        $namespace = $aliases->namespace;
 
         return ($namespace ? $namespace . '\\' : '') . $function_name;
     }

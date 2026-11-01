@@ -14725,6 +14725,16 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintFlowsThroughAClosureInAClassConstant' => [
+                'code' => '<?php
+                    final class K {
+                        const C = static function (string $s): string { return $s; };
+                    }
+
+                    echo (K::C)($_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.5',
+            ],
         ];
     }
 
