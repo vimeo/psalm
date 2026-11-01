@@ -166,10 +166,13 @@ final class SwitchAnalyzer
                         $original_context->inside_loop,
                     );
 
-                if (isset($case_vars_in_scope_reconciled[$switch_var_id])
-                    && $case_vars_in_scope_reconciled[$switch_var_id]->isNever()
-                ) {
-                    $all_options_matched = true;
+                if (isset($case_vars_in_scope_reconciled[$switch_var_id])) {
+                    if ($case_vars_in_scope_reconciled[$switch_var_id]->isNever()) {
+                        $all_options_matched = true;
+                    } elseif ($all_options_returned) {
+                        // every case leaves the switch, so only no case matching reaches the code after it
+                        $context->vars_in_scope[$switch_var_id] = $case_vars_in_scope_reconciled[$switch_var_id];
+                    }
                 }
             }
         }
