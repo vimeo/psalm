@@ -208,6 +208,10 @@ final class AssertionFinder
                 : [];
         }
 
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp) {
+            $conditional = self::withPipeOperandsAsCalls($conditional);
+        }
+
         $var_name = ExpressionIdentifier::getExtendedVarId(
             $conditional,
             $this_class_name,
@@ -383,6 +387,35 @@ final class AssertionFinder
         }
 
         return [];
+    }
+
+    /**
+     * The comparison with each pipe operand replaced by the call it makes, which comparisons recognise by its function
+     * (`count(...) > 0`, `gettype(...) === "string"`), as in the hand-written comparison.
+     *
+     * @template TBinaryOp of PhpParser\Node\Expr\BinaryOp
+     * @param TBinaryOp $conditional
+     * @return TBinaryOp
+     */
+    private static function withPipeOperandsAsCalls(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+    ): PhpParser\Node\Expr\BinaryOp {
+        $left = $conditional->left instanceof PhpParser\Node\Expr\BinaryOp\Pipe
+            ? PipeAnalyzer::getCall($conditional->left)
+            : null;
+        $right = $conditional->right instanceof PhpParser\Node\Expr\BinaryOp\Pipe
+            ? PipeAnalyzer::getCall($conditional->right)
+            : null;
+
+        if ($left === null && $right === null) {
+            return $conditional;
+        }
+
+        $conditional = clone $conditional;
+        $conditional->left = $left ?? $conditional->left;
+        $conditional->right = $right ?? $conditional->right;
+
+        return $conditional;
     }
 
     /**

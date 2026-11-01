@@ -433,6 +433,47 @@ final class Php85Test extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'pipeComparedNarrowsAsTheCallItMakes' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    function ab(): A|B { return new A(); }
+
+                    function m(): mixed { return 1; }
+
+                    /** @return array<string, int> */
+                    function counts(): array { return []; }
+
+                    $a = counts();
+                    if (($a |> count(...)) > 0) { $nonEmpty = $a; } else { $nonEmpty = ["k" => 1]; }
+
+                    $b = counts();
+                    if (($b |> count(...)) === 0) { $empty = $b; } else { $empty = []; }
+
+                    $c = m();
+                    $gettype = ($c |> gettype(...)) === "integer" ? $c : 0;
+
+                    $d = m();
+                    $debugType = ($d |> get_debug_type(...)) === "string" ? $d : "";
+
+                    $e = ab();
+                    $getClass = ($e |> get_class(...)) === A::class ? $e : null;
+
+                    $f = m();
+                    $isInt = ($f |> is_int(...)) === true;
+                    $assigned = $isInt ? $f : 0;',
+                'assertions' => [
+                    '$nonEmpty===' => 'non-empty-array<string, int>',
+                    '$empty===' => 'array<never, never>',
+                    '$gettype===' => 'int',
+                    '$debugType===' => 'string',
+                    '$getClass===' => 'A|null',
+                    '$assigned===' => 'int',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.5',
+            ],
             'pipeNarrowsAPropertyOfItsArgument' => [
                 'code' => '<?php
                     final class HasP {
