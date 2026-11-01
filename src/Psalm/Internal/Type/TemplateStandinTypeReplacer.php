@@ -1347,14 +1347,21 @@ final class TemplateStandinTypeReplacer
         if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
             $input_type_params = $input_type_part->type_params;
 
-            // a purity template left out (`Iterator<int, int>`) is bound to its default, never to mixed
+            // left-out templates (`Foo<A>`, purity ones of `Iterator<int, int>`) take their default, never mixed
             if ($input_type_part instanceof TGenericObject
                 && $codebase->classlike_storage_provider->has($input_type_part->value)
             ) {
                 $input_class_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
+                $input_type_params = TemplateDefaults::fillTypeArguments(
+                    $input_type_params,
+                    $input_class_storage,
+                    $codebase,
+                    $input_type_part->from_docblock,
+                );
 
                 foreach (array_keys($input_class_storage->template_types ?? []) as $i => $template_name) {
                     if ($i >= count($input_type_params)
+                        && isset($input_class_storage->purity_templates[$template_name])
                         && isset($input_class_storage->template_defaults[$template_name])
                     ) {
                         $input_type_params[] = $input_class_storage->template_defaults[$template_name];
