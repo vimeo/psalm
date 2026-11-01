@@ -173,3 +173,5 @@ class DynamicallySuppressClassIssueBasedOnInterface implements AfterClassLikeVis
     }
 }
 ```
+
+If an issue looks wrong, see the [common questions](common_issues.md) before reporting it.
