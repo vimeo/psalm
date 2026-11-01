@@ -182,8 +182,8 @@ final class FunctionDocblockComment
     public array $template_defaults = [];
 
     /**
-     * The names of the templates in the order they are first declared, whatever the form of their tags (which the
-     * docblock groups by form): the order in which their defaults may use one another.
+     * The template names in order of first declaration in any tag form (the docblock groups tags by form): the order
+     * in which their defaults may use one another.
      *
      * @var list<string>
      */

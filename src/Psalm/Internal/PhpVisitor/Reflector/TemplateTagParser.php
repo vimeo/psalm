@@ -38,10 +38,9 @@ use function trim;
 final class TemplateTagParser
 {
     /**
-     * The templates of the docblock, each from its preferred form (`@psalm-`, then `@phpstan-`, then the
-     * plain tag), as `[name, modifier, bound, covariant, offset in the docblock]`, their defaults, and the names
-     * of the templates in the order they are first declared in any form (the docblock groups the tags by their
-     * form). The bound is given with what follows it, as the scanner cuts the description off.
+     * The templates of the docblock, each from its preferred form (`@psalm-`, then `@phpstan-`, then the plain tag),
+     * as `[name, modifier, bound, covariant, offset in the docblock]`, their defaults, and their names in order of
+     * first declaration in any form. The bound comes with what follows it, as the scanner cuts the description off.
      *
      * @param array<string, bool> $tags the tags to read, and whether their templates are covariant
      * @param array<string, array<string, array{string, ?string, ?string, bool, int}>> $templates the purity

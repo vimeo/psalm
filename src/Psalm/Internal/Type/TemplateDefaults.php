@@ -29,8 +29,7 @@ use function strtolower;
 
 /**
  * What a template with a default (`@template T of Bound = Default`) stands for when a use of its class leaves it out
- * or a call of its function-like doesn't infer it: the default, with the earlier templates standing for what they
- * are there.
+ * or a call of its function-like doesn't infer it: the default, with the earlier templates standing for what they are.
  *
  * @internal
  */
@@ -255,9 +254,9 @@ final class TemplateDefaults
     }
 
     /**
-     * Binds the templates of the function-like that the call left to their default (see {@see self::isUninferred()}),
-     * in the order they are declared (that of their defaults), so that a default sees those of the templates
-     * before it. A default is a placeholder too: reconciliation does not check it.
+     * Binds the templates the call left to their default ({@see self::isUninferred()}) in declaration order, the order
+     * of $template_defaults, so each default sees those before it. Like a constraint fallback, a default is a
+     * placeholder that reconciliation does not check.
      *
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
@@ -275,7 +274,7 @@ final class TemplateDefaults
                 continue;
             }
 
-            // a template the call leaves unbound, without a default, is never in the return type: so in the default
+            // a template the call leaves unbound and without a default is `never` in the return type, so in the default
             $resolving_result = clone $template_result;
 
             foreach ($template_types as $name => $other_type_map) {
