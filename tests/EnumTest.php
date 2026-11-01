@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class EnumTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
@@ -777,6 +779,54 @@ final class EnumTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'tryFromWithValueOfTemplate' => [
+                'code' => '<?php
+                    enum Suit: string {
+                        case Hearts = "h";
+                        case Spades = "s";
+                    }
+
+                    /**
+                     * @template T of Suit
+                     */
+                    final class Box {
+                        /** @var value-of<T> */
+                        public $value = "h";
+
+                        public function get(): void {
+                            /** @psalm-trace $suit */
+                            $suit = Suit::tryFrom($this->value);
+                        }
+                    }
+                ',
+                'error_message' => 'Trace - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:29 - $suit: enum(Suit::Hearts)|enum(Suit::Spades)|null',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'fromWithValueOfTemplate' => [
+                'code' => '<?php
+                    enum Suit: string {
+                        case Hearts = "h";
+                        case Spades = "s";
+                    }
+
+                    /**
+                     * @template T of Suit
+                     */
+                    final class Box {
+                        /** @var value-of<T> */
+                        public $value = "h";
+
+                        public function get(): void {
+                            /** @psalm-trace $suit */
+                            $suit = Suit::from($this->value);
+                        }
+                    }
+                ',
+                'error_message' => 'Trace - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:29 - $suit: enum(Suit::Hearts)|enum(Suit::Spades',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'enumValueIsNot' => [
                 'code' => '<?php
                     enum Suit: string {
