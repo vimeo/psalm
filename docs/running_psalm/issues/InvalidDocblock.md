@@ -9,7 +9,7 @@ Emitted when there's an error in a docblock type
 $a = [];
 ```
 
-It is also emitted for a [template default](../../annotating_code/templated_annotations.md#template-defaults) that is not within the bound of its template:
+It is also emitted for a [template default](../../annotating_code/templated_annotations.md#template-defaults) outside its template's bound:
 
 ```php
 <?php
@@ -20,7 +20,7 @@ It is also emitted for a [template default](../../annotating_code/templated_anno
 final class Box {}
 ```
 
-or that uses a template declared after it:
+or one that uses a template declared after it:
 
 ```php
 <?php

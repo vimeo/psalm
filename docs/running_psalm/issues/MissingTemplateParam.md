@@ -27,9 +27,8 @@ class SomeIterator implements ArrayAccess
 }
 ```
 
-Trailing template params with a [default](../../annotating_code/templated_annotations.md#template-defaults)
-may be left out, so `@extends Factory<User>` is fine below. The others still have to be given,
-and the issue then says how many are needed at least:
+Trailing templates with a [default](../../annotating_code/templated_annotations.md#template-defaults) can be left out:
+`@extends Factory<User>` would be enough below. Without it, the message gives the minimum count (`expecting at least 1`):
 
 ```php
 <?php

@@ -288,14 +288,14 @@ class Baz extends Foo {
 
 ## Template defaults
 
-A template can declare a default type after `=`: `@template T = Default`, or `@template T of Bound = Default` with a bound. The `@psalm-template`, `@phpstan-template` and `@template-covariant` forms take a default the same way.
+A template can have a default type, written after `=`: `@template T = Default`, or `@template T of Bound = Default` with a bound. `@template-covariant` and the `@psalm-template` and `@phpstan-template` forms take one the same way.
 
-The default is what the template stands for where a type argument is left out:
+Psalm uses the default when the type argument is left out:
 
-* `@extends`, `@implements` and `@use` with fewer type arguments than the class has templates, when the templates left out come last and all have a default;
-* a class extended, implemented or used without `@extends`, `@implements` or `@use`: its templates with a default are bound to it, the others to their bound as before;
-* a generic type written with at least one type argument, in a `@param`, `@return`, `@var` or property type: `Factory<User>` means `Factory<User, null>` below;
-* `new Box()`, for the templates the constructor arguments don't infer.
+* in `@extends`, `@implements` and `@use` that leave out trailing templates, if each of them has a default;
+* when a class is extended, implemented or used without one of those tags (templates without a default get their bound);
+* in a generic type with only its first arguments given, such as `Factory<User>` in a `@param`, `@return`, `@var` or property type;
+* in `new`, for templates the constructor arguments don't infer.
 
 ```php
 <?php
@@ -324,22 +324,37 @@ $factory = new UserFactory();
 $count = $factory->count(); // null
 $user = $factory->create(); // User
 
+/** @param Factory<User> $factory */
+function createUser(Factory $factory): User {
+    return $factory->create(); // User
+}
+
+/** @param Factory $factory */
+function countAny(Factory $factory): ?int {
+    return $factory->count(); // int|null
+}
+
 /**
  * @template T = int
  */
-final class Box {}
+class Box {
+    /** @return T */
+    public function get(): mixed {
+        throw new RuntimeException();
+    }
+}
+
+final class IntBox extends Box {}
 
 $box = new Box(); // Box<int>
+$int = (new IntBox())->get(); // int
 ```
 
-Psalm keeps its behaviour in these cases:
+Defaults don't apply to a class name without type arguments (PHPStan applies them there). `Factory` alone still stands for its bounds, `Factory<object, int|null>`, compared with the usual variance rules, and templates bounded by `mixed` or a set of capabilities stay open. Templates without a default are unaffected.
 
-* A class name written without type arguments (`Factory` in a parameter type) keeps its meaning: its templates stand for their bounds (`Factory<object, int|null>`, compared with the usual variance rules), or are left open when the bound is `mixed` or a set of capabilities. The defaults don't apply there, unlike in PHPStan.
-* A template without a default is resolved as before when it is left out.
+A default must be within its template's bound and may only use templates declared before it. Otherwise Psalm reports [InvalidDocblock](../running_psalm/issues/InvalidDocblock.md) on the template line.
 
-A default must be within the bound of its template and may only use the templates declared before it. Psalm reports an [InvalidDocblock](../running_psalm/issues/InvalidDocblock.md) issue on the template line otherwise.
-
-A default that names its own class (`@template TNext of Node = Node<T>`) is expanded one level deep, so comparing it with an explicitly written deeper type can report a coercion.
+A default that names its own class (`@template TNext of Node = Node<T>`) expands one level only: `Node<int>` is `Node<int, Node<int>>`. Comparing it with a type written out more levels deep can report a coercion.
 
 ## Template covariance
 
