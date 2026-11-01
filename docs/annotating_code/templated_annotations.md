@@ -296,7 +296,7 @@ Psalm uses the default when the type argument is left out:
 * when a class is extended, implemented or used without one of those tags (templates without a default get their bound);
 * in a generic type with only its first arguments given, such as `Factory<User>` in a `@param`, `@return`, `@var` or property type;
 * in `new`, for templates the constructor arguments don't infer;
-* a function or method template that a call doesn't infer.
+* in a function or method call, for templates the arguments don't infer.
 
 ```php
 <?php
@@ -351,7 +351,9 @@ $box = new Box(); // Box<int>
 $int = (new IntBox())->get(); // int
 ```
 
-A default can use the templates declared before it, and the default of a method template can use the templates of its class:
+Defaults don't apply to a class name without type arguments (PHPStan applies them there). `Factory` alone still stands for its bounds, `Factory<object, int|null>`, compared with the usual variance rules, and templates bounded by `mixed` or a set of capabilities stay open. Templates without a default are unaffected.
+
+Method templates take defaults too, and a default can use the templates of its class:
 
 ```php
 <?php
@@ -376,10 +378,45 @@ function handle(Promise $promise): void {
 }
 ```
 
-Defaults don't apply to a class name without type arguments (PHPStan applies them there). `Factory` alone still stands for its bounds, `Factory<object, int|null>`, compared with the usual variance rules, and templates bounded by `mixed` or a set of capabilities stay open. Templates without a default are unaffected.
+A call still infers a template from its arguments and parameter defaults where it can. A `null` for `T|null` infers `null` if the bound admits it, and an argument that doesn't say what `T` is (a bare `callable` for `callable(): T`, a bare `Coll` for `Coll<T>`) infers the bound, not the default:
 
-* A template that a parameter default infers keeps that type: with `@param T|null $value` and `$value = null`, a call that leaves out `$value` (or passes `null`) infers `T` as `null` when its bound admits `null`. When it doesn't (`@template T of object = stdClass`), `null` matches only the `null` part of the parameter type and `T` takes its default.
-* An argument that matches the part of the parameter type naming the template without telling what it is (a bare `callable` for `callable(): T`, a `Coll` without type arguments for `Coll<T>`) infers the bound of the template, not its default.
+```php
+<?php
+/**
+ * @template T = string
+ * @param T|null $value
+ * @return T
+ */
+function orNull(mixed $value = null): mixed {
+    return $value;
+}
+
+/**
+ * @template T of object = stdClass
+ * @param T|null $value
+ * @return T
+ */
+function orObject(?object $value = null): object {
+    throw new RuntimeException();
+}
+
+/**
+ * @template T of scalar = int
+ * @param callable(): T $make
+ * @return T
+ */
+function make(callable $make): mixed {
+    return $make();
+}
+
+function test(callable $callable): void {
+    $null = orNull(); // null
+    $null = orNull(null); // null
+    $object = orObject(); // stdClass
+    $object = orObject(null); // stdClass
+    $made = make($callable); // scalar
+}
+```
 
 A default must be within its template's bound and may only use templates declared before it. Otherwise Psalm reports [InvalidDocblock](../running_psalm/issues/InvalidDocblock.md) on the template line.
 
