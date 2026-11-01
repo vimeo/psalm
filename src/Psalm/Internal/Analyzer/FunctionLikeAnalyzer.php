@@ -122,6 +122,17 @@ use const SORT_NUMERIC;
  */
 abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 {
+    private const MAGIC_METHODS_WITH_REQUIRED_PARAMS = [
+        '__call',
+        '__callstatic',
+        '__get',
+        '__set',
+        '__isset',
+        '__unset',
+        '__unserialize',
+        '__set_state',
+    ];
+
     protected Codebase $codebase;
 
     /**
@@ -3025,7 +3036,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             $method_name_lc = strtolower($storage->cased_name);
 
-            if ($storage->abstract) {
+            // PHP requires these magic methods to take exactly the parameters they declare
+            if ($storage->abstract || in_array($method_name_lc, self::MAGIC_METHODS_WITH_REQUIRED_PARAMS, true)) {
                 continue;
             }
 
