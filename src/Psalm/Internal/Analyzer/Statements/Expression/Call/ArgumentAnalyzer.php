@@ -425,39 +425,32 @@ final class ArgumentAnalyzer
                 }
             }
 
-            $param_type = TemplateStandinTypeReplacer::replace(
-                $param_type,
-                $template_result,
-                $codebase,
-                $statements_analyzer,
-                $arg_type_param,
-                $argument_offset,
-                !$statements_analyzer->isStatic()
-                    && (!$method_id || $method_id->method_name !== '__construct')
-                    ? $context->self
-                    : null,
-                $context->calling_method_id ?: $context->calling_function_id,
-            );
+            // an empty unpack (`...[]`) passes no argument: it says nothing about the templates, which stand for
+            // their bounds when it is checked
+            $empty_unpack = $arg->unpack && $arg_type_param->isNever();
 
-            self::addConstraintFallbacks(
-                $codebase,
-                $template_result,
-                $bindable_template_params,
-                $declared_param_type,
-                $arg_type_param,
-            );
+            if (!$empty_unpack) {
+                $param_type = TemplateStandinTypeReplacer::replace(
+                    $param_type,
+                    $template_result,
+                    $codebase,
+                    $statements_analyzer,
+                    $arg_type_param,
+                    $argument_offset,
+                    !$statements_analyzer->isStatic()
+                        && (!$method_id || $method_id->method_name !== '__construct')
+                        ? $context->self
+                        : null,
+                    $context->calling_method_id ?: $context->calling_function_id,
+                );
 
-            // an empty unpack (`...[]`) passes no argument: the `never` it binds says nothing about the templates
-            if ($arg->unpack && $arg_type_param->isNever()) {
-                foreach ($bindable_template_params as $template_type) {
-                    foreach ($template_result->lower_bounds[$template_type->param_name][$template_type->defining_class]
-                        ?? [] as $lower_bound
-                    ) {
-                        if ($lower_bound->arg_offset === $argument_offset && $lower_bound->type->isNever()) {
-                            $lower_bound->from_template_free_argument = true;
-                        }
-                    }
-                }
+                self::addConstraintFallbacks(
+                    $codebase,
+                    $template_result,
+                    $bindable_template_params,
+                    $declared_param_type,
+                    $arg_type_param,
+                );
             }
 
             $param_type = TypeExpander::expandUnion(
@@ -470,6 +463,7 @@ final class ArgumentAnalyzer
                 false,
                 $static_classlike_storage->final ?? false,
                 true,
+                $empty_unpack,
             );
         }
 

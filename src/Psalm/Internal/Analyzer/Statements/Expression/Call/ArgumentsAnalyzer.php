@@ -61,6 +61,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_filter;
 use function array_reduce;
 use function array_reverse;
 use function array_slice;
@@ -2232,7 +2233,16 @@ final class ArgumentsAnalyzer
             return;
         }
 
-        if (count($args) < count($function_params)) {
+        // an empty unpack (`...[]`) passes no argument, so the parameters it would fill take their default too; only
+        // the arguments written count for TooFewArguments
+        $passed_arg_count = count(array_filter(
+            $args,
+            static fn(PhpParser\Node\Arg $arg): bool => !self::isEmptyUnpack($statements_analyzer, $arg),
+        ));
+
+        if ($passed_arg_count < count($function_params)) {
+            $reports_missing = count($args) < count($function_params);
+
             //we're gonna loop over given args and unset them from the function_params.
             // If some mandatory params are left at the end, we'll throw an error
             foreach ($args as $arg) {
@@ -2317,15 +2327,18 @@ final class ArgumentsAnalyzer
             // If they're mandatory, throw an error. Otherwise, we compute the default value
             foreach ($function_params as $i => $param) {
                 if (!$param->is_optional && !$param->is_variadic) {
-                    IssueBuffer::maybeAdd(
-                        new TooFewArguments(
-                            'Too few arguments for ' . $cased_method_id
-                            . ' - expecting ' . $param->name . ' to be passed',
-                            $code_location,
-                            (string)$method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
+                    if ($reports_missing) {
+                        IssueBuffer::maybeAdd(
+                            new TooFewArguments(
+                                'Too few arguments for ' . $cased_method_id
+                                . ' - expecting ' . $param->name . ' to be passed',
+                                $code_location,
+                                (string)$method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
+
                     continue;
                 }
 
@@ -2360,6 +2373,28 @@ final class ArgumentsAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * Whether the argument unpacks an array that is always empty (`...[]`)
+     *
+     * @psalm-mutation-free
+     */
+    private static function isEmptyUnpack(StatementsAnalyzer $statements_analyzer, PhpParser\Node\Arg $arg): bool
+    {
+        $arg_value_type = $arg->unpack ? $statements_analyzer->node_data->getType($arg->value) : null;
+
+        if ($arg_value_type === null) {
+            return false;
+        }
+
+        foreach ($arg_value_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TArray || !$atomic_type->type_params[1]->isNever()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

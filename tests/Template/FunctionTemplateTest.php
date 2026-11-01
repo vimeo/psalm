@@ -2378,6 +2378,37 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'templateDefaultIsNotOverriddenByAnEmptyUnpackOfACallableOrParamDefault' => [
+                'code' => '<?php
+                    /**
+                     * @template T = int
+                     * @param (callable(): T) ...$callables
+                     * @return list<T>
+                     */
+                    function calls(callable ...$callables): array {
+                        return [];
+                    }
+
+                    /**
+                     * @template T = int
+                     * @param T|null $value
+                     * @return list<T>
+                     */
+                    function single(mixed $value = null): array {
+                        return [];
+                    }
+
+                    $calls = calls(...[]);
+                    $single = single();
+                    $single_unpacked = single(...[]);',
+                'assertions' => [
+                    '$calls===' => 'list<int>',
+                    '$single===' => 'list<null>',
+                    '$single_unpacked===' => 'list<null>',
+                ],
+                'ignored_issues' => ['NoValue'],
+                'php_version' => '8.0',
+            ],
             'templateDefaultUsingKeyOfAnEarlierTemplate' => [
                 'code' => '<?php
                     /**
