@@ -20,6 +20,32 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callableArrayOfAMagicMethodDeclaredByAnAnnotation' => [
+                'code' => '<?php
+                    /**
+                     * @method void magic()
+                     * @method static void staticMagic()
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+
+                        public static function __callStatic(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    function call(callable $_callable): void {}
+
+                    function test(Foo $foo): void {
+                        call([$foo, "magic"]);
+                        call([Foo::class, "staticMagic"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'byRefUseVar' => [
                 'code' => '<?php
                     /** @return void */
@@ -2516,6 +2542,31 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'callableArrayOfAMethodThatIsNotDeclaredByAnAnnotation' => [
+                'code' => '<?php
+                    /**
+                     * @method void magic()
+                     * @method static void staticMagic()
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+
+                        public static function __callStatic(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    function call(callable $_callable): void {}
+
+                    function test(Foo $foo): void {
+                        call([$foo, "missing"]);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'undefinedCallableClass' => [
                 'code' => '<?php
                     class A {
