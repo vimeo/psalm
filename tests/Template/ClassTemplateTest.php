@@ -4541,6 +4541,21 @@ final class ClassTemplateTest extends TestCase
 
                     takesInts(new SomeCollection([1, 2, 3]));',
             ],
+            'constructorListKeysGeneralize' => [
+                'code' => '<?php
+                    /** @template TKey */
+                    final class KeyedCollection {
+                        /** @param array<TKey, mixed> $items */
+                        public function __construct(array $items) {}
+                    }
+
+                    /** @param KeyedCollection<int> $c */
+                    function takesIntKeys(KeyedCollection $c): void {}
+
+                    $fromList = new KeyedCollection(["a", "b"]);
+                    takesIntKeys($fromList);
+                    takesIntKeys(new KeyedCollection(["a"]));',
+            ],
             'nullReturnAgainstTemplatedTypeSilent' => [
                 'code' => '<?php
                     /** @template T as array|object|string */
