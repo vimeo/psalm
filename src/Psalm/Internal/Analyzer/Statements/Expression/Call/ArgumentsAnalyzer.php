@@ -1306,82 +1306,11 @@ final class ArgumentsAnalyzer
             $code_location,
         );
 
-        if ($template_result
-            && $function_storage
-            && $function_storage->template_defaults
-            && TemplateDefaults::bindUninferred($template_result, $function_storage, $codebase)
-        ) {
-            self::assignByRefArgsWithDefaults(
-                $statements_analyzer,
-                $args,
-                $arg_function_params,
-                $template_result,
-                $function_storage,
-                $method_id instanceof MethodIdentifier ? $method_id : null,
-                $context,
-            );
+        if ($template_result && $function_storage && $function_storage->template_defaults) {
+            TemplateDefaults::bindUninferred($template_result, $function_storage, $codebase);
         }
 
         return null;
-    }
-
-    /**
-     * Assigns the by-reference arguments again, now that the templates the call left out are bound to their default:
-     * their out type was resolved with each argument, before later ones could still infer those templates.
-     *
-     * @param array<int, PhpParser\Node\Arg> $args
-     * @param array<int, non-empty-list<FunctionLikeParameter>> $arg_function_params
-     */
-    private static function assignByRefArgsWithDefaults(
-        StatementsAnalyzer $statements_analyzer,
-        array $args,
-        array $arg_function_params,
-        TemplateResult $template_result,
-        FunctionLikeStorage $function_storage,
-        ?MethodIdentifier $method_identifier,
-        Context $context,
-    ): void {
-        $codebase = $statements_analyzer->getCodebase();
-        $self_class = $function_storage instanceof MethodStorage ? $function_storage->defining_fqcln : null;
-        $static_class = $method_identifier?->fq_class_name ?? $self_class;
-
-        foreach ($args as $argument_offset => $arg) {
-            $function_param = $arg_function_params[$argument_offset][0] ?? null;
-            $out_type = $function_param?->out_type ?? $function_param?->type;
-
-            if ($function_param === null
-                || !$function_param->by_ref
-                || $out_type === null
-                || $out_type->getTemplateTypes() === []
-                || ($function_param->is_variadic && $arg->unpack)
-            ) {
-                continue;
-            }
-
-            $in_type = $function_param->type ?? Type::getMixed();
-
-            AssignmentAnalyzer::assignByRefParam(
-                $statements_analyzer,
-                $arg->value,
-                TypeExpander::expandUnion(
-                    $codebase,
-                    TemplateInferredTypeReplacer::replace($in_type, $template_result, $codebase),
-                    $self_class,
-                    $static_class,
-                    null,
-                ),
-                TypeExpander::expandUnion(
-                    $codebase,
-                    TemplateInferredTypeReplacer::replace($out_type, $template_result, $codebase),
-                    $self_class,
-                    $static_class,
-                    null,
-                ),
-                $context,
-                true,
-                !$in_type->isNullable(),
-            );
-        }
     }
 
     /**

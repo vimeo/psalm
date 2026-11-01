@@ -2278,48 +2278,6 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'templateDefaultReachesTheParamOutType' => [
-                'code' => '<?php
-                    /**
-                     * @template T = int
-                     * @param-out list<T> $out
-                     * @return list<T>
-                     */
-                    function make(mixed &$out): array {
-                        $out = [];
-                        return [];
-                    }
-
-                    $returned = make($out);',
-                'assertions' => [
-                    '$returned===' => 'list<int>',
-                    '$out===' => 'list<int>',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'templateDefaultIsNotOverriddenByAnEmptyUnpack' => [
-                'code' => '<?php
-                    /**
-                     * @template T = int
-                     * @param T ...$args
-                     * @return list<T>
-                     */
-                    function make(mixed ...$args): array {
-                        return [];
-                    }
-
-                    $direct = make();
-                    $unpacked = make(...[]);
-                    $with_argument = make(1, ...[]);',
-                'assertions' => [
-                    '$direct===' => 'list<int>',
-                    '$unpacked===' => 'list<int>',
-                    '$with_argument===' => 'list<1>',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
             'templateDefaultUsingKeyOfAnEarlierTemplate' => [
                 'code' => '<?php
                     /**

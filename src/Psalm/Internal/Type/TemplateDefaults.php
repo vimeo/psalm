@@ -258,8 +258,8 @@ final class TemplateDefaults
 
     /**
      * Binds the templates the call left to their default ({@see self::isUninferred()}) in declaration order, the order
-     * of $template_defaults, so each default sees those before it, and tells whether it bound any. Like a constraint
-     * fallback, a default is a placeholder that reconciliation does not check.
+     * of $template_defaults, so each default sees those before it. Like a constraint fallback, a default is a
+     * placeholder that reconciliation does not check.
      *
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
@@ -267,9 +267,8 @@ final class TemplateDefaults
         TemplateResult $template_result,
         FunctionLikeStorage $storage,
         Codebase $codebase,
-    ): bool {
+    ): void {
         $template_types = $storage->template_types ?? [];
-        $bound_any = false;
 
         foreach ($storage->template_defaults as $template_name => $default) {
             $defining_id = array_key_first($template_types[$template_name] ?? []);
@@ -290,10 +289,7 @@ final class TemplateDefaults
             $default_bound->from_constraint_fallback = true;
 
             $template_result->lower_bounds[$template_name][$defining_id] = [$default_bound];
-            $bound_any = true;
         }
-
-        return $bound_any;
     }
 
     /**
