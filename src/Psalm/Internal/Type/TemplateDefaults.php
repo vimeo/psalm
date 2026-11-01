@@ -21,7 +21,6 @@ use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
-use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -304,35 +303,7 @@ final class TemplateDefaults
             return $default;
         }
 
-        // a later default may index with it (`V = T[K]` after `K = key-of<T>`): so the key-of of an array is its keys
-        return self::evaluateKeyOf(TemplateInferredTypeReplacer::replace($default, $template_result, $codebase));
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    private static function evaluateKeyOf(Union $type): Union
-    {
-        $atomic_types = [];
-        $evaluated = false;
-
-        foreach ($type->getAtomicTypes() as $atomic_type) {
-            $key_type = $atomic_type instanceof TKeyOf ? TKeyOf::getArrayKeyType($atomic_type->type) : null;
-
-            if ($key_type === null) {
-                $atomic_types[] = $atomic_type;
-
-                continue;
-            }
-
-            $evaluated = true;
-
-            foreach ($key_type->getAtomicTypes() as $key_atomic_type) {
-                $atomic_types[] = $key_atomic_type;
-            }
-        }
-
-        return $evaluated ? new Union($atomic_types) : $type;
+        return TemplateInferredTypeReplacer::replace($default, $template_result, $codebase);
     }
 
     /**

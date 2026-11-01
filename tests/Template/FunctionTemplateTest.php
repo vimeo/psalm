@@ -2409,25 +2409,6 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => ['NoValue'],
                 'php_version' => '8.0',
             ],
-            'templateDefaultIndexingWithAnEarlierKeyOfDefault' => [
-                'code' => '<?php
-                    /**
-                     * @template T of array = array{x: int}
-                     * @template K of array-key = key-of<T>
-                     * @template V = T[K]
-                     * @return array{T, K, V}
-                     */
-                    function indexed(): array {
-                        throw new Exception();
-                    }
-
-                    $indexed = indexed();',
-                'assertions' => [
-                    '$indexed===' => 'list{array{x: int}, \'x\', int}',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
             'templateDefaultUsingKeyOfAnEarlierTemplate' => [
                 'code' => '<?php
                     /**
