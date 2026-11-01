@@ -302,6 +302,8 @@ final class ArgumentsAnalyzer
             if (($arg->value instanceof PhpParser\Node\Expr\MethodCall
                     || $arg->value instanceof PhpParser\Node\Expr\StaticCall)
                 && $arg->value->isFirstClassCallable()
+                && $method_id === 'array_map'
+                && $argument_offset === 0
             ) {
                 $arg->value->setAttribute(MethodCallReturnTypeFetcher::CALL_ARGUMENT_ATTRIBUTE, true);
             }
