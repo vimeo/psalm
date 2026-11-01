@@ -192,6 +192,17 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertSame(2, $result['CODE']);
     }
 
+    public function testParseErrorIsReportedOnEveryRunWithAWarmCache(): void
+    {
+        file_put_contents(self::$tmpDir . '/src/Broken.php', "<?php\nfunction f() {\n    echo 1\n}\n");
+        $this->runPsalmInit(1);
+
+        foreach ([1, 2, 3] as $run) {
+            $result = $this->runPsalm(['--threads=1'], self::$tmpDir, true);
+            $this->assertStringContainsString('ParseError', $result['STDOUT'], 'run ' . $run);
+        }
+    }
+
     public function testPsalmWithPHPVersionOverride(): void
     {
         $this->runPsalmInit(1);

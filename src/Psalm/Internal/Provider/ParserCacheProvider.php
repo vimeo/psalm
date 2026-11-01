@@ -16,9 +16,13 @@ use const DIRECTORY_SEPARATOR;
 final class ParserCacheProvider
 {
     private const PARSER_CACHE_DIRECTORY = 'php-parser';
+    private const PARSE_ERROR_CACHE_DIRECTORY = 'php-parser-errors';
 
     /** @var Cache<list<PhpParser\Node\Stmt>> */
     private readonly Cache $stmtCache;
+
+    /** @var Cache<list<array{string, array<string, mixed>}>>|null */
+    private ?Cache $parseErrorCache = null;
 
     public function __construct(Config $config, string $composerLock, bool $persistent = true)
     {
@@ -29,11 +33,13 @@ final class ParserCacheProvider
         ];
 
         $this->stmtCache = new Cache($config, self::PARSER_CACHE_DIRECTORY, $deps, $persistent);
+        $this->parseErrorCache = new Cache($config, self::PARSE_ERROR_CACHE_DIRECTORY, $deps, $persistent);
     }
 
     public function consolidate(): void
     {
         $this->stmtCache->consolidate();
+        $this->parseErrorCache?->consolidate();
     }
 
     /**
@@ -60,5 +66,21 @@ final class ParserCacheProvider
         array $stmts,
     ): void {
         $this->stmtCache->saveItem($file_path, $stmts, $file_content_hash);
+    }
+
+    /**
+     * @return list<array{string, array<string, mixed>}>|null the raw message and attributes of each parse error
+     */
+    public function loadParseErrorsFromCache(string $file_path, string $file_content_hash): ?array
+    {
+        return $this->parseErrorCache?->getItem($file_path, $file_content_hash);
+    }
+
+    /**
+     * @param list<array{string, array<string, mixed>}> $errors
+     */
+    public function saveParseErrorsToCache(string $file_path, string $file_content_hash, array $errors): void
+    {
+        $this->parseErrorCache?->saveItem($file_path, $errors, $file_content_hash);
     }
 }
