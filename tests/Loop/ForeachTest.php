@@ -306,6 +306,22 @@ final class ForeachTest extends TestCase
                         $a = $i;
                     }',
             ],
+            'issetOfVariableUnsetInPreviousForeachIteration' => [
+                'code' => '<?php
+                    class A {
+                        public function noop(): void {
+                            echo 1;
+                        }
+                    }
+
+                    $a = new A();
+                    foreach ([1, 2] as $_) {
+                        if (isset($a)) {
+                            $a->noop();
+                        }
+                        unset($a);
+                    }',
+            ],
             'unsetInLoop' => [
                 'code' => '<?php
                     $a = null;
