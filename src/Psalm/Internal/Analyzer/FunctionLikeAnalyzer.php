@@ -337,11 +337,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         TemplateDefaults::checkBounds(
-            $codebase,
+            $this,
             $storage->template_types ?? [],
             $storage->template_defaults,
             $storage->template_default_locations,
             $context->self,
+            $context->parent,
             ($storage instanceof MethodStorage ? $storage->defining_fqcln . '::' : '') . $storage->cased_name,
             $this->getSuppressedIssues(),
         );

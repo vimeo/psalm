@@ -277,7 +277,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             );
         }
 
-        self::reportDocblockIssues($codebase, $storage, $storage->suppressed_issues + $this->getSuppressedIssues());
+        self::reportDocblockIssues($this, $storage, $storage->suppressed_issues + $this->getSuppressedIssues());
 
         $parent_fq_class_name = $this->parent_fq_class_name;
 

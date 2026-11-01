@@ -2359,6 +2359,27 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'methodTemplateDefaultNamingParent' => [
+                'code' => '<?php
+                    class Par {}
+
+                    final class Child extends Par {
+                        /**
+                         * @template R of Par = parent
+                         * @return R
+                         */
+                        public function make(): Par {
+                            throw new Exception();
+                        }
+                    }
+
+                    $made = (new Child())->make();',
+                'assertions' => [
+                    '$made===' => 'Par',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -3050,6 +3071,17 @@ final class FunctionTemplateTest extends TestCase
                         throw new Exception();
                     }',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:24 - The default of template K uses template U, which is not declared before it, in docblock for f',
+            ],
+            'templateDefaultNamingAnUndefinedClass' => [
+                'code' => '<?php
+                    /**
+                     * @template T = Missing
+                     * @return T
+                     */
+                    function f(): mixed {
+                        throw new Exception();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:24 - Class, interface or enum named Missing does not exist',
             ],
         ];
     }

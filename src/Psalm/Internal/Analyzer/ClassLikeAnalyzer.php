@@ -762,13 +762,13 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * Reports the docblock issues found when the class-like was scanned, and the template defaults outside their
-     * bounds, which can only be checked once the codebase is populated.
+     * Reports the docblock issues found when the class-like was scanned, and the template defaults naming undefined
+     * classes or outside their bounds, which can only be checked once the codebase is populated.
      *
      * @param array<string> $suppressed_issues
      */
     protected static function reportDocblockIssues(
-        Codebase $codebase,
+        StatementsSource $source,
         ClassLikeStorage $storage,
         array $suppressed_issues,
     ): void {
@@ -777,11 +777,12 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         }
 
         TemplateDefaults::checkBounds(
-            $codebase,
+            $source,
             $storage->template_types ?? [],
             $storage->template_defaults,
             $storage->template_default_locations,
             $storage->name,
+            $storage->parent_class,
             $storage->name,
             $suppressed_issues,
         );

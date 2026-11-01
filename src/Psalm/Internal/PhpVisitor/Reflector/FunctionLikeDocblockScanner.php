@@ -280,6 +280,7 @@ final class FunctionLikeDocblockScanner
                 $cased_function_id,
                 $codebase,
                 $file_storage,
+                $classlike_storage,
             );
 
             foreach ($docblock_info->purity_templates as $purity_template) {
@@ -1972,6 +1973,7 @@ final class FunctionLikeDocblockScanner
         string $cased_function_id,
         Codebase $codebase,
         FileStorage $file_storage,
+        ?ClassLikeStorage $classlike_storage,
     ): array {
         $storage->template_types = [];
 
@@ -2049,8 +2051,8 @@ final class FunctionLikeDocblockScanner
                 array_fill_keys($docblock_info->purity_templates, true),
                 $aliases,
                 $type_aliases,
-                null,
-                null,
+                $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null,
+                $classlike_storage?->parent_class,
                 new CodeLocation($file_scanner, $stmt, null, true),
                 $cased_function_id,
                 new TypeScanner($codebase->scanner, $file_storage, $storage->template_types),

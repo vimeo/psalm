@@ -5471,6 +5471,15 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classTemplateDefaultNamingAnUndefinedClass' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T = Missing
+                     */
+                    final class C {}',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33 - Class, interface or enum named Missing does not exist',
+            ],
             'partialGenericNextToASelfNamingDefaultChecksItsDefaults' => [
                 'code' => '<?php
                     /**

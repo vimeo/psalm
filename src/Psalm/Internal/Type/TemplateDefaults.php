@@ -17,6 +17,7 @@ use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\IssueBuffer;
+use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
@@ -324,8 +325,8 @@ final class TemplateDefaults
     }
 
     /**
-     * Reports the defaults outside their template's bound, where they are declared. Earlier templates stay templates
-     * there, so `@template U of T = T` is within its bound.
+     * Reports the defaults naming undefined classes, as for bounds, and those outside their template's bound, where
+     * they are declared. Earlier templates stay templates there, so `@template U of T = T` is within its bound.
      *
      * @param array<string, non-empty-array<string, Union>> $template_types
      * @param array<string, Union> $template_defaults
@@ -333,24 +334,30 @@ final class TemplateDefaults
      * @param array<string> $suppressed_issues
      */
     public static function checkBounds(
-        Codebase $codebase,
+        StatementsSource $source,
         array $template_types,
         array $template_defaults,
         array $locations,
         ?string $self_class,
+        ?string $parent_class,
         string $owner,
         array $suppressed_issues,
     ): void {
+        $codebase = $source->getCodebase();
+
         foreach ($locations as $template_name => $location) {
             $bound = reset($template_types[$template_name]);
             $default = $template_defaults[$template_name] ?? null;
 
-            if ($default === null || $bound->isMixed()) {
+            if ($default === null
+                || !$default->check($source, $location, $suppressed_issues, [], false)
+                || $bound->isMixed()
+            ) {
                 continue;
             }
 
-            $default = TypeExpander::expandUnion($codebase, $default, $self_class, $self_class, null);
-            $bound = TypeExpander::expandUnion($codebase, $bound, $self_class, $self_class, null);
+            $default = TypeExpander::expandUnion($codebase, $default, $self_class, $self_class, $parent_class);
+            $bound = TypeExpander::expandUnion($codebase, $bound, $self_class, $self_class, $parent_class);
 
             if (!UnionTypeComparator::isContainedBy($codebase, $default, $bound)) {
                 IssueBuffer::maybeAdd(
