@@ -96,25 +96,13 @@ final class FunctionCallReturnTypeFetcher
         $config = $codebase->config;
 
         if ($stmt->isFirstClassCallable()) {
-            $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
+            $closure = CallableTypeComparator::getClosureFromFunctionId(
                 $codebase,
-                Type::getAtomicStringFromLiteral($function_id),
-                null,
+                $function_id,
                 $statements_analyzer,
                 $context,
-                true,
             );
-
-            if ($candidate_callable) {
-                $stmt_type = new Union([new TClosure(
-                    $candidate_callable->params,
-                    $candidate_callable->return_type,
-                    $candidate_callable->purity,
-                    callable_id: strtolower($function_id),
-                )]);
-            } else {
-                $stmt_type = Type::getClosure();
-            }
+            $stmt_type = $closure ? new Union([$closure]) : Type::getClosure();
         } elseif ($codebase->functions->return_type_provider->has($function_id)) {
             $stmt_type = $codebase->functions->return_type_provider->getReturnType(
                 $statements_analyzer,

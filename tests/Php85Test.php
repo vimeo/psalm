@@ -303,6 +303,174 @@ final class Php85Test extends TestCase
                 'ignored_issues' => ['InvalidPassByReference'],
                 'php_version' => '8.5',
             ],
+            'closureInClassConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class K {
+                        const C = static function (string $s): string { return $s; };
+                    }
+
+                    $c = K::C;
+                    PHP,
+                'assertions' => [
+                    '$c' => 'Closure[impure](string):string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'firstClassCallableInClassConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class P {
+                        public static function triple(int $x): int { return $x * 3; }
+                    }
+
+                    final class K extends P {
+                        const F = strtoupper(...);
+                        const M = self::double(...);
+                        const T = parent::triple(...);
+                        const Q = P::triple(...);
+                        public static function double(int $x): int { return $x * 2; }
+                    }
+
+                    $f = K::F;
+                    $m = K::M;
+                    $t = K::T;
+                    $q = K::Q;
+                    PHP,
+                'assertions' => [
+                    '$f' => 'Closure[pure](string):string',
+                    '$m' => 'Closure[impure](int):int',
+                    '$t' => 'Closure[impure](int):int',
+                    '$q' => 'Closure[impure](int):int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'firstClassCallableOfANamespacedFunctionInClassConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace Foo;
+
+                    final class K {
+                        const F = strtoupper(...);
+                        const L = \strlen(...);
+                    }
+
+                    $f = K::F;
+                    $l = K::L;
+                    PHP,
+                'assertions' => [
+                    '$f' => 'Closure[pure](string):string',
+                    '$l' => 'Closure[pure](string):int<0, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'closureInArrayClassConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class K {
+                        const A = ['c' => static function (string $s): string { return $s; }, 'f' => strtoupper(...)];
+                    }
+
+                    $c = K::A['c'];
+                    $f = K::A['f'];
+                    PHP,
+                'assertions' => [
+                    '$c' => 'Closure[impure](string):string',
+                    '$f' => 'Closure[pure](string):string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'typedClosureClassConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class K {
+                        const Closure C = static function (string $s): string { return $s; };
+                        const Closure F = strtoupper(...);
+                    }
+
+                    $c = K::C;
+                    $f = K::F;
+                    PHP,
+                'assertions' => [
+                    '$c' => 'Closure[impure](string):string',
+                    '$f' => 'Closure[pure](string):string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'closureClassConstantIsCallable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class K {
+                        const C = static function (string $s): string { return $s; };
+                        const D = self::C;
+                    }
+
+                    $r = (K::C)("x");
+                    $d = K::D;
+                    PHP,
+                'assertions' => [
+                    '$r' => 'string',
+                    '$d' => 'Closure[impure](string):string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'closureClassConstantOfAParent' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class P {
+                        const C = static function (int $i): int { return $i; };
+                    }
+                    final class K extends P {}
+
+                    $c = K::C;
+                    PHP,
+                'assertions' => [
+                    '$c' => 'Closure[impure](int):int',
+                ],
+                'ignored_issues' => ['MissingClassConstType'],
+                'php_version' => '8.5',
+            ],
+            'closureInterfaceAndEnumConstants' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface I {
+                        const C = static function (): int { return 1; };
+                    }
+                    enum E {
+                        const C = static function (): string { return "e"; };
+                        const F = strtoupper(...);
+                    }
+
+                    $i = I::C;
+                    $e = E::C;
+                    $f = E::F;
+                    PHP,
+                'assertions' => [
+                    '$i' => 'Closure[impure]():int',
+                    '$e' => 'Closure[impure]():string',
+                    '$f' => 'Closure[pure](string):string',
+                ],
+                'ignored_issues' => ['MissingClassConstType'],
+                'php_version' => '8.5',
+            ],
+            'closureInPropertyDefault' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class K {
+                        public Closure $c = static function (string $s): string { return $s; };
+                        public Closure $f = strtoupper(...);
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'closureInParameterDefault' => [
                 'code' => <<<'PHP'
                     <?php
@@ -314,6 +482,99 @@ final class Php85Test extends TestCase
                     PHP,
                 'assertions' => [],
                 'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'closureInStaticVariable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        static $c = static function (string $s): string { return $s; };
+                        static $f = strtoupper(...);
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'closureInAttributeArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    #[Attribute(Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE)]
+                    final class A {
+                        public function __construct(public Closure $c) {}
+                    }
+
+                    #[A(static function (string $s): string { return $s; })]
+                    #[A(strtoupper(...))]
+                    final class K {}
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'firstClassCallableOfAnInheritedStaticMethodInClassConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class P {
+                        final public function __construct() {}
+
+                        public static function self(int $x): self { return new self(); }
+                        public static function late(int $x): static { return new static(); }
+                    }
+
+                    final class K extends P {
+                        const S = self::self(...);
+                        const L = self::late(...);
+                    }
+
+                    $s = K::S;
+                    $l = K::L;
+                    PHP,
+                'assertions' => [
+                    '$s' => 'Closure[impure](int):P',
+                    '$l' => 'Closure[impure](int):K',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'firstClassCallableOfAnImportedUndefinedFunctionInClassConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace Foo;
+
+                    use function Bar\strlen;
+
+                    final class K {
+                        const F = strlen(...);
+                    }
+
+                    $f = K::F;
+                    PHP,
+                'assertions' => [
+                    '$f' => 'Closure[impure]',
+                ],
+                'ignored_issues' => ['UndefinedFunction'],
+                'php_version' => '8.5',
+            ],
+            'firstClassCallableOfAQualifiedFunctionInClassConstantHasNoGlobalFallback' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace Sub {
+                        function f(int $x): int { return $x; }
+                    }
+
+                    namespace Foo {
+                        final class K {
+                            const F = Sub\f(...);
+                        }
+
+                        $f = K::F;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$f' => 'Closure[impure]',
+                ],
+                'ignored_issues' => ['UndefinedFunction'],
                 'php_version' => '8.5',
             ],
         ];

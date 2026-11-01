@@ -12,14 +12,17 @@ use PhpParser\Node\Expr\ConstFetch;
 use Psalm\Aliases;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayOffsetFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArraySpread;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayValue;
 use Psalm\Internal\Scanner\UnresolvedConstant\ClassConstant;
+use Psalm\Internal\Scanner\UnresolvedConstant\ClosureValue;
 use Psalm\Internal\Scanner\UnresolvedConstant\Constant;
 use Psalm\Internal\Scanner\UnresolvedConstant\EnumNameFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\EnumValueFetch;
+use Psalm\Internal\Scanner\UnresolvedConstant\FirstClassCallable;
 use Psalm\Internal\Scanner\UnresolvedConstant\KeyValuePair;
 use Psalm\Internal\Scanner\UnresolvedConstant\ScalarValue;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedAdditionOp;
@@ -55,13 +58,25 @@ final class ExpressionResolver
         Aliases $aliases,
         ?string $fq_classlike_name,
         ?string $parent_fq_class_name = null,
+        ?string $file_path = null,
     ): ?UnresolvedConstantComponent {
+        if ($file_path !== null && $stmt instanceof PhpParser\Node\Expr\Closure) {
+            return new ClosureValue(
+                $file_path,
+                strtolower($file_path)
+                . ':' . $stmt->getLine()
+                . ':' . (int) $stmt->getAttribute('startFilePos')
+                . ':-:closure',
+            );
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             $left = self::getUnresolvedClassConstExpr(
                 $stmt->left,
                 $aliases,
                 $fq_classlike_name,
                 $parent_fq_class_name,
+                $file_path,
             );
 
             $right = self::getUnresolvedClassConstExpr(
@@ -69,6 +84,7 @@ final class ExpressionResolver
                 $aliases,
                 $fq_classlike_name,
                 $parent_fq_class_name,
+                $file_path,
             );
 
             if (!$left || !$right) {
@@ -114,6 +130,7 @@ final class ExpressionResolver
                 $aliases,
                 $fq_classlike_name,
                 $parent_fq_class_name,
+                $file_path,
             );
 
             $if = null;
@@ -124,6 +141,7 @@ final class ExpressionResolver
                     $aliases,
                     $fq_classlike_name,
                     $parent_fq_class_name,
+                    $file_path,
                 );
 
                 if ($if === null) {
@@ -136,6 +154,7 @@ final class ExpressionResolver
                 $aliases,
                 $fq_classlike_name,
                 $parent_fq_class_name,
+                $file_path,
             );
 
             if ($cond && $else && $if !== false) {
@@ -177,6 +196,7 @@ final class ExpressionResolver
                 $aliases,
                 $fq_classlike_name,
                 $parent_fq_class_name,
+                $file_path,
             );
 
             $right = self::getUnresolvedClassConstExpr(
@@ -184,6 +204,7 @@ final class ExpressionResolver
                 $aliases,
                 $fq_classlike_name,
                 $parent_fq_class_name,
+                $file_path,
             );
 
             if ($left && $right) {
@@ -232,6 +253,7 @@ final class ExpressionResolver
                 $aliases,
                 $fq_classlike_name,
                 $parent_fq_class_name,
+                $file_path,
             );
 
             if (!$right) {
@@ -250,6 +272,7 @@ final class ExpressionResolver
                 $aliases,
                 $fq_classlike_name,
                 $parent_fq_class_name,
+                $file_path,
             );
 
             if (!$right) {
@@ -272,6 +295,7 @@ final class ExpressionResolver
                         $aliases,
                         $fq_classlike_name,
                         $parent_fq_class_name,
+                        $file_path,
                     );
 
                     if (!$item_key_type) {
@@ -286,6 +310,7 @@ final class ExpressionResolver
                     $aliases,
                     $fq_classlike_name,
                     $parent_fq_class_name,
+                    $file_path,
                 );
 
                 if (!$item_value_type) {
@@ -330,6 +355,42 @@ final class ExpressionResolver
                 return new EnumValueFetch($enum_fq_class_name, $stmt->var->name->name);
             } else /*if ($stmt->name->name === 'name')*/ {
                 return new EnumNameFetch($enum_fq_class_name, $stmt->var->name->name);
+            }
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\FuncCall
+            && $stmt->name instanceof PhpParser\Node\Name
+            && $stmt->isFirstClassCallable()
+        ) {
+            $name = $stmt->name->toString();
+
+            if ($stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
+                return new FirstClassCallable($name);
+            }
+
+            // only an unqualified name that was not imported falls back to the global function
+            return new FirstClassCallable(
+                Functions::getFullyQualifiedFunctionNameFromString($name, $aliases),
+                global_fallback_name: $stmt->name->isUnqualified() && !isset($aliases->functions[strtolower($name)])
+                    ? $name
+                    : null,
+            );
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\StaticCall
+            && $stmt->class instanceof PhpParser\Node\Name
+            && $stmt->name instanceof PhpParser\Node\Identifier
+            && $stmt->isFirstClassCallable()
+            && $stmt->class->toLowerString() !== 'static'
+        ) {
+            $fqcln = match ($stmt->class->toLowerString()) {
+                'self' => $fq_classlike_name,
+                'parent' => $parent_fq_class_name,
+                default => ClassLikeAnalyzer::getFQCLNFromNameObject($stmt->class, $aliases),
+            };
+
+            if ($fqcln !== null) {
+                return new FirstClassCallable($stmt->name->name, $fqcln);
             }
         }
 
