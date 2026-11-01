@@ -2639,10 +2639,20 @@ final class Config
             $core_generic_files[] = $stringable_path;
         }
 
+        if (PHP_VERSION_ID < 8_06_00 && $codebase->analysis_php_version_id >= 8_06_00) {
+            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php86.phpstub';
+
+            if (!file_exists($stringable_path)) {
+                throw new UnexpectedValueException('Cannot locate PHP 8.6 classes');
+            }
+
+            $core_generic_files[] = $stringable_path;
+        }
+
         // Genuinely-new classes from every version live in PhpVersionedClasses.phpstub (always
         // loaded via internal_stubs). When the running PHP is older than the newest of them, its
         // reflection cannot provide them, so preload the file too.
-        if (PHP_VERSION_ID < 8_05_00) {
+        if (PHP_VERSION_ID < 8_06_00) {
             $versioned_classes_path = dirname(__DIR__, 2) . '/stubs/PhpVersionedClasses.phpstub';
 
             if (!file_exists($versioned_classes_path)) {
@@ -2767,6 +2777,7 @@ final class Config
         }
 
         if ($codebase->analysis_php_version_id >= 8_06_00) {
+            $this->internal_stubs[] = $stubsDir . 'Php86.phpstub';
             $this->internal_stubs[] = $stubsDir . 'Php86Functions.phpstub';
         }
 

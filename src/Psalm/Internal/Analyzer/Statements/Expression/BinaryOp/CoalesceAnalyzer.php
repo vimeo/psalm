@@ -40,7 +40,7 @@ final class CoalesceAnalyzer
             $root_expr = $root_expr->var;
         }
 
-        if ($root_expr instanceof PhpParser\Node\Expr\FuncCall
+        $has_call_root = $root_expr instanceof PhpParser\Node\Expr\FuncCall
             || $root_expr instanceof PhpParser\Node\Expr\MethodCall
             || $root_expr instanceof PhpParser\Node\Expr\StaticCall
             || $root_expr instanceof PhpParser\Node\Expr\Cast
@@ -48,14 +48,29 @@ final class CoalesceAnalyzer
             || $root_expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch
             || $root_expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
             || $root_expr instanceof PhpParser\Node\Expr\Ternary
-            || $root_expr instanceof PhpParser\Node\Expr\BinaryOp\Pipe
-        ) {
+            || $root_expr instanceof PhpParser\Node\Expr\BinaryOp\Pipe;
+
+        $has_untracked_offset = !$has_call_root
+            && $left_expr instanceof PhpParser\Node\Expr\ArrayDimFetch
+            && ExpressionIdentifier::getExtendedVarId(
+                $left_expr,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            ) === null;
+
+        if ($has_call_root || $has_untracked_offset) {
             $left_var_id = '$<tmp coalesce var>' . (int) $left_expr->getAttribute('startFilePos');
 
-            $cloned = clone $context;
+            // an untracked offset is evaluated unconditionally, so its assignments belong to the real context
+            $cloned = $has_untracked_offset ? $context : clone $context;
+            $was_inside_isset = $cloned->inside_isset;
             $cloned->inside_isset = true;
 
             ExpressionAnalyzer::analyze($statements_analyzer, $left_expr, $cloned);
+
+            if ($has_untracked_offset) {
+                $context->inside_isset = $was_inside_isset;
+            }
 
             if ($root_expr !== $left_expr) {
                 $condition_type = $statements_analyzer->node_data->getType($left_expr);
