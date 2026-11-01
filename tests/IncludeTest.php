@@ -106,6 +106,130 @@ final class IncludeTest extends TestCase
     }
 
     /**
+     * What `callWriter()` writes to the globals depends on the file analyzing its call: each resolves `writeGlobal()`
+     * as it sees it (a declaration of its own, or one it includes, even through another file), whichever file is
+     * analyzed first.
+     *
+     * @param array<string, string> $files
+     * @param list<string> $files_to_check
+     */
+    #[DataProvider('providerGlobalsWrittenThroughAnotherFunctionAreIndependentOfAnalysisOrder')]
+    public function testGlobalsWrittenThroughAnotherFunctionAreIndependentOfAnalysisOrder(
+        array $files,
+        array $files_to_check,
+    ): void {
+        $dir = (string) getcwd() . DIRECTORY_SEPARATOR;
+
+        $codebase = $this->project_analyzer->getCodebase();
+
+        foreach ($files as $file_name => $contents) {
+            $this->addFile($dir . $file_name, $contents);
+            $codebase->scanner->addFilesToShallowScan([$dir . $file_name => $dir . $file_name]);
+        }
+
+        foreach ($files_to_check as $file_name) {
+            $codebase->addFilesToAnalyze([$dir . $file_name => $dir . $file_name]);
+        }
+
+        $config = $codebase->config;
+        $config->skip_checks_on_unresolvable_includes = true;
+
+        $codebase->scanFiles();
+
+        foreach ($files_to_check as $file_name) {
+            $file_path = $dir . $file_name;
+            $file_analyzer = new FileAnalyzer($this->project_analyzer, $file_path, $config->shortenFileName($file_path));
+            $file_analyzer->analyze();
+        }
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * @return array<string,array{files:array<string,string>,files_to_check:list<string>}>
+     * @psalm-pure
+     */
+    public static function providerGlobalsWrittenThroughAnotherFunctionAreIndependentOfAnalysisOrder(): array
+    {
+        $shadowing_files = [
+            'writer.php' => '<?php
+                function writeGlobal(): void {
+                    global $x;
+                    $x = "written";
+                }',
+            'caller.php' => '<?php
+                require_once "writer.php";
+
+                function callWriter(): void {
+                    writeGlobal();
+                }',
+            'shadowing.php' => '<?php
+                require_once "caller.php";
+
+                function writeGlobal(): void {
+                }
+
+                $x = "safe";
+                callWriter();
+                /** @psalm-check-type-exact $x = \'safe\' */;',
+            'plain.php' => '<?php
+                require_once "caller.php";
+
+                $x = "safe";
+                callWriter();
+                /** @psalm-check-type-exact $x = mixed */;',
+        ];
+
+        $reverse_files = [
+            'helpers.php' => '<?php
+                function writeGlobal(): void {
+                    global $x;
+                    $x = "written";
+                }',
+            'lib.php' => '<?php
+                function callWriter(): void {
+                    writeGlobal();
+                }',
+            'entry.php' => '<?php
+                require_once "helpers.php";
+                require_once "lib.php";
+
+                $x = "safe";
+                callWriter();
+                /** @psalm-check-type-exact $x = mixed */;',
+            'noop_helpers.php' => '<?php
+                function writeGlobal(): void {
+                }',
+            'other_entry.php' => '<?php
+                require_once "noop_helpers.php";
+                require_once "lib.php";
+
+                $x = "safe";
+                callWriter();
+                /** @psalm-check-type-exact $x = \'safe\' */;',
+        ];
+
+        return [
+            'shadowingFileFirst' => [
+                'files' => $shadowing_files,
+                'files_to_check' => ['shadowing.php', 'plain.php'],
+            ],
+            'shadowingFileLast' => [
+                'files' => $shadowing_files,
+                'files_to_check' => ['plain.php', 'shadowing.php'],
+            ],
+            'calleeVisibleOnlyThroughRootFirst' => [
+                'files' => $reverse_files,
+                'files_to_check' => ['entry.php', 'other_entry.php'],
+            ],
+            'calleeVisibleOnlyThroughRootLast' => [
+                'files' => $reverse_files,
+                'files_to_check' => ['other_entry.php', 'entry.php'],
+            ],
+        ];
+    }
+
+    /**
      * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>,hoist_constants?:bool,ignored_issues?:list<string>}>
      */
     public static function providerTestValidIncludes(): array
