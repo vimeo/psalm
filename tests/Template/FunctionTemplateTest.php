@@ -23,6 +23,60 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'closureOfATemplateWithANullDefaultOfTheSameTemplate' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Collection {
+                        /**
+                         * @param Closure(T,mixed):bool|null $callback
+                         * @param T|null $default
+                         * @return T|null
+                         */
+                        public function last(?Closure $callback = null, $default = null) {
+                            return $default;
+                        }
+                    }
+
+                    /** @var Collection<array> $collection */
+                    $collection = new Collection();
+                    $collection->last(function (array $_item): bool {
+                        return true;
+                    });',
+            ],
+            'nullOfATemplateOrNullParamDoesNotBoundTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param Closure(T):void $callback
+                     * @param T|null $default
+                     */
+                    function withDefault(Closure $callback, $default = null): void {}
+
+                    /**
+                     * @template T
+                     * @param T|null $default
+                     * @param Closure(T):void $callback
+                     */
+                    function withNull($default, Closure $callback): void {}
+
+                    /**
+                     * @template T
+                     * @param T|null $value
+                     * @return T|null
+                     */
+                    function identity($value) {
+                        return $value;
+                    }
+
+                    withDefault(function (array $_item): void {});
+                    withNull(null, function (array $_item): void {});
+                    $null = identity(null);
+                    $one = identity(1);',
+                'assertions' => [
+                    '$null===' => 'null',
+                    '$one===' => '1|null',
+                ],
+            ],
             'extractTypeParameterValue' => [
                 'code' => '<?php
                     /**
