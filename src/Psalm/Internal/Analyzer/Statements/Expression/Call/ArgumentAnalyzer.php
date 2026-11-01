@@ -349,8 +349,7 @@ final class ArgumentAnalyzer
             true,
         );
 
-        // what the argument says about each template is read from the type as declared, before the bound class
-        // templates are replaced
+        // what the argument says about each template is read from the declared type, before class templates are bound
         $declared_param_type = $param_type;
 
         if ($class_generic_params) {
@@ -704,12 +703,9 @@ final class ArgumentAnalyzer
     }
 
     /**
-     * Gives each template of the parameter type that the argument did not bind its constraint (or the upper
-     * bound the argument gave it) as a stand-in lower bound, and records whether the argument matched only the
-     * parts of the declared parameter type that don't name that template, which says nothing about it (`null` for
-     * `(callable(): T)|null`), unlike one matching the part that names it without telling what it is (a bare
-     * `callable`). A template is only left to its default when every argument for it says nothing about it,
-     * whatever their order.
+     * Gives each template the argument did not bind its constraint (or the upper bound the argument gave it) as a
+     * stand-in lower bound, and sets {@see TemplateBound::$from_template_free_argument} on its lower bounds, those of
+     * earlier arguments included: a template takes its default only if no argument says anything about it.
      *
      * @param list<TTemplateParam> $bindable_template_params
      */
@@ -750,9 +746,9 @@ final class ArgumentAnalyzer
     }
 
     /**
-     * Whether the argument is within the parts of the declared parameter type that don't name the template, the
-     * templates there standing for their bounds. As such a bound may take any argument (`(callable(): T)|U`), no
-     * type of the argument may then be within or coerced to the parts naming the template.
+     * Whether the argument fits the parts of the declared type not naming the template, read at their bounds. As a
+     * template there may take anything (`(callable(): T)|U`), no part of the argument may then fit or coerce to the
+     * parts naming the template.
      */
     private static function saysNothingAbout(
         Codebase $codebase,

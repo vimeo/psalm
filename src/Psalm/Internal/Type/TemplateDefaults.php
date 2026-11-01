@@ -26,9 +26,8 @@ use function reset;
 use function strtolower;
 
 /**
- * What a template left out of a use of its class stands for when it has a default
- * (`@template T of Bound = Default`): the default, in which the templates declared before it stand for
- * what they are there.
+ * What a template with a default (`@template T of Bound = Default`) stands for when a use of its class leaves it out:
+ * the default, with the templates declared before it standing for their arguments in that use.
  *
  * @internal
  */
@@ -42,9 +41,9 @@ final class TemplateDefaults
     private static array $filling = [];
 
     /**
-     * The type arguments of a use of the class that gives some of them (`Foo<A>`), with the defaults of the
-     * trailing type templates it leaves out, written where the use is ($from_docblock). A use without type
-     * arguments (`Foo`, `Foo[pure]`) is left alone: it stands for the bounds.
+     * The type arguments of a use giving only some of them (`Foo<A>`), plus the defaults of the trailing type templates
+     * it leaves out, marked as written where the use is ($from_docblock). A use with no type arguments (`Foo`,
+     * `Foo[pure]`) stands for the bounds and is left alone.
      *
      * @param list<Union> $type_params
      * @return ($type_params is non-empty-list ? non-empty-list<Union> : list<Union>)
@@ -125,10 +124,9 @@ final class TemplateDefaults
     }
 
     /**
-     * {@see self::fillTypeArguments()}, with $fill_default filling in the uses of generic types in each default.
-     * Doing so may come upon the template slot being filled again (`@template TNext = Node<T>`): that generated
-     * use is left without it and the slots after it, for the readers to fill when they get to it, so that
-     * filling ends.
+     * {@see self::fillTypeArguments()}, with $fill_default filling the generic types in each default. A default that
+     * comes back to its own slot (`@template TNext = Node<T>`) leaves that slot and the later ones out of the generated
+     * use, for readers to fill when they reach it, so that filling ends.
      *
      * @param list<Union> $type_params
      * @param Closure(Union): Union $fill_default
@@ -171,8 +169,8 @@ final class TemplateDefaults
     }
 
     /**
-     * A resolved default of a template of the class, expanded in the scope of the class, with its slot marked as
-     * being filled in meanwhile (see {@see self::fillTypeArgumentsWith()}).
+     * A resolved template default expanded in the scope of its class, with its slot marked as being filled meanwhile
+     * ({@see self::fillTypeArgumentsWith()}).
      *
      * @psalm-impure
      */
@@ -212,10 +210,9 @@ final class TemplateDefaults
     }
 
     /**
-     * What the templates of a class are bound to by a use that binds some of them by name (`@extends Foo<A>`),
-     * or none (no `@extends`, `new Foo()` without a constructor): those with a default are bound to it and,
-     * with $others_to_bound, the others to their bound. Without $purity_defaults, the purity templates are
-     * bound to their bound too, as in a `new` type.
+     * What the templates of a class are bound to by a use binding some by name (`@extends Foo<A>`) or none (a class
+     * without `@extends`, `new Foo()` without a constructor): their defaults and, with $others_to_bound, the others'
+     * bounds. Without $purity_defaults, purity templates are treated as having no default, as in a `new` type.
      *
      * @param array<string, Union> $given
      * @return array<string, Union>
@@ -269,8 +266,8 @@ final class TemplateDefaults
     }
 
     /**
-     * Reports the defaults that are not within the bounds of their templates, where they are declared. The
-     * templates declared before a default stay templates there: `@template U of T = T` is within its bound.
+     * Reports the defaults outside their template's bound, where they are declared. Earlier templates stay templates
+     * there, so `@template U of T = T` is within its bound.
      *
      * @param array<string, non-empty-array<string, Union>> $template_types
      * @param array<string, Union> $template_defaults
@@ -311,10 +308,9 @@ final class TemplateDefaults
     }
 
     /**
-     * The defaults of the templates of a declaration, parsed in the order the templates are declared, and where
-     * they are, with the issues about those that can't be used: an empty or invalid type, or one that uses a
-     * template of the declaration not declared before it (which makes cycles impossible). Such a template has no
-     * default. Purity templates take no type default, and a default may use them wherever they are declared.
+     * Parses the defaults of a declaration's templates in declaration order, with their locations and the issues
+     * dropping the unusable ones: empty, invalid, or using a template of the declaration declared after it (which
+     * rules out cycles). Purity templates take no type default, but a default may use them wherever they are declared.
      *
      * @param array<string, array{type: string, line_number: int}> $entries
      * @param array<string, array<string, Union>> $template_types the templates of the declaration
@@ -411,11 +407,8 @@ final class TemplateDefaults
     }
 
     /**
-     * Whether the arguments of a call or `new` leave a template to its default: they gave it no upper bound, and no
-     * lower bound but the stand-ins for arguments that matched a part of the parameter type naming no template
-     * (`null` for `(callable(): T)|null`, a string for `(callable(): T)|string`). An argument matching the part
-     * that names the template without telling what it is (a bare `callable`, a bare generic object) infers its
-     * bound instead.
+     * Whether the arguments of a call or `new` leave a template to its default: no upper bound, and no lower bound but
+     * stand-ins for arguments saying nothing about it ({@see TemplateBound::$from_template_free_argument}).
      *
      * @psalm-mutation-free
      */
@@ -438,8 +431,8 @@ final class TemplateDefaults
     }
 
     /**
-     * The type with the generic types in it written with fewer type arguments than their class has templates given
-     * the defaults they leave out, for the readers of stored types that don't expand them.
+     * The type with the defaults left out of its generic types filled in at any depth, for the readers of stored types
+     * that don't expand them.
      *
      * @psalm-impure
      */
@@ -454,9 +447,8 @@ final class TemplateDefaults
     }
 
     /**
-     * How many type arguments a use of the class must give, as issues about missing ones word it: at least
-     * those before the trailing defaults (of type or purity templates) when some may be left out, all of them
-     * otherwise.
+     * How many type arguments a use of the class must give, worded for MissingTemplateParam: "at least N" when
+     * trailing templates with a default may be left out.
      *
      * @psalm-mutation-free
      */

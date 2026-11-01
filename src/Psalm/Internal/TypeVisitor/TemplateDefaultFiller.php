@@ -14,10 +14,9 @@ use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
 /**
- * Gives the generic types written with fewer type arguments than their class has templates (`Foo<A>`), at any
- * depth of a type, the defaults of the templates they leave out, for the readers of stored types that don't
- * expand them. With a codebase, the defaults are expanded (see {@see TemplateDefaults::fillAndExpandTypeArguments()});
- * without, the generic types in them are filled the same way (see {@see TemplateDefaults::fillTypeArgumentsWith()}).
+ * Fills in the defaults left out of generic types (`Foo<A>`) at any depth of a type. With a codebase, the defaults
+ * are expanded ({@see TemplateDefaults::fillAndExpandTypeArguments()}); without, the generic types in them are filled
+ * the same way ({@see TemplateDefaults::fillTypeArgumentsWith()}).
  *
  * @internal
  */

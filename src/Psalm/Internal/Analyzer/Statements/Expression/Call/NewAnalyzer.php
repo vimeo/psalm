@@ -1797,8 +1797,8 @@ final class NewAnalyzer extends CallAnalyzer
     }
 
     /**
-     * The type arguments of the new object: what the constructor arguments bound each template of the class to,
-     * what a parent template given one of them binds it to, or what a template left unbound stands for.
+     * The type arguments of the new object: what the constructor arguments bound each template to, directly or
+     * through a parent template, or else what the unbound template stands for.
      *
      * @return list<Union>
      */
@@ -1816,8 +1816,7 @@ final class NewAnalyzer extends CallAnalyzer
         $generic_param_types = [];
 
         foreach ($storage->template_types ?? [] as $template_name => $base_type) {
-            // what the arguments bound a type template with a default to, directly or through a parent template,
-            // only counts when they said something about it
+            // a type template with a default only takes bounds from arguments that said something about it
             $lower_bounds = isset($storage->template_defaults[$template_name])
                 && !isset($storage->purity_templates[$template_name])
                     ? $inferred_lower_bounds
@@ -1829,16 +1828,9 @@ final class NewAnalyzer extends CallAnalyzer
                     $codebase,
                 );
 
-                // The constructor arguments bound this template, but PHP has no
-                // constructor type arguments to pin it: later code may still widen
-                // it within its declared constraint (Hack's `new Foo<_>(...)` local
-                // inference). Mint a type variable seeded with the arg-inferred
-                // bounds as lower bounds and the declared constraint as an upper
-                // bound; the bounds reconcile when the surrounding function-like
-                // has been analyzed.
-                // the constraint may name the class's other templates
-                // (`TIterator as Traversable<TKey, TValue>`): those are what the
-                // arguments bound them to
+                // PHP has no constructor type arguments, so later code may still widen this template within its
+                // constraint (as Hack's `new Foo<_>()`): mint a type variable with the argument bounds below and the
+                // constraint above, the other templates it names (`TIterator as Traversable<TKey, TValue>`) resolved
                 $constraint = TemplateInferredTypeReplacer::replace(
                     array_values($base_type)[0],
                     $template_result,
@@ -1846,12 +1838,9 @@ final class NewAnalyzer extends CallAnalyzer
                 );
                 $unconstrainable_templates ??= self::getUnconstrainableTemplates($storage);
 
-                // An argument typed `mixed` binds the template to `mixed` from
-                // below, which no later bound can narrow: the variable would
-                // only ever resolve to `mixed` while the class template stays
-                // opaque to reads (`class-string<T>` returns, `self<T&X>`
-                // assertions, the constraint clamp on later calls). Keep the
-                // plain parameter instead, as for an explicit `Foo<mixed>`.
+                // a `mixed` argument binds the template to `mixed`, which no later bound can narrow, while a type
+                // variable would hide the template from reads (`class-string<T>` returns, `self<T&X>` assertions, the
+                // constraint clamp on later calls): keep the plain parameter, as for an explicit `Foo<mixed>`
                 if (!isset($unconstrainable_templates[$template_name])
                     && !$generic_param_type->hasMixed()
                 ) {
@@ -1907,8 +1896,8 @@ final class NewAnalyzer extends CallAnalyzer
     }
 
     /**
-     * The lower bounds of the template result, but those of the templates the arguments said nothing about (see
-     * {@see TemplateDefaults::isUninferred()}).
+     * The lower bounds of the template result, without those of the templates the arguments said nothing about
+     * ({@see TemplateDefaults::isUninferred()}).
      *
      * @return array<string, array<string, non-empty-list<TemplateBound>>>
      * @psalm-mutation-free
@@ -1929,13 +1918,10 @@ final class NewAnalyzer extends CallAnalyzer
     }
 
     /**
-     * What a template the constructor arguments did not bind stands for in the new object: the default of a
-     * type template that has one, in which the templates before it stand for what the object binds them to.
-     * Otherwise later code may still constrain it (Hack's `new Foo<_>(...)` model): a fresh type variable
-     * whose upper bound is the template's declared constraint, reconciled with the constraints recorded while
-     * it flows through the rest of the body once the surrounding function-like has been analyzed. A template
-     * with no public mutation channel (named only in the constructor) can never be constrained later, so it
-     * resolves eagerly to its constraint.
+     * What a template the constructor arguments did not bind stands for: a type template's default, with the earlier
+     * templates bound as in the new object. Otherwise later code may still constrain it (Hack's `new Foo<_>()`), so
+     * it gets a type variable bounded above by its constraint and reconciled once the enclosing function-like is
+     * analyzed, unless only the constructor names it: then it is its constraint.
      *
      * @param non-empty-array<string, Union> $type_map the constraint of the template, by its class
      * @param list<Union> $generic_param_types those of the templates before it
