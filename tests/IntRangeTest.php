@@ -32,6 +32,33 @@ final class IntRangeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'comparisonsNarrowTheRangeNextToItsBounds' => [
+                'code' => '<?php
+                    /**
+                     * @param int<1, 5> $a
+                     * @param int<1, 5> $b
+                     * @param int<1, 5> $c
+                     * @param int<1, 5> $d
+                     * @param int<1, 5> $e
+                     */
+                    function scope(int $a, int $b, int $c, int $d, int $e): void {
+                        if ($a > 1) {
+                            /** @psalm-check-type-exact $a = int<2, 5> */;
+                        }
+                        if ($b >= 2) {
+                            /** @psalm-check-type-exact $b = int<2, 5> */;
+                        }
+                        if ($c < 5) {
+                            /** @psalm-check-type-exact $c = int<1, 4> */;
+                        }
+                        if ($d <= 4) {
+                            /** @psalm-check-type-exact $d = int<1, 4> */;
+                        }
+                        if ($e > 1 && $e < 4) {
+                            /** @psalm-check-type-exact $e = int<2, 3> */;
+                        }
+                    }',
+            ],
             'intRangeContained' => [
                 'code' => '<?php
                     /**
@@ -1076,6 +1103,46 @@ final class IntRangeTest extends TestCase
                      */
                     function scope(int $a): void{
                         assert($a < 10);
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'assertRedundantGreaterAtLowerBound' => [
+                'code' => '<?php
+                    /**
+                     * @param int<1, 5> $a
+                     */
+                    function scope(int $a): void{
+                        assert($a > 0);
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'assertRedundantGreaterOrEqualAtLowerBound' => [
+                'code' => '<?php
+                    /**
+                     * @param int<1, 5> $a
+                     */
+                    function scope(int $a): void{
+                        assert($a >= 1);
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'assertRedundantLessAtUpperBound' => [
+                'code' => '<?php
+                    /**
+                     * @param int<1, 5> $a
+                     */
+                    function scope(int $a): void{
+                        assert($a < 6);
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'assertRedundantLessOrEqualAtUpperBound' => [
+                'code' => '<?php
+                    /**
+                     * @param int<1, 5> $a
+                     */
+                    function scope(int $a): void{
+                        assert($a <= 5);
                     }',
                 'error_message' => 'RedundantConditionGivenDocblockType',
             ],

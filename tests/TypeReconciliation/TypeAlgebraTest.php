@@ -856,7 +856,7 @@ final class TypeAlgebraTest extends TestCase
                                 ($c >= 0x10b00 && $c <= 0x10b35) ||
                                 ($c >= 0x10b40 && $c <= 0x10b55) ||
                                 ($c >= 0x10b58 && $c <= 0x10b72) ||
-                                ($c >= 0x10b78 && $c <= 0x10b7f)
+                                $c >= 0x10b78
                             ) {
                                 return "RTL";
                             }
