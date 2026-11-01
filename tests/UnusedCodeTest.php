@@ -19,6 +19,8 @@ use Psalm\Storage\Capabilities;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function array_column;
+use function array_combine;
+use function array_map;
 use function getcwd;
 use function preg_quote;
 use function sort;
@@ -432,6 +434,216 @@ final class UnusedCodeTest extends TestCase
         $issue = IssueBuffer::getIssuesDataForFile($file_path)[2];
         $this->assertSame('UnusedClass', $issue->type);
         $this->assertSame(10, $issue->line_from);
+    }
+
+    public function testCodeUseGraphIsNotResolvedWithoutUnusedCodeDetection(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->find_unused_code = null;
+        $codebase->collectLocations();
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                interface I {
+                    public function value(): int;
+                }
+
+                final class Used implements I {
+                    public function value(): int {
+                        return 1;
+                    }
+                }
+
+                final class Unused {
+                    public function never(): void {}
+                }
+
+                class Open {}
+
+                /** @api */
+                class Published {}
+
+                (new Used())->value();',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $graph = $codebase->code_use_graph;
+
+        // nothing derived from the class storages is added: only unused code detection reads it
+        self::assertSame([], $graph->getReferencingNodes(CodeUseGraph::classNode('used'), CodeUseGraph::EDGE_METHOD));
+        self::assertSame(
+            [],
+            $graph->getReferencingNodes(CodeUseGraph::functionLikeNode('used::value'), CodeUseGraph::EDGE_OVERRIDE),
+        );
+        self::assertSame(
+            [],
+            $graph->getReferencingNodes(CodeUseGraph::classNode('published'), CodeUseGraph::EDGE_PUBLIC_API),
+        );
+
+        // the issues that do not depend on it, and the references, are unaffected
+        self::assertSame(
+            ['ClassMustBeFinal'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+        self::assertCount(1, $codebase->findReferencesToMethod('Used::value'));
+        self::assertNotSame([], $codebase->findReferencesToClassLike('Used'));
+    }
+
+    public function testCodeUseGraphIsResolvedWithUnusedCodeDetection(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->collectLocations();
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                interface I {
+                    public function value(): int;
+                }
+
+                final class Used implements I {
+                    public function value(): int {
+                        return 1;
+                    }
+                }
+
+                final class Unused {
+                    public function never(): void {}
+                }
+
+                class Open {}
+
+                /** @api */
+                class Published {}
+
+                (new Used())->value();',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $graph = $codebase->code_use_graph;
+
+        self::assertSame(
+            [CodeUseGraph::functionLikeNode('used::value') => true],
+            $graph->getReferencingNodes(CodeUseGraph::classNode('used'), CodeUseGraph::EDGE_METHOD),
+        );
+        self::assertSame(
+            [CodeUseGraph::functionLikeNode('i::value') => true],
+            $graph->getReferencingNodes(CodeUseGraph::functionLikeNode('used::value'), CodeUseGraph::EDGE_OVERRIDE),
+        );
+        self::assertSame(
+            [CodeUseGraph::PUBLIC_API => true],
+            $graph->getReferencingNodes(CodeUseGraph::classNode('published'), CodeUseGraph::EDGE_PUBLIC_API),
+        );
+        self::assertTrue($graph->isUsed(CodeUseGraph::classNode('used')));
+        self::assertFalse($graph->isUsed(CodeUseGraph::classNode('unused')));
+        self::assertCount(1, $codebase->findReferencesToMethod('Used::value'));
+        self::assertNotSame([], $codebase->findReferencesToClassLike('Used'));
+    }
+
+    /**
+     * --diff re-analyses the files referencing a changed file: the inheritors and users of a changed parent,
+     * interface or trait in both modes. With unused code detection the overridden method of a parent, interface
+     * or trait is also recorded as referencing the overrider, so the overrider's file lists the parent's file too.
+     *
+     * @param 'always'|'auto'|null $find_unused_code
+     * @param array<string, list<string>> $expected_referencing_files
+     */
+    #[DataProvider('providerFilesReferencingFile')]
+    public function testFilesReferencingFile(?string $find_unused_code, array $expected_referencing_files): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->find_unused_code = $find_unused_code;
+        $codebase->collectLocations();
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $sources = [
+            'Base' => '<?php class Base { public function run(): int { return 1; } }',
+            'Child' => '<?php final class Child extends Base { public function run(): int { return 2; } }',
+            'I' => '<?php interface I { public function go(): int; }',
+            'Impl' => '<?php final class Impl implements I { public function go(): int { return 1; } }',
+            'T' => '<?php trait T { public function t(): int { return 1; } }',
+            'UsesT' => '<?php final class UsesT { use T; public function x(): int { return $this->t(); } }',
+            'Main' => '<?php function main(Base $b, I $i, UsesT $u): int { return $b->run() + $i->go() + $u->x(); }',
+        ];
+
+        $files = [];
+
+        foreach ($sources as $name => $code) {
+            $files[$name] = self::$src_dir_path . $name . '.php';
+            $this->addFile($files[$name], $code);
+        }
+
+        foreach ($files as $file_path) {
+            $this->analyzeFile($file_path, new Context(), false);
+        }
+
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $file_reference_provider = $codebase->file_reference_provider;
+        $file_reference_provider->updateReferenceCache($codebase, array_combine($files, $files));
+
+        foreach ($files as $name => $file_path) {
+            $referencing_files = $file_reference_provider->getFilesReferencingFile($file_path);
+            sort($referencing_files);
+
+            $expected = array_map(
+                static fn(string $referencing_name): string => self::$src_dir_path . $referencing_name . '.php',
+                $expected_referencing_files[$name] ?? [],
+            );
+            sort($expected);
+
+            self::assertSame($expected, $referencing_files, $name);
+        }
+
+        $files_to_check = $this->project_analyzer->getReferencedFilesFromDiff(
+            [$files['Base'], $files['I'], $files['T']],
+        );
+
+        foreach (['Base', 'I', 'T', 'Child', 'Impl', 'UsesT', 'Main'] as $name) {
+            self::assertArrayHasKey($files[$name], $files_to_check, $name);
+        }
+    }
+
+    /**
+     * @return array<string, array{find_unused_code: 'always'|'auto'|null, expected_referencing_files: array<string, list<string>>}>
+     * @psalm-pure
+     */
+    public static function providerFilesReferencingFile(): array
+    {
+        return [
+            'without unused code detection' => [
+                'find_unused_code' => null,
+                'expected_referencing_files' => [
+                    'Base' => ['Child', 'Main'],
+                    'I' => ['Impl', 'Main'],
+                    'T' => ['UsesT'],
+                    'UsesT' => ['Main'],
+                ],
+            ],
+            'with unused code detection' => [
+                'find_unused_code' => 'auto',
+                'expected_referencing_files' => [
+                    'Base' => ['Child', 'Main'],
+                    'Child' => ['Base'],
+                    'I' => ['Impl', 'Main'],
+                    'Impl' => ['I'],
+                    'T' => ['UsesT'],
+                    'UsesT' => ['Main', 'T'],
+                ],
+            ],
+        ];
     }
 
     /**
