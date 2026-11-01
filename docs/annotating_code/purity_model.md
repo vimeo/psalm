@@ -1181,11 +1181,27 @@ The first two can be fixed automatically, with or without the flag in the config
 vendor/bin/psalm --alter --issues=MissingPureAnnotation,MissingImmutableAnnotation
 ```
 
-Inference itself always runs, whether or not the suggestions are enabled: capability checks and
+The suggestions and
 [taint analysis](../security_analysis/avoiding_false_positives.md#specializing-taints-in-functions)
-use the inferred purity of unannotated code. Taint analysis can only rely on inference for functions
-and for methods that cannot be overridden, so an annotation still adds precision to an overridable
-method, an abstract or interface method, and a constructor.
+(on by default) both need the inferred purity of unannotated code, so it is computed when either is
+on. Capability checks never use it: a call is checked against what the callee declares, with or
+without the suggestions.
+
+```php
+<?php
+function slug(string $title): string { // inferred pure, but not declared
+    return strtolower(trim($title));
+}
+
+/** @psalm-pure */
+function heading(string $title): string {
+    return ucfirst(slug($title)); // ImpureFunctionCall: The context is pure but function call on slug requires impure
+}
+```
+
+Taint analysis can only rely on inference for functions and for methods that cannot be overridden,
+so an annotation still adds precision to an overridable method, an abstract or interface method,
+and a constructor.
 
 Given this code (the reason ends with "to aid security analysis" when taint analysis runs, which it does
 by default, and with "to document what it may do and let Psalm enforce it" otherwise):

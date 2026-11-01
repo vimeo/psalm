@@ -376,7 +376,7 @@ When `true`, Psalm will report class and interface methods that override a metho
   suggestPurityAnnotations="[bool]"
 >
 ```
-When `true`, Psalm will report code that could carry a purity annotation: [MissingPureAnnotation](issues/MissingPureAnnotation.md), [MissingImmutableAnnotation](issues/MissingImmutableAnnotation.md), [MissingAbstractPureAnnotation](issues/MissingAbstractPureAnnotation.md) and [MissingInterfaceImmutableAnnotation](issues/MissingInterfaceImmutableAnnotation.md). Defaults to `false`. Running `psalter --issues=MissingPureAnnotation` or `--issues=MissingImmutableAnnotation` turns it on for that run. Purity is inferred and used by the analysis whether or not suggestions are reported.
+When `true`, Psalm will report code that could carry a purity annotation: [MissingPureAnnotation](issues/MissingPureAnnotation.md), [MissingImmutableAnnotation](issues/MissingImmutableAnnotation.md), [MissingAbstractPureAnnotation](issues/MissingAbstractPureAnnotation.md) and [MissingInterfaceImmutableAnnotation](issues/MissingInterfaceImmutableAnnotation.md). Defaults to `false`. Running `psalter --issues=MissingPureAnnotation` or `--issues=MissingImmutableAnnotation` turns it on for that run. Capability checks (`ImpureFunctionCall` and the like) compare a call with what the callee declares, whatever this is set to.
 
 #### loadLibraryStubs
 ```xml
