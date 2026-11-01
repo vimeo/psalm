@@ -30,11 +30,16 @@ final class ContainsLiteralVisitor extends TypeVisitor
     {
         if ($type instanceof TLiteralString
             || $type instanceof TLiteralInt
-            || $type instanceof TIntRange
             || $type instanceof TLiteralFloat
             || $type instanceof TTrue
             || $type instanceof TFalse
         ) {
+            $this->contains_literal = true;
+            return self::STOP_TRAVERSAL;
+        }
+
+        // a closed range, like the one inferred for the keys of a list literal, is as precise as the literals
+        if ($type instanceof TIntRange && $type->min_bound !== null && $type->max_bound !== null) {
             $this->contains_literal = true;
             return self::STOP_TRAVERSAL;
         }
