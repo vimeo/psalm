@@ -543,6 +543,55 @@ final class TraitTemplateTest extends TestCase
                         }
                     }',
             ],
+            'pseudoPropertyTemplateMappedThroughUse' => [
+                'code' => '<?php
+                    /**
+                     * @template T as string
+                     * @property T $status
+                     */
+                    trait Status {}
+
+                    class A {
+                        /** @use Status<"a"|"b"|"c"> */
+                        use Status;
+
+                        public function __get(string $name) {
+                            return 0;
+                        }
+                    }
+
+                    $a = new A();
+                    $status = $a->status;',
+                'assertions' => [
+                    '$status===' => "'a'|'b'|'c'",
+                ],
+            ],
+            'pseudoPropertyOwnDeclarationWinsOverUsedTrait' => [
+                'code' => '<?php
+                    /**
+                     * @template T as string
+                     * @property T $status
+                     */
+                    trait Status {}
+
+                    /**
+                     * @property int $status
+                     */
+                    class A {
+                        /** @use Status<"a"|"b"|"c"> */
+                        use Status;
+
+                        public function __get(string $name) {
+                            return 0;
+                        }
+                    }
+
+                    $a = new A();
+                    $status = $a->status;',
+                'assertions' => [
+                    '$status===' => 'int',
+                ],
+            ],
         ];
     }
 
@@ -769,6 +818,27 @@ final class TraitTemplateTest extends TestCase
                         }
                     }',
                 'error_message' => 'MixedMethodCall',
+            ],
+            'pseudoPropertyWriteTemplateMappedThroughUse' => [
+                'code' => '<?php
+                    /**
+                     * @template T as string
+                     * @property-write T $status
+                     */
+                    trait Status {}
+
+                    class A {
+                        /** @use Status<"a"|"b"|"c"> */
+                        use Status;
+
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    $a = new A();
+                    $a->status = "d";',
+                'error_message' => "with declared type ''a'|'b'|'c'' cannot be assigned",
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
