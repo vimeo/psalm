@@ -1832,6 +1832,20 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
                 'php_version' => '8.6',
             ],
+            'PartialApplication:PlaceholderAsAttributeArgumentLeavesTheConstructorUnchecked' => [
+                'code' => <<<'PHP'
+                    <?php
+                        #[Attribute]
+                        final class Attr {
+                            public function __construct(public int $a, public int $b = 0) {}
+                        }
+                        #[Attr(?)]
+                        function f(): void {}
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ParseError'],
+                'php_version' => '8.6',
+            ],
             'arrowFunctionReturnsNeverImplicitly' => [
                 'code' => '<?php
                     $bar = ["foo", "bar"];
@@ -2695,6 +2709,20 @@ final class ClosureTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],
+            'PartialApplication:PlaceholderAsAttributeArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                        #[Attribute]
+                        final class Attr {
+                            public function __construct(public int $a = 0) {}
+                        }
+                        #[Attr(?)]
+                        function f(): void {}
+                    PHP,
+                'error_message' => 'ParseError',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
             'PartialApplication:InIncludePath' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2715,6 +2743,52 @@ final class ClosureTest extends TestCase
                         $closure = (new Test())->length(1, ?);
                     PHP,
                 'error_message' => 'UndefinedMagicMethod',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'FirstClassCallable:AsAttributeArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                        #[Attribute]
+                        final class Attr {
+                            public function __construct(public mixed $a = null) {}
+                        }
+                        #[Attr(...)]
+                        function f(): void {}
+                    PHP,
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:7 - Cannot create Closure as attribute argument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'PartialApplication:PlaceholderAsAttributeArgumentOfAClassConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                        #[Attribute]
+                        final class Attr {
+                            public function __construct(public int $a = 0) {}
+                        }
+                        final class K {
+                            #[Attr(?)]
+                            public const int X = 1;
+                        }
+                    PHP,
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:11 - Cannot create Closure as attribute argument',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:PlaceholderAsAttributeArgumentOfAnEnumCase' => [
+                'code' => <<<'PHP'
+                    <?php
+                        #[Attribute]
+                        final class Attr {
+                            public function __construct(public int $a = 0) {}
+                        }
+                        enum E {
+                            #[Attr(...)]
+                            case A;
+                        }
+                    PHP,
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:11 - Cannot create Closure as attribute argument',
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],

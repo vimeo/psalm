@@ -215,6 +215,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                 return;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
                 $member_stmts[] = $stmt;
+                AttributesAnalyzer::reportPlaceholders($this, $stmt->attrGroups, $this->getSuppressedIssues());
 
                 foreach ($stmt->consts as $const) {
                     $const_id = strtolower($this->fq_class_name) . '::' . $const->name;
