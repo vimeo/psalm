@@ -45,6 +45,7 @@ use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeChecker;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\AssignmentToVoid;
 use Psalm\Issue\ImpureByReferenceAssignment;
 use Psalm\Issue\ImpureGlobalVariable;
@@ -1572,6 +1573,8 @@ final class AssignmentAnalyzer
         array $var_comments,
         int $removed_taints,
     ): void {
+        $assign_value_type = TypeVariableResolver::resolveTopLevel($assign_value_type, $codebase);
+
         if (!$assign_value_type->hasArray()
             && !$assign_value_type->isMixed()
             && !$assign_value_type->hasArrayAccessInterface($codebase)
