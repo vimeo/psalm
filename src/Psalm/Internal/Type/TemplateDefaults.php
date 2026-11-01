@@ -17,6 +17,8 @@ use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Type;
 use Psalm\Type\Union;
 
 use function array_key_first;
@@ -26,9 +28,9 @@ use function reset;
 use function strtolower;
 
 /**
- * What a template left out of a use of its class stands for when it has a default
- * (`@template T of Bound = Default`): the default, in which the templates declared before it stand for
- * what they are there.
+ * What a template left out of a use of its class, or not inferred by a call of its function-like, stands
+ * for when it has a default (`@template T of Bound = Default`): the default, in which the templates
+ * declared before it stand for what they are there.
  *
  * @internal
  */
@@ -252,6 +254,42 @@ final class TemplateDefaults
         }
 
         return $given;
+    }
+
+    /**
+     * Binds the templates of the function-like that the call left to their default (see {@see self::isUninferred()}),
+     * in the order they are declared (that of their defaults), so that a default sees those of the templates
+     * before it. A default is a placeholder too: reconciliation does not check it.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public static function bindUninferred(
+        TemplateResult $template_result,
+        FunctionLikeStorage $storage,
+        Codebase $codebase,
+    ): void {
+        $template_types = $storage->template_types ?? [];
+
+        foreach ($storage->template_defaults as $template_name => $default) {
+            $defining_id = array_key_first($template_types[$template_name] ?? []);
+
+            if ($defining_id === null || !self::isUninferred($template_result, $template_name, $defining_id)) {
+                continue;
+            }
+
+            // a template the call leaves unbound, without a default, is never in the return type: so in the default
+            $resolving_result = clone $template_result;
+
+            foreach ($template_types as $name => $other_type_map) {
+                $resolving_result->lower_bounds[$name][array_key_first($other_type_map)]
+                    ??= [new TemplateBound(Type::getNever())];
+            }
+
+            $default_bound = new TemplateBound(self::resolve($default, $resolving_result, $codebase));
+            $default_bound->from_constraint_fallback = true;
+
+            $template_result->lower_bounds[$template_name][$defining_id] = [$default_bound];
+        }
     }
 
     /**

@@ -176,6 +176,7 @@ final class FunctionLikeDocblockParserTest extends BaseTestCase
             ],
             $function_docblock->template_defaults,
         );
+        $this->assertSame(['T', 'U', 'V', 'W', 'X', 'Y'], $function_docblock->template_order);
     }
 
     public function testReturnsUnexpectedTags(): void

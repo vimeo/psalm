@@ -295,7 +295,8 @@ The default is what the template stands for where a type argument is left out:
 * `@extends`, `@implements` and `@use` with fewer type arguments than the class has templates, when the templates left out come last and all have a default;
 * a class extended, implemented or used without `@extends`, `@implements` or `@use`: its templates with a default are bound to it, the others to their bound as before;
 * a generic type written with at least one type argument, in a `@param`, `@return`, `@var` or property type: `Factory<User>` means `Factory<User, null>` below;
-* `new Box()`, for the templates the constructor arguments don't infer.
+* `new Box()`, for the templates the constructor arguments don't infer;
+* a function or method template that a call doesn't infer.
 
 ```php
 <?php
@@ -332,9 +333,36 @@ final class Box {}
 $box = new Box(); // Box<int>
 ```
 
+A default can use the templates declared before it, and the default of a method template can use the templates of its class:
+
+```php
+<?php
+/**
+ * @template T
+ */
+interface Promise {
+    /**
+     * @template TResult1 = T
+     * @template TResult2 = never
+     * @param (callable(T): TResult1)|null $onFulfilled
+     * @param (callable(mixed): TResult2)|null $onRejected
+     * @return Promise<TResult1|TResult2>
+     */
+    public function then(?callable $onFulfilled = null, ?callable $onRejected = null): Promise;
+}
+
+/** @param Promise<int> $promise */
+function handle(Promise $promise): void {
+    $same = $promise->then(); // Promise<int>
+    $mapped = $promise->then(fn(int $i): bool => $i > 0); // Promise<bool>
+}
+```
+
 Psalm keeps its behaviour in these cases:
 
 * A class name written without type arguments (`Factory` in a parameter type) keeps its meaning: its templates stand for their bounds (`Factory<object, int|null>`, compared with the usual variance rules), or are left open when the bound is `mixed` or a set of capabilities. The defaults don't apply there, unlike in PHPStan.
+* A template that a parameter default infers keeps that type: with `@param T|null $value` and `$value = null`, a call that leaves out `$value` (or passes `null`) infers `T` as `null` when its bound admits `null`. When it doesn't (`@template T of object = stdClass`), `null` matches only the `null` part of the parameter type and `T` takes its default.
+* An argument that matches the part of the parameter type naming the template without telling what it is (a bare `callable` for `callable(): T`, a `Coll` without type arguments for `Coll<T>`) infers the bound of the template, not its default.
 * A template without a default is resolved as before when it is left out.
 
 A default must be within the bound of its template and may only use the templates declared before it. Psalm reports an [InvalidDocblock](../running_psalm/issues/InvalidDocblock.md) issue on the template line otherwise.

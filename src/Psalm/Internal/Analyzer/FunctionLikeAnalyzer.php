@@ -39,6 +39,7 @@ use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\PurityWildcardPaths;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -334,6 +335,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         foreach ($storage->docblock_issues as $docblock_issue) {
             IssueBuffer::maybeAdd($docblock_issue);
         }
+
+        TemplateDefaults::checkBounds(
+            $codebase,
+            $storage->template_types ?? [],
+            $storage->template_defaults,
+            $storage->template_default_locations,
+            $context->self,
+            ($storage instanceof MethodStorage ? $storage->defining_fqcln . '::' : '') . $storage->cased_name,
+            $this->getSuppressedIssues(),
+        );
 
         $function_information = $this->getFunctionInformation(
             $context,

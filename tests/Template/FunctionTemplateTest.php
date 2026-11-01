@@ -1959,6 +1959,344 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'functionTemplateDefaultForTemplateTheCallDoesNotInfer' => [
+                'code' => '<?php
+                    /**
+                     * @template TD = never
+                     * @param (callable(): TD)|null $d
+                     * @return string|TD
+                     */
+                    function get(?callable $d = null) {
+                        return "";
+                    }
+
+                    /**
+                     * @template T of bool = true
+                     * @param T $v
+                     * @return T
+                     */
+                    function flag(bool $v = true): bool {
+                        return $v;
+                    }
+
+                    /**
+                     * @template T = int
+                     * @return list<T>
+                     */
+                    function emptyListWithDefault(): array {
+                        return [];
+                    }
+
+                    /**
+                     * @template T
+                     * @return list<T>
+                     */
+                    function emptyList(): array {
+                        return [];
+                    }
+
+                    /** @var mixed $m */
+                    $m = null;
+
+                    $omitted = get();
+                    $null = get(null);
+                    $int = get(fn(): int => 1);
+                    $mixed = get(fn(): mixed => $m);
+                    $flag = flag();
+                    $with_default = emptyListWithDefault();
+                    $without_default = emptyList();',
+                'assertions' => [
+                    '$omitted===' => 'string',
+                    '$null===' => 'string',
+                    '$int===' => '1|string',
+                    '$mixed===' => 'mixed',
+                    '$flag===' => 'true',
+                    '$with_default===' => 'list<int>',
+                    '$without_default===' => 'array<never, never>',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'functionTemplateDefaultNamingEarlierTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template U = list<T>
+                     * @param T $t
+                     * @param (callable(T): U)|null $cb
+                     * @return U
+                     */
+                    function wrap(mixed $t, ?callable $cb = null): mixed {
+                        throw new Exception();
+                    }
+
+                    $default = wrap(1);
+                    $inferred = wrap("s", fn(string $s): bool => true);',
+                'assertions' => [
+                    '$default===' => 'list<1>',
+                    '$inferred===' => 'true',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'functionTemplateDefaultYieldsToArgumentEvidence' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template R = T
+                     * @param list<T> $list
+                     * @param (callable(T): R)|null $f
+                     * @return list<R>
+                     */
+                    function mapOr(array $list, ?callable $f = null): array {
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T = string
+                     * @param callable(T): void $cb
+                     * @return T
+                     */
+                    function fromCallbackParam(callable $cb): mixed {
+                        throw new Exception();
+                    }
+
+                    $default = mapOr([1, 2]);
+                    $null = mapOr([1, 2], null);
+                    $closure = mapOr([1, 2], fn($x) => [$x]);
+                    $upper_bound = fromCallbackParam(function (int $i): void {});',
+                'assertions' => [
+                    '$default===' => 'list<1|2>',
+                    '$null===' => 'list<1|2>',
+                    '$closure===' => 'list<list{1|2}>',
+                    '$upper_bound===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'firstClassCallableOfFunctionWithTemplateDefault' => [
+                'code' => '<?php
+                    /**
+                     * @template T = int
+                     * @return list<T>
+                     */
+                    function emptyListWithDefault(): array {
+                        return [];
+                    }
+
+                    $callable = emptyListWithDefault(...);',
+                'assertions' => [
+                    '$callable===' => 'Closure[impure]():list<mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'templateDefaultIsNotUsedForAnArgumentWithoutTemplateInformation' => [
+                'code' => '<?php
+                    /**
+                     * @template T = int
+                     * @param callable(): T $c
+                     * @return T
+                     */
+                    function callIt(callable $c): mixed {
+                        return $c();
+                    }
+
+                    /**
+                     * @psalm-mutable
+                     * @template V
+                     */
+                    final class Coll {
+                        /** @var list<V> */
+                        public array $items = [];
+                    }
+
+                    /**
+                     * @template T = int
+                     * @param Coll<T> $c
+                     * @return T
+                     */
+                    function first(Coll $c): mixed {
+                        return $c->items[0];
+                    }
+
+                    /**
+                     * @psalm-mutable
+                     * @template T
+                     */
+                    interface Promise {
+                        /**
+                         * @psalm-impure
+                         * @template TResult = T
+                         * @param (callable(T): TResult)|null $f
+                         * @return Promise<TResult>
+                         */
+                        public function then(?callable $f = null): Promise;
+                    }
+
+                    /** @var callable $callable */
+                    $callable = null;
+                    /** @var Coll $bare */
+                    $bare = new Coll();
+                    /** @var Promise<int> $promise */
+                    $promise = null;
+
+                    $called = callIt($callable);
+                    $first = first($bare);
+                    $then = $promise->then($callable);',
+                'assertions' => [
+                    '$called===' => 'mixed',
+                    '$first===' => 'mixed',
+                    '$then===' => 'Promise<mixed>',
+                ],
+                'ignored_issues' => ['MixedArgumentTypeCoercion', 'MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'templateDefaultsFollowTheDeclarationOrderAcrossTagForms' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-template T = int
+                     * @template U = list<T>
+                     * @return U
+                     */
+                    function f(): mixed {
+                        throw new Exception();
+                    }
+
+                    final class C {
+                        /**
+                         * @phpstan-template T = string
+                         * @template U = array{T}
+                         * @return U
+                         */
+                        public static function m(): mixed {
+                            throw new Exception();
+                        }
+                    }
+
+                    $function = f();
+                    $method = C::m();',
+                'assertions' => [
+                    '$function===' => 'list<int>',
+                    '$method===' => 'list{string}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateDefaultNeedsEveryArgumentForTheTemplateToNameNone' => [
+                'code' => '<?php
+                    /**
+                     * @template T = int
+                     * @param (callable(): T)|null $a
+                     * @param (callable(): T)|null $b
+                     * @return T
+                     */
+                    function two(?callable $a, ?callable $b): mixed {
+                        throw new Exception();
+                    }
+
+                    /** @var callable $callable */
+                    $callable = null;
+
+                    $nulls = two(null, null);
+                    $null_then_bare = two(null, $callable);
+                    $bare_then_null = two($callable, null);',
+                'assertions' => [
+                    '$nulls===' => 'int',
+                    '$null_then_bare===' => 'mixed',
+                    '$bare_then_null===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedArgumentTypeCoercion', 'MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'templateDefaultIgnoresWhatAnArgumentSaysAboutOtherTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template T = int
+                     * @template U
+                     * @param (callable(): T)|list<U> $value
+                     * @return array{T, U}
+                     */
+                    function select(callable|array $value): array {
+                        throw new Exception();
+                    }
+
+                    $selected = select([true]);',
+                'assertions' => [
+                    '$selected===' => 'list{int, true}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateDefaultNeedsAnArgumentThatCannotBeForTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T = int
+                     * @template U
+                     * @param (callable(): T)|U $value
+                     * @return T
+                     */
+                    function either(mixed $value): mixed {
+                        throw new Exception();
+                    }
+
+                    /** @var callable $callable */
+                    $callable = null;
+                    /** @var mixed $mixed */
+                    $mixed = null;
+                    /** @var Closure|int $closure_or_int */
+                    $closure_or_int = null;
+
+                    $from_callable = either($callable);
+                    $from_mixed = either($mixed);
+                    $from_int = either(5);
+                    $from_closure_or_int = either($closure_or_int);',
+                'assertions' => [
+                    '$from_callable===' => 'mixed',
+                    '$from_mixed===' => 'mixed',
+                    '$from_int===' => 'int',
+                    '$from_closure_or_int===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'templatesDeclaredAcrossTagFormsKeepTheirOrderInStorage' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template U of T
+                     * @psalm-template T of string
+                     * @param T $a
+                     * @param U $b
+                     * @return U
+                     */
+                    function pick(string $a, string $b): string {
+                        return $b;
+                    }
+
+                    /**
+                     * @psalm-template T of U
+                     * @template U of object
+                     * @param T $t
+                     * @param U $u
+                     * @return T
+                     */
+                    function crossGroup(object $t, object $u): object {
+                        return $t;
+                    }
+
+                    final class Foo {}
+
+                    $picked = pick("a", "b");
+                    $foo = new Foo();
+                    $crossed = crossGroup($foo, $foo);',
+                'assertions' => [
+                    '$picked===' => '\'b\'',
+                    '$crossed===' => 'Foo',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -2611,6 +2949,33 @@ final class FunctionTemplateTest extends TestCase
                      */
                     function test2(BType $_value): void {}',
                 'error_message' => 'InvalidTemplateParam',
+            ],
+            'functionTemplateDefaultOutsideBoundNamingEarlierTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @template U of T = stdClass
+                     * @param T $t
+                     * @return U
+                     */
+                    function pick(object $t): object {
+                        throw new Exception();
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:24 - The default stdClass of template U is not within its bound T:fn-pick as object',
+            ],
+            'methodTemplateDefaultUsingLaterTemplate' => [
+                'code' => '<?php
+                    final class C {
+                        /**
+                         * @template T of int = U
+                         * @template U of int = int
+                         * @return T
+                         */
+                        public function m(): int {
+                            throw new Exception();
+                        }
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:28 - The default of template T uses template U, which is not declared before it, in docblock for C::m',
             ],
         ];
     }
