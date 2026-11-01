@@ -433,6 +433,115 @@ final class Php85Test extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'pipeNarrowsAPropertyOfItsArgument' => [
+                'code' => '<?php
+                    final class HasP {
+                        public ?string $p = null;
+                    }
+
+                    final class Holder {
+                        public function __construct(public HasP $h) {}
+                    }
+
+                    final class Checks {
+                        /**
+                         * @psalm-assert-if-true !null $h->p
+                         */
+                        public static function has(HasP $h): bool { return $h->p !== null; }
+                    }
+
+                    /**
+                     * @psalm-assert-if-false !null $h->p
+                     */
+                    function lacksP(HasP $h): bool { return $h->p === null; }
+
+                    /**
+                     * @psalm-assert !null $h->p
+                     */
+                    function assertHasP(HasP $h): void { if ($h->p === null) { throw new Exception(); } }
+
+                    function ifTrue(Holder $hd): string {
+                        return $hd->h |> Checks::has(...) ? $hd->h->p : "";
+                    }
+
+                    function ifFalse(Holder $hd): string {
+                        return $hd->h |> lacksP(...) ? "" : $hd->h->p;
+                    }
+
+                    function asserted(Holder $hd): string {
+                        $hd->h |> assertHasP(...);
+
+                        return $hd->h->p;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'pipedValueAssertsNothingAboutItsProperty' => [
+                'code' => '<?php
+                    final class HasP {
+                        public ?string $p = null;
+                    }
+
+                    final class Holder {
+                        public function __construct(public HasP $h) {}
+                    }
+
+                    final class Checks {
+                        /**
+                         * @psalm-assert-if-true !null $h->p
+                         */
+                        public function has(HasP $h): bool { return $h->p !== null; }
+
+                        /**
+                         * @psalm-assert-if-false !null $h->p
+                         */
+                        public static function lacks(HasP $h): bool { return $h->p === null; }
+
+                        /**
+                         * @psalm-assert !null $h->p
+                         */
+                        public function assertHas(HasP $h): void { if ($h->p === null) { throw new Exception(); } }
+                    }
+
+                    function mkHasP(): HasP { return new HasP(); }
+
+                    function f(Holder $hd, Checks $checks): bool {
+                        if ($hd->h |> $checks->has(...)) {}
+                        if (mkHasP() |> Checks::lacks(...)) {}
+                        $hd->h |> $checks->assertHas(...);
+
+                        $has = mkHasP() |> $checks->has(...);
+                        $lacks = mkHasP() |> Checks::lacks(...);
+
+                        return $has && $lacks;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'pipeOutsideAConditionAssertsAsAMethodCallDoes' => [
+                'code' => '<?php
+                    final class HasP {
+                        public ?string $p = null;
+                    }
+
+                    final class Checks {
+                        /**
+                         * @psalm-assert-if-true !null $h->p
+                         */
+                        public function has(HasP $h, int $x): bool { return $h->p !== null && $x > 0; }
+                    }
+
+                    function mkHasP(): HasP { return new HasP(); }
+
+                    function f(Checks $checks, int $x): bool {
+                        return $x |> $checks->has(mkHasP(), ?);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
         ];
     }
 

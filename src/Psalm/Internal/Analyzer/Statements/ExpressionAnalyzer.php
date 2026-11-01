@@ -107,8 +107,9 @@ final class ExpressionAnalyzer
 
         GlobalStateAnalyzer::propagate($statements_analyzer, $stmt, $context);
 
+        // a pipe is the call it makes, which is scraped as such
         if (!$context->inside_conditional
-            && ($stmt instanceof PhpParser\Node\Expr\BinaryOp
+            && (($stmt instanceof PhpParser\Node\Expr\BinaryOp && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\Pipe)
                 || $stmt instanceof PhpParser\Node\Expr\Instanceof_
                 || $stmt instanceof PhpParser\Node\Expr\Assign
                 || $stmt instanceof PhpParser\Node\Expr\BooleanNot

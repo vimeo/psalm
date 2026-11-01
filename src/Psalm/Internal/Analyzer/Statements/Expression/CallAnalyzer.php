@@ -37,6 +37,7 @@ use Psalm\Issue\UndefinedFunction;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualConstFetch;
+use Psalm\Node\Expr\VirtualPipeValue;
 use Psalm\Node\VirtualName;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsIdentical;
@@ -744,6 +745,11 @@ abstract class CallAnalyzer
                 }
 
                 $arg_value = $args[$var_id]->value;
+
+                // a value a pipe read first has no variable to narrow
+                if ($arg_value instanceof VirtualPipeValue) {
+                    continue;
+                }
 
                 $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $statements_analyzer);
 

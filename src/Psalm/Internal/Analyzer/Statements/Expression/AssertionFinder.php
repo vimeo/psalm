@@ -45,6 +45,7 @@ use Psalm\Issue\UnevaluatedCode;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\BinaryOp\VirtualNotIdentical;
+use Psalm\Node\Expr\VirtualPipeValue;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Storage\Assertion\DoesNotHaveAtLeastCount;
@@ -1181,6 +1182,11 @@ final class AssertionFinder
 
                         $arg_value = $args[$var_id_int]->value;
 
+                        // a value a pipe read first has no variable to narrow
+                        if ($arg_value instanceof VirtualPipeValue) {
+                            continue;
+                        }
+
                         $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $source);
 
                         if (null === $arg_var_id) {
@@ -1307,6 +1313,10 @@ final class AssertionFinder
                             continue;
                         }
                         $arg_value = $args[$var_id_int]->value;
+
+                        if ($arg_value instanceof VirtualPipeValue) {
+                            continue;
+                        }
 
                         $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $source);
 
