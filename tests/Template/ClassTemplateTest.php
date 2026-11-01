@@ -5585,6 +5585,111 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'classTemplateBoundUsingTemplateRedeclaredWithAnotherTagPrefix' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /**
+                     * @template T
+                     * @template U of T
+                     * @psalm-template T of object
+                     */
+                    final class DupBox {
+                        /** @param U $u */
+                        public function __construct(private object $u) {}
+
+                        /** @return U */
+                        public function get(): object {
+                            return $this->u;
+                        }
+                    }
+
+                    $u = (new DupBox(new Foo()))->get();',
+                'assertions' => [
+                    '$u===' => 'Foo',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'bindTemplateRegardlessOfArgumentOrderWithUnboundNullFirst' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /** @template T of object */
+                    final class Pair {
+                        /**
+                         * @param T|null $a
+                         * @param T|null $b
+                         */
+                        public function __construct(?object $a, ?object $b) {}
+                    }
+
+                    final class S {
+                        /**
+                         * @template T of object
+                         * @param T|null $a
+                         * @param T|null $b
+                         * @return T
+                         */
+                        public static function s(?object $a, ?object $b): object {
+                            throw new \Exception();
+                        }
+                    }
+
+                    $foo = new Foo();
+                    $a = new Pair(null, $foo);
+                    $b = new Pair($foo, null);
+                    $c = S::s(null, $foo);',
+                'assertions' => [
+                    '$a' => 'Pair<Foo>',
+                    '$b' => 'Pair<Foo>',
+                    '$c' => 'Foo',
+                ],
+            ],
+            'bindClassStringTemplateAfterUnboundNull' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /** @template T of object */
+                    final class X {
+                        /**
+                         * @param T|null $a
+                         * @param class-string<T> $b
+                         */
+                        public function __construct(?object $a, string $b) {}
+                    }
+
+                    $x = new X(null, Foo::class);',
+                'assertions' => [
+                    '$x' => 'X<Foo>',
+                ],
+            ],
+            'bindTemplateAfterUnboundArgInConditionalParam' => [
+                'code' => '<?php
+                    /** @template T of self::* */
+                    final class SomeTemplatedClass {
+                        public const TYPE1 = "type1";
+                        public const TYPE2 = "type2";
+
+                        /**
+                         * @param (T is self::TYPE1 ? string : null) $someParam
+                         * @param T $type
+                         */
+                        public function __construct(private ?string $someParam, private string $type) {}
+
+                        /** @return SomeTemplatedClass<self::TYPE1> */
+                        public static function create(): self {
+                            return new self("some-string", self::TYPE1);
+                        }
+                    }
+
+                    $r = new SomeTemplatedClass("some-string", SomeTemplatedClass::TYPE1);',
+                'assertions' => [
+                    '$r===' => 'SomeTemplatedClass<\'type1\'>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

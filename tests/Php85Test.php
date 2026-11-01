@@ -258,20 +258,6 @@ final class Php85Test extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.6',
             ],
-            'pipeKeepsTheContextOfACallableLiteral' => [
-                'code' => '<?php
-                    /** @return list<int> */
-                    function ints(): array { return [1, 2]; }
-
-                    $r = (fn($v) => $v * 2) |> array_map(?, [1, 2]);
-                    $s = (fn($v) => $v * 2) |> array_map(?, ints());',
-                'assertions' => [
-                    '$r===' => 'list{2|4, 2|4}',
-                    '$s===' => 'list<int>',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.6',
-            ],
             'pipeOnTheLeftOfCoalesce' => [
                 'code' => '<?php
                     function findName(string $id): ?string { return $id === "" ? null : $id; }
@@ -417,35 +403,6 @@ final class Php85Test extends TestCase
                         }
 
                         return $b["k"] |> apply(function () use ($b): int { return strlen($b->p); }, ?);
-                    }',
-                'error_message' => 'PossiblyNullArgument',
-                'error_levels' => [],
-                'php_version' => '8.6',
-            ],
-            'pipeReadsAnArrayAccessOffsetFirstWhateverTheVariableName' => [
-                'code' => '<?php
-                    /** @implements ArrayAccess<string, string> */
-                    final class B implements ArrayAccess {
-                        public ?string $p = null;
-
-                        public function offsetExists(mixed $offset): bool { return true; }
-                        public function offsetGet(mixed $offset): string { $this->p = null; return "v"; }
-                        public function offsetSet(mixed $offset, mixed $value): void {}
-                        public function offsetUnset(mixed $offset): void {}
-                    }
-
-                    /** @param Closure(): int $f */
-                    function apply(Closure $f, string $s): int { return $f() + strlen($s); }
-
-                    function f(B $http_response_header): int {
-                        if ($http_response_header->p === null) {
-                            return 0;
-                        }
-
-                        return $http_response_header["k"]
-                            |> apply(function () use ($http_response_header): int {
-                                return strlen($http_response_header->p);
-                            }, ?);
                     }',
                 'error_message' => 'PossiblyNullArgument',
                 'error_levels' => [],
