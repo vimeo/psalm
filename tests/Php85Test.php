@@ -647,6 +647,27 @@ final class Php85Test extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],
+            'pipeReadingAnArrayAccessOffsetFirstNarrowsNothingInALoop' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string, mixed> */
+                    final class Bag implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool { return true; }
+                        public function offsetGet(mixed $offset): mixed { return random_int(0, 1) ? "strlen" : 42; }
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function takesCallable(callable $c): void {}
+
+                    function f(Bag $http_response_header, bool $syntax): void {
+                        while ($http_response_header["x"] |> is_callable(?, $syntax)) {
+                            takesCallable($http_response_header["x"]);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
         ];
     }
 }

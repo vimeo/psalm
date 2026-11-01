@@ -474,10 +474,15 @@ final class PipeAnalyzer
                 return false;
             }
 
+            // before the pipe is analysed, the type of the variable is unknown
+            if ($context === null) {
+                return false;
+            }
+
             $var_id = '$' . $expr->var->name;
 
             // an offset of an `ArrayAccess` object is read by calling `offsetGet()`
-            return $context !== null && isset($context->vars_in_scope[$var_id])
+            return isset($context->vars_in_scope[$var_id])
                 ? $context->vars_in_scope[$var_id]->isArray()
                 : VariableFetchAnalyzer::isSuperGlobal($var_id);
         }
