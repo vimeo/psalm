@@ -698,6 +698,54 @@ final class MethodSignatureTest extends TestCase
                         }
                     }',
             ],
+            'finalOverrideOfMethodReturningTemplatedStatic' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Box {}
+
+                    class Base {
+                        /** @return Box<static> */
+                        public function box(): Box { throw new RuntimeException(); }
+                    }
+
+                    final class FinalClass extends Base {
+                        /** @return Box<static> */
+                        public function box(): Box { throw new RuntimeException(); }
+                    }
+
+                    final class FinalClassReturningThis extends Base {
+                        /** @return Box<$this> */
+                        public function box(): Box { throw new RuntimeException(); }
+                    }
+
+                    class FinalMethod extends Base {
+                        /** @return Box<static> */
+                        final public function box(): Box { throw new RuntimeException(); }
+                    }',
+            ],
+            'finalClassInheritingStaticReturnDocblock' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @return static */
+                        abstract public function instance();
+                    }
+
+                    final class Leaf extends Base {
+                        public function instance() { return new self(); }
+                    }',
+            ],
+            'finalClassOverridingMethodReturningStatic' => [
+                'code' => '<?php
+                    class Base {
+                        /** @return static */
+                        public function instance(): object { return $this; }
+                    }
+
+                    final class Leaf extends Base {
+                        /** @return static */
+                        public function instance(): object { return parent::instance(); }
+                    }',
+            ],
             'selfInTraitAbstractIsFine' => [
                 'code' => '<?php
                     trait SomeTrait {
@@ -910,7 +958,7 @@ final class MethodSignatureTest extends TestCase
                         }
                     }
 
-                    class MyChildClass extends MyParentClass
+                    final class MyChildClass extends MyParentClass
                     {
                         use MyTrait;
                     }',
