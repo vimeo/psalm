@@ -8,22 +8,34 @@ use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use PhpParser\Comment\Doc;
+use PhpParser\Error;
 use PhpParser\Node\Scalar\String_;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\DocblockTypeLocation;
+use Psalm\CodeLocation\ParseErrorLocation;
+use Psalm\CodeLocation\Raw;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
+use ReflectionClass;
+use ReflectionProperty;
 
+use function count;
+use function extension_loaded;
+use function igbinary_serialize;
+use function igbinary_unserialize;
 use function mb_check_encoding;
 use function restore_error_handler;
+use function serialize;
 use function set_error_handler;
 use function str_repeat;
 use function strlen;
 use function strpos;
 use function substr;
+use function unserialize;
 
 final class CodeLocationTest extends BaseTestCase
 {
@@ -79,6 +91,143 @@ final class CodeLocationTest extends BaseTestCase
 
         $this->assertSame($expected, $location->getSnippet());
         $this->assertSame('$a', $location->getSelectedText());
+    }
+
+    /**
+     * @return iterable<string, array{bool}>
+     * @psalm-pure
+     */
+    public static function provideSnippetStates(): iterable
+    {
+        yield 'snippet not computed' => [false];
+        yield 'snippet computed' => [true];
+    }
+
+    /**
+     * Workers send their locations to the parent, which must get back what they had: the lazily computed
+     * properties only when they were computed, and the previous location of one.
+     *
+     * The location is restored through __unserialize() rather than unserialize(): its file path comes
+     * from FileSource::getFilePath(), which Psalm's taint analysis treats as user input.
+     */
+    #[DataProvider('provideSnippetStates')]
+    public function testSerializationRoundTrip(bool $computed): void
+    {
+        $contents = "<?php\n// Grüße\n\$a = 'x' . \$b;\n";
+        $previous = $this->locate($contents, '$b', 3);
+
+        $start = strlen("<?php\n// Grüße\n\$a = ");
+        $node = new String_('x', ['startFilePos' => $start, 'endFilePos' => $start + 2, 'startLine' => 3]);
+        $location = new CodeLocation($this->file_analyzer, $node, $previous, true, null, null, 7);
+
+        if ($computed) {
+            $this->assertNotSame('', $location->getSnippet());
+        }
+
+        $copy = (new ReflectionClass(CodeLocation::class))->newInstanceWithoutConstructor();
+        $copy->__unserialize($location->__serialize());
+
+        $this->assertEquals($location, $copy);
+        $this->assertSame($location->getSelectedText(), $copy->getSelectedText());
+        $this->assertSame($location->getSnippet(), $copy->getSnippet());
+        $this->assertSame($location->getLineNumber(), $copy->getLineNumber());
+        $this->assertSame($location->getEndLineNumber(), $copy->getEndLineNumber());
+        $this->assertSame($location->getSelectionBounds(), $copy->getSelectionBounds());
+        $this->assertSame($location->getColumn(), $copy->getColumn());
+        $this->assertEquals($previous, $copy->previous_location);
+    }
+
+    /**
+     * @return iterable<string, array{bool}>
+     * @psalm-pure
+     */
+    public static function provideSerializers(): iterable
+    {
+        yield 'native' => [false];
+        yield 'igbinary' => [true];
+    }
+
+    /**
+     * The same round trip through the serializers a worker's result goes through, for every kind of location.
+     *
+     * CodeLocation and DocblockTypeLocation get their properties set directly rather than through their
+     * constructors: those read the path of a FileSource, which Psalm's own taint analysis treats as user input,
+     * so a location they built would be reported as user input reaching unserialize().
+     */
+    #[DataProvider('provideSerializers')]
+    public function testLocationsSurviveEncodingAndDecoding(bool $igbinary): void
+    {
+        if ($igbinary && !extension_loaded('igbinary')) {
+            $this->markTestSkipped('igbinary is not loaded');
+        }
+
+        $contents = "<?php\n// Grüße\n\$a = 'x' . \$b;\n";
+        $this->file_provider->registerFile(self::FILE, $contents);
+
+        $start = strlen("<?php\n// Grüße\n\$a = ");
+        $previous = new Raw($contents, self::FILE, self::FILE, $start, $start + 2);
+        $properties = [
+            'file_path' => self::FILE,
+            'file_name' => self::FILE,
+            'raw_line_number' => 3,
+            'raw_file_start' => $start + 6,
+            'raw_file_end' => $start + 7,
+            'file_start' => $start + 6,
+            'file_end' => $start + 7,
+            'single_line' => true,
+            'preview_start' => $start + 6,
+            'docblock_line_number' => 7,
+        ];
+
+        $fresh = $this->createLocation(CodeLocation::class, $properties + ['previous_location' => $previous]);
+        // what calculateRealLocation() sets, which calling it on the location would taint
+        $computed = $this->createLocation(CodeLocation::class, $properties + [
+            'previous_location' => $previous,
+            'have_recalculated' => true,
+            'end_line_number' => 7,
+            'preview_end' => 31,
+            'selection_start' => 28,
+            'selection_end' => 30,
+            'column_from' => 12,
+            'column_to' => 14,
+            'snippet' => '$a = \'x\' . $b;',
+        ]);
+
+        $locations = [
+            'fresh' => $fresh,
+            'computed' => $computed,
+            'raw' => new Raw($contents, self::FILE, self::FILE, $start, $start + 2),
+            'docblock type' => $this->createLocation(DocblockTypeLocation::class, $properties),
+            'parse error' => new ParseErrorLocation(
+                new Error('syntax error', ['startFilePos' => $start, 'endFilePos' => $start + 2]),
+                $contents,
+                self::FILE,
+                self::FILE,
+            ),
+        ];
+
+        foreach ($locations as $name => $location) {
+            $serialized = $igbinary ? igbinary_serialize($location) : serialize($location);
+            $this->assertIsString($serialized, $name);
+            $copy = $igbinary ? igbinary_unserialize($serialized) : unserialize($serialized);
+
+            $this->assertInstanceOf($location::class, $copy, $name);
+            $this->assertEquals($location, $copy, $name);
+            $this->assertSame($location->getLineNumber(), $copy->getLineNumber(), $name);
+            $this->assertSame($location->getSelectionBounds(), $copy->getSelectionBounds(), $name);
+            $this->assertSame($location->getSnippet(), $copy->getSnippet(), $name);
+            $this->assertSame($location->getSelectedText(), $copy->getSelectedText(), $name);
+        }
+    }
+
+    public function testLocationNotAskedForItsSnippetSerializesWithoutTheComputedProperties(): void
+    {
+        $location = $this->locate("<?php\n\$a = 1;\n", '$a', 2);
+        $fresh_property_count = count($location->__serialize());
+
+        $this->assertSame('$a = 1;', $location->getSnippet());
+
+        $this->assertLessThan(count($location->__serialize()), $fresh_property_count);
     }
 
     public function testSnippetOfASelectionEndingTheFile(): void
@@ -166,5 +315,22 @@ final class CodeLocationTest extends BaseTestCase
         ]);
 
         return new CodeLocation($this->file_analyzer, $node, null, false, $regex_type);
+    }
+
+    /**
+     * @template T of CodeLocation
+     * @param class-string<T> $class
+     * @param array<string, bool|int|string|CodeLocation|null> $properties
+     * @return T
+     */
+    private function createLocation(string $class, array $properties): CodeLocation
+    {
+        $location = (new ReflectionClass($class))->newInstanceWithoutConstructor();
+
+        foreach ($properties as $name => $value) {
+            (new ReflectionProperty(CodeLocation::class, $name))->setValue($location, $value);
+        }
+
+        return $location;
     }
 }

@@ -4,24 +4,33 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\CodeLocation\Raw;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\Path;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Type\TaintKind;
+use ReflectionProperty;
 
 use function array_diff;
 use function array_keys;
 use function array_reverse;
+use function extension_loaded;
+use function igbinary_serialize;
+use function igbinary_unserialize;
 use function json_encode;
 use function ksort;
 use function range;
+use function serialize;
 use function sort;
 use function str_repeat;
 use function str_starts_with;
+use function unserialize;
 
 use const JSON_THROW_ON_ERROR;
 
@@ -345,6 +354,97 @@ final class TaintFlowGraphTest extends TestCase
         ksort($lines);
 
         return array_keys($lines);
+    }
+
+    /**
+     * @return iterable<string, array{bool}>
+     * @psalm-pure
+     */
+    public static function provideSerializers(): iterable
+    {
+        yield 'native' => [false];
+        yield 'igbinary' => [true];
+    }
+
+    /**
+     * Forked workers send their graph to the parent, which merges and resolves what it decodes.
+     */
+    #[DataProvider('provideSerializers')]
+    public function testGraphResolvesTheSameAfterEncodingAndDecoding(bool $igbinary): void
+    {
+        if ($igbinary && !extension_loaded('igbinary')) {
+            $this->markTestSkipped('igbinary is not loaded');
+        }
+
+        IssueBuffer::clear();
+
+        $this->project_analyzer->trackTaintedInputs();
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php echo $x;');
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $codebase->scanFiles();
+        $location = new Raw('<?php echo $x;', $file_path, 'somefile.php', 6, 14);
+
+        $graph = new TaintFlowGraph();
+        $source = DataFlowNode::getForTaint('source', $location, TaintKind::INPUT_HTML);
+        $variable = DataFlowNode::getForAssignment('$x', $location);
+        $other = DataFlowNode::getForAssignment('$y', $location);
+        $dead_end = DataFlowNode::getForAssignment('$z', $location);
+        $later_line = DataFlowNode::getForAssignment(
+            '$w',
+            new Raw("<?php\n\necho \$x;", $file_path, 'somefile.php', 8, 16),
+        );
+        $sink = DataFlowNode::getForTaint('sink', $location, TaintKind::INPUT_HTML);
+
+        $graph->addSource($source);
+        $graph->addNode($variable);
+        $graph->addNode($other);
+        $graph->addNode($dead_end);
+        $graph->addNode($later_line);
+        $graph->addSink($sink);
+        $graph->addPath($source, $variable, '=');
+        $graph->addPath($source, $other, '=');
+        $graph->addPath($variable, $sink, 'arrayvalue-fetch', TaintKind::INPUT_SQL);
+        $graph->addPath($other, $dead_end, 'arrayvalue-fetch', TaintKind::INPUT_SQL);
+        // Paths that differ from the shared ones in one thing each: the taints it removes, the taints it adds,
+        // and its length (the lines between the nodes)
+        $graph->addPath($dead_end, $later_line, 'arrayvalue-fetch', TaintKind::INPUT_SQL, TaintKind::INPUT_HTML);
+        $graph->addPath($later_line, $other, 'arrayvalue-fetch', TaintKind::INPUT_HTML);
+        $graph->addPath($source, $later_line, '=');
+
+        $serialized = $igbinary ? igbinary_serialize($graph) : serialize($graph);
+        $this->assertIsString($serialized);
+        $copy = $igbinary ? igbinary_unserialize($serialized) : unserialize($serialized);
+
+        $this->assertInstanceOf(TaintFlowGraph::class, $copy);
+        $this->assertEquals($graph, $copy);
+
+        /** @var array<string, array<string, Path>> $edges */
+        $edges = (new ReflectionProperty(DataFlowGraph::class, 'forward_edges'))->getValue($copy);
+        $this->assertSame($edges[$source->id][$variable->id], $edges[$source->id][$other->id]);
+        $this->assertSame($edges[$variable->id][$sink->id], $edges[$other->id][$dead_end->id]);
+        $this->assertNotSame($edges[$source->id][$variable->id], $edges[$variable->id][$sink->id]);
+        $this->assertNotSame($edges[$variable->id][$sink->id], $edges[$dead_end->id][$later_line->id]);
+        $this->assertNotSame($edges[$variable->id][$sink->id], $edges[$later_line->id][$other->id]);
+        $this->assertNotSame($edges[$source->id][$variable->id], $edges[$source->id][$later_line->id]);
+
+        $merged = new TaintFlowGraph();
+        $merged->addGraph($copy);
+        $codebase->taint_flow_graph = $merged;
+        $merged->connectSinksAndSources($codebase->progress);
+
+        $issue_types = [];
+
+        foreach (IssueBuffer::getIssuesData() as $file_issues) {
+            foreach ($file_issues as $issue) {
+                $issue_types[] = $issue->type;
+            }
+        }
+
+        $this->assertSame(['TaintedHtml'], $issue_types);
     }
 
     /**
