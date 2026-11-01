@@ -2034,19 +2034,10 @@ final class FunctionLikeDocblockScanner
             }
         }
 
-        // the defaults are read in the order the templates are declared, which the docblock groups by tag form
-        $declared_template_types = [];
-
-        foreach ($docblock_info->template_order as $template_name) {
-            if (isset($storage->template_types[$template_name])) {
-                $declared_template_types[$template_name] = $storage->template_types[$template_name];
-            }
-        }
-
         [$storage->template_defaults, $storage->template_default_locations, $default_issues]
             = TemplateDefaults::parseDefaults(
                 $docblock_info->template_defaults,
-                $declared_template_types,
+                $storage->template_types,
                 $storage->template_types + ($template_types ?? []),
                 array_fill_keys($docblock_info->purity_templates, true),
                 $aliases,

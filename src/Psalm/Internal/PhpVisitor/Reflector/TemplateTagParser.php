@@ -10,7 +10,6 @@ use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
 
-use function array_keys;
 use function array_shift;
 use function asort;
 use function count;
@@ -38,17 +37,17 @@ use function trim;
 final class TemplateTagParser
 {
     /**
-     * The templates of the docblock, each from its preferred form (`@psalm-`, then `@phpstan-`, then the plain tag),
-     * as `[name, modifier, bound, covariant, offset in the docblock]`, their defaults, and their names in order of
-     * first declaration in any form. The bound comes with what follows it, as the scanner cuts the description off.
+     * The templates of the docblock in order of first declaration in any form, each from its preferred form
+     * (`@psalm-`, then `@phpstan-`, then the plain tag), as `[name, modifier, bound, covariant, offset of the
+     * first declaration in the docblock]`, and their defaults. The bound comes with what follows it, as the
+     * scanner cuts the description off.
      *
      * @param array<string, bool> $tags the tags to read, and whether their templates are covariant
      * @param array<string, array<string, array{string, ?string, ?string, bool, int}>> $templates the purity
      *     templates already read, by name and form
      * @return array{
      *     list<array{string, ?string, ?string, bool, int}>,
-     *     array<string, array{type: string, line_number: int}>,
-     *     list<string>
+     *     array<string, array{type: string, line_number: int}>
      * }
      * @throws IncorrectDocblockException
      * @psalm-capabilities read-props
@@ -85,18 +84,25 @@ final class TemplateTagParser
             }
         }
 
-        $chosen_templates = [];
-        $chosen_defaults = [];
         $declared_at = [];
 
         foreach ($templates as $name => $entries) {
             foreach ($entries as $entry) {
                 $declared_at[$name] = min($declared_at[$name] ?? $entry[4], $entry[4]);
             }
+        }
 
+        // a bound may use the templates declared before it, in whichever tag form they are written
+        asort($declared_at);
+
+        $chosen_templates = [];
+        $chosen_defaults = [];
+
+        foreach ($declared_at as $name => $offset) {
             foreach (['psalm', 'phpstan', 'none'] as $source_prefix) {
-                if (isset($entries[$source_prefix])) {
-                    $chosen_templates[] = $entries[$source_prefix];
+                if (isset($templates[$name][$source_prefix])) {
+                    [$template_name, $modifier, $bound, $covariant] = $templates[$name][$source_prefix];
+                    $chosen_templates[] = [$template_name, $modifier, $bound, $covariant, $offset];
 
                     if (isset($defaults[$name][$source_prefix])) {
                         $chosen_defaults[$name] = $defaults[$name][$source_prefix];
@@ -107,9 +113,7 @@ final class TemplateTagParser
             }
         }
 
-        asort($declared_at);
-
-        return [$chosen_templates, $chosen_defaults, array_keys($declared_at)];
+        return [$chosen_templates, $chosen_defaults];
     }
 
     /**

@@ -5585,6 +5585,32 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'classTemplateBoundUsingTemplateRedeclaredWithAnotherTagPrefix' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /**
+                     * @template T
+                     * @template U of T
+                     * @psalm-template T of object
+                     */
+                    final class DupBox {
+                        /** @param U $u */
+                        public function __construct(private object $u) {}
+
+                        /** @return U */
+                        public function get(): object {
+                            return $this->u;
+                        }
+                    }
+
+                    $u = (new DupBox(new Foo()))->get();',
+                'assertions' => [
+                    '$u===' => 'Foo',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

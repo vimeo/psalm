@@ -2017,6 +2017,27 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.0',
             ],
+            'functionTemplateBoundUsingTemplateDeclaredWithAnotherTagPrefix' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /**
+                     * @psalm-template T of object
+                     * @template U of T
+                     * @param U $value
+                     * @return U
+                     */
+                    function same(object $value): object {
+                        return $value;
+                    }
+
+                    $foo = same(new Foo());',
+                'assertions' => [
+                    '$foo===' => 'Foo',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'functionTemplateDefaultNamingEarlierTemplate' => [
                 'code' => '<?php
                     /**
