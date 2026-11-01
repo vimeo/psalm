@@ -5224,6 +5224,19 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:31 - The context is read-props but unsetting a property on a mutable object requires write-props',
             ],
+            'unsettingAnElementOfAStaticPropertyThroughAnInstanceWritesProps' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @var array<string, int> */
+                        public static array $items = [];
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function f(Box $box): void {
+                        unset($box::$items["k"]);
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:31 - The context is read-props but property assignment to Box::$items requires write-props',
+            ],
             'concatenatingToAPropertyOfACallResultWritesProps' => [
                 'code' => '<?php
                     final class Box {
