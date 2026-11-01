@@ -595,6 +595,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 
             /** @var ?Union $intersection_result->return_type */
             $intersection_result->return_type = null;
+            $intersection_result->existent_method_ids = [];
 
             self::analyze(
                 $statements_analyzer,
