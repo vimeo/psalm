@@ -22,6 +22,28 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'objectWithPropertiesAcceptsAClassWithPseudoProperties' => [
+                'code' => '<?php
+                    /**
+                     * @property int $id
+                     * @property-read string $name
+                     */
+                    class Thing {
+                        public function __get(string $name): mixed {
+                            return 1;
+                        }
+                    }
+
+                    /** @param object{id: int, name: string} $object */
+                    function takesObject(object $object): int {
+                        return $object->id;
+                    }
+
+                    takesObject(new Thing());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'argumentUnpackingLiteral' => [
                 'code' => '<?php
                     function add(int $a, int $b, int $c) : int {
@@ -386,6 +408,50 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'objectWithPropertiesRejectsAPseudoPropertyOfAnotherType' => [
+                'code' => '<?php
+                    /**
+                     * @property int $id
+                     * @property-read string $name
+                     */
+                    class Thing {
+                        public function __get(string $name): mixed {
+                            return 1;
+                        }
+                    }
+
+                    /** @param object{id: string} $object */
+                    function takesObject(object $object): string {
+                        return $object->id;
+                    }
+
+                    takesObject(new Thing());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'objectWithPropertiesRejectsAMissingPseudoProperty' => [
+                'code' => '<?php
+                    /**
+                     * @property int $id
+                     * @property-read string $name
+                     */
+                    class Thing {
+                        public function __get(string $name): mixed {
+                            return 1;
+                        }
+                    }
+
+                    /** @param object{missing: int} $object */
+                    function takesObject(object $object): int {
+                        return $object->missing;
+                    }
+
+                    takesObject(new Thing());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'arrayPushArgumentUnpackingWithBadArg' => [
                 'code' => '<?php
                     $a = [];
