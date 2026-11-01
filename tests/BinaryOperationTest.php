@@ -908,6 +908,29 @@ final class BinaryOperationTest extends TestCase
                         func("asdasdasd $a");
                     }',
             ],
+            'interpolatedStringNonFalsyParts' => [
+                'code' => '<?php
+                    /**
+                     * @param non-falsy-string $falsy
+                     * @param non-empty-string $empty
+                     */
+                    function foo(string $falsy, string $empty, string $any) : void {
+                        $dashed = "-$falsy";
+                        $joined = "$falsy$any";
+                        $two = "$empty$empty";
+                        $zero = "0$any";
+                        $suffixed = "$any-";
+                        $single = "$empty";
+                        echo $dashed, $joined, $two, $zero, $suffixed, $single;
+
+                        /** @psalm-check-type-exact $dashed = non-falsy-string */
+                        /** @psalm-check-type-exact $joined = non-falsy-string */
+                        /** @psalm-check-type-exact $two = non-falsy-string */
+                        /** @psalm-check-type-exact $zero = non-empty-string */
+                        /** @psalm-check-type-exact $suffixed = non-falsy-string */
+                        /** @psalm-check-type-exact $single = non-empty-string */
+                    }',
+            ],
             'spaceshipOpIsLiteralUnionType' => [
                 'code' => '<?php
                     /**
