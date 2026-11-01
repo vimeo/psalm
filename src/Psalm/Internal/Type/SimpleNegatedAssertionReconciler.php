@@ -16,6 +16,7 @@ use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\ArrayKeyDoesNotExist;
 use Psalm\Storage\Assertion\DoesNotHaveAtLeastCount;
 use Psalm\Storage\Assertion\DoesNotHaveExactCount;
+use Psalm\Storage\Assertion\DoesNotHaveMethod;
 use Psalm\Storage\Assertion\Empty_;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsGreaterThanOrEqualTo;
@@ -152,6 +153,19 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
 
         if ($assertion instanceof ArrayKeyDoesNotExist) {
             return Type::getNever();
+        }
+
+        if ($assertion instanceof DoesNotHaveMethod) {
+            return self::reconcileDoesNotHaveMethod(
+                $assertion,
+                $codebase,
+                $existing_var_type,
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+            );
         }
 
         if ($assertion instanceof NotInArray) {
@@ -2056,5 +2070,63 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         return $existing_var_type->freeze();
+    }
+
+    /**
+     * An object whose class has the method can't be one for which method_exists() is false
+     *
+     * @param string[] $suppressed_issues
+     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileDoesNotHaveMethod(
+        DoesNotHaveMethod $assertion,
+        Codebase $codebase,
+        Union $existing_var_type,
+        ?string $key,
+        bool $negated,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+    ): ?Union {
+        $remaining_types = [];
+        $found_class_with_method = false;
+
+        foreach ($existing_var_type->getAtomicTypes() as $type) {
+            if ($type instanceof TNamedObject
+                && $codebase->classOrInterfaceExists($type->value)
+                && $codebase->methodExists($type->value . '::' . $assertion->method)
+            ) {
+                $found_class_with_method = true;
+
+                continue;
+            }
+
+            $remaining_types[] = $type;
+        }
+
+        if (!$found_class_with_method) {
+            return null;
+        }
+
+        if ($remaining_types) {
+            return new Union($remaining_types);
+        }
+
+        if ($key !== null && $code_location) {
+            self::triggerIssueForImpossible(
+                $existing_var_type,
+                $existing_var_type->getId(),
+                $key,
+                $assertion,
+                false,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+            );
+        }
+
+        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
+
+        return Type::getNever();
     }
 }
