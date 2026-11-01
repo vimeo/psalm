@@ -85,6 +85,7 @@
         <xs:attribute name="runTaintAnalysis" type="xs:boolean" default="true" />
         <xs:attribute name="usePhpStormMetaPath" type="xs:boolean" default="true" />
         <xs:attribute name="loadLibraryStubs" type="xs:boolean" default="true" />
+        <xs:attribute name="loadLibraryPlugins" type="xs:boolean" default="true" />
         <xs:attribute name="allowInternalNamedArgumentCalls" type="xs:boolean" default="true" />
         <xs:attribute name="allowNamedArgumentCalls" type="xs:boolean" default="true" />
         <xs:attribute name="reportInfo" type="xs:boolean" default="true" />
@@ -799,6 +800,7 @@
             <xs:enumeration value="geos"/>
             <xs:enumeration value="gmp"/>
             <xs:enumeration value="ibm_db2"/>
+            <xs:enumeration value="imagick"/>
             <xs:enumeration value="memcached"/>
             <xs:enumeration value="mongodb"/>
             <xs:enumeration value="mysqli"/>

@@ -542,21 +542,33 @@ final class FunctionLikeNodeScanner
                         + ($classlike_storage->template_types ?: [])
                     ;
 
-                    $var_comments = CommentAnalyzer::getTypeFromComment(
-                        $this->codebase,
-                        $doc_comment,
-                        $this->file_scanner,
-                        $this->aliases,
-                        $template_types,
-                        $this->type_aliases,
-                    );
+                    try {
+                        $var_comments = CommentAnalyzer::getTypeFromComment(
+                            $this->codebase,
+                            $doc_comment,
+                            $this->file_scanner,
+                            $this->aliases,
+                            $template_types,
+                            $this->type_aliases,
+                        );
 
-                    $var_comment = array_pop($var_comments);
+                        $var_comment = array_pop($var_comments);
 
-                    if ($var_comment !== null) {
-                        $var_comment_type = $var_comment->type;
-                        $var_comment_readonly = $var_comment->readonly;
-                        $var_comment_allow_private_mutation = $var_comment->allow_private_mutation;
+                        if ($var_comment !== null) {
+                            $var_comment_type = $var_comment->type;
+                            $var_comment_readonly = $var_comment->readonly;
+                            $var_comment_allow_private_mutation = $var_comment->allow_private_mutation;
+                        }
+                    } catch (IncorrectDocblockException $e) {
+                        $storage->docblock_issues[] = new MissingDocblockType(
+                            $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                            new CodeLocation($this->file_scanner, $param, null, true),
+                        );
+                    } catch (DocblockParseException $e) {
+                        $storage->docblock_issues[] = new InvalidDocblock(
+                            $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                            new CodeLocation($this->file_scanner, $param, null, true),
+                        );
                     }
                 }
 

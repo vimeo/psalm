@@ -1,0 +1,132 @@
+# Measured by .github/workflows/perf.yml via bin/perf/run-shard.sh; converted with `yq -o=json` (mikefarah v4).
+# Top level: php (runner version), memory_limit (Psalm --memory-limit), install_timeout (s per project install),
+#   php_ini (-d settings),
+#   jobs (job id -> projects, each project in one job), projects (name -> fields below).
+# Project: repo (https URL), ref (commit SHA, never a branch), tag (release of ref), timeout (s per run),
+#   exercises (shown in the report), composer (false skips the install), before_install / after_install (shell),
+#   psalm.dirs / ignore / attributes / extensions (generate psalm-perf.xml; attributes override the fixed ones,
+#   errorLevel defaults to 1).
+
+php: "8.5"
+install_timeout: 180
+memory_limit: 12G
+php_ini:
+  opcache.enable: "1"
+  opcache.enable_cli: "1"
+  opcache.jit: "0"
+  opcache.validate_timestamps: "0"
+  opcache.file_update_protection: "0"
+  opcache.max_accelerated_files: "1000000"
+  opcache.interned_strings_buffer: "64"
+  opcache.memory_consumption: "512"
+  opcache.optimization_level: "0x7FFEBFFF"
+  opcache.save_comments: "1"
+
+jobs:
+  laravel: [laravel]
+  symfony: [symfony]
+  orm-psl: [doctrine-orm, psl]
+  phpunit-parser: [phpunit, php-parser]
+  small: [amphp-amp, webmozarts-assert]
+  drupal: [drupal]
+
+projects:
+  laravel:
+    repo: https://github.com/laravel/framework
+    ref: "d52c3b3129e4c8e213c97cdc68f94b0b7d27f181"
+    tag: v13.39.0
+    timeout: 300
+    exercises: magic __call/macros, Eloquent generics and template inference, large Collection/Support type surface, facades, container resolution
+    psalm:
+      dirs: [src]
+
+  symfony:
+    repo: https://github.com/symfony/symfony
+    ref: "34a08ab1b25dac1ebbdca78927f27cf353993625"
+    tag: v8.1.10
+    timeout: 400
+    exercises: very wide codebase (about 4400 files), PHP 8.4+ features (property hooks, asymmetric visibility), many small independent components, polyfills, heavy interface graphs
+    psalm:
+      dirs: [src]
+      ignore:
+        - src/Symfony/*/*/Tests
+        - src/Symfony/*/*/*/Tests
+        - src/Symfony/*/*/*/*/Tests
+        - src/Symfony/Component/Intl/Resources/data
+        - src/Symfony/Component/Emoji/Resources/data
+        - src/Symfony/*/*/Resources/views
+        - src/Symfony/*/*/*/Resources/views
+      attributes: {ensureOverrideAttribute: "false"}
+
+  drupal:
+    repo: https://github.com/drupal/drupal
+    ref: "76deda03b09b57d76941e2d30e6dade35e92a14a"
+    tag: 11.4.11
+    timeout: 600
+    exercises: custom file extensions (.module/.inc/.install), procedural hooks plus OOP services, plugin/annotation/attribute discovery, dynamic entity APIs, large taint graph
+    psalm:
+      dirs: [core/lib, core/modules]
+      ignore:
+        - core/modules/*/tests
+        - core/modules/*/src/Tests
+        - core/lib/Drupal/Component/*/Tests
+      extensions: [.php, .module, .inc, .install, .theme, .profile, .engine]
+
+  doctrine-orm:
+    repo: https://github.com/doctrine/orm
+    ref: "4487f850401c0e1f27891cce5897fa90b3055c2a"
+    tag: 3.7.6
+    timeout: 120
+    exercises: deep class hierarchies, class-string<T> repositories, attributes metadata
+    psalm:
+      dirs: [src]
+
+  psl:
+    repo: https://github.com/php-standard-library/php-standard-library
+    ref: "f537759b58ba36c8093505004e1bff7578238736"
+    tag: 6.4.2
+    timeout: 120
+    exercises: heavily templated functional library, 70+ packages, generics, conditional types, assertions
+    psalm:
+      dirs: [packages/*/src]
+      attributes: {phpVersion: "8.4"}
+
+  phpunit:
+    repo: https://github.com/sebastianbergmann/phpunit
+    ref: "941457a4f147a60fe2074d40e1fce0d08ea8d930"
+    tag: 13.4.5
+    timeout: 120
+    exercises: large final-class codebase, readonly/immutable value objects, modern PHP 8.4 syntax, event system
+    psalm:
+      dirs: [src]
+      attributes: {phpVersion: "8.4"}
+
+  php-parser:
+    repo: https://github.com/nikic/PHP-Parser
+    ref: "9e33da9553fe7786f0962b35f4e4ecf01be89def"
+    tag: v5.9.0
+    timeout: 120
+    exercises: large AST node class hierarchy, many untyped closures and arrays, visitor pattern
+    psalm:
+      dirs: [lib]
+      attributes: {phpVersion: "7.4"}
+
+  amphp-amp:
+    repo: https://github.com/amphp/amp
+    ref: "73c38b323ff8d790abf0f76c56fcc892bda4111a"
+    tag: v3.1.3
+    timeout: 60
+    exercises: fibers, generics (Future<T>), closures templates, small and fast
+    psalm:
+      dirs: [src]
+      attributes: {phpVersion: "8.1"}
+
+  webmozarts-assert:
+    repo: https://github.com/webmozarts/assert
+    ref: "8a163706bbcac613733dba03f51e13b5eb1bb819"
+    tag: 2.5.0
+    timeout: 90
+    exercises: psalm-assert type narrowing, pure/immutable annotations, static-analysis fixture files
+    psalm:
+      dirs: [src, tests/static-analysis]
+      attributes: {phpVersion: "8.2"}

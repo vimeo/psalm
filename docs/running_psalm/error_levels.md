@@ -28,6 +28,7 @@ A stricter level (lower number) reports more issues as errors. A more lenient le
 These issues have very low false-positive rates and indicate definite problems. They cannot be suppressed by changing the error level.
 
  - [AbstractMethodCall](issues/AbstractMethodCall.md)
+ - [CheckType](issues/CheckType.md)
  - [ComplexFunction](issues/ComplexFunction.md)
  - [ComplexMethod](issues/ComplexMethod.md)
  - [ConfigIssue](issues/ConfigIssue.md)

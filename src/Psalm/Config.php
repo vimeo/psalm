@@ -12,6 +12,7 @@ use Composer\Semver\VersionParser;
 use DOMAttr;
 use DOMDocument;
 use DOMElement;
+use Generator;
 use InvalidArgumentException;
 use JsonException;
 use LogicException;
@@ -66,6 +67,7 @@ use XdgBaseDir\Xdg;
 use stdClass;
 
 use function array_any;
+use function array_column;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
@@ -169,6 +171,26 @@ final class Config
     final public const REPORT_INFO = 'info';
     final public const REPORT_ERROR = 'error';
     final public const REPORT_SUPPRESS = 'suppress';
+
+    /**
+     * The packages whose Psalm plugin is enabled when they are installed (see loadLibraryPlugins)
+     */
+    private const LIBRARY_PLUGIN_PACKAGES = [
+        'webmozart/assert',
+    ];
+
+    /**
+     * The first-party plugins, which Psalm requires, enabled when composer.json requires their library (see
+     * loadLibraryPlugins): library => plugin class
+     */
+    private const FIRST_PARTY_PLUGINS = [
+        'phpunit/phpunit' => 'Psalm\PhpUnitPlugin\Plugin',
+        'mockery/mockery' => 'Psalm\MockeryPlugin\Plugin',
+        'symfony/framework-bundle' => 'Psalm\SymfonyPsalmPlugin\Plugin',
+        'laravel/framework' => 'Psalm\LaravelPlugin\Plugin',
+        'orchestra/testbench' => 'Psalm\LaravelPlugin\Plugin',
+        'sabre/event' => 'Psalm\SabreEventPlugin\Plugin',
+    ];
 
     /**
      * @var array<string>
@@ -445,6 +467,11 @@ final class Config
     public bool $load_library_stubs = true;
 
     /**
+     * Whether to enable the plugins the installed packages of LIBRARY_PLUGIN_PACKAGES ship
+     */
+    public bool $load_library_plugins = true;
+
+    /**
      * The directory of the library stubs, `<vendor>/<package>.phpstub`: by default Psalm's `stubs/libraries`
      */
     public ?string $library_stubs_dir = null;
@@ -581,6 +608,7 @@ final class Config
         "geos" => null,
         "gmp" => null,
         "ibm_db2" => null,
+        "imagick" => null,
         "mongodb" => null,
         "mysqli" => null,
         "pdo" => null,
@@ -739,6 +767,8 @@ final class Config
 
     /**
      * Creates a new config object from the file
+     *
+     * @throws ConfigException if the file can't be read, is empty or isn't a valid config
      */
     public static function loadFromXMLFile(string $file_path, string $current_dir): Config
     {
@@ -747,11 +777,13 @@ final class Config
         $base_dir = dirname($file_path);
 
         if ($file_contents === false) {
-            throw new InvalidArgumentException('Cannot open ' . $file_path);
+            throw new ConfigException('Cannot read the config file ' . $file_path);
         }
 
         if ($file_contents === '') {
-            throw new InvalidArgumentException('Invalid empty file ' . $file_path);
+            throw new ConfigException(
+                'The config file ' . $file_path . ' is empty: delete it and run psalm --init to create a new one',
+            );
         }
 
         try {
@@ -1053,6 +1085,7 @@ final class Config
             'runTaintAnalysis' => 'run_taint_analysis',
             'usePhpStormMetaPath' => 'use_phpstorm_meta_path',
             'loadLibraryStubs' => 'load_library_stubs',
+            'loadLibraryPlugins' => 'load_library_plugins',
             'allowInternalNamedArgumentsCalls' => 'allow_internal_named_arg_calls',
             'allowNamedArgumentCalls' => 'allow_named_arg_calls',
             'findUnusedPsalmSuppress' => 'find_unused_psalm_suppress',
@@ -1177,8 +1210,8 @@ final class Config
                 )
             ) {
                 $config->use_igbinary = false;
-                $config->config_warnings[] = '"serializer" set to "igbinary" but ext-igbinary seems to be missing on ' .
-                    'the system. Using php\'s build-in serializer.';
+                $config->config_warnings[] = 'ext-igbinary is missing, using the PHP serializer'
+                    . ' (serializer="igbinary" in the config)';
             }
         } elseif ($igbinary_version = phpversion('igbinary')) {
             $config->use_igbinary = version_compare($igbinary_version, '2.0.5') >= 0;
@@ -1190,15 +1223,15 @@ final class Config
                 if (function_exists('lz4_compress') && function_exists('lz4_uncompress')) {
                     $config->compressor = 'lz4';
                 } else {
-                    $config->config_warnings[] = '"compressor" set to "lz4" but ext-lz4 seems to be missing on the ' .
-                        'system. Disabling cache compressor.';
+                    $config->config_warnings[] = 'ext-lz4 is missing, cache compression disabled'
+                        . ' (compressor="lz4" in the config)';
                 }
             } elseif ($compressor === 'deflate') {
                 if (function_exists('gzinflate') && function_exists('gzdeflate')) {
                     $config->compressor = 'deflate';
                 } else {
-                    $config->config_warnings[] = '"compressor" set to "deflate" but zlib seems to be missing on the ' .
-                        'system. Disabling cache compressor.';
+                    $config->config_warnings[] = 'ext-zlib is missing, cache compression disabled'
+                        . ' (compressor="deflate" in the config)';
                 }
             }
         } elseif (function_exists('gzinflate') && function_exists('gzdeflate')) {
@@ -1501,6 +1534,32 @@ final class Config
                     }
 
                     $config->addPluginClass((string) $plugin_class_name, $plugin_config);
+                }
+            }
+        }
+
+        if ($config->load_library_plugins) {
+            $vendor_dir = (string) ($composer_json['config']['vendor-dir'] ?? 'vendor');
+            $library_plugin_classes = [...self::getLibraryPluginClasses(
+                Path::isAbsolute($vendor_dir) ? $vendor_dir : $config->base_dir . DIRECTORY_SEPARATOR . $vendor_dir,
+            )];
+
+            foreach (['require', 'require-dev'] as $section) {
+                foreach ($composer_json[$section] ?? [] as $package => $_) {
+                    $plugin_class_name = self::FIRST_PARTY_PLUGINS[strtolower((string) $package)] ?? null;
+                    if ($plugin_class_name !== null) {
+                        $library_plugin_classes[] = $plugin_class_name;
+                    }
+                }
+            }
+
+            foreach ($library_plugin_classes as $plugin_class_name) {
+                if (!array_any(
+                    $config->plugin_classes,
+                    static fn(array $plugin): bool =>
+                        strtolower(ltrim($plugin['class'], '\\')) === strtolower($plugin_class_name),
+                )) {
+                    $config->addPluginClass($plugin_class_name);
                 }
             }
         }
@@ -2710,6 +2769,10 @@ final class Config
             $this->internal_stubs[] = $stubsDir . 'Php84.phpstub';
         }
 
+        if ($codebase->analysis_php_version_id >= 8_06_00) {
+            $this->internal_stubs[] = $stubsDir . 'Php86Functions.phpstub';
+        }
+
         $ext_stubs_dir = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs" . DIRECTORY_SEPARATOR . "extensions";
         foreach ($this->php_extensions as $ext => $enabled) {
             if ($enabled) {
@@ -2767,6 +2830,35 @@ final class Config
         $codebase->register_stub_files = false;
 
         self::reportStubDocblockIssues($codebase, $user_stub_paths);
+    }
+
+    /**
+     * The plugin classes the packages of LIBRARY_PLUGIN_PACKAGES installed in $vendor_dir declare
+     *
+     * @return Generator<int, string>
+     */
+    private static function getLibraryPluginClasses(string $vendor_dir): Generator
+    {
+        $installed_path = $vendor_dir . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'installed.json';
+        if (!is_file($installed_path)) {
+            return;
+        }
+
+        $installed = json_decode((string) file_get_contents($installed_path), true);
+        if (!is_array($installed) || !isset($installed['packages']) || !is_array($installed['packages'])) {
+            return;
+        }
+
+        $extras = array_column($installed['packages'], 'extra', 'name');
+        foreach (self::LIBRARY_PLUGIN_PACKAGES as $package) {
+            if (isset($extras[$package]['psalm']['pluginClass'])
+                && is_array($extras[$package])
+                && is_array($extras[$package]['psalm'])
+                && is_string($extras[$package]['psalm']['pluginClass'])
+            ) {
+                yield $extras[$package]['psalm']['pluginClass'];
+            }
+        }
     }
 
     /**
