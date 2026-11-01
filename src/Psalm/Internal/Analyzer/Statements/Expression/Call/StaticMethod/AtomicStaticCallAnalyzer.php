@@ -275,6 +275,7 @@ final class AtomicStaticCallAnalyzer
                                 $method_storage->template_types ?? [],
                                 $self_fq_class_name,
                                 $self_fq_class_name,
+                                $inferred_template_result,
                             );
                         }
                     }
@@ -613,6 +614,7 @@ final class AtomicStaticCallAnalyzer
                     $method_template_types,
                     $called_fq_class_name,
                     $self_fq_class_name,
+                    $inferred_template_result,
                 ),
             );
 
@@ -1181,6 +1183,7 @@ final class AtomicStaticCallAnalyzer
         array $method_template_types,
         string $called_fq_class_name,
         ?string $self_fq_class_name,
+        ?TemplateResult $inferred_template_result,
     ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -1205,10 +1208,17 @@ final class AtomicStaticCallAnalyzer
             $class_storage,
         );
 
+        $template_result = new TemplateResult([], $found_generic_params ?? []);
+
+        if ($inferred_template_result) {
+            $template_result->lower_bounds += $inferred_template_result->lower_bounds;
+        }
+
         return MethodCallReturnTypeFetcher::getFirstClassCallableType(
             $codebase,
+            $stmt,
             $closure,
-            new TemplateResult([], $found_generic_params ?? []),
+            $template_result,
             $method_template_types,
             $self_fq_class_name,
             $static_type,

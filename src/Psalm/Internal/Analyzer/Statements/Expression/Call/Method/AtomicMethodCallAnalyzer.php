@@ -235,6 +235,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 
                         $return_type_candidate = MethodCallReturnTypeFetcher::getFirstClassCallableType(
                             $codebase,
+                            $stmt,
                             new TClosure(
                                 $method_storage->params,
                                 $method_storage->return_type,

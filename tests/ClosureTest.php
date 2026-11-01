@@ -1201,6 +1201,104 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'FirstClassCallable:StaticMethod:PassedToTemplatedCallableParam' => [
+                'code' => '<?php
+                    final class Util {
+                        /**
+                         * @template V
+                         * @param V $v
+                         * @return list<V>
+                         */
+                        public static function listOf(mixed $v): array { return [$v]; }
+                    }
+
+                    /**
+                     * @template A
+                     * @template B
+                     * @param list<A> $list
+                     * @param callable(A):B $f
+                     * @return list<B>
+                     */
+                    function mapList(array $list, callable $f): array { return array_map($f, $list); }
+
+                    /** @var list<int> $ints */;
+                    $mapped = mapList($ints, Util::listOf(...));
+                ',
+                'assertions' => [
+                    '$mapped===' => 'list<list<int>>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:MethodTemplatesBoundByArrayMap' => [
+                'code' => '<?php
+                    final class Util {
+                        /**
+                         * @template V
+                         * @param V $v
+                         * @return list<V>
+                         */
+                        public static function listOf(mixed $v): array { return [$v]; }
+
+                        /**
+                         * @template V
+                         * @param V $v
+                         * @return list<V>
+                         */
+                        public function instanceListOf(mixed $v): array { return [$v]; }
+                    }
+
+                    /** @var list<int> $ints */;
+                    $util = new Util();
+                    $static_mapped = array_map(Util::listOf(...), $ints);
+                    $instance_mapped = array_map($util->instanceListOf(...), $ints);
+                ',
+                'assertions' => [
+                    '$static_mapped===' => 'list<list<int>>',
+                    '$instance_mapped===' => 'list<list<int>>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:ChainedMethodTemplateBounds' => [
+                'code' => '<?php
+                    final class Model {}
+
+                    /** @template T of Model */
+                    final class Container {
+                        /**
+                         * @template U of T
+                         * @template V of U
+                         * @param V $value
+                         * @return V
+                         */
+                        public function identity(Model $value): Model { return $value; }
+
+                        /**
+                         * @template A
+                         * @template B of A
+                         * @param A $a
+                         * @param B $b
+                         * @return list<B>
+                         */
+                        public static function chained(mixed $a, mixed $b): array { return [$b]; }
+                    }
+
+                    /** @var Container<Model> $container */;
+                    $identity = $container->identity(...);
+                    $model = $identity(new Model());
+                    $chained = Container::chained(...);
+                    $list = $chained(1, 2);
+                ',
+                'assertions' => [
+                    '$identity===' => 'Closure[impure](Model):Model',
+                    '$model===' => 'Model',
+                    '$chained===' => 'Closure[impure](mixed, mixed):list<mixed>',
+                    '$list===' => 'list<mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'FirstClassCallable:InstanceMethod:UnresolvedClassTemplates' => [
                 'code' => '<?php
                     /** @template T of scalar */
