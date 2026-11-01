@@ -301,6 +301,20 @@ final class MethodSignatureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'overrideDateTimeDiffWithTheNativeParameterName' => [
+                'code' => '<?php
+                    class Date extends DateTime {
+                        public function diff(
+                            \\DateTimeInterface $targetObject,
+                            bool $absolute = false,
+                        ): \\DateInterval {
+                            return parent::diff(targetObject: $targetObject, absolute: $absolute);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'privateArgs' => [
                 'code' => '<?php
                     class A {

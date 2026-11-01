@@ -14,6 +14,7 @@ use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\PurityArguments;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\UndefinedTrait;
@@ -46,7 +47,6 @@ use function array_merge;
 use function array_search;
 use function array_shift;
 use function array_splice;
-use function array_values;
 use function count;
 use function in_array;
 use function key;
@@ -889,7 +889,7 @@ final class Populator
         $this->inheritMethodsFromParent($storage, $trait_storage);
         $this->inheritPropertiesFromParent($storage, $trait_storage);
 
-        self::extendTemplateParams($storage, $trait_storage, false);
+        $this->extendTemplateParams($storage, $trait_storage, false);
 
         $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
         $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
@@ -963,7 +963,7 @@ final class Populator
 
         $storage->parent_classes = [...$storage->parent_classes, ...$parent_storage->parent_classes];
 
-        self::extendTemplateParams($storage, $parent_storage, true);
+        $this->extendTemplateParams($storage, $parent_storage, true);
 
         $this->inheritMethodsFromParent($storage, $parent_storage);
         $this->inheritPropertiesFromParent($storage, $parent_storage);
@@ -1150,7 +1150,7 @@ final class Populator
             ...$interface_storage->invalid_dependencies,
         ];
 
-        self::extendTemplateParams($storage, $interface_storage, false);
+        $this->extendTemplateParams($storage, $interface_storage, false);
 
         $new_parents = array_keys($interface_storage->parent_interfaces);
         $new_parents[] = $interface_storage->name;
@@ -1170,7 +1170,7 @@ final class Populator
         }
     }
 
-    private static function extendTemplateParams(
+    private function extendTemplateParams(
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage,
         bool $from_direct_parent,
@@ -1183,9 +1183,23 @@ final class Populator
             $storage->template_extended_params[$parent_storage->name] = [];
 
             if (isset($storage->template_extended_offsets[$parent_storage->name])) {
-                // `@extends Foo[pure]` for a class with type templates
+                // the generic types written in the arguments get the defaults they leave out, as in any other use
+                $written_params = [];
+
+                foreach ($storage->template_extended_offsets[$parent_storage->name] as $written_param) {
+                    $written_params[] = TemplateDefaults::fillNested(
+                        $written_param,
+                        $this->classlike_storage_provider,
+                        null,
+                    );
+                }
+
+                $written_type_param_count = count(PurityArguments::split($written_params)[0]);
+
+                // `@extends Foo<A>` leaving out trailing templates with a default, `@extends Foo[pure]` for a
+                // class with type templates
                 $storage->template_extended_offsets[$parent_storage->name] = PurityArguments::align(
-                    array_values($storage->template_extended_offsets[$parent_storage->name]),
+                    TemplateDefaults::fillTypeArguments($written_params, $parent_storage, null, true),
                     $parent_storage,
                 );
 
@@ -1197,17 +1211,26 @@ final class Populator
                     if ($mapped_name) {
                         $storage->template_extended_params[$parent_storage->name][$mapped_name]
                             = $type;
+
+                        if ($i >= $written_type_param_count
+                            && isset($parent_storage->template_defaults[$mapped_name])
+                            && !isset($parent_storage->purity_templates[$mapped_name])
+                        ) {
+                            $storage->template_extended_defaults[$parent_storage->name][$mapped_name] = true;
+                        }
                     }
                 }
 
-                // trailing purity templates left out are bound to their default
-                foreach ($parent_storage->template_types as $template_name => $_) {
-                    if (!isset($storage->template_extended_params[$parent_storage->name][$template_name])
-                        && isset($parent_storage->template_defaults[$template_name])
-                    ) {
+                // trailing templates left out are bound to their default
+                foreach (TemplateDefaults::bindOmitted(
+                    $parent_storage,
+                    $storage->template_extended_params[$parent_storage->name],
+                    false,
+                ) as $template_name => $type) {
+                    if (!isset($storage->template_extended_params[$parent_storage->name][$template_name])) {
                         $storage->template_extended_params[$parent_storage->name][$template_name]
-                            = $parent_storage->template_defaults[$template_name]
-                                ->setProperties(['from_docblock' => false]);
+                            = $type->setProperties(['from_docblock' => true]);
+                        $storage->template_extended_defaults[$parent_storage->name][$template_name] = true;
                     }
                 }
 
@@ -1222,12 +1245,13 @@ final class Populator
                     }
                 }
             } else {
-                foreach ($parent_storage->template_types as $template_name => $template_type_map) {
-                    foreach ($template_type_map as $template_type) {
-                        // a purity template with a default is bound to it, others to their bound
-                        $default_param = ($parent_storage->template_defaults[$template_name] ?? $template_type)
-                            ->setProperties(['from_docblock' => false]);
-                        $storage->template_extended_params[$parent_storage->name][$template_name] = $default_param;
+                // templates with a default are bound to it, others to their bound
+                foreach (TemplateDefaults::bindOmitted($parent_storage, [], true) as $template_name => $type) {
+                    $storage->template_extended_params[$parent_storage->name][$template_name]
+                        = $type->setProperties(['from_docblock' => false]);
+
+                    if (isset($parent_storage->template_defaults[$template_name])) {
+                        $storage->template_extended_defaults[$parent_storage->name][$template_name] = true;
                     }
                 }
 
