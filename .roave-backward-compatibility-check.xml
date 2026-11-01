@@ -8,5 +8,7 @@
         <ignored-regex>#^\[BC\] CHANGED: Value of constant Psalm\\DocComment::PSALM_ANNOTATIONS changed from #</ignored-regex>
         <!-- The list of the extensions Psalm has stubs for grows with each new stub (zstd). -->
         <ignored-regex>#^\[BC\] CHANGED: Property Psalm\\Config\#\$php_extensions changed default value from #</ignored-regex>
+        <!-- ClassLikeStorage::$template_extended_defaults was added by #12962 and removed before any release. -->
+        <ignored-regex>#^\[BC\] REMOVED: Property Psalm\\Storage\\ClassLikeStorage\#\$template_extended_defaults was removed$#</ignored-regex>
     </baseline>
 </roave-bc-check>

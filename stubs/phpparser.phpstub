@@ -3,12 +3,13 @@
 namespace PhpParser\Node\Expr;
 
 use PhpParser\Node\Arg;
+use PhpParser\Node\ArgPlaceholder;
 use PhpParser\Node\Expr;
 use PhpParser\Node\VariadicPlaceholder;
 
 abstract class CallLike extends Expr {
     /**
-     * @return list<Arg|VariadicPlaceholder>
+     * @return list<Arg|VariadicPlaceholder|ArgPlaceholder>
      */
     abstract public function getRawArgs(): array;
 

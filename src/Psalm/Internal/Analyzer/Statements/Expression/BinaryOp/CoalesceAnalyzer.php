@@ -47,7 +47,8 @@ final class CoalesceAnalyzer
             || $root_expr instanceof PhpParser\Node\Expr\Match_
             || $root_expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch
             || $root_expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
-            || $root_expr instanceof PhpParser\Node\Expr\Ternary;
+            || $root_expr instanceof PhpParser\Node\Expr\Ternary
+            || $root_expr instanceof PhpParser\Node\Expr\BinaryOp\Pipe;
 
         $has_untracked_offset = !$has_call_root
             && $left_expr instanceof PhpParser\Node\Expr\ArrayDimFetch
