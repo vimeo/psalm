@@ -20,6 +20,106 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'invokeInheritedGenericFirstClassCallable' => [
+                'code' => '<?php
+                    class Helpers {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public static function identity($value) { return $value; }
+                    }
+                    final class Child extends Helpers {}
+                    $method = "identity";
+                    $instance = (new Child())->{$method}(...);
+                    $static = Child::{$method}(...);
+                    $text = $instance("hello");
+                    $number = $static(42);',
+                'assertions' => [
+                    '$text===' => "'hello'",
+                    '$number===' => '42',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeGenericFirstClassFunctionCallable' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return T
+                     */
+                    function identity($value) { return $value; }
+                    $identity = identity(...);
+                    $text = $identity("hello");
+                    $number = $identity(42);',
+                'assertions' => [
+                    '$text===' => "'hello'",
+                    '$number===' => '42',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeGenericFirstClassStaticCallable' => [
+                'code' => '<?php
+                    final class Helpers {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public static function identity($value) { return $value; }
+                    }
+                    $identity = Helpers::identity(...);
+                    $copy = $identity(...);
+                    $text = $copy("hello");
+                    $number = $identity(42);',
+                'assertions' => [
+                    '$text===' => "'hello'",
+                    '$number===' => '42',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeFirstClassCallableWithCapturedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Closure(): T
+                     */
+                    function capture($value): Closure {
+                        $closure = /** @return T */ static fn () => $value;
+                        return $closure(...);
+                    }
+                    $closure = capture("hello");
+                    $copy = $closure(...);
+                    $text = $copy();',
+                'assertions' => ['$text===' => "'hello'"],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeGenericFirstClassMethodCallable' => [
+                'code' => '<?php
+                    final class Helpers {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public function identity($value) { return $value; }
+                    }
+                    $identity = (new Helpers())->identity(...);
+                    $text = $identity("hello");
+                    $number = $identity(42);',
+                'assertions' => [
+                    '$text===' => "'hello'",
+                    '$number===' => '42',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'byRefUseVar' => [
                 'code' => '<?php
                     /** @return void */
@@ -2516,6 +2616,20 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'invokeGenericFirstClassCallableWithInvalidBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param T $value
+                     * @return T
+                     */
+                    function identity($value) { return $value; }
+                    $identity = identity(...);
+                    $identity(42);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'undefinedCallableClass' => [
                 'code' => '<?php
                     class A {

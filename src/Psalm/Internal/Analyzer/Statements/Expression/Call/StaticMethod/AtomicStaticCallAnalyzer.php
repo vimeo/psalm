@@ -259,6 +259,7 @@ final class AtomicStaticCallAnalyzer
                                 $method_storage->params,
                                 $method_storage->return_type,
                                 $method_storage->capabilities,
+                                callable_id: strtolower((string) $method_identifier),
                             )]);
                         }
                     }
@@ -500,6 +501,7 @@ final class AtomicStaticCallAnalyzer
                     $method_storage->params,
                     $method_storage->return_type,
                     $method_storage->capabilities,
+                    callable_id: strtolower((string) $method_id),
                 )]);
             } else {
                 $method_exists = $naive_method_exists
@@ -514,6 +516,7 @@ final class AtomicStaticCallAnalyzer
                         array_values($codebase->getMethodParams($method_id)),
                         $codebase->getMethodReturnType($method_id, $fq_class_name),
                         $codebase->methods->getStorage($declaring_method_id)->capabilities,
+                        callable_id: strtolower((string) $declaring_method_id),
                     )]);
                 } elseif ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->getFirst() === 'parent'
                     && !$statements_analyzer->isStatic()
@@ -530,6 +533,7 @@ final class AtomicStaticCallAnalyzer
                         $pseudo_method_storage->params,
                         $pseudo_method_storage->return_type,
                         $pseudo_method_storage->capabilities,
+                        callable_id: strtolower((string) $method_id),
                     )]);
                 } elseif ($codebase->methodExists(
                     $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),

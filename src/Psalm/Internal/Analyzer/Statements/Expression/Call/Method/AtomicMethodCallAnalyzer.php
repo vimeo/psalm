@@ -234,6 +234,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                             $method_storage->params,
                             $method_storage->return_type,
                             $method_storage->capabilities,
+                            callable_id: strtolower((string) $method_identifier),
                         )]);
                     }
                 }
