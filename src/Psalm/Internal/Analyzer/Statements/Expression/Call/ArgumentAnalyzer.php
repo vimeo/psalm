@@ -65,6 +65,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -348,6 +349,10 @@ final class ArgumentAnalyzer
             true,
         );
 
+        // what the argument says about each template is read from the type as declared, before the bound class
+        // templates are replaced
+        $declared_param_type = $param_type;
+
         if ($class_generic_params) {
             // here we're replacing the param types and arg types with the bound
             // class template params.
@@ -435,35 +440,13 @@ final class ArgumentAnalyzer
                 $context->calling_method_id ?: $context->calling_function_id,
             );
 
-            foreach ($bindable_template_params as $template_type) {
-                if (!isset(
-                    $template_result->lower_bounds
-                        [$template_type->param_name]
-                        [$template_type->defining_class],
-                )) {
-                    if (isset(
-                        $template_result->upper_bounds
-                            [$template_type->param_name]
-                            [$template_type->defining_class],
-                    )) {
-                        $fallback_bound = new TemplateBound(
-                            $template_result->upper_bounds
-                                [$template_type->param_name]
-                                [$template_type->defining_class]->type,
-                        );
-                    } else {
-                        $fallback_bound = new TemplateBound(
-                            $template_type->as,
-                        );
-                    }
-
-                    $fallback_bound->from_constraint_fallback = true;
-
-                    $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class] = [
-                        $fallback_bound,
-                    ];
-                }
-            }
+            self::addConstraintFallbacks(
+                $codebase,
+                $template_result,
+                $bindable_template_params,
+                $declared_param_type,
+                $arg_type_param,
+            );
 
             $param_type = TypeExpander::expandUnion(
                 $codebase,
@@ -718,6 +701,130 @@ final class ArgumentAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * Gives each template of the parameter type that the argument did not bind its constraint (or the upper
+     * bound the argument gave it) as a stand-in lower bound, and records whether the argument matched only the
+     * parts of the declared parameter type that don't name that template, which says nothing about it (`null` for
+     * `(callable(): T)|null`), unlike one matching the part that names it without telling what it is (a bare
+     * `callable`). A template is only left to its default when every argument for it says nothing about it,
+     * whatever their order.
+     *
+     * @param list<TTemplateParam> $bindable_template_params
+     */
+    private static function addConstraintFallbacks(
+        Codebase $codebase,
+        TemplateResult $template_result,
+        array $bindable_template_params,
+        Union $declared_param_type,
+        Union $arg_type,
+    ): void {
+        foreach ($bindable_template_params as $template_type) {
+            $lower_bounds = $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class]
+                ?? [];
+
+            foreach ($lower_bounds as $lower_bound) {
+                if ($lower_bound->from_template_free_argument) {
+                    $lower_bound->from_template_free_argument
+                        = self::saysNothingAbout($codebase, $template_type, $declared_param_type, $arg_type);
+                }
+            }
+
+            if ($lower_bounds !== []) {
+                continue;
+            }
+
+            $fallback_bound = new TemplateBound(
+                $template_result->upper_bounds[$template_type->param_name][$template_type->defining_class]->type
+                    ?? $template_type->as,
+            );
+            $fallback_bound->from_constraint_fallback = true;
+            $fallback_bound->from_template_free_argument
+                = self::saysNothingAbout($codebase, $template_type, $declared_param_type, $arg_type);
+
+            $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class] = [
+                $fallback_bound,
+            ];
+        }
+    }
+
+    /**
+     * Whether the argument is within the parts of the declared parameter type that don't name the template, the
+     * templates there standing for their bounds. As such a bound may take any argument (`(callable(): T)|U`), no
+     * type of the argument may then be within or coerced to the parts naming the template.
+     */
+    private static function saysNothingAbout(
+        Codebase $codebase,
+        TTemplateParam $template_type,
+        Union $declared_param_type,
+        Union $arg_type,
+    ): bool {
+        $naming_types = [];
+        $other_types = [];
+
+        foreach ($declared_param_type->getAtomicTypes() as $key => $atomic) {
+            foreach ((new Union([$atomic]))->getTemplateTypes() as $named_template) {
+                if ($named_template->param_name === $template_type->param_name
+                    && $named_template->defining_class === $template_type->defining_class
+                ) {
+                    $naming_types[$key] = $atomic;
+
+                    continue 2;
+                }
+            }
+
+            $other_types[$key] = $atomic;
+        }
+
+        if ($other_types === []) {
+            return false;
+        }
+
+        $other_type = new Union($other_types);
+
+        if (!UnionTypeComparator::isContainedBy($codebase, $arg_type, self::atBounds($codebase, $other_type))) {
+            return false;
+        }
+
+        if ($naming_types === [] || $other_type->getTemplateTypes() === []) {
+            return true;
+        }
+
+        $naming_type = self::atBounds($codebase, new Union($naming_types));
+
+        foreach ($arg_type->getAtomicTypes() as $arg_atomic) {
+            $comparison_result = new TypeComparisonResult();
+
+            if (UnionTypeComparator::isContainedBy(
+                $codebase,
+                new Union([$arg_atomic]),
+                $naming_type,
+                false,
+                false,
+                $comparison_result,
+            ) || $comparison_result->type_coerced || $comparison_result->type_coerced_from_mixed) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static function atBounds(Codebase $codebase, Union $type): Union
+    {
+        return TypeExpander::expandUnion(
+            $codebase,
+            $type,
+            null,
+            null,
+            null,
+            true,
+            false,
+            false,
+            false,
+            true,
+        );
     }
 
     /**

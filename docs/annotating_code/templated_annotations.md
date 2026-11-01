@@ -286,6 +286,61 @@ class Baz extends Foo {
 }
 ```
 
+## Template defaults
+
+A template can declare a default type after `=`: `@template T = Default`, or `@template T of Bound = Default` with a bound. The `@psalm-template`, `@phpstan-template` and `@template-covariant` forms take a default the same way.
+
+The default is what the template stands for where a type argument is left out:
+
+* `@extends`, `@implements` and `@use` with fewer type arguments than the class has templates, when the templates left out come last and all have a default;
+* a class extended, implemented or used without `@extends`, `@implements` or `@use`: its templates with a default are bound to it, the others to their bound as before;
+* a generic type written with at least one type argument, in a `@param`, `@return`, `@var` or property type: `Factory<User>` means `Factory<User, null>` below;
+* `new Box()`, for the templates the constructor arguments don't infer.
+
+```php
+<?php
+/**
+ * @template TModel of object
+ * @template TCount of int|null = null
+ */
+abstract class Factory {
+    /** @return TCount */
+    public function count(): ?int {
+        return null;
+    }
+
+    /** @return (TCount is null ? TModel : list<TModel>) */
+    public function create(): object|array {
+        throw new RuntimeException();
+    }
+}
+
+final class User {}
+
+/** @extends Factory<User> */
+final class UserFactory extends Factory {}
+
+$factory = new UserFactory();
+$count = $factory->count(); // null
+$user = $factory->create(); // User
+
+/**
+ * @template T = int
+ */
+final class Box {}
+
+$box = new Box(); // Box<int>
+```
+
+Psalm keeps its behaviour in these cases:
+
+* A class name written without type arguments (`Factory` in a parameter type) keeps its meaning: its templates stand for their bounds (`Factory<object, int|null>`, compared with the usual variance rules), or are left open when the bound is `mixed` or a set of capabilities. The defaults don't apply there, unlike in PHPStan.
+* A template without a default is resolved as before when it is left out.
+
+A default must be within the bound of its template and may only use the templates declared before it. Psalm reports an [InvalidDocblock](../running_psalm/issues/InvalidDocblock.md) issue on the template line otherwise.
+
+A default that names its own class (`@template TNext of Node = Node<T>`) is expanded one level deep, so comparing it with an explicitly written deeper type can report a coercion.
+
 ## Template covariance
 
 Imagine you have code like this:

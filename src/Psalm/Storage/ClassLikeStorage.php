@@ -370,12 +370,31 @@ final class ClassLikeStorage implements HasAttributesInterface
     public ?array $template_covariants = null;
 
     /**
-     * The default value of each purity template that has one (`@psalm-purity-template C(pure) <= io`):
-     * what a subclass that does not bind the template gets.
+     * The templates declared with `@psalm-purity-template`, whose values are capability sets: the
+     * others are type templates.
+     *
+     * @var array<string, true>
+     */
+    public array $purity_templates = [];
+
+    /**
+     * What a template argument left out of a use of the class stands for, for the templates that
+     * have one: the declared default of a type template (`@template T of Bound = Default`), in which
+     * the earlier templates of the class stand for their arguments, and the default of a purity
+     * template (`@psalm-purity-template C(pure) <= io`), its upper bound without one. A subclass
+     * that does not bind the template gets it, and a use with type arguments (`Foo<A>`) that leaves
+     * out trailing type templates gets theirs. A use without type arguments (`Foo`) does not.
      *
      * @var array<string, Union>
      */
     public array $template_defaults = [];
+
+    /**
+     * Where each declared type template default is, for the issues about it.
+     *
+     * @var array<string, CodeLocation>
+     */
+    public array $template_default_locations = [];
 
     /**
      * The lower bound of each purity template that has one (`@psalm-purity-template write-props <= C`):
@@ -411,6 +430,15 @@ final class ClassLikeStorage implements HasAttributesInterface
      * @var array<string, array<string, Union>>|null
      */
     public ?array $template_extended_params = null;
+
+    /**
+     * The templates of each class extended, implemented or used that this class leaves out (`@extends Foo<A>`
+     * for `@template T`, `@template U = int`, or no `@extends`), by the name of that class: their entry in
+     * $template_extended_params is their default, which is checked against their bound where it is declared.
+     *
+     * @var array<string, array<string, true>>
+     */
+    public array $template_extended_defaults = [];
 
     /**
      * @var array<string, int>|null
@@ -557,8 +585,8 @@ final class ClassLikeStorage implements HasAttributesInterface
     }
 
     /**
-     * How many template params a use of this class must give: all of them, except trailing purity
-     * templates with a default, which need not be given.
+     * How many template params a use of this class must give: all of them, except trailing templates
+     * with a default (type or purity templates), which need not be given.
      *
      * @psalm-mutation-free
      */
