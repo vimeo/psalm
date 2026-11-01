@@ -29,4 +29,10 @@ final class FakeParserCacheProvider extends ParserCacheProvider
     {
         return null;
     }
+
+    #[Override]
+    public function hasStatementsInCache(string $file_path): bool
+    {
+        return false;
+    }
 }
