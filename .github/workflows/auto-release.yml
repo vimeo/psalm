@@ -1,7 +1,8 @@
 name: Automatic release
 
-# Releases master and 6.x every hour when they have unreleased commits and all checks of their head passed;
-# see bin/ci/auto-release.php. Scheduled workflows only run from the default branch, which releases both.
+# Releases master and 6.x once a day (UTC) when they have unreleased commits and all checks of their head passed:
+# it runs every hour, and the first run of the day that finds a branch ready releases it; see bin/ci/auto-release.php.
+# Scheduled workflows only run from the default branch, which releases both.
 on:
   schedule:
     - cron: '23 * * * *'

@@ -335,6 +335,33 @@ $user2 = new User($_GET["name"]);
 echoUserName($user1);
 ```
 
+## Suppressing taint issues
+
+A taint issue is reported at the sink, not where the tainted value is passed to it, so a docblock can't suppress it by its own name. `@psalm-suppress TaintedInput` stops tracking taints in the function or statement it annotates, and the `<issueHandlers>` of the config suppress a specific issue:
+
+```php
+<?php
+
+/** @psalm-taint-sink header $value */
+function sendHeader(string $value): void {}
+
+function a(): void {
+    /** @psalm-suppress TaintedHeader */
+    sendHeader($_GET['h']); // TaintedHeader
+}
+
+function b(): void {
+    /** @psalm-suppress TaintedInput */
+    sendHeader($_GET['h']); // suppressed
+}
+```
+
+```xml
+<issueHandlers>
+    <TaintedHeader errorLevel="suppress"/> <!-- suppressed everywhere -->
+</issueHandlers>
+```
+
 ## Avoiding files in taint paths
 
 You can also tell Psalm that you’re not interested in any taint paths that flow through certain files or directories by specifying them in your Psalm config:

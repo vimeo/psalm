@@ -64,6 +64,13 @@ final class TemplateBound
     public bool $from_constraint_fallback = false;
 
     /**
+     * True for a constraint fallback for an argument that only matched parts of the parameter type not naming the
+     * template (`null` for `(callable(): T)|null`): it says nothing about the template, unlike a bare `callable` or
+     * generic object, which infers the constraint. A template with a default and only such lower bounds takes it.
+     */
+    public bool $from_template_free_argument = false;
+
+    /**
      * True for an upper bound imposed by a declared return type on a returned
      * value.
      */
