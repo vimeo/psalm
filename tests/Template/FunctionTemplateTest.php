@@ -2320,6 +2320,64 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'templateDefaultInAParamOutTypeAppendsOnce' => [
+                'code' => '<?php
+                    /**
+                     * @template T = int
+                     * @param-out list<T> $out
+                     */
+                    function make(mixed &$out): void {
+                        $out = [];
+                    }
+
+                    $appended = [];
+                    make($appended[]);',
+                'assertions' => [
+                    '$appended===' => 'list{list<int>}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateWithoutDefaultInAParamOutTypeNextToOneWithADefault' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template D = int
+                     * @param-out list<T> $out
+                     * @return list<D>
+                     */
+                    function unrelated(mixed &$out): array {
+                        $out = [];
+                        return [];
+                    }
+
+                    $returned = unrelated($out);',
+                'assertions' => [
+                    '$returned===' => 'list<int>',
+                    '$out===' => 'list<mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateDefaultInADerivedParamOutType' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array = array{x: int}
+                     * @param-out key-of<T> $key
+                     * @param-out value-of<T> $value
+                     */
+                    function entry(mixed &$key, mixed &$value): void {
+                        throw new Exception();
+                    }
+
+                    entry($key, $value);',
+                'assertions' => [
+                    '$key===' => '\'x\'',
+                    '$value===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'templateDefaultUsingKeyOfAnEarlierTemplate' => [
                 'code' => '<?php
                     /**
