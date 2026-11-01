@@ -1045,6 +1045,16 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'isCallableOnDeclaredCallableArray' => [
+                'code' => '<?php
+                    /** @param callable-array{0: string, 1: non-empty-string} $c */
+                    function f(array $c): void {
+                        if (is_callable($c)) {
+                            echo "always";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
             'instanceofOfATemplateParamAlreadyNarrowedToTheClass' => [
                 'code' => '<?php
                     interface Node {}
