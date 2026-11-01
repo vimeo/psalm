@@ -10,6 +10,7 @@ use PhpParser\Node\Expr\PostInc;
 use PhpParser\Node\Expr\PreDec;
 use PhpParser\Node\Expr\PreInc;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -70,6 +71,14 @@ final class IncDecExpressionAnalyzer
 
             $result_type = $return_type ?? Type::getMixed();
             $statements_analyzer->node_data->setType($stmt, $result_type);
+
+            if ($stmt->var instanceof PhpParser\Node\Expr\PropertyFetch) {
+                InstancePropertyAssignmentAnalyzer::trackReadonlyPropertyWrite(
+                    $statements_analyzer,
+                    $stmt->var,
+                    $context,
+                );
+            }
 
             BinaryOpAnalyzer::addDataFlow(
                 $statements_analyzer,

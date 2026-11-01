@@ -118,6 +118,131 @@ final class ReadonlyPropertyTest extends TestCase
 
                     echo (new A)->bar;',
             ],
+            'incrementMutableNumericStringProperty' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var numeric-string */
+                        public string $n = "5";
+
+                        public function next(): void {
+                            $this->n++;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'foreachByRefOverReadonlyObjectAndMutableArrayProperty' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var list<int> */
+                        public array $items = [1];
+
+                        /** @var ArrayObject<int, int> */
+                        public readonly ArrayObject $bag;
+
+                        public function __construct() {
+                            $this->bag = new ArrayObject([1]);
+                        }
+
+                        public function touch(): void {
+                            foreach ($this->bag as &$item) {
+                                $item = 1;
+                            }
+
+                            foreach ($this->items as &$value) {
+                                $value = 1;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'writesThroughUndefinedDocblockClassReceiver' => [
+                'code' => '<?php
+                    final class H {
+                        /** @var Unknown */
+                        public $u;
+
+                        /** @param Unknown $u */
+                        public function __construct($u) {
+                            $this->u = $u;
+                        }
+                    }
+
+                    function viaPropertyType(H $h): void {
+                        foreach ($h->u->arr as &$item) {
+                            $item = 1;
+                        }
+                    }
+
+                    function viaVarAnnotation(): void {
+                        /** @var Unknown $u */
+                        $u = $GLOBALS["u"];
+
+                        foreach ($u->arr as &$item) {
+                            $item = 1;
+                        }
+
+                        if (is_string($u->s)) {
+                            $u->s++;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedDocblockClass', 'MixedAssignment', 'StringIncrement'],
+                'php_version' => '8.1',
+            ],
+            'foreachByRefOverReadonlyArrayObjectPropertyNarrowedFromUnion' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var array<int, int>|ArrayObject<int, int> */
+                        public readonly array|ArrayObject $bag;
+
+                        public function __construct() {
+                            $this->bag = new ArrayObject([1]);
+                        }
+
+                        public function touch(): void {
+                            if ($this->bag instanceof ArrayObject) {
+                                foreach ($this->bag as &$item) {
+                                    $item = 1;
+                                }
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'incrementAndForeachByRefOnPrivateMutationAllowedReadonlyPropertyWithCapabilities' => [
+                'code' => '<?php
+                    final class A {
+                        /**
+                         * @var numeric-string
+                         * @psalm-readonly-allow-private-mutation
+                         */
+                        public string $n = "5";
+
+                        /**
+                         * @var list<int>
+                         * @psalm-readonly-allow-private-mutation
+                         */
+                        public array $items = [1];
+
+                        /** @psalm-capabilities read-props|write-this-props|write-refs */
+                        public function touch(): void {
+                            $this->n++;
+
+                            foreach ($this->items as &$value) {
+                                $value = 1;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'readonlyPropertySetChildClass' => [
                 'code' => '<?php
                     abstract class A {
@@ -319,6 +444,89 @@ final class ReadonlyPropertyTest extends TestCase
 
                     $test->prop += 1;',
                 'error_message' => 'InaccessibleProperty',
+            ],
+            'readonlyStringPropertyIncrement' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public readonly string $s) {}
+
+                        public function next(): void {
+                            $this->s++;
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29 - A::$s is marked readonly',
+                'error_levels' => ['StringIncrement'],
+                'php_version' => '8.1',
+            ],
+            'readonlyStringPropertyIncrementThroughTemplateReceiver' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public readonly string $s) {}
+                    }
+
+                    /**
+                     * @template T of A
+                     * @param T $t
+                     */
+                    function bump(A $t): void {
+                        $t->s++;
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:25 - A::$s is marked readonly',
+                'error_levels' => ['StringIncrement'],
+                'php_version' => '8.1',
+            ],
+            'readonlyIntOrStringPropertyPreIncrement' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public readonly int|string $v) {}
+
+                        public function next(): void {
+                            ++$this->v;
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:31 - A::$v is marked readonly',
+                'error_levels' => ['StringIncrement'],
+                'php_version' => '8.1',
+            ],
+            'readonlyPropertyForeachByRef' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var list<int> */
+                        public readonly array $items;
+
+                        public function __construct() {
+                            $this->items = [1];
+                        }
+
+                        public function touch(): void {
+                            foreach ($this->items as &$item) {
+                                $item = 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:38 - A::$items is marked readonly',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'readonlyPropertyForeachByRefOutsideClass' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var list<int> */
+                        public readonly array $items;
+
+                        public function __construct() {
+                            $this->items = [1];
+                        }
+                    }
+
+                    function bump(A $a): void {
+                        foreach ($a->items as &$item) {
+                            $item = 1;
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:34 - A::$items is marked readonly',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'readonlyPropertyWithDefault' => [
                 'code' => '<?php
