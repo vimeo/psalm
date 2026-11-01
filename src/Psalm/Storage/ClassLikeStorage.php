@@ -370,20 +370,17 @@ final class ClassLikeStorage implements HasAttributesInterface
     public ?array $template_covariants = null;
 
     /**
-     * The templates declared with `@psalm-purity-template`, whose values are capability sets: the
-     * others are type templates.
+     * The templates declared with `@psalm-purity-template` (capability sets); the others are type templates.
      *
      * @var array<string, true>
      */
     public array $purity_templates = [];
 
     /**
-     * What a template argument left out of a use of the class stands for, for the templates that
-     * have one: the declared default of a type template (`@template T of Bound = Default`), in which
-     * the earlier templates of the class stand for their arguments, and the default of a purity
-     * template (`@psalm-purity-template C(pure) <= io`), its upper bound without one. A subclass
-     * that does not bind the template gets it, and a use with type arguments (`Foo<A>`) that leaves
-     * out trailing type templates gets theirs. A use without type arguments (`Foo`) does not.
+     * What a template left out of a use of the class stands for: the declared default of a type template, in which
+     * earlier templates stand for their arguments (`@template T of Bound = Default`), or the default of a purity
+     * template (`@psalm-purity-template C(pure) <= io`), else its upper bound. Subclasses not binding it get it, as do
+     * uses like `Foo<A>` leaving out trailing type templates, but not a use without type arguments (`Foo`).
      *
      * @var array<string, Union>
      */
@@ -432,9 +429,9 @@ final class ClassLikeStorage implements HasAttributesInterface
     public ?array $template_extended_params = null;
 
     /**
-     * The templates of each class extended, implemented or used that this class leaves out (`@extends Foo<A>`
-     * for `@template T`, `@template U = int`, or no `@extends`), by the name of that class: their entry in
-     * $template_extended_params is their default, which is checked against their bound where it is declared.
+     * By ancestor name, the templates with a default this class leaves out (`U` in `@extends Foo<A>` of a `Foo`
+     * declaring `T` and `U = int`, or with no `@extends`): their $template_extended_params entry is that default,
+     * checked against their bound where it is declared.
      *
      * @var array<string, array<string, true>>
      */
@@ -585,8 +582,7 @@ final class ClassLikeStorage implements HasAttributesInterface
     }
 
     /**
-     * How many template params a use of this class must give: all of them, except trailing templates
-     * with a default (type or purity templates), which need not be given.
+     * How many template params a use of this class must give: all but the trailing ones with a default.
      *
      * @psalm-mutation-free
      */

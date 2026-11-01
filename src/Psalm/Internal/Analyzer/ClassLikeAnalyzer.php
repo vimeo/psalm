@@ -762,8 +762,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * Reports the issues found in the docblock of the class-like when it was scanned, and the defaults of its
-     * templates that are not within their bounds, which need the codebase populated to tell.
+     * Reports the docblock issues found when the class-like was scanned, and the template defaults outside their
+     * bounds, which can only be checked once the codebase is populated.
      *
      * @param array<string> $suppressed_issues
      */
@@ -942,7 +942,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                         }
                     }
 
-                    // a default the class leaves its parent template to is checked where it is declared
+                    // a parent template left to its default is checked where the default is declared
                     if (!$template_type->isMixed()
                         && !isset($storage->template_extended_defaults[$parent_storage->name][$template_name])
                     ) {
