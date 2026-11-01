@@ -108,6 +108,7 @@ use UnexpectedValueException;
 use function array_key_exists;
 use function assert;
 use function count;
+use function ctype_digit;
 use function explode;
 use function in_array;
 use function is_int;
@@ -1194,6 +1195,12 @@ final class AssertionFinder
                         }
 
                         $assertion_var_id = str_replace($var_id, $arg_var_id, $assertion->var_id);
+                    } elseif (self::splitArgumentOffsetVarId($assertion->var_id) !== null) {
+                        $assertion_var_id = self::getArgumentOffsetVarId($assertion->var_id, $expr->getArgs(), $source);
+
+                        if ($assertion_var_id === null) {
+                            continue;
+                        }
                     } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
                         $assertion_var_id = $assertion->var_id;
 
@@ -1325,6 +1332,15 @@ final class AssertionFinder
                         $assertion_var_id = str_replace($var_id, $arg_var_id, $assertion->var_id);
 
                         $if_types[$assertion_var_id] = [[$rule]];
+                    } elseif (self::splitArgumentOffsetVarId($assertion->var_id) !== null) {
+                        $offset_var_id = self::getArgumentOffsetVarId($assertion->var_id, $expr->getArgs(), $source);
+                        $offset_rule = $assertion->rule[0] ?? null;
+
+                        if ($offset_var_id === null || $offset_rule === null) {
+                            continue;
+                        }
+
+                        $if_types[$offset_var_id] = [[$offset_rule->getNegation()]];
                     } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
                         $var_id = $assertion->var_id;
                         if (str_starts_with($var_id, 'self::')) {
@@ -1348,6 +1364,46 @@ final class AssertionFinder
         }
 
         return $anded_types;
+    }
+
+    /**
+     * `0['key']` stands for `$array['key']` of the array passed as the first argument
+     *
+     * @return array{int, string}|null the argument offset and the rest of the id (`['key']`)
+     * @psalm-pure
+     */
+    public static function splitArgumentOffsetVarId(string $var_id): ?array
+    {
+        $bracket_offset = strpos($var_id, '[');
+
+        if ($bracket_offset === false || $bracket_offset === 0) {
+            return null;
+        }
+
+        $arg_offset = substr($var_id, 0, $bracket_offset);
+
+        if (!ctype_digit($arg_offset)) {
+            return null;
+        }
+
+        return [(int) $arg_offset, substr($var_id, $bracket_offset)];
+    }
+
+    /**
+     * @param array<PhpParser\Node\Arg|PhpParser\Node\VariadicPlaceholder> $args
+     */
+    public static function getArgumentOffsetVarId(string $var_id, array $args, FileSource $source): ?string
+    {
+        $parts = self::splitArgumentOffsetVarId($var_id);
+        $arg = $parts === null ? null : ($args[$parts[0]] ?? null);
+
+        if ($parts === null || !$arg instanceof PhpParser\Node\Arg) {
+            return null;
+        }
+
+        $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg->value, null, $source);
+
+        return $arg_var_id === null ? null : $arg_var_id . $parts[1];
     }
 
     /**
