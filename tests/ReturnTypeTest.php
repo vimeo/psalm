@@ -1795,6 +1795,35 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'iterableDocblockReturnTypeOfNativeObjectRejectsANonIterableObject' => [
+                'code' => '<?php
+                    interface FooInterface {
+                        /**
+                         * @return iterable
+                         */
+                        public function foo(): object|array {
+                            return new A();
+                        }
+                    }
+
+                    final class A {}',
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'objectIsNotAcceptedWhereAnIterableIsExpected' => [
+                'code' => '<?php
+                    function takesIterable(iterable $items): void {
+                        foreach ($items as $_) {
+                            echo 1;
+                        }
+                    }
+
+                    function test(object $object): void {
+                        takesIterable($object);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'unrepresentableScalarIntersection' => [
                 'code' => '<?php
                     /** @return literal-string&non-falsy-string */
