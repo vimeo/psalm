@@ -1981,13 +1981,6 @@
       <code><![CDATA[empty($imported_type_data[4])]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Internal/PhpVisitor/Reflector/ExpressionResolver.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$string_value]]></code>
-      <code><![CDATA[$string_value]]></code>
-      <code><![CDATA[$string_value]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ExpressionScanner.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$node->getArgs()[0]]]></code>

@@ -39,11 +39,17 @@ use function array_merge;
 use function array_values;
 use function assert;
 use function class_exists;
+use function enum_exists;
+use function file_get_contents;
 use function function_exists;
 use function get_defined_constants;
 use function in_array;
 use function interface_exists;
+use function preg_match;
+use function preg_quote;
+use function strrpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -441,19 +447,7 @@ final class ExpressionResolver
                 $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
             }
 
-            if ($string_value && class_exists($string_value)) {
-                $reflection_class = new ReflectionClass($string_value);
-
-                if ($reflection_class->getFileName() !== $file_path) {
-                    $codebase->scanner->queueClassLikeForScanning(
-                        $string_value,
-                    );
-
-                    return true;
-                }
-            }
-
-            return false;
+            return self::isDefinedElsewhere($codebase, $string_value, $file_path, 'class');
         }
 
         if ($function->name->getParts() === ['interface_exists']
@@ -471,19 +465,7 @@ final class ExpressionResolver
                 $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
             }
 
-            if ($string_value && interface_exists($string_value)) {
-                $reflection_class = new ReflectionClass($string_value);
-
-                if ($reflection_class->getFileName() !== $file_path) {
-                    $codebase->scanner->queueClassLikeForScanning(
-                        $string_value,
-                    );
-
-                    return true;
-                }
-            }
-
-            return false;
+            return self::isDefinedElsewhere($codebase, $string_value, $file_path, 'interface');
         }
 
         if ($function->name->getParts() === ['enum_exists']
@@ -501,21 +483,7 @@ final class ExpressionResolver
                 $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
             }
 
-            // We're using class_exists here because enum_exists doesn't exist on old versions of PHP
-            // Not sure what happens if we try to autoload or reflect on an enum on an old version of PHP though...
-            if ($string_value && class_exists($string_value)) {
-                $reflection_class = new ReflectionClass($string_value);
-
-                if ($reflection_class->getFileName() !== $file_path) {
-                    $codebase->scanner->queueClassLikeForScanning(
-                        $string_value,
-                    );
-
-                    return true;
-                }
-            }
-
-            return false;
+            return self::isDefinedElsewhere($codebase, $string_value, $file_path, 'enum');
         }
 
         if ($function->name->getParts() === ['defined']
@@ -532,5 +500,78 @@ final class ExpressionResolver
         }
 
         return null;
+    }
+
+    /**
+     * Whether the class, interface or enum is defined by something other than the file being scanned: a symbol
+     * Psalm's own process has loaded, or one Composer finds a file for that declares it with the guarded kind.
+     * The autoloader is never run, as it would execute the analyzed code (and any `exit` of it).
+     *
+     * @param 'class'|'interface'|'enum' $kind
+     */
+    private static function isDefinedElsewhere(
+        Codebase $codebase,
+        ?string $name,
+        string $file_path,
+        string $kind,
+    ): bool {
+        if ($name === null || $name === '') {
+            return false;
+        }
+
+        // class_exists() is also true for enums, but not for interfaces and traits
+        if ($kind === 'interface'
+            ? interface_exists($name, false)
+            : ($kind === 'enum' ? enum_exists($name, false) : class_exists($name, false))
+        ) {
+            /** @var class-string $name */
+            $defining_file = (new ReflectionClass($name))->getFileName();
+        } else {
+            $defining_file = $codebase->config->getComposerFilePathForClassLike($name);
+
+            if ($defining_file === false || !self::fileDeclaresKind($defining_file, $name, $kind)) {
+                return false;
+            }
+        }
+
+        if ($defining_file === $file_path) {
+            return false;
+        }
+
+        $codebase->scanner->queueClassLikeForScanning($name);
+
+        return true;
+    }
+
+    /**
+     * Composer's class map only says which file defines a name, so the declaration keyword is read from the file.
+     * A file whose declaration can't be found is taken to match.
+     *
+     * @param 'class'|'interface'|'enum' $kind
+     */
+    private static function fileDeclaresKind(string $file_path, string $name, string $kind): bool
+    {
+        $contents = @file_get_contents($file_path);
+
+        if ($contents === false) {
+            return true;
+        }
+
+        $short_name = ($pos = strrpos($name, '\\')) === false ? $name : substr($name, $pos + 1);
+
+        $matched = preg_match(
+            '/^[ \t]*(?:(?:final|abstract|readonly)\s+)*(class|interface|trait|enum)\s+' . preg_quote($short_name, '/')
+                . '\b/mi',
+            $contents,
+            $matches,
+        );
+
+        if ($matched !== 1 || !isset($matches[1])) {
+            return true;
+        }
+
+        $declared = strtolower($matches[1]);
+
+        return $kind === 'class' ? ($declared === 'class' || $declared === 'enum') : $declared === $kind;
     }
 }
