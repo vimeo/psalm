@@ -4796,6 +4796,28 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'classTemplateDefaultUsingKeyOfAnEarlierTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T of array
+                     * @template K of array-key = key-of<T>
+                     */
+                    final class Keyed {
+                        /** @return K */
+                        public function key(): int|string {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @param Keyed<array{a: int}> $keyed */
+                    function keyOf(Keyed $keyed): string {
+                        return $keyed->key();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'selfReferencingTemplateDefault' => [
                 'code' => '<?php
                     /**

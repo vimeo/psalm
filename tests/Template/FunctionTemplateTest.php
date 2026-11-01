@@ -2339,6 +2339,26 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'templateDefaultUsingKeyOfAnEarlierTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @template K of array-key = key-of<T>
+                     * @param T $array
+                     * @param (callable(): K)|null $pick
+                     * @return K
+                     */
+                    function firstKey(array $array, ?callable $pick = null): int|string {
+                        throw new Exception();
+                    }
+
+                    $key = firstKey(["x" => 1]);',
+                'assertions' => [
+                    '$key===' => '\'x\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -3018,6 +3038,18 @@ final class FunctionTemplateTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:28 - The default of template T uses template U, which is not declared before it, in docblock for C::m',
+            ],
+            'templateDefaultUsingKeyOfALaterTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template K = key-of<U>
+                     * @template U of array = array{x: int}
+                     * @return K
+                     */
+                    function f(): mixed {
+                        throw new Exception();
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:24 - The default of template K uses template U, which is not declared before it, in docblock for f',
             ],
         ];
     }

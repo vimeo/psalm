@@ -13,12 +13,14 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\TypeVisitor\TemplateDefaultFiller;
+use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_key_first;
@@ -300,11 +302,25 @@ final class TemplateDefaults
      */
     public static function resolve(Union $default, TemplateResult $template_result, ?Codebase $codebase): Union
     {
-        if ($template_result->lower_bounds === [] || $default->getTemplateTypes() === []) {
+        if ($template_result->lower_bounds === [] || self::getUsedTemplates($default) === []) {
             return $default;
         }
 
         return TemplateInferredTypeReplacer::replace($default, $template_result, $codebase);
+    }
+
+    /**
+     * The templates a default uses, also through `key-of<T>`, `value-of<T>`, `properties-of<T>` and `T[K]`
+     *
+     * @return list<TTemplateParam>
+     * @psalm-external-mutation-free
+     */
+    private static function getUsedTemplates(Union $default): array
+    {
+        $collector = new TemplateTypeCollector(true);
+        $collector->traverseArray($default->getAtomicTypes());
+
+        return $collector->getTemplateTypes();
     }
 
     /**
@@ -425,7 +441,7 @@ final class TemplateDefaults
 
             $type_scanner->traverseArray($default->getAtomicTypes());
 
-            foreach ($default->getTemplateTypes() as $used_template) {
+            foreach (self::getUsedTemplates($default) as $used_template) {
                 if ($used_template->defining_class === array_key_first($type_map)
                     && !isset($declared_before[$used_template->param_name])
                     && !isset($purity_templates[$used_template->param_name])
