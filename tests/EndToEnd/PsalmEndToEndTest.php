@@ -25,6 +25,7 @@ use function preg_replace;
 use function readdir;
 use function rmdir;
 use function str_replace;
+use function substr_count;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
@@ -190,6 +191,37 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
         $this->assertStringContainsString('2 errors', $result['STDOUT']);
         $this->assertSame(2, $result['CODE']);
+    }
+
+    /**
+     * The parser cache holds the statements of a file the parser recovered from an error in, so the ParseError has to
+     * come with them: the issue cache never stores it. The 3 files exceed the 2 threads, so the files are analyzed by
+     * workers, whose issues are merged into those of the parent.
+     */
+    public function testParseErrorIsReportedOnEveryRunWithAWarmCache(): void
+    {
+        $this->runPsalmInit(1);
+        file_put_contents(self::$tmpDir . '/src/Clean.php', "<?php\nfunction clean(): void {}\n");
+        $broken_file = self::$tmpDir . '/src/Broken.php';
+        file_put_contents($broken_file, "<?php\nfunction f() {\n    echo 1\n}\n");
+
+        foreach (['--threads=1', '--threads=2'] as $threads) {
+            if (file_exists(self::$tmpDir . '/cache')) {
+                self::recursiveRemoveDirectory(self::$tmpDir . '/cache');
+            }
+
+            for ($run = 1; $run <= 3; $run++) {
+                $result = $this->runPsalm([$threads, '--no-progress'], self::$tmpDir, true);
+
+                $this->assertSame(1, substr_count($result['STDOUT'], 'ParseError'), "$threads, run $run");
+            }
+        }
+
+        file_put_contents($broken_file, "<?php\nfunction f() {\n    echo 1;\n}\n");
+
+        $result = $this->runPsalm(['--no-progress'], self::$tmpDir, true);
+
+        $this->assertSame(0, substr_count($result['STDOUT'], 'ParseError'));
     }
 
     public function testPsalmWithPHPVersionOverride(): void

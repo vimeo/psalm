@@ -111,9 +111,9 @@ final class AlgebraTest extends TestCase
                   || ($b3 === true && $b4 === true && $b5 === true)
                   || ($b6 === true && $b7 === true && $b8 === true);';
 
-        $has_errors = false;
+        $parse_errors = [];
 
-        $dnf_stmt = StatementsProvider::parseStatements($dnf, 7_04_00, $has_errors)[0];
+        $dnf_stmt = StatementsProvider::parseStatements($dnf, 7_04_00, $parse_errors)[0];
 
         $this->assertInstanceOf(PhpParser\Node\Stmt\Expression::class, $dnf_stmt);
 
@@ -605,12 +605,12 @@ final class AlgebraTest extends TestCase
 
     public function testFormulaOfUnknownExpressionIsKeyedByAssertionString(): void
     {
-        $has_errors = false;
+        $parse_errors = [];
 
         $stmt = StatementsProvider::parseStatements(
             '<?php unknown_function($a) && (unknown_function($b) || $c !== 1);',
             7_04_00,
-            $has_errors,
+            $parse_errors,
         )[0];
 
         $this->assertInstanceOf(PhpParser\Node\Stmt\Expression::class, $stmt);

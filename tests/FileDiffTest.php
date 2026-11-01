@@ -36,10 +36,10 @@ final class FileDiffTest extends TestCase
             $this->markTestSkipped();
         }
 
-        $has_errors = false;
+        $parse_errors = [];
 
-        $a_stmts = StatementsProvider::parseStatements($a, 7_04_00, $has_errors);
-        $b_stmts = StatementsProvider::parseStatements($b, 7_04_00, $has_errors);
+        $a_stmts = StatementsProvider::parseStatements($a, 7_04_00, $parse_errors);
+        $b_stmts = StatementsProvider::parseStatements($b, 7_04_00, $parse_errors);
 
         $diff = FileStatementsDiffer::diff($a_stmts, $b_stmts, $a, $b);
 
@@ -97,9 +97,9 @@ final class FileDiffTest extends TestCase
 
         $file_changes = FileDiffer::getDiff($a, $b);
 
-        $has_errors = false;
+        $parse_errors = [];
 
-        $a_stmts = StatementsProvider::parseStatements($a, 7_04_00, $has_errors);
+        $a_stmts = StatementsProvider::parseStatements($a, 7_04_00, $parse_errors);
 
         $traverser = new PhpParser\NodeTraverser;
         $traverser->addVisitor(new CloningVisitor);
@@ -109,8 +109,8 @@ final class FileDiffTest extends TestCase
 
         $this->assertTreesEqual($a_stmts, $a_stmts_copy);
 
-        $b_stmts = StatementsProvider::parseStatements($b, 7_04_00, $has_errors, null, $a, $a_stmts_copy, $file_changes);
-        $b_clean_stmts = StatementsProvider::parseStatements($b, 7_04_00, $has_errors);
+        $b_stmts = StatementsProvider::parseStatements($b, 7_04_00, $parse_errors, $a, $a_stmts_copy, $file_changes);
+        $b_clean_stmts = StatementsProvider::parseStatements($b, 7_04_00, $parse_errors);
 
         $this->assertTreesEqual($b_clean_stmts, $b_stmts);
 
