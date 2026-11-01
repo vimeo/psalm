@@ -30,6 +30,7 @@ final class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
             || $node instanceof PhpParser\Node\Expr\YieldFrom
             || $node instanceof PhpParser\Node\Expr\New_
             || $node instanceof PhpParser\Node\Expr\Cast\String_
+            || $node instanceof PhpParser\Node\Expr\BinaryOp\Pipe
         ) {
             if (($node instanceof PhpParser\Node\Expr\FuncCall
                     || $node instanceof PhpParser\Node\Expr\MethodCall

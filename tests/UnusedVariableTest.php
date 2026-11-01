@@ -2642,6 +2642,33 @@ final class UnusedVariableTest extends TestCase
                     }
                 );',
             ],
+            'pipeUsesItsLeftHandSide' => [
+                'code' => '<?php
+                    function f(string $s, string $u): int {
+                        $t = trim($s);
+                        $v = trim($u);
+
+                        return ($t |> strlen(...)) + (($v . "!") |> strlen(...));
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'pipeIntoUnsupportedPartialApplicationUsesItsOperands' => [
+                'code' => '<?php
+                    final class A {
+                        public function two(int $a, string $b): string { return $b . $a; }
+                    }
+
+                    function f(A $o): mixed {
+                        $method = "two";
+
+                        return 3 |> $o->$method(?, ?);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
         ];
     }
 
@@ -3788,6 +3815,15 @@ final class UnusedVariableTest extends TestCase
                     }
                 );',
                 'error_message' => 'Param float is never referenced in this method',
+            ],
+            'pipeIntoPureFunctionIsUnused' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        $s |> strlen(...);
+                    }',
+                'error_message' => 'UnusedFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.5',
             ],
         ];
     }

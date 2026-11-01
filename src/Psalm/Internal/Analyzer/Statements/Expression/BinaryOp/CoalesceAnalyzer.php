@@ -48,6 +48,7 @@ final class CoalesceAnalyzer
             || $root_expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch
             || $root_expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
             || $root_expr instanceof PhpParser\Node\Expr\Ternary
+            || $root_expr instanceof PhpParser\Node\Expr\BinaryOp\Pipe
         ) {
             $left_var_id = '$<tmp coalesce var>' . (int) $left_expr->getAttribute('startFilePos');
 

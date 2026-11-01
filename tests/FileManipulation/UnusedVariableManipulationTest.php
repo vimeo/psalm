@@ -709,6 +709,44 @@ final class UnusedVariableManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['UnusedVariable'],
                 'safe_types' => true,
             ],
+            'dontRemovePipeCall' => [
+                'input' => '<?php
+                    function foo(string $x, Closure $f): void {
+                        $a = $x |> $f;
+                    }',
+                'output' => '<?php
+                    function foo(string $x, Closure $f): void {
+                        $x |> $f;
+                    }',
+                'php_version' => '8.5',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'dontRemovePipeWithImpureOperand' => [
+                'input' => '<?php
+                    function sideEffect(): string { echo "side effect"; return "b"; }
+
+                    final class K {
+                        public string $x = "a";
+
+                        public function run(): void {
+                            $unused = $this->x |> str_replace("a", sideEffect(), ?);
+                        }
+                    }',
+                'output' => '<?php
+                    function sideEffect(): string { echo "side effect"; return "b"; }
+
+                    final class K {
+                        public string $x = "a";
+
+                        public function run(): void {
+                            $this->x |> str_replace("a", sideEffect(), ?);
+                        }
+                    }',
+                'php_version' => '8.6',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
         ];
     }
 }

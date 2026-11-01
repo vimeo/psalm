@@ -469,7 +469,7 @@ final class StringStartScanner
             }
 
             $method = $private[$name];
-            if ($call->isFirstClassCallable()) {
+            if ($call->isPartialFunctionApplication()) {
                 unset($private[$name]);
                 continue;
             }
@@ -558,6 +558,10 @@ final class StringStartScanner
      */
     private static function getNewArguments(Aliases $aliases, string $self, New_ $call): string
     {
+        if ($call->isPartialFunctionApplication()) {
+            return self::UNKNOWN_CALL;
+        }
+
         $arguments = [];
         foreach ($call->getArgs() as $arg) {
             if ($arg->unpack || $arg->name !== null) {
@@ -642,7 +646,7 @@ final class StringStartScanner
             return ['R' . $property];
         }
 
-        if ($expr instanceof CallLike && !$expr->isFirstClassCallable()) {
+        if ($expr instanceof CallLike && !$expr->isPartialFunctionApplication()) {
             $method = self::getOwnCallName($expr);
             if ($method !== null) {
                 return ['F' . $method];
@@ -665,7 +669,7 @@ final class StringStartScanner
 
         if ($expr instanceof FuncCall
             && $expr->name instanceof Name
-            && !$expr->isFirstClassCallable()
+            && !$expr->isPartialFunctionApplication()
             && $expr->name->toLowerString() === 'sprintf'
         ) {
             $args = $expr->getArgs();
