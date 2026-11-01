@@ -452,6 +452,40 @@ final class WhileTest extends TestCase
                         return rand(0, 1) ? $s : null;
                     }',
             ],
+            'issetOfVariableUnsetInPreviousIteration' => [
+                'code' => '<?php
+                    class A {
+                        public function noop(): void {
+                            echo 1;
+                        }
+                    }
+
+                    $a = new A();
+                    while (true) {
+                        if (!isset($a)) {
+                            exit(0);
+                        }
+                        $a->noop();
+                        unset($a);
+                    }',
+            ],
+            'issetOfVariableUnsetAndReassignedInLoop' => [
+                'code' => '<?php
+                    class A {
+                        public function noop(): void {
+                            echo 1;
+                        }
+                    }
+
+                    $a = new A();
+                    while (rand(0, 1)) {
+                        $a->noop();
+                        unset($a);
+                        $a = new A();
+                    }
+                    $b = $a;',
+                'assertions' => ['$b' => 'A'],
+            ],
             'thornyLoop' => [
                 'code' => '<?php
 
