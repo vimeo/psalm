@@ -1049,27 +1049,12 @@ final class ArrayAssignmentAnalyzer
                     }
                 } elseif ($atomic_root_type_array instanceof TKeyedArray
                     && $atomic_root_type_array->fallback_params === null
+                    && $array_atomic_type_array
                 ) {
-                    if ($array_atomic_type_array) {
-                        $array_atomic_type = new TNonEmptyArray(
-                            $array_atomic_type_array,
-                            count($atomic_root_type_array->properties),
-                        );
-                    } else {
-                        assert($array_atomic_type_list !== null);
-                        $array_atomic_type = array_fill(
-                            $atomic_root_type_array->getMinCount(),
-                            count($atomic_root_type_array->properties)-1,
-                            $array_atomic_type_list,
-                        );
-                        assert(count($array_atomic_type) > 0);
-                        $array_atomic_type = TKeyedArray::make(
-                            $array_atomic_type,
-                            null,
-                            null,
-                            true,
-                        );
-                    }
+                    $array_atomic_type = new TNonEmptyArray(
+                        $array_atomic_type_array,
+                        count($atomic_root_type_array->properties),
+                    );
                     $from_countable_object_like = true;
                 } elseif ($array_atomic_type_list) {
                     $array_atomic_type = Type::getNonEmptyListAtomic(

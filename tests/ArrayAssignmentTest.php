@@ -126,6 +126,19 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'appendToANestedElementOfASealedKeyedArray' => [
+                'code' => '<?php
+                    $conditions = ["A" => "B"];
+                    $conditions[]["C"] = [];
+
+                    $pair = ["A" => "B", "C" => "D"];
+                    $pair[]["E"] = 1;
+
+                    echo count($conditions) + count($pair);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'floatLiteralKeysOutsideTheRangeOfAnIntAreInts' => [
                 'code' => '<?php
                     $big = [1.0e30 => 1];
