@@ -1789,6 +1789,134 @@ final class UnusedCodeTest extends TestCase
 
                     report();',
             ],
+            'propertyReadInDestructorIsUsed' => [
+                'code' => '<?php
+                    final class Greeter {
+                        public function __construct(private string $name) {
+                            echo "Hello, {$this->name}!\n";
+                        }
+
+                        public function __destruct() {
+                            echo "Goodbye, {$this->name}!\n";
+                        }
+                    }
+
+                    $greeter = new Greeter("World");
+                    unset($greeter);',
+            ],
+            'privateMethodCalledOnlyFromDestructorIsUsed' => [
+                'code' => '<?php
+                    final class A {
+                        public function __destruct() {
+                            $this->close();
+                        }
+
+                        private function close(): void {
+                            echo "closed";
+                        }
+                    }
+
+                    new A();',
+            ],
+            'destructorInheritedFromAbstractParentIsUsed' => [
+                'code' => '<?php
+                    abstract class P {
+                        public function __destruct() {
+                            $this->close();
+                        }
+
+                        abstract protected function close(): void;
+                    }
+
+                    final class Q extends P {
+                        private string $name = "q";
+
+                        protected function close(): void {
+                            echo $this->name;
+                        }
+                    }
+
+                    new Q();',
+            ],
+            'destructorFromTraitIsUsed' => [
+                'code' => '<?php
+                    trait T {
+                        public function __destruct() {
+                            $this->close();
+                        }
+                    }
+
+                    final class A {
+                        use T;
+
+                        private function close(): void {
+                            echo "closed";
+                        }
+                    }
+
+                    new A();',
+            ],
+            'propertyReadInImplicitlyCalledMagicMethodsIsUsed' => [
+                'code' => '<?php
+                    final class A {
+                        private string $a = "a";
+                        private string $b = "b";
+                        private string $c = "c";
+                        private string $d = "d";
+                        private string $e = "e";
+                        private string $f = "f";
+                        private string $g = "g";
+                        private static string $h = "h";
+
+                        /** @return list<string> */
+                        public function __sleep(): array { return [$this->a]; }
+                        public function __wakeup(): void { echo $this->b; }
+                        /** @return array<string, string> */
+                        public function __serialize(): array { return ["c" => $this->c]; }
+                        /** @param array<string, string> $data */
+                        public function __unserialize(array $data): void { echo $this->d, $data["c"]; }
+                        /** @return array<string, string> */
+                        public function __debugInfo(): array { return ["e" => $this->e]; }
+                        public function __isset(string $name): bool { return $name === $this->f; }
+                        public function __unset(string $name): void { echo $this->g, $name; }
+                        /** @param array<string, string> $_properties */
+                        public static function __set_state(array $_properties): self { echo self::$h; return new self(); }
+                    }
+
+                    echo serialize(new A());',
+            ],
+            'implicitlyCalledMagicMethodsOfUsedClassAreNotReported' => [
+                'code' => '<?php
+                    final class Single {
+                        private static ?self $instance = null;
+                        private function __construct() {}
+                        private function __clone() {}
+                        public static function get(): self { return self::$instance ??= new self(); }
+                    }
+
+                    final class AllMagic {
+                        public function __destruct() {}
+                        public function __clone() {}
+                        public function __invoke(): void {}
+                        public function __isset(string $k): bool { return $k === ""; }
+                        public function __unset(string $k): void { echo $k; }
+                        /** @return list<string> */
+                        public function __sleep(): array { return []; }
+                        public function __wakeup(): void {}
+                        /** @return array<string, mixed> */
+                        public function __serialize(): array { return []; }
+                        /** @param array<string, mixed> $data */
+                        public function __unserialize(array $data): void { echo count($data); }
+                        /** @param array<string, mixed> $a */
+                        public static function __set_state(array $a): self { echo count($a); return new self(); }
+                        /** @return array<string, mixed> */
+                        public function __debugInfo(): array { return []; }
+                        public function __toString(): string { return ""; }
+                    }
+
+                    echo get_class(Single::get());
+                    new AllMagic();',
+            ],
         ];
     }
 
@@ -2609,6 +2737,19 @@ final class UnusedCodeTest extends TestCase
                     class a {}
                     new a;',
                 'error_message' => 'ClassMustBeFinal',
+            ],
+            'unusedClassWithDestructorDoesNotMakeItsReferencesUsed' => [
+                'code' => '<?php
+                    final class Helper {
+                        public function run(): void {}
+                    }
+
+                    final class Dead {
+                        public function __destruct() {
+                            (new Helper())->run();
+                        }
+                    }',
+                'error_message' => 'Class Helper is never used',
             ],
         ];
     }
