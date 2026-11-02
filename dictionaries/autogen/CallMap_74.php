@@ -1075,6 +1075,10 @@ return array (
   array (
     0 => 'mixed',
   ),
+  'amqpvalue::toamqpvalue' => 
+  array (
+    0 => 'mixed',
+  ),
   'amqpvalueexception::__clone' => 
   array (
     0 => 'mixed',
@@ -1708,6 +1712,27 @@ return array (
     '&input' => 'mixed',
     'funcname' => 'mixed',
     'userdata=' => 'mixed',
+  ),
+  'arrayaccess::offsetexists' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'mixed',
+  ),
+  'arrayaccess::offsetget' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'mixed',
+  ),
+  'arrayaccess::offsetset' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'arrayaccess::offsetunset' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'arrayiterator::__construct' => 
   array (
@@ -5843,6 +5868,14 @@ return array (
     0 => 'Couchbase\\AnalyticsOptions',
     'arg' => 'int',
   ),
+  'couchbase\\analyticsresult::metadata' => 
+  array (
+    0 => 'Couchbase\\QueryMetaData|null',
+  ),
+  'couchbase\\analyticsresult::rows' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
   'couchbase\\appendoptions::durabilitylevel' => 
   array (
     0 => 'Couchbase\\AppendOptions',
@@ -6823,6 +6856,18 @@ return array (
     0 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
     'username' => 'string',
   ),
+  'couchbase\\counterresult::cas' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\counterresult::content' => 
+  array (
+    0 => 'int',
+  ),
+  'couchbase\\counterresult::mutationtoken' => 
+  array (
+    0 => 'Couchbase\\MutationToken|null',
+  ),
   'couchbase\\createanalyticsdatasetoptions::condition' => 
   array (
     0 => 'Couchbase\\CreateAnalyticsDatasetOptions',
@@ -6897,6 +6942,22 @@ return array (
   array (
     0 => 'Couchbase\\CreateQueryPrimaryIndexOptions',
     'number' => 'int',
+  ),
+  'couchbase\\daterangefacetresult::count' => 
+  array (
+    0 => 'int',
+  ),
+  'couchbase\\daterangefacetresult::end' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\daterangefacetresult::name' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\daterangefacetresult::start' => 
+  array (
+    0 => 'null|string',
   ),
   'couchbase\\daterangesearchfacet::__construct' => 
   array (
@@ -7290,6 +7351,14 @@ return array (
     0 => 'Couchbase\\ExistsOptions',
     'arg' => 'int',
   ),
+  'couchbase\\existsresult::cas' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\existsresult::exists' => 
+  array (
+    0 => 'bool',
+  ),
   'couchbase\\geoboundingboxsearchquery::__construct' => 
   array (
     0 => 'void',
@@ -7436,6 +7505,30 @@ return array (
   array (
     0 => 'Couchbase\\GetOptions',
     'arg' => 'bool',
+  ),
+  'couchbase\\getreplicaresult::cas' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\getreplicaresult::content' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\getreplicaresult::isreplica' => 
+  array (
+    0 => 'bool',
+  ),
+  'couchbase\\getresult::cas' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\getresult::content' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\getresult::expirytime' => 
+  array (
+    0 => 'DateTimeInterface|null',
   ),
   'couchbase\\getuseroptions::domainname' => 
   array (
@@ -8166,6 +8259,29 @@ return array (
     0 => 'Couchbase\\LookupInOptions',
     'arg' => 'bool',
   ),
+  'couchbase\\lookupinresult::cas' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\lookupinresult::content' => 
+  array (
+    0 => 'null|object',
+    'index' => 'int',
+  ),
+  'couchbase\\lookupinresult::exists' => 
+  array (
+    0 => 'bool',
+    'index' => 'int',
+  ),
+  'couchbase\\lookupinresult::expirytime' => 
+  array (
+    0 => 'DateTimeInterface|null',
+  ),
+  'couchbase\\lookupinresult::status' => 
+  array (
+    0 => 'int',
+    'index' => 'int',
+  ),
   'couchbase\\matchallsearchquery::__construct' => 
   array (
     0 => 'void',
@@ -8250,6 +8366,12 @@ return array (
     0 => 'Couchbase\\MatchSearchQuery',
     'prefixLength' => 'int',
   ),
+  'couchbase\\meter::valuerecorder' => 
+  array (
+    0 => 'Couchbase\\ValueRecorder',
+    'name' => 'string',
+    'tags' => 'array<array-key, mixed>',
+  ),
   'couchbase\\mutatearrayadduniquespec::__construct' => 
   array (
     0 => 'void',
@@ -8324,6 +8446,19 @@ return array (
     0 => 'Couchbase\\MutateInOptions',
     'arg' => 'int',
   ),
+  'couchbase\\mutateinresult::cas' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\mutateinresult::content' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+    'index' => 'int',
+  ),
+  'couchbase\\mutateinresult::mutationtoken' => 
+  array (
+    0 => 'Couchbase\\MutationToken|null',
+  ),
   'couchbase\\mutateinsertspec::__construct' => 
   array (
     0 => 'void',
@@ -8355,6 +8490,14 @@ return array (
     'createPath' => 'bool',
     'expandMacros' => 'bool',
   ),
+  'couchbase\\mutationresult::cas' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\mutationresult::mutationtoken' => 
+  array (
+    0 => 'Couchbase\\MutationToken|null',
+  ),
   'couchbase\\mutationstate::__construct' => 
   array (
     0 => 'void',
@@ -8363,6 +8506,22 @@ return array (
   array (
     0 => 'Couchbase\\MutationState',
     'source' => 'Couchbase\\MutationResult',
+  ),
+  'couchbase\\mutationtoken::bucketname' => 
+  array (
+    0 => 'mixed',
+  ),
+  'couchbase\\mutationtoken::partitionid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'couchbase\\mutationtoken::partitionuuid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'couchbase\\mutationtoken::sequencenumber' => 
+  array (
+    0 => 'mixed',
   ),
   'couchbase\\networkexception::__clone' => 
   array (
@@ -8430,6 +8589,22 @@ return array (
     0 => 'mixed',
     'name' => 'string',
     'parent=' => 'Couchbase\\RequestSpan|null',
+  ),
+  'couchbase\\numericrangefacetresult::count' => 
+  array (
+    0 => 'int',
+  ),
+  'couchbase\\numericrangefacetresult::max' => 
+  array (
+    0 => 'mixed',
+  ),
+  'couchbase\\numericrangefacetresult::min' => 
+  array (
+    0 => 'mixed',
+  ),
+  'couchbase\\numericrangefacetresult::name' => 
+  array (
+    0 => 'string',
   ),
   'couchbase\\numericrangesearchfacet::__construct' => 
   array (
@@ -9047,6 +9222,38 @@ return array (
     'timeout' => 'int',
     'options=' => 'Couchbase\\WatchQueryIndexesOptions|null',
   ),
+  'couchbase\\querymetadata::clientcontextid' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\querymetadata::errors' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\querymetadata::metrics' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\querymetadata::profile' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\querymetadata::requestid' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\querymetadata::signature' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\querymetadata::status' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\querymetadata::warnings' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
   'couchbase\\queryoptions::adhoc' => 
   array (
     0 => 'Couchbase\\QueryOptions',
@@ -9137,6 +9344,14 @@ return array (
   array (
     0 => 'Couchbase\\QueryOptions',
     'arg' => 'int',
+  ),
+  'couchbase\\queryresult::metadata' => 
+  array (
+    0 => 'Couchbase\\QueryMetaData|null',
+  ),
+  'couchbase\\queryresult::rows' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
   ),
   'couchbase\\queryserviceexception::__clone' => 
   array (
@@ -9441,6 +9656,26 @@ return array (
   array (
     0 => 'null|string',
   ),
+  'couchbase\\requestspan::addtag' => 
+  array (
+    0 => 'void',
+    'key' => 'string',
+    'value' => 'mixed',
+  ),
+  'couchbase\\requestspan::end' => 
+  array (
+    0 => 'void',
+  ),
+  'couchbase\\requesttracer::requestspan' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+    'parent=' => 'Couchbase\\RequestSpan|null',
+  ),
+  'couchbase\\result::cas' => 
+  array (
+    0 => 'null|string',
+  ),
   'couchbase\\role::bucket' => 
   array (
     0 => 'null|string',
@@ -9677,6 +9912,34 @@ return array (
   array (
     0 => 'null|string',
   ),
+  'couchbase\\searchfacetresult::dateranges' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\searchfacetresult::field' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchfacetresult::missing' => 
+  array (
+    0 => 'int',
+  ),
+  'couchbase\\searchfacetresult::numericranges' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\searchfacetresult::other' => 
+  array (
+    0 => 'int',
+  ),
+  'couchbase\\searchfacetresult::terms' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\searchfacetresult::total' => 
+  array (
+    0 => 'int',
+  ),
   'couchbase\\searchindex::jsonserialize' => 
   array (
     0 => 'mixed',
@@ -9804,6 +10067,30 @@ return array (
     0 => 'mixed',
     'indexDefinition' => 'Couchbase\\SearchIndex',
   ),
+  'couchbase\\searchmetadata::errorcount' => 
+  array (
+    0 => 'int|null',
+  ),
+  'couchbase\\searchmetadata::maxscore' => 
+  array (
+    0 => 'float|null',
+  ),
+  'couchbase\\searchmetadata::metrics' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\searchmetadata::successcount' => 
+  array (
+    0 => 'int|null',
+  ),
+  'couchbase\\searchmetadata::took' => 
+  array (
+    0 => 'int|null',
+  ),
+  'couchbase\\searchmetadata::totalhits' => 
+  array (
+    0 => 'int|null',
+  ),
   'couchbase\\searchoptions::collections' => 
   array (
     0 => 'Couchbase\\SearchOptions',
@@ -9864,6 +10151,18 @@ return array (
   array (
     0 => 'Couchbase\\SearchOptions',
     'ms' => 'int',
+  ),
+  'couchbase\\searchresult::facets' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\searchresult::metadata' => 
+  array (
+    0 => 'Couchbase\\SearchMetaData|null',
+  ),
+  'couchbase\\searchresult::rows' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
   ),
   'couchbase\\searchsortfield::__construct' => 
   array (
@@ -10105,6 +10404,14 @@ return array (
   'couchbase\\tempfailexception::ref' => 
   array (
     0 => 'null|string',
+  ),
+  'couchbase\\termfacetresult::count' => 
+  array (
+    0 => 'int',
+  ),
+  'couchbase\\termfacetresult::term' => 
+  array (
+    0 => 'string',
   ),
   'couchbase\\termrangesearchquery::__construct' => 
   array (
@@ -10418,6 +10725,11 @@ return array (
     'user' => 'Couchbase\\User',
     'options=' => 'Couchbase\\UpsertUserOptions|null',
   ),
+  'couchbase\\valuerecorder::recordvalue' => 
+  array (
+    0 => 'void',
+    'value' => 'int',
+  ),
   'couchbase\\valuetoobigexception::__clone' => 
   array (
     0 => 'mixed',
@@ -10574,6 +10886,14 @@ return array (
     0 => 'mixed',
     'document' => 'Couchbase\\DesignDocument',
   ),
+  'couchbase\\viewmetadata::debug' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\viewmetadata::totalrows' => 
+  array (
+    0 => 'int|null',
+  ),
   'couchbase\\viewoptions::group' => 
   array (
     0 => 'Couchbase\\ViewOptions',
@@ -10650,6 +10970,14 @@ return array (
     0 => 'Couchbase\\ViewOptions',
     'arg' => 'int',
   ),
+  'couchbase\\viewresult::metadata' => 
+  array (
+    0 => 'Couchbase\\ViewMetaData|null',
+  ),
+  'couchbase\\viewresult::rows' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
   'couchbase\\viewrow::document' => 
   array (
     0 => 'mixed',
@@ -10701,6 +11029,10 @@ return array (
     0 => 'mixed',
     'input' => 'mixed',
     'mode=' => 'mixed',
+  ),
+  'countable::count' => 
+  array (
+    0 => 'mixed',
   ),
   'crc32' => 
   array (
@@ -11533,6 +11865,33 @@ return array (
   array (
     0 => 'mixed',
     'interval' => 'mixed',
+  ),
+  'datetimeinterface::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'datetimeinterface::diff' => 
+  array (
+    0 => 'mixed',
+    'object' => 'mixed',
+    'absolute=' => 'mixed',
+  ),
+  'datetimeinterface::format' => 
+  array (
+    0 => 'mixed',
+    'format' => 'mixed',
+  ),
+  'datetimeinterface::getoffset' => 
+  array (
+    0 => 'mixed',
+  ),
+  'datetimeinterface::gettimestamp' => 
+  array (
+    0 => 'mixed',
+  ),
+  'datetimeinterface::gettimezone' => 
+  array (
+    0 => 'mixed',
   ),
   'datetimezone::__construct' => 
   array (
@@ -14335,6 +14694,34 @@ return array (
     0 => 'mixed',
     'var' => 'mixed',
   ),
+  'ds\\collection::clear' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\collection::copy' => 
+  array (
+    0 => 'Ds\\Collection',
+  ),
+  'ds\\collection::count' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\collection::getiterator' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\collection::isempty' => 
+  array (
+    0 => 'bool',
+  ),
+  'ds\\collection::jsonserialize' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\collection::toarray' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
   'ds\\deque::__construct' => 
   array (
     0 => 'void',
@@ -14519,6 +14906,15 @@ return array (
   array (
     0 => 'mixed',
     '...values=' => 'mixed',
+  ),
+  'ds\\hashable::equals' => 
+  array (
+    0 => 'bool',
+    'obj' => 'mixed',
+  ),
+  'ds\\hashable::hash' => 
+  array (
+    0 => 'mixed',
   ),
   'ds\\map::__construct' => 
   array (
@@ -14873,6 +15269,168 @@ return array (
   'ds\\queue::toarray' => 
   array (
     0 => 'array<array-key, mixed>',
+  ),
+  'ds\\sequence::allocate' => 
+  array (
+    0 => 'mixed',
+    'capacity' => 'int',
+  ),
+  'ds\\sequence::capacity' => 
+  array (
+    0 => 'int',
+  ),
+  'ds\\sequence::clear' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\sequence::contains' => 
+  array (
+    0 => 'bool',
+    '...values=' => 'mixed',
+  ),
+  'ds\\sequence::copy' => 
+  array (
+    0 => 'Ds\\Collection',
+  ),
+  'ds\\sequence::count' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\sequence::filter' => 
+  array (
+    0 => 'Ds\\Sequence',
+    'callback=' => 'callable[impure]|null',
+  ),
+  'ds\\sequence::find' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+  ),
+  'ds\\sequence::first' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\sequence::get' => 
+  array (
+    0 => 'mixed',
+    'index' => 'int',
+  ),
+  'ds\\sequence::getiterator' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\sequence::insert' => 
+  array (
+    0 => 'mixed',
+    'index' => 'int',
+    '...values=' => 'mixed',
+  ),
+  'ds\\sequence::isempty' => 
+  array (
+    0 => 'bool',
+  ),
+  'ds\\sequence::join' => 
+  array (
+    0 => 'string',
+    'glue=' => 'string',
+  ),
+  'ds\\sequence::jsonserialize' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\sequence::last' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\sequence::map' => 
+  array (
+    0 => 'Ds\\Sequence',
+    'callback' => 'callable[impure]',
+  ),
+  'ds\\sequence::merge' => 
+  array (
+    0 => 'Ds\\Sequence',
+    'values' => 'mixed',
+  ),
+  'ds\\sequence::offsetexists' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'mixed',
+  ),
+  'ds\\sequence::offsetget' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'mixed',
+  ),
+  'ds\\sequence::offsetset' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'ds\\sequence::offsetunset' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'mixed',
+  ),
+  'ds\\sequence::pop' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\sequence::push' => 
+  array (
+    0 => 'mixed',
+    '...values=' => 'mixed',
+  ),
+  'ds\\sequence::reduce' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'callable[impure]',
+    'initial=' => 'mixed',
+  ),
+  'ds\\sequence::remove' => 
+  array (
+    0 => 'mixed',
+    'index' => 'int',
+  ),
+  'ds\\sequence::reverse' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\sequence::rotate' => 
+  array (
+    0 => 'mixed',
+    'rotations' => 'int',
+  ),
+  'ds\\sequence::set' => 
+  array (
+    0 => 'mixed',
+    'index' => 'int',
+    'value' => 'mixed',
+  ),
+  'ds\\sequence::shift' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\sequence::slice' => 
+  array (
+    0 => 'Ds\\Sequence',
+    'index' => 'int',
+    'length=' => 'int|null',
+  ),
+  'ds\\sequence::sort' => 
+  array (
+    0 => 'mixed',
+    'comparator=' => 'callable[impure]|null',
+  ),
+  'ds\\sequence::toarray' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'ds\\sequence::unshift' => 
+  array (
+    0 => 'mixed',
+    '...values=' => 'mixed',
   ),
   'ds\\set::__construct' => 
   array (
@@ -26243,6 +26801,26 @@ return array (
     0 => 'mixed',
     'filename' => 'mixed',
   ),
+  'iterator::current' => 
+  array (
+    0 => 'mixed',
+  ),
+  'iterator::key' => 
+  array (
+    0 => 'mixed',
+  ),
+  'iterator::next' => 
+  array (
+    0 => 'mixed',
+  ),
+  'iterator::rewind' => 
+  array (
+    0 => 'mixed',
+  ),
+  'iterator::valid' => 
+  array (
+    0 => 'mixed',
+  ),
   'iterator_apply' => 
   array (
     0 => 'mixed',
@@ -26260,6 +26838,10 @@ return array (
     0 => 'mixed',
     'iterator' => 'Traversable',
     'use_keys=' => 'mixed',
+  ),
+  'iteratoraggregate::getiterator' => 
+  array (
+    0 => 'mixed',
   ),
   'iteratoriterator::__construct' => 
   array (
@@ -26372,6 +26954,10 @@ return array (
     0 => 'mixed',
   ),
   'jsonexception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'jsonserializable::jsonserialize' => 
   array (
     0 => 'mixed',
   ),
@@ -27938,6 +28524,18 @@ return array (
     0 => 'void',
     'serialized' => 'mixed',
   ),
+  'mongodb\\bson\\binaryinterface::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'mongodb\\bson\\binaryinterface::getdata' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\bson\\binaryinterface::gettype' => 
+  array (
+    0 => 'mixed',
+  ),
   'mongodb\\bson\\dbpointer::__construct' => 
   array (
     0 => 'void',
@@ -28008,6 +28606,10 @@ return array (
   array (
     0 => 'void',
     'serialized' => 'mixed',
+  ),
+  'mongodb\\bson\\decimal128interface::__tostring' => 
+  array (
+    0 => 'mixed',
   ),
   'mongodb\\bson\\document::__construct' => 
   array (
@@ -28218,6 +28820,18 @@ return array (
     0 => 'void',
     'serialized' => 'mixed',
   ),
+  'mongodb\\bson\\javascriptinterface::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\bson\\javascriptinterface::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\bson\\javascriptinterface::getscope' => 
+  array (
+    0 => 'mixed',
+  ),
   'mongodb\\bson\\maxkey::__serialize' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -28312,6 +28926,14 @@ return array (
     0 => 'void',
     'serialized' => 'mixed',
   ),
+  'mongodb\\bson\\objectidinterface::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\bson\\objectidinterface::gettimestamp' => 
+  array (
+    0 => 'mixed',
+  ),
   'mongodb\\bson\\packedarray::__construct' => 
   array (
     0 => 'void',
@@ -28401,6 +29023,15 @@ return array (
     0 => 'void',
     'serialized' => 'mixed',
   ),
+  'mongodb\\bson\\persistable::bsonserialize' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\bson\\persistable::bsonunserialize' => 
+  array (
+    0 => 'mixed',
+    'data' => 'array<array-key, mixed>',
+  ),
   'mongodb\\bson\\regex::__construct' => 
   array (
     0 => 'void',
@@ -28445,6 +29076,22 @@ return array (
   array (
     0 => 'void',
     'serialized' => 'mixed',
+  ),
+  'mongodb\\bson\\regexinterface::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\bson\\regexinterface::getflags' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\bson\\regexinterface::getpattern' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\bson\\serializable::bsonserialize' => 
+  array (
+    0 => 'mixed',
   ),
   'mongodb\\bson\\symbol::__construct' => 
   array (
@@ -28526,6 +29173,18 @@ return array (
     0 => 'void',
     'serialized' => 'mixed',
   ),
+  'mongodb\\bson\\timestampinterface::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\bson\\timestampinterface::getincrement' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\bson\\timestampinterface::gettimestamp' => 
+  array (
+    0 => 'mixed',
+  ),
   'mongodb\\bson\\tocanonicalextendedjson' => 
   array (
     0 => 'string',
@@ -28582,6 +29241,11 @@ return array (
     0 => 'void',
     'serialized' => 'mixed',
   ),
+  'mongodb\\bson\\unserializable::bsonunserialize' => 
+  array (
+    0 => 'mixed',
+    'data' => 'array<array-key, mixed>',
+  ),
   'mongodb\\bson\\utcdatetime::__construct' => 
   array (
     0 => 'void',
@@ -28625,6 +29289,14 @@ return array (
   array (
     0 => 'void',
     'serialized' => 'mixed',
+  ),
+  'mongodb\\bson\\utcdatetimeinterface::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\bson\\utcdatetimeinterface::todatetime' => 
+  array (
+    0 => 'mixed',
   ),
   'mongodb\\driver\\bulkwrite::__construct' => 
   array (
@@ -28800,6 +29472,27 @@ return array (
   array (
     0 => 'void',
     'serialized' => 'mixed',
+  ),
+  'mongodb\\driver\\cursorinterface::getid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\driver\\cursorinterface::getserver' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\driver\\cursorinterface::isdead' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\driver\\cursorinterface::settypemap' => 
+  array (
+    0 => 'mixed',
+    'typemap' => 'array<array-key, mixed>',
+  ),
+  'mongodb\\driver\\cursorinterface::toarray' => 
+  array (
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\authenticationexception::__clone' => 
   array (
@@ -29120,6 +29813,38 @@ return array (
   array (
     0 => 'bool',
     'errorLabel' => 'string',
+  ),
+  'mongodb\\driver\\exception\\exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\driver\\exception\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\driver\\exception\\exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\driver\\exception\\exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\driver\\exception\\exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\driver\\exception\\exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\driver\\exception\\exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\driver\\exception\\exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\executiontimeoutexception::__clone' => 
   array (
@@ -29721,6 +30446,21 @@ return array (
   array (
     0 => 'MongoDB\\BSON\\ObjectId|null',
   ),
+  'mongodb\\driver\\monitoring\\commandsubscriber::commandfailed' => 
+  array (
+    0 => 'mixed',
+    'event' => 'MongoDB\\Driver\\Monitoring\\CommandFailedEvent',
+  ),
+  'mongodb\\driver\\monitoring\\commandsubscriber::commandstarted' => 
+  array (
+    0 => 'mixed',
+    'event' => 'MongoDB\\Driver\\Monitoring\\CommandStartedEvent',
+  ),
+  'mongodb\\driver\\monitoring\\commandsubscriber::commandsucceeded' => 
+  array (
+    0 => 'mixed',
+    'event' => 'MongoDB\\Driver\\Monitoring\\CommandSucceededEvent',
+  ),
   'mongodb\\driver\\monitoring\\commandsucceededevent::__construct' => 
   array (
     0 => 'void',
@@ -29769,6 +30509,13 @@ return array (
   array (
     0 => 'MongoDB\\BSON\\ObjectId|null',
   ),
+  'mongodb\\driver\\monitoring\\logsubscriber::log' => 
+  array (
+    0 => 'void',
+    'level' => 'int',
+    'domain' => 'string',
+    'message' => 'string',
+  ),
   'mongodb\\driver\\monitoring\\mongoc_log' => 
   array (
     0 => 'void',
@@ -29780,6 +30527,51 @@ return array (
   array (
     0 => 'void',
     'subscriber' => 'MongoDB\\Driver\\Monitoring\\Subscriber',
+  ),
+  'mongodb\\driver\\monitoring\\sdamsubscriber::serverchanged' => 
+  array (
+    0 => 'mixed',
+    'event' => 'MongoDB\\Driver\\Monitoring\\ServerChangedEvent',
+  ),
+  'mongodb\\driver\\monitoring\\sdamsubscriber::serverclosed' => 
+  array (
+    0 => 'mixed',
+    'event' => 'MongoDB\\Driver\\Monitoring\\ServerClosedEvent',
+  ),
+  'mongodb\\driver\\monitoring\\sdamsubscriber::serverheartbeatfailed' => 
+  array (
+    0 => 'mixed',
+    'event' => 'MongoDB\\Driver\\Monitoring\\ServerHeartbeatFailedEvent',
+  ),
+  'mongodb\\driver\\monitoring\\sdamsubscriber::serverheartbeatstarted' => 
+  array (
+    0 => 'mixed',
+    'event' => 'MongoDB\\Driver\\Monitoring\\ServerHeartbeatStartedEvent',
+  ),
+  'mongodb\\driver\\monitoring\\sdamsubscriber::serverheartbeatsucceeded' => 
+  array (
+    0 => 'mixed',
+    'event' => 'MongoDB\\Driver\\Monitoring\\ServerHeartbeatSucceededEvent',
+  ),
+  'mongodb\\driver\\monitoring\\sdamsubscriber::serveropening' => 
+  array (
+    0 => 'mixed',
+    'event' => 'MongoDB\\Driver\\Monitoring\\ServerOpeningEvent',
+  ),
+  'mongodb\\driver\\monitoring\\sdamsubscriber::topologychanged' => 
+  array (
+    0 => 'mixed',
+    'event' => 'MongoDB\\Driver\\Monitoring\\TopologyChangedEvent',
+  ),
+  'mongodb\\driver\\monitoring\\sdamsubscriber::topologyclosed' => 
+  array (
+    0 => 'mixed',
+    'event' => 'MongoDB\\Driver\\Monitoring\\TopologyClosedEvent',
+  ),
+  'mongodb\\driver\\monitoring\\sdamsubscriber::topologyopening' => 
+  array (
+    0 => 'mixed',
+    'event' => 'MongoDB\\Driver\\Monitoring\\TopologyOpeningEvent',
   ),
   'mongodb\\driver\\monitoring\\serverchangedevent::__construct' => 
   array (
@@ -31363,6 +32155,30 @@ return array (
   array (
     0 => 'mixed',
     'character' => 'mixed',
+  ),
+  'outeriterator::current' => 
+  array (
+    0 => 'mixed',
+  ),
+  'outeriterator::getinneriterator' => 
+  array (
+    0 => 'mixed',
+  ),
+  'outeriterator::key' => 
+  array (
+    0 => 'mixed',
+  ),
+  'outeriterator::next' => 
+  array (
+    0 => 'mixed',
+  ),
+  'outeriterator::rewind' => 
+  array (
+    0 => 'mixed',
+  ),
+  'outeriterator::valid' => 
+  array (
+    0 => 'mixed',
   ),
   'outofboundsexception::__clone' => 
   array (
@@ -34989,6 +35805,34 @@ return array (
     0 => 'mixed',
   ),
   'recursivefilteriterator::valid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'recursiveiterator::current' => 
+  array (
+    0 => 'mixed',
+  ),
+  'recursiveiterator::getchildren' => 
+  array (
+    0 => 'mixed',
+  ),
+  'recursiveiterator::haschildren' => 
+  array (
+    0 => 'mixed',
+  ),
+  'recursiveiterator::key' => 
+  array (
+    0 => 'mixed',
+  ),
+  'recursiveiterator::next' => 
+  array (
+    0 => 'mixed',
+  ),
+  'recursiveiterator::rewind' => 
+  array (
+    0 => 'mixed',
+  ),
+  'recursiveiterator::valid' => 
   array (
     0 => 'mixed',
   ),
@@ -40437,6 +41281,10 @@ return array (
   array (
     0 => 'mixed',
   ),
+  'reflector::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
   'regexiterator::__construct' => 
   array (
     0 => 'void',
@@ -40701,6 +41549,40 @@ return array (
     'sorting_order=' => 'mixed',
     'context=' => 'mixed',
   ),
+  'seekableiterator::current' => 
+  array (
+    0 => 'mixed',
+  ),
+  'seekableiterator::key' => 
+  array (
+    0 => 'mixed',
+  ),
+  'seekableiterator::next' => 
+  array (
+    0 => 'mixed',
+  ),
+  'seekableiterator::rewind' => 
+  array (
+    0 => 'mixed',
+  ),
+  'seekableiterator::seek' => 
+  array (
+    0 => 'mixed',
+    'position' => 'int',
+  ),
+  'seekableiterator::valid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'serializable::serialize' => 
+  array (
+    0 => 'mixed',
+  ),
+  'serializable::unserialize' => 
+  array (
+    0 => 'mixed',
+    'serialized' => 'mixed',
+  ),
   'serialize' => 
   array (
     0 => 'mixed',
@@ -40856,6 +41738,52 @@ return array (
     0 => 'mixed',
     'key' => 'mixed',
     'val' => 'mixed',
+  ),
+  'sessionhandlerinterface::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'sessionhandlerinterface::destroy' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'sessionhandlerinterface::gc' => 
+  array (
+    0 => 'mixed',
+    'maxlifetime' => 'mixed',
+  ),
+  'sessionhandlerinterface::open' => 
+  array (
+    0 => 'mixed',
+    'save_path' => 'mixed',
+    'session_name' => 'mixed',
+  ),
+  'sessionhandlerinterface::read' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'sessionhandlerinterface::write' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'val' => 'mixed',
+  ),
+  'sessionidinterface::create_sid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'sessionupdatetimestamphandlerinterface::updatetimestamp' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'val' => 'mixed',
+  ),
+  'sessionupdatetimestamphandlerinterface::validateid' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'set_error_handler' => 
   array (
@@ -42909,6 +43837,11 @@ return array (
   array (
     0 => 'mixed',
   ),
+  'splobserver::update' => 
+  array (
+    0 => 'mixed',
+    'subject' => 'SplSubject',
+  ),
   'splpriorityqueue::__debuginfo' => 
   array (
     0 => 'mixed',
@@ -43216,6 +44149,20 @@ return array (
     'value' => 'mixed',
   ),
   'splstack::valid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'splsubject::attach' => 
+  array (
+    0 => 'mixed',
+    'observer' => 'SplObserver',
+  ),
+  'splsubject::detach' => 
+  array (
+    0 => 'mixed',
+    'observer' => 'SplObserver',
+  ),
+  'splsubject::notify' => 
   array (
     0 => 'mixed',
   ),
@@ -56110,6 +57057,38 @@ return array (
     0 => 'mixed',
     'dir' => 'mixed',
     'prefix' => 'mixed',
+  ),
+  'throwable::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'throwable::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'throwable::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'throwable::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'throwable::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'throwable::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'throwable::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'throwable::gettraceasstring' => 
+  array (
+    0 => 'mixed',
   ),
   'time' => 
   array (

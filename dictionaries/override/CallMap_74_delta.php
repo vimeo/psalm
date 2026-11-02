@@ -1757,6 +1757,19 @@ return array (
         'data=' => 'mixed',
       ),
     ),
+    'splobserver::update' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'SplSubject' => 'SplSubject',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'subject' => 'SplSubject',
+      ),
+    ),
     'splpriorityqueue::compare' => 
     array (
       'old' => 
@@ -1796,6 +1809,32 @@ return array (
       array (
         0 => 'int',
         'mode' => 'int',
+      ),
+    ),
+    'splsubject::attach' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'SplObserver' => 'SplObserver',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'observer' => 'SplObserver',
+      ),
+    ),
+    'splsubject::detach' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'SplObserver' => 'SplObserver',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'observer' => 'SplObserver',
       ),
     ),
     'spltempfileobject::fwrite' => 
@@ -1866,6 +1905,10 @@ return array (
   'removed' => 
   array (
     'reflectionfunctionabstract::export' => 
+    array (
+      0 => 'null|string',
+    ),
+    'reflector::export' => 
     array (
       0 => 'null|string',
     ),

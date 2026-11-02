@@ -6938,6 +6938,14 @@ return array (
     0 => 'Couchbase\\AnalyticsQuery',
     'statement' => 'string',
   ),
+  'couchbase\\analyticsresult::metadata' => 
+  array (
+    0 => 'Couchbase\\QueryMetaData|null',
+  ),
+  'couchbase\\analyticsresult::rows' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
   'couchbase\\appendoptions::durabilitylevel' => 
   array (
     0 => 'Couchbase\\AppendOptions',
@@ -8343,6 +8351,18 @@ return array (
     0 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
     'username' => 'string',
   ),
+  'couchbase\\counterresult::cas' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\counterresult::content' => 
+  array (
+    0 => 'int',
+  ),
+  'couchbase\\counterresult::mutationtoken' => 
+  array (
+    0 => 'Couchbase\\MutationToken|null',
+  ),
   'couchbase\\createanalyticsdatasetoptions::condition' => 
   array (
     0 => 'Couchbase\\CreateAnalyticsDatasetOptions',
@@ -8417,6 +8437,22 @@ return array (
   array (
     0 => 'Couchbase\\CreateQueryPrimaryIndexOptions',
     'number' => 'int',
+  ),
+  'couchbase\\daterangefacetresult::count' => 
+  array (
+    0 => 'int',
+  ),
+  'couchbase\\daterangefacetresult::end' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\daterangefacetresult::name' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\daterangefacetresult::start' => 
+  array (
+    0 => 'null|string',
   ),
   'couchbase\\daterangesearchfacet::__construct' => 
   array (
@@ -8822,6 +8858,14 @@ return array (
     0 => 'Couchbase\\ExistsOptions',
     'arg' => 'int',
   ),
+  'couchbase\\existsresult::cas' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\existsresult::exists' => 
+  array (
+    0 => 'bool',
+  ),
   'couchbase\\fastlzcompress' => 
   array (
     0 => 'string',
@@ -8978,6 +9022,30 @@ return array (
   array (
     0 => 'Couchbase\\GetOptions',
     'arg' => 'bool',
+  ),
+  'couchbase\\getreplicaresult::cas' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\getreplicaresult::content' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\getreplicaresult::isreplica' => 
+  array (
+    0 => 'bool',
+  ),
+  'couchbase\\getresult::cas' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\getresult::content' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\getresult::expirytime' => 
+  array (
+    0 => 'DateTimeInterface|null',
   ),
   'couchbase\\getuseroptions::domainname' => 
   array (
@@ -9734,6 +9802,29 @@ return array (
     0 => 'Couchbase\\LookupInOptions',
     'arg' => 'bool',
   ),
+  'couchbase\\lookupinresult::cas' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\lookupinresult::content' => 
+  array (
+    0 => 'Couchbase\\object|null',
+    'index' => 'int',
+  ),
+  'couchbase\\lookupinresult::exists' => 
+  array (
+    0 => 'bool',
+    'index' => 'int',
+  ),
+  'couchbase\\lookupinresult::expirytime' => 
+  array (
+    0 => 'DateTimeInterface|null',
+  ),
+  'couchbase\\lookupinresult::status' => 
+  array (
+    0 => 'int',
+    'index' => 'int',
+  ),
   'couchbase\\matchallsearchquery::__construct' => 
   array (
     0 => 'void',
@@ -9817,6 +9908,12 @@ return array (
   array (
     0 => 'Couchbase\\MatchSearchQuery',
     'prefixLength' => 'int',
+  ),
+  'couchbase\\meter::valuerecorder' => 
+  array (
+    0 => 'Couchbase\\ValueRecorder',
+    'name' => 'string',
+    'tags' => 'array<array-key, mixed>',
   ),
   'couchbase\\mutatearrayadduniquespec::__construct' => 
   array (
@@ -9993,6 +10090,19 @@ return array (
     0 => 'Couchbase\\MutateInOptions',
     'arg' => 'int',
   ),
+  'couchbase\\mutateinresult::cas' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\mutateinresult::content' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+    'index' => 'int',
+  ),
+  'couchbase\\mutateinresult::mutationtoken' => 
+  array (
+    0 => 'Couchbase\\MutationToken|null',
+  ),
   'couchbase\\mutateinsertspec::__construct' => 
   array (
     0 => 'void',
@@ -10024,6 +10134,14 @@ return array (
     'createPath' => 'bool',
     'expandMacros' => 'bool',
   ),
+  'couchbase\\mutationresult::cas' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\mutationresult::mutationtoken' => 
+  array (
+    0 => 'Couchbase\\MutationToken|null',
+  ),
   'couchbase\\mutationstate::__construct' => 
   array (
     0 => 'void',
@@ -10053,6 +10171,14 @@ return array (
     'vbucketId' => 'int',
     'vbucketUuid' => 'string',
     'sequenceNumber' => 'string',
+  ),
+  'couchbase\\mutationtoken::partitionid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'couchbase\\mutationtoken::partitionuuid' => 
+  array (
+    0 => 'mixed',
   ),
   'couchbase\\mutationtoken::sequencenumber' => 
   array (
@@ -10205,6 +10331,22 @@ return array (
     0 => 'mixed',
     'name' => 'string',
     'parent=' => 'Couchbase\\RequestSpan|null',
+  ),
+  'couchbase\\numericrangefacetresult::count' => 
+  array (
+    0 => 'int',
+  ),
+  'couchbase\\numericrangefacetresult::max' => 
+  array (
+    0 => 'mixed',
+  ),
+  'couchbase\\numericrangefacetresult::min' => 
+  array (
+    0 => 'mixed',
+  ),
+  'couchbase\\numericrangefacetresult::name' => 
+  array (
+    0 => 'string',
   ),
   'couchbase\\numericrangesearchfacet::__construct' => 
   array (
@@ -10844,6 +10986,38 @@ return array (
     'timeout' => 'int',
     'options=' => 'Couchbase\\WatchQueryIndexesOptions|null',
   ),
+  'couchbase\\querymetadata::clientcontextid' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\querymetadata::errors' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\querymetadata::metrics' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\querymetadata::profile' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\querymetadata::requestid' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\querymetadata::signature' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\querymetadata::status' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\querymetadata::warnings' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
   'couchbase\\queryoptions::adhoc' => 
   array (
     0 => 'Couchbase\\QueryOptions',
@@ -10934,6 +11108,14 @@ return array (
   array (
     0 => 'Couchbase\\QueryOptions',
     'arg' => 'int',
+  ),
+  'couchbase\\queryresult::metadata' => 
+  array (
+    0 => 'Couchbase\\QueryMetaData|null',
+  ),
+  'couchbase\\queryresult::rows' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
   ),
   'couchbase\\queryserviceexception::__clone' => 
   array (
@@ -11238,6 +11420,26 @@ return array (
   array (
     0 => 'null|string',
   ),
+  'couchbase\\requestspan::addtag' => 
+  array (
+    0 => 'void',
+    'key' => 'string',
+    'value' => 'mixed',
+  ),
+  'couchbase\\requestspan::end' => 
+  array (
+    0 => 'void',
+  ),
+  'couchbase\\requesttracer::requestspan' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+    'parent=' => 'Couchbase\\RequestSpan|null',
+  ),
+  'couchbase\\result::cas' => 
+  array (
+    0 => 'null|string',
+  ),
   'couchbase\\role::bucket' => 
   array (
     0 => 'null|string',
@@ -11474,6 +11676,34 @@ return array (
   array (
     0 => 'null|string',
   ),
+  'couchbase\\searchfacetresult::dateranges' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\searchfacetresult::field' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchfacetresult::missing' => 
+  array (
+    0 => 'int',
+  ),
+  'couchbase\\searchfacetresult::numericranges' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\searchfacetresult::other' => 
+  array (
+    0 => 'int',
+  ),
+  'couchbase\\searchfacetresult::terms' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\searchfacetresult::total' => 
+  array (
+    0 => 'int',
+  ),
   'couchbase\\searchindex::jsonserialize' => 
   array (
     0 => 'mixed',
@@ -11600,6 +11830,30 @@ return array (
   array (
     0 => 'mixed',
     'indexDefinition' => 'Couchbase\\SearchIndex',
+  ),
+  'couchbase\\searchmetadata::errorcount' => 
+  array (
+    0 => 'int|null',
+  ),
+  'couchbase\\searchmetadata::maxscore' => 
+  array (
+    0 => 'float|null',
+  ),
+  'couchbase\\searchmetadata::metrics' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\searchmetadata::successcount' => 
+  array (
+    0 => 'int|null',
+  ),
+  'couchbase\\searchmetadata::took' => 
+  array (
+    0 => 'int|null',
+  ),
+  'couchbase\\searchmetadata::totalhits' => 
+  array (
+    0 => 'int|null',
   ),
   'couchbase\\searchoptions::collections' => 
   array (
@@ -11830,6 +12084,18 @@ return array (
   array (
     0 => 'Couchbase\\WildcardSearchQuery',
     'wildcard' => 'string',
+  ),
+  'couchbase\\searchresult::facets' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\searchresult::metadata' => 
+  array (
+    0 => 'Couchbase\\SearchMetaData|null',
+  ),
+  'couchbase\\searchresult::rows' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
   ),
   'couchbase\\searchsort::__construct' => 
   array (
@@ -12224,6 +12490,14 @@ return array (
   array (
     0 => 'null|string',
   ),
+  'couchbase\\termfacetresult::count' => 
+  array (
+    0 => 'int',
+  ),
+  'couchbase\\termfacetresult::term' => 
+  array (
+    0 => 'string',
+  ),
   'couchbase\\termrangesearchquery::__construct' => 
   array (
     0 => 'void',
@@ -12552,6 +12826,11 @@ return array (
     'role' => 'string',
     'bucket=' => 'string',
   ),
+  'couchbase\\valuerecorder::recordvalue' => 
+  array (
+    0 => 'void',
+    'value' => 'int',
+  ),
   'couchbase\\valuetoobigexception::__clone' => 
   array (
     0 => 'mixed',
@@ -12707,6 +12986,14 @@ return array (
   array (
     0 => 'mixed',
     'document' => 'Couchbase\\DesignDocument',
+  ),
+  'couchbase\\viewmetadata::debug' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\viewmetadata::totalrows' => 
+  array (
+    0 => 'int|null',
   ),
   'couchbase\\viewoptions::group' => 
   array (
@@ -12870,6 +13157,14 @@ return array (
   'couchbase\\viewqueryencodable::encode' => 
   array (
     0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\viewresult::metadata' => 
+  array (
+    0 => 'Couchbase\\ViewMetaData|null',
+  ),
+  'couchbase\\viewresult::rows' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
   ),
   'couchbase\\viewrow::document' => 
   array (
@@ -14451,10 +14746,14 @@ return array (
     0 => 'mixed',
     'interval' => 'mixed',
   ),
+  'datetimeinterface::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
   'datetimeinterface::diff' => 
   array (
     0 => 'DateInterval',
-    'datetime2' => 'DateTimeInterface',
+    'object' => 'DateTimeInterface',
     'absolute=' => 'bool',
   ),
   'datetimeinterface::format' => 
@@ -18367,9 +18666,21 @@ return array (
   array (
     0 => 'Ds\\Collection',
   ),
+  'ds\\collection::count' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\collection::getiterator' => 
+  array (
+    0 => 'mixed',
+  ),
   'ds\\collection::isempty' => 
   array (
     0 => 'bool',
+  ),
+  'ds\\collection::jsonserialize' => 
+  array (
+    0 => 'mixed',
   ),
   'ds\\collection::toarray' => 
   array (
@@ -18563,7 +18874,7 @@ return array (
   'ds\\hashable::equals' => 
   array (
     0 => 'bool',
-    'object' => 'mixed',
+    'obj' => 'mixed',
   ),
   'ds\\hashable::hash' => 
   array (
@@ -18945,15 +19256,27 @@ return array (
   array (
     0 => 'int',
   ),
+  'ds\\sequence::clear' => 
+  array (
+    0 => 'mixed',
+  ),
   'ds\\sequence::contains' => 
   array (
     0 => 'bool',
     '...values=' => 'mixed',
   ),
+  'ds\\sequence::copy' => 
+  array (
+    0 => 'Ds\\Collection',
+  ),
+  'ds\\sequence::count' => 
+  array (
+    0 => 'mixed',
+  ),
   'ds\\sequence::filter' => 
   array (
     0 => 'Ds\\Sequence',
-    'callback=' => 'callable[impure]',
+    'callback=' => 'callable[impure]|null',
   ),
   'ds\\sequence::find' => 
   array (
@@ -18969,16 +19292,28 @@ return array (
     0 => 'mixed',
     'index' => 'int',
   ),
+  'ds\\sequence::getiterator' => 
+  array (
+    0 => 'mixed',
+  ),
   'ds\\sequence::insert' => 
   array (
     0 => 'void',
     'index' => 'int',
     '...values=' => 'mixed',
   ),
+  'ds\\sequence::isempty' => 
+  array (
+    0 => 'bool',
+  ),
   'ds\\sequence::join' => 
   array (
     0 => 'string',
     'glue=' => 'string',
+  ),
+  'ds\\sequence::jsonserialize' => 
+  array (
+    0 => 'mixed',
   ),
   'ds\\sequence::last' => 
   array (
@@ -18993,6 +19328,27 @@ return array (
   array (
     0 => 'Ds\\Sequence',
     'values' => 'mixed',
+  ),
+  'ds\\sequence::offsetexists' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'mixed',
+  ),
+  'ds\\sequence::offsetget' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'mixed',
+  ),
+  'ds\\sequence::offsetset' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'ds\\sequence::offsetunset' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'ds\\sequence::pop' => 
   array (
@@ -19046,7 +19402,7 @@ return array (
   'ds\\sequence::sort' => 
   array (
     0 => 'void',
-    'comparator=' => 'callable[impure]',
+    'comparator=' => 'callable[impure]|null',
   ),
   'ds\\sequence::sorted' => 
   array (
@@ -19056,6 +19412,10 @@ return array (
   'ds\\sequence::sum' => 
   array (
     0 => 'float|int',
+  ),
+  'ds\\sequence::toarray' => 
+  array (
+    0 => 'array<array-key, mixed>',
   ),
   'ds\\sequence::unshift' => 
   array (
@@ -47846,6 +48206,11 @@ return array (
   array (
     0 => 'MongoDB\\BSON\\Document|array<array-key, mixed>|stdClass',
   ),
+  'mongodb\\bson\\persistable::bsonunserialize' => 
+  array (
+    0 => 'mixed',
+    'data' => 'array<array-key, mixed>',
+  ),
   'mongodb\\bson\\regex::__construct' => 
   array (
     0 => 'void',
@@ -48589,6 +48954,34 @@ return array (
   array (
     0 => 'string',
   ),
+  'mongodb\\driver\\exception\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\driver\\exception\\exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\driver\\exception\\exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\driver\\exception\\exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\driver\\exception\\exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\driver\\exception\\exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\driver\\exception\\exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
   'mongodb\\driver\\exception\\executiontimeoutexception::__clone' => 
   array (
     0 => 'mixed',
@@ -49220,62 +49613,10 @@ return array (
   array (
     0 => 'MongoDB\\BSON\\ObjectId|null',
   ),
-  'mongodb\\driver\\monitoring\\logsubscriber::log' => 
-  array (
-    0 => 'void',
-    'level' => 'int',
-    'domain' => 'string',
-    'message' => 'string',
-  ),
   'mongodb\\driver\\monitoring\\removesubscriber' => 
   array (
     0 => 'void',
     'subscriber' => 'MongoDB\\Driver\\Monitoring\\Subscriber',
-  ),
-  'mongodb\\driver\\monitoring\\sdamsubscriber::serverchanged' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\ServerChangedEvent',
-  ),
-  'mongodb\\driver\\monitoring\\sdamsubscriber::serverclosed' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\ServerClosedEvent',
-  ),
-  'mongodb\\driver\\monitoring\\sdamsubscriber::serverheartbeatfailed' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\ServerHeartbeatFailedEvent',
-  ),
-  'mongodb\\driver\\monitoring\\sdamsubscriber::serverheartbeatstarted' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\ServerHeartbeatStartedEvent',
-  ),
-  'mongodb\\driver\\monitoring\\sdamsubscriber::serverheartbeatsucceeded' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\ServerHeartbeatSucceededEvent',
-  ),
-  'mongodb\\driver\\monitoring\\sdamsubscriber::serveropening' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\ServerOpeningEvent',
-  ),
-  'mongodb\\driver\\monitoring\\sdamsubscriber::topologychanged' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\TopologyChangedEvent',
-  ),
-  'mongodb\\driver\\monitoring\\sdamsubscriber::topologyclosed' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\TopologyClosedEvent',
-  ),
-  'mongodb\\driver\\monitoring\\sdamsubscriber::topologyopening' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\TopologyOpeningEvent',
   ),
   'mongodb\\driver\\query::__construct' => 
   array (
@@ -71358,29 +71699,29 @@ return array (
   'sessionhandlerinterface::destroy' => 
   array (
     0 => 'bool',
-    'id' => 'string',
+    'key' => 'string',
   ),
   'sessionhandlerinterface::gc' => 
   array (
     0 => 'false|int',
-    'max_lifetime' => 'int',
+    'maxlifetime' => 'int',
   ),
   'sessionhandlerinterface::open' => 
   array (
     0 => 'bool',
-    'path' => 'string',
-    'name' => 'string',
+    'save_path' => 'string',
+    'session_name' => 'string',
   ),
   'sessionhandlerinterface::read' => 
   array (
     0 => 'false|string',
-    'id' => 'string',
+    'key' => 'string',
   ),
   'sessionhandlerinterface::write' => 
   array (
     0 => 'bool',
-    'id' => 'string',
-    'data' => 'string',
+    'key' => 'string',
+    'val' => 'string',
   ),
   'sessionidinterface::create_sid' => 
   array (
@@ -71400,13 +71741,13 @@ return array (
   'sessionupdatetimestamphandlerinterface::updatetimestamp' => 
   array (
     0 => 'bool',
-    'id' => 'string',
-    'data' => 'string',
+    'key' => 'string',
+    'val' => 'string',
   ),
   'sessionupdatetimestamphandlerinterface::validateid' => 
   array (
     0 => 'bool',
-    'id' => 'string',
+    'key' => 'string',
   ),
   'set_error_handler' => 
   array (
@@ -77561,7 +77902,7 @@ return array (
   'splobserver::update' => 
   array (
     0 => 'void',
-    'subject' => 'SplSubject',
+    'SplSubject' => 'SplSubject',
   ),
   'splpriorityqueue::__construct' => 
   array (
@@ -77854,12 +78195,12 @@ return array (
   'splsubject::attach' => 
   array (
     0 => 'void',
-    'observer' => 'SplObserver',
+    'SplObserver' => 'SplObserver',
   ),
   'splsubject::detach' => 
   array (
     0 => 'void',
-    'observer' => 'SplObserver',
+    'SplObserver' => 'SplObserver',
   ),
   'splsubject::notify' => 
   array (
