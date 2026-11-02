@@ -1,0 +1,493 @@
+<?php
+
+// Global constants introduced by a specific PHP version. Unlike the version-specific stubs
+// (Php80.phpstub, ...), which refine pre-existing symbols and must stay gated to the analysis
+// version, these are brand-new symbols, so this file is loaded on every analysis version (a runtime
+// that already defines a constant must not hide it). Each carries an `@since x.y` tag, so a use is
+// reported as undefined when analysing an older PHP version without a guard or a polyfill.
+//
+// Only top-level `const` is read for `@since` (not `define()`), outside any namespace block.
+// Constants whose value depends on the platform or on the library version PHP is built against
+// carry a `@var` type instead of a literal, with a placeholder value.
+
+// Core
+
+/**
+ * @var string
+ * @since 8.5
+ */
+const PHP_BUILD_DATE = '';
+
+/**
+ * @var string
+ * @since 8.5
+ */
+const PHP_BUILD_PROVIDER = '';
+
+/**
+ * @var string
+ * @since 8.5
+ */
+const ZEND_VM_KIND = '';
+
+// curl
+
+/** @since 8.5 */
+const CURLFOLLOW_ALL = 1;
+
+/** @since 8.5 */
+const CURLFOLLOW_FIRSTONLY = 3;
+
+/** @since 8.5 */
+const CURLFOLLOW_OBEYCODE = 2;
+
+/** @since 8.5 */
+const CURLINFO_CONN_ID = 6291520;
+
+/** @since 8.5 */
+const CURLINFO_HTTPAUTH_USED = 2097221;
+
+/** @since 8.5 */
+const CURLINFO_PROXYAUTH_USED = 2097222;
+
+/** @since 8.5 */
+const CURLINFO_QUEUE_TIME_T = 6291521;
+
+/** @since 8.6 */
+const CURLINFO_SIZE_DELIVERED = 6291527;
+
+/** @since 8.5 */
+const CURLINFO_USED_PROXY = 2097218;
+
+/** @since 8.5 */
+const CURLOPT_INFILESIZE_LARGE = 30115;
+
+/** @since 8.6 */
+const CURLOPT_SEEKFUNCTION = 20167;
+
+/** @since 8.5 */
+const CURLOPT_SSL_SIGNATURE_ALGORITHMS = 10328;
+
+/** @since 8.6 */
+const CURL_READFUNC_ABORT = 268435456;
+
+/** @since 8.6 */
+const CURL_SEEKFUNC_CANTSEEK = 2;
+
+/** @since 8.6 */
+const CURL_SEEKFUNC_FAIL = 1;
+
+/** @since 8.6 */
+const CURL_SEEKFUNC_OK = 0;
+
+// filter
+
+/** @since 8.5 */
+const FILTER_THROW_ON_FAILURE = 268435456;
+
+// mysqli
+
+/** @since 8.6 */
+const MYSQLI_OPT_COMPRESS = 1;
+
+// openssl
+
+/** @since 8.5 */
+const OPENSSL_PKCS1_PSS_PADDING = 6;
+
+/** @since 8.6 */
+const OPENSSL_RSA_PSS_SALTLEN_AUTO = -2;
+
+/** @since 8.6 */
+const OPENSSL_RSA_PSS_SALTLEN_DIGEST = -1;
+
+/** @since 8.6 */
+const OPENSSL_RSA_PSS_SALTLEN_MAX = -3;
+
+/** @since 8.5 */
+const PKCS7_CRLFEOL = 2048;
+
+/** @since 8.5 */
+const PKCS7_NOCRL = 8192;
+
+/** @since 8.5 */
+const PKCS7_NOSMIMECAP = 512;
+
+/** @since 8.5 */
+const PKCS7_NO_DUAL_CONTENT = 65536;
+
+// posix
+
+/**
+ * @var int
+ * @since 8.5
+ */
+const POSIX_SC_OPEN_MAX = 0;
+
+// sockets
+
+/**
+ * @var int
+ * @since 8.5
+ */
+const AF_PACKET = 0;
+
+/** @since 8.6 */
+const AF_UNSPEC = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const EAI_ADDRFAMILY = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const EAI_AGAIN = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const EAI_ALLDONE = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const EAI_BADFLAGS = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const EAI_CANCELED = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const EAI_FAIL = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const EAI_FAMILY = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const EAI_IDN_ENCODE = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const EAI_INPROGRESS = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const EAI_INTR = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const EAI_NODATA = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const EAI_NONAME = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const EAI_NOTCANCELED = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const EAI_OVERFLOW = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const EAI_SERVICE = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const EAI_SOCKTYPE = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const EAI_SYSTEM = 0;
+
+/**
+ * @var int
+ * @since 8.5
+ */
+const ETH_P_ALL = 0;
+
+/**
+ * @var int
+ * @since 8.5
+ */
+const ETH_P_IP = 0;
+
+/**
+ * @var int
+ * @since 8.5
+ */
+const ETH_P_IPV6 = 0;
+
+/**
+ * @var int
+ * @since 8.5
+ */
+const ETH_P_LOOP = 0;
+
+/** @since 8.5 */
+const IPPROTO_ICMP = 1;
+
+/** @since 8.5 */
+const IPPROTO_ICMPV6 = 58;
+
+/**
+ * @var int
+ * @since 8.5
+ */
+const IP_BINDANY = 0;
+
+/** @since 8.5 */
+const SHUT_RD = 0;
+
+/** @since 8.5 */
+const SHUT_RDWR = 2;
+
+/** @since 8.5 */
+const SHUT_WR = 1;
+
+/**
+ * @var int
+ * @since 8.5
+ */
+const SO_BUSY_POLL = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const SO_DETACH_REUSEPORT_BPF = 0;
+
+/**
+ * @var int
+ * @since 8.5
+ */
+const TCP_BBR_ALGORITHM = 0;
+
+/**
+ * @var int
+ * @since 8.5
+ */
+const TCP_FUNCTION_ALIAS = 0;
+
+/**
+ * @var int
+ * @since 8.5
+ */
+const TCP_FUNCTION_BLK = 0;
+
+/**
+ * @var int
+ * @since 8.5
+ */
+const TCP_REUSPORT_LB_NUMA = 0;
+
+/**
+ * @var int
+ * @since 8.5
+ */
+const TCP_REUSPORT_LB_NUMA_CURDOM = 0;
+
+/**
+ * @var int
+ * @since 8.5
+ */
+const TCP_REUSPORT_LB_NUMA_NODOM = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const TCP_USER_TIMEOUT = 0;
+
+/**
+ * @var int
+ * @since 8.5
+ */
+const UDP_SEGMENT = 0;
+
+// sodium
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_IPCRYPT_BYTES = 16;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_IPCRYPT_KEYBYTES = 16;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_IPCRYPT_NDX_INPUTBYTES = 16;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_IPCRYPT_NDX_KEYBYTES = 32;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_IPCRYPT_NDX_OUTPUTBYTES = 32;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_IPCRYPT_NDX_TWEAKBYTES = 16;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_IPCRYPT_ND_INPUTBYTES = 16;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_IPCRYPT_ND_KEYBYTES = 16;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_IPCRYPT_ND_OUTPUTBYTES = 24;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_IPCRYPT_ND_TWEAKBYTES = 8;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_IPCRYPT_PFX_BYTES = 16;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_IPCRYPT_PFX_KEYBYTES = 32;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const SODIUM_CRYPTO_KEM_CIPHERTEXTBYTES = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const SODIUM_CRYPTO_KEM_KEYPAIRBYTES = 0;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_KEM_MLKEM768_CIPHERTEXTBYTES = 1088;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_KEM_MLKEM768_KEYPAIRBYTES = 3584;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_KEM_MLKEM768_PUBLICKEYBYTES = 1184;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_KEM_MLKEM768_SECRETKEYBYTES = 2400;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_KEM_MLKEM768_SEEDBYTES = 64;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_KEM_MLKEM768_SHAREDSECRETBYTES = 32;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const SODIUM_CRYPTO_KEM_PUBLICKEYBYTES = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const SODIUM_CRYPTO_KEM_SECRETKEYBYTES = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const SODIUM_CRYPTO_KEM_SEEDBYTES = 0;
+
+/**
+ * @var int
+ * @since 8.6
+ */
+const SODIUM_CRYPTO_KEM_SHAREDSECRETBYTES = 0;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_XOF_SHAKE128_BLOCKBYTES = 168;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_XOF_SHAKE128_STATEBYTES = 256;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_XOF_SHAKE256_BLOCKBYTES = 136;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_XOF_SHAKE256_STATEBYTES = 256;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_XOF_TURBOSHAKE128_BLOCKBYTES = 168;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_XOF_TURBOSHAKE128_STATEBYTES = 256;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_XOF_TURBOSHAKE256_BLOCKBYTES = 136;
+
+/** @since 8.6 */
+const SODIUM_CRYPTO_XOF_TURBOSHAKE256_STATEBYTES = 256;
+
+// standard
+
+/** @since 8.6 */
+const ARRAY_FILTER_USE_VALUE = 0;
+
+/** @since 8.5 */
+const IMAGETYPE_HEIF = 20;
+
+/** @since 8.5 */
+const IMAGETYPE_SVG = 21;
+
+/** @since 8.6 */
+const STREAM_CRYPTO_STATUS_NONE = 0;
+
+/** @since 8.6 */
+const STREAM_CRYPTO_STATUS_WANT_READ = 1;
+
+/** @since 8.6 */
+const STREAM_CRYPTO_STATUS_WANT_WRITE = 2;
+
+// tokenizer
+
+/**
+ * @var int
+ * @since 8.5
+ */
+const T_PIPE = 0;
+
+/**
+ * @var int
+ * @since 8.5
+ */
+const T_VOID_CAST = 0;

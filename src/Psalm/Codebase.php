@@ -158,6 +158,13 @@ final class Codebase
     private static array $stubbed_constants = [];
 
     /**
+     * The PHP version id a stubbed constant was introduced in, for stubs tagged `@since`
+     *
+     * @var array<string, int>
+     */
+    private array $stubbed_constant_since_php_version_ids = [];
+
+    /**
      * @var array<string, UnresolvedConstantComponent>
      */
     private static array $unresolved_stubbed_constants = [];
@@ -1164,11 +1171,46 @@ final class Codebase
     }
 
     /**
+     * Registering a constant clears any `@since` left by an earlier stub registration of the same name. A stub
+     * constant introduced after the analysed PHP version does not replace a constant registered without `@since`
+     * (a project polyfill).
+     *
      * @psalm-external-mutation-free
      */
-    public function addGlobalConstantType(string $const_id, Union $type): void
+    public function addGlobalConstantType(string $const_id, Union $type, ?int $since_php_version_id = null): void
     {
+        if ($since_php_version_id !== null
+            && $since_php_version_id > $this->analysis_php_version_id
+            && $this->getStubbedConstantType($const_id) !== null
+            && !isset($this->stubbed_constant_since_php_version_ids[$const_id])
+        ) {
+            return;
+        }
+
         self::$stubbed_constants[$const_id] = $type;
+
+        if ($since_php_version_id !== null) {
+            $this->stubbed_constant_since_php_version_ids[$const_id] = $since_php_version_id;
+        } else {
+            unset($this->stubbed_constant_since_php_version_ids[$const_id]);
+        }
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    public function getStubbedConstantSincePhpVersionId(string $const_id): ?int
+    {
+        return $this->stubbed_constant_since_php_version_ids[$const_id] ?? null;
+    }
+
+    /**
+     * @return array<string, int>
+     * @psalm-external-mutation-free
+     */
+    public function getAllStubbedConstantSincePhpVersionIds(): array
+    {
+        return $this->stubbed_constant_since_php_version_ids;
     }
 
     /**
@@ -1186,6 +1228,29 @@ final class Codebase
     public function addGlobalConstantTypes(array $stubs): void
     {
         self::$stubbed_constants += $stubs;
+    }
+
+    /**
+     * Merges the constants a scanning worker registered. The worker started from this registry, so an entry
+     * it did not change is the same here. A constant declared without `@since` over one that has it (a project
+     * polyfill of a versioned stub) replaces the versioned entry; anything else registered here already is kept.
+     *
+     * @param array<string, Union> $types
+     * @param array<string, int> $since_php_version_ids
+     * @psalm-external-mutation-free
+     */
+    public function mergeGlobalConstantsOfWorker(array $types, array $since_php_version_ids): void
+    {
+        foreach ($types as $const_id => $type) {
+            if ($this->getStubbedConstantType($const_id) !== null
+                && (!isset($this->stubbed_constant_since_php_version_ids[$const_id])
+                    || isset($since_php_version_ids[$const_id]))
+            ) {
+                continue;
+            }
+
+            $this->addGlobalConstantType($const_id, $type, $since_php_version_ids[$const_id] ?? null);
+        }
     }
 
     /**
