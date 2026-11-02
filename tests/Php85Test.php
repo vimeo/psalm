@@ -577,6 +577,52 @@ final class Php85Test extends TestCase
                 'ignored_issues' => ['UndefinedFunction'],
                 'php_version' => '8.5',
             ],
+            'closureConstantsReadByAParameterDefaultDeclaredBeforeThem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class K {
+                        public static function f(callable $c = self::C, callable $d = self::M): void {}
+
+                        const C = static function (int $x): int { return $x; };
+                        const M = self::double(...);
+
+                        public static function double(int $x): int { return $x * 2; }
+                    }
+
+                    $c = K::C;
+                    $m = K::M;
+                    PHP,
+                'assertions' => [
+                    '$c' => 'Closure[impure](int):int',
+                    '$m' => 'Closure[impure](int):int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'firstClassCallableOfAFunctionShadowingAGlobalOneInClassConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace Foo;
+
+                    function strlen(int $x): int { return $x; }
+
+                    final class K {
+                        const F = strlen(...);
+                    }
+
+                    /** @return K::F */
+                    function g(): \Closure { return K::F; }
+
+                    $f = K::F;
+                    $g = g();
+                    PHP,
+                'assertions' => [
+                    '$f' => 'Closure[impure](int):int',
+                    '$g' => 'Closure[impure]',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 

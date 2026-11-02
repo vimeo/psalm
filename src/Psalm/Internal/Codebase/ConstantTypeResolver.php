@@ -380,7 +380,13 @@ final class ConstantTypeResolver
         $codebase = ProjectAnalyzer::getInstance()->getCodebase();
 
         if ($c instanceof ClosureValue) {
-            $storage = $codebase->getClosureStorage($c->file_path, $c->closure_id);
+            $storage = $codebase->file_storage_provider->get($c->file_path)->functions[$c->closure_id] ?? null;
+
+            // the closure is not scanned yet when a parameter default earlier in the file reads the constant;
+            // the constant is resolved again once it is
+            if ($storage === null) {
+                return new TClosure();
+            }
 
             return new TClosure(
                 $storage->params,
@@ -395,17 +401,22 @@ final class ConstantTypeResolver
             return self::resolveStaticMethodClosure($codebase, $c->fqcln, $c->name);
         }
 
-        foreach ([$c->name, $c->global_fallback_name] as $function_id) {
-            $closure = $function_id !== null
-                ? CallableTypeComparator::getClosureFromFunctionId($codebase, $function_id, $statements_analyzer)
-                : null;
+        $closure = CallableTypeComparator::getClosureFromFunctionId($codebase, $c->name, $statements_analyzer);
 
-            if ($closure) {
-                return $closure;
-            }
+        // the global function is called only if the namespace does not declare one of that name
+        if (!$closure
+            && $c->global_fallback_name !== null
+            && !$codebase->functions->isDeclaredInCode($c->name)
+            && !$codebase->functions->hasStubbedFunction($c->name)
+        ) {
+            $closure = CallableTypeComparator::getClosureFromFunctionId(
+                $codebase,
+                $c->global_fallback_name,
+                $statements_analyzer,
+            );
         }
 
-        return new TClosure();
+        return $closure ?? new TClosure();
     }
 
     /**
