@@ -15,8 +15,8 @@
  *  - Telegram: TELEGRAM_BOT_TOKEN (from @BotFather) and TELEGRAM_CHAT_ID (the channel, e.g. @psalmphp, where the bot
  *    must be an administrator allowed to post messages);
  *  - Discord: DISCORD_BOT_TOKEN (of a bot application) and DISCORD_CHANNEL (<server id>/<channel id>, as in the
- *    channel's URL), an announcement channel where the bot may send messages and mention @everyone; the post mentions
- *    @everyone and is published to the servers following the channel.
+ *    channel's URL), an announcement channel where the bot may send messages and mention everyone; the post pings
+ *    everyone and is published to the servers following the channel.
  *
  * Drafts aren't announced, nor releases published more than a day ago unless --force is given, so that
  * auto-release.php dispatching the announcement on the last tag of each branch doesn't announce old releases.
