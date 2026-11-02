@@ -1293,6 +1293,74 @@ final class PartialFunctionApplicationTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],
+            'PartialApplication:BoundArgumentsBreakingATemplateConstraint' => [
+                'code' => <<<'PHP'
+                    <?php
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @param callable(T): void $callback
+                         */
+                        function apply(mixed $value, callable $callback, int $times): void {}
+                        $apply = apply(5, function (string $s): void {}, ?);
+                    PHP,
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:14 - Type 5 should be a subtype of string',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:BoundArgumentOfAParentMethodOfAGenericClass' => [
+                'code' => <<<'PHP'
+                    <?php
+                        /** @template T */
+                        class Box {
+                            /** @param T $value */
+                            public function set(mixed $value, int $times): void {}
+                        }
+                        /** @extends Box<int> */
+                        final class IntBox extends Box {
+                            public function f(): void {
+                                $closure = parent::set('s', ?);
+                            }
+                        }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:BoundExpressionOfAReferenceParameter' => [
+                'code' => <<<'PHP'
+                    <?php
+                        $closure = sort([3, 1], ?);
+                    PHP,
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:BoundMissingVariableOfANonNullableReferenceParameter' => [
+                'code' => <<<'PHP'
+                    <?php
+                        function fill(array &$a, int $n): void {}
+                        function f(): void {
+                            $closure = fill($missing, ?);
+                        }
+                    PHP,
+                'error_message' => 'NullArgument',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:TooManyPlaceholdersOfAnInheritedMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                        class Base {
+                            public function run(int $a, int $b): void {}
+                        }
+                        final class Child extends Base {}
+                        $closure = (new Child())->run(?, ?, ?);
+                    PHP,
+                'error_message' => 'Too many arguments for partial application of Base::run',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
         ];
     }
 }

@@ -78,7 +78,9 @@ final class CliOutput
     }
 
     /**
-     * Marks the arguments of a call of a builtin function printing them, in code only running from the command line
+     * Marks the arguments of a call of a builtin function printing them, in code only running from the command line.
+     * In a partial application, an argument making it return what it prints that isn't bound is left to the closure's
+     * caller.
      *
      * @param array<array-key, Arg> $args
      */
@@ -86,6 +88,7 @@ final class CliOutput
         StatementsAnalyzer $statements_analyzer,
         ?string $function_id,
         array $args,
+        bool $partial_application = false,
     ): void {
         if ($function_id === null
             || !array_key_exists($function_id, self::PRINTING_FUNCTIONS)
@@ -101,6 +104,8 @@ final class CliOutput
             if ($return_type === null || !$return_type->isFalse()) {
                 return;
             }
+        } elseif ($return_offset !== null && $partial_application) {
+            return;
         }
 
         if (!self::isInCliOnlyCode($statements_analyzer)) {

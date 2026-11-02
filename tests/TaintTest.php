@@ -795,16 +795,74 @@ final class TaintTest extends TestCase
                     $literal = show("literal", ?);',
                 ['TaintedHtml from line 6'],
             ],
-            'applicationsOfAPureFunctionInDifferentPlaces' => [
+            'staticCallNamingItsClass' => [
                 '<?php
-                    /** @psalm-taint-sink shell $cmd */
-                    function run(string $cmd, int $n): int {
-                        return $n;
+                    class A {
+                        public static function run(string $s, int $n): void {}
+                    }
+                    final class B extends A {
+                        #[Override]
+                        public static function run(string $s, int $n): void {
+                            shell_exec($s);
+                        }
                     }
 
-                    $literal = run("ls", ?);
-                    $tainted = run((string) $_GET["x"], ?);',
-                ['TaintedShell from line 8'],
+                    $named = A::run((string) $_GET["named"], ?);',
+                [],
+            ],
+            'instanceMethodOfAClassNamedOnThis' => [
+                '<?php
+                    class A {
+                        public function run(string $s, int $n): void {}
+                    }
+                    class B extends A {
+                        #[Override]
+                        public function run(string $s, int $n): void {
+                            shell_exec($s);
+                        }
+                    }
+                    final class C extends B {
+                        public function named(): Closure {
+                            return A::run((string) $_GET["named"], ?);
+                        }
+                    }',
+                [],
+            ],
+            'staticCallOfStatic' => [
+                '<?php
+                    class A {
+                        public static function run(string $s, int $n): void {}
+
+                        public static function late(): Closure {
+                            return static::run((string) $_GET["late"], ?);
+                        }
+                    }
+                    final class B extends A {
+                        #[Override]
+                        public static function run(string $s, int $n): void {
+                            shell_exec($s);
+                        }
+                    }',
+                ['TaintedShell from line 6'],
+            ],
+            'printedFromCliOnlyCode' => [
+                '<?php
+                    /** @psalm-cli-only */
+                    function report(): void {
+                        $closure = printf("%s\n", (string) $_GET["x"], ...);
+                    }',
+                [],
+            ],
+            'curlOptionPlaceholder' => [
+                '<?php
+                    $closure = curl_setopt(curl_init(), ?, (string) $_GET["value"]);',
+                [
+                    'TaintedCallable from line 2',
+                    'TaintedFile from line 2',
+                    'TaintedHeader from line 2',
+                    'TaintedSSRF from line 2',
+                    'TaintedSleep from line 2',
+                ],
             ],
         ];
 
@@ -14873,6 +14931,38 @@ final class TaintTest extends TestCase
                     }
 
                     $closure = run((string) $_GET["cmd"], ?);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationOfAFunctionNameBindsATaintedArgument' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink shell $cmd */
+                    function run(string $cmd, int $n): void {}
+
+                    $f = "run";
+                    $closure = $f((string) $_GET["cmd"], ?);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationOfAnInvokableObjectBindsATaintedArgument' => [
+                'code' => '<?php
+                    final class Runner {
+                        public function __invoke(string $cmd, int $n): void {
+                            shell_exec($cmd);
+                        }
+                    }
+
+                    $runner = new Runner();
+                    $closure = $runner((string) $_GET["cmd"], ?);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.6',
+            ],
+            'partialApplicationOfAClosureBindsATaintedArgument' => [
+                'code' => '<?php
+                    $run = function (string $cmd, int $n): void {
+                        shell_exec($cmd);
+                    };
+                    $closure = $run((string) $_GET["cmd"], ?);',
                 'error_message' => 'TaintedShell',
                 'php_version' => '8.6',
             ],

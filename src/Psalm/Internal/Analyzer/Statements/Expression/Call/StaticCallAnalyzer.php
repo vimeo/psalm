@@ -59,40 +59,16 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        // unlike static::, a class it names (parent::, self::, A::) has the call run that method, and no override
-        if ($stmt->class instanceof PhpParser\Node\Name
-            && $stmt->class->toLowerString() !== 'static'
-            && !$stmt->isFirstClassCallable()
-        ) {
-            foreach ($stmt->getArgs() as $arg) {
-                $arg->value->setAttribute(ArgumentAnalyzer::NON_VIRTUAL_CALL_ATTRIBUTE, true);
-            }
-        }
+        if ($stmt->class instanceof PhpParser\Node\Name && !$stmt->isFirstClassCallable()) {
+            $body_class = self::markArgsOfACallNamingItsClass(
+                $statements_analyzer,
+                $stmt->class,
+                $stmt->getArgs(),
+                $context,
+            );
 
-        // parent::/self::, and A:: naming a class `$this` is an object of, run the method on `$this`, an object of
-        // its class (see InheritedMethodTaints)
-        if ($stmt->class instanceof PhpParser\Node\Name
-            && $stmt->class->toLowerString() !== 'static'
-            && !$stmt->isFirstClassCallable()
-            && isset($context->vars_in_scope['$this'])
-        ) {
-            $named_class = in_array($stmt->class->toLowerString(), ['parent', 'self'], true)
-                ? null
-                : ClassLikeAnalyzer::getFQCLNFromNameObject($stmt->class, $statements_analyzer->getAliases());
-
-            foreach ($context->vars_in_scope['$this']->getAtomicTypes() as $this_atomic) {
-                if ($this_atomic instanceof TNamedObject
-                    && ($named_class === null
-                        || strtolower($named_class) === strtolower($this_atomic->value)
-                        || ($codebase->classlike_storage_provider->has($this_atomic->value)
-                            && $codebase->classlikes->classExtends($this_atomic->value, $named_class)))
-                ) {
-                    $stmt->setAttribute(InheritedMethodTaints::BODY_CLASS_ATTRIBUTE, $this_atomic->value);
-
-                    foreach ($stmt->getArgs() as $arg) {
-                        $arg->value->setAttribute(InheritedMethodTaints::BODY_CLASS_ATTRIBUTE, $this_atomic->value);
-                    }
-                }
+            if ($body_class !== null) {
+                $stmt->setAttribute(InheritedMethodTaints::BODY_CLASS_ATTRIBUTE, $body_class);
             }
         }
 
@@ -349,6 +325,55 @@ final class StaticCallAnalyzer extends CallAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * Unlike static::, a class a call names (parent::, self::, A::) has the call run that method, and no override.
+     * parent::/self::, and A:: naming a class `$this` is an object of, run the method on `$this`, an object of its
+     * class (see InheritedMethodTaints): returns that class.
+     *
+     * @param array<int, PhpParser\Node\Arg> $args
+     */
+    public static function markArgsOfACallNamingItsClass(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Name $class,
+        array $args,
+        Context $context,
+    ): ?string {
+        if ($class->toLowerString() === 'static') {
+            return null;
+        }
+
+        foreach ($args as $arg) {
+            $arg->value->setAttribute(ArgumentAnalyzer::NON_VIRTUAL_CALL_ATTRIBUTE, true);
+        }
+
+        if (!isset($context->vars_in_scope['$this'])) {
+            return null;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $named_class = in_array($class->toLowerString(), ['parent', 'self'], true)
+            ? null
+            : ClassLikeAnalyzer::getFQCLNFromNameObject($class, $statements_analyzer->getAliases());
+        $body_class = null;
+
+        foreach ($context->vars_in_scope['$this']->getAtomicTypes() as $this_atomic) {
+            if ($this_atomic instanceof TNamedObject
+                && ($named_class === null
+                    || strtolower($named_class) === strtolower($this_atomic->value)
+                    || ($codebase->classlike_storage_provider->has($this_atomic->value)
+                        && $codebase->classlikes->classExtends($this_atomic->value, $named_class)))
+            ) {
+                $body_class = $this_atomic->value;
+
+                foreach ($args as $arg) {
+                    $arg->value->setAttribute(InheritedMethodTaints::BODY_CLASS_ATTRIBUTE, $body_class);
+                }
+            }
+        }
+
+        return $body_class;
     }
 
     public static function taintReturnType(

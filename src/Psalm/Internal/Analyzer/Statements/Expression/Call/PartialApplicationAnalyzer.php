@@ -26,10 +26,13 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod\ExistingAtomicStaticCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -43,7 +46,9 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\PartialApplication;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
+use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -112,14 +117,20 @@ final class PartialApplicationAnalyzer
 
         if ($closure) {
             $method_id = self::getMethodId($statements_analyzer, $stmt, $context);
+            // the diagnostics of the application name the method where it is declared
+            $declaring_method_id = $method_id !== null
+                ? $codebase->methods->getDeclaringMethodId($method_id, true)
+                : null;
             $has_one_signature = self::hasOneSignature($statements_analyzer, $closure);
             $binding = self::bind(
                 $statements_analyzer,
                 $stmt,
                 $closure,
-                $closure->callable_id ?? ($method_id !== null ? (string) $method_id : null),
+                $closure->callable_id ?? ($declaring_method_id !== null ? (string) $declaring_method_id : null),
                 $closure->callable_id
-                    ?? ($method_id !== null ? $codebase->methods->getCasedMethodId($method_id) : 'the closure'),
+                    ?? ($declaring_method_id !== null
+                        ? $codebase->methods->getCasedMethodId($declaring_method_id)
+                        : 'the closure'),
                 $has_one_signature,
                 $code_location,
             );
@@ -583,25 +594,62 @@ final class PartialApplicationAnalyzer
         $storage = null;
         $class_storage = null;
         $class_template_params = null;
+        $is_callable_value = false;
+        $callable_value_id = null;
+        $lhs_type = $call instanceof MethodCall ? self::getStaticClassType($statements_analyzer, $stmt) : null;
 
-        // like a call of it, a pseudo method is checked against its parameters only, and a callable value too
+        if ($call instanceof StaticCall && $call->class instanceof Name) {
+            StaticCallAnalyzer::markArgsOfACallNamingItsClass($statements_analyzer, $call->class, $args, $context);
+        } elseif ($call instanceof FuncCall && $call->name instanceof Expr) {
+            $callee_type = $statements_analyzer->node_data->getType($call->name);
+            $callee_atomic = $callee_type && $callee_type->isSingle() ? $callee_type->getSingleAtomic() : null;
+
+            // as calls of them (see FunctionCallAnalyzer): a function name is called like the function, an object
+            // through its __invoke(), and a closure or callable gets its arguments checked and the data flow of its id
+            if ($callee_atomic instanceof TClosure || $callee_atomic instanceof TCallable) {
+                $is_callable_value = true;
+                $callable_value_id = $callee_atomic->callable_id;
+            } elseif ($callee_atomic instanceof TNamedObject
+                && strtolower($callee_atomic->value) !== 'closure'
+                && $codebase->classlikes->classOrInterfaceExists($callee_atomic->value)
+                && $codebase->methods->getDeclaringMethodId(
+                    $invoke_method_id = new MethodIdentifier($callee_atomic->value, '__invoke'),
+                ) !== null
+            ) {
+                $method_id = $invoke_method_id;
+                $lhs_type = $callee_atomic;
+            } elseif (!$callee_atomic instanceof TLiteralString) {
+                $is_callable_value = true;
+            }
+        }
+
+        // like a call of it, a pseudo method is checked against its parameters only
         if ($method_id !== null && $codebase->methods->getDeclaringMethodId($method_id) !== null) {
             $callee_id = $method_id;
             $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
             $declaring_method_id = $class_storage->declaring_method_ids[$method_id->method_name] ?? null;
             $storage = $declaring_method_id ? $codebase->methods->getStorage($declaring_method_id) : null;
 
-            if ($call instanceof MethodCall && ($lhs_type = self::getStaticClassType($statements_analyzer, $stmt))) {
+            if ($lhs_type) {
                 $class_template_params = ClassTemplateParamCollector::collect(
                     $codebase,
                     $codebase->methods->getClassLikeStorageForMethod($method_id),
                     $class_storage,
                     $method_id->method_name,
                     $lhs_type,
-                    $call->var instanceof Variable && $call->var->name === 'this',
+                    $call instanceof MethodCall && $call->var instanceof Variable && $call->var->name === 'this',
+                );
+            } elseif ($call instanceof StaticCall) {
+                $class_template_params = ExistingAtomicStaticCallAnalyzer::collectClassTemplateParams(
+                    $statements_analyzer,
+                    $call,
+                    $context,
+                    $class_storage,
+                    $method_id,
+                    new TNamedObject($method_id->fq_class_name),
                 );
             }
-        } elseif ($call instanceof FuncCall && $call->name instanceof Name && $closure->callable_id !== null) {
+        } elseif ($call instanceof FuncCall && !$is_callable_value && $closure->callable_id !== null) {
             $callee_id = $closure->callable_id;
             $functions = $codebase->functions;
 
@@ -611,20 +659,44 @@ final class PartialApplicationAnalyzer
                 } catch (UnexpectedValueException) {
                 }
             }
+
+            CliOutput::markPrintedArgs($statements_analyzer, $callee_id, $args, true);
         }
+
+        $template_result = new TemplateResult([], $class_template_params ?? []);
 
         ArgumentsAnalyzer::checkArgumentsMatch(
             $statements_analyzer,
             $args,
             $callee_id,
-            $closure->params ?? [],
+            // the declared parameters, as for a call: those of the closure may have the callee's templates replaced
+            $storage->params ?? $closure->params ?? [],
             $storage,
             $class_storage,
-            new TemplateResult([], $class_template_params ?? []),
+            $template_result,
             $code_location,
             $context,
             true,
         );
+
+        if ($template_result->template_types) {
+            CallAnalyzer::checkTemplateResult(
+                $statements_analyzer,
+                $template_result,
+                $code_location,
+                $callee_id !== null ? strtolower((string) $callee_id) : null,
+            );
+        }
+
+        // the data flow a call of a callable value gets beside the checks of its arguments
+        if ($callable_value_id !== null) {
+            FunctionCallReturnTypeFetcher::taintArgsBoundToCallable(
+                $statements_analyzer,
+                $callable_value_id,
+                $args,
+                $code_location,
+            );
+        }
     }
 
     /**
@@ -674,7 +746,9 @@ final class PartialApplicationAnalyzer
         );
 
         if ($location instanceof Variable && $var_id !== null && !isset($context->vars_in_scope[$var_id])) {
+            // what PHP passes, which the parameter's type is checked against (see checkBoundArgs())
             $current_type = Type::getNull();
+            $statements_analyzer->node_data->setType($location, $current_type);
         } else {
             // read like an ordinary by-reference argument: a missing offset is created, not an empty access
             $was_inside_by_ref_offset = $context->inside_by_ref_offset;

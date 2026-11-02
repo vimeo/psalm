@@ -79,7 +79,6 @@ final class ExistingAtomicStaticCallAnalyzer
         ?TemplateResult $inferred_template_result = null,
     ): void {
         $fq_class_name = $method_id->fq_class_name;
-        $method_name_lc = $method_id->method_name;
 
         $codebase = $statements_analyzer->getCodebase();
         $config = $codebase->config;
@@ -152,44 +151,14 @@ final class ExistingAtomicStaticCallAnalyzer
             }
         }
 
-        $found_generic_params = ClassTemplateParamCollector::collect(
-            $codebase,
+        $found_generic_params = self::collectClassTemplateParams(
+            $statements_analyzer,
+            $stmt,
+            $context,
             $class_storage,
-            $class_storage,
-            $method_name_lc,
+            $method_id,
             $lhs_type_part,
-            !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
         );
-
-        if ($found_generic_params
-            && $stmt->class instanceof PhpParser\Node\Name
-            && $stmt->class->getParts() === ['parent']
-            && $context->self
-            && ($self_class_storage = $codebase->classlike_storage_provider->get($context->self))
-            && $self_class_storage->template_extended_params
-        ) {
-            foreach ($self_class_storage->template_extended_params as $template_fq_class_name => $extended_types) {
-                foreach ($extended_types as $type_key => $extended_type) {
-                    if (isset($found_generic_params[$type_key][$template_fq_class_name])) {
-                        $found_generic_params[$type_key][$template_fq_class_name] = $extended_type;
-                        continue;
-                    }
-
-                    foreach ($extended_type->getAtomicTypes() as $t) {
-                        if ($t instanceof TTemplateParam
-                            && isset($found_generic_params[$t->param_name][$t->defining_class])
-                        ) {
-                            $found_generic_params[$type_key][$template_fq_class_name]
-                                = $found_generic_params[$t->param_name][$t->defining_class];
-                        } else {
-                            $found_generic_params[$type_key][$template_fq_class_name]
-                                = $extended_type;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
 
         $template_result = new TemplateResult([], $found_generic_params ?: []);
 
@@ -555,6 +524,64 @@ final class ExistingAtomicStaticCallAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * The class templates of the call, with those of the class a parent:: call names bound as the class of the
+     * calling code extends it
+     *
+     * @return array<string, non-empty-array<string, Union>>|null
+     */
+    public static function collectClassTemplateParams(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\StaticCall $stmt,
+        Context $context,
+        ClassLikeStorage $class_storage,
+        MethodIdentifier $method_id,
+        Atomic $lhs_type_part,
+    ): ?array {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $found_generic_params = ClassTemplateParamCollector::collect(
+            $codebase,
+            $class_storage,
+            $class_storage,
+            $method_id->method_name,
+            $lhs_type_part,
+            !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
+        );
+
+        if ($found_generic_params
+            && $stmt->class instanceof PhpParser\Node\Name
+            && $stmt->class->getParts() === ['parent']
+            && $context->self
+            && ($self_class_storage = $codebase->classlike_storage_provider->get($context->self))
+            && $self_class_storage->template_extended_params
+        ) {
+            foreach ($self_class_storage->template_extended_params as $template_fq_class_name => $extended_types) {
+                foreach ($extended_types as $type_key => $extended_type) {
+                    if (isset($found_generic_params[$type_key][$template_fq_class_name])) {
+                        $found_generic_params[$type_key][$template_fq_class_name] = $extended_type;
+                        continue;
+                    }
+
+                    foreach ($extended_type->getAtomicTypes() as $t) {
+                        if ($t instanceof TTemplateParam
+                            && isset($found_generic_params[$t->param_name][$t->defining_class])
+                        ) {
+                            $found_generic_params[$type_key][$template_fq_class_name]
+                                = $found_generic_params[$t->param_name][$t->defining_class];
+                        } else {
+                            $found_generic_params[$type_key][$template_fq_class_name]
+                                = $extended_type;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $found_generic_params;
     }
 
     /**
