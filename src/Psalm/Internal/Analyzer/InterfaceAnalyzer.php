@@ -159,9 +159,11 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
             $class_storage->suppressed_issues + $this->getSuppressedIssues(),
         );
 
-        foreach ($class_storage->docblock_issues as $docblock_issue) {
-            IssueBuffer::maybeAdd($docblock_issue);
-        }
+        self::reportDocblockIssues(
+            $this,
+            $class_storage,
+            $class_storage->suppressed_issues + $this->getSuppressedIssues(),
+        );
 
         $member_stmts = [];
         foreach ($this->class->stmts as $stmt) {
@@ -215,6 +217,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                 return;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
                 $member_stmts[] = $stmt;
+                AttributesAnalyzer::reportPlaceholders($this, $stmt->attrGroups, $this->getSuppressedIssues());
 
                 foreach ($stmt->consts as $const) {
                     $const_id = strtolower($this->fq_class_name) . '::' . $const->name;

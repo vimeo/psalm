@@ -285,6 +285,23 @@ $a = new A();
 $b = $a->bar(); // this call fails
 ```
 
+### `@psalm-stub-override`
+
+Used in a [stub file](../running_psalm/configuration.md#stubs) on a class, interface, trait or method that is meant to replace an existing declaration. Psalm stops with an error if there is nothing to replace, so a stub cannot silently go stale (a renamed class, a wrong namespace, a removed method).
+
+```php
+<?php
+// stub file
+/** @psalm-stub-override */
+class ArrayObject {
+    /** @psalm-stub-override */
+    public function count(): int {} // fine: ArrayObject::count() exists
+
+    /** @psalm-stub-override */
+    public function nope(): int {} // error: ArrayObject::nope is marked as stub override, but no original counterpart found
+}
+```
+
 ### `@psalm-internal`
 
 Used to mark a class, property or function as internal to a given namespace or class or even method. 

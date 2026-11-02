@@ -864,6 +864,9 @@ every part but the name is optional:
   template may then use unconditionally: `write-this-props <= C`;
 - the default, in parentheses, applies to subclasses that don't bind the template: `C(pure)`.
 
+Type templates take their default after `=` instead (`@template T of Bound = Default`), and it also
+applies to generic types that leave the template out, see [Template defaults](templated_annotations.md#template-defaults).
+
 Several templates can be declared in one tag, separated by commas (`P <= io, Q`). In a chain with
 a single bound, the side that is a capability is the bound: `io <= C` is a lower bound and
 `C <= io` an upper bound. A type alias used as a lower bound needs the upper bound written out

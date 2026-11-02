@@ -78,7 +78,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             || $node instanceof PhpParser\Node\Expr\MethodCall
             || $node instanceof PhpParser\Node\Expr\StaticCall
         ) {
-            if (!$node->isFirstClassCallable()) {
+            if (!$node->isPartialFunctionApplication()) {
                 foreach ($node->getArgs() as $arg) {
                     $arg_var_id = ExpressionIdentifier::getRootVarId($arg->value, $this->this_class_name);
 

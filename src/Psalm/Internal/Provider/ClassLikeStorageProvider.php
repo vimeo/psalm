@@ -10,6 +10,7 @@ use Psalm\Issue\DuplicateClass;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 
+use function strcmp;
 use function strtolower;
 
 /**
@@ -122,19 +123,24 @@ final class ClassLikeStorageProvider
                     && $location !== null
                     && $duplicate_location->getHash() !== $location->getHash()
                 ) {
+                    // the declaration in the smaller path wins: it is the one a single process finds first
+                    $new_is_kept = strcmp($location->file_path, $duplicate_location->file_path) < 0;
+                    [$kept, $kept_location, $dropped_location] = $new_is_kept
+                        ? [$storage, $location, $duplicate_location]
+                        : [$duplicate_storage, $duplicate_location, $location];
+
                     IssueBuffer::maybeAdd(
                         new DuplicateClass(
-                            'Class ' . $k . ' has already been defined'
-                            . ' in ' . $location->file_path,
-                            $location,
+                            'Class ' . $kept->name . ' has already been defined in ' . $kept_location->file_path,
+                            $dropped_location,
                         ),
                     );
 
-                    //$storage->file_storage->has_visitor_issues = true;
+                    $kept->has_visitor_issues = true;
 
-                    $duplicate_storage->has_visitor_issues = true;
-
-                    continue;
+                    if (!$new_is_kept) {
+                        continue;
+                    }
                 }
             }
             self::$new_storage[$k] = $storage;

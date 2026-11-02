@@ -474,9 +474,11 @@ final class FormulaGenerator
         $conditional_ref = '*' . $conditional->getAttribute('startFilePos')
             . ':' . $conditional->getAttribute('endFilePos');
 
+        $truthy = new Truthy();
+
         return [
             new Clause(
-                [$conditional_ref => ['truthy' => new Truthy()]],
+                [$conditional_ref => [(string) $truthy => $truthy]],
                 $conditional_object_id,
                 $creating_object_id,
             ),

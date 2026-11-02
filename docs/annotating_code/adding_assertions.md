@@ -117,6 +117,9 @@ methods inside classes. As you can see, Psalm even allows you to specify multipl
 
 ```php
 <?php
+/**
+ * @psalm-immutable
+ */
 class Result {
     /**
      * @var ?Exception
@@ -135,11 +138,13 @@ class Result {
         return $this->exception;
     }
 
-    public function foo(): void {
+    public function foo(): string {
         if( $this->hasException() ) {
             // Psalm now knows that $this->exception is an instance of Exception
-            echo $this->exception->getMessage();
+            return $this->exception->getMessage();
         }
+
+        return "";
     }
 }
 
@@ -151,8 +156,7 @@ if( $result->hasException() ) {
 }
 ```
 
-Please note that the example above only works if you enable [method call memoization](https://psalm.dev/docs/running_psalm/configuration/#memoizemethodcallresults)
-in the config file or annotate the class as [immutable](https://psalm.dev/docs/annotating_code/supported_annotations/#psalm-immutable).
+The assertion on `$this->getException()` only holds because the class is annotated as [immutable](https://psalm.dev/docs/annotating_code/supported_annotations/#psalm-immutable). For a mutable class, enable [method call memoization](https://psalm.dev/docs/running_psalm/configuration/#memoizemethodcallresults) in the config file.
 
 
 You can use `@psalm-this-out` to change the template arguments of a method after a method call, to reflect changes to the object's internal state.  
