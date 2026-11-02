@@ -8,10 +8,13 @@ $platform = match (getenv('PLATFORM')) {
     'ubuntu-latest' => 'amd64',
 };
 
-$commit = getenv('GITHUB_SHA');
 $image = getenv('IMAGE');
 $is_tag = str_starts_with(getenv('REF'), 'refs/tags/');
 $ref = str_replace(['refs/heads/', 'refs/tags/'], '', getenv('REF'));
+// a tag rebuilt from a branch's workflow isn't at GITHUB_SHA
+$commit = $is_tag
+    ? trim((string) shell_exec('git rev-parse ' . escapeshellarg("refs/tags/$ref^{commit}")))
+    : getenv('GITHUB_SHA');
 
 echo "Waiting for commit $commit on $ref...".PHP_EOL;
 
