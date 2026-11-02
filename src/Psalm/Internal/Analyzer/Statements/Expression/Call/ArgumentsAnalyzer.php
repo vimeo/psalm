@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
@@ -296,6 +297,15 @@ final class ArgumentsAnalyzer
                         $param,
                     );
                 }
+            }
+
+            if (($arg->value instanceof PhpParser\Node\Expr\MethodCall
+                    || $arg->value instanceof PhpParser\Node\Expr\StaticCall)
+                && $arg->value->isFirstClassCallable()
+                && $method_id === 'array_map'
+                && $argument_offset === 0
+            ) {
+                $arg->value->setAttribute(MethodCallReturnTypeFetcher::CALL_ARGUMENT_ATTRIBUTE, true);
             }
 
             $was_inside_call = $context->inside_call;
@@ -1805,6 +1815,29 @@ final class ArgumentsAnalyzer
     ): void {
         $property_id = $fq_class_name . '::$' . $prop_name;
 
+        $declaring_class_storage = self::getDeclaringClassStorage($statements_analyzer, $property_id, $prop_name);
+
+        if ($declaring_class_storage !== null) {
+            InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
+                $statements_analyzer,
+                $stmt,
+                $property_id,
+                $declaring_class_storage->properties[$prop_name],
+                $declaring_class_storage,
+                $context,
+                $lhs_var_id,
+            );
+        }
+    }
+
+    /**
+     * The storage of the class declaring the property, null when it is unknown
+     */
+    public static function getDeclaringClassStorage(
+        StatementsAnalyzer $statements_analyzer,
+        string $property_id,
+        string $prop_name,
+    ): ?ClassLikeStorage {
         $codebase = $statements_analyzer->getCodebase();
         $declaring_property_class = (string) $codebase->properties->getDeclaringClassForProperty(
             $property_id,
@@ -1815,22 +1848,10 @@ final class ArgumentsAnalyzer
         try {
             $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
         } catch (InvalidArgumentException) {
-            return;
+            return null;
         }
 
-        if (isset($declaring_class_storage->properties[$prop_name])) {
-            $property_storage = $declaring_class_storage->properties[$prop_name];
-
-            InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
-                $statements_analyzer,
-                $stmt,
-                $property_id,
-                $property_storage,
-                $declaring_class_storage,
-                $context,
-                $lhs_var_id,
-            );
-        }
+        return isset($declaring_class_storage->properties[$prop_name]) ? $declaring_class_storage : null;
     }
 
     /**
