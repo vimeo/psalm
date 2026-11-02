@@ -49,7 +49,6 @@ use UnexpectedValueException;
 use function array_pop;
 use function count;
 use function end;
-use function in_array;
 use function strtolower;
 
 /**
@@ -139,24 +138,7 @@ final class PartialApplicationAnalyzer
             && $binding['params'] !== null
             && !self::hasTemplates($statements_analyzer, $closure)
         ) {
-            $return_type = $closure->return_type;
-            $static_class_type = self::getStaticClassType($statements_analyzer, $stmt);
-
-            if ($return_type && $static_class_type) {
-                $return_type = TypeExpander::expandUnion(
-                    $codebase,
-                    $return_type,
-                    $static_class_type->value,
-                    $static_class_type,
-                    null,
-                    true,
-                    false,
-                    $codebase->classlike_storage_provider->has($static_class_type->value)
-                        && $codebase->classlike_storage_provider->get($static_class_type->value)->final,
-                );
-            }
-
-            $type = new Union([new TClosure($binding['params'], $return_type, $closure->purity)]);
+            $type = new Union([new TClosure($binding['params'], $closure->return_type, $closure->purity)]);
         }
 
         $statements_analyzer->node_data->setType($stmt, $type);
@@ -266,7 +248,12 @@ final class PartialApplicationAnalyzer
         }
 
         if ($call instanceof MethodCall) {
-            $fq_class_name = self::getStaticClassType($statements_analyzer, $stmt)?->value;
+            $var_type = $statements_analyzer->node_data->getType($call->var);
+            $fq_class_name = $var_type
+                && $var_type->isSingle()
+                && ($atomic = $var_type->getSingleAtomic()) instanceof TNamedObject
+                ? $atomic->value
+                : null;
         } elseif ($call->class instanceof Name) {
             $fq_class_name = match ($call->class->toLowerString()) {
                 'self', 'static' => $context->self,
@@ -468,8 +455,9 @@ final class PartialApplicationAnalyzer
     }
 
     /**
-     * Templates of the callee stay unbound: the closure is a plain Closure until they are inferred. A builtin's
-     * signature is the one its first-class callable has, with templates expanded to their bounds
+     * Templates of a user function, or left in the signature of the callee's first-class callable, stay unbound: the
+     * closure is a plain Closure until they are inferred. A builtin's signature, as a method's, is the one its
+     * first-class callable has, with its own templates expanded to their bounds
      */
     private static function hasTemplates(StatementsAnalyzer $statements_analyzer, TClosure $closure): bool
     {
@@ -493,37 +481,6 @@ final class PartialApplicationAnalyzer
         } catch (UnexpectedValueException) {
             return false;
         }
-    }
-
-    /**
-     * The class `static` stands for in the return type, as for a call of the method
-     */
-    private static function getStaticClassType(
-        StatementsAnalyzer $statements_analyzer,
-        PartialApplication $stmt,
-    ): ?TNamedObject {
-        $call = $stmt->call;
-
-        if ($call instanceof MethodCall) {
-            $var_type = $statements_analyzer->node_data->getType($call->var);
-
-            return $var_type
-                && $var_type->isSingle()
-                && ($atomic = $var_type->getSingleAtomic()) instanceof TNamedObject
-                ? $atomic
-                : null;
-        }
-
-        if ($call instanceof StaticCall
-            && $call->class instanceof Name
-            && !in_array($call->class->toLowerString(), ['self', 'static', 'parent'], true)
-        ) {
-            return new TNamedObject(
-                ClassLikeAnalyzer::getFQCLNFromNameObject($call->class, $statements_analyzer->getAliases()),
-            );
-        }
-
-        return null;
     }
 
     /**

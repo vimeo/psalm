@@ -300,16 +300,19 @@ final class PartialFunctionApplicationTest extends TestCase
                                 return new self(array_map($callback, $this->items));
                             }
                         }
-                        /** @param Collection<int> $ints */
-                        function f(Collection $ints): void {
-                            $reduce = $ints->reduce(0, ?);
-                            $filter = $ints->filter(?);
-                            $map = $ints->map(?);
-                            $map(fn(int $i): string => (string) $i);
-                        }
+                        /** @var Collection<int> $ints */;
+                        $reduce = $ints->reduce(0, ?);
+                        $filter = $ints->filter(?);
+                        $map = $ints->map(?);
+                        $mapped = $map(fn(int $i): string => (string) $i);
                     PHP,
-                'assertions' => [],
-                'ignored_issues' => ['UnusedVariable'],
+                'assertions' => [
+                    '$reduce===' => 'Closure[impure](callable[impure](mixed, int):mixed):mixed',
+                    '$filter===' => 'Closure[impure](callable[impure](int, int):bool):void',
+                    '$map===' => 'Closure[impure](callable[impure](int):mixed):Collection<mixed>',
+                    '$mapped===' => 'Collection<mixed>',
+                ],
+                'ignored_issues' => [],
                 'php_version' => '8.6',
             ],
             'PartialApplication:TemplateFunctionWithABoundCallable' => [
@@ -416,6 +419,34 @@ final class PartialFunctionApplicationTest extends TestCase
                 'assertions' => [
                     '$static===' => 'Closure[impure](int):Q',
                     '$method===' => 'Closure[impure](int):Q',
+                ],
+                'ignored_issues' => ['UnsafeInstantiation'],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:StaticReturnOfANonFinalReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                        class P {
+                            public static function create(int $a): static {
+                                return new static();
+                            }
+                            public function me(int $a): static {
+                                return $this;
+                            }
+                            public function test(): void {
+                                $late = static::create(?);
+                                /** @psalm-check-type-exact $late = Closure(int):(P&static) */;
+                                $self = self::create(?);
+                                /** @psalm-check-type-exact $self = Closure(int):(P&static) */;
+                            }
+                        }
+                        /** @var P $p */;
+                        $method = $p->me(?);
+                        $named = P::create(?);
+                    PHP,
+                'assertions' => [
+                    '$method===' => 'Closure[impure](int):P&static',
+                    '$named===' => 'Closure[impure](int):P',
                 ],
                 'ignored_issues' => ['UnsafeInstantiation'],
                 'php_version' => '8.6',
