@@ -37,9 +37,11 @@ final class ConditionalTaintSinks
 
     /**
      * Makes the arguments of the call given to parameters with conditional sinks sinks of the taints their conditional
-     * types resolve to
+     * types resolve to. With $open_params, a partial application's: $args are by offset in it, and the parameters its
+     * closure's caller gives (by offset) are not known.
      *
      * @param array<array-key, Arg> $args
+     * @param array<int, true>|null $open_params
      */
     public static function taintCall(
         StatementsAnalyzer $statements_analyzer,
@@ -48,6 +50,7 @@ final class ConditionalTaintSinks
         array $args,
         string $cased_function_id,
         CodeLocation $call_location,
+        ?array $open_params = null,
     ): void {
         if ($storage->conditional_taint_sinks === []) {
             return;
@@ -57,11 +60,13 @@ final class ConditionalTaintSinks
 
         // an unpacked or unknown named argument may be given to any parameter: the conditions are not known, and any
         // argument may be given to the sink
-        $args_by_param = TaintStore::getArgsByParam($storage, $args);
+        $args_by_param = TaintStore::getArgsByParam($storage, $args, $open_params !== null);
 
         $template_result = new TemplateResult(
             [],
-            $args_by_param === null ? [] : self::getParamBounds($statements_analyzer, $storage, $args_by_param),
+            $args_by_param === null
+                ? []
+                : self::getParamBounds($statements_analyzer, $storage, $args_by_param, $open_params ?? []),
         );
 
         foreach ($storage->conditional_taint_sinks as $sink) {
@@ -98,10 +103,11 @@ final class ConditionalTaintSinks
 
     /**
      * The types of the arguments given to the parameters, as the lower bounds of the templates the conditional types
-     * name them by; the default value of a parameter not given one. A parameter whose type isn't known has none,
-     * which leaves both branches of a condition on it.
+     * name them by; the default value of a parameter not given one, unless it is open. A parameter whose type isn't
+     * known has none, which leaves both branches of a condition on it.
      *
      * @param array<int, list<Arg>> $args_by_param
+     * @param array<int, true> $open_params
      * @return array<string, array<string, Union>>
      * @psalm-external-mutation-free
      */
@@ -109,6 +115,7 @@ final class ConditionalTaintSinks
         StatementsAnalyzer $statements_analyzer,
         FunctionLikeStorage $storage,
         array $args_by_param,
+        array $open_params,
     ): array {
         $bounds = [];
 
@@ -133,7 +140,7 @@ final class ConditionalTaintSinks
 
                     $type = $type === null ? $arg_type : Type::combineUnionTypes($type, $arg_type);
                 }
-            } elseif ($param->default_type instanceof Union) {
+            } elseif (!isset($open_params[$offset]) && $param->default_type instanceof Union) {
                 $type = $param->default_type;
             }
 
