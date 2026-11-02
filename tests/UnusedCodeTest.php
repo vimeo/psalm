@@ -46,14 +46,6 @@ final class UnusedCodeTest extends TestCase
         );
 
         $this->project_analyzer->getCodebase()->reportUnusedCode();
-        $this->project_analyzer->getCodebase()->config->setCustomErrorLevel(
-            'MissingPureAnnotation',
-            Config::REPORT_SUPPRESS,
-        );
-        $this->project_analyzer->getCodebase()->config->setCustomErrorLevel(
-            'MissingAbstractPureAnnotation',
-            Config::REPORT_SUPPRESS,
-        );
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
 
@@ -208,10 +200,6 @@ final class UnusedCodeTest extends TestCase
         $this->project_analyzer->getConfig()->throw_exception = false;
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
 
-        foreach (['MissingImmutableAnnotation', 'MissingOverrideAttribute'] as $issue_type) {
-            $this->project_analyzer->getConfig()->setCustomErrorLevel($issue_type, Config::REPORT_SUPPRESS);
-        }
-
         $file_path = self::$src_dir_path . 'somefile.php';
 
         $this->addFile(
@@ -248,10 +236,7 @@ final class UnusedCodeTest extends TestCase
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
-        $this->project_analyzer->getConfig()->setCustomErrorLevel(
-            'MissingInterfaceImmutableAnnotation',
-            Config::REPORT_ERROR,
-        );
+        $this->project_analyzer->getConfig()->suggest_purity_annotations = true;
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
@@ -302,10 +287,7 @@ final class UnusedCodeTest extends TestCase
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
-        $this->project_analyzer->getConfig()->setCustomErrorLevel(
-            'MissingInterfaceImmutableAnnotation',
-            Config::REPORT_ERROR,
-        );
+        $this->project_analyzer->getConfig()->suggest_purity_annotations = true;
 
         $file_path = self::$src_dir_path . 'somefile.php';
 

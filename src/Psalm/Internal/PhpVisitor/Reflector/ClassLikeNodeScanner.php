@@ -36,12 +36,14 @@ use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Internal\Type\TypeAlias\InlineTypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\Issue\ConstantDeclarationInTrait;
 use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\DuplicateConstant;
@@ -76,6 +78,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_diff_key;
+use function array_fill_keys;
 use function array_merge;
 use function array_pop;
 use function array_shift;
@@ -548,6 +551,24 @@ final class ClassLikeNodeScanner
                 }
 
                 $this->class_template_types = $storage->template_types;
+
+                $storage->purity_templates = array_fill_keys($purity_templates, true);
+
+                [$storage->template_defaults, $storage->template_default_locations, $default_issues]
+                    = TemplateDefaults::parseDefaults(
+                        $docblock_info->template_defaults,
+                        $storage->template_types,
+                        $storage->template_types,
+                        $storage->purity_templates,
+                        $this->aliases,
+                        $this->type_aliases,
+                        $fq_classlike_name,
+                        $storage->parent_class,
+                        $name_location ?? $class_location,
+                        $fq_classlike_name,
+                        new TypeScanner($this->codebase->scanner, $this->file_storage, $storage->template_types),
+                    );
+                $storage->docblock_issues = [...$storage->docblock_issues, ...$default_issues];
 
                 foreach ($docblock_info->purity_templates as $purity_template) {
                     $bound = $storage->template_types[$purity_template][$fq_classlike_name] ?? null;
