@@ -255,7 +255,7 @@ final class ClassTemplateParamCollector
                     // classes it extends are mapped already
                     if (!isset($class_template_params[$type_name][$class_storage->name])) {
                         $class_template_params[$type_name][$class_storage->name]
-                            = PurityArguments::getOmittedArgument($type);
+                            = PurityArguments::getOmittedArgument($class_storage, $type_name, $type);
                     }
                 }
             }
