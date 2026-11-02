@@ -8,6 +8,7 @@ use PhpParser;
 use Psalm\Config;
 use Psalm\Internal\Cache;
 
+use function array_map;
 use function filemtime;
 
 use const DIRECTORY_SEPARATOR;
@@ -17,7 +18,12 @@ final class ParserCacheProvider
 {
     private const PARSER_CACHE_DIRECTORY = 'php-parser';
 
-    /** @var Cache<list<PhpParser\Node\Stmt>> */
+    /**
+     * The statements of a file, and the raw message and attributes of each error the parser recovered from, which
+     * are stored rather than the exceptions, as those carry their stack trace
+     *
+     * @var Cache<array{list<PhpParser\Node\Stmt>, list<array{string, array<string, mixed>}>}>
+     */
     private readonly Cache $stmtCache;
 
     public function __construct(Config $config, string $composerLock, bool $persistent = true)
@@ -37,13 +43,26 @@ final class ParserCacheProvider
     }
 
     /**
-     * @return list<PhpParser\Node\Stmt>|null
+     * @return array{list<PhpParser\Node\Stmt>, list<PhpParser\Error>}|null
      */
     public function loadStatementsFromCache(
         string $file_path,
         ?string $file_content_hash,
     ): ?array {
-        return $this->stmtCache->getItem($file_path, $file_content_hash);
+        /** @var array{list<PhpParser\Node\Stmt>, list<array{string, array<string, mixed>}>}|null $item */
+        $item = $this->stmtCache->getItem($file_path, $file_content_hash);
+
+        if ($item === null) {
+            return null;
+        }
+
+        return [
+            $item[0],
+            array_map(
+                static fn(array $error): PhpParser\Error => new PhpParser\Error($error[0], $error[1]),
+                $item[1],
+            ),
+        ];
     }
 
     public function getHash(string $file_path): ?string
@@ -53,12 +72,24 @@ final class ParserCacheProvider
 
     /**
      * @param  list<PhpParser\Node\Stmt>        $stmts
+     * @param  list<PhpParser\Error>            $parse_errors
      */
     public function saveStatementsToCache(
         string $file_path,
         string $file_content_hash,
         array $stmts,
+        array $parse_errors,
     ): void {
-        $this->stmtCache->saveItem($file_path, $stmts, $file_content_hash);
+        $this->stmtCache->saveItem(
+            $file_path,
+            [
+                $stmts,
+                array_map(
+                    static fn(PhpParser\Error $error): array => [$error->getRawMessage(), $error->getAttributes()],
+                    $parse_errors,
+                ),
+            ],
+            $file_content_hash,
+        );
     }
 }

@@ -2397,7 +2397,6 @@
       <code><![CDATA[$existing_file_contents]]></code>
       <code><![CDATA[$existing_statements]]></code>
       <code><![CDATA[$file_changes]]></code>
-      <code><![CDATA[$file_path]]></code>
       <code><![CDATA[self::$parser->parse($file_contents, $error_handler)]]></code>
       <code><![CDATA[self::$parser->parse($file_contents, $error_handler)]]></code>
       <code><![CDATA[strpos($file_path, 'vendor')]]></code>
