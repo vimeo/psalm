@@ -1,6 +1,6 @@
 name: Announce release
 
-# Posts releases to Mastodon, X and Telegram; see bin/ci/announce-release.php for the secrets it needs.
+# Posts releases to Mastodon, X, Telegram and Discord; see bin/ci/announce-release.php for the secrets it needs.
 on:
   release:
     types:
@@ -43,3 +43,5 @@ jobs:
           PSALM_POST_TOKEN: ${{ secrets.PSALM_POST_TOKEN }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: '@psalmphp'
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_CHANNEL: '1566817276756365375/1566820917147869224'

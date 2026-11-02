@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Announces a release of Psalm on Mastodon, X and Telegram.
+ * Announces a release of Psalm on Mastodon, X, Telegram and Discord.
  *
  * Usage: php bin/ci/announce-release.php [--dry-run] [--force] <tag>
  *
@@ -13,7 +13,10 @@
  *  - X: PSALM_POST_TOKEN, the token of https://psalm-post.daniil.it, which posts it from a home connection (X
  *    flags GitHub's runners as bots, and its API charges per post); it only announces real releases, each once;
  *  - Telegram: TELEGRAM_BOT_TOKEN (from @BotFather) and TELEGRAM_CHAT_ID (the channel, e.g. @psalmphp, where the bot
- *    must be an administrator allowed to post messages).
+ *    must be an administrator allowed to post messages);
+ *  - Discord: DISCORD_BOT_TOKEN (of a bot application) and DISCORD_CHANNEL (<server id>/<channel id>, as in the
+ *    channel's URL), an announcement channel where the bot may send messages and mention @everyone; the post mentions
+ *    @everyone and is published to the servers following the channel.
  *
  * Drafts aren't announced, nor releases published more than a day ago unless --force is given, so that
  * auto-release.php dispatching the announcement on the last tag of each branch doesn't announce old releases.
@@ -57,7 +60,7 @@ $run = static function (array $command): string {
  * @param list<string> $headers
  * @return array<string, mixed>
  */
-$post = static function (string $url, array $headers, array $body): array {
+$post = static function (string $url, array $headers, array|object $body): array {
     $curl = curl_init($url);
     curl_setopt_array($curl, [
         CURLOPT_POST => true,
@@ -128,6 +131,22 @@ $platforms = [
             )['result'];
 
             return "https://t.me/{$message['chat']['username']}/{$message['message_id']}";
+        },
+    ],
+    'Discord' => [
+        ['DISCORD_BOT_TOKEN', 'DISCORD_CHANNEL'],
+        static function (string $token, string $channel) use ($post, $text): string {
+            [$server_id, $channel_id] = explode('/', $channel, 2);
+            $api = "https://discord.com/api/v10/channels/$channel_id/messages";
+            $headers = ["Authorization: Bot $token"];
+            $message = $post(
+                $api,
+                $headers,
+                ['content' => "@everyone $text", 'allowed_mentions' => ['parse' => ['everyone']]],
+            );
+            $post("$api/{$message['id']}/crosspost", $headers, (object) []);
+
+            return "https://discord.com/channels/$server_id/$channel_id/{$message['id']}";
         },
     ],
 ];
