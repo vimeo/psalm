@@ -16,7 +16,7 @@ vendor/bin/psalter --issues=MissingReturnType,MissingParamType src/Foo.php
    today, which may be narrower or wider than the intent.
 
 Fixes that delete methods and properties (`UnusedMethod`, `PossiblyUnusedMethod`, `UnusedProperty`, …)
-need `--find-unused-code`, a run on the whole project rather than single files, and a check that the symbol isn't used from outside the analysed code (see `@psalm-api` in
+need `--find-unused-code`, a run on the whole project rather than single files, and a check that the symbol isn't used from outside the analysed code (see `@api` in
 [annotations.md](annotations.md)).
 
 `--php-version=8.2` keeps added type declarations valid for the target PHP version.
@@ -48,7 +48,7 @@ From narrowest to widest; pick the narrowest one that covers the case:
 4. A baseline (below).
 
 Suppressing an `Unused*` issue silences the report only; code reachable only through that symbol is still
-reported. `@psalm-api` is the annotation for "used from outside".
+reported. `@api` is the annotation for "used from outside".
 
 `--find-unused-psalm-suppress` reports suppressions that no longer hide anything.
 

@@ -1,9 +1,21 @@
 # Annotations cheat sheet
 
 Full reference: `docs/annotating_code/supported_annotations.md` and `docs/annotating_code/type_syntax/`.
-Psalm reads `@param`, `@return` and `@var` with its own type syntax. The `@psalm-` prefix (`@psalm-param`,
-`@psalm-return`) is only needed when other tools such as an IDE choke on a type; Psalm then takes the
-`@psalm-` version.
+## Prefixes
+
+Write the plain tag wherever Psalm reads it with the same meaning: `@param`, `@return`, `@var`,
+`@template`, `@template-covariant`, `@extends`, `@implements`, `@use`, `@param-out`, `@property`,
+`@method`, `@mixin`, `@readonly`, `@api`, `@pure` (on functions), `@seal-properties`, `@seal-methods`. Other tools (IDEs, PHPStan,
+phpDocumentor) read them too.
+
+The `@psalm-` prefix is for:
+
+- tags with no plain form: `@psalm-assert`, `@psalm-assert-if-true`, `@psalm-assert-if-false`,
+  `@psalm-type`, `@psalm-import-type`, `@psalm-immutable`, `@psalm-capabilities`, `@psalm-suppress`,
+  `@psalm-trace`, `@psalm-check-type`, `@psalm-taint-*`;
+- `@psalm-internal Vendor\Package`, which is stricter than the plain `@internal` (see below);
+- a type another tool misreads: keep `@return array` for it and add `@psalm-return array{id: int}`. Psalm
+  takes the `@psalm-` version.
 
 ## Arrays
 
@@ -108,20 +120,20 @@ function make(string $class): object { … }
 
 ## Properties and purity
 
-- `@readonly` / `@psalm-readonly` on a property: assignable only in the constructor. Prefer the native
-  `readonly`.
+- `@readonly` on a property: assignable only in the constructor. Prefer the native `readonly`.
 - `@psalm-immutable` on a class: all properties read-only, methods may only read properties.
-- `@psalm-pure` on a function: the result depends only on its arguments.
+- `@pure` on a function: the result depends only on its arguments.
 - `@psalm-capabilities read-props|io` lists the side effects a function may have (replaces
   `@psalm-mutation-free` and `@psalm-external-mutation-free`, which still work). See
   `docs/annotating_code/purity_model.md`.
 
 ## Dead-code annotations
 
-- `@psalm-api` (or `@api`) on a class: used from outside the analysed code; its public members are not
-  reported as unused. Put it on the class rather than on single members.
-- `@psalm-internal Vendor\Package` on a symbol: only that namespace may use it; using it elsewhere is
-  `InternalClass` / `InternalMethod`.
+- `@api` on a class: used from outside the analysed code; its public members are not reported as unused.
+  Put it on the class rather than on single members. `@psalm-api` means the same to Psalm.
+- `@internal` on a symbol: code outside the symbol's top-level namespace may not use it.
+  `@psalm-internal Vendor\Package` narrows that to the given namespace or class. A violation is
+  `InternalClass`, `InternalMethod` or `InternalProperty`.
 
 ## Variables
 

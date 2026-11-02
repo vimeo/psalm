@@ -45,7 +45,7 @@ for the inferred type (see [When stuck](#when-stuck)) before editing.
 - **Missing or loose types**: add native types first, then a docblock for what PHP can't express:
   `list<User>`, `array{sku: string, qty: int}`, `@template T`, `@psalm-assert`. Syntax:
   [references/annotations.md](references/annotations.md).
-- **Unused code** (`Unused*`, `PossiblyUnused*`): decide per symbol. `@psalm-api` on the class is for code
+- **Unused code** (`Unused*`, `PossiblyUnused*`): decide per symbol. `@api` on the class is for code
   with a caller outside the analysed code — a framework, router, container config or the users of a
   library — and that caller should be visible somewhere (a config file, a docblock, an interface). A
   method or property of application code with no such caller is dead code: delete it. When a deletion
