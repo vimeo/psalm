@@ -80,6 +80,7 @@ final class AtomicStaticCallAnalyzer
         bool &$moved_call,
         bool &$has_mock,
         bool &$has_existing_method,
+        bool &$args_analyzed,
         ?TemplateResult $inferred_template_result = null,
     ): void {
         $intersection_types = [];
@@ -213,6 +214,7 @@ final class AtomicStaticCallAnalyzer
                 $fq_class_name,
                 $moved_call,
                 $has_existing_method,
+                $args_analyzed,
                 $inferred_template_result,
             );
         } else {
@@ -329,6 +331,7 @@ final class AtomicStaticCallAnalyzer
         string $fq_class_name,
         bool &$moved_call,
         bool &$has_existing_method,
+        bool &$args_analyzed,
         ?TemplateResult $inferred_template_result = null,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
@@ -695,6 +698,8 @@ final class AtomicStaticCallAnalyzer
                     );
 
                     if ($return_type_candidate) {
+                        $args_analyzed = true;
+
                         CallAnalyzer::checkMethodArgs(
                             $method_id,
                             $stmt->getArgs(),
@@ -712,6 +717,8 @@ final class AtomicStaticCallAnalyzer
 
                 if ($found_method_and_class_storage) {
                     [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
+
+                    $args_analyzed = true;
 
                     if (self::checkPseudoMethod(
                         $statements_analyzer,
@@ -733,7 +740,9 @@ final class AtomicStaticCallAnalyzer
                     if ($pseudo_method_storage->return_type) {
                         return true;
                     }
-                } else {
+                } elseif (!$args_analyzed) {
+                    $args_analyzed = true;
+
                     if (ArgumentsAnalyzer::analyze(
                         $statements_analyzer,
                         $args,
@@ -747,6 +756,8 @@ final class AtomicStaticCallAnalyzer
                 }
             } elseif ($found_method_and_class_storage && ($naive_method_exists || $with_pseudo)) {
                 [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
+
+                $args_analyzed = true;
 
                 if (self::checkPseudoMethod(
                     $statements_analyzer,
@@ -815,7 +826,7 @@ final class AtomicStaticCallAnalyzer
             }
 
             if (!$context->check_methods) {
-                if (ArgumentsAnalyzer::analyze(
+                if (!$args_analyzed && ArgumentsAnalyzer::analyze(
                     $statements_analyzer,
                     $stmt->getArgs(),
                     null,
@@ -825,6 +836,8 @@ final class AtomicStaticCallAnalyzer
                 ) === false) {
                     return false;
                 }
+
+                $args_analyzed = true;
 
                 return true;
             }
@@ -845,7 +858,7 @@ final class AtomicStaticCallAnalyzer
         }
 
         if (!$does_method_exist) {
-            if (ArgumentsAnalyzer::analyze(
+            if (!$args_analyzed && ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->getArgs(),
                 null,
@@ -855,6 +868,8 @@ final class AtomicStaticCallAnalyzer
             ) === false) {
                 return false;
             }
+
+            $args_analyzed = true;
 
             if ($codebase->alter_code && $fq_class_name && !$moved_call) {
                 $codebase->classlikes->handleClassLikeReferenceInMigration(
@@ -905,6 +920,7 @@ final class AtomicStaticCallAnalyzer
         }
 
         $has_existing_method = true;
+        $args_analyzed = true;
 
         ExistingAtomicStaticCallAnalyzer::analyze(
             $statements_analyzer,

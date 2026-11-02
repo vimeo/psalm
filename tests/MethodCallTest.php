@@ -1700,6 +1700,18 @@ final class MethodCallTest extends TestCase
                     $q->foo(bar());',
                 'error_message' => 'UndefinedFunction',
             ],
+            'undefinedMethodPassedAsArgOnPossiblyInvalidCallee' => [
+                'code' => '<?php
+                    class A {
+                        public function __call(string $method, array $args) {}
+                    }
+
+                    /** @param A|int $q */
+                    function f($q): void {
+                        $q->foo(bar());
+                    }',
+                'error_message' => 'UndefinedFunction',
+            ],
             'noIntersectionMethod' => [
                 'code' => '<?php
                     interface A {}

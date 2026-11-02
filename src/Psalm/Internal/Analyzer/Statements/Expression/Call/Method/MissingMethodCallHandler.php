@@ -122,6 +122,9 @@ final class MissingMethodCallHandler
                     $codebase,
                 );
 
+                $result->has_valid_method_call_type = true;
+                $result->existent_method_ids[$method_id->__toString()] = true;
+
                 CallAnalyzer::checkMethodArgs(
                     $method_id,
                     $stmt->getArgs(),
@@ -228,21 +231,10 @@ final class MissingMethodCallHandler
 
                 return null;
             }
-        } elseif ($all_intersection_return_type === null) {
-            ArgumentsAnalyzer::analyze(
-                $statements_analyzer,
-                $stmt->getArgs(),
-                null,
-                null,
-                true,
-                $context,
-            );
+        } elseif ($all_intersection_return_type === null && $class_storage->hasSealedMethods($config)) {
+            $result->non_existent_magic_method_ids[] = $method_id->__toString();
 
-            if ($class_storage->hasSealedMethods($config)) {
-                $result->non_existent_magic_method_ids[] = $method_id->__toString();
-
-                return null;
-            }
+            return null;
         }
 
         $result->has_valid_method_call_type = true;
