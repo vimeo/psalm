@@ -47,6 +47,7 @@ final class ShutdownScannerTask implements Task
             'file_storage' => $codebase->file_storage_provider->getAll(),
             'taint_data' => $codebase->taint_flow_graph,
             'global_constants' => $codebase->getAllStubbedConstants(),
+            'global_constant_since_php_version_ids' => $codebase->getAllStubbedConstantSincePhpVersionIds(),
             'unresolved_global_constants' => $codebase->getAllUnresolvedGlobalConstants(),
             'global_functions' => $codebase->functions->getAllStubbedFunctions(),
         ];
