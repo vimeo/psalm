@@ -22,6 +22,7 @@ use PhpParser\Node\Expr\NullsafePropertyFetch;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\StaticPropertyFetch;
+use PhpParser\Node\Name;
 use PhpParser\Node\VariadicPlaceholder;
 use PhpParser\NodeVisitorAbstract;
 use Psalm\Node\Expr\PartialApplication;
@@ -30,6 +31,7 @@ use WeakMap;
 use function array_filter;
 use function array_values;
 use function count;
+use function strtolower;
 
 /**
  * Replaces the call node of each partial function application with a PartialApplication node, and removes the
@@ -40,10 +42,10 @@ use function count;
  */
 final class PartialApplicationVisitor extends NodeVisitorAbstract
 {
-    /** Set on an attribute whose placeholders were removed: PHP never constructs it */
-    public const PLACEHOLDER_IN_ATTRIBUTE = 'psalmPlaceholderInAttribute';
-
-    /** The compile error of a PartialApplication node, which analysis then types as a plain Closure */
+    /**
+     * The compile error of a PartialApplication node, which analysis types as a plain Closure, or of an Attribute node
+     * whose placeholders were removed, which analysis does not construct
+     */
     public const COMPILE_ERROR = 'psalmCompileError';
 
     /** @var WeakMap<Expr, true> the right-hand sides of the pipes being traversed */
@@ -77,15 +79,11 @@ final class PartialApplicationVisitor extends NodeVisitorAbstract
 
             if (count($args) !== count($node->args)) {
                 $node->args = $args;
-                $node->setAttribute(self::PLACEHOLDER_IN_ATTRIBUTE, true);
+                $node->setAttribute(self::COMPILE_ERROR, 'Cannot create Closure as attribute argument');
             }
 
-            // also reports the attributes of statements a partial reparse kept (see PartialParserVisitor)
-            if ($node->getAttribute(self::PLACEHOLDER_IN_ATTRIBUTE) === true) {
-                $this->error_handler->handleError(
-                    new Error('Cannot create Closure as attribute argument', $node->getAttributes()),
-                );
-            }
+            // also reports the attributes a partial reparse kept (see PartialParserVisitor)
+            $this->reportCompileError($node);
 
             return null;
         }
@@ -137,6 +135,14 @@ final class PartialApplicationVisitor extends NodeVisitorAbstract
             return false;
         }
 
+        // never assert(), by the name as written whatever it resolves to (zend_is_pipe_optimizable_callable_name())
+        if ($callee instanceof FuncCall
+            && $callee->name instanceof Name
+            && strtolower($callee->name->name) === 'assert'
+        ) {
+            return false;
+        }
+
         $placeholders = 0;
         $has_named = false;
 
@@ -159,7 +165,7 @@ final class PartialApplicationVisitor extends NodeVisitorAbstract
         return $placeholders === 1;
     }
 
-    private function reportCompileError(PartialApplication $node): void
+    private function reportCompileError(Attribute|PartialApplication $node): void
     {
         /** @var string|null $compile_error set by leaveNode() */
         $compile_error = $node->getAttribute(self::COMPILE_ERROR);

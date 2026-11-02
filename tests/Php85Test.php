@@ -303,6 +303,26 @@ final class Php85Test extends TestCase
                 'ignored_issues' => ['InvalidPassByReference'],
                 'php_version' => '8.5',
             ],
+            'pipeIntoPartialApplicationOfAssertCreatesTheClosure' => [
+                'code' => '<?php
+                    $r = true |> assert(?, "explanation");',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'pipeIntoAnInvalidDirectPartialApplicationHasTheReturnTypeOfTheCallee' => [
+                'code' => '<?php
+                    function two(int $a, int $b = 0): int { return $a + $b; }
+
+                    $positionalAfterUnpacking = 1 |> two(...[2], ?);
+                    $unpackingAfterNamed = 3 |> two(b: ?, ...[1]);',
+                'assertions' => [
+                    '$positionalAfterUnpacking===' => 'int',
+                    '$unpackingAfterNamed===' => 'int',
+                ],
+                'ignored_issues' => ['ParseError'],
+                'php_version' => '8.6',
+            ],
         ];
     }
 
@@ -394,6 +414,47 @@ final class Php85Test extends TestCase
 
                     $r = 3 |> two(b: 1, ?);',
                 'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31 - Cannot use positional argument after named argument on line 4',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'pipeIntoDirectPartialApplicationWithAPlaceholderAfterUnpacking' => [
+                'code' => '<?php
+                    function two(int $a, int $b = 0): int { return $a + $b; }
+
+                    $r = 3 |> two(...[1], ?);',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31 - Cannot use positional argument after argument unpacking on line 4',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'pipeIntoDirectPartialApplicationWithUnpackingAfterANamedPlaceholder' => [
+                'code' => '<?php
+                    function two(int $a, int $b = 0): int { return $a + $b; }
+
+                    $r = 3 |> two(b: ?, ...[1]);',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31 - Cannot use argument unpacking after named arguments on line 4',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'pipeIntoPartialApplicationOfAssertIsNotADirectCall' => [
+                'code' => '<?php
+                    $r = true |> assert(..., "explanation");',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:34 - Variadic placeholder must be last on line 2',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'pipeIntoPartialApplicationOfAssertInANamespaceInAnyCase' => [
+                'code' => '<?php
+                    namespace N;
+                    $r = true |> Assert(..., "explanation");',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34 - Variadic placeholder must be last on line 3',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'pipeIntoPartialApplicationOfFullyQualifiedAssert' => [
+                'code' => '<?php
+                    namespace N;
+                    $r = true |> \ASSERT(?, ...[1]);',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34 - Cannot combine partial application and unpacking on line 3',
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],

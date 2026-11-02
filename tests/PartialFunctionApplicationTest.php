@@ -923,6 +923,16 @@ final class PartialFunctionApplicationTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],
+            'PartialApplication:UnpackingAfterANamedPlaceholder' => [
+                'code' => <<<'PHP'
+                    <?php
+                        function f(int $a, int $b): void {}
+                        $closure = f(b: ?, ...[1]);
+                    PHP,
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:16 - Cannot use argument unpacking after named arguments on line 3',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
             'PartialApplication:NamedPlaceholderLeavesRequiredParametersOfAFunctionWithByReferenceParameters' => [
                 'code' => <<<'PHP'
                     <?php
