@@ -947,7 +947,7 @@ final class ClassLikes
         });
 
         $suggest_purity_annotations = $project_analyzer->suggestsPurityAnnotations();
-        $benefit = MutationLevelResolver::getSuggestionBenefit($codebase);
+        $benefit = $project_analyzer->getPuritySuggestionReason();
         $subclass_capabilities = $suggest_purity_annotations
             ? $this->getSubclassCapabilities($codebase->analyzer->mutable_classes)
             : [];
@@ -1200,7 +1200,8 @@ final class ClassLikes
             IssueBuffer::maybeAdd(
                 new MissingInterfaceImmutableAnnotation(
                     $storage->name
-                    . ' must be marked with either @psalm-pure, @psalm-immutable, @psalm-capabilities or @psalm-mutable'
+                    . ' could be marked with either @psalm-pure, @psalm-immutable, @psalm-capabilities'
+                    . ' or @psalm-mutable'
                     . ' ' . $benefit,
                     $storage->location,
                 ),
@@ -1222,7 +1223,7 @@ final class ClassLikes
 
         IssueBuffer::maybeAdd(
             new MissingImmutableAnnotation(
-                $storage->name . ' must be marked @' . Capabilities::toClassAnnotation($capabilities)
+                $storage->name . ' could be marked @' . Capabilities::toClassAnnotation($capabilities)
                     . ' ' . $benefit
                     . ', run with --alter --issues=MissingImmutableAnnotation to fix this',
                 $storage->location,
