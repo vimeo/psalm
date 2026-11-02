@@ -359,7 +359,8 @@ final class StatementsProvider
     }
 
     /**
-     * @param  list<PhpParser\Error>|null $parse_errors the errors the parser recovered from
+     * @param  list<PhpParser\Error>|null $parse_errors the errors the parser recovered from,
+     *     and the compile errors found while resolving names (e.g. a duplicate import)
      * @param-out list<PhpParser\Error> $parse_errors
      * @param  list<Stmt> $existing_statements
      * @param  array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> $file_changes
@@ -420,10 +421,6 @@ final class StatementsProvider
             }
         }
 
-        $parse_errors = array_values($error_handler->getErrors());
-
-        $error_handler->clearErrors();
-
         $resolving_traverser = new PhpParser\NodeTraverser;
         $name_resolver = new SimpleNameResolver(
             $error_handler,
@@ -432,6 +429,8 @@ final class StatementsProvider
         $resolving_traverser->addVisitor($name_resolver);
         $resolving_traverser->addVisitor(new PartialApplicationVisitor());
         $resolving_traverser->traverse($stmts);
+
+        $parse_errors = array_values($error_handler->getErrors());
 
         return $stmts;
     }
