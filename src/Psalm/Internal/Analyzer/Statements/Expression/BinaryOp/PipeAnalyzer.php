@@ -19,6 +19,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\PartialApplicationAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\PhpVisitor\PartialApplicationVisitor;
 use Psalm\Node\Expr\PartialApplication;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Expr\VirtualMethodCall;
@@ -26,6 +27,7 @@ use Psalm\Node\Expr\VirtualPipeValue;
 use Psalm\Node\Expr\VirtualStaticCall;
 use Psalm\Node\VirtualArg;
 use Psalm\Type;
+use Psalm\Type\Atomic\TClosure;
 
 /**
  * `$value |> $callable` calls `$callable($value)`. A first-class callable or a partial application with a single
@@ -63,6 +65,12 @@ final class PipeAnalyzer
             return false;
         }
 
+        if ($right instanceof PartialApplication
+            && $right->getAttribute(PartialApplicationVisitor::COMPILE_ERROR) !== null
+        ) {
+            return self::analyzeInvalidPartialApplication($statements_analyzer, $stmt, $right, $context);
+        }
+
         $value = new VirtualPipeValue(
             $statements_analyzer->node_data->getType($left) ?? Type::getMixed(),
             $left->getAttributes(),
@@ -94,15 +102,16 @@ final class PipeAnalyzer
     }
 
     /**
-     * The callee and arguments when PHP calls the callee directly with the piped value as its placeholder: a single
-     * `?` or `...`, no named or unpacked argument before a `...`. A positional argument after a named one is not direct
-     * because it is a compile error, which the partial application reports.
+     * The callee and arguments when PHP calls the callee directly with the piped value as its placeholder, apart from a
+     * partial application with a compile error, which is not called at all
      *
      * @return array{FuncCall|MethodCall|StaticCall, list<Arg|ArgPlaceholder|VariadicPlaceholder>}|null
      */
     private static function getDirectCall(Expr $right): ?array
     {
-        if ($right instanceof PartialApplication) {
+        if ($right instanceof PartialApplication
+            && $right->getAttribute(PartialApplicationVisitor::COMPILE_ERROR) === null
+        ) {
             $callee = $right->call;
             $raw_args = $right->args;
         } elseif ($right instanceof CallLike && $right->isFirstClassCallable()) {
@@ -112,37 +121,33 @@ final class PipeAnalyzer
             return null;
         }
 
-        if (!$callee instanceof FuncCall && !$callee instanceof MethodCall && !$callee instanceof StaticCall) {
-            return null;
+        return PartialApplicationVisitor::isDirectPipeCall($callee, $raw_args) ? [$callee, $raw_args] : null;
+    }
+
+    /**
+     * The parser reported the compile error, so nothing is called and no check of the call repeats it: the pipe has the
+     * return type of the callee, when it is known
+     */
+    private static function analyzeInvalidPartialApplication(
+        StatementsAnalyzer $statements_analyzer,
+        Pipe $stmt,
+        PartialApplication $right,
+        Context $context,
+    ): bool {
+        if (ExpressionAnalyzer::analyze($statements_analyzer, $right, $context) === false) {
+            return false;
         }
 
-        $placeholders = 0;
-        $has_named = false;
-        $has_named_or_unpacked = false;
+        $callee_type = $statements_analyzer->node_data->getType($right->call);
+        $return_type = $callee_type
+            && $callee_type->isSingle()
+            && ($callee = $callee_type->getSingleAtomic()) instanceof TClosure
+                ? $callee->return_type
+                : null;
 
-        foreach ($raw_args as $arg) {
-            if ($arg instanceof VariadicPlaceholder) {
-                if ($has_named_or_unpacked) {
-                    return null;
-                }
+        $statements_analyzer->node_data->setType($stmt, $return_type ?? Type::getMixed());
 
-                $placeholders++;
-            } elseif ($arg->name !== null) {
-                $has_named = $has_named_or_unpacked = true;
-
-                if ($arg instanceof ArgPlaceholder) {
-                    $placeholders++;
-                }
-            } elseif ($arg instanceof Arg && $arg->unpack) {
-                $has_named_or_unpacked = true;
-            } elseif ($has_named) {
-                return null;
-            } elseif ($arg instanceof ArgPlaceholder) {
-                $placeholders++;
-            }
-        }
-
-        return $placeholders === 1 ? [$callee, $raw_args] : null;
+        return true;
     }
 
     /**

@@ -2194,7 +2194,7 @@ final class ClosureTest extends TestCase
                         #[Attr(...)]
                         function f(): void {}
                     PHP,
-                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:7 - Cannot create Closure as attribute argument',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:7 - Cannot create Closure as attribute argument on line 6',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
