@@ -355,6 +355,74 @@ final class TaintTest extends TestCase
         );
     }
 
+    public function testTaintFlowsFromTheLeftHandSideOfAPipe(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            /** @psalm-taint-sink html $s */
+            function showVariable(string $s): void {}
+            /** @psalm-taint-sink html $s */
+            function showValue(string $s): void {}
+            /** @psalm-taint-sink html $s */
+            function showEscaped(string $s): void {}
+
+            $a = (string) $_GET["a"];
+            $a |> showVariable(...);
+            (string) $_GET["b"] |> trim(...) |> showValue(...);
+            (string) $_GET["c"] |> htmlspecialchars(...) |> showEscaped(...);
+        ');
+        $this->project_analyzer->setPhpVersion('8.5', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [3, 'TaintedHtml'],
+                [5, 'TaintedHtml'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
+    public function testTaintThroughAPipeChainStaysWithEachCall(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            function pick(string $a, string $b): string { return $a; }
+            /** @psalm-taint-sink html $s */
+            function showPicked(string $s): void {}
+            /** @psalm-taint-sink html $s */
+            function showDropped(string $s): void {}
+
+            (string) $_GET["a"] |> pick(?, "c") |> pick(?, "clean") |> showPicked(...);
+            (string) $_GET["b"] |> pick(?, "c") |> pick("clean", ?) |> showDropped(...);
+        ');
+        $this->project_analyzer->setPhpVersion('8.6', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertSame(
+            [[4, 'TaintedHtml']],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
     public function testTaintFlowThroughNestedSpecializedCallsAndStaticProperty(): void
     {
         $depth = 20;
@@ -678,6 +746,15 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'dontTaintAParameterWithANamedArgumentTheVariadicTakes' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink html $a */
+                    function v(string $a = "", string ...$rest): void {
+                        echo $a;
+                    }
+
+                    v(zzz: (string) $_GET["x"]);',
+            ],
             'taintSourceUnderAKeyOfTheReturnOnly' => [
                 'code' => '<?php // --taint-analysis
                     /**
@@ -5003,6 +5080,25 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'taintAParameterWithItsNamedArgument' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink html $a */
+                    function v(string $a = "", string ...$rest): void {
+                        echo $a;
+                    }
+
+                    v(a: (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheVariadicWithAPositionalArgument' => [
+                'code' => '<?php // --taint-analysis
+                    function v(string $a = "", string ...$rest): void {
+                        echo $rest[0];
+                    }
+
+                    v("", (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintSourceUnderAKeyOfTheReturnOfAFunction' => [
                 'code' => '<?php // --taint-analysis
                     /**
@@ -8118,6 +8214,40 @@ final class TaintTest extends TestCase
                     $tainted->current();
                     $tainted->send((string) $_GET["value"]);
                     echo $tainted->current();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatIsSentToAGeneratorSentToItselfThroughAnotherGenerator' => [
+                'code' => '<?php // --taint-analysis
+                    function receiver(): Generator {
+                        $received = yield 1;
+                        echo $received;
+                    }
+
+                    function relay(): Generator {
+                        $sent = yield 1;
+                        $own = relay();
+                        /** @var Generator $target */
+                        $target = rand() ? $sent : $own;
+                        // what is sent here reaches `$sent`, so it may be a generator too: the one of `receiver()`
+                        $target->send(rand() ? receiver() : (string) $_GET["value"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatIsSentToAnUnspecializedGeneratorSentToItselfThroughAnotherGenerator' => [
+                'code' => '<?php // --taint-analysis
+                    function receiver(): Generator {
+                        $received = yield 1;
+                        echo $received;
+                    }
+
+                    /** @psalm-impure */
+                    function relay(): Generator {
+                        $sent = yield 1;
+                        $own = relay();
+                        /** @var Generator $target */
+                        $target = rand() ? $sent : $own;
+                        $target->send(rand() ? receiver() : (string) $_GET["value"]);
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'taintWhatAGeneratorYields' => [

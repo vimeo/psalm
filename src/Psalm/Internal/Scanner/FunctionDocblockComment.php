@@ -175,6 +175,13 @@ final class FunctionDocblockComment
     public array $templates = [];
 
     /**
+     * The default of each template that has one (`@template T of Bound = Default`), and its line.
+     *
+     * @var array<string, array{type: string, line_number: int}>
+     */
+    public array $template_defaults = [];
+
+    /**
      * @var array<int, array{type: string, param_name: string}>
      */
     public array $assertions = [];

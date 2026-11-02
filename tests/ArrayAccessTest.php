@@ -550,6 +550,42 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'coalesceOnOptionalKeysWithComputedOffset' => [
+                'code' => '<?php
+                    /** @return array{a?: int, b?: int} */
+                    function getKeys(): array {
+                        return [];
+                    }
+
+                    /** @return "a"|"b" */
+                    function getKey(): string {
+                        return "a";
+                    }
+
+                    $keys = getKeys();
+                    $call = $keys[getKey()] ?? "none";
+                    $concat = $keys[getKey() . ""] ?? 0;
+                    $nullable = rand(0, 1) ? getKey() : null;
+                    $nested = $keys[$nullable ?? "a"] ?? 0;
+                ',
+                'assertions' => [
+                    '$call===' => "'none'|int",
+                    '$concat' => 'int',
+                    '$nested' => 'int',
+                ],
+            ],
+            'coalesceOffsetAssignmentsStayInContext' => [
+                'code' => '<?php
+                    /** @var array<int, int> $arr */
+                    $arr = [];
+                    $value = $arr[($key = rand(0, 9)) + 1] ?? 1;
+                    $used = $key;
+                ',
+                'assertions' => [
+                    '$value' => 'int',
+                    '$used' => 'int<0, 9>',
+                ],
+            ],
             'missingOffsetPassedByReferenceIsNull' => [
                 'code' => '<?php
                     /**
