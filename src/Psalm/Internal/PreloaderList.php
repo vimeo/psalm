@@ -902,6 +902,7 @@ final class PreloaderList {
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayFillKeysReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayFillReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayFilterReturnTypeProvider::class,
+        \Psalm\Internal\Provider\ReturnTypeProvider\ArrayFirstLastReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayMapReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayMergeReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayPadReturnTypeProvider::class,

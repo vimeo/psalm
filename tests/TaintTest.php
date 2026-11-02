@@ -45,7 +45,7 @@ final class TaintTest extends TestCase
     /**
      * @dataProvider providerInvalidCodeParse
      */
-    public function testInvalidCode(string $code, string $error_message): void
+    public function testInvalidCode(string $code, string $error_message, ?string $php_version = null): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -53,6 +53,10 @@ final class TaintTest extends TestCase
 
         $this->expectException(CodeException::class);
         $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');
+
+        if ($php_version !== null) {
+            $this->project_analyzer->setPhpVersion($php_version, 'tests');
+        }
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
@@ -777,7 +781,7 @@ final class TaintTest extends TestCase
     }
 
     /**
-     * @return array<string, array{code: string, error_message: string}>
+     * @return array<string, array{code: string, error_message: string, php_version?: string}>
      */
     public function providerInvalidCodeParse(): array
     {
@@ -2318,6 +2322,17 @@ final class TaintTest extends TestCase
 
                     foo([$_GET["a"]]);',
                 'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughArrayFirst' => [
+                'code' => '<?php
+                    /** @param array<string> $arr */
+                    function foo(array $arr) : void {
+                        echo array_first($arr) ?? "";
+                    }
+
+                    foo([(string) $_GET["a"]]);',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.5',
             ],
             'shellExecBacktick' => [
                 'code' => '<?php
