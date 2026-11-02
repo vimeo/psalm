@@ -8,9 +8,16 @@ use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_filter;
+use function array_map;
+use function array_values;
+use function sort;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -6043,6 +6050,90 @@ final class CapabilitiesTest extends TestCase
                 'error_message' => 'ImpurePropertyAssignment',
             ],
         ];
+    }
+
+    public function testEachPropertyWriteIsReportedOnce(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            final class C {
+                public int $n = 0;
+                public ?C $o = null;
+                public static ?C $g = null;
+
+                /** @psalm-capabilities read-props */
+                public function own(): void { $this->n = 1; }
+
+                /** @psalm-capabilities read-props */
+                public function unsetOwn(): void { unset($this->o); }
+            }
+
+            /** @psalm-capabilities read-props */
+            function assign(C $c): void { $c->n = 1; }
+            /** @psalm-capabilities read-props */
+            function increment(C $c): void { $c->n++; }
+            /** @psalm-capabilities read-props */
+            function compound(C $c): void { $c->n += 1; }
+            /** @psalm-capabilities read-props */
+            function coalesce(C $c): void { $c->n ??= 1; }
+            /** @psalm-capabilities read-props */
+            function destructure(C $c): void { [$c->n] = [1]; }
+            /** @psalm-capabilities read-props */
+            function nested(C $c): void { if ($c->o) { $c->o->n = 1; } }
+            /** @psalm-capabilities read-props */
+            function union(C|stdClass $c): void { $c->n = 1; }
+            /** @psalm-capabilities read-props */
+            function remove(C $c): void { unset($c->o); }
+            /** @psalm-capabilities read-props|read-globals */
+            function globalState(): void { if (C::$g) { C::$g->n = 1; } }
+            /** @psalm-capabilities read-props|read-globals */
+            function removeGlobal(): void { if (C::$g) { unset(C::$g->o); } }
+            /** @psalm-capabilities read-props */
+            function dynamic(C $c, string $p): void { $c->$p = 1; }
+            /** @psalm-capabilities read-props */
+            function untyped(mixed $c): void { $c->n = 1; }
+            /** @psalm-capabilities read-props */
+            function make(): C { return new C(); }
+            /** @psalm-capabilities read-props */
+            function onCallResult(): void { make()->n = 1; }
+            /** @psalm-capabilities read-props */
+            function fresh(): void { $c = new C(); $c->n = 1; unset($c->o); }
+        ');
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = array_map(
+            static fn(IssueData $issue): array => [$issue->line_from, $issue->message],
+            array_values(array_filter(
+                IssueBuffer::getIssuesDataForFile($file_path),
+                static fn(IssueData $issue): bool => $issue->type === 'ImpurePropertyAssignment',
+            )),
+        );
+        sort($issues);
+
+        self::assertSame(
+            [
+                [8, 'The context is read-props but property assignment to C::$n requires write-this-props'],
+                [11, 'The context is read-props but unsetting a property on a mutable object requires write-this-props'],
+                [15, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [17, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [19, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [21, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [23, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [25, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [27, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [29, 'The context is read-props but property assignment to C::$o requires write-props'],
+                [31, 'The context is read-props|read-globals but property assignment to C::$n'
+                    . ' on an object reached from global state requires write-props|write-globals'],
+                [33, 'The context is read-props|read-globals but property assignment to C::$o'
+                    . ' on an object reached from global state requires write-props|write-globals'],
+                [35, 'The context is read-props but property assignment requires write-props'],
+                [37, 'The context is read-props but property assignment requires write-props'],
+                [41, 'The context is read-props but property assignment requires write-props'],
+            ],
+            $issues,
+        );
     }
 
     public function testPureNewAndStaticCallsKeepPropertyRefinements(): void
