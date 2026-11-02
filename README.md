@@ -37,7 +37,7 @@ Have a look at [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Built by Matt Brown ([@muglug](https://github.com/muglug)).
 
-Maintained by Daniil Gentili ([@danog](https://github.com/danog)).
+Maintained by Daniil Gentili ([@danog](https://github.com/danog)) and Alies Lapatsin ([@alies-dev](https://github.com/alies-dev)).
 
 Former maintainers: Orklah ([@orklah](https://github.com/orklah)) and Bruce Weirdan ([@weirdan](https://github.com/weirdan)).
 
