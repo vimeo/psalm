@@ -33,8 +33,9 @@ $dev = $is_tag ? '' : '~dev';
 if ($is_tag) {
     $cur = 0;
     while (true) {
-        $json = json_decode(file_get_contents("https://repo.packagist.org/p2/vimeo/psalm$dev.json?v=$cur"), true)["packages"]["vimeo/psalm"];
-        foreach ($json as $v) {
+        // a failed request (e.g. a timeout) is retried like a missing version
+        $body = file_get_contents("https://repo.packagist.org/p2/vimeo/psalm$dev.json?v=$cur");
+        foreach ($body === false ? [] : json_decode($body, true)["packages"]["vimeo/psalm"] as $v) {
             if ($v['version'] === $composer_branch) {
                 if ($v['source']['reference'] === $commit) {
                     break 2;
