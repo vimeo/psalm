@@ -1372,6 +1372,15 @@ final class PartialFunctionApplicationTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],
+            'PartialApplication:BoundArgumentOfABuiltinWithoutAStub' => [
+                'code' => <<<'PHP'
+                    <?php
+                        $closure = mb_substr([], ?);
+                    PHP,
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:26 - Argument 1 of mb_substr expects string',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
         ];
     }
 }
