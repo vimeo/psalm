@@ -7,7 +7,7 @@
 
 Psalm is a static analysis tool for finding errors in PHP applications.
 
-[Join the official Psalm news channel](https://t.me/psalmphp) and the [Psalm community](https://t.me/psalmphp_community)!
+[Join the official Psalm news channel](https://t.me/psalmphp) and the Psalm community on [Telegram](https://t.me/psalmphp_community) and [Discord](https://discord.gg/RwH8rEpxt9)!
 
 ## Installation
 
