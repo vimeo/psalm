@@ -94,7 +94,9 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             )[0];
 
             if ($lhs_type_part instanceof TNamedObject) {
-                $lhs_type_part = $lhs_type_part->setIntersectionTypes($extra_types)->setFromDocblock(true);
+                $lhs_type_part = $lhs_type_part
+                    ->setIntersectionTypes([...$lhs_type_part->getIntersectionTypes(), ...$extra_types])
+                    ->setFromDocblock(true);
             } elseif ($lhs_type_part instanceof TObject && $extra_types) {
                 $lhs_type_part = array_shift($extra_types)->setFromDocblock(true);
                 if ($extra_types) {
