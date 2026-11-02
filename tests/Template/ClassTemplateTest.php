@@ -5772,6 +5772,182 @@ final class ClassTemplateTest extends TestCase
                         }
                     }',
             ],
+            'writeFreeTemplateLeftOutAcceptsAnyArgument' => [
+                'code' => <<<'PHP'
+                <?php
+                /**
+                 * @template TFirst
+                 * @template TSecond of object
+                 */
+                final class Pair {
+                    /** @var TSecond */
+                    private readonly object $second;
+
+                    /**
+                     * @param TFirst $_first
+                     * @param TSecond $second
+                     */
+                    public function __construct($_first, object $second)
+                    {
+                        $this->second = $second;
+                    }
+
+                    /** @return TSecond */
+                    public function second(): object
+                    {
+                        return $this->second;
+                    }
+                }
+
+                function takesNative(Pair $_p): void {}
+
+                /** @param Pair $_p */
+                function takesDocblock(Pair $_p): void {}
+
+                /** @param Pair<int, stdClass> $p */
+                function f(Pair $p): void {
+                    takesNative($p);
+                    takesDocblock($p);
+                }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'writeFreeTemplateLeftOutAcceptsAnyArgumentInPropertyAndReturnTypes' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @template T of object */
+                final class Getter {
+                    /** @var T */
+                    private readonly object $value;
+
+                    /** @param T $value */
+                    public function __construct(object $value)
+                    {
+                        $this->value = $value;
+                    }
+
+                    /** @return T */
+                    public function get(): object
+                    {
+                        return $this->value;
+                    }
+                }
+
+                final class Holder {
+                    public Getter $native;
+
+                    /** @var Getter */
+                    public $docblock;
+
+                    public function __construct(Getter $native)
+                    {
+                        $this->native = $native;
+                        $this->docblock = $native;
+                    }
+                }
+
+                /** @param Getter<stdClass> $g */
+                function assign(Getter $g, Holder $h): void {
+                    $h->native = $g;
+                    $h->docblock = $g;
+                }
+
+                /**
+                 * @param Getter<stdClass> $g
+                 * @return Getter
+                 */
+                function returnDocblock(Getter $g) {
+                    return $g;
+                }
+
+                /** @param Getter<stdClass> $g */
+                function returnNative(Getter $g): Getter {
+                    return $g;
+                }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'writeFreeTemplateOfReadonlyPropertyLeftOutAcceptsAnyArgument' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @template T of object */
+                final class ReadOnlyBox {
+                    /** @var T */
+                    public readonly object $value;
+
+                    /** @param T $value */
+                    public function __construct(object $value)
+                    {
+                        $this->value = $value;
+                    }
+                }
+
+                function takes(ReadOnlyBox $_b): void {}
+
+                /** @param ReadOnlyBox<stdClass> $b */
+                function f(ReadOnlyBox $b): void {
+                    takes($b);
+                }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'writeFreeTemplateLeftOutAcceptsAnyArgumentOfChildOfWriteFreeClass' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @template T of object */
+                abstract class Base {
+                    /** @return T */
+                    abstract public function get(): object;
+                }
+
+                /**
+                 * @template U of object
+                 * @extends Base<U>
+                 */
+                abstract class Child extends Base {}
+
+                function takes(Child $_c): void {}
+
+                /** @param Child<stdClass> $c */
+                function f(Child $c): void {
+                    takes($c);
+                }
+                PHP,
+            ],
+            'writeFreeTemplateLeftOutAcceptsClassExtendedWithAnArgument' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @template T of object */
+                abstract class A {}
+
+                /** @extends A<stdClass> */
+                final class AChild extends A {}
+
+                function takesA(A $_a): void {}
+
+                takesA(new AChild());
+                PHP,
+            ],
+            'unboundedTemplateLeftOutAcceptsAnyArgument' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @template T */
+                final class Box {}
+
+                function takes(Box $_b): void {}
+
+                /** @param Box<int> $b */
+                function f(Box $b): void {
+                    takes($b);
+                }
+                PHP,
+            ],
         ];
     }
 
@@ -6412,7 +6588,10 @@ final class ClassTemplateTest extends TestCase
                     /**
                      * @template T as object
                      */
-                    abstract class A {}
+                    abstract class A {
+                        /** @var T */
+                        public $foo;
+                    }
 
                     function takesA(A $a) : void {}
 
@@ -6428,7 +6607,10 @@ final class ClassTemplateTest extends TestCase
                     /**
                      * @template T as object
                      */
-                    abstract class A {}
+                    abstract class A {
+                        /** @var T */
+                        public $foo;
+                    }
 
                     /**
                      * @extends A<stdClass>
@@ -6439,6 +6621,130 @@ final class ClassTemplateTest extends TestCase
 
                     $child = new AChild();
                     takesA($child);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'writableTemplateLeftOutStaysInvariantForSetter' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @template T of object */
+                final class Box {
+                    /** @var T */
+                    private object $value;
+
+                    /** @param T $value */
+                    public function __construct(object $value)
+                    {
+                        $this->value = $value;
+                    }
+
+                    /** @param T $value */
+                    public function set(object $value): void
+                    {
+                        $this->value = $value;
+                    }
+                }
+
+                function takes(Box $_b): void {}
+
+                /** @param Box<stdClass> $b */
+                function f(Box $b): void {
+                    takes($b);
+                }
+                PHP,
+                'error_message' => 'InvalidArgument',
+            ],
+            'writableTemplateLeftOutStaysInvariantForPublicProperty' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @template T of object */
+                final class Box {
+                    /** @var T|null */
+                    public ?object $value = null;
+                }
+
+                function takes(Box $_b): void {}
+
+                /** @param Box<stdClass> $b */
+                function f(Box $b): void {
+                    takes($b);
+                }
+                PHP,
+                'error_message' => 'InvalidArgument',
+            ],
+            'writableTemplateLeftOutStaysInvariantWhenAParentWritesIt' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @template T of object */
+                abstract class Base {
+                    /** @param T $value */
+                    abstract public function set(object $value): void;
+                }
+
+                /**
+                 * @template U of object
+                 * @extends Base<U>
+                 */
+                abstract class Child extends Base {}
+
+                function takes(Child $_c): void {}
+
+                /** @param Child<stdClass> $c */
+                function f(Child $c): void {
+                    takes($c);
+                }
+                PHP,
+                'error_message' => 'InvalidArgument',
+            ],
+            'writableTemplateLeftOutStaysInvariantForPrivatePropertyWrittenThroughAnotherInstance' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @template T of object */
+                final class Box {
+                    /** @var T|null */
+                    private ?object $value = null;
+
+                    public static function clear(Box $other): void
+                    {
+                        $other->value = null;
+                    }
+                }
+
+                function takes(Box $_b): void {}
+
+                /** @param Box<stdClass> $b */
+                function f(Box $b): void {
+                    takes($b);
+                }
+                PHP,
+                'error_message' => 'InvalidArgument',
+            ],
+            'writableTemplateLeftOutStaysInvariantForPrivateSetterCalledOnAnotherInstance' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @template T of object */
+                final class Box {
+                    /** @var mixed */
+                    private $value;
+
+                    /** @param T $value */
+                    private function put(object $value): void
+                    {
+                        $this->value = $value;
+                    }
+
+                    public static function fill(Box $other): void
+                    {
+                        $other->put(new stdClass());
+                    }
+                }
+
+                function takes(Box $_b): void {}
+
+                /** @param Box<stdClass> $b */
+                function f(Box $b): void {
+                    takes($b);
+                }
+                PHP,
                 'error_message' => 'InvalidArgument',
             ],
             'preventBoundsMismatchDifferentContainers' => [
@@ -6824,6 +7130,47 @@ final class ClassTemplateTest extends TestCase
                      */
                     final class A {}',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33 - Missing default after = for template T in docblock for A',
+            ],
+            'boundedTemplateExplicitArgumentStaysInvariant' => [
+                'code' => <<<'PHP'
+                <?php
+                /**
+                 * @template TFirst
+                 * @template TSecond of object
+                 */
+                final class Pair {}
+
+                /** @param Pair<mixed, object> $_p */
+                function takes(Pair $_p): void {}
+
+                /** @param Pair<int, stdClass> $p */
+                function f(Pair $p): void {
+                    takes($p);
+                }
+                PHP,
+                'error_message' => 'InvalidArgument',
+            ],
+            'boundedTemplateExplicitArgumentOfTemplatedParamStaysInvariant' => [
+                'code' => <<<'PHP'
+                <?php
+                /**
+                 * @template TFirst
+                 * @template TSecond of object
+                 */
+                final class Pair {}
+
+                /**
+                 * @template T
+                 * @param Pair<T, object> $_p
+                 */
+                function takes(Pair $_p): void {}
+
+                /** @param Pair<int, stdClass> $p */
+                function f(Pair $p): void {
+                    takes($p);
+                }
+                PHP,
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

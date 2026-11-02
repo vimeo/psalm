@@ -377,6 +377,16 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $purity_templates = [];
 
     /**
+     * The templates no member of the class, or of the classes it extends, lets code write a value of into the
+     * instance: they are in no parameter of a method but the constructor, and in no property but a readonly one,
+     * private members included (the class's own code reaches those of any instance). A use without type arguments
+     * (`Foo`) fits any instance for these, whatever they are bound to.
+     *
+     * @var array<string, true>
+     */
+    public array $write_free_templates = [];
+
+    /**
      * What a template left out of a use of the class stands for: the declared default of a type template, in which
      * earlier templates stand for their arguments (`@template T of Bound = Default`), or the default of a purity
      * template (`@psalm-purity-template C(pure) <= io`), else its upper bound. Subclasses not binding it get it, as do

@@ -49,6 +49,7 @@ use ReflectionProperty;
 use function array_all;
 use function array_any;
 use function array_filter;
+use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_values;
@@ -774,11 +775,14 @@ final class TypeExpander
             ) {
                 $return_type = new TGenericObject(
                     $return_type->value,
-                    array_values(
-                        array_map(
-                            static fn($type_map) => PurityArguments::getOmittedArgument(reset($type_map)),
-                            $container_class_storage->template_types,
+                    array_map(
+                        static fn($template_name, $type_map) => PurityArguments::getOmittedArgument(
+                            $container_class_storage,
+                            $template_name,
+                            reset($type_map),
                         ),
+                        array_keys($container_class_storage->template_types),
+                        $container_class_storage->template_types,
                     ),
                 );
 
