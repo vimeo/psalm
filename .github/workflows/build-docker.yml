@@ -1,7 +1,7 @@
 name: Build docker image
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ inputs.tag || github.ref }}
   cancel-in-progress: true
 
 on:
@@ -14,6 +14,11 @@ on:
   # dispatched on the tags of the releases bin/ci/auto-release.php publishes, which don't trigger tag pushes, and
   # by bin/ci/apply-queued-changes.php after merging, which doesn't trigger branch pushes either
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to rebuild with this branch's workflow (empty builds the dispatched ref)
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -95,7 +100,7 @@ jobs:
       # vimeo/psalm publishes to the psalm organization, which GITHUB_TOKEN can't write to; forks use their own namespace
       - name: Upload docker image
         env:
-          REF: ${{ github.ref }}
+          REF: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
           IMAGE: ${{ github.repository == 'vimeo/psalm' && 'ghcr.io/psalm/psalm' || format('ghcr.io/{0}/psalm', github.repository_owner) }}
           PLATFORM: ${{ matrix.image }}
           GHCR_TOKEN: ${{ github.repository == 'vimeo/psalm' && secrets.PSALM_GHCR_TOKEN || secrets.GITHUB_TOKEN }}
@@ -126,7 +131,7 @@ jobs:
 
       - name: Upload final docker image
         env:
-          REF: ${{ github.ref }}
+          REF: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
           IMAGE: ${{ github.repository == 'vimeo/psalm' && 'ghcr.io/psalm/psalm' || format('ghcr.io/{0}/psalm', github.repository_owner) }}
           GHCR_TOKEN: ${{ github.repository == 'vimeo/psalm' && secrets.PSALM_GHCR_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
