@@ -331,6 +331,32 @@ final class PartialFunctionApplicationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.6',
             ],
+            'PartialApplication:BoundArgumentsBindTheTemplatesOfTheCallee' => [
+                'code' => <<<'PHP'
+                    <?php
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @param callable(T): void $callback
+                         */
+                        function apply(mixed $value, callable $callback, int $times): void {}
+                        $apply = apply(5, function (int $i): void {}, ?);
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:BoundMissingVariableOfAReferenceParameterOfABuiltin' => [
+                'code' => <<<'PHP'
+                    <?php
+                        function f(): void {
+                            $closure = proc_open(?, [], $pipes);
+                        }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
             'PartialApplication:VariadicPlaceholderLeavesTheFormatOpen' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1166,6 +1192,192 @@ final class PartialFunctionApplicationTest extends TestCase
                         }
                     PHP,
                 'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25 - R::$v is marked readonly',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:BoundArgumentOfTheWrongType' => [
+                'code' => <<<'PHP'
+                    <?php
+                        function add(int $a, int $b): int {
+                            return $a + $b;
+                        }
+                        $closure = add([], ?);
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:PossiblyNullBoundArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                        function greet(string $name, string $greeting): string {
+                            return $greeting . $name;
+                        }
+                        function f(?string $name): void {
+                            $closure = greet($name, ?);
+                        }
+                    PHP,
+                'error_message' => 'PossiblyNullArgument',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:BoundArgumentOfAParentType' => [
+                'code' => <<<'PHP'
+                    <?php
+                        class A {}
+                        final class B extends A {}
+                        function take(B $b, int $n): void {}
+                        function f(A $a): void {
+                            $closure = take($a, ?);
+                        }
+                    PHP,
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:NamedBoundArgumentOfTheWrongType' => [
+                'code' => <<<'PHP'
+                    <?php
+                        function add(int $a, int $b): int {
+                            return $a + $b;
+                        }
+                        $closure = add(b: [], a: ?);
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:BoundVariadicValueOfTheWrongType' => [
+                'code' => <<<'PHP'
+                    <?php
+                        function sum(int ...$numbers): int {
+                            return array_sum($numbers);
+                        }
+                        $closure = sum(1, [], ?);
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:BoundArgumentOfAMethodOfTheWrongType' => [
+                'code' => <<<'PHP'
+                    <?php
+                        final class A {
+                            public function add(int $a, int $b): int {
+                                return $a + $b;
+                            }
+                        }
+                        $closure = (new A())->add([], ?);
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:BoundArgumentOfAStaticMethodOfTheWrongType' => [
+                'code' => <<<'PHP'
+                    <?php
+                        final class A {
+                            public static function add(int $a, int $b): int {
+                                return $a + $b;
+                            }
+                        }
+                        $closure = A::add([], ?);
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:BoundArgumentOfAMethodOfAGenericReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                        /** @template T */
+                        final class Box {
+                            /** @param T $value */
+                            public function set(mixed $value, int $times): void {}
+                        }
+                        /** @param Box<int> $box */
+                        function f(Box $box): void {
+                            $closure = $box->set([], ?);
+                        }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:BoundArgumentsBreakingATemplateConstraint' => [
+                'code' => <<<'PHP'
+                    <?php
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @param callable(T): void $callback
+                         */
+                        function apply(mixed $value, callable $callback, int $times): void {}
+                        $apply = apply(5, function (string $s): void {}, ?);
+                    PHP,
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:14 - Type 5 should be a subtype of string',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:BoundArgumentOfAParentMethodOfAGenericClass' => [
+                'code' => <<<'PHP'
+                    <?php
+                        /** @template T */
+                        class Box {
+                            /** @param T $value */
+                            public function set(mixed $value, int $times): void {}
+                        }
+                        /** @extends Box<int> */
+                        final class IntBox extends Box {
+                            public function f(): void {
+                                $closure = parent::set('s', ?);
+                            }
+                        }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:BoundExpressionOfAReferenceParameter' => [
+                'code' => <<<'PHP'
+                    <?php
+                        $closure = sort([3, 1], ?);
+                    PHP,
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:BoundMissingVariableOfANonNullableReferenceParameter' => [
+                'code' => <<<'PHP'
+                    <?php
+                        function fill(array &$a, int $n): void {}
+                        function f(): void {
+                            $closure = fill($missing, ?);
+                        }
+                    PHP,
+                'error_message' => 'NullArgument',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:TooManyPlaceholdersOfAnInheritedMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                        class Base {
+                            public function run(int $a, int $b): void {}
+                        }
+                        final class Child extends Base {}
+                        $closure = (new Child())->run(?, ?, ?);
+                    PHP,
+                'error_message' => 'Too many arguments for partial application of Base::run',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:BoundArgumentOfABuiltinWithoutAStub' => [
+                'code' => <<<'PHP'
+                    <?php
+                        $closure = mb_substr([], ?);
+                    PHP,
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:26 - Argument 1 of mb_substr expects string',
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],

@@ -799,7 +799,10 @@ final class ArgumentsAnalyzer
     }
 
     /**
-     * @param   list<PhpParser\Node\Arg>  $args
+     * With $partial_application, $args are the arguments a partial application binds, by offset in it: PHP checks them
+     * when it creates the closure, and passes no reference then. The arguments of the later call aren't known.
+     *
+     * @param   array<int, PhpParser\Node\Arg>  $args
      * @param   array<int,FunctionLikeParameter>        $function_params
      * @return  false|null
      * @psalm-suppress ComplexMethod there's just not much that can be done about this
@@ -814,6 +817,7 @@ final class ArgumentsAnalyzer
         TemplateResult $template_result,
         CodeLocation $code_location,
         Context $context,
+        bool $partial_application = false,
     ): ?bool {
         $in_call_map = $method_id ? InternalCallMapHandler::inCallMap((string) $method_id) : false;
 
@@ -923,7 +927,7 @@ final class ArgumentsAnalyzer
 
         $function_param_count = count($function_params);
 
-        if (count($function_params) > count($args) && !$has_packed_var) {
+        if (!$partial_application && count($function_params) > count($args) && !$has_packed_var) {
             for ($i = count($args), $iMax = count($function_params); $i < $iMax; $i++) {
                 if ($function_params[$i]->default_type
                     && $function_params[$i]->type
@@ -1106,7 +1110,18 @@ final class ArgumentsAnalyzer
             if ($arg_function_params[$argument_offset][0]->by_ref
                 && $method_id !== 'extract'
             ) {
-                if (self::handlePossiblyMatchingByRefParam(
+                // a partial application passes no reference when it creates the closure, but PHP checks the argument
+                if ($partial_application) {
+                    if (!self::isPassableByReference(
+                        $statements_analyzer,
+                        (string) $method_id,
+                        $cased_method_id,
+                        $argument_offset,
+                        $arg,
+                    )) {
+                        return null;
+                    }
+                } elseif (self::handlePossiblyMatchingByRefParam(
                     $statements_analyzer,
                     $codebase,
                     (string) $method_id,
@@ -1181,7 +1196,13 @@ final class ArgumentsAnalyzer
                 }
 
                 foreach ($arg_function_params[$argument_offset] as $function_param) {
-                    $sinks = self::getArgumentSinks($cased_method_id, $argument_offset, $args, $function_param->sinks);
+                    $sinks = self::getArgumentSinks(
+                        $cased_method_id,
+                        $argument_offset,
+                        $args,
+                        $function_param->sinks,
+                        $partial_application,
+                    );
 
                     if ($sinks || $function_param->value_sinks) {
                         if (!$function_storage) {
@@ -1251,6 +1272,10 @@ final class ArgumentsAnalyzer
                     }
                 }
             }
+        }
+
+        if ($partial_application) {
+            return null;
         }
 
         $f = in_array($method_id, self::ARRAY_FILTERLIKE, true);
@@ -1326,26 +1351,15 @@ final class ArgumentsAnalyzer
     }
 
     /**
-     * @param  array<int, FunctionLikeParameter> $function_params
-     * @param  array<int, PhpParser\Node\Arg> $args
-     * @return false|null
+     * Reports an argument that can't be passed by reference
      */
-    private static function handlePossiblyMatchingByRefParam(
+    private static function isPassableByReference(
         StatementsAnalyzer $statements_analyzer,
-        Codebase $codebase,
         string $method_id,
         ?string $cased_method_id,
-        ?FunctionLikeParameter $last_param,
-        array $function_params,
         int $argument_offset,
         PhpParser\Node\Arg $arg,
-        Context $context,
-        ?TemplateResult $template_result,
-        ?MethodIdentifier $method_identifier,
-        ?FunctionLikeStorage $function_storage,
-        CodeLocation $call_location,
-        array $args,
-    ): ?bool {
+    ): bool {
         if (($arg->value instanceof VirtualPipeValue
                 && self::phpTakesArgumentByReference($method_id, $argument_offset))
             || $arg->value instanceof PhpParser\Node\Scalar
@@ -1377,6 +1391,34 @@ final class ArgumentsAnalyzer
                 $statements_analyzer->getSuppressedIssues(),
             );
 
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param  array<int, FunctionLikeParameter> $function_params
+     * @param  array<int, PhpParser\Node\Arg> $args
+     * @return false|null
+     */
+    private static function handlePossiblyMatchingByRefParam(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        string $method_id,
+        ?string $cased_method_id,
+        ?FunctionLikeParameter $last_param,
+        array $function_params,
+        int $argument_offset,
+        PhpParser\Node\Arg $arg,
+        Context $context,
+        ?TemplateResult $template_result,
+        ?MethodIdentifier $method_identifier,
+        ?FunctionLikeStorage $function_storage,
+        CodeLocation $call_location,
+        array $args,
+    ): ?bool {
+        if (!self::isPassableByReference($statements_analyzer, $method_id, $cased_method_id, $argument_offset, $arg)) {
             return false;
         }
 
@@ -2062,7 +2104,7 @@ final class ArgumentsAnalyzer
     }
 
     /**
-     * @param   list<PhpParser\Node\Arg> $args
+     * @param   array<int, PhpParser\Node\Arg> $args
      * @param   array<int,FunctionLikeParameter>        $function_params
      * @param   array<string, array<string, Union>>  $class_generic_params
      */
@@ -2448,15 +2490,25 @@ final class ArgumentsAnalyzer
 
     /**
      * The sinks of the argument at $argument_offset of a call of $function_id. The value given to curl_setopt()
-     * is the sink of its option (see CURL_OPTION_SINKS). An option the analysis can't tell may be any of them.
+     * is the sink of its option (see CURL_OPTION_SINKS). An option the analysis can't tell may be any of them, as
+     * the placeholder a partial application gives instead of it.
      *
      * @param array<int, PhpParser\Node\Arg> $args
      * @psalm-capabilities read-props
      */
-    private static function getArgumentSinks(string $function_id, int $argument_offset, array $args, int $sinks): int
-    {
-        if ($argument_offset !== 2 || strtolower($function_id) !== 'curl_setopt' || !isset($args[1])) {
+    private static function getArgumentSinks(
+        string $function_id,
+        int $argument_offset,
+        array $args,
+        int $sinks,
+        bool $partial_application,
+    ): int {
+        if ($argument_offset !== 2 || strtolower($function_id) !== 'curl_setopt') {
             return $sinks;
+        }
+
+        if (!isset($args[1])) {
+            return $partial_application ? self::CURL_ANY_OPTION_SINKS : $sinks;
         }
 
         $option = $args[1]->value;
