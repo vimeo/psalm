@@ -79,11 +79,23 @@ final class MethodCallReturnTypeFetcher
 
         if ($stmt->isFirstClassCallable()) {
             if ($method_storage) {
-                return new Union([new TClosure(
-                    $method_storage->params,
-                    $method_storage->return_type,
-                    $method_storage->capabilities,
-                )]);
+                return self::getFirstClassCallableType(
+                    $codebase,
+                    $stmt,
+                    new TClosure(
+                        $method_storage->params,
+                        $method_storage->return_type,
+                        $method_storage->capabilities,
+                    ),
+                    $template_result,
+                    $method_storage->template_types ?? [],
+                    $fq_class_name,
+                    $static_type,
+                    $class_storage->parent_class,
+                    $static_type instanceof TNamedObject
+                    && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                    true,
+                );
             }
 
             return Type::getClosure();
@@ -838,6 +850,88 @@ final class MethodCallReturnTypeFetcher
         }
 
         return $call_node;
+    }
+
+    /**
+     * The node attribute set on a first-class callable given as the callback of array_map(), which binds the templates
+     * of its method itself: they then stay in its closure. Other calls bind them through the inferred template result.
+     */
+    public const CALL_ARGUMENT_ATTRIBUTE = 'first_class_callable_argument';
+
+    /**
+     * The closure of a first-class callable of a method, typed as a call of the method on the same receiver: with its
+     * template bounds (those of the class, from the receiver) and `static`. The method's own templates left unbound
+     * stand for their bounds, as a function's do in its closure, unless the call it is an argument of may bind them.
+     *
+     * @param array<string, non-empty-array<string, Union>> $method_template_types
+     */
+    public static function getFirstClassCallableType(
+        Codebase $codebase,
+        PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt,
+        TClosure $closure,
+        TemplateResult $template_result,
+        array $method_template_types,
+        ?string $self_class,
+        string|TNamedObject|TTemplateParam|null $static_class_type,
+        ?string $parent_class,
+        bool $final,
+        bool $expand_generic = false,
+    ): Union {
+        $keep_method_templates = $stmt->getAttribute(self::CALL_ARGUMENT_ATTRIBUTE) === true;
+        $bounds_result = new TemplateResult([], []);
+        $bounds_result->lower_bounds = $template_result->lower_bounds;
+
+        // in the order they are declared in, as a bound may be another template of the method (`@template B of A`)
+        foreach ($method_template_types as $template_name => $bounds) {
+            foreach ($bounds as $defining_class => $bound) {
+                if (isset($template_result->lower_bounds[$template_name][$defining_class])) {
+                    continue;
+                }
+
+                if ($bounds_result->lower_bounds) {
+                    $bound = TemplateInferredTypeReplacer::replace($bound, $bounds_result, $codebase);
+                }
+
+                $bounds_result->lower_bounds[$template_name][$defining_class] = [new TemplateBound(
+                    $keep_method_templates
+                        ? new Union([new TTemplateParam($template_name, $bound, $defining_class)])
+                        : $bound,
+                )];
+            }
+        }
+
+        $closure_type = new Union([$closure]);
+
+        if ($bounds_result->lower_bounds) {
+            $closure_type = TemplateInferredTypeReplacer::replace(
+                TypeExpander::expandUnion($codebase, $closure_type, null, null, null),
+                $bounds_result,
+                $codebase,
+            );
+
+            // a template bound to mixed gives way to its as-type, which may be another template of the method
+            for ($i = $keep_method_templates ? 0 : count($method_template_types); $i > 0; $i--) {
+                $replaced = TemplateInferredTypeReplacer::replace($closure_type, $bounds_result, $codebase);
+
+                if ($replaced->getId() === $closure_type->getId()) {
+                    break;
+                }
+
+                $closure_type = $replaced;
+            }
+        }
+
+        return TypeExpander::expandUnion(
+            $codebase,
+            $closure_type,
+            $self_class,
+            $static_class_type,
+            $parent_class,
+            true,
+            false,
+            $final,
+            $expand_generic,
+        );
     }
 
     public static function replaceTemplateTypes(
