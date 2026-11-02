@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests\Config;
 
 use Composer\Autoload\ClassLoader;
+use DOMDocument;
+use DOMXPath;
 use ErrorException;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -1211,6 +1213,53 @@ final class ConfigTest extends TestCase
         );
 
         $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testEveryExtensionOfTheSchemaCanBeEnabled(): void
+    {
+        $schema = new DOMDocument();
+        $schema->load(dirname(__DIR__, 2) . '/config.xsd');
+        $xpath = new DOMXPath($schema);
+        $xpath->registerNamespace('xs', 'http://www.w3.org/2001/XMLSchema');
+        $names = [];
+        foreach ($xpath->query('//xs:simpleType[@name="ExtensionType"]//xs:enumeration/@value') ?: [] as $name) {
+            if ($name->nodeValue !== null) {
+                $names[] = $name->nodeValue;
+            }
+        }
+
+        $this->assertContains('memcached', $names);
+
+        $default_config = TestConfig::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+            </psalm>',
+        );
+
+        $extensions = '';
+        foreach ($names as $name) {
+            $this->assertArrayHasKey($name, $default_config->php_extensions);
+            $extensions .= '<extension name="' . $name . '"/>';
+        }
+
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+                <enableExtensions>' . $extensions . '</enableExtensions>
+            </psalm>',
+        );
+
+        foreach ($names as $name) {
+            $this->assertTrue($config->php_extensions[$name], $name);
+        }
     }
 
     public function testZstdExtensionStubDeclaresItsFunctions(): void
