@@ -3,15 +3,6 @@
 return array (
   'added' => 
   array (
-    'datetimeinterface::__serialize' => 
-    array (
-      0 => 'array<array-key, mixed>',
-    ),
-    'datetimeinterface::__unserialize' => 
-    array (
-      0 => 'void',
-      'data' => 'array<array-key, mixed>',
-    ),
     'imap_is_open' => 
     array (
       0 => 'bool',
@@ -554,6 +545,10 @@ return array (
   ),
   'removed' => 
   array (
+    'ds\\collection::clear' => 
+    array (
+      0 => 'void',
+    ),
     'ds\\deque::allocate' => 
     array (
       0 => 'void',
@@ -650,6 +645,51 @@ return array (
       0 => 'array<array-key, mixed>',
     ),
     'ds\\queue::push' => 
+    array (
+      0 => 'void',
+      '...values=' => 'mixed',
+    ),
+    'ds\\sequence::allocate' => 
+    array (
+      0 => 'void',
+      'capacity' => 'int',
+    ),
+    'ds\\sequence::insert' => 
+    array (
+      0 => 'void',
+      'index' => 'int',
+      '...values=' => 'mixed',
+    ),
+    'ds\\sequence::last' => 
+    array (
+      0 => 'void',
+    ),
+    'ds\\sequence::push' => 
+    array (
+      0 => 'void',
+      '...values=' => 'mixed',
+    ),
+    'ds\\sequence::reverse' => 
+    array (
+      0 => 'void',
+    ),
+    'ds\\sequence::rotate' => 
+    array (
+      0 => 'void',
+      'rotations' => 'int',
+    ),
+    'ds\\sequence::set' => 
+    array (
+      0 => 'void',
+      'index' => 'int',
+      'value' => 'mixed',
+    ),
+    'ds\\sequence::sort' => 
+    array (
+      0 => 'void',
+      'comparator=' => 'callable[impure]|null',
+    ),
+    'ds\\sequence::unshift' => 
     array (
       0 => 'void',
       '...values=' => 'mixed',

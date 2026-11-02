@@ -3404,6 +3404,17 @@ return array (
         0 => 'MongoDB\\BSON\\Int64',
       ),
     ),
+    'mongodb\\driver\\cursorinterface::getid' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorId',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\BSON\\Int64',
+      ),
+    ),
     'mongodb\\driver\\manager::executecommand' => 
     array (
       'old' => 
@@ -3826,6 +3837,17 @@ return array (
         'iv=' => 'string',
         'tag=' => 'null|string',
         'aad=' => 'string',
+      ),
+    ),
+    'outeriterator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
       ),
     ),
     'pg_affected_rows' => 

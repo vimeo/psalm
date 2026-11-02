@@ -3634,7 +3634,7 @@ return array (
       'old' => 
       array (
         0 => 'DateInterval',
-        'datetime2' => 'DateTimeInterface',
+        'object' => 'DateTimeInterface',
         'absolute=' => 'bool',
       ),
       'new' => 
@@ -26370,6 +26370,19 @@ return array (
         'context=' => 'resource',
       ),
     ),
+    'seekableiterator::seek' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'position' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'offset' => 'int',
+      ),
+    ),
     'sem_acquire' => 
     array (
       'old' => 
@@ -26428,6 +26441,19 @@ return array (
       array (
         0 => 'bool',
         'semaphore' => 'SysvSemaphore',
+      ),
+    ),
+    'serializable::unserialize' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'serialized' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'data' => 'string',
       ),
     ),
     'serialize' => 
@@ -26609,6 +26635,103 @@ return array (
         0 => 'bool',
         'id' => 'string',
         'data' => 'string',
+      ),
+    ),
+    'sessionhandlerinterface::destroy' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'id' => 'string',
+      ),
+    ),
+    'sessionhandlerinterface::gc' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'maxlifetime' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'max_lifetime' => 'int',
+      ),
+    ),
+    'sessionhandlerinterface::open' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'save_path' => 'string',
+        'session_name' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'path' => 'string',
+        'name' => 'string',
+      ),
+    ),
+    'sessionhandlerinterface::read' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'key' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'id' => 'string',
+      ),
+    ),
+    'sessionhandlerinterface::write' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'string',
+        'val' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'id' => 'string',
+        'data' => 'string',
+      ),
+    ),
+    'sessionupdatetimestamphandlerinterface::updatetimestamp' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'string',
+        'val' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'id' => 'string',
+        'data' => 'string',
+      ),
+    ),
+    'sessionupdatetimestamphandlerinterface::validateid' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'id' => 'string',
       ),
     ),
     'set_error_handler' => 

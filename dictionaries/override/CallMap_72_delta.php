@@ -182,6 +182,51 @@ return array (
     array (
       0 => 'array<array-key, mixed>|null|object',
     ),
+    'mongodb\\driver\\monitoring\\sdamsubscriber::serverchanged' => 
+    array (
+      0 => 'void',
+      'event' => 'MongoDB\\Driver\\Monitoring\\ServerChangedEvent',
+    ),
+    'mongodb\\driver\\monitoring\\sdamsubscriber::serverclosed' => 
+    array (
+      0 => 'void',
+      'event' => 'MongoDB\\Driver\\Monitoring\\ServerClosedEvent',
+    ),
+    'mongodb\\driver\\monitoring\\sdamsubscriber::serverheartbeatfailed' => 
+    array (
+      0 => 'void',
+      'event' => 'MongoDB\\Driver\\Monitoring\\ServerHeartbeatFailedEvent',
+    ),
+    'mongodb\\driver\\monitoring\\sdamsubscriber::serverheartbeatstarted' => 
+    array (
+      0 => 'void',
+      'event' => 'MongoDB\\Driver\\Monitoring\\ServerHeartbeatStartedEvent',
+    ),
+    'mongodb\\driver\\monitoring\\sdamsubscriber::serverheartbeatsucceeded' => 
+    array (
+      0 => 'void',
+      'event' => 'MongoDB\\Driver\\Monitoring\\ServerHeartbeatSucceededEvent',
+    ),
+    'mongodb\\driver\\monitoring\\sdamsubscriber::serveropening' => 
+    array (
+      0 => 'void',
+      'event' => 'MongoDB\\Driver\\Monitoring\\ServerOpeningEvent',
+    ),
+    'mongodb\\driver\\monitoring\\sdamsubscriber::topologychanged' => 
+    array (
+      0 => 'void',
+      'event' => 'MongoDB\\Driver\\Monitoring\\TopologyChangedEvent',
+    ),
+    'mongodb\\driver\\monitoring\\sdamsubscriber::topologyclosed' => 
+    array (
+      0 => 'void',
+      'event' => 'MongoDB\\Driver\\Monitoring\\TopologyClosedEvent',
+    ),
+    'mongodb\\driver\\monitoring\\sdamsubscriber::topologyopening' => 
+    array (
+      0 => 'void',
+      'event' => 'MongoDB\\Driver\\Monitoring\\TopologyOpeningEvent',
+    ),
     'oci_register_taf_callback' => 
     array (
       0 => 'bool',

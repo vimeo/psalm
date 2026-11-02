@@ -205,6 +205,16 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'dateTimeInterfaceMicrosecond' => [
+                'code' => '<?php
+                    function asInterface(DateTimeInterface $date): DateTimeInterface {
+                        return $date;
+                    }
+                    $result = asInterface(new DateTimeImmutable())->getMicrosecond();',
+                'assertions' => ['$result' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'notInCallMapTest' => [
                 'code' => '<?php
                     new DOMImplementation();',
@@ -1505,6 +1515,15 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'dateTimeInterfaceMicrosecondBeforeEightFour' => [
+                'code' => '<?php
+                    function microseconds(DateTimeInterface $date): void {
+                        $date->getMicrosecond();
+                    }',
+                'error_message' => 'UndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - Method DateTimeInterface::getMicrosecond',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'staticInvocation' => [
                 'code' => '<?php
                     class Foo {

@@ -20,6 +20,31 @@ final class CallMapTest extends TestCase
 {
     protected const DICTIONARY_PATH = 'dictionaries';
 
+    public function testReflectedInterfaceMethods(): void
+    {
+        foreach ([70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 86] as $version) {
+            /** @var TCallMap $map */
+            $map = require self::DICTIONARY_PATH . '/autogen/CallMap_' . $version . '.php';
+            /** @var array<string, string> $extensions */
+            $extensions = require self::DICTIONARY_PATH . '/autogen/CallMapExtensions_' . $version . '.php';
+
+            self::assertArrayHasKey('iterator::current', $map);
+            self::assertSame(['mixed'], $map['iterator::current']);
+            self::assertSame(['mixed'], $map['recursiveiterator::current']);
+            self::assertSame('spl', $extensions['recursiveiterator::current']);
+            self::assertArrayHasKey('datetimeinterface::format', $map);
+            self::assertSame('date', $extensions['datetimeinterface::format']);
+
+            if ($version >= 84) {
+                self::assertSame(['int'], $map['datetimeinterface::getmicrosecond']);
+                self::assertSame('date', $extensions['datetimeinterface::getmicrosecond']);
+            } else {
+                self::assertArrayNotHasKey('datetimeinterface::getmicrosecond', $map);
+                self::assertArrayNotHasKey('datetimeinterface::getmicrosecond', $extensions);
+            }
+        }
+    }
+
     public function testDictionaryPathMustBeAReadableDirectory(): void
     {
         self::assertDirectoryExists(self::DICTIONARY_PATH, self::DICTIONARY_PATH . " is not a valid directory");

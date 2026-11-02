@@ -128,7 +128,7 @@ foreach (get_defined_functions() as $sub) {
     }
 }
 
-foreach (get_declared_classes() as $class) {
+foreach (array_merge(get_declared_classes(), get_declared_interfaces()) as $class) {
     $refl = new ReflectionClass($class);
 
     foreach ($refl->getMethods() as $method) {
