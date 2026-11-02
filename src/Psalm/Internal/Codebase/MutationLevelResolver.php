@@ -193,18 +193,6 @@ final class MutationLevelResolver
     }
 
     /**
-     * Why a purity annotation is worth adding: what it brings depends on what is analysed.
-     *
-     * @psalm-mutation-free
-     */
-    public static function getSuggestionBenefit(Codebase $codebase): string
-    {
-        return $codebase->taint_flow_graph !== null
-            ? 'to aid security analysis'
-            : 'to document what it may do and let Psalm enforce it';
-    }
-
-    /**
      * When suggesting purity annotations is enabled, resolves the mutation levels of the code
      * analysed in this run, reports function-likes that could be marked with a stricter purity
      * annotation and queues the annotation fixes when running with `--alter`.
@@ -260,14 +248,14 @@ final class MutationLevelResolver
 
             IssueBuffer::maybeAdd(
                 new MissingPureAnnotation(
-                    $info['cased_name'] . ' must be marked @' . Capabilities::toFunctionAnnotation($level)
+                    $info['cased_name'] . ' could be marked @' . Capabilities::toFunctionAnnotation($level)
                     . ($wildcards
                         ? ', with the _ purity for ' . implode(', ', array_map(
                             static fn(string $param): string => '$' . $param,
                             array_keys($wildcards),
                         )) . ' (Closure[_], Traversable[_], ...),'
                         : '')
-                    . ' ' . self::getSuggestionBenefit($codebase)
+                    . ' ' . $project_analyzer->getPuritySuggestionReason()
                     . ', run with --alter --issues=MissingPureAnnotation to fix this',
                     $info['location'],
                 ),
