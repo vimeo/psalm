@@ -424,14 +424,26 @@ final class StatementsProvider
 
         $error_handler->clearErrors();
 
+        // the name resolver's errors are dropped, unlike those of the partial applications
+        $compile_error_handler = new Collecting();
+
         $resolving_traverser = new PhpParser\NodeTraverser;
         $name_resolver = new SimpleNameResolver(
             $error_handler,
             $used_cached_statements ? $file_changes : [],
         );
         $resolving_traverser->addVisitor($name_resolver);
-        $resolving_traverser->addVisitor(new PartialApplicationVisitor());
+
+        if ($used_cached_statements) {
+            // the name resolver skips the methods the partial reparse kept, whose compile errors are reported again
+            $resolving_traverser->traverse($stmts);
+            $resolving_traverser = new PhpParser\NodeTraverser;
+        }
+
+        $resolving_traverser->addVisitor(new PartialApplicationVisitor($compile_error_handler));
         $resolving_traverser->traverse($stmts);
+
+        $parse_errors = [...$parse_errors, ...array_values($compile_error_handler->getErrors())];
 
         return $stmts;
     }

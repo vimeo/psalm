@@ -533,7 +533,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
                 $member_stmts[] = $stmt;
-                AttributesAnalyzer::reportPlaceholders($this, $stmt->attrGroups, $this->getSuppressedIssues());
 
                 foreach ($stmt->consts as $const) {
                     if ($const->name->toLowerString() === 'class') {
@@ -565,8 +564,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         }
                     }
                 }
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\EnumCase) {
-                AttributesAnalyzer::reportPlaceholders($this, $stmt->attrGroups, $this->getSuppressedIssues());
             }
         }
 

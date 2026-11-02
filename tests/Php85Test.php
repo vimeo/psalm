@@ -357,7 +357,7 @@ final class Php85Test extends TestCase
                     }
 
                     $new = 3 |> new N(?);',
-                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33 - Cannot create Closure for new expression',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33 - Cannot create Closure for new expression on line 6',
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],
@@ -375,7 +375,7 @@ final class Php85Test extends TestCase
                     function one(int $a): int { return $a; }
 
                     $r = 3 |> one(?, ..., ...);',
-                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31 - Variadic placeholder may only appear once',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31 - Variadic placeholder may only appear once on line 4',
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],
@@ -384,7 +384,7 @@ final class Php85Test extends TestCase
                     function two(int $a, int $b = 0): int { return $a + $b; }
 
                     $r = 3 |> two(..., ?);',
-                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31 - Variadic placeholder must be last',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31 - Variadic placeholder must be last on line 4',
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],
@@ -393,7 +393,7 @@ final class Php85Test extends TestCase
                     function two(int $a, int $b = 0): int { return $a + $b; }
 
                     $r = 3 |> two(b: 1, ?);',
-                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31 - Cannot use positional argument after named argument',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31 - Cannot use positional argument after named argument on line 4',
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],

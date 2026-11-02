@@ -19,6 +19,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\PartialApplicationAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\PhpVisitor\PartialApplicationVisitor;
 use Psalm\Node\Expr\PartialApplication;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Expr\VirtualMethodCall;
@@ -94,15 +95,16 @@ final class PipeAnalyzer
     }
 
     /**
-     * The callee and arguments when PHP calls the callee directly with the piped value as its placeholder: a single
-     * `?` or `...`, no named or unpacked argument before a `...`. A positional argument after a named one is not direct
-     * because it is a compile error, which the partial application reports.
+     * The callee and arguments when PHP calls the callee directly with the piped value as its placeholder. A partial
+     * application with a compile error is analysed as a closure, so that no check of the call repeats the error.
      *
      * @return array{FuncCall|MethodCall|StaticCall, list<Arg|ArgPlaceholder|VariadicPlaceholder>}|null
      */
     private static function getDirectCall(Expr $right): ?array
     {
-        if ($right instanceof PartialApplication) {
+        if ($right instanceof PartialApplication
+            && $right->getAttribute(PartialApplicationVisitor::COMPILE_ERROR) === null
+        ) {
             $callee = $right->call;
             $raw_args = $right->args;
         } elseif ($right instanceof CallLike && $right->isFirstClassCallable()) {
@@ -112,37 +114,7 @@ final class PipeAnalyzer
             return null;
         }
 
-        if (!$callee instanceof FuncCall && !$callee instanceof MethodCall && !$callee instanceof StaticCall) {
-            return null;
-        }
-
-        $placeholders = 0;
-        $has_named = false;
-        $has_named_or_unpacked = false;
-
-        foreach ($raw_args as $arg) {
-            if ($arg instanceof VariadicPlaceholder) {
-                if ($has_named_or_unpacked) {
-                    return null;
-                }
-
-                $placeholders++;
-            } elseif ($arg->name !== null) {
-                $has_named = $has_named_or_unpacked = true;
-
-                if ($arg instanceof ArgPlaceholder) {
-                    $placeholders++;
-                }
-            } elseif ($arg instanceof Arg && $arg->unpack) {
-                $has_named_or_unpacked = true;
-            } elseif ($has_named) {
-                return null;
-            } elseif ($arg instanceof ArgPlaceholder) {
-                $placeholders++;
-            }
-        }
-
-        return $placeholders === 1 ? [$callee, $raw_args] : null;
+        return PartialApplicationVisitor::isDirectPipeCall($callee, $raw_args) ? [$callee, $raw_args] : null;
     }
 
     /**

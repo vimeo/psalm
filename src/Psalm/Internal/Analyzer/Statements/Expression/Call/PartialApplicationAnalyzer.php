@@ -10,8 +10,6 @@ use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
-use PhpParser\Node\Expr\NullsafeMethodCall;
-use PhpParser\Node\Expr\NullsafePropertyFetch;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\StaticPropertyFetch;
@@ -32,6 +30,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\PhpVisitor\PartialApplicationVisitor;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\ParseError;
@@ -70,14 +69,8 @@ final class PartialApplicationAnalyzer
 
         self::checkPhpVersion($statements_analyzer, $stmt);
 
-        $compile_error = self::getCompileError($stmt);
-
-        if ($compile_error !== null) {
-            IssueBuffer::maybeAdd(
-                new ParseError($compile_error, $code_location),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        }
+        // the parser reported its compile error (see PartialApplicationVisitor)
+        $is_invalid = $stmt->getAttribute(PartialApplicationVisitor::COMPILE_ERROR) !== null;
 
         $closure = null;
 
@@ -94,7 +87,7 @@ final class PartialApplicationAnalyzer
 
             $callee_type = $statements_analyzer->node_data->getType($stmt->call);
 
-            if ($compile_error === null
+            if (!$is_invalid
                 && $callee_type
                 && $callee_type->isSingle()
                 && ($atomic = $callee_type->getSingleAtomic()) instanceof TClosure
@@ -181,73 +174,6 @@ final class PartialApplicationAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
-        }
-    }
-
-    /**
-     * @psalm-capabilities read-props
-     */
-    private static function getCompileError(PartialApplication $stmt): ?string
-    {
-        $call = $stmt->call;
-
-        if ($call instanceof New_) {
-            return 'Cannot create Closure for new expression';
-        }
-
-        // PHP checks the object chain of a method call only: the class of a static call may be a nullsafe expression
-        if ($call instanceof NullsafeMethodCall
-            || ($call instanceof MethodCall && self::isShortCircuited($call->var))
-        ) {
-            return 'Cannot combine nullsafe operator with Closure creation';
-        }
-
-        $has_named = false;
-        $has_variadic_placeholder = false;
-
-        foreach ($stmt->args as $arg) {
-            if ($has_variadic_placeholder) {
-                return $arg instanceof VariadicPlaceholder
-                    ? 'Variadic placeholder may only appear once'
-                    : 'Variadic placeholder must be last';
-            }
-
-            if ($arg instanceof VariadicPlaceholder) {
-                $has_variadic_placeholder = true;
-            } elseif ($arg instanceof Arg && $arg->unpack) {
-                return 'Cannot combine partial application and unpacking';
-            } elseif ($arg->name !== null) {
-                $has_named = true;
-            } elseif ($has_named) {
-                return 'Cannot use positional argument after named argument';
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Whether a nullsafe operator short-circuits the chain, as PHP's compiler sees it: parentheses don't end the
-     * chain, and the class of a static call or property within it is part of it
-     *
-     * @psalm-capabilities read-props
-     */
-    private static function isShortCircuited(Expr $expr): bool
-    {
-        while (true) {
-            if ($expr instanceof NullsafeMethodCall || $expr instanceof NullsafePropertyFetch) {
-                return true;
-            }
-
-            if ($expr instanceof MethodCall || $expr instanceof PropertyFetch || $expr instanceof ArrayDimFetch) {
-                $expr = $expr->var;
-            } elseif (($expr instanceof StaticCall || $expr instanceof StaticPropertyFetch)
-                && $expr->class instanceof Expr
-            ) {
-                $expr = $expr->class;
-            } else {
-                return false;
-            }
         }
     }
 

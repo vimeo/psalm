@@ -1055,7 +1055,7 @@ final class PartialFunctionApplicationTest extends TestCase
                             public const int X = 1;
                         }
                     PHP,
-                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:11 - Cannot create Closure as attribute argument',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:11 - Cannot create Closure as attribute argument on line 7',
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],
@@ -1071,7 +1071,23 @@ final class PartialFunctionApplicationTest extends TestCase
                             case A;
                         }
                     PHP,
-                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:11 - Cannot create Closure as attribute argument',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:11 - Cannot create Closure as attribute argument on line 7',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:PlaceholderAsAttributeArgumentOfATraitConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                        #[Attribute]
+                        final class Attr {
+                            public function __construct(public int $a = 0) {}
+                        }
+                        trait T {
+                            #[Attr(?)]
+                            public const int X = 1;
+                        }
+                    PHP,
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:11 - Cannot create Closure as attribute argument on line 7',
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],
@@ -1094,7 +1110,7 @@ final class PartialFunctionApplicationTest extends TestCase
                             $closure = $o?->p::make()->m(?);
                         }
                     PHP,
-                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:20 - Cannot combine nullsafe operator with Closure creation',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:20 - Cannot combine nullsafe operator with Closure creation on line 15',
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],
