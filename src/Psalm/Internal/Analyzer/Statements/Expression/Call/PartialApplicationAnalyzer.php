@@ -23,6 +23,7 @@ use PhpParser\Node\VariadicPlaceholder;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
@@ -33,7 +34,9 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAna
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
+use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
@@ -136,12 +139,17 @@ final class PartialApplicationAnalyzer
             );
         }
 
+        // as a call would, a builtin's reference parameter gets no null check (see ArgumentsAnalyzer)
+        $callee_id = $closure?->callable_id;
+        $checks_null_reference = $callee_id === null || !InternalCallMapHandler::inCallMap($callee_id);
+
         foreach ($stmt->args as $offset => $arg) {
             if ($arg instanceof Arg
                 && self::analyzeBoundArg(
                     $statements_analyzer,
                     $arg,
                     $binding['bound'][$offset] ?? null,
+                    $checks_null_reference,
                     $context,
                 ) === false
             ) {
@@ -156,6 +164,7 @@ final class PartialApplicationAnalyzer
                 $closure,
                 $method_id,
                 $binding['bound'],
+                $binding['open'],
                 $code_location,
                 $context,
             );
@@ -334,8 +343,12 @@ final class PartialApplicationAnalyzer
      * required parameters of the closure (positional ones first, then named ones in the order written), and `...`
      * keeps the parameters nothing else covers.
      *
-     * @return array{params: ?list<FunctionLikeParameter>, bound: array<int, FunctionLikeParameter>} the closure
-     *     parameters (null when the application fails), and the parameter each bound argument goes to, by offset
+     * @return array{
+     *     params: ?list<FunctionLikeParameter>,
+     *     bound: array<int, FunctionLikeParameter>,
+     *     open: array<int, true>,
+     * } the closure parameters (null when the application fails), the parameter each bound argument goes to, by
+     *     offset, and the offsets of the parameters the closure's caller gives
      */
     private static function bind(
         StatementsAnalyzer $statements_analyzer,
@@ -355,6 +368,7 @@ final class PartialApplicationAnalyzer
         $covered = [];
         $extra_names = [];
         $bound = [];
+        $open = [];
         $variadic_placeholder_count = 0;
         $has_variadic_placeholder = false;
         $failed = !$report;
@@ -374,12 +388,14 @@ final class PartialApplicationAnalyzer
                     $covered[$offset] = true;
 
                     if ($is_placeholder) {
+                        $open[$offset] = true;
                         $positional_placeholders[] = self::makeRequired($params[$offset]);
                     } else {
                         $bound[$offset] = $params[$offset];
                     }
                 } elseif ($variadic) {
                     if ($is_placeholder) {
+                        $open[$fixed_count] = true;
                         $positional_placeholders[] = self::makeRequired(
                             $variadic,
                             $variadic->name . $variadic_placeholder_count++,
@@ -427,6 +443,7 @@ final class PartialApplicationAnalyzer
                     $covered[$param_offset] = true;
 
                     if ($is_placeholder) {
+                        $open[$param_offset] = true;
                         $named_placeholders[] = self::makeRequired($params[$param_offset]);
                     } else {
                         $bound[$offset] = $params[$param_offset];
@@ -463,6 +480,7 @@ final class PartialApplicationAnalyzer
             }
 
             if ($has_variadic_placeholder) {
+                $open[$offset] = true;
                 $closure_params[] = $param;
             } elseif (!$param->is_optional && !$failed) {
                 $failed = true;
@@ -480,10 +498,11 @@ final class PartialApplicationAnalyzer
         }
 
         if ($has_variadic_placeholder && $variadic) {
+            $open[$fixed_count] = true;
             $closure_params[] = $variadic;
         }
 
-        return ['params' => $failed ? null : $closure_params, 'bound' => $bound];
+        return ['params' => $failed ? null : $closure_params, 'bound' => $bound, 'open' => $open];
     }
 
     /**
@@ -564,6 +583,7 @@ final class PartialApplicationAnalyzer
      * flow and sinks of the call
      *
      * @param array<int, FunctionLikeParameter> $bound
+     * @param array<int, true> $open the offsets of the parameters the closure's caller gives
      */
     private static function checkBoundArgs(
         StatementsAnalyzer $statements_analyzer,
@@ -571,6 +591,7 @@ final class PartialApplicationAnalyzer
         TClosure $closure,
         ?MethodIdentifier $method_id,
         array $bound,
+        array $open,
         CodeLocation $code_location,
         Context $context,
     ): void {
@@ -688,12 +709,44 @@ final class PartialApplicationAnalyzer
             );
         }
 
+        if ($storage !== null
+            && $callee_id !== null
+            && ($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+        ) {
+            $cased_callee_id = $callee_id instanceof MethodIdentifier
+                ? $codebase->methods->getCasedMethodId($callee_id)
+                : $storage->cased_name ?? $callee_id;
+
+            ConditionalTaintSinks::taintCall(
+                $statements_analyzer,
+                $graph,
+                $storage,
+                $args,
+                $cased_callee_id,
+                $code_location,
+                $open,
+            );
+
+            // the call specialized for the application never returns here: its exit has no outgoing edge, so that the
+            // resolver doesn't leave the callee through every call of it (see TaintFlowResolution::isExitOfEntered())
+            if (TaintFlowGraph::isCallSpecialized($graph, $codebase, $storage, $code_location)) {
+                $graph->addNode(DataFlowNode::getForMethodReturn(
+                    $callee_id instanceof MethodIdentifier
+                        ? FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $callee_id)
+                        : $cased_callee_id,
+                    $storage,
+                    $code_location,
+                ));
+            }
+        }
+
         // the data flow a call of a callable value gets beside the checks of its arguments
         if ($callable_value_id !== null) {
             FunctionCallReturnTypeFetcher::taintArgsBoundToCallable(
                 $statements_analyzer,
                 $callable_value_id,
                 $args,
+                $open,
                 $code_location,
             );
         }
@@ -706,6 +759,7 @@ final class PartialApplicationAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Arg $arg,
         ?FunctionLikeParameter $param,
+        bool $checks_null_reference,
         Context $context,
     ): ?bool {
         if ($param && $param->by_ref
@@ -714,7 +768,13 @@ final class PartialApplicationAnalyzer
                 || $arg->value instanceof PropertyFetch
                 || $arg->value instanceof StaticPropertyFetch)
         ) {
-            return self::captureReference($statements_analyzer, $arg->value, $param, $context);
+            return self::captureReference(
+                $statements_analyzer,
+                $arg->value,
+                $param,
+                $checks_null_reference,
+                $context,
+            );
         }
 
         $was_inside_call = $context->inside_call;
@@ -737,6 +797,7 @@ final class PartialApplicationAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Variable|ArrayDimFetch|PropertyFetch|StaticPropertyFetch $location,
         FunctionLikeParameter $param,
+        bool $checks_null_reference,
         Context $context,
     ): ?bool {
         $var_id = ExpressionIdentifier::getExtendedVarId(
@@ -746,9 +807,12 @@ final class PartialApplicationAnalyzer
         );
 
         if ($location instanceof Variable && $var_id !== null && !isset($context->vars_in_scope[$var_id])) {
-            // what PHP passes, which the parameter's type is checked against (see checkBoundArgs())
             $current_type = Type::getNull();
-            $statements_analyzer->node_data->setType($location, $current_type);
+
+            // what PHP passes, which the parameter's type is checked against (see checkBoundArgs())
+            if ($checks_null_reference) {
+                $statements_analyzer->node_data->setType($location, $current_type);
+            }
         } else {
             // read like an ordinary by-reference argument: a missing offset is created, not an empty access
             $was_inside_by_ref_offset = $context->inside_by_ref_offset;

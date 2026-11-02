@@ -346,6 +346,17 @@ final class PartialFunctionApplicationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.6',
             ],
+            'PartialApplication:BoundMissingVariableOfAReferenceParameterOfABuiltin' => [
+                'code' => <<<'PHP'
+                    <?php
+                        function f(): void {
+                            $closure = proc_open(?, [], $pipes);
+                        }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
             'PartialApplication:VariadicPlaceholderLeavesTheFormatOpen' => [
                 'code' => <<<'PHP'
                     <?php

@@ -864,6 +864,74 @@ final class TaintTest extends TestCase
                     'TaintedSleep from line 2',
                 ],
             ],
+            'applicationThenFirstClassCallableCall' => [
+                '<?php
+                    function id(string $s, int $n): string {
+                        return $s;
+                    }
+
+                    $f = id(...);
+                    $a = id((string) $_GET["x"], ?);
+                    echo $f("safe", 1);',
+                [],
+            ],
+            'applicationOfAFirstClassCallableThenItsCall' => [
+                '<?php
+                    function id(string $s, int $n): string {
+                        return $s;
+                    }
+
+                    $f = id(...);
+                    $a = $f((string) $_GET["x"], ?);
+                    echo $f("safe", 1);',
+                [],
+            ],
+            'conditionalSinkOfAThunk' => [
+                '<?php
+                    /** @psalm-taint-sink ($mode is 0|1|2 ? null : "html") $content */
+                    function render(string $content, int $mode = 0): void {}
+
+                    $raw = render((string) $_GET["raw"], 3, ...);
+                    $safe = render((string) $_GET["safe"], 1, ...);
+                    $default = render((string) $_GET["default"], ?, ...);',
+                ['TaintedHtml from line 5', 'TaintedHtml from line 7'],
+            ],
+            'conditionalSinkOfAnOpenParameter' => [
+                '<?php
+                    /** @psalm-taint-sink ($mode is 0|1|2 ? null : "html") $content */
+                    function render(string $content, int $mode = 0): void {}
+
+                    $positional = render((string) $_GET["positional"], ?);
+                    $named = render(mode: ?, content: (string) $_GET["named"]);
+                    $rest = render((string) $_GET["rest"], ...);
+                    $omitted = render((string) $_GET["omitted"]);',
+                ['TaintedHtml from line 5', 'TaintedHtml from line 6', 'TaintedHtml from line 7'],
+            ],
+            'conditionalSinkOfMethods' => [
+                '<?php
+                    final class Component {
+                        /** @psalm-taint-sink ($mode is 0|1|2 ? null : "html") $content */
+                        public function show(string $content, int $mode = 0): void {}
+
+                        /** @psalm-taint-sink ($mode is 0|1|2 ? null : "html") $content */
+                        public static function format(string $content, int $mode = 0): void {}
+                    }
+
+                    $show = (new Component())->show((string) $_GET["show"], 3, ...);
+                    $format = Component::format((string) $_GET["format"], 3, ...);
+                    $safe = Component::format((string) $_GET["safe"], 1, ...);',
+                ['TaintedHtml from line 10', 'TaintedHtml from line 11'],
+            ],
+            'conditionalSinkOfACallableValue' => [
+                '<?php
+                    /** @psalm-taint-sink ($mode is 0|1|2 ? null : "html") $content */
+                    function render(string $content, int $mode = 0): void {}
+
+                    $render = render(...);
+                    $open = $render((string) $_GET["open"], ?);
+                    $safe = $render((string) $_GET["safe"], 1, ...);',
+                ['TaintedHtml from line 6'],
+            ],
         ];
 
         $data = [];
