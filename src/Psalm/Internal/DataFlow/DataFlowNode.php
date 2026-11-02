@@ -187,8 +187,8 @@ final class DataFlowNode implements Stringable
      * overrides of the classes extending it: shared by all those calls, so it has no location. The calls
      * specialized to their location have one of their own, which only goes to the overrides.
      *
-     * A named argument that a variadic collects has a node per name (as PHP binds them, case-sensitively), and an
-     * unpacked one a node of its own, as what an override takes of it depends on that.
+     * What an override takes of an argument the variadic collects depends on its name (case-sensitive) and the
+     * number of positional arguments before it (null: an unpack precedes), or on its being unpacked.
      *
      * @psalm-pure
      */
@@ -198,10 +198,13 @@ final class DataFlowNode implements Stringable
         bool $specialized_calls = false,
         ?string $named_argument = null,
         bool $unpacked_argument = false,
+        ?int $positional_arguments = null,
     ): self {
         $label = ($specialized_calls ? 'specialized ' : '') . 'dispatch of ' . $cased_method_id
             . '#' . ($argument_offset + 1);
-        $collected = ($named_argument !== null ? ' named ' . $named_argument : '')
+        $collected = ($named_argument !== null
+                ? ' named ' . $named_argument . ' after ' . ($positional_arguments ?? 'unpack')
+                : '')
             . ($unpacked_argument ? ' unpacked' : '');
 
         return self::make(strtolower($label) . $collected, $label . $collected, null);

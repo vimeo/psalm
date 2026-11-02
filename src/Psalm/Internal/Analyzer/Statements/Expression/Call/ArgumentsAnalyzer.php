@@ -873,12 +873,18 @@ final class ArgumentsAnalyzer
         }
 
         $has_packed_var = false;
+        $positional_arguments = 0;
 
         foreach ($args as $arg) {
             if ($arg->unpack) {
                 $has_packed_var = true;
+            } elseif (!$arg->name) {
+                $positional_arguments++;
             }
         }
+
+        // PHP binds no positional argument after a named one, so this holds for each named argument of the call
+        $positional_arguments = $has_packed_var ? null : $positional_arguments;
 
         $last_param = $function_params
             ? $function_params[count($function_params) - 1]
@@ -953,6 +959,7 @@ final class ArgumentsAnalyzer
                             $template_result,
                             $specialize_taint,
                             $in_call_map,
+                            $positional_arguments,
                         );
                     }
                 }
@@ -1138,6 +1145,7 @@ final class ArgumentsAnalyzer
                     $template_result,
                     $specialize_taint,
                     $in_call_map,
+                    $positional_arguments,
                 ) === false) {
                     return false;
                 }
