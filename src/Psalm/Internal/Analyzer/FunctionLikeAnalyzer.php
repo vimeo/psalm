@@ -1372,10 +1372,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * The by-reference parameter $var_id stops referencing the variable passed to it (unset(), =&, global,
-     * static, ...): that variable keeps what the parameter holds now.
+     * static, ...): that variable keeps what the parameter holds now. Also the case for a variable bound to
+     * a global.
      */
     public static function unbindByRefParam(Codebase $codebase, Context $context, string $var_id): void
     {
+        unset($context->bound_globals[$var_id]);
+
         if (isset($context->by_ref_param_out_nodes[$var_id])) {
             self::taintByRefParamOut($codebase, $context, $var_id);
 

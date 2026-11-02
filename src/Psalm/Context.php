@@ -102,6 +102,15 @@ final class Context
     public array $by_ref_param_out_nodes = [];
 
     /**
+     * The variables bound to a global by `global`, with the type the scope declares for the global (see
+     * GlobalAnalyzer::readGlobalsWrittenBy()). Dropped when the variable stops referencing the global.
+     *
+     * @internal
+     * @var array<string, Union>
+     */
+    public array $bound_globals = [];
+
+    /**
      * The elements of an array a foreach loop iterates over, that an assignment in its body may copy under their
      * own key (see ArrayAssignmentAnalyzer::getElementCopySource()): value variable id => [key variable id, ids of
      * its parent nodes, ids of the parent nodes of the value variable, parent nodes of the iterated array]. The
