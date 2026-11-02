@@ -10,6 +10,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -463,8 +464,18 @@ final class ConstFetchAnalyzer
 
         $file_storage = $codebase->file_storage_provider->get($statements_analyzer->getRootFilePath());
 
+        // a constant defined inside the function (see ExpressionScanner::scan) is not known to the context yet
+        // where only the scanned declarations are available, e.g. when scraping the assertions of a condition
+        $source = $statements_analyzer->getSource();
+        $defined_constants = $source instanceof FunctionLikeAnalyzer
+            ? $source->getFunctionLikeStorage($statements_analyzer)->defined_constants
+            : [];
+
         foreach ([$const_name, $fq_const_name] as $name) {
-            if (isset($file_storage->declaring_constants[$name]) || $codebase->getUnresolvedGlobalConstant($name)) {
+            if (isset($file_storage->declaring_constants[$name])
+                || isset($defined_constants[$name])
+                || $codebase->getUnresolvedGlobalConstant($name)
+            ) {
                 return null;
             }
         }
