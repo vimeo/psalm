@@ -36,6 +36,27 @@ Issues due to missing extensions can be fixed by enabling them in psalm.xml and/
 
 Extensions not stubbed by Psalm itself (and thus not available as a psalm config option) may be stubbed using [traditional PHP stubs](https://github.com/JetBrains/phpstorm-stubs/).
 
+## GitHub Actions
+
+The [Psalm GitHub Action](https://github.com/psalm/psalm-github-actions) runs Psalm in the docker image and shows its issues on pull requests:
+
+```yaml
+      - name: Psalm
+        uses: docker://ghcr.io/psalm/psalm-github-actions # or :6.20.5, :7.0.0-rc27, ...
+```
+
+The [Psalm Security Scan](https://github.com/psalm/psalm-github-security-scan) action sends the [security analysis](../security_analysis/index.md) results to GitHub code scanning:
+
+```yaml
+      - name: Psalm Security Scan
+        uses: docker://ghcr.io/psalm/psalm-security-scan
+
+      - name: Upload Security Analysis results to GitHub
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+```
+
 ## Installing plugins
 
 While Psalm can figure out the types used by various libraries based on
