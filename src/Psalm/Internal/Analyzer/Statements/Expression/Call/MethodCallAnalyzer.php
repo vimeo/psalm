@@ -259,6 +259,20 @@ final class MethodCallAnalyzer extends CallAnalyzer
             );
         }
 
+        $magic_args_analyzed = null;
+
+        // issues from the arguments precede the issues of the call itself
+        if ($result->non_existent_magic_method_ids && !$result->existent_method_ids && !$stmt->isFirstClassCallable()) {
+            $magic_args_analyzed = self::checkMethodArgs(
+                null,
+                $stmt->getArgs(),
+                new TemplateResult([], []),
+                $context,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer,
+            );
+        }
+
         if ($result->invalid_method_call_types) {
             $invalid_class_type = $result->invalid_method_call_types[0];
 
@@ -281,21 +295,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
             }
         }
 
-        $magic_args_analyzed = null;
-
         if ($result->non_existent_magic_method_ids) {
-            if (!$result->existent_method_ids && !$stmt->isFirstClassCallable()) {
-                // the arguments are analyzed before the missing magic method is reported
-                $magic_args_analyzed = self::checkMethodArgs(
-                    null,
-                    $stmt->getArgs(),
-                    new TemplateResult([], []),
-                    $context,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $statements_analyzer,
-                );
-            }
-
             if ($context->check_methods) {
                 IssueBuffer::maybeAdd(
                     new UndefinedMagicMethod(
