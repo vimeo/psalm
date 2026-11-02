@@ -109,6 +109,7 @@ use function str_contains;
 use function str_starts_with;
 use function strpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -1120,6 +1121,13 @@ final class AssignmentAnalyzer
         }
 
         FunctionLikeAnalyzer::unbindByRefParam($statements_analyzer->getCodebase(), $context, $lhs_var_id);
+
+        if ($rhs_var_id === '$GLOBALS[\'' . substr($lhs_var_id, 1) . '\']') {
+            $context->bound_globals[$lhs_var_id] = VariableFetchAnalyzer::getGlobalType(
+                $lhs_var_id,
+                $statements_analyzer->getCodebase()->analysis_php_version_id,
+            );
+        }
 
         if (isset($context->references_in_scope[$lhs_var_id])) {
             // Decrement old referenced variable's reference count

@@ -500,6 +500,33 @@ final class ScopeTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullReference',
             ],
+            'globalBoundThroughClosureUseByRefKeepsDeclaredTypeAfterCall' => [
+                'code' => '<?php
+                    class Db { public function prepare(string $q): string { return $q; } }
+                    function write_db_null(): void { global $db; $db = null; }
+                    /** @global Db|null $db */
+                    function run(): Closure {
+                        global $db;
+                        return function () use (&$db): string {
+                            if (!$db) { return ""; }
+                            write_db_null();
+                            return $db->prepare("x");
+                        };
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'globalBoundByReferenceToGlobalsElementIsReadAfterCall' => [
+                'code' => '<?php
+                    class Db { public function prepare(string $q): string { return $q; } }
+                    function write_db_null(): void { global $db; $db = null; }
+                    function run(): string {
+                        $db = &$GLOBALS["db"];
+                        if (!$db instanceof Db) { return ""; }
+                        write_db_null();
+                        return $db->prepare("x");
+                    }',
+                'error_message' => 'MixedMethodCall',
+            ],
             'thisInStatic' => [
                 'code' => '<?php
                     class A {
