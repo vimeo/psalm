@@ -72,6 +72,13 @@ final class CodeUseGraph
     public const EDGE_OVERRIDE = 'override';
 
     /**
+     * From a class to a magic method PHP calls implicitly, without a call
+     * Psalm can see (`__destruct`, `__serialize`, ...): the method is used
+     * once its class is.
+     */
+    public const EDGE_IMPLICIT_CALL = 'implicit-call';
+
+    /**
      * Edge types derived from the class storages rather than from the analysed
      * code: recomputed on every run instead of being cached.
      */
@@ -79,6 +86,7 @@ final class CodeUseGraph
         self::EDGE_PUBLIC_API => true,
         self::EDGE_OVERRIDE => true,
         self::EDGE_METHOD => true,
+        self::EDGE_IMPLICIT_CALL => true,
     ];
 
     private const KIND_CLASS = 'class';
