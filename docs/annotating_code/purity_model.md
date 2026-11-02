@@ -1203,19 +1203,18 @@ Taint analysis can only rely on inference for functions and for methods that can
 so an annotation still adds precision to an overridable method, an abstract or interface method,
 and a constructor.
 
-Given this code (the reason ends with "to aid security analysis" when taint analysis runs, which it does
-by default, and with "to document what it may do and let Psalm enforce it" otherwise):
+Given this code:
 
 ```php
 <?php
-function slug(string $title): string { // MissingPureAnnotation: slug must be marked @psalm-pure to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this
+function slug(string $title): string { // MissingPureAnnotation: slug could be marked @psalm-pure to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this
     return strtolower(trim($title));
 }
 
-final class Cart { // MissingImmutableAnnotation: Cart must be marked @psalm-capabilities read-props|write-this-props|write-refs to aid security analysis, run with --alter --issues=MissingImmutableAnnotation to fix this
+final class Cart { // MissingImmutableAnnotation: Cart could be marked @psalm-capabilities read-props|write-this-props|write-refs to aid security analysis, run with --alter --issues=MissingImmutableAnnotation to fix this
     private int $items = 0;
 
-    public function addItem(): void { // MissingPureAnnotation: addItem must be marked @psalm-capabilities read-props|write-this-props|write-refs to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this
+    public function addItem(): void { // MissingPureAnnotation: addItem could be marked @psalm-capabilities read-props|write-this-props|write-refs to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this
         $this->items++;
     }
 
@@ -1258,7 +1257,7 @@ final class Circle extends Shape {
     }
 }
 
-class Base { // MissingImmutableAnnotation: Base must be marked @psalm-capabilities read-props|write-this-props|write-refs to aid security analysis, run with --alter --issues=MissingImmutableAnnotation to fix this
+class Base { // MissingImmutableAnnotation: Base could be marked @psalm-capabilities read-props|write-this-props|write-refs to aid security analysis, run with --alter --issues=MissingImmutableAnnotation to fix this
     /** @psalm-pure */
     public function name(): string {
         return 'base';
