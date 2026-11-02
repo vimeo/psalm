@@ -232,34 +232,7 @@ final class BinaryOpAnalyzer
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual)
                 && $statements_analyzer->getCodebase()->config->strict_nullable_comparison
             ) {
-                $operands = [
-                    ['Left', $stmt->left, $stmt_left_type],
-                    ['Right', $stmt->right, $stmt_right_type],
-                ];
-
-                foreach ($operands as [$side, $operand_expr, $operand_type]) {
-                    if (!$operand_type || $operand_type->ignore_nullable_issues) {
-                        continue;
-                    }
-
-                    if ($operand_type->isNull()) {
-                        IssueBuffer::maybeAdd(
-                            new NullOperand(
-                                $side . ' operand cannot be null',
-                                new CodeLocation($statements_analyzer, $operand_expr),
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
-                    } elseif ($operand_type->isNullable()) {
-                        IssueBuffer::maybeAdd(
-                            new PossiblyNullOperand(
-                                $side . ' operand cannot be nullable, got ' . $operand_type->getId(),
-                                new CodeLocation($statements_analyzer, $operand_expr),
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
-                    }
-                }
+                self::checkForNullableOperands($statements_analyzer, $stmt, $stmt_left_type, $stmt_right_type);
             }
 
             if (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
@@ -376,6 +349,42 @@ final class BinaryOpAnalyzer
         );
 
         return true;
+    }
+
+    private static function checkForNullableOperands(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\BinaryOp $stmt,
+        ?Union $stmt_left_type,
+        ?Union $stmt_right_type,
+    ): void {
+        $operands = [
+            ['Left', $stmt->left, $stmt_left_type],
+            ['Right', $stmt->right, $stmt_right_type],
+        ];
+
+        foreach ($operands as [$side, $operand_expr, $operand_type]) {
+            if (!$operand_type || $operand_type->ignore_nullable_issues) {
+                continue;
+            }
+
+            if ($operand_type->isNull()) {
+                IssueBuffer::maybeAdd(
+                    new NullOperand(
+                        $side . ' operand cannot be null',
+                        new CodeLocation($statements_analyzer, $operand_expr),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            } elseif ($operand_type->isNullable()) {
+                IssueBuffer::maybeAdd(
+                    new PossiblyNullOperand(
+                        $side . ' operand cannot be nullable, got ' . $operand_type->getId(),
+                        new CodeLocation($statements_analyzer, $operand_expr),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+        }
     }
 
     public static function addDataFlow(

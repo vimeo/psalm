@@ -28,6 +28,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFet
 use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Codebase\MutationLevelResolver;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -795,19 +796,27 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if ($this->function->getStmts() === null) {
-                if (!$storage->has_mutations_annotation && $storage->location) {
+                if ($project_analyzer->suggestsPurityAnnotations()
+                    && !$storage->has_mutations_annotation
+                    && $storage->location
+                ) {
                     IssueBuffer::maybeAdd(
                         new MissingAbstractPureAnnotation(
                             $storage->cased_name . ' must be marked with one of @psalm-pure,'
-                            . ' @psalm-capabilities or @psalm-impure to aid security analysis',
+                            . ' @psalm-capabilities or @psalm-impure '
+                            . MutationLevelResolver::getSuggestionBenefit($codebase),
                             $storage->location,
                         ),
                         $storage->suppressed_issues,
                     );
                 }
-            } elseif ($storage->location && ($node_id = $this->getMutationNodeId()) !== null) {
-                // the final level depends on the callees' levels: resolved after analysis,
-                // which reports MissingPureAnnotation and queues the fix (see MutationLevelResolver)
+            } elseif ($storage->location
+                && ($project_analyzer->suggestsPurityAnnotations() || $codebase->taint_flow_graph !== null)
+                && ($node_id = $this->getMutationNodeId()) !== null
+            ) {
+                // the final level depends on the callees' levels: resolved after analysis, which reports
+                // MissingPureAnnotation and queues the fix (see MutationLevelResolver), and which taint
+                // analysis reads to specialize the calls of unannotated functions
                 $codebase->code_use_graph->addMutationInfo($node_id, [
                     // the calls of an unannotated overridden method may run any of its overrides,
                     // which could do anything: annotating it would restrict them
@@ -836,10 +845,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         && !($storage->has_mutations_annotation
                             && ($storage->capabilities === Capabilities::ALL
                                 || ($storage instanceof MethodStorage && $storage->overridden_somewhere))),
-                    'wildcards' => array_map(
-                        static fn(array $paths): array => array_keys($paths),
-                        $this->purity_wildcard_candidates,
-                    ),
+                    'wildcards' => $project_analyzer->suggestsPurityAnnotations()
+                        ? array_map(
+                            static fn(array $paths): array => array_keys($paths),
+                            $this->purity_wildcard_candidates,
+                        )
+                        : [],
                 ]);
             }
         }
