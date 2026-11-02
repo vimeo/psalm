@@ -12,6 +12,7 @@ use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Type;
 
 use function array_filter;
 use function array_map;
@@ -142,6 +143,47 @@ final class NativeSymbolAvailabilityTest extends TestCase
                 'run ' . $run,
             );
         }
+    }
+
+    /**
+     * The constants registered by the workers of a forked scan are merged into a registry that already holds
+     * the stubs: a worker's polyfill replaces the versioned stub, whichever worker is merged first.
+     */
+    public function testPolyfillOfAVersionedConstantFromAScanningWorkerWins(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.5', 'tests');
+        $this->addFile('somefile.php', '<?php echo 1;');
+        $this->analyzeFile('somefile.php', new Context());
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $name = 'ARRAY_FILTER_USE_VALUE';
+        $stub_type = $codebase->getStubbedConstantType($name);
+        $this->assertNotNull($stub_type);
+        $this->assertSame(8_06_00, $codebase->getStubbedConstantSincePhpVersionId($name));
+
+        $codebase->mergeGlobalConstantsOfWorker([$name => Type::getInt(false, 7)], []);
+        $codebase->mergeGlobalConstantsOfWorker([$name => $stub_type], [$name => 8_06_00]);
+
+        $this->assertNull($codebase->getStubbedConstantSincePhpVersionId($name));
+        $this->assertSame('7', $codebase->getStubbedConstantType($name)?->getId());
+    }
+
+    public function testUntouchedWorkerBeforeAPolyfillingWorkerKeepsThePolyfill(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.5', 'tests');
+        $this->addFile('somefile.php', '<?php echo 1;');
+        $this->analyzeFile('somefile.php', new Context());
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $name = 'ARRAY_FILTER_USE_VALUE';
+        $stub_type = $codebase->getStubbedConstantType($name);
+        $this->assertNotNull($stub_type);
+
+        $codebase->mergeGlobalConstantsOfWorker([$name => $stub_type], [$name => 8_06_00]);
+        $codebase->mergeGlobalConstantsOfWorker([$name => Type::getInt(false, 7)], []);
+
+        $this->assertNull($codebase->getStubbedConstantSincePhpVersionId($name));
+        $this->assertSame('7', $codebase->getStubbedConstantType($name)?->getId());
     }
 
     /**
@@ -1123,6 +1165,23 @@ final class NativeSymbolAvailabilityTest extends TestCase
             ',
             'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:40 - Const'
                 . ' ARRAY_FILTER_USE_VALUE is not defined for the analysed PHP version 8.5'
+                . ' (it was introduced in PHP 8.6',
+            'error_levels' => [],
+            'php_version' => '8.5',
+        ];
+
+        yield 'definedGuardOfAPolyfilledConstantDoesNotGuardOthers' => [
+            'code' => '<?php
+                function f(): void {
+                    define("ARRAY_FILTER_USE_VALUE", 7);
+
+                    if (defined("ARRAY_FILTER_USE_VALUE")) {
+                        echo STREAM_CRYPTO_STATUS_WANT_READ;
+                    }
+                }
+            ',
+            'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:30 - Const'
+                . ' STREAM_CRYPTO_STATUS_WANT_READ is not defined for the analysed PHP version 8.5'
                 . ' (it was introduced in PHP 8.6',
             'error_levels' => [],
             'php_version' => '8.5',

@@ -1205,15 +1205,6 @@ final class Codebase
     }
 
     /**
-     * @param array<string, int> $since_php_version_ids
-     * @psalm-external-mutation-free
-     */
-    public function addGlobalConstantSincePhpVersionIds(array $since_php_version_ids): void
-    {
-        $this->stubbed_constant_since_php_version_ids += $since_php_version_ids;
-    }
-
-    /**
      * @return array<string, int>
      * @psalm-external-mutation-free
      */
@@ -1231,12 +1222,32 @@ final class Codebase
     }
 
     /**
-     * @param array<string, Union> $stubs
+     * Merges the constants a scanning worker registered. The worker started from this registry, so an entry
+     * it did not change is the same here. A constant declared without `@since` over one that has it (a project
+     * polyfill of a versioned stub) replaces the versioned entry; anything else registered here already is kept.
+     *
+     * @param array<string, Union> $types
+     * @param array<string, int> $since_php_version_ids
      * @psalm-external-mutation-free
      */
-    public function addGlobalConstantTypes(array $stubs): void
+    public function mergeGlobalConstantsOfWorker(array $types, array $since_php_version_ids): void
     {
-        self::$stubbed_constants += $stubs;
+        foreach ($types as $const_id => $type) {
+            if ($this->getStubbedConstantType($const_id) !== null
+                && (!isset($this->stubbed_constant_since_php_version_ids[$const_id])
+                    || isset($since_php_version_ids[$const_id]))
+            ) {
+                continue;
+            }
+
+            self::$stubbed_constants[$const_id] = $type;
+
+            if (isset($since_php_version_ids[$const_id])) {
+                $this->stubbed_constant_since_php_version_ids[$const_id] = $since_php_version_ids[$const_id];
+            } else {
+                unset($this->stubbed_constant_since_php_version_ids[$const_id]);
+            }
+        }
     }
 
     /**

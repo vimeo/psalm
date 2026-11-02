@@ -536,8 +536,8 @@ final class Scanner
 
                 $this->addThreadData($pool_data['scanner_data']);
 
-                $this->codebase->addGlobalConstantTypes($pool_data['global_constants']);
-                $this->codebase->addGlobalConstantSincePhpVersionIds(
+                $this->codebase->mergeGlobalConstantsOfWorker(
+                    $pool_data['global_constants'],
                     $pool_data['global_constant_since_php_version_ids'],
                 );
                 $this->codebase->addUnresolvedGlobalConstants($pool_data['unresolved_global_constants']);
