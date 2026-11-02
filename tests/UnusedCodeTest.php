@@ -423,6 +423,34 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'argumentCastToStringDoesNotReportPossiblyInvalidCast' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function a(array|string $s): string {
+                        return ucfirst($s);
+                    }',
+                'ignored_issues' => ['PossiblyInvalidArgument'],
+            ],
+            'argumentCastToStringDoesNotReportInvalidCast' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function a(array $s): string {
+                        return ucfirst($s);
+                    }',
+                'ignored_issues' => ['InvalidArgument'],
+            ],
+            'userFunctionArgumentCastToStringDoesNotReportCastIssue' => [
+                'code' => '<?php
+                    function takesString(string $s): string {
+                        return $s;
+                    }
+
+                    /** @psalm-api */
+                    function a(array|string $s, array $t): string {
+                        return takesString($s) . takesString($t);
+                    }',
+                'ignored_issues' => ['PossiblyInvalidArgument', 'InvalidArgument'],
+            ],
             'usedExceptionsAreNotReported' => [
                 'code' => '<?php
                     /** @psalm-api */
@@ -1771,6 +1799,55 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'argumentStillReportsPossiblyInvalidArgumentWithUnusedCode' => [
+                'code' => '<?php
+                    /**
+                     * @param array|string $s
+                     * @psalm-api
+                     */
+                    function a($s): string {
+                        return ucfirst($s);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'argumentStillReportsInvalidArgumentWithUnusedCode' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function a(array $s): string {
+                        return ucfirst($s);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'explicitStringCastStillReportsPossiblyInvalidCastWithUnusedCode' => [
+                'code' => '<?php
+                    /**
+                     * @param array|string $s
+                     * @psalm-api
+                     */
+                    function a($s): string {
+                        return (string) $s;
+                    }',
+                'error_message' => 'PossiblyInvalidCast',
+            ],
+            'explicitStringCastStillReportsInvalidCastWithUnusedCode' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function a(array $s): string {
+                        return (string) $s;
+                    }',
+                'error_message' => 'InvalidCast',
+            ],
+            'interpolationStillReportsPossiblyInvalidCastWithUnusedCode' => [
+                'code' => '<?php
+                    /**
+                     * @param array|string $s
+                     * @psalm-api
+                     */
+                    function a($s): string {
+                        return "$s";
+                    }',
+                'error_message' => 'PossiblyInvalidCast',
+            ],
             'unusedClass' => [
                 'code' => '<?php
                     final class A { }',

@@ -1951,11 +1951,13 @@ final class ArgumentAnalyzer
         }
 
         if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
+            // only the data-flow path is wanted: the argument check reports a bad argument itself
             $input_type = CastAnalyzer::castStringAttempt(
                 $statements_analyzer,
                 $context,
                 $input_type,
                 $expr,
+                false,
                 false,
             );
         }
