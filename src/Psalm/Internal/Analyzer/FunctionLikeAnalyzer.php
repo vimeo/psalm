@@ -78,18 +78,21 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_combine;
 use function array_diff_key;
+use function array_filter;
 use function array_key_exists;
 use function array_keys;
 use function array_map;
@@ -1863,8 +1866,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     );
                 }
 
+                // a callable parameter defaults to null or, as of PHP 8.5, to a closure
                 if ($default_type
-                    && !$default_type->isNull()
+                    && array_filter(
+                        $default_type->getAtomicTypes(),
+                        static fn(Atomic $atomic): bool => !$atomic instanceof TNull && !$atomic instanceof TClosure,
+                    ) !== []
                     && $param_type->isSingleAndMaybeNullable()
                     && $param_type->getCallableTypes()
                 ) {

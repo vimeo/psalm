@@ -804,9 +804,9 @@ final class TaintStore
         $function_id = strtolower(
             $name instanceof FullyQualified
                 ? $name->toString()
-                : $codebase->functions->getFullyQualifiedFunctionNameFromString(
+                : Functions::getFullyQualifiedFunctionNameFromString(
                     $name->toString(),
-                    $statements_analyzer,
+                    $statements_analyzer->getAliases(),
                 ),
         );
 
