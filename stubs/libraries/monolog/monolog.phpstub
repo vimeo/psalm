@@ -6,16 +6,17 @@
 //
 // The stream a StreamHandler writes to is a file sink, and the address a SocketHandler connects to an SSRF sink.
 //
-// Logging, and resetting or closing a logger, run the handlers and processors the logger was given, and subclasses
-// override them, so these methods are left unrestricted: they may do anything.
+// Logging runs the handlers and processors the logger was given, which write files, sockets and buffers (io, the
+// handler objects), read the request, the process and the clock (read-globals, time) and may count in static state
+// (write-globals): every capability but write-refs.
 //
 // The handlers and formatters a logging setup builds only keep their settings when they are made and given a formatter
 // (write-this-props); a stream handler reads the memory limit and the working directory and sizes a given stream's
 // chunks, a socket handler reads the default socket timeout (read-globals, io).
 //
-// Getting or setting the formatter of a formattable handler is left unrestricted too: wrappers pass it on to the
-// handlers they hold, a fingers-crossed handler first makes its nested handler with the factory it was given, and
-// subclasses override both methods.
+// Getting or setting the formatter of any formattable handler may pass it on to the handlers a wrapper holds (a group,
+// buffer, filter or sampling handler: write-props), and a fingers-crossed handler first makes its nested handler
+// with the factory it was given, which may do anything but write the caller's references.
 //
 // A web processor reads the request's server data when made and when it runs (read-globals), and adds the extra
 // fields to the record it is given (write-props).
@@ -167,6 +168,7 @@ class Logger implements LoggerInterface, ResettableInterface
      * @return bool                   Whether the record has been processed
      *
      * @phpstan-param value-of<Level::VALUES>|Level $level
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
      */
     public function addRecord(int|Level $level, string $message, array $context = [], JsonSerializableDateTimeImmutable|null $datetime = null): bool
     {
@@ -180,6 +182,7 @@ class Logger implements LoggerInterface, ResettableInterface
      *
      * This is useful at the end of a request and will be called automatically on every handler
      * when they get destructed.
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
      */
     public function close(): void
     {
@@ -193,6 +196,7 @@ class Logger implements LoggerInterface, ResettableInterface
      * This is useful in case you want to avoid logs leaking between two requests or jobs when you
      * have a long running process like a worker or an application server serving multiple requests
      * in one process.
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
      */
     public function reset(): void
     {
@@ -261,6 +265,7 @@ class Logger implements LoggerInterface, ResettableInterface
      * @param mixed[]           $context The log context
      *
      * @phpstan-param Level|LogLevel::* $level
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
      */
     public function log($level, string|\Stringable $message, array $context = []): void
     {
@@ -272,6 +277,7 @@ class Logger implements LoggerInterface, ResettableInterface
      *
      * @param string|Stringable $message The log message
      * @param mixed[]           $context The log context
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
      */
     public function debug(string|\Stringable $message, array $context = []): void
     {
@@ -283,6 +289,7 @@ class Logger implements LoggerInterface, ResettableInterface
      *
      * @param string|Stringable $message The log message
      * @param mixed[]           $context The log context
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
      */
     public function info(string|\Stringable $message, array $context = []): void
     {
@@ -294,6 +301,7 @@ class Logger implements LoggerInterface, ResettableInterface
      *
      * @param string|Stringable $message The log message
      * @param mixed[]           $context The log context
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
      */
     public function notice(string|\Stringable $message, array $context = []): void
     {
@@ -305,6 +313,7 @@ class Logger implements LoggerInterface, ResettableInterface
      *
      * @param string|Stringable $message The log message
      * @param mixed[]           $context The log context
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
      */
     public function warning(string|\Stringable $message, array $context = []): void
     {
@@ -316,6 +325,7 @@ class Logger implements LoggerInterface, ResettableInterface
      *
      * @param string|Stringable $message The log message
      * @param mixed[]           $context The log context
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
      */
     public function error(string|\Stringable $message, array $context = []): void
     {
@@ -327,6 +337,7 @@ class Logger implements LoggerInterface, ResettableInterface
      *
      * @param string|Stringable $message The log message
      * @param mixed[]           $context The log context
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
      */
     public function critical(string|\Stringable $message, array $context = []): void
     {
@@ -338,6 +349,7 @@ class Logger implements LoggerInterface, ResettableInterface
      *
      * @param string|Stringable $message The log message
      * @param mixed[]           $context The log context
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
      */
     public function alert(string|\Stringable $message, array $context = []): void
     {
@@ -349,6 +361,7 @@ class Logger implements LoggerInterface, ResettableInterface
      *
      * @param string|Stringable $message The log message
      * @param mixed[]           $context The log context
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
      */
     public function emergency(string|\Stringable $message, array $context = []): void
     {
@@ -561,10 +574,13 @@ interface FormattableHandlerInterface
      * Sets the formatter.
      *
      * @return HandlerInterface self
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
      */
     public function setFormatter(FormatterInterface $formatter): HandlerInterface;
     /**
      * Gets the formatter.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
      */
     public function getFormatter(): FormatterInterface;
 }
