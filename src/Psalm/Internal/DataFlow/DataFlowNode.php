@@ -46,6 +46,7 @@ use function substr_compare;
  * @psalm-consistent-constructor
  * @internal
  * @psalm-external-mutation-free
+ * @psalm-type SerializedNode = array{string, ?string, ?string, string, ?int, int, ?array, list<string>, ?int}
  * @psalm-type CallableKind = 'builtin'|'inherited-method'|'magic-method'|'dynamic-function-call'|'dynamic-instantiation'|'callable-object'
  */
 final class DataFlowNode implements Stringable
@@ -978,6 +979,52 @@ final class DataFlowNode implements Stringable
     public static function getForVariableUseDestination(string $id, array $path_types = []): self
     {
         return new self($id, null, null, $id, null, 0, null, $path_types);
+    }
+
+    /**
+     * The fields of this node as TaintFlowGraph::__serialize() writes them: its location is $location_index, an
+     * index into the list of locations the graph is serialized with, and its taint source is $taint_source, the
+     * same fields of that node.
+     *
+     * @param SerializedNode|null $taint_source
+     * @return SerializedNode
+     * @psalm-mutation-free
+     */
+    public function toSerializedFields(?int $location_index, ?array $taint_source): array
+    {
+        return [
+            $this->id,
+            $this->unspecialized_id,
+            $this->specialization_key,
+            $this->label,
+            $location_index,
+            $this->taints,
+            $taint_source,
+            $this->path_types,
+            $this->context,
+        ];
+    }
+
+    /**
+     * Rebuilds a node from toSerializedFields(), with the location and taint source it was serialized with, so its
+     * location is still the one its id has (see the class invariant).
+     *
+     * @param SerializedNode $fields
+     * @psalm-pure
+     */
+    public static function fromSerializedFields(array $fields, ?CodeLocation $code_location, ?self $taint_source): self
+    {
+        return new self(
+            $fields[0],
+            $fields[1],
+            $fields[2],
+            $fields[3],
+            $code_location,
+            $fields[5],
+            $taint_source,
+            $fields[7],
+            $fields[8],
+        );
     }
 
     /**
