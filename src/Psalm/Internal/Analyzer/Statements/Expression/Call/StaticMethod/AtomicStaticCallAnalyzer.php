@@ -977,7 +977,10 @@ final class AtomicStaticCallAnalyzer
         if ($this_type !== null
             && !$statements_analyzer->isStatic()
             && UnionTypeComparator::isContainedBy($codebase, $this_type, $class_type)
-            && $codebase->methodExists(new MethodIdentifier($fq_class_name, '__call'))
+            && $codebase->methodExists(
+                new MethodIdentifier($fq_class_name, '__call'),
+                use_method_existence_provider: false,
+            )
         ) {
             return;
         }
@@ -993,7 +996,7 @@ final class AtomicStaticCallAnalyzer
                 ? $statements_analyzer
                 : null,
             $statements_analyzer->getFilePath(),
-            true,
+            false,
             $context->insideUse(),
         );
     }

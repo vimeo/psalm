@@ -15,6 +15,7 @@ use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\MethodExistenceProviderEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
@@ -414,6 +415,76 @@ final class UnusedCodeTest extends TestCase
         $issue = IssueBuffer::getIssuesDataForFile($file_path)[2];
         $this->assertSame('UnusedClass', $issue->type);
         $this->assertSame(10, $issue->line_from);
+    }
+
+    public function testCallStaticReachedWhenAMethodExistenceProviderAnswersForTheClass(): void
+    {
+        $this->project_analyzer->getCodebase()->methods->existence_provider->registerClosure(
+            'Factory',
+            static fn(): bool => true,
+        );
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-no-seal-methods */
+                final class Factory {
+                    /** @param list<mixed> $_arguments */
+                    public static function __callStatic(string $name, array $_arguments): void {
+                        echo $name;
+                    }
+                }
+
+                Factory::make("x");',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testCallStaticNotReachedWhenAMethodExistenceProviderDeniesCall(): void
+    {
+        $this->project_analyzer->getCodebase()->methods->existence_provider->registerClosure(
+            'Factory',
+            static fn(MethodExistenceProviderEvent $event): ?bool => $event->getMethodNameLowercase() === '__call'
+                ? false
+                : null,
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('Cannot find any calls to method Factory::__callStatic');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-no-seal-methods */
+                final class Factory {
+                    /** @param list<mixed> $_arguments */
+                    public static function __callStatic(string $name, array $_arguments): void {
+                        echo $name;
+                    }
+
+                    /** @param list<mixed> $_arguments */
+                    public function __call(string $name, array $_arguments): void {
+                        echo $name;
+                    }
+
+                    public function run(): void {
+                        self::make();
+                    }
+                }
+
+                (new Factory())->run();',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
     }
 
     /**
