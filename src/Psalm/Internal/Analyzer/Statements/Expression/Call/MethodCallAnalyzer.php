@@ -281,7 +281,21 @@ final class MethodCallAnalyzer extends CallAnalyzer
             }
         }
 
+        $magic_args_analyzed = null;
+
         if ($result->non_existent_magic_method_ids) {
+            if (!$result->existent_method_ids && !$stmt->isFirstClassCallable()) {
+                // the arguments are analyzed before the missing magic method is reported
+                $magic_args_analyzed = self::checkMethodArgs(
+                    null,
+                    $stmt->getArgs(),
+                    new TemplateResult([], []),
+                    $context,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $statements_analyzer,
+                );
+            }
+
             if ($context->check_methods) {
                 IssueBuffer::maybeAdd(
                     new UndefinedMagicMethod(
@@ -414,14 +428,14 @@ final class MethodCallAnalyzer extends CallAnalyzer
         }
 
         if (!$result->existent_method_ids) {
-            return $stmt->isFirstClassCallable() || self::checkMethodArgs(
+            return $stmt->isFirstClassCallable() || ($magic_args_analyzed ?? self::checkMethodArgs(
                 null,
                 $stmt->getArgs(),
                 new TemplateResult([], []),
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer,
-            );
+            ));
         }
 
         // if we called a method on this nullable variable, remove the nullable status here

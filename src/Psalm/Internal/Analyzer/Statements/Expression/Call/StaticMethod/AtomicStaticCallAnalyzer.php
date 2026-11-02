@@ -740,6 +740,19 @@ final class AtomicStaticCallAnalyzer
                     if ($pseudo_method_storage->return_type) {
                         return true;
                     }
+                } elseif (!$args_analyzed) {
+                    $args_analyzed = true;
+
+                    if (ArgumentsAnalyzer::analyze(
+                        $statements_analyzer,
+                        $args,
+                        null,
+                        null,
+                        true,
+                        $context,
+                    ) === false) {
+                        return false;
+                    }
                 }
             } elseif ($found_method_and_class_storage && ($naive_method_exists || $with_pseudo)) {
                 [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
@@ -813,9 +826,7 @@ final class AtomicStaticCallAnalyzer
             }
 
             if (!$context->check_methods) {
-                $args_analyzed = true;
-
-                if (ArgumentsAnalyzer::analyze(
+                if (!$args_analyzed && ArgumentsAnalyzer::analyze(
                     $statements_analyzer,
                     $stmt->getArgs(),
                     null,
@@ -825,6 +836,8 @@ final class AtomicStaticCallAnalyzer
                 ) === false) {
                     return false;
                 }
+
+                $args_analyzed = true;
 
                 return true;
             }
