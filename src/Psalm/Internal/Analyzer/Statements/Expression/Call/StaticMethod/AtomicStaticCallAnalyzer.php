@@ -167,6 +167,7 @@ final class AtomicStaticCallAnalyzer
                 }
 
                 $fq_class_name = $generic_param_type->value;
+                $intersection_types = [...$generic_param_type->extra_types, ...$lhs_type_part->extra_types];
                 break;
             }
 

@@ -46,6 +46,42 @@ final class IntersectionTypeTest extends TestCase
                         }
                     }',
             ],
+            'staticMethodOfTheSecondTypeOfAnIntersectionBoundOfATemplate' => [
+                'code' => '<?php
+                    interface HasName {}
+
+                    class Base {
+                        public static function custom(): int {
+                            return 0;
+                        }
+                    }
+
+                    /**
+                     * @template T of HasName&Base
+                     * @param T $param
+                     */
+                    function test($param): int {
+                        return $param::custom();
+                    }',
+            ],
+            'methodOfAnIntersectionBoundOfATemplateIntersectedWithAnotherType' => [
+                'code' => '<?php
+                    interface HasName {}
+
+                    class Base {
+                        public function custom(): int {
+                            return 0;
+                        }
+                    }
+
+                    /**
+                     * @template T of HasName&Base
+                     * @param T&Countable $param
+                     */
+                    function test($param): int {
+                        return $param->custom() + $param->count();
+                    }',
+            ],
             'callableObject' => [
                 'code' => '<?php
                     /**
