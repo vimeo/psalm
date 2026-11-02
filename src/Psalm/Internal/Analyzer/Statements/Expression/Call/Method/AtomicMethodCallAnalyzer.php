@@ -226,15 +226,37 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         true,
                         $context->insideUse(),
                     )) {
-                        $method_storage = $codebase->methods->getStorage(
-                            $codebase->methods->getDeclaringMethodId($method_identifier) ?? $method_identifier,
+                        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_identifier)
+                            ?? $method_identifier;
+                        $declaring_class_storage = $codebase->classlike_storage_provider->get(
+                            $declaring_method_id->fq_class_name,
                         );
+                        $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
-                        $return_type_candidate = new Union([new TClosure(
-                            $method_storage->params,
-                            $method_storage->return_type,
-                            $method_storage->capabilities,
-                        )]);
+                        $return_type_candidate = MethodCallReturnTypeFetcher::getFirstClassCallableType(
+                            $codebase,
+                            $stmt,
+                            new TClosure(
+                                $method_storage->params,
+                                $method_storage->return_type,
+                                $method_storage->capabilities,
+                            ),
+                            new TemplateResult([], ClassTemplateParamCollector::collect(
+                                $codebase,
+                                $declaring_class_storage,
+                                $class_storage,
+                                $method_identifier->method_name,
+                                $lhs_type_part,
+                                $lhs_var_id === '$this',
+                            ) ?? []),
+                            $method_storage->template_types ?? [],
+                            $fq_class_name,
+                            $static_type,
+                            $declaring_class_storage->parent_class,
+                            $static_type instanceof TNamedObject
+                            && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                            true,
+                        );
                     }
                 }
 

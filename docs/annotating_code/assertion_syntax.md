@@ -96,7 +96,7 @@ There are two differences between the above assertion and
 /** @psalm-assert int $some_int */
 ```
 
-Firstly, the negation of `=int` has no meaning:
+Firstly, the negation of `=int` has no meaning, so the `else` branch keeps the type, while the negation of `int` removes it:
 
 ```php
 <?php
@@ -105,19 +105,23 @@ function equalsFive($x) {
   return is_int($x) && $x === 5;
 }
 
-function foo($y) : void {
-  if (equalsFive($y)) {
-    // $y is definitely an int
-  } else {
-    // $y might be an int, but it might not
-  }
+/** @psalm-assert-if-true int $x */
+function isInt($x) {
+  return is_int($x);
 }
 
-function bar($y) : void {
-  if (is_int($y)) {
-    // $y is definitely an int
+/** @param float|int $y */
+function foo($y) : void {
+  if (equalsFive($y)) {
+    // $y is int
   } else {
-    // $y is definitely not an int
+    // $y is float|int: it might be an int, but it might not
+  }
+
+  if (isInt($y)) {
+    // $y is int
+  } else {
+    // $y is float
   }
 }
 ```
