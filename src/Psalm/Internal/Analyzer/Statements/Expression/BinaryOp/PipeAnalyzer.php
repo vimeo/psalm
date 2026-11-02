@@ -27,6 +27,7 @@ use Psalm\Node\Expr\VirtualPipeValue;
 use Psalm\Node\Expr\VirtualStaticCall;
 use Psalm\Node\VirtualArg;
 use Psalm\Type;
+use Psalm\Type\Atomic\TClosure;
 
 /**
  * `$value |> $callable` calls `$callable($value)`. A first-class callable or a partial application with a single
@@ -64,6 +65,12 @@ final class PipeAnalyzer
             return false;
         }
 
+        if ($right instanceof PartialApplication
+            && $right->getAttribute(PartialApplicationVisitor::COMPILE_ERROR) !== null
+        ) {
+            return self::analyzeInvalidPartialApplication($statements_analyzer, $stmt, $right, $context);
+        }
+
         $value = new VirtualPipeValue(
             $statements_analyzer->node_data->getType($left) ?? Type::getMixed(),
             $left->getAttributes(),
@@ -95,8 +102,8 @@ final class PipeAnalyzer
     }
 
     /**
-     * The callee and arguments when PHP calls the callee directly with the piped value as its placeholder. A partial
-     * application with a compile error is analysed as a closure, so that no check of the call repeats the error.
+     * The callee and arguments when PHP calls the callee directly with the piped value as its placeholder, apart from a
+     * partial application with a compile error, which is not called at all
      *
      * @return array{FuncCall|MethodCall|StaticCall, list<Arg|ArgPlaceholder|VariadicPlaceholder>}|null
      */
@@ -115,6 +122,32 @@ final class PipeAnalyzer
         }
 
         return PartialApplicationVisitor::isDirectPipeCall($callee, $raw_args) ? [$callee, $raw_args] : null;
+    }
+
+    /**
+     * The parser reported the compile error, so nothing is called and no check of the call repeats it: the pipe has the
+     * return type of the callee, when it is known
+     */
+    private static function analyzeInvalidPartialApplication(
+        StatementsAnalyzer $statements_analyzer,
+        Pipe $stmt,
+        PartialApplication $right,
+        Context $context,
+    ): bool {
+        if (ExpressionAnalyzer::analyze($statements_analyzer, $right, $context) === false) {
+            return false;
+        }
+
+        $callee_type = $statements_analyzer->node_data->getType($right->call);
+        $return_type = $callee_type
+            && $callee_type->isSingle()
+            && ($callee = $callee_type->getSingleAtomic()) instanceof TClosure
+                ? $callee->return_type
+                : null;
+
+        $statements_analyzer->node_data->setType($stmt, $return_type ?? Type::getMixed());
+
+        return true;
     }
 
     /**

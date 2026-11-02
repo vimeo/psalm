@@ -24,7 +24,7 @@ final class StatementsProviderTest extends TestCase
 
     private const FIXED = "<?php\nfunction f() {\n    echo 1;\n}\n";
 
-    private const INVALID_PARTIAL_APPLICATION = "<?php\nfunction f(int \$a, int \$b): void {}\n\$c = f(..., ?);\n";
+    private const INVALID_PARTIAL_APPLICATIONS = "<?php\n#[A(?)]\nfunction f(int \$a, int \$b): void {}\n\$c = f(..., ?);\n";
 
     private string $file;
 
@@ -78,14 +78,19 @@ final class StatementsProviderTest extends TestCase
         }
     }
 
-    public function testPartialApplicationCompileErrorIsReportedOnEveryRun(): void
+    public function testPartialApplicationCompileErrorsAreReportedOnEveryRunWhateverTheTargetVersion(): void
     {
-        $this->file_provider->registerFile($this->file, self::INVALID_PARTIAL_APPLICATION);
+        $this->file_provider->registerFile($this->file, self::INVALID_PARTIAL_APPLICATIONS);
 
-        for ($run = 1; $run <= 3; $run++) {
-            $this->getStatements();
+        // the cache key has no PHP version, so the errors must not depend on it
+        foreach ([8_06_00, 8_05_00, 8_06_00] as $run => $php_version_id) {
+            $this->statements_provider->getStatementsForFile($this->file, $php_version_id, false);
 
-            $this->assertSame(['Variadic placeholder must be last on line 3'], $this->takeIssueMessages(), "run $run");
+            $this->assertSame(
+                ['Cannot create Closure as attribute argument on line 2', 'Variadic placeholder must be last on line 4'],
+                $this->takeIssueMessages(),
+                "run $run",
+            );
         }
     }
 

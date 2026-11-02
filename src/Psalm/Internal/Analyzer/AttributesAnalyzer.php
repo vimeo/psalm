@@ -97,7 +97,7 @@ final class AttributesAnalyzer
             );
 
             // the parser reported the placeholders it removed: checking the arguments left would add TooFewArguments
-            if ($attribute->getAttribute(PartialApplicationVisitor::PLACEHOLDER_IN_ATTRIBUTE) !== true) {
+            if ($attribute->getAttribute(PartialApplicationVisitor::COMPILE_ERROR) === null) {
                 self::analyzeAttributeConstruction(
                     $source,
                     $context,
