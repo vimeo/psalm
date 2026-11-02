@@ -2773,6 +2773,79 @@ final class CapabilitiesTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'reflectionClassSubclassReadsItsOwnProperties' => [
+                'code' => '<?php
+                    /** @extends ReflectionClass<object> */
+                    final class MyClassReflection extends ReflectionClass {
+                        /** @var class-string */
+                        private string $cachedName = stdClass::class;
+
+                        /**
+                         * @return class-string
+                         * @psalm-capabilities read-props
+                         */
+                        #[Override]
+                        public function getName(): string {
+                            return $this->cachedName;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'reflectionSubclassesOfFunctionLikesAndPropertiesReadTheirOwnProperties' => [
+                'code' => '<?php
+                    final class MyMethodReflection extends ReflectionMethod {
+                        private bool $cachedIsStatic = false;
+
+                        /** @psalm-capabilities read-props */
+                        #[Override]
+                        public function isStatic(): bool {
+                            return $this->cachedIsStatic;
+                        }
+                    }
+
+                    final class MyFunctionReflection extends ReflectionFunction {
+                        private bool $cachedIsGenerator = false;
+
+                        /** @psalm-capabilities read-props */
+                        #[Override]
+                        public function isGenerator(): bool {
+                            return $this->cachedIsGenerator;
+                        }
+                    }
+
+                    final class MyPropertyReflection extends ReflectionProperty {
+                        private bool $cachedIsPublic = false;
+
+                        /** @psalm-capabilities read-props */
+                        #[Override]
+                        public function isPublic(): bool {
+                            return $this->cachedIsPublic;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'pureFunctionsMayCallReflectionGetters' => [
+                'code' => '<?php
+                    /**
+                     * @param ReflectionClass<object> $class
+                     * @psalm-pure
+                     */
+                    function className(ReflectionClass $class): string {
+                        return $class->getName();
+                    }
+
+                    /** @psalm-pure */
+                    function isStaticMethod(ReflectionMethod $method): bool {
+                        return $method->isStatic();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
         ];
     }
 
@@ -3012,6 +3085,26 @@ final class CapabilitiesTest extends TestCase
                         return $storage->serialize();
                     }',
                 'error_message' => 'ImpureMethodCall',
+            ],
+            'reflectionSubclassesMayNotWriteWhenOverridingGetters' => [
+                'code' => '<?php
+                    /** @extends ReflectionClass<object> */
+                    final class CountingReflection extends ReflectionClass {
+                        private int $calls = 0;
+
+                        /**
+                         * @return class-string
+                         * @psalm-capabilities read-props|write-this-props
+                         */
+                        #[Override]
+                        public function getName(): string {
+                            ++$this->calls;
+                            return parent::getName();
+                        }
+                    }',
+                'error_message' => 'ReflectionClass::getName is read-props, but CountingReflection::getName additionally requires write-this-props',
+                'error_levels' => [],
+                'php_version' => '8.3',
             ],
             'splObjectStorageSubclassesKeepItsContract' => [
                 'code' => '<?php

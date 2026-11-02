@@ -27,7 +27,7 @@ jobs:
   symfony: [symfony]
   orm-psl: [doctrine-orm, psl]
   phpunit-parser: [phpunit, php-parser]
-  small: [amphp-amp, webmozarts-assert, guzzle-promises]
+  small: [amphp-amp, webmozarts-assert, guzzle-promises, monolog]
   drupal: [drupal]
 
 projects:
@@ -140,3 +140,13 @@ projects:
     psalm:
       dirs: [src]
       attributes: {phpVersion: "7.4"}
+
+  monolog:
+    repo: https://github.com/Seldaek/monolog
+    ref: "d7059e4c691d05ea1222b5124bed0f961be46e15"
+    tag: 3.12.1
+    timeout: 60
+    exercises: Psalm's bundled Monolog library stub (taints and capabilities) on the library's own subclasses, handler and formatter hierarchies, PSR-3 logger implementation, small and fast
+    psalm:
+      dirs: [src]
+      attributes: {phpVersion: "8.1"}
