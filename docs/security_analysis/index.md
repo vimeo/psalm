@@ -128,7 +128,7 @@ Psalm supports the [SARIF](http://docs.oasis-open.org/sarif/sarif/v2.0/csprd01/s
 
 ### GitHub Code Scanning
 
-[GitHub code scanning](https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/about-code-scanning) can be set up by using the [Psalm GitHub Action](https://github.com/marketplace/actions/psalm-static-analysis-for-php).
+[GitHub code scanning](https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/about-code-scanning) can be set up by using the [Psalm Security Scan](https://github.com/psalm/psalm-github-security-scan) action, or the [Psalm GitHub Action](https://github.com/psalm/psalm-github-actions) with `report_file: results.sarif` (see [GitHub Actions](../running_psalm/installation.md#github-actions)).
 
 Alternatively, the generated SARIF file can be manually uploaded as described in [the GitHub documentation](https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/uploading-a-sarif-file-to-github).
 
