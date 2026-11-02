@@ -92,6 +92,7 @@ use const SORT_STRING;
  *     file_storage:array<lowercase-string, FileStorage>,
  *     taint_data: ?TaintFlowGraph,
  *     global_constants: array<string, Union>,
+ *     global_constant_since_php_version_ids: array<string, int>,
  *     unresolved_global_constants: array<string, UnresolvedConstantComponent>,
  *     global_functions: array<lowercase-string, FunctionStorage>
  * }
@@ -536,6 +537,9 @@ final class Scanner
                 $this->addThreadData($pool_data['scanner_data']);
 
                 $this->codebase->addGlobalConstantTypes($pool_data['global_constants']);
+                $this->codebase->addGlobalConstantSincePhpVersionIds(
+                    $pool_data['global_constant_since_php_version_ids'],
+                );
                 $this->codebase->addUnresolvedGlobalConstants($pool_data['unresolved_global_constants']);
                 $this->codebase->functions->addGlobalFunctions($pool_data['global_functions']);
             }
@@ -697,8 +701,10 @@ final class Scanner
                     }
                 }
             }
-            if ($this->codebase->register_autoload_files
-                || $this->codebase->all_constants_global
+            // a stub is reflected again even when its storage is cached (see FileScanner::scan), which registers its
+            // constants with their @since; replaying them would register them without it
+            if (!$this->codebase->register_stub_files
+                && ($this->codebase->register_autoload_files || $this->codebase->all_constants_global)
             ) {
                 foreach ($file_storage->constants as $name => $type) {
                     $this->codebase->addGlobalConstantType($name, $type);

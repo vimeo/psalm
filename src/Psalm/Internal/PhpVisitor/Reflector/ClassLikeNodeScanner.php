@@ -1536,10 +1536,10 @@ final class ClassLikeNodeScanner
      *
      * @psalm-capabilities read-props
      */
-    private function parseSincePhpVersionId(ParsedDocblock $comments): ?int
+    public static function parseSincePhpVersionId(ParsedDocblock $comments, string $file_path): ?int
     {
         if (!isset($comments->tags['since'])
-            || pathinfo($this->file_path, PATHINFO_EXTENSION) !== 'phpstub'
+            || pathinfo($file_path, PATHINFO_EXTENSION) !== 'phpstub'
         ) {
             return null;
         }
@@ -1585,7 +1585,7 @@ final class ClassLikeNodeScanner
                 $deprecated = true;
             }
 
-            $since_php_version_id = $this->parseSincePhpVersionId($comments);
+            $since_php_version_id = self::parseSincePhpVersionId($comments, $this->file_path);
 
             $description = $comments->description;
 
@@ -1998,7 +1998,7 @@ final class ClassLikeNodeScanner
             $property_storage->has_default = (bool)$property->default;
             $property_storage->deprecated = $var_comment ? $var_comment->deprecated : false;
             $property_storage->since_php_version_id = $comment
-                ? $this->parseSincePhpVersionId(DocComment::parsePreservingLength($comment, true))
+                ? self::parseSincePhpVersionId(DocComment::parsePreservingLength($comment, true), $this->file_path)
                 : null;
             $property_storage->suppressed_issues = $var_comment ? $var_comment->suppressed_issues : [];
             $property_storage->internal = $var_comment ? $var_comment->psalm_internal : [];

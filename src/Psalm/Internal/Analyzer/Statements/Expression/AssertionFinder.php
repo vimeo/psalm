@@ -26,6 +26,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
@@ -844,6 +845,12 @@ final class AssertionFinder
                 $if_types[$first_var_name] = [[new IsType(new TCallableString())]];
             }
         } elseif ($expr->name instanceof PhpParser\Node\Name
+            && strtolower($expr->name->getFirst()) === 'defined'
+            && isset($expr->getArgs()[0])
+            && $expr->getArgs()[0]->value instanceof PhpParser\Node\Scalar\String_
+        ) {
+            // no variable is asserted, only the PHP version guard below
+        } elseif ($expr->name instanceof PhpParser\Node\Name
             && strtolower($expr->name->getFirst()) === 'method_exists'
             && isset($expr->getArgs()[1])
             && $expr->getArgs()[1]->value instanceof PhpParser\Node\Scalar\String_
@@ -879,8 +886,8 @@ final class AssertionFinder
     }
 
     /**
-     * A `function_exists()`, `class_exists()`, `interface_exists()`, `enum_exists()` or
-     * `method_exists()` check of a native symbol newer than the analysed PHP version: where it
+     * A `function_exists()`, `class_exists()`, `interface_exists()`, `enum_exists()`, `method_exists()` or
+     * `defined()` check of a native symbol newer than the analysed PHP version: where it
      * holds, PHP_VERSION_ID is at least the version that introduced the symbol, so the symbol
      * can be used there (see Codebase::getGuardedPhpVersionId()).
      */
@@ -920,6 +927,16 @@ final class AssertionFinder
                     }
                 }
             }
+        } elseif ($function_name === 'defined'
+            && isset($args[0])
+            && $args[0]->value instanceof PhpParser\Node\Scalar\String_
+        ) {
+            $since_php_version_id = ConstFetchAnalyzer::getStubSincePhpVersionId(
+                $source,
+                ltrim($args[0]->value->value, '\\'),
+                true,
+                null,
+            );
         } elseif (in_array($function_name, ['class_exists', 'interface_exists', 'enum_exists'], true)) {
             $guarded_class = isset($args[0]) ? self::getLiteralClassName($args[0]->value) : null;
 
