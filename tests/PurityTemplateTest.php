@@ -4257,6 +4257,21 @@ final class PurityTemplateTest extends TestCase
                     }',
                 'error_message' => 'UnsafeGenericInstantiation',
             ],
+            'newStaticOfClassWithTypeTemplateWithADefault' => [
+                'code' => '<?php
+                    /**
+                     * @template T = int
+                     * @psalm-consistent-constructor
+                     */
+                    abstract class Repo {
+                        public function __construct() {}
+
+                        public static function make(): static {
+                            return new static();
+                        }
+                    }',
+                'error_message' => 'UnsafeGenericInstantiation',
+            ],
             'newStaticOfClassWithPurityTemplateAndInconsistentConstructor' => [
                 'code' => '<?php
                     /** @psalm-purity-template C */

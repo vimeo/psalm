@@ -33,6 +33,16 @@ Configuration file may be split into several files using [XInclude](https://www.
 </projectFiles>
 ```
 
+## Keep the configuration private
+
+`psalm.xml` lists the layout of your code, and a [baseline](dealing_with_code_issues.md#using-a-baseline-file) lists the issues Psalm found, with taint analysis the places that are vulnerable. Don't leave them where a web server serves them (the document root of a web project):
+
+```nginx
+location ~ /(psalm.*|.*baseline.*)\.xml$ {
+    deny all;
+}
+```
+
 ## Different configuration file
 
 You can also create a different configuration file, then run Psalm with:
@@ -167,6 +177,16 @@ If true we force strict typing on numerical and string operations (see https://g
 ```
 
 If false, disallows comparing a boolean to a literal boolean (mostly a codestyle rule, not a bug detection rule; see [RedundantIdentityWithTrue](https://psalm.dev/docs/running_psalm/issues/RedundantIdentityWithTrue/)). Defaults to `true`.
+
+#### strictNullableComparison
+
+```xml
+<psalm
+  strictNullableComparison="[bool]"
+>
+```
+
+If true, `<`, `>`, `<=` and `>=` report [PossiblyNullOperand](https://psalm.dev/docs/running_psalm/issues/PossiblyNullOperand/) (or [NullOperand](https://psalm.dev/docs/running_psalm/issues/NullOperand/)) for an operand that can be `null`, so the `null` case has to be handled explicitly. Defaults to `false`.
 
 #### rememberPropertyAssignmentsAfterCall
 
@@ -369,6 +389,14 @@ When `true`, Psalm will complain when referencing an explicit integer offset on 
 >
 ```
 When `true`, Psalm will report class and interface methods that override a method on a parent, but do not have an `Override` attribute. Defaults to `true`.
+
+#### suggestPurityAnnotations
+```xml
+<psalm
+  suggestPurityAnnotations="[bool]"
+>
+```
+When `true`, Psalm will report code that could carry a purity annotation: [MissingPureAnnotation](issues/MissingPureAnnotation.md), [MissingImmutableAnnotation](issues/MissingImmutableAnnotation.md), [MissingAbstractPureAnnotation](issues/MissingAbstractPureAnnotation.md) and [MissingInterfaceImmutableAnnotation](issues/MissingInterfaceImmutableAnnotation.md). Defaults to `false`. Running `psalm --alter --issues=MissingPureAnnotation` or `--issues=MissingImmutableAnnotation` turns it on for that run. Capability checks (`ImpureFunctionCall` and the like) compare a call with what the callee declares, whatever this is set to.
 
 #### loadLibraryStubs
 ```xml

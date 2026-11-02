@@ -5,7 +5,7 @@ name: Apply queued changes
 # from the default branch.
 on:
   schedule:
-    - cron: '53 * * * *'
+    - cron: '23,53 * * * *'
   workflow_dispatch:
 
 concurrency:

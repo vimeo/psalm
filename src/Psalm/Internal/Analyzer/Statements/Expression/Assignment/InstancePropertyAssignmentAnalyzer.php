@@ -402,48 +402,15 @@ final class InstancePropertyAssignmentAnalyzer
             && $stmt_var_type->reference_free
             && $stmt_var_type->allow_mutations;
 
-        $appearing_property_class = $codebase->properties->getAppearingClassForProperty(
+        $can_set_readonly_property = self::checkReadonlyPropertyWrite(
+            $statements_analyzer,
+            $stmt,
             $property_id,
-            true,
+            $property_storage,
+            $context,
+            $property_var_pure_compatible,
         );
 
-        $can_set_readonly_property = true;
-        if ($appearing_property_class) {
-            $can_set_readonly_property = $context->self
-                && $context->calling_method_id
-                && ($appearing_property_class === $context->self
-                    || $codebase->classExtends($context->self, $appearing_property_class))
-                && (str_ends_with($context->calling_method_id, '::__construct')
-                    || str_ends_with($context->calling_method_id, '::unserialize')
-                    || str_ends_with($context->calling_method_id, '::__unserialize')
-                    || str_ends_with($context->calling_method_id, '::__clone')
-                    || $property_storage->allow_private_mutation
-                    || $property_var_pure_compatible);
-
-            if (!$can_set_readonly_property && $property_storage->readonly) {
-                IssueBuffer::maybeAdd(
-                    new InaccessibleProperty(
-                        $property_id . ' is marked readonly',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } elseif ($property_storage->readonly_default
-                && $codebase->analysis_php_version_id >= 8_06_00
-                && !str_ends_with((string) $context->calling_method_id, '::unserialize')
-                && !str_ends_with((string) $context->calling_method_id, '::__unserialize')
-                && !str_ends_with((string) $context->calling_method_id, '::__clone')
-            ) {
-                IssueBuffer::maybeAdd(
-                    new InaccessibleProperty(
-                        $property_id . ' is readonly and already initialised by its default',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            }
-        }
-        
         // writing the property of an object reached from global state writes global state
         $var_type = $statements_analyzer->node_data->getType($stmt->var);
         $on_global_state = $var_type !== null && $var_type->from_global_state;
@@ -514,6 +481,64 @@ final class InstancePropertyAssignmentAnalyzer
                 Capabilities::ALL,
             );
         }
+    }
+
+    /**
+     * Reports writing a readonly property where PHP forbids it, and returns whether the scope may set it
+     */
+    public static function checkReadonlyPropertyWrite(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        string $property_id,
+        PropertyStorage $property_storage,
+        Context $context,
+        bool $property_var_pure_compatible,
+    ): bool {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $appearing_property_class = $codebase->properties->getAppearingClassForProperty(
+            $property_id,
+            true,
+        );
+
+        $can_set_readonly_property = true;
+        if ($appearing_property_class) {
+            $can_set_readonly_property = $context->self
+                && $context->calling_method_id
+                && ($appearing_property_class === $context->self
+                    || $codebase->classExtends($context->self, $appearing_property_class))
+                && (str_ends_with($context->calling_method_id, '::__construct')
+                    || str_ends_with($context->calling_method_id, '::unserialize')
+                    || str_ends_with($context->calling_method_id, '::__unserialize')
+                    || str_ends_with($context->calling_method_id, '::__clone')
+                    || $property_storage->allow_private_mutation
+                    || $property_var_pure_compatible);
+
+            if (!$can_set_readonly_property && $property_storage->readonly) {
+                IssueBuffer::maybeAdd(
+                    new InaccessibleProperty(
+                        $property_id . ' is marked readonly',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            } elseif ($property_storage->readonly_default
+                && $codebase->analysis_php_version_id >= 8_06_00
+                && !str_ends_with((string) $context->calling_method_id, '::unserialize')
+                && !str_ends_with((string) $context->calling_method_id, '::__unserialize')
+                && !str_ends_with((string) $context->calling_method_id, '::__clone')
+            ) {
+                IssueBuffer::maybeAdd(
+                    new InaccessibleProperty(
+                        $property_id . ' is readonly and already initialised by its default',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+        }
+
+        return $can_set_readonly_property;
     }
 
     public static function analyzeStatement(
@@ -1227,9 +1252,7 @@ final class InstancePropertyAssignmentAnalyzer
                 }
 
                 // Test if the property has a 'set' hook
-                $interface_property = $stmt->name instanceof PhpParser\Node\Identifier
-                    ? $interface_storage->properties[$stmt->name->name] ?? null
-                    : null;
+                $interface_property = $interface_storage->properties[$prop_name] ?? null;
                 $has_set_hook = $codebase->analysis_php_version_id >= 8_04_00
                     && $interface_property?->hook_set !== null;
 

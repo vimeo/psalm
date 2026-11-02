@@ -122,4 +122,14 @@ Integers that don't pass this type check:
 
 A non empty string, lowercased or both at once.
 
+`lowercase-string` is what `strtolower()` leaves unchanged, and since PHP 8 that function only changes the ASCII letters. Uppercase letters outside of ASCII are not recognised:
+
+```php
+<?php
+/** @return lowercase-string */
+function ascii() { return 'Hello'; } // InvalidReturnStatement
+/** @return lowercase-string */
+function umlaut() { return 'Über'; } // no issue
+```
+
 `empty` here is defined as all strings except the empty string `''`. Another type `non-falsy-string` is effectively a subtype of `non-empty-string`, and also precludes the string value `'0'`.

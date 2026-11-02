@@ -2826,6 +2826,14 @@ final class ArrayFunctionCallTest extends TestCase
                     '$test' => 'non-empty-array<array-key, array{s: int, v: string}>',
                 ],
             ],
+            'arrayMultisortSortOrder' => [
+                'code' => '<?php
+                    $a = [3, 1];
+                    array_multisort($a, SORT_DESC);',
+                'assertions' => [
+                    '$a===' => 'list{3, 1}',
+                ],
+            ],
             'arrayMapGenericObject' => [
                 'code' => '<?php
                     /**

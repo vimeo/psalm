@@ -5,16 +5,25 @@ declare(strict_types=1);
 namespace Psalm\Tests\Type;
 
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Tests\TestCase;
 use Psalm\Type;
 use Psalm\Type\Atomic\TAnonymousClassInstance;
+use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
+use ReflectionClass;
+use ReflectionNamedType;
+use ReflectionProperty;
 
 final class UnionTest extends TestCase
 {
@@ -118,6 +127,73 @@ final class UnionTest extends TestCase
 
         self::assertSame('list{0?: int, ...<string>}', $list->getId());
         self::assertEquality(false, $list, Type::getList(Type::getString()));
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string}>
+     */
+    public static function publicFlags(): iterable
+    {
+        foreach ((new ReflectionClass(Union::class))->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
+            yield $property->getName() => [$property->getName()];
+        }
+    }
+
+    #[DataProvider('publicFlags')]
+    public function testBuilderAndFreezeKeepEveryFlag(string $flag): void
+    {
+        $union = new Union([new TInt()]);
+        $node = DataFlowNode::getForPropertyFetch('Foo::$bar');
+        $type = (new ReflectionProperty(Union::class, $flag))->getType();
+        $value = match ($type instanceof ReflectionNamedType ? $type->getName() : null) {
+            'bool' => !$union->{$flag},
+            'array' => [$node->id => $node],
+            'int' => 5,
+            default => 'Foo',
+        };
+        /** @psalm-suppress ArgumentTypeCoercion The flag is only known at runtime */
+        $union = $union->setProperties([$flag => $value]);
+
+        $builder = $union->getBuilder();
+        $frozen = $builder->freeze();
+
+        // the cache of the type is not carried over
+        $expected = $flag === 'checked' ? false : $value;
+        self::assertSame($expected, $builder->{$flag});
+        self::assertSame($expected, $frozen->{$flag});
+    }
+
+    public function testBuilderAndFreezeDeriveTheFlagsOfTheTypes(): void
+    {
+        self::assertTrue((new Union([new TNever()]))->getBuilder()->freeze()->explicit_never);
+        self::assertTrue((new Union([new TInt(true)]))->getBuilder()->freeze()->from_docblock);
+        self::assertTrue(Type::getInt()->getBuilder()->setTypes([new TInt(true)])->freeze()->from_docblock);
+
+        $builder = Type::getInt()->getBuilder();
+        $builder->from_docblock = true;
+        self::assertTrue($builder->freeze()->from_docblock);
+        self::assertFalse(Type::getInt()->getBuilder()->freeze()->from_docblock);
+        self::assertFalse(Type::getInt()->getBuilder()->freeze()->explicit_never);
+    }
+
+    public function testBuilderAndFreezeKeepTheTypesAndTheLiteralsOfTheUnion(): void
+    {
+        $union = new Union([
+            Type::getAtomicStringFromLiteral('a'),
+            new TLiteralInt(1),
+            new TLiteralFloat(1.5),
+            new TClassString('Foo', new TNamedObject('Foo')),
+            new TNull(),
+        ]);
+
+        foreach ([$union->getBuilder(), $union->getBuilder()->freeze()] as $copy) {
+            self::assertSame($union->getAtomicTypes(), $copy->getAtomicTypes());
+            self::assertSame($union->getLiteralStrings(), $copy->getLiteralStrings());
+            self::assertSame($union->getLiteralInts(), $copy->getLiteralInts());
+            self::assertSame($union->getLiteralFloats(), $copy->getLiteralFloats());
+            self::assertSame($union->getId(), $copy->getId());
+        }
     }
 
     /**

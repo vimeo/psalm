@@ -1262,6 +1262,32 @@ final class ProjectAnalyzer
         return $this->issues_to_fix;
     }
 
+    /**
+     * Whether the purity annotation suggestions are reported: when the config asks for them, and
+     * when running with `--alter` to add them, as the fixes are queued while they are suggested.
+     *
+     * @psalm-capabilities read-props
+     */
+    public function suggestsPurityAnnotations(): bool
+    {
+        return $this->config->suggest_purity_annotations
+            || ($this->codebase->alter_code
+                && (isset($this->issues_to_fix['MissingPureAnnotation'])
+                    || isset($this->issues_to_fix['MissingImmutableAnnotation'])));
+    }
+
+    /**
+     * Why a purity annotation is worth adding: what it brings depends on what is analysed.
+     *
+     * @psalm-capabilities read-props
+     */
+    public function getPuritySuggestionReason(): string
+    {
+        return $this->codebase->taint_flow_graph !== null
+            ? 'to aid security analysis'
+            : 'to document what it may do and let Psalm enforce it';
+    }
+
     public function getCodebase(): Codebase
     {
         return $this->codebase;

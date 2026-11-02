@@ -358,6 +358,8 @@ final class Config
 
     public bool $allow_bool_to_literal_bool_comparison = true;
 
+    public bool $strict_nullable_comparison = false;
+
     public bool $remember_property_assignments_after_call = true;
 
     public bool $use_igbinary = false;
@@ -437,6 +439,8 @@ final class Config
     public bool $ensure_array_int_offsets_exist = false;
 
     public bool $ensure_override_attribute = true;
+
+    public bool $suggest_purity_annotations = false;
 
     /**
      * @var array<lowercase-string, bool>
@@ -1058,6 +1062,7 @@ final class Config
             'respectIncludeOnce' => 'respect_include_once',
             'strictBinaryOperands' => 'strict_binary_operands',
             'allowBoolToLiteralBoolComparison' => 'allow_bool_to_literal_bool_comparison',
+            'strictNullableComparison' => 'strict_nullable_comparison',
             'rememberPropertyAssignmentsAfterCall' => 'remember_property_assignments_after_call',
             'disableVarParsing' => 'disable_var_parsing',
             'allowStringToStandInForClass' => 'allow_string_standin_for_class',
@@ -1075,6 +1080,7 @@ final class Config
             'ensureArrayStringOffsetsExist' => 'ensure_array_string_offsets_exist',
             'ensureArrayIntOffsetsExist' => 'ensure_array_int_offsets_exist',
             'ensureOverrideAttribute' => 'ensure_override_attribute',
+            'suggestPurityAnnotations' => 'suggest_purity_annotations',
             'reportMixedIssues' => 'show_mixed_issues',
             'skipChecksOnUnresolvableIncludes' => 'skip_checks_on_unresolvable_includes',
             'sealAllMethods' => 'seal_all_methods',
@@ -2639,10 +2645,20 @@ final class Config
             $core_generic_files[] = $stringable_path;
         }
 
+        if (PHP_VERSION_ID < 8_06_00 && $codebase->analysis_php_version_id >= 8_06_00) {
+            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php86.phpstub';
+
+            if (!file_exists($stringable_path)) {
+                throw new UnexpectedValueException('Cannot locate PHP 8.6 classes');
+            }
+
+            $core_generic_files[] = $stringable_path;
+        }
+
         // Genuinely-new classes from every version live in PhpVersionedClasses.phpstub (always
         // loaded via internal_stubs). When the running PHP is older than the newest of them, its
         // reflection cannot provide them, so preload the file too.
-        if (PHP_VERSION_ID < 8_05_00) {
+        if (PHP_VERSION_ID < 8_06_00) {
             $versioned_classes_path = dirname(__DIR__, 2) . '/stubs/PhpVersionedClasses.phpstub';
 
             if (!file_exists($versioned_classes_path)) {
@@ -2767,6 +2783,7 @@ final class Config
         }
 
         if ($codebase->analysis_php_version_id >= 8_06_00) {
+            $this->internal_stubs[] = $stubsDir . 'Php86.phpstub';
             $this->internal_stubs[] = $stubsDir . 'Php86Functions.phpstub';
         }
 

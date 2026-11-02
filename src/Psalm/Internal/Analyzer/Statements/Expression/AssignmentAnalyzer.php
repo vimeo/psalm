@@ -27,6 +27,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAss
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\StaticPropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -1201,9 +1202,9 @@ final class AssignmentAnalyzer
         bool $prevent_null = false,
         bool $out_type_holds_value = false,
     ): void {
-        if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $stmt->name instanceof PhpParser\Node\Identifier) {
-            $prop_name = $stmt->name->name;
-
+        if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch
+            && ($prop_name = InstancePropertyFetchAnalyzer::getPropertyName($statements_analyzer, $stmt)) !== null
+        ) {
             InstancePropertyAssignmentAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
@@ -1963,15 +1964,7 @@ final class AssignmentAnalyzer
             $context->inside_general_use = $was_inside_general_use;
         }
 
-        if ($assign_var->name instanceof PhpParser\Node\Identifier) {
-            $prop_name = $assign_var->name->name;
-        } elseif (($assign_var_name_type = $statements_analyzer->node_data->getType($assign_var->name))
-            && $assign_var_name_type->isSingleStringLiteral()
-        ) {
-            $prop_name = $assign_var_name_type->getSingleStringLiteral()->value;
-        } else {
-            $prop_name = null;
-        }
+        $prop_name = InstancePropertyFetchAnalyzer::getPropertyName($statements_analyzer, $assign_var);
 
         if ($prop_name) {
             InstancePropertyAssignmentAnalyzer::analyze(
