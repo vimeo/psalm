@@ -466,6 +466,11 @@ class Reconciler
                 $result_type = $result_type->setProperties(['failed_reconciliation' => true]);
             }
 
+            // a variable that was not set before is still possibly undefined where it is asserted not to be set
+            if (!$did_type_exist && $has_inverted_isset && count($key_parts) === 1 && $key[0] === '$') {
+                $result_type = $result_type->setPossiblyUndefined(true);
+            }
+
             if (!$has_object_array_access) {
                 $existing_types[$key] = $result_type;
             }
