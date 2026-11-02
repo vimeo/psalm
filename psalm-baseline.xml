@@ -3190,12 +3190,8 @@
     <ImpurePropertyAssignment>
       <code><![CDATA[$node->{$key}]]></code>
       <code><![CDATA[$result->from_docblock]]></code>
-      <code><![CDATA[$result->from_docblock]]></code>
-      <code><![CDATA[$result->offset_end]]></code>
       <code><![CDATA[$result->offset_end]]></code>
       <code><![CDATA[$result->offset_start]]></code>
-      <code><![CDATA[$result->offset_start]]></code>
-      <code><![CDATA[$result->text]]></code>
       <code><![CDATA[$result->text]]></code>
     </ImpurePropertyAssignment>
     <PossiblyUndefinedIntArrayOffset>
@@ -3390,7 +3386,6 @@
       <code><![CDATA[Type::getString()]]></code>
     </ImpureMethodCall>
     <ImpurePropertyAssignment>
-      <code><![CDATA[$cloned->value_param]]></code>
       <code><![CDATA[$cloned->value_param]]></code>
     </ImpurePropertyAssignment>
   </file>

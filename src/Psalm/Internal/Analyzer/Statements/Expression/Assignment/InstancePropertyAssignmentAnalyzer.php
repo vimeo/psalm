@@ -385,6 +385,15 @@ final class InstancePropertyAssignmentAnalyzer
         }
     }
 
+    /**
+     * Set on an assigned property fetch whose write trackPropertyImpurity() charged, so
+     * AssignmentAnalyzer doesn't charge it again
+     */
+    public const WRITE_CHARGED = 'psalm-property-write-charged';
+
+    /**
+     * Charges writing a property, and returns whether it did (it can't without a receiver variable)
+     */
     public static function trackPropertyImpurity(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt,
@@ -393,7 +402,7 @@ final class InstancePropertyAssignmentAnalyzer
         ClassLikeStorage $declaring_class_storage,
         Context $context,
         ?string $lhs_var_id,
-    ): void {
+    ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
         $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
@@ -464,23 +473,27 @@ final class InstancePropertyAssignmentAnalyzer
                 // where a readonly one couldn't be: it can't be immutable (as before the waiver)
                 $writes_fresh_object && !$can_set_readonly_property ? $mut | Capabilities::WRITE_PROPS : $mut,
             );
-        } else {
-            if ($on_global_state) {
-                $statements_analyzer->signalMutation(
-                    Capabilities::WRITE_PROPS | Capabilities::WRITE_GLOBALS,
-                    $context,
-                    'property assignment to ' . $property_id . ' on an object reached from global state',
-                    ImpurePropertyAssignment::class,
-                    $stmt,
-                );
-            }
 
-            // e.g. the property of an array element: the class is still being mutated from outside
-            $codebase->analyzer->addMutableClass(
-                $declaring_class_storage->name,
-                Capabilities::ALL,
+            return true;
+        }
+
+        if ($on_global_state) {
+            $statements_analyzer->signalMutation(
+                Capabilities::WRITE_PROPS | Capabilities::WRITE_GLOBALS,
+                $context,
+                'property assignment to ' . $property_id . ' on an object reached from global state',
+                ImpurePropertyAssignment::class,
+                $stmt,
             );
         }
+
+        // e.g. the property of an array element: the class is still being mutated from outside
+        $codebase->analyzer->addMutableClass(
+            $declaring_class_storage->name,
+            Capabilities::ALL,
+        );
+
+        return $on_global_state;
     }
 
     /**
@@ -1578,7 +1591,7 @@ final class InstancePropertyAssignmentAnalyzer
                 );
             }
 
-            self::trackPropertyImpurity(
+            if (self::trackPropertyImpurity(
                 $statements_analyzer,
                 $stmt,
                 $property_id,
@@ -1586,7 +1599,9 @@ final class InstancePropertyAssignmentAnalyzer
                 $declaring_class_storage,
                 $context,
                 $lhs_var_id,
-            );
+            )) {
+                $stmt->setAttribute(self::WRITE_CHARGED, true);
+            }
 
             if ($property_storage->getter_method) {
                 $getter_id = $lhs_var_id . '->' . $property_storage->getter_method . '()';

@@ -1974,6 +1974,8 @@ final class AssignmentAnalyzer
 
         $prop_name = InstancePropertyFetchAnalyzer::getPropertyName($statements_analyzer, $assign_var);
 
+        $assign_var->setAttribute(InstancePropertyAssignmentAnalyzer::WRITE_CHARGED, false);
+
         if ($prop_name) {
             InstancePropertyAssignmentAnalyzer::analyze(
                 $statements_analyzer,
@@ -2008,6 +2010,10 @@ final class AssignmentAnalyzer
 
         if ($var_id) {
             $context->vars_possibly_in_scope[$var_id] = true;
+        }
+
+        if ($assign_var->getAttribute(InstancePropertyAssignmentAnalyzer::WRITE_CHARGED) === true) {
+            return;
         }
 
         $pureCompat = $statements_analyzer->node_data->isPureCompatible($assign_var->var);
