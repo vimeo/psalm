@@ -39,6 +39,7 @@ use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\PurityWildcardPaths;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -334,6 +335,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         foreach ($storage->docblock_issues as $docblock_issue) {
             IssueBuffer::maybeAdd($docblock_issue);
         }
+
+        TemplateDefaults::checkBounds(
+            $this,
+            $storage->template_types ?? [],
+            $storage->template_defaults,
+            $storage->template_default_locations,
+            $context->self,
+            $context->parent,
+            ($storage instanceof MethodStorage ? $storage->defining_fqcln . '::' : '') . $storage->cased_name,
+            $this->getSuppressedIssues(),
+        );
 
         $function_information = $this->getFunctionInformation(
             $context,
@@ -783,19 +795,27 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if ($this->function->getStmts() === null) {
-                if (!$storage->has_mutations_annotation && $storage->location) {
+                if ($project_analyzer->suggestsPurityAnnotations()
+                    && !$storage->has_mutations_annotation
+                    && $storage->location
+                ) {
                     IssueBuffer::maybeAdd(
                         new MissingAbstractPureAnnotation(
-                            $storage->cased_name . ' must be marked with one of @psalm-pure,'
-                            . ' @psalm-capabilities or @psalm-impure to aid security analysis',
+                            $storage->cased_name . ' could be marked with one of @psalm-pure,'
+                            . ' @psalm-capabilities or @psalm-impure '
+                            . $project_analyzer->getPuritySuggestionReason(),
                             $storage->location,
                         ),
                         $storage->suppressed_issues,
                     );
                 }
-            } elseif ($storage->location && ($node_id = $this->getMutationNodeId()) !== null) {
-                // the final level depends on the callees' levels: resolved after analysis,
-                // which reports MissingPureAnnotation and queues the fix (see MutationLevelResolver)
+            } elseif ($storage->location
+                && ($project_analyzer->suggestsPurityAnnotations() || $codebase->taint_flow_graph !== null)
+                && ($node_id = $this->getMutationNodeId()) !== null
+            ) {
+                // the final level depends on the callees' levels: resolved after analysis, which reports
+                // MissingPureAnnotation and queues the fix (see MutationLevelResolver), and which taint
+                // analysis reads to specialize the calls of unannotated functions
                 $codebase->code_use_graph->addMutationInfo($node_id, [
                     // the calls of an unannotated overridden method may run any of its overrides,
                     // which could do anything: annotating it would restrict them
@@ -824,11 +844,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         && !($storage->has_mutations_annotation
                             && ($storage->capabilities === Capabilities::ALL
                                 || ($storage instanceof MethodStorage && $storage->overridden_somewhere))),
-                    'wildcards' => array_map(
-                        static fn(array $paths): array => array_keys($paths),
-                        $this->purity_wildcard_candidates,
-                    ),
-                ]);
+                ] + ($project_analyzer->suggestsPurityAnnotations()
+                    ? [
+                        'wildcards' => array_map(
+                            static fn(array $paths): array => array_keys($paths),
+                            $this->purity_wildcard_candidates,
+                        ),
+                    ]
+                    : []));
             }
         }
 
