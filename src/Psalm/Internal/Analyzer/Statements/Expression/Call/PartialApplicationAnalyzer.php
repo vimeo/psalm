@@ -663,11 +663,13 @@ final class PartialApplicationAnalyzer
             } elseif ($call instanceof StaticCall) {
                 $class_template_params = ExistingAtomicStaticCallAnalyzer::collectClassTemplateParams(
                     $statements_analyzer,
+                    $codebase,
                     $call,
                     $context,
-                    $class_storage,
-                    $method_id,
                     new TNamedObject($method_id->fq_class_name),
+                    $method_id,
+                    $class_storage,
+                    $class_storage,
                 );
             }
         } elseif ($call instanceof FuncCall && !$is_callable_value && $closure->callable_id !== null) {

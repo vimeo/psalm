@@ -510,12 +510,9 @@ final class ClassLikeDocblockParser
                 $php_string = '<?php class A { ' . $function_docblock . ' public ' . $function_string . '{} }';
 
                 try {
-                    $has_errors = false;
-
                     $statements = StatementsProvider::parseStatements(
                         $php_string,
                         $codebase->analysis_php_version_id,
-                        $has_errors,
                     );
                 } catch (Exception) {
                     throw new DocblockParseException('Badly-formatted @method string ' . $method_entry);

@@ -48,8 +48,7 @@ final class TaintTest extends TestCase
         'MissingPropertyType', 'UndefinedMagicPropertyAssignment', 'InvalidStringClass', 'PossiblyInvalidIterator',
         'InvalidReturnStatement', 'ArgumentTypeCoercion', 'UnresolvableInclude', 'UndefinedClass', 'RedundantCast',
         'MixedArrayAssignment', 'InvalidReturnStatement', 'InvalidArrayOffset', 'UndefinedFunction', 'ImplicitToStringCast',
-        'InvalidArgument', 'UndefinedVariable', 'MissingPureAnnotation', 'MissingImmutableAnnotation',
-        'MissingAbstractPureAnnotation', 'MissingInterfaceImmutableAnnotation',
+        'InvalidArgument', 'UndefinedVariable',
     ];
     public function testTaintKindNoHoles(): void
     {

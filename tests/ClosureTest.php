@@ -1117,6 +1117,455 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'FirstClassCallable:InstanceMethod:ClassTemplatesAndStatic' => [
+                'code' => '<?php
+                    class Model {}
+
+                    /** @template TModel of Model */
+                    final class Builder {
+                        /** @return Builder<TModel> */
+                        public function has(string $relation): self { return $this; }
+
+                        /** @param TModel $model */
+                        public function save(Model $model): void {}
+                    }
+
+                    /** @template T */
+                    class Collection {
+                        public function filter(): static { return $this; }
+                    }
+
+                    /** @extends Collection<int> */
+                    final class FinalCollection extends Collection {}
+
+                    /** @var Builder<Model> $builder */;
+                    /** @var Collection<int> $collection */;
+                    /** @var FinalCollection $final_collection */;
+                    $has = $builder->has(...);
+                    $save = $builder->save(...);
+                    $filter = $collection->filter(...);
+                    $final_filter = $final_collection->filter(...);
+                ',
+                'assertions' => [
+                    '$has===' => 'Closure[impure](string):Builder<Model>',
+                    '$save===' => 'Closure[impure](Model):void',
+                    '$filter===' => 'Closure[impure]():Collection<int>&static',
+                    '$final_filter===' => 'Closure[impure]():FinalCollection',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:MethodTemplatesStandForTheirBounds' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @param list<T> $items */
+                        public function __construct(private array $items) {}
+
+                        /**
+                         * @template U
+                         * @param callable(T): U $f
+                         * @return list<U>
+                         */
+                        public function map(callable $f): array { return array_map($f, $this->items); }
+
+                        /**
+                         * @template U of T
+                         * @param U $u
+                         * @return list<U>
+                         */
+                        public function wrap(mixed $u): array { return [$u]; }
+
+                        /**
+                         * @template V
+                         * @param V $v
+                         * @return list<V>
+                         */
+                        public static function listOf(mixed $v): array { return [$v]; }
+                    }
+
+                    /** @var Coll<int> $coll */;
+                    $map = $coll->map(...);
+                    $mapped = $map(fn(int $i): string => (string) $i);
+                    $wrap = $coll->wrap(...);
+                    $wrapped = $wrap(5);
+                    $list_of = Coll::listOf(...);
+                ',
+                'assertions' => [
+                    '$map===' => 'Closure[impure](callable[impure](int):mixed):list<mixed>',
+                    '$mapped===' => 'list<mixed>',
+                    '$wrap===' => 'Closure[impure](int):list<int>',
+                    '$wrapped===' => 'list<int>',
+                    '$list_of===' => 'Closure[impure](mixed):list<mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:StaticMethod:PassedToTemplatedCallableParam' => [
+                'code' => '<?php
+                    final class Util {
+                        /**
+                         * @template V
+                         * @param V $v
+                         * @return list<V>
+                         */
+                        public static function listOf(mixed $v): array { return [$v]; }
+                    }
+
+                    /**
+                     * @template A
+                     * @template B
+                     * @param list<A> $list
+                     * @param callable(A):B $f
+                     * @return list<B>
+                     */
+                    function mapList(array $list, callable $f): array { return array_map($f, $list); }
+
+                    /** @var list<int> $ints */;
+                    $mapped = mapList($ints, Util::listOf(...));
+                ',
+                'assertions' => [
+                    '$mapped===' => 'list<list<int>>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:MethodTemplatesBoundByArrayMap' => [
+                'code' => '<?php
+                    final class Util {
+                        /**
+                         * @template V
+                         * @param V $v
+                         * @return list<V>
+                         */
+                        public static function listOf(mixed $v): array { return [$v]; }
+
+                        /**
+                         * @template V
+                         * @param V $v
+                         * @return list<V>
+                         */
+                        public function instanceListOf(mixed $v): array { return [$v]; }
+                    }
+
+                    /** @var list<int> $ints */;
+                    $util = new Util();
+                    $static_mapped = array_map(Util::listOf(...), $ints);
+                    $instance_mapped = array_map($util->instanceListOf(...), $ints);
+                ',
+                'assertions' => [
+                    '$static_mapped===' => 'list<list<int>>',
+                    '$instance_mapped===' => 'list<list<int>>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:MethodTemplatesBoundWhenTheArgumentEscapes' => [
+                'code' => '<?php
+                    final class O {
+                        /**
+                         * @template T
+                         * @param T $t
+                         * @return T
+                         */
+                        public function ident(mixed $t): mixed { return $t; }
+                    }
+
+                    /**
+                     * @template F
+                     * @param F $f
+                     * @return F
+                     */
+                    function tap(mixed $f): mixed { return $f; }
+
+                    $o = new O();
+                    $t = tap($o->ident(...));
+                    $t(5);
+                ',
+                'assertions' => [
+                    '$t===' => 'Closure[impure](mixed):mixed',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:ChainedMethodTemplateBounds' => [
+                'code' => '<?php
+                    final class Model {}
+
+                    /** @template T of Model */
+                    final class Container {
+                        /**
+                         * @template U of T
+                         * @template V of U
+                         * @param V $value
+                         * @return V
+                         */
+                        public function identity(Model $value): Model { return $value; }
+
+                        /**
+                         * @template A
+                         * @template B of A
+                         * @param A $a
+                         * @param B $b
+                         * @return list<B>
+                         */
+                        public static function chained(mixed $a, mixed $b): array { return [$b]; }
+                    }
+
+                    /** @var Container<Model> $container */;
+                    $identity = $container->identity(...);
+                    $model = $identity(new Model());
+                    $chained = Container::chained(...);
+                    $list = $chained(1, 2);
+                ',
+                'assertions' => [
+                    '$identity===' => 'Closure[impure](Model):Model',
+                    '$model===' => 'Model',
+                    '$chained===' => 'Closure[impure](mixed, mixed):list<mixed>',
+                    '$list===' => 'list<mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:UnresolvedClassTemplates' => [
+                'code' => '<?php
+                    /** @template T of scalar */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(private mixed $v) {}
+
+                        /** @return T */
+                        public function get(): mixed { return $this->v; }
+
+                        /** @return Closure():T */
+                        public function getter(): Closure { return $this->get(...); }
+                    }
+
+                    /**
+                     * @template T of scalar
+                     * @param Box<T> $box
+                     * @return Closure():T
+                     */
+                    function getter(Box $box): Closure {
+                        return $box->get(...);
+                    }
+
+                    /** @var Box $raw */;
+                    $raw_get = $raw->get(...);
+                ',
+                'assertions' => [
+                    '$raw_get===' => 'Closure[read-props]():scalar',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:InheritedTemplatesAndInterface' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Collection {
+                        /** @return T */
+                        public function first(): mixed { throw new Exception(); }
+                    }
+
+                    /** @extends Collection<string> */
+                    final class Strings extends Collection {}
+
+                    /** @template T */
+                    interface Repository {
+                        /** @return T */
+                        public function find(int $id): mixed;
+
+                        public function fresh(): static;
+                    }
+
+                    /** @var Strings $strings */;
+                    /** @var Repository<int> $repository */;
+                    $first = $strings->first(...);
+                    $find = $repository->find(...);
+                    $fresh = $repository->fresh(...);
+                ',
+                'assertions' => [
+                    '$first===' => 'Closure[impure]():string',
+                    '$find===' => 'Closure[impure](int):int',
+                    '$fresh===' => 'Closure[impure]():Repository<int>&static',
+                ],
+                'ignored_issues' => ['MissingAbstractPureAnnotation'],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:PassedToTemplatedCallableParam' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @return T */
+                        public function get(): mixed { throw new Exception(); }
+
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return list<U>
+                         */
+                        public function wrap(mixed $u): array { return [$u]; }
+                    }
+
+                    /**
+                     * @template R
+                     * @param callable():R $f
+                     * @return R
+                     */
+                    function call(callable $f): mixed { return $f(); }
+
+                    /**
+                     * @template A
+                     * @template B
+                     * @param list<A> $list
+                     * @param callable(A):B $f
+                     * @return list<B>
+                     */
+                    function mapList(array $list, callable $f): array { return array_map($f, $list); }
+
+                    /** @var Box<int> $box */;
+                    /** @var list<int> $ints */;
+                    $result = call($box->get(...));
+                    $lists = mapList($ints, $box->wrap(...));
+                ',
+                'assertions' => [
+                    '$result===' => 'int',
+                    '$lists===' => 'list<list<int>>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:LiteralName' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @return T */
+                        public function get(): mixed { throw new Exception(); }
+                    }
+
+                    /** @var Box<int> $box */;
+                    $get = $box->{"get"}(...);
+                ',
+                'assertions' => [
+                    '$get===' => 'Closure[impure]():int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:StaticMethod:ClassTemplatesAndStatic' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Collection {
+                        /** @return T */
+                        public static function one(): mixed { throw new Exception(); }
+
+                        public static function make(): static { throw new Exception(); }
+                    }
+
+                    /** @extends Collection<int> */
+                    class Ints extends Collection {
+                        public function test(): void {
+                            $static_make = static::make(...);
+                            /** @psalm-check-type-exact $static_make = Closure():(Collection&static) */;
+                            $self_make = self::make(...);
+                            /** @psalm-check-type-exact $self_make = Closure():(Collection&static) */;
+                            $parent_one = parent::one(...);
+                            /** @psalm-check-type-exact $parent_one = Closure():int */;
+                        }
+                    }
+
+                    final class FinalInts extends Ints {}
+
+                    $one = Ints::one(...);
+                    $literal_one = Ints::{"one"}(...);
+                    $make = Ints::make(...);
+                    $final_make = FinalInts::make(...);
+                ',
+                'assertions' => [
+                    '$one===' => 'Closure[impure]():int',
+                    '$literal_one===' => 'Closure[impure]():int',
+                    '$make===' => 'Closure[impure]():Ints',
+                    '$final_make===' => 'Closure[impure]():FinalInts',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:MixinAndPseudoMethods' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Inner {
+                        /** @return T */
+                        public function get(): mixed { throw new Exception(); }
+
+                        /** @param T $t */
+                        public function put(mixed $t): void {}
+                    }
+
+                    /**
+                     * @template T
+                     * @mixin Inner<T>
+                     */
+                    final class Outer {
+                        public function __call(string $name, array $args): mixed { return null; }
+                    }
+
+                    /**
+                     * @template T
+                     * @method T pseudoGet()
+                     * @method static T pseudoOne()
+                     */
+                    class Magic {
+                        public function __call(string $name, array $args): mixed { return null; }
+                        public static function __callStatic(string $name, array $args): mixed { return null; }
+                    }
+
+                    /** @extends Magic<int> */
+                    final class IntMagic extends Magic {}
+
+                    /** @var Outer<float> $outer */;
+                    /** @var IntMagic $magic */;
+                    $mixin_get = $outer->get(...);
+                    $mixin_put = $outer->put(...);
+                    $pseudo_get = $magic->pseudoGet(...);
+                    $pseudo_one = IntMagic::pseudoOne(...);
+                ',
+                'assertions' => [
+                    '$mixin_get===' => 'Closure[impure]():float',
+                    '$mixin_put===' => 'Closure[impure](float):void',
+                    '$pseudo_get===' => 'Closure[impure]():int',
+                    '$pseudo_one===' => 'Closure[impure]():int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InheritedMethodReturningParent' => [
+                'code' => '<?php
+                    class Base {}
+
+                    class A extends Base {
+                        public function m(): parent { return new Base; }
+
+                        /** @return list<parent> */
+                        public function l(): array { return [new Base]; }
+                    }
+
+                    final class B extends A {}
+
+                    /** @var B $b */;
+                    $direct = $b->m();
+                    $fcc = $b->m(...);
+                    $literal = $b->{"m"}(...);
+                    $literal_list = $b->{"l"}(...);
+                ',
+                'assertions' => [
+                    '$direct===' => 'Base',
+                    '$fcc===' => 'Closure[impure]():Base',
+                    '$literal===' => 'Closure[impure]():Base',
+                    '$literal_list===' => 'Closure[impure]():list<Base>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'FirstClassCallable:ComparedToAMixedValue' => [
                 'code' => <<<'PHP'
                     <?php
