@@ -260,7 +260,12 @@ final class AtomicStaticCallAnalyzer
                             $stmt,
                             $context,
                             $method_identifier,
-                            $method_exists,
+                            $method_exists
+                                && MethodAnalyzer::isMethodVisible(
+                                    $method_identifier,
+                                    $context,
+                                    $statements_analyzer->getSource(),
+                                ),
                         );
 
                         if ($method_exists) {
@@ -522,7 +527,10 @@ final class AtomicStaticCallAnalyzer
             $method_name_lc,
         );
 
-        self::recordCallStaticReference($statements_analyzer, $stmt, $context, $method_id, $naive_method_exists);
+        $method_visible = $naive_method_exists
+            && MethodAnalyzer::isMethodVisible($method_id, $context, $statements_analyzer->getSource());
+
+        self::recordCallStaticReference($statements_analyzer, $stmt, $context, $method_id, $method_visible);
 
         if ($stmt->isFirstClassCallable()) {
             $self_fq_class_name = $stmt->class instanceof PhpParser\Node\Name && $stmt->class->getParts() === ['parent']
@@ -677,12 +685,7 @@ final class AtomicStaticCallAnalyzer
             }
         }
 
-        if (!$naive_method_exists
-            || !MethodAnalyzer::isMethodVisible(
-                $method_id,
-                $context,
-                $statements_analyzer->getSource(),
-            )
+        if (!$method_visible
             || $fake_method_exists
             || $found_method_and_class_storage
         ) {
@@ -950,36 +953,34 @@ final class AtomicStaticCallAnalyzer
     }
 
     /**
-     * PHP calls `__callStatic` for `X::m()` and `X::m(...)` when `m` is missing or not visible from the call
-     * site, except when there is a `$this` that is an instance of X, where `__call` takes over. A `$this` that only
-     * might be an instance of X (e.g. a parent class, or a closure without `$this`) records the reference, since
-     * PHP might call `__callStatic`.
+     * Records the `__callStatic` reference where PHP may call it: `m` is missing or not visible here, and no `$this`
+     * is known to be an instance of a class with `__call`.
      */
     private static function recordCallStaticReference(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticCall $stmt,
         Context $context,
         MethodIdentifier $method_id,
-        bool $method_exists,
+        bool $method_visible,
     ): void {
-        $codebase = $statements_analyzer->getCodebase();
-        $fq_class_name = $method_id->fq_class_name;
-
-        if ($method_exists
-            && MethodAnalyzer::isMethodVisible($method_id, $context, $statements_analyzer->getSource())
-        ) {
+        if ($method_visible) {
             return;
         }
 
+        $codebase = $statements_analyzer->getCodebase();
+        $fq_class_name = $method_id->fq_class_name;
         $this_type = $context->vars_in_scope['$this'] ?? null;
-        $class_type = new Union([new TNamedObject($fq_class_name)]);
 
         if ($this_type !== null
             && !$statements_analyzer->isStatic()
-            && UnionTypeComparator::isContainedBy($codebase, $this_type, $class_type)
             && $codebase->methodExists(
                 new MethodIdentifier($fq_class_name, '__call'),
                 use_method_existence_provider: false,
+            )
+            && UnionTypeComparator::isContainedBy(
+                $codebase,
+                $this_type,
+                new Union([new TNamedObject($fq_class_name)]),
             )
         ) {
             return;
