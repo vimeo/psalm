@@ -101,22 +101,6 @@ final class CacheTest extends TestCase
                 </psalm>
                 XML,
         );
-        $config->setCustomErrorLevel(
-            'MissingImmutableAnnotation',
-            Config::REPORT_SUPPRESS,
-        );
-        $config->setCustomErrorLevel(
-            'MissingInterfaceImmutableAnnotation',
-            Config::REPORT_SUPPRESS,
-        );
-        $config->setCustomErrorLevel(
-            'MissingPureAnnotation',
-            Config::REPORT_SUPPRESS,
-        );
-        $config->setCustomErrorLevel(
-            'MissingAbstractPureAnnotation',
-            Config::REPORT_SUPPRESS,
-        );
         $config->setIncludeCollector(new IncludeCollector());
 
         $file_provider = new FakeFileProvider();
