@@ -98,6 +98,156 @@ final class ScopeTest extends TestCase
                         return $foo;
                     }',
             ],
+            'globalNonEmptyMixedKeepsUnboundPathTypeAfterCall' => [
+                'code' => '<?php
+                    function bind_x(): void { global $x; }
+                    /** @global non-empty-mixed $x */
+                    function run(bool $c): int {
+                        global $x;
+                        if ($c) {
+                            unset($x);
+                            $x = 0;
+                        }
+                        bind_x();
+                        if (!$x) {
+                            return 1;
+                        }
+                        return 2;
+                    }',
+            ],
+            'globalDeclaredTypeAfterMethodCall' => [
+                'code' => '<?php
+                    class Db { public function prepare(string $q): string { return $q; } }
+                    class Q {
+                        /** @global Db $db */
+                        public function run(): string {
+                            global $db;
+                            $this->parse();
+                            return $db->prepare("x");
+                        }
+                        /** @global Db $db */
+                        private function parse(): void {
+                            global $db;
+                            $db->prepare("y");
+                        }
+                    }',
+            ],
+            'globalDeclaredTypeAfterFunctionCall' => [
+                'code' => '<?php
+                    class Db { public function prepare(string $q): string { return $q; } }
+                    function bind_db(): void { global $db; }
+                    /** @global Db $db */
+                    function run(): string {
+                        global $db;
+                        bind_db();
+                        return $db->prepare("x");
+                    }',
+            ],
+            'globalDeclaredTypeAfterStaticMethodCall' => [
+                'code' => '<?php
+                    class Db { public function prepare(string $q): string { return $q; } }
+                    class Binder { public static function bind(): void { global $db; } }
+                    /** @global Db $db */
+                    function run(): string {
+                        global $db;
+                        Binder::bind();
+                        return $db->prepare("x");
+                    }',
+            ],
+            'globalDeclaredTypeAfterTransitiveCall' => [
+                'code' => '<?php
+                    class Db { public function prepare(string $q): string { return $q; } }
+                    function bind_db(): void { global $db; }
+                    function outer(): void { bind_db(); }
+                    /** @global Db $db */
+                    function run(): string {
+                        global $db;
+                        outer();
+                        return $db->prepare("x");
+                    }',
+            ],
+            'globalInlineVarTypeAfterCall' => [
+                'code' => '<?php
+                    class Db { public function prepare(string $q): string { return $q; } }
+                    function bind_db(): void { global $db; }
+                    function run(): string {
+                        /** @var Db $db */
+                        global $db;
+                        bind_db();
+                        return $db->prepare("x");
+                    }',
+            ],
+            'localVariableKeepsTypeAfterCallBindingSameNameGlobal' => [
+                'code' => '<?php
+                    class Db { public function prepare(string $q): string { return $q; } }
+                    function bind_db(): void { global $db; }
+                    function run(): string {
+                        $db = new Db();
+                        bind_db();
+                        return $db->prepare("x");
+                    }',
+            ],
+            'byRefParamKeepsTypeAfterCallBindingSameNameGlobal' => [
+                'code' => '<?php
+                    function bind_state(): void { global $install_state; }
+                    /** @param array{a: int} $install_state */
+                    function run(array &$install_state): int {
+                        bind_state();
+                        return $install_state["a"];
+                    }',
+            ],
+            'globalDeclaredTypeWinsOverWriteInCallee' => [
+                'code' => '<?php
+                    class Db { public function prepare(string $q): string { return $q; } }
+                    function write_db(): void { global $db; $db = 5; }
+                    /** @global Db $db */
+                    function run(): string {
+                        global $db;
+                        write_db();
+                        return $db->prepare("x");
+                    }',
+            ],
+            'globalUnsetThenReassignedKeepsTypeAfterCall' => [
+                'code' => '<?php
+                    class Db {}
+                    class Other { public function name(): string { return "o"; } }
+                    function bind_db(): void { global $db; }
+                    /** @global Db $db */
+                    function run(): string {
+                        global $db;
+                        unset($db);
+                        $db = new Other();
+                        bind_db();
+                        return $db->name();
+                    }',
+            ],
+            'globalRebindToStaticKeepsTypeAfterCall' => [
+                'code' => '<?php
+                    class Db {}
+                    class Other { public function name(): string { return "o"; } }
+                    function bind_db(): void { global $db; }
+                    /** @global Db $db */
+                    function run(): string {
+                        global $db;
+                        static $db;
+                        $db = new Other();
+                        bind_db();
+                        return $db->name();
+                    }',
+            ],
+            'globalRebindByReferenceKeepsTypeAfterCall' => [
+                'code' => '<?php
+                    class Db {}
+                    class Other { public function name(): string { return "o"; } }
+                    function bind_db(): void { global $db; }
+                    /** @global Db $db */
+                    function run(Other $other): string {
+                        global $db;
+                        $db = &$other;
+                        bind_db();
+                        return $db->name();
+                    }',
+            ],
             'negateAssertionAndOther' => [
                 'code' => '<?php
                     $a = rand(0, 10) ? "hello" : null;
@@ -273,6 +423,109 @@ final class ScopeTest extends TestCase
 
                     global $a;',
                 'error_message' => 'InvalidGlobal',
+            ],
+            'globalUndeclaredNarrowedStaysMixedAfterCall' => [
+                'code' => '<?php
+                    class Db { public function prepare(string $q): string { return $q; } }
+                    function bind_db(): void { global $db; }
+                    function run(): string {
+                        global $db;
+                        if (!$db instanceof Db) { return ""; }
+                        bind_db();
+                        return $db->prepare("x");
+                    }',
+                'error_message' => 'MixedMethodCall',
+            ],
+            'globalForeachByRefUnbindsAfterCall' => [
+                'code' => '<?php
+                    class Db {}
+                    class Other { public function name(): string { return "o"; } }
+                    function bind_db(): void { global $db; }
+                    /**
+                     * @global Db $db
+                     * @param list<Other> $others
+                     */
+                    function run(array $others): string {
+                        global $db;
+                        foreach ($others as &$db) {}
+                        bind_db();
+                        return $db->name();
+                    }',
+                'error_message' => 'PossiblyUndefinedMethod',
+            ],
+            'globalUnsetInBranchKeepsOtherPathTypeAfterCall' => [
+                'code' => '<?php
+                    class Db {}
+                    class Other { public function name(): string { return "o"; } }
+                    function bind_db(): void { global $db; }
+                    /** @global Db $db */
+                    function run(bool $c): string {
+                        global $db;
+                        if ($c) {
+                            unset($db);
+                            $db = new Other();
+                        }
+                        bind_db();
+                        return $db->name();
+                    }',
+                'error_message' => 'PossiblyUndefinedMethod',
+            ],
+            'globalNarrowedStaysNullableAfterCallThatMayWriteNull' => [
+                'code' => '<?php
+                    class Db { public function prepare(string $q): string { return $q; } }
+                    function write_db_null(): void { global $db; $db = null; }
+                    /** @global Db|null $db */
+                    function run(): string {
+                        global $db;
+                        if (!$db) { return ""; }
+                        write_db_null();
+                        return $db->prepare("x");
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'globalNullableForeachByRefMayNotRunKeepsBothTypesAfterCall' => [
+                'code' => '<?php
+                    class Db { public function prepare(string $q): string { return $q; } }
+                    function bind_db(): void { global $db; }
+                    /**
+                     * @global Db|null $db
+                     * @param list<Db> $others
+                     */
+                    function run(array $others): string {
+                        global $db;
+                        if (!$db) { return ""; }
+                        foreach ($others as &$db) {}
+                        bind_db();
+                        return $db->prepare("x");
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'globalBoundThroughClosureUseByRefKeepsDeclaredTypeAfterCall' => [
+                'code' => '<?php
+                    class Db { public function prepare(string $q): string { return $q; } }
+                    function write_db_null(): void { global $db; $db = null; }
+                    /** @global Db|null $db */
+                    function run(): Closure {
+                        global $db;
+                        return function () use (&$db): string {
+                            if (!$db) { return ""; }
+                            write_db_null();
+                            return $db->prepare("x");
+                        };
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'globalBoundByReferenceToGlobalsElementIsReadAfterCall' => [
+                'code' => '<?php
+                    class Db { public function prepare(string $q): string { return $q; } }
+                    function write_db_null(): void { global $db; $db = null; }
+                    function run(): string {
+                        $db = &$GLOBALS["db"];
+                        if (!$db instanceof Db) { return ""; }
+                        write_db_null();
+                        return $db->prepare("x");
+                    }',
+                'error_message' => 'MixedMethodCall',
             ],
             'thisInStatic' => [
                 'code' => '<?php
