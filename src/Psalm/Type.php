@@ -927,6 +927,52 @@ abstract class Type
         return $combined_type;
     }
 
+    /**
+     * e.g. array and iterable<int, Foo> are array<int, Foo>
+     */
+    private static function intersectArrayWithIterable(
+        Codebase $codebase,
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+        bool $allow_interface_equality,
+        bool $allow_float_int_equality,
+    ): ?TArray {
+        if ($type_1_atomic instanceof TArray && $type_2_atomic instanceof TIterable) {
+            $array_atomic = $type_1_atomic;
+            $iterable_atomic = $type_2_atomic;
+        } elseif ($type_1_atomic instanceof TIterable && $type_2_atomic instanceof TArray) {
+            $array_atomic = $type_2_atomic;
+            $iterable_atomic = $type_1_atomic;
+        } else {
+            return null;
+        }
+
+        $key_intersection = self::intersectUnionTypes(
+            $array_atomic->type_params[0],
+            $iterable_atomic->type_params[0],
+            $codebase,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
+        $value_intersection = self::intersectUnionTypes(
+            $array_atomic->type_params[1],
+            $iterable_atomic->type_params[1],
+            $codebase,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
+
+        if ($key_intersection === null
+            || $value_intersection === null
+            || $key_intersection->isNever()
+            || $value_intersection->isNever()
+        ) {
+            return null;
+        }
+
+        return $array_atomic->setTypeParams([$key_intersection, $value_intersection]);
+    }
+
     private static function intersectAtomicTypes(
         Atomic $type_1_atomic,
         Atomic $type_2_atomic,
@@ -1036,6 +1082,15 @@ abstract class Type
                         );
                         $intersection_performed = true;
                     }
+                } elseif (($array_iterable_intersection = self::intersectArrayWithIterable(
+                    $codebase,
+                    $type_1_atomic,
+                    $type_2_atomic,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                )) !== null) {
+                    $intersection_atomic = $array_iterable_intersection;
+                    $intersection_performed = true;
                 } elseif (($type_1_atomic instanceof TNonspecificLiteralString
                         && $type_2_atomic instanceof TNonEmptyString)
                     || ($type_1_atomic instanceof TNonEmptyString
