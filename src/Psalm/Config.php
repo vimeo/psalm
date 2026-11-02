@@ -610,6 +610,7 @@ final class Config
         "gmp" => null,
         "ibm_db2" => null,
         "imagick" => null,
+        "memcached" => null,
         "mongodb" => null,
         "mysqli" => null,
         "pdo" => null,
