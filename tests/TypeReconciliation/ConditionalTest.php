@@ -3465,6 +3465,30 @@ final class ConditionalTest extends TestCase
                     '$after' => 'Countable|string',
                 ],
             ],
+            'isArrayOrNegatedIssetGuardNarrowsAfterReturn' => [
+                'code' => '<?php
+                    function f(string|int|array $t, array $map): string {
+                        if (is_array($t) || !isset($map[(string) $t])) {
+                            return "";
+                        }
+
+                        return (string) $t;
+                    }
+
+                    /** @var string|int|array $t */
+                    $t = $_GET["t"];
+                    /** @var array $map */
+                    $map = [];
+                    if (is_array($t) || !isset($map[(string) $t])) {
+                        return;
+                    }
+                    $s = $t;',
+                'assertions' => [
+                    '$s' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

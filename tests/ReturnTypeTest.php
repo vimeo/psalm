@@ -1785,6 +1785,21 @@ final class ReturnTypeTest extends TestCase
                     '$b===' => "''",
                 ],
             ],
+            'objectShapePropertyNarrowedByIdenticalCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param object{n: string} $s
+                     * @return non-empty-string
+                     */
+                    function f(object $s): string {
+                        if ($s->n === "") {
+                            throw new RuntimeException("empty-string");
+                        }
+                        return $s->n;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingThrowsDocblock'],
+            ],
         ];
     }
 

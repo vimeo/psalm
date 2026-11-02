@@ -5071,6 +5071,49 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'staticReturnOnChildOfConstrainedTemplateParent' => [
+                'code' => '<?php
+                    /** @template T of \\DateTimeInterface */
+                    abstract class AbstractSelector
+                    {
+                        public function limit(int $limit): static { return $this; }
+                    }
+
+                    /** @extends AbstractSelector<\\DateTime> */
+                    final class Selector extends AbstractSelector {}
+
+                    $s = (new Selector)->limit(10);',
+                'assertions' => [
+                    '$s===' => 'Selector',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nativeReturnTypeOverridingInheritedTemplateReturn' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Foo
+                    {
+                        /** @return T|null */
+                        abstract public function bar();
+                    }
+
+                    /** @extends Foo<string> */
+                    class Bar extends Foo
+                    {
+                        public function bar(): string|null
+                        {
+                            return null;
+                        }
+                    }
+
+                    $v = (new Bar())->bar();',
+                'assertions' => [
+                    '$v===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

@@ -2340,6 +2340,83 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'classStringTemplateAcceptsChildOfListenerBound' => [
+                'code' => '<?php
+                    class Event {}
+                    abstract class ARemoteWipeEvent extends Event {}
+                    class RemoteWipeStarted extends ARemoteWipeEvent {}
+
+                    /**
+                     * @template T of Event
+                     */
+                    interface IEventListener {
+                        /** @param T $event */
+                        public function handle(Event $event): void;
+                    }
+
+                    /**
+                     * @implements IEventListener<ARemoteWipeEvent>
+                     */
+                    class RemoteWipeListener implements IEventListener {
+                        public function handle(Event $event): void {}
+                    }
+
+                    /**
+                     * @template T of Event
+                     * @param class-string<T> $eventName
+                     * @param class-string<IEventListener<T>> $className
+                     */
+                    function addListener(string $eventName, string $className): void {}
+
+                    addListener(RemoteWipeStarted::class, RemoteWipeListener::class);',
+            ],
+            'iterableTemplateFromSingleArgIterableSubclass' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @param iterable<TKey, TValue> $items
+                     * @return list<TValue>
+                     */
+                    function returnChunk(iterable $items): array { return []; }
+
+                    /**
+                     * @template TValue
+                     * @extends ArrayObject<int, TValue>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    class A extends ArrayObject {}
+
+                    /** @var A<string> $input */
+                    $input = new A();
+                    $a = returnChunk($input);',
+                'assertions' => [
+                    '$a' => 'list<string>',
+                ],
+            ],
+            'templateOfLiteralUnionNotNeverAfterIsArrayReturnAndUnrelatedCondition' => [
+                'code' => '<?php
+                    /**
+                     * @template T of "a"|list<"a">
+                     * @param T $var
+                     */
+                    function foo($var): void
+                    {
+                        if (is_array($var)) {
+                            foreach ($var as $v) {
+                                foo($v);
+                            }
+                            return;
+                        }
+
+                        if (!rand()) {
+                            return;
+                        }
+
+                        echo "$var";
+                    }',
+                'assertions' => [],
+            ],
         ];
     }
 

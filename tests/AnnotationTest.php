@@ -2175,6 +2175,16 @@ final class AnnotationTest extends TestCase
                     echo $a->licenseType;',
                 'error_message' => 'InvalidArgument',
             ],
+            'malformedConditionalReturnTypeDoesNotCrash' => [
+                'code' => '<?php
+                    /** @return ($n is int) ? int : float */
+                    function double(int|float $n): int|float {
+                        return $n * 2;
+                    }',
+                'error_message' => 'InvalidDocblock',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 }

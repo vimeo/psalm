@@ -15302,6 +15302,27 @@ final class TaintTest extends TestCase
                     echo html("other");',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintFlowsThroughParentPropertyToChildGetter' => [
+                'code' => '<?php // --taint-analysis
+                    class ParentResponse {
+                        public string $taint = "";
+
+                        public function setTaint(string $taint): void {
+                            $this->taint = $taint;
+                        }
+                    }
+
+                    class ChildResponse extends ParentResponse {
+                        public function getTaint(): string {
+                            return $this->taint;
+                        }
+                    }
+
+                    $response = new ChildResponse();
+                    $response->setTaint((string) $_GET["bar"]);
+                    echo $response->getTaint();',
+                'error_message' => 'TaintedHtml',
+            ],
         ];
     }
 
