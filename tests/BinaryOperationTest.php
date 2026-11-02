@@ -8,8 +8,12 @@ use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -353,6 +357,112 @@ final class BinaryOperationTest extends TestCase
         );
         $this->expectException(CodeException::class);
         $this->expectExceptionMessage('InvalidOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testConcatenationWithIgnoredNullOrFalseInStrictMode(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @return int|string|null
+                 * @psalm-ignore-nullable-return
+                 */
+                function nullableUnion() {
+                    return rand(0, 1) ? 80 : (rand(0, 1) ? "http" : null);
+                }
+
+                /**
+                 * @return int|string|false
+                 * @psalm-ignore-falsable-return
+                 */
+                function falsableUnion() {
+                    return rand(0, 1) ? 80 : (rand(0, 1) ? "http" : false);
+                }
+
+                /**
+                 * @return int|null
+                 * @psalm-ignore-nullable-return
+                 */
+                function nullableInt() {
+                    return rand(0, 1) ? 80 : null;
+                }
+
+                echo "a: " . nullableUnion();
+                echo nullableUnion() . " is a";
+                echo "b: " . falsableUnion();
+                echo falsableUnion() . " is b";
+                echo "c: " . nullableInt();',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+        $this->addToAssertionCount(1);
+    }
+
+    public function testConcatenationWithNullOrFalseOnlyReportsNullAndFalseOperand(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->testConfig->strict_binary_operands = true;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @param int|string|null $b
+                 * @param int|false $c
+                 * @param int|string|false $d
+                 */
+                function test(?int $a, $b, $c, $d): void {
+                    echo "a: " . $a;
+                    echo "b: " . $b;
+                    echo "c: " . $c;
+                    echo "d: " . $d;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                [8, 'PossiblyNullOperand'],
+                [9, 'PossiblyNullOperand'],
+                [10, 'PossiblyFalseOperand'],
+                [11, 'PossiblyFalseOperand'],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->type],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    public function testConcatenationWithIgnoredNullableFloatInStrictMode(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @return float|null
+                 * @psalm-ignore-nullable-return
+                 */
+                function ratio() {
+                    return rand(0, 1) ? 0.5 : null;
+                }
+
+                echo "ratio: " . ratio();',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage(
+            'InvalidOperand - somefile.php:10:34 - Cannot concatenate with a float|null',
+        );
 
         $this->analyzeFile('somefile.php', new Context());
     }
