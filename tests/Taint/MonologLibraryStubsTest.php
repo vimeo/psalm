@@ -20,7 +20,17 @@ final class MonologLibraryStubsTest extends LibraryStubsTestCase
     {
         return '<?php
             namespace Psr\Log {
-                interface LoggerInterface {}
+                interface LoggerInterface {
+                    public function emergency(string|\Stringable $message, array $context = []): void;
+                    public function alert(string|\Stringable $message, array $context = []): void;
+                    public function critical(string|\Stringable $message, array $context = []): void;
+                    public function error(string|\Stringable $message, array $context = []): void;
+                    public function warning(string|\Stringable $message, array $context = []): void;
+                    public function notice(string|\Stringable $message, array $context = []): void;
+                    public function info(string|\Stringable $message, array $context = []): void;
+                    public function debug(string|\Stringable $message, array $context = []): void;
+                    public function log($level, string|\Stringable $message, array $context = []): void;
+                }
                 class LogLevel {}
                 trait LoggerTrait {
                     public function emergency(string|\Stringable $message, array $context = []): void {
@@ -85,7 +95,10 @@ final class MonologLibraryStubsTest extends LibraryStubsTestCase
                 interface HandlerInterface {}
                 interface ProcessableHandlerInterface {}
                 trait ProcessableHandlerTrait {}
-                interface FormattableHandlerInterface {}
+                interface FormattableHandlerInterface {
+                    public function setFormatter(\Monolog\Formatter\FormatterInterface $formatter): HandlerInterface;
+                    public function getFormatter(): \Monolog\Formatter\FormatterInterface;
+                }
                 trait FormattableHandlerTrait {}
                 abstract class Handler implements HandlerInterface {}
                 abstract class AbstractHandler extends Handler implements \Monolog\ResettableInterface {}
@@ -106,6 +119,14 @@ final class MonologLibraryStubsTest extends LibraryStubsTestCase
                     \Monolog\ResettableInterface
                 {
                     use ProcessableHandlerTrait;
+                }
+                class BufferHandler extends Handler implements FormattableHandlerInterface {
+                    public function setFormatter(\Monolog\Formatter\FormatterInterface $formatter): HandlerInterface {
+                        return $this;
+                    }
+                    public function getFormatter(): \Monolog\Formatter\FormatterInterface {
+                        return new \Monolog\Formatter\LineFormatter();
+                    }
                 }
             }';
     }
@@ -150,11 +171,6 @@ final class MonologLibraryStubsTest extends LibraryStubsTestCase
                         $logger->info("message");
                     }
 
-                    /** @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time */
-                    function logWithoutWritingReferences(Monolog\Logger $logger): void {
-                        $logger->info("message");
-                    }
-
                     /** @psalm-pure */
                     function getLevel(): Monolog\Level {
                         return Monolog\Logger::toMonologLevel("debug");
@@ -167,11 +183,6 @@ final class MonologLibraryStubsTest extends LibraryStubsTestCase
                 '<?php
                     /** @psalm-capabilities read-props */
                     function logInfo(Psr\Log\LoggerInterface $logger): void {
-                        $logger->info("message");
-                    }
-
-                    /** @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time */
-                    function logWithoutWritingReferences(Psr\Log\LoggerInterface $logger): void {
                         $logger->info("message");
                     }',
                 [
@@ -217,12 +228,37 @@ final class MonologLibraryStubsTest extends LibraryStubsTestCase
                         $null_logger->log("info", "message");
                     }',
                 [
-                    'ImmutableDependency on line 24',
-                    'ImmutableDependency on line 25',
                     'ImpureMethodCall on line 34',
                     'ImpureMethodCall on line 35',
                     'ImpureMethodCall on line 36',
                 ],
+            ],
+            'psrLoggerDecoratorCapabilities' => [
+                '<?php
+                    final class DecoratingLogger implements Psr\Log\LoggerInterface {
+                        use Psr\Log\LoggerTrait;
+
+                        public function __construct(private Psr\Log\LoggerInterface $inner) {}
+
+                        public function log($level, string|\Stringable $message, array $context = []): void {
+                            $this->inner->log($level, $message, $context);
+                        }
+                    }',
+                [],
+            ],
+            'monologLoggerSubclassCapabilities' => [
+                '<?php
+                    final class QuietLogger extends Monolog\Logger {
+                        public function info(string|\Stringable $message, array $context = []): void {}
+
+                        public function close(): void {}
+                    }',
+                [],
+            ],
+            'formattableHandlerSubclassCapabilities' => [
+                '<?php
+                    final class MyHandler extends Monolog\Handler\BufferHandler {}',
+                [],
             ],
             'handlerSetupCapabilities' => [
                 '<?php
