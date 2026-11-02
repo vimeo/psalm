@@ -358,6 +358,8 @@ final class Config
 
     public bool $allow_bool_to_literal_bool_comparison = true;
 
+    public bool $strict_nullable_comparison = false;
+
     public bool $remember_property_assignments_after_call = true;
 
     public bool $use_igbinary = false;
@@ -437,6 +439,8 @@ final class Config
     public bool $ensure_array_int_offsets_exist = false;
 
     public bool $ensure_override_attribute = true;
+
+    public bool $suggest_purity_annotations = false;
 
     /**
      * @var array<lowercase-string, bool>
@@ -1058,6 +1062,7 @@ final class Config
             'respectIncludeOnce' => 'respect_include_once',
             'strictBinaryOperands' => 'strict_binary_operands',
             'allowBoolToLiteralBoolComparison' => 'allow_bool_to_literal_bool_comparison',
+            'strictNullableComparison' => 'strict_nullable_comparison',
             'rememberPropertyAssignmentsAfterCall' => 'remember_property_assignments_after_call',
             'disableVarParsing' => 'disable_var_parsing',
             'allowStringToStandInForClass' => 'allow_string_standin_for_class',
@@ -1075,6 +1080,7 @@ final class Config
             'ensureArrayStringOffsetsExist' => 'ensure_array_string_offsets_exist',
             'ensureArrayIntOffsetsExist' => 'ensure_array_int_offsets_exist',
             'ensureOverrideAttribute' => 'ensure_override_attribute',
+            'suggestPurityAnnotations' => 'suggest_purity_annotations',
             'reportMixedIssues' => 'show_mixed_issues',
             'skipChecksOnUnresolvableIncludes' => 'skip_checks_on_unresolvable_includes',
             'sealAllMethods' => 'seal_all_methods',

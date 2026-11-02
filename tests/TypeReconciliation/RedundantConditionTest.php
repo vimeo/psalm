@@ -1055,6 +1055,16 @@ final class RedundantConditionTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:26 - '
                     . 'Type \'some\' for $a is always string, so its negation can never be true',
             ],
+            'isCallableOnDeclaredCallableArray' => [
+                'code' => '<?php
+                    /** @param callable-array{0: string, 1: non-empty-string} $c */
+                    function f(array $c): void {
+                        if (is_callable($c)) {
+                            echo "always";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
             'instanceofOfATemplateParamAlreadyNarrowedToTheClass' => [
                 'code' => '<?php
                     interface Node {}
