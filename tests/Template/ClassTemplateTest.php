@@ -5690,6 +5690,88 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'templateInVarDocblockOfPromotedProperty' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Foo {
+                        public function __construct(
+                            /** @var T */
+                            public mixed $withVar,
+                        ) {}
+                    }
+
+                    /** @var Foo<int> $foo */
+                    $foo = new Foo(1);
+                    $x = $foo->withVar;',
+                'assertions' => [
+                    '$x===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'staticReturnFromInterfaceOnGenericClassKeepsTemplateParams' => [
+                'code' => '<?php
+                    interface CopyInterface {
+                        public function copy(): static;
+                    }
+
+                    /**
+                     * @template T
+                     */
+                    class Collection implements CopyInterface {
+                        /** @var T[] */
+                        private $x;
+
+                        /** @param T[] $x */
+                        public function __construct($x) {
+                            $this->x = $x;
+                        }
+
+                        public function copy(): static {
+                            return $this;
+                        }
+                    }
+
+                    /** @param Collection<int> $x */
+                    function checkCollection($x): string {
+                        return get_class($x);
+                    }
+
+                    /** @var Collection<int> $intCollection */
+                    $intCollection = new Collection([1]);
+
+                    checkCollection($intCollection->copy());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateBoundReferencesEarlierTemplateInPropertyAndParamDocblock' => [
+                'code' => '<?php
+                    interface Entity {}
+                    final class Customer implements Entity {}
+
+                    /** @template T */
+                    interface Dao {}
+
+                    /** @implements Dao<Customer> */
+                    final class CustomerDao implements Dao {}
+
+                    /**
+                     * @template TModel of Entity
+                     * @template TDao of Dao<TModel>
+                     */
+                    class Cache {}
+
+                    class Test {
+                        /** @var Cache<Customer, CustomerDao> */
+                        public $c;
+
+                        /** @param Cache<Customer, CustomerDao> $c */
+                        public function __construct($c) {
+                            $this->c = $c;
+                        }
+                    }',
+            ],
         ];
     }
 

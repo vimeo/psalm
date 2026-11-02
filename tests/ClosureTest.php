@@ -1692,6 +1692,21 @@ final class ClosureTest extends TestCase
 
                     $arr[0](["last_access" => 0]);',
             ],
+            'FirstClassCallable:StaticReturnTypeResolved' => [
+                'code' => '<?php
+                    class P {
+                        /** @return static */
+                        public static function make() { return new static(); }
+                    }
+                    final class S extends P {}
+                    $f = S::make(...);
+                    $c = $f();',
+                'assertions' => [
+                    '$c===' => 'S',
+                ],
+                'ignored_issues' => ['UnsafeInstantiation'],
+                'php_version' => '8.1',
+            ],
         ];
     }
 

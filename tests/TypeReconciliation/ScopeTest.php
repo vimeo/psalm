@@ -387,6 +387,21 @@ final class ScopeTest extends TestCase
                     }
                     PHP,
             ],
+            'globalStatementInOtherFunctionKeepsLocalType' => [
+                'code' => '<?php
+                    function function1(): void {
+                        global $a;
+                    }
+
+                    /** @param "a" $s */
+                    function takesA(string $s): void {}
+
+                    function method1(): void {
+                        $a = "a";
+                        function1();
+                        takesA($a);
+                    }',
+            ],
         ];
     }
 
