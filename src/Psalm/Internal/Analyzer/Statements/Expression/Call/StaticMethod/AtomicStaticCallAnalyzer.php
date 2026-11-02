@@ -27,6 +27,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnaly
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedClass;
@@ -245,7 +246,7 @@ final class AtomicStaticCallAnalyzer
                             strtolower($method_name_type->getSingleStringLiteral()->value),
                         );
                         //the call to methodExists will register that the method was called from somewhere
-                        if ($codebase->methodExists(
+                        $method_exists = $codebase->methodExists(
                             $method_identifier,
                             $context->calling_method_id,
                             null,
@@ -253,7 +254,16 @@ final class AtomicStaticCallAnalyzer
                             $statements_analyzer->getFilePath(),
                             true,
                             $context->insideUse(),
-                        )) {
+                        );
+                        self::recordCallStaticReference(
+                            $statements_analyzer,
+                            $stmt,
+                            $context,
+                            $method_identifier,
+                            $method_exists,
+                        );
+
+                        if ($method_exists) {
                             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_identifier)
                                 ?? $method_identifier;
                             $method_storage = $codebase->methods->getStorage($declaring_method_id);
@@ -512,6 +522,7 @@ final class AtomicStaticCallAnalyzer
             $method_name_lc,
         );
 
+        self::recordCallStaticReference($statements_analyzer, $stmt, $context, $method_id, $naive_method_exists);
 
         if ($stmt->isFirstClassCallable()) {
             $self_fq_class_name = $stmt->class instanceof PhpParser\Node\Name && $stmt->class->getParts() === ['parent']
@@ -573,8 +584,6 @@ final class AtomicStaticCallAnalyzer
                     $method_template_types = $pseudo_method_storage->template_types ?? [];
                 } elseif ($codebase->methodExists(
                     $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
-                    null,
-                    new CodeLocation($statements_analyzer, $stmt),
                     is_used: false,
                 )) {
                     $call_static_storage = $codebase->methods->getStorage(
@@ -938,6 +947,55 @@ final class AtomicStaticCallAnalyzer
         );
 
         return true;
+    }
+
+    /**
+     * PHP calls `__callStatic` for `X::m()` and `X::m(...)` when `m` is missing or not visible from the call
+     * site, except when there is a `$this` that is an instance of X, where `__call` takes over. A `$this` that only
+     * might be an instance of X (e.g. a parent class, or a closure without `$this`) records the reference, since
+     * PHP might call `__callStatic`.
+     */
+    private static function recordCallStaticReference(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\StaticCall $stmt,
+        Context $context,
+        MethodIdentifier $method_id,
+        bool $method_exists,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        $fq_class_name = $method_id->fq_class_name;
+
+        if ($method_exists
+            && MethodAnalyzer::isMethodVisible($method_id, $context, $statements_analyzer->getSource())
+        ) {
+            return;
+        }
+
+        $this_type = $context->vars_in_scope['$this'] ?? null;
+        $class_type = new Union([new TNamedObject($fq_class_name)]);
+
+        if ($this_type !== null
+            && !$statements_analyzer->isStatic()
+            && UnionTypeComparator::isContainedBy($codebase, $this_type, $class_type)
+            && $codebase->methodExists(new MethodIdentifier($fq_class_name, '__call'))
+        ) {
+            return;
+        }
+
+        $codebase->methodExists(
+            new MethodIdentifier($fq_class_name, '__callstatic'),
+            $context->calling_method_id,
+            $codebase->collect_locations
+                ? new CodeLocation($statements_analyzer, $stmt->name)
+                : null,
+            !$context->collect_initializations
+            && !$context->collect_mutations
+                ? $statements_analyzer
+                : null,
+            $statements_analyzer->getFilePath(),
+            true,
+            $context->insideUse(),
+        );
     }
 
     /**

@@ -1917,6 +1917,259 @@ final class UnusedCodeTest extends TestCase
                     echo get_class(Single::get());
                     new AllMagic();',
             ],
+            'callStaticReachedByPseudoStaticCallIsUsed' => [
+                'code' => '<?php
+                    /**
+                     * @method static string make(string $name)
+                     */
+                    final class Factory {
+                        private static string $prefix = "made: ";
+
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return self::$prefix . $name;
+                        }
+                    }
+
+                    echo Factory::make("x");',
+            ],
+            'callStaticReachedByUndeclaredStaticCallIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Factory {
+                        private static string $prefix = "made: ";
+
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo self::$prefix . $name;
+                        }
+                    }
+
+                    Factory::make("x");',
+            ],
+            'callStaticReachedByFirstClassCallableIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Factory {
+                        private static string $prefix = "made: ";
+
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return self::$prefix . $name;
+                        }
+                    }
+
+                    $make = Factory::make(...);
+                    echo $make("x");',
+            ],
+            'callStaticReachedByPseudoStaticFirstClassCallableIsUsed' => [
+                'code' => '<?php
+                    /**
+                     * @method static string make(string $name)
+                     */
+                    final class Factory {
+                        private static string $prefix = "made: ";
+
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return self::$prefix . $name;
+                        }
+                    }
+
+                    $make = Factory::make(...);
+                    echo $make("x");',
+            ],
+            'callStaticReachedByLiteralNameFirstClassCallableIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Factory {
+                        private static string $prefix = "made: ";
+
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return self::$prefix . $name;
+                        }
+                    }
+
+                    $name = "make";
+                    $make = Factory::$name(...);
+                    $make("x");',
+            ],
+            'callStaticReachedByPrivateMethodCallFromOutsideIsUsed' => [
+                'code' => '<?php
+                    final class Factory {
+                        private static string $prefix = "made: ";
+
+                        private static function make(): string {
+                            return "private";
+                        }
+
+                        public static function hidden(): string {
+                            return self::make();
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return self::$prefix . $name;
+                        }
+                    }
+
+                    echo Factory::hidden();
+                    echo Factory::make();',
+                'ignored_issues' => ['InaccessibleMethod'],
+            ],
+            'callStaticReachedByProtectedMethodCallFromOutsideIsUsed' => [
+                'code' => '<?php
+                    final class Factory {
+                        private static string $prefix = "made: ";
+
+                        protected static function make(): string {
+                            return "protected";
+                        }
+
+                        public static function hidden(): string {
+                            return self::make();
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return self::$prefix . $name;
+                        }
+                    }
+
+                    echo Factory::hidden();
+                    echo Factory::make();',
+                'ignored_issues' => ['InaccessibleMethod'],
+            ],
+            'callStaticInheritedFromParentIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    abstract class Base {
+                        private static string $prefix = "made: ";
+
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo self::$prefix . $name;
+                        }
+                    }
+
+                    final class Child extends Base {}
+
+                    Child::make("x");',
+            ],
+            'callStaticReachedFromWithinClassIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Factory {
+                        private static string $prefix = "made: ";
+
+                        public static function run(): void {
+                            self::make();
+                            static::other();
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo self::$prefix . $name;
+                        }
+                    }
+
+                    Factory::run();',
+            ],
+            'callStaticReachedByParentCallWithoutCallIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    abstract class Base {
+                        private static string $prefix = "made: ";
+
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo self::$prefix . $name;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function run(): void {
+                            parent::make();
+                        }
+                    }
+
+                    (new Child())->run();',
+            ],
+            'callStaticReachedFromStaticMethodOfClassWithCallIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Factory {
+                        private static string $prefix = "made: ";
+
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo self::$prefix . $name;
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        public static function run(): void {
+                            self::make();
+                        }
+                    }
+
+                    Factory::run();
+                    (new Factory())->other();',
+            ],
+            'callStaticReachedFromClosureWithoutThisInStaticMethodIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        public static function run(): void {
+                            $create = function (): Closure {
+                                return self::make(...);
+                            };
+                            $create()();
+                        }
+                    }
+
+                    Factory::run();
+                    (new Factory())->other();',
+            ],
+            'callStaticReachedFromParentInstanceMethodWherePossiblyNotInstanceIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    class Base {
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        public function run(): void {
+                            Child::make();
+                        }
+                    }
+
+                    /** @psalm-no-seal-methods */
+                    final class Child extends Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+                    }
+
+                    (new Base())->run();
+                    (new Child())->other();',
+            ],
         ];
     }
 
@@ -2750,6 +3003,185 @@ final class UnusedCodeTest extends TestCase
                         }
                     }',
                 'error_message' => 'Class Helper is never used',
+            ],
+            'callStaticNotReachedByCallToVisibleMethodWithPseudoTag' => [
+                'code' => '<?php
+                    /**
+                     * @method static string make(string $name)
+                     */
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return $name;
+                        }
+
+                        public static function make(string $name): string {
+                            return $name;
+                        }
+                    }
+
+                    echo Factory::make("x");',
+                'error_message' => 'Cannot find any calls to method Factory::__callStatic',
+            ],
+            'callStaticNotReachedByFirstClassCallableOfVisibleMethodWithPseudoTag' => [
+                'code' => '<?php
+                    /**
+                     * @method static string make(string $name)
+                     */
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return $name;
+                        }
+
+                        public static function make(string $name): string {
+                            return $name;
+                        }
+                    }
+
+                    $make = Factory::make(...);
+                    echo $make("x");',
+                'error_message' => 'Cannot find any calls to method Factory::__callStatic',
+            ],
+            'callStaticNotReachedByCallToVisibleMethod' => [
+                'code' => '<?php
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return $name;
+                        }
+
+                        public static function make(string $name): string {
+                            return $name;
+                        }
+                    }
+
+                    echo Factory::make("x");',
+                'error_message' => 'Cannot find any calls to method Factory::__callStatic',
+            ],
+            'callStaticNotReachedByParentCallInInstanceMethodWithCall' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    abstract class Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function run(): void {
+                            parent::make();
+                        }
+                    }
+
+                    (new Child())->run();',
+                'error_message' => 'Cannot find any calls to method Base::__callStatic',
+            ],
+            'callStaticNotReachedByParentFirstClassCallableInInstanceMethodWithCall' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    abstract class Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function run(): Closure {
+                            return parent::make(...);
+                        }
+                    }
+
+                    $make = (new Child())->run();
+                    $make("x");',
+                'error_message' => 'Cannot find any calls to method Base::__callStatic',
+            ],
+            'callStaticNotReachedBySelfCallInInstanceMethodWithCall' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        public function run(): void {
+                            self::make();
+                        }
+                    }
+
+                    (new Factory())->run();',
+                'error_message' => 'Cannot find any calls to method Factory::__callStatic',
+            ],
+            'callStaticNotReachedByNarrowedThisInParentInstanceMethodWithCall' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    class Base {
+                        public function run(): void {
+                            if ($this instanceof Child) {
+                                Child::make();
+                            }
+                        }
+                    }
+
+                    /** @psalm-no-seal-methods */
+                    final class Child extends Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+                    }
+
+                    (new Base())->run();
+                    (new Child())->run();',
+                'error_message' => 'Cannot find any calls to method Child::__callStatic',
+            ],
+            'callStaticNotReachedByClosureWithThisInInstanceMethodWithCall' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        public function run(): void {
+                            $create = function (): Closure {
+                                return self::make(...);
+                            };
+                            $create()();
+                        }
+                    }
+
+                    (new Factory())->run();',
+                'error_message' => 'Cannot find any calls to method Factory::__callStatic',
             ],
         ];
     }
