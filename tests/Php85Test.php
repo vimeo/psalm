@@ -310,6 +310,13 @@ final class Php85Test extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.6',
             ],
+            'pipeIntoPartialApplicationOfABackslashedAssertStringIsADirectCall' => [
+                'code' => '<?php
+                    true |> "\\\\assert"(..., "explanation");',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
             'pipeIntoAnInvalidDirectPartialApplicationHasTheReturnTypeOfTheCallee' => [
                 'code' => '<?php
                     function two(int $a, int $b = 0): int { return $a + $b; }
@@ -455,6 +462,13 @@ final class Php85Test extends TestCase
                     namespace N;
                     $r = true |> \ASSERT(?, ...[1]);',
                 'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34 - Cannot combine partial application and unpacking on line 3',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'pipeIntoPartialApplicationOfAnAssertString' => [
+                'code' => '<?php
+                    $r = true |> "ASSERT"(..., "explanation");',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:34 - Variadic placeholder must be last on line 2',
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],

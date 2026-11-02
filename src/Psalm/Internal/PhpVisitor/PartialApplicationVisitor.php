@@ -23,6 +23,7 @@ use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\StaticPropertyFetch;
 use PhpParser\Node\Name;
+use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\VariadicPlaceholder;
 use PhpParser\NodeVisitorAbstract;
 use Psalm\Node\Expr\PartialApplication;
@@ -135,10 +136,14 @@ final class PartialApplicationVisitor extends NodeVisitorAbstract
             return false;
         }
 
-        // never assert(), by the name as written whatever it resolves to (zend_is_pipe_optimizable_callable_name())
+        // never assert(), by the name or string as written (zend_is_pipe_optimizable_callable_name()): `'\assert'` is
+        // called directly
         if ($callee instanceof FuncCall
-            && $callee->name instanceof Name
-            && strtolower($callee->name->name) === 'assert'
+            && strtolower(match (true) {
+                $callee->name instanceof Name => $callee->name->name,
+                $callee->name instanceof String_ => $callee->name->value,
+                default => '',
+            }) === 'assert'
         ) {
             return false;
         }
