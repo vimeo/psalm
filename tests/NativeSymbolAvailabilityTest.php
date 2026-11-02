@@ -6,13 +6,17 @@ namespace Psalm\Tests;
 
 use Override;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
+use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_filter;
 use function array_map;
 use function explode;
+use function getcwd;
 use function implode;
 
 use const DIRECTORY_SEPARATOR;
@@ -55,6 +59,89 @@ final class NativeSymbolAvailabilityTest extends TestCase
         );
 
         $this->assertCount(2, $unused_calls);
+    }
+
+    /**
+     * Project files are scanned before the stubs, so the stub must not hide a polyfill registered by then.
+     */
+    public function testConstantPolyfilledInAnotherFileOfTheProject(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.5', 'tests');
+        $this->project_analyzer->getCodebase()->all_constants_global = true;
+
+        $file1 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file1.php';
+        $file2 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file2.php';
+
+        $this->addFile($file1, '<?php define("ARRAY_FILTER_USE_VALUE", 7);');
+        $this->addFile(
+            $file2,
+            '<?php
+                /** @psalm-check-type-exact $x = 7 */
+                $x = ARRAY_FILTER_USE_VALUE;
+            ',
+        );
+
+        $this->analyzeFile($file2, new Context());
+    }
+
+    /**
+     * A wildcard reads the polyfill that won, not the superseded declaration of the stub.
+     */
+    public function testConstantWildcardUsesTheProjectPolyfill(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.5', 'tests');
+        $this->project_analyzer->getCodebase()->all_constants_global = true;
+
+        $file1 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file1.php';
+        $file2 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file2.php';
+
+        $this->addFile($file1, '<?php define("ARRAY_FILTER_USE_VALUE", 7);');
+        $this->addFile(
+            $file2,
+            '<?php
+                /** @param ARRAY_FILTER_USE_* $mode */
+                function accept(int $mode): void {
+                    /** @psalm-check-type-exact $mode = 1|2|7 */
+                    $mode;
+                }
+            ',
+        );
+
+        $this->analyzeFile($file2, new Context());
+    }
+
+    /**
+     * The stubs are reflected again when their storage is reused (as a cached run does), and must keep their
+     * availability, also with all constants registered globally.
+     */
+    public function testConstantBelowItsVersionIsReportedWhenStubStorageIsReused(): void
+    {
+        foreach ([1, 2] as $run) {
+            if ($run === 2) {
+                $this->project_analyzer = new ProjectAnalyzer(
+                    $this->makeConfig(),
+                    new Providers($this->file_provider, new FakeParserCacheProvider()),
+                );
+            }
+
+            $this->project_analyzer->setPhpVersion('8.5', 'tests');
+            $codebase = $this->project_analyzer->getCodebase();
+            $codebase->all_constants_global = true;
+            $codebase->config->throw_exception = false;
+
+            IssueBuffer::clear();
+            $this->addFile('somefile.php', '<?php echo ARRAY_FILTER_USE_VALUE;');
+            $this->analyzeFile('somefile.php', new Context());
+
+            $this->assertSame(
+                ['UndefinedConstant'],
+                array_map(
+                    static fn($issue): string => $issue->type,
+                    IssueBuffer::getIssuesData()['somefile.php'] ?? [],
+                ),
+                'run ' . $run,
+            );
+        }
     }
 
     /**
@@ -585,6 +672,191 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'ignored_issues' => [],
             'php_version' => '8.6',
         ];
+
+        yield 'php86ConstantAvailableFromItsVersion' => [
+            'code' => '<?php
+                $x = ARRAY_FILTER_USE_VALUE;
+            ',
+            'assertions' => [
+                '$x===' => '0',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.6',
+        ];
+
+        yield 'php86PlatformConstantIsInt' => [
+            'code' => '<?php
+                $x = EAI_NONAME;
+
+                if ($x === -2) {
+                    echo "no such name";
+                }
+            ',
+            'assertions' => [
+                '$x===' => 'int',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.6',
+        ];
+
+        yield 'php86ExtensionConstantWithoutItsExtensionStub' => [
+            'code' => '<?php
+                $x = MYSQLI_OPT_COMPRESS;
+            ',
+            'assertions' => [
+                '$x===' => '1',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.6',
+        ];
+
+        yield 'php86NegativeConstantValues' => [
+            'code' => '<?php
+                $a = OPENSSL_RSA_PSS_SALTLEN_AUTO;
+                $b = STREAM_CRYPTO_STATUS_WANT_WRITE;
+            ',
+            'assertions' => [
+                '$a===' => '-2',
+                '$b===' => '2',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.6',
+        ];
+
+        yield 'php85ConstantAvailableFromItsVersion' => [
+            'code' => '<?php
+                $x = CURLOPT_INFILESIZE_LARGE;
+                $y = PHP_BUILD_DATE;
+            ',
+            'assertions' => [
+                '$x===' => '30115',
+                '$y===' => 'string',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.5',
+        ];
+
+        yield 'constantGuardedByPhpVersionId' => [
+            'code' => '<?php
+                function a(): int {
+                    if (PHP_VERSION_ID >= 80600) {
+                        return ARRAY_FILTER_USE_VALUE;
+                    }
+
+                    return 0;
+                }
+
+                function b(): int {
+                    return \\PHP_VERSION_ID >= 80600 ? \\ARRAY_FILTER_USE_VALUE : 0;
+                }
+
+                function c(): int {
+                    if (PHP_VERSION_ID < 80600) {
+                        return 0;
+                    }
+
+                    return ARRAY_FILTER_USE_VALUE;
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.5',
+        ];
+
+        yield 'constantGuardedByDefined' => [
+            'code' => '<?php
+                function a(): int {
+                    if (defined("ARRAY_FILTER_USE_VALUE")) {
+                        return ARRAY_FILTER_USE_VALUE;
+                    }
+
+                    return 0;
+                }
+
+                function b(): int {
+                    return \\defined("\\\\ARRAY_FILTER_USE_VALUE") ? ARRAY_FILTER_USE_VALUE : 0;
+                }
+
+                function c(): int {
+                    if (!defined("ARRAY_FILTER_USE_VALUE")) {
+                        return 0;
+                    }
+
+                    return ARRAY_FILTER_USE_VALUE;
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.5',
+        ];
+
+        yield 'constantPolyfilledByDefine' => [
+            'code' => '<?php
+                define("ARRAY_FILTER_USE_VALUE", 0);
+
+                $x = ARRAY_FILTER_USE_VALUE;
+            ',
+            'assertions' => [
+                '$x===' => '0',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.5',
+        ];
+
+        yield 'constantPolyfilledByConst' => [
+            'code' => '<?php
+                const ARRAY_FILTER_USE_VALUE = 0;
+
+                $x = ARRAY_FILTER_USE_VALUE;
+            ',
+            'assertions' => [
+                '$x===' => '0',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.5',
+        ];
+
+        yield 'constantPolyfilledIfNotDefined' => [
+            'code' => '<?php
+                if (!defined("CURLOPT_INFILESIZE_LARGE")) {
+                    define("CURLOPT_INFILESIZE_LARGE", 30115);
+                }
+
+                function f(): int {
+                    return CURLOPT_INFILESIZE_LARGE;
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.4',
+        ];
+
+        yield 'constantShadowedByNamespaceConstant' => [
+            'code' => '<?php
+                namespace Foo;
+
+                const ARRAY_FILTER_USE_VALUE = 5;
+
+                $x = ARRAY_FILTER_USE_VALUE;
+            ',
+            'assertions' => [
+                '$x===' => '5',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.5',
+        ];
+
+        yield 'constantWildcardKeepsMembersFromItsVersion' => [
+            'code' => '<?php
+                /** @param PKCS7_* $flags */
+                function f(int $flags): void {}
+
+                f(512);
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.5',
+        ];
     }
 
     /**
@@ -792,6 +1064,96 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'error_message' => 'InaccessibleMethod',
             'error_levels' => [],
             'php_version' => '8.6',
+        ];
+
+        yield 'constantBelowItsVersion' => [
+            'code' => '<?php
+                $x = ARRAY_FILTER_USE_VALUE;
+            ',
+            'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:22 - Const'
+                . ' ARRAY_FILTER_USE_VALUE is not defined for the analysed PHP version 8.5'
+                . ' (it was introduced in PHP 8.6); install symfony/polyfill-php86',
+            'error_levels' => [],
+            'php_version' => '8.5',
+        ];
+
+        // Defined by the PHP 8.5 runtime running the tests: the report comes from the stub, not the runtime.
+        yield 'php85ConstantBelowItsVersion' => [
+            'code' => '<?php
+                $x = CURLOPT_INFILESIZE_LARGE;
+            ',
+            'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:22 - Const'
+                . ' CURLOPT_INFILESIZE_LARGE is not defined for the analysed PHP version 8.4'
+                . ' (it was introduced in PHP 8.5',
+            'error_levels' => [],
+            'php_version' => '8.4',
+        ];
+
+        yield 'namespacedConstantBelowItsVersion' => [
+            'code' => '<?php
+                namespace Foo;
+
+                $x = ARRAY_FILTER_USE_VALUE;
+            ',
+            'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:22 - Const'
+                . ' ARRAY_FILTER_USE_VALUE is not defined for the analysed PHP version 8.5'
+                . ' (it was introduced in PHP 8.6',
+            'error_levels' => [],
+            'php_version' => '8.5',
+        ];
+
+        yield 'fullyQualifiedConstantBelowItsVersion' => [
+            'code' => '<?php
+                namespace Foo;
+
+                $x = \\ARRAY_FILTER_USE_VALUE;
+            ',
+            'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:22 - Const'
+                . ' ARRAY_FILTER_USE_VALUE is not defined for the analysed PHP version 8.5'
+                . ' (it was introduced in PHP 8.6',
+            'error_levels' => [],
+            'php_version' => '8.5',
+        ];
+
+        yield 'constantAsParameterDefaultBelowItsVersion' => [
+            'code' => '<?php
+                function f(int $mode = ARRAY_FILTER_USE_VALUE): int {
+                    return $mode;
+                }
+            ',
+            'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:40 - Const'
+                . ' ARRAY_FILTER_USE_VALUE is not defined for the analysed PHP version 8.5'
+                . ' (it was introduced in PHP 8.6',
+            'error_levels' => [],
+            'php_version' => '8.5',
+        ];
+
+        yield 'constantGuardedForAnOlderVersion' => [
+            'code' => '<?php
+                function a(): int {
+                    if (PHP_VERSION_ID < 80600) {
+                        return ARRAY_FILTER_USE_VALUE;
+                    }
+
+                    return 0;
+                }
+            ',
+            'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - Const'
+                . ' ARRAY_FILTER_USE_VALUE is not defined for the analysed PHP version 8.5',
+            'error_levels' => [],
+            'php_version' => '8.5',
+        ];
+
+        yield 'constantWildcardDropsMembersBelowTheirVersion' => [
+            'code' => '<?php
+                /** @param PKCS7_* $flags */
+                function f(int $flags): void {}
+
+                f(512);
+            ',
+            'error_message' => 'InvalidArgument',
+            'error_levels' => [],
+            'php_version' => '8.4',
         ];
     }
 }

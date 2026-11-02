@@ -2746,13 +2746,14 @@ final class Config
             $stubsDir . 'Reflection.phpstub',
             $stubsDir . 'SPL.phpstub',
             $stubsDir . 'CoreGenericAttributes.phpstub',
-            // Genuinely-new classes introduced by a specific PHP version. Loaded on every analysis
-            // version so they are known to analysis; each carries an `@since` tag, so a use is
+            // Genuinely-new classes and constants introduced by a specific PHP version. Loaded on every
+            // analysis version so they are known to analysis; each carries an `@since` tag, so a use is
             // reported as undefined (via the since_php_version_id check at each reference site) when
             // analysing an older PHP version without a polyfill. Version-specific *refinements* of
             // pre-existing symbols (the Php8X.phpstub files below) stay version gated so they are
             // not applied early.
             $stubsDir . 'PhpVersionedClasses.phpstub',
+            $stubsDir . 'PhpVersionedConstants.phpstub',
         ];
 
         if ($codebase->analysis_php_version_id >= 7_04_00) {
