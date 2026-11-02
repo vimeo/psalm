@@ -5999,6 +5999,33 @@ final class CapabilitiesTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testPureMagicStaticCallKeepsPropertyRefinements(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class A { public ?int $x = null; }
+
+                /** @psalm-no-seal-methods */
+                final class Magic {
+                    /** @psalm-pure */
+                    public static function __callStatic(string $name, array $args): int { return 1; }
+                }
+
+                function keep(A $a): int {
+                    if ($a->x === null) {
+                        return 0;
+                    }
+                    Magic::noop();
+                    return $a->x;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testWriteGlobalsCallForgetsStaticPropertyRefinements(): void
     {
         $this->expectException(CodeException::class);
