@@ -522,7 +522,9 @@ final class ArgumentAnalyzer
                 $arg_key_allowed = true;
 
                 foreach ($arg_value_type->getAtomicTypes() as $unpacked_atomic_type) {
-                    if (!$unpacked_atomic_type->isIterable($codebase)) {
+                    if (!$unpacked_atomic_type instanceof TClassStringMap
+                        && !$unpacked_atomic_type->isIterable($codebase)
+                    ) {
                         IssueBuffer::maybeAdd(
                             new PossiblyInvalidArgument(
                                 'Tried to unpack non-iterable ' . $arg_value_type->getId(),

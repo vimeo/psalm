@@ -394,6 +394,15 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'unpackClassStringMapOrInt' => [
+                'code' => '<?php
+                    class A {}
+
+                    /** @var class-string-map<A, A>|int $arr */
+                    $arr = [];
+                    var_dump(...$arr);',
+                'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33 - Tried to unpack non-iterable',
+            ],
             'unpackArrayOrObject' => [
                 'code' => '<?php
                     /** @psalm-suppress UnusedParam */
