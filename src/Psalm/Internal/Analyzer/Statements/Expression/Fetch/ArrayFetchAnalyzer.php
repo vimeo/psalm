@@ -2557,21 +2557,21 @@ final class ArrayFetchAnalyzer
     }
 
     /**
-     * An offset type with what PHP can't use as an array key replaced by what it casts to (or array-key)
+     * An offset type with what can't be an array key, and PHP doesn't cast to one, replaced by array-key
      *
      * @psalm-capabilities read-props|write-this-props
      */
     public static function castInvalidOffsetTypes(Union $offset_type): Union
     {
-        [$bad_types, $good_types] = self::splitInvalidOffsetTypes($offset_type);
+        $uncastable = self::getUncastableOffsetTypes($offset_type);
 
-        if (!$bad_types || !$good_types) {
+        if (!$uncastable) {
             return $offset_type;
         }
 
         return $offset_type->getBuilder()->substitute(
-            TypeCombiner::combine($bad_types, null),
-            TypeCombiner::combine($good_types, null),
+            TypeCombiner::combine($uncastable, null),
+            Type::getArrayKey(),
         )->freeze();
     }
 
