@@ -5,15 +5,61 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-use const DIRECTORY_SEPARATOR;
+use function array_map;
 
 final class ToStringTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    #[DataProvider('providerEchoOfAnObjectWithoutToString')]
+    public function testEchoOfAnObjectWithoutToStringIsTheSameIssueInEveryMode(bool $track_taints): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class NoStr {}
+
+                function g(NoStr $o): void {
+                    echo $o;
+                }',
+        );
+
+        if ($track_taints) {
+            $this->project_analyzer->trackTaintedInputs();
+        }
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            ['InvalidArgument'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{bool}>
+     * @psalm-pure
+     */
+    public static function providerEchoOfAnObjectWithoutToString(): iterable
+    {
+        return [
+            'withoutTaintAnalysis' => [false],
+            'withTaintAnalysis' => [true],
+        ];
+    }
 
     /**
      * @psalm-pure
@@ -223,15 +269,6 @@ final class ToStringTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'echoObjectWithoutToString' => [
-                'code' => '<?php
-                    final class NoStr {}
-
-                    function g(NoStr $o): void {
-                        echo $o;
-                    }',
-                'error_message' => 'InvalidCast - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:30 - NoStr cannot be cast to string',
-            ],
             'echoClass' => [
                 'code' => '<?php
                     class A {}
