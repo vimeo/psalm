@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -13,6 +15,135 @@ final class ConditionalTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    /**
+     * @return list<int>
+     */
+    private function getMixedAssignmentLines(string $code): array
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, $code);
+
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'MixedAssignment') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        return $lines;
+    }
+
+    public function testMixedVarNarrowedByAnElseifIsNotReportedWhereItIsAssigned(): void
+    {
+        self::assertSame(
+            [],
+            $this->getMixedAssignmentLines('<?php
+                function returnsArray(): array {
+                    return ["foo" => 42];
+                }
+
+                foreach (returnsArray() as $key => $value) {
+                    if ($key !== "foo") {
+                        throw new Exception("Unexpected array key");
+                    } elseif (!is_int($value)) {
+                        throw new Exception("Unexpected array value");
+                    }
+
+                    echo $value * 3;
+                }'),
+        );
+    }
+
+    public function testMixedVarNarrowedByTheIfOfAnElseifChainIsNotReportedWhereItIsAssigned(): void
+    {
+        self::assertSame(
+            [],
+            $this->getMixedAssignmentLines('<?php
+                function returnsArray(): array {
+                    return ["foo" => 42];
+                }
+
+                foreach (returnsArray() as $key => $value) {
+                    if (!is_int($value)) {
+                        throw new Exception("Unexpected array value");
+                    } elseif ($key !== "foo") {
+                        throw new Exception("Unexpected array key");
+                    }
+
+                    echo $value * 3;
+                }'),
+        );
+    }
+
+    public function testMixedVarNarrowedByTheLastOfThreeLeavingBranchesIsNotReportedWhereItIsAssigned(): void
+    {
+        self::assertSame(
+            [],
+            $this->getMixedAssignmentLines('<?php
+                function returnsArray(): array {
+                    return ["foo" => 42];
+                }
+
+                foreach (returnsArray() as $key => $value) {
+                    if ($key === "bar") {
+                        continue;
+                    } elseif ($key === "baz") {
+                        break;
+                    } elseif (!is_string($value)) {
+                        throw new Exception("Unexpected array value");
+                    }
+
+                    echo strlen($value);
+                }'),
+        );
+    }
+
+    public function testMixedVarIsStillReportedWhenAnElseifBranchDoesNotLeave(): void
+    {
+        self::assertSame(
+            [6],
+            $this->getMixedAssignmentLines('<?php
+                function returnsArray(): array {
+                    return ["foo" => 42];
+                }
+
+                foreach (returnsArray() as $key => $value) {
+                    if ($key !== "foo") {
+                        throw new Exception("Unexpected array key");
+                    } elseif (!is_int($value)) {
+                        echo "not an int";
+                    }
+
+                    echo $value;
+                }'),
+        );
+    }
+
+    public function testMixedVarIsStillReportedWhenTheIfBranchDoesNotLeave(): void
+    {
+        self::assertSame(
+            [6],
+            $this->getMixedAssignmentLines('<?php
+                function returnsArray(): array {
+                    return ["foo" => 42];
+                }
+
+                foreach (returnsArray() as $key => $value) {
+                    if ($key !== "foo") {
+                        echo "other key";
+                    } elseif (!is_int($value)) {
+                        throw new Exception("Unexpected array value");
+                    }
+
+                    echo $value;
+                }'),
+        );
+    }
 
     /**
      * @psalm-pure
