@@ -420,8 +420,11 @@ final class VariableFetchAnalyzer
             self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
 
             $context->vars_in_scope[$var_name] = $stmt_type;
-            // the value that is read is defined, whatever the variable is
-            $statements_analyzer->node_data->setType($stmt, $stmt_type->setPossiblyUndefined(false));
+            // the value that is read is defined, whatever the variable is (an isset() asks about the variable)
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                $context->inside_isset ? $stmt_type : $stmt_type->setPossiblyUndefined(false),
+            );
 
             // a variable a loop defines, where an iteration starts (see LoopAnalyzer)
             if ($stmt_type->possibly_undefined
