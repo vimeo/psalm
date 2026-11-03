@@ -11,6 +11,8 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Issue\ReservedWord;
+use Psalm\IssueBuffer;
 use Psalm\Type;
 
 use function implode;
@@ -69,7 +71,16 @@ final class InstanceofAnalyzer
                     );
                 }
 
-                if (!isset($context->phantom_classes[strtolower($fq_class_name)])) {
+                if (strtolower($fq_class_name) === 'iterable') {
+                    IssueBuffer::maybeAdd(
+                        new ReservedWord(
+                            'iterable is a reserved word, no object is an instance of it (use is_iterable())',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt->class),
+                            'iterable',
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                } elseif (!isset($context->phantom_classes[strtolower($fq_class_name)])) {
                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                         $statements_analyzer,
                         $fq_class_name,

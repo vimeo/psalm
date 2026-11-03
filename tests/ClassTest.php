@@ -1100,6 +1100,14 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'instanceofIterable' => [
+                'code' => '<?php
+                    /** @param mixed $a */
+                    function f($a): bool {
+                        return $a instanceof iterable;
+                    }',
+                'error_message' => 'ReservedWord - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:46 - iterable is a reserved word',
+            ],
             'undefinedClass' => [
                 'code' => '<?php
                     (new Foo());',
