@@ -3,7 +3,7 @@
 /**
  * Announces a release of Psalm on Mastodon, X, Telegram and Discord.
  *
- * Usage: php bin/ci/announce-release.php [--dry-run] [--force] <tag>
+ * Usage: php bin/ci/announce-release.php [--dry-run] [--force] [--only=<platform>,...] <tag>
  *
  * Run by .github/workflows/announce-release.yml when a release is published, or dispatched on its tag by
  * bin/ci/auto-release.php. For each platform:
@@ -18,6 +18,9 @@
  *    channel's URL), an announcement channel where the bot may send messages and mention everyone; the post pings
  *    everyone and is published to the servers following the channel.
  *
+ * --only announces on the given platforms alone (e.g. --only=x,telegram), to retry those that failed without posting
+ * twice on the others.
+ *
  * Drafts aren't announced, nor releases published more than a day ago unless --force is given, so that
  * auto-release.php dispatching the announcement on the last tag of each branch doesn't announce old releases.
  *
@@ -29,10 +32,17 @@ declare(strict_types=1);
 $args = array_slice($argv, 1);
 $dry_run = in_array('--dry-run', $args, true);
 $force = in_array('--force', $args, true);
-$options = ['--dry-run', '--force'];
-$tags = array_values(array_filter($args, static fn(string $arg): bool => !in_array($arg, $options, true)));
+$only = null;
+$tags = [];
+foreach ($args as $arg) {
+    if (str_starts_with($arg, '--only=')) {
+        $only = explode(',', strtolower(substr($arg, strlen('--only='))));
+    } elseif ($arg !== '--dry-run' && $arg !== '--force') {
+        $tags[] = $arg;
+    }
+}
 if (count($tags) !== 1) {
-    fwrite(STDERR, 'Usage: ' . $argv[0] . ' [--dry-run] [--force] <tag>' . PHP_EOL);
+    fwrite(STDERR, 'Usage: ' . $argv[0] . ' [--dry-run] [--force] [--only=<platform>,...] <tag>' . PHP_EOL);
     exit(1);
 }
 $tag = $tags[0];
@@ -166,8 +176,18 @@ $platforms = [
     ],
 ];
 
+$unknown = array_diff($only ?? [], array_map(strtolower(...), array_keys($platforms)));
+if ($unknown !== []) {
+    fwrite(STDERR, 'Unknown platforms: ' . implode(', ', $unknown) . PHP_EOL);
+    exit(1);
+}
+
 $failed = false;
 foreach ($platforms as $platform => [$secrets, $announce]) {
+    if ($only !== null && !in_array(strtolower($platform), $only, true)) {
+        continue;
+    }
+
     $values = array_map(static fn(string $secret): string => (string) getenv($secret), $secrets);
     if (in_array('', $values, true)) {
         echo "::notice::Not announcing $tag on $platform: " . implode(', ', $secrets) . ' must be set' . PHP_EOL;
