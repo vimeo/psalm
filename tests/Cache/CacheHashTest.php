@@ -144,6 +144,31 @@ final class CacheHashTest extends TestCase
         yield 'total length one byte long' => [pack('V', 8) . 'the hash' . $key . 'x'];
     }
 
+    /** A writer that died mid-write leaves a header shorter than it declares, which must not throw. */
+    #[DataProvider('provideTruncatedHeaders')]
+    public function testGetItemTreatsATruncatedHeaderAsAMiss(string $header): void
+    {
+        $key = 'truncated/header.php';
+
+        $this->newCache()->saveItem($key, ['payload'], 'the hash');
+        file_put_contents($this->entryPath($key) . '.hash', $header);
+
+        $this->assertNull($this->newCache()->getItem($key, null));
+        $this->assertNull($this->newCache()->getItem($key, 'the hash'));
+    }
+
+    /**
+     * @return iterable<string, list{string}>
+     * @psalm-pure
+     */
+    public static function provideTruncatedHeaders(): iterable
+    {
+        yield 'length prefix only' => [pack('V', 8)];
+        yield 'declared length overruns the header' => [pack('V', 4096) . 'the hash'];
+        yield 'hash cut short' => [pack('V', 8) . 'the h'];
+        yield 'key cut short' => [pack('V', 8) . 'the hash' . 'truncated/'];
+    }
+
     private function entryPath(string $key): string
     {
         $files = glob($this->cache_directory . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . 'test_subdir'

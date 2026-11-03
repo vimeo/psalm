@@ -12,21 +12,29 @@ use Psalm\Internal\RuntimeCaches;
 
 use function assert;
 use function dirname;
+use function explode;
 use function fclose;
-use function fgets;
 use function file_get_contents;
 use function file_put_contents;
 use function flock;
 use function fopen;
 use function getenv;
+use function getmypid;
 use function glob;
 use function hash;
+use function in_array;
+use function is_dir;
+use function microtime;
 use function proc_close;
+use function proc_get_status;
 use function proc_open;
+use function readlink;
+use function realpath;
+use function scandir;
+use function str_starts_with;
 use function stream_get_contents;
 use function substr;
 use function sys_get_temp_dir;
-use function trim;
 use function uniqid;
 use function usleep;
 
@@ -102,7 +110,8 @@ final class CacheConcurrencyTest extends TestCase
      *
      * The writer runs in its own process (flock() conflicts between two descriptors of one process
      * would block this test forever). The test keeps a shared lock on the entry's header, as a
-     * reader in the middle of getItem() does, while the writer is told to replace the entry.
+     * reader in the middle of getItem() does, while the writer is told to replace the entry. The
+     * header is only inspected once the writer holds it open, so a writer that truncated it on open is caught.
      */
     public function testWriterWaitingForAReaderDoesNotEmptyTheEntry(): void
     {
@@ -115,12 +124,12 @@ final class CacheConcurrencyTest extends TestCase
         assert($reader_lock !== false);
         $this->assertTrue(flock($reader_lock, LOCK_SH));
 
-        [$writer, $stdout] = $this->startWriter($key, 'new hash');
+        $writer = $this->startWriter($key, 'new hash');
 
         try {
-            $this->assertSame('started', trim((string) fgets($stdout)));
-            // Give the writer time to run up to the lock it has to wait for.
-            usleep(300_000);
+            // A writer that has the header open and is still running is waiting for the lock held here.
+            $this->waitUntilOpened($writer, $header_path);
+            $this->assertTrue(proc_get_status($writer)['running'], 'the writer exited without waiting for the lock');
 
             $this->assertNotSame('', file_get_contents($header_path), 'the header was truncated by a waiting writer');
             $this->assertSame(['old payload'], $this->newCache()->getItem($key, 'old hash'));
@@ -128,8 +137,6 @@ final class CacheConcurrencyTest extends TestCase
             flock($reader_lock, LOCK_UN);
             fclose($reader_lock);
 
-            stream_get_contents($stdout);
-            fclose($stdout);
             $this->assertSame(0, proc_close($writer));
         }
 
@@ -147,16 +154,14 @@ final class CacheConcurrencyTest extends TestCase
         $this->assertNull($this->newCache()->getItem($key, 'hash'));
     }
 
-    /** @return array{resource, resource} the writer process and its stdout pipe */
-    private function startWriter(string $key, string $hash): array
+    /** @return resource the writer process */
+    private function startWriter(string $key, string $hash)
     {
         $autoload = dirname(__DIR__, 2) . '/vendor/autoload.php';
         $script = <<<'PHP'
             require getenv('AUTOLOAD');
             $config = Psalm\Config::loadFromXML(getenv('BASE_DIR'), getenv('CONFIG_XML'));
             $cache = new Psalm\Internal\Cache($config, 'test_subdir');
-            echo "started\n";
-            fflush(STDOUT);
             $cache->saveItem(getenv('KEY'), ['new payload'], getenv('HASH'));
             PHP;
 
@@ -169,7 +174,7 @@ final class CacheConcurrencyTest extends TestCase
                 '-r',
                 $script,
             ],
-            [1 => ['pipe', 'w']],
+            [],
             $pipes,
             null,
             [
@@ -181,11 +186,79 @@ final class CacheConcurrencyTest extends TestCase
                 'HASH' => $hash,
             ],
         );
-        if ($process === false || !isset($pipes[1])) {
+        if ($process === false) {
             self::fail('Failed to start the writer process');
         }
 
-        return [$process, $pipes[1]];
+        return $process;
+    }
+
+    /** @param resource $process */
+    private function waitUntilOpened($process, string $path): void
+    {
+        $pid = proc_get_status($process)['pid'];
+        $real_path = realpath($path);
+        $this->assertNotFalse($real_path);
+
+        if (self::listOpenFiles((int) getmypid()) === null) {
+            self::markTestSkipped('Neither /proc nor lsof is available to see the files the writer has open');
+        }
+
+        $deadline = microtime(true) + 10.0;
+        while (!in_array($real_path, self::listOpenFiles($pid) ?? [], true)) {
+            $this->assertTrue(proc_get_status($process)['running'], 'the writer exited before opening the header');
+            $this->assertLessThan($deadline, microtime(true), 'the writer never opened the header');
+            usleep(2_000);
+        }
+    }
+
+    /**
+     * @return list<string>|null the paths a process has open, null if this system cannot tell
+     */
+    private static function listOpenFiles(int $pid): ?array
+    {
+        $paths = [];
+
+        if (is_dir('/proc/self/fd')) {
+            // a process that has exited has no directory to list
+            $entries = @scandir("/proc/$pid/fd");
+            foreach ($entries === false ? [] : $entries as $entry) {
+                $target = @readlink("/proc/$pid/fd/$entry");
+                if ($target !== false) {
+                    $paths[] = $target;
+                }
+            }
+
+            return $paths;
+        }
+
+        $pipes = [];
+        $lsof = proc_open(
+            ['lsof', '-p', (string) $pid, '-Fn'],
+            [0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['file', '/dev/null', 'w']],
+            $pipes,
+        );
+        if ($lsof === false) {
+            return null;
+        }
+
+        $output = stream_get_contents($pipes[1]);
+        fclose($pipes[1]);
+        $exit_code = proc_close($lsof);
+
+        // lsof exits with 1 when it finds nothing, as for a process that has exited
+        if ($output === false || ($exit_code !== 0 && $exit_code !== 1)) {
+            return null;
+        }
+
+        // -Fn prints one "n<path>" line per open file
+        foreach (explode("\n", $output) as $line) {
+            if (str_starts_with($line, 'n')) {
+                $paths[] = substr($line, 1);
+            }
+        }
+
+        return $paths;
     }
 
     private function entryPath(string $key): string

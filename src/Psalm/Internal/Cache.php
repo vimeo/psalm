@@ -167,6 +167,13 @@ final class Cache
         return substr($header, 4, $hashLen);
     }
 
+    /** Whether contents are stored for the key, even if their header is unusable */
+    public function hasItem(string $key): bool
+    {
+        return isset($this->cache[$key])
+            || ($this->persistent && file_exists($this->dir . hash('xxh128', $key)));
+    }
+
     /** @return T */
     public function getItem(string $key, ?string $hash = ''): array|object|string|null
     {
@@ -215,16 +222,20 @@ final class Cache
             fclose($fp);
             return null;
         }
+        // A writer that died mid-write leaves a header shorter than it declares
+        $hashLen = $hash === null ? unpack('V', $fileHash)[1] : strlen($hash);
+        assert(is_int($hashLen));
+        if (strlen($fileHash) !== 4 + $hashLen + strlen($key)) {
+            fclose($fp);
+            return null;
+        }
         if ($hash === null) {
-            $hashLen = unpack('V', $fileHash)[1];
-            assert(is_int($hashLen));
             $hash = substr($fileHash, 4, $hashLen);
-            if (substr_compare($fileHash, $key, 4+$hashLen) !== 0) {
+            if (substr_compare($fileHash, $key, 4 + $hashLen) !== 0) {
                 throw new AssertionError("Hash collision on key $key");
             }
-        } elseif (substr_compare($fileHash, $hash, 4, strlen($hash)) !== 0
-            || substr_compare($fileHash, $key, strlen($hash)+4) !== 0
-            || strlen($fileHash) !== strlen($key)+strlen($hash)+4
+        } elseif (substr_compare($fileHash, $hash, 4, $hashLen) !== 0
+            || substr_compare($fileHash, $key, 4 + $hashLen) !== 0
         ) {
             fclose($fp);
             return null;

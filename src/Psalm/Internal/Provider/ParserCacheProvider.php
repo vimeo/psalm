@@ -71,6 +71,20 @@ final class ParserCacheProvider
     }
 
     /**
+     * Whether the cached statements of a file were parsed from other contents. A file that was never cached has
+     * nothing to be stale. One with cached statements but no usable stored hash can no longer be trusted.
+     */
+    public function hasChanged(string $file_path, string $file_contents): bool
+    {
+        $hash = $this->getHash($file_path);
+        if ($hash !== null) {
+            return $hash !== $file_contents;
+        }
+
+        return $this->stmtCache->hasItem($file_path);
+    }
+
+    /**
      * @param  list<PhpParser\Node\Stmt>        $stmts
      * @param  list<PhpParser\Error>            $parse_errors
      */
