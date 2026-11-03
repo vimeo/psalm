@@ -893,6 +893,8 @@ final class Populator
     /**
      * A docblock return type is not inherited when it uses a template of the overridden method that only params the
      * override documents itself would bind: nothing could infer it at call sites.
+     *
+     * @psalm-capabilities read-props
      */
     private static function inheritsReturnType(
         MethodStorage $method_storage,
@@ -904,7 +906,10 @@ final class Populator
 
         $method_template_types = $overridden_method_storage->template_types;
 
-        if (!$method_template_types || !$overridden_method_storage->return_type) {
+        if ($method_template_types === null
+            || $method_template_types === []
+            || !$overridden_method_storage->return_type
+        ) {
             return true;
         }
 
