@@ -20,6 +20,60 @@ final class ImmutableAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'memoizedImmutableCallSurvivesTheConstructorInitializationPass' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    final class Foo {
+                        private ?DateTimeImmutable $date = null;
+
+                        public function getDate(): ?DateTimeImmutable {
+                            return $this->date;
+                        }
+                    }
+
+                    final class Bar {
+                        public ?string $tz;
+
+                        public function __construct(Foo $foo) {
+                            if ($foo->getDate()) {
+                                $this->tz = $foo->getDate()->getTimezone()->getName();
+                            } else {
+                                $this->tz = null;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingPureAnnotation'],
+            ],
+            'memoizedImmutableCallSurvivesAConstructorCalledMethod' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    final class Foo {
+                        private ?DateTimeImmutable $date = null;
+
+                        public function getDate(): ?DateTimeImmutable {
+                            return $this->date;
+                        }
+                    }
+
+                    final class Bar {
+                        public ?string $tz;
+
+                        public function __construct(Foo $foo) {
+                            $this->init($foo);
+                        }
+
+                        private function init(Foo $foo): void {
+                            if ($foo->getDate()) {
+                                $this->tz = $foo->getDate()->getTimezone()->getName();
+                            } else {
+                                $this->tz = null;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingPureAnnotation'],
+            ],
             'SKIPPED-noMissing' => [
                 'code' => '<?php
                     /** @psalm-immutable */
