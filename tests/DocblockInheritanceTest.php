@@ -867,6 +867,26 @@ final class DocblockInheritanceTest extends TestCase
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:37',
                 'error_levels' => ['ImplementedReturnTypeMismatch'],
             ],
+            'mixedNativeParamCollapsesInheritedType' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @param list<string> $a
+                         * @param positive-int $b
+                         */
+                        public function f(array $a, int $b): void {}
+                    }
+
+                    final class C extends P {
+                        /** @param int $b */
+                        public function f(mixed $a, int $b): void {
+                            echo strlen($a);
+                        }
+                    }',
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:41 - Argument 1 of strlen cannot be mixed, expecting string',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 }

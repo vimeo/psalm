@@ -419,7 +419,7 @@ final class Methods
                     && $param->signature_type->getId() !== $overridden_param->signature_type->getId()
                 ) {
                     $codebase = $source?->getCodebase() ?? ProjectAnalyzer::getInstance()->getCodebase();
-                    $builder = $type->getBuilder();
+                    $widened_types = [];
 
                     foreach ($param->signature_type->getAtomicTypes() as $atomic) {
                         if (!UnionTypeComparator::isContainedBy(
@@ -427,11 +427,13 @@ final class Methods
                             new Union([$atomic]),
                             $overridden_param->signature_type,
                         )) {
-                            $builder->addType($atomic);
+                            $widened_types[] = $atomic;
                         }
                     }
 
-                    $type = $builder->freeze();
+                    if ($widened_types) {
+                        $type = Type::combineUnionTypes($type, new Union($widened_types), $codebase, false, false);
+                    }
                 }
 
                 if ($param->signature_type
