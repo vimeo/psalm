@@ -23,6 +23,22 @@ final class FFITest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'memcmpAcceptsValuesAndVariables' => [
+                'code' => '<?php
+                    function getCData(): FFI\CData {
+                        return new FFI\CData;
+                    }
+
+                    function cmp(): int {
+                        $var = new FFI\CData;
+
+                        return FFI::memcmp(getCData(), $var, 0) + FFI::memcmp($var, "abc", 3);
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
             // Examples are from https://www.php.net/manual/en/ffi.examples-basic.php
             // Some of them needed tweaks, e.g. due to unsafe use of var_dump().
             'Example #1 Calling a function from shared library' => [
