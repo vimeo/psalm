@@ -216,6 +216,8 @@ foreach (range(1,1) as $_) $a[(string)rand(0,1)] = rand(0,1); // array<string,in
 
 `TTemplateParamClass` - denotes a `class-string` corresponding to a template parameter previously specified in a `@template` tag.
 
+`TStarProjection` - denotes the `*` type argument of a generic object e.g. `Pair<int, *>`, an unknown type. Its `$as` is what is known of the type when reading it, not what may be written to it. A method return type provider receives it in `getTemplateTypeParameters()` for a receiver like `Pair<int, *>`.
+
 ## Creating type object instances
 
 There are two ways of creating the object instances which describe a given type. They can be created directly using new, or created declaratively from a doc string. Normally, you'd want to use the second option. However, understanding the structure of this data will help you understand types passed into a plugin.
