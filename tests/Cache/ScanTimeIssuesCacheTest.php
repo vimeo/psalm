@@ -42,25 +42,6 @@ final class ScanTimeIssuesCacheTest extends TestCase
         $argv = [];
     }
 
-    #[Override]
-    public function setUp(): void
-    {
-        parent::setUp();
-
-        RuntimeCaches::clearAll();
-    }
-
-    /**
-     * @psalm-external-mutation-free
-     */
-    #[Override]
-    public function tearDown(): void
-    {
-        RuntimeCaches::clearAll();
-
-        parent::tearDown();
-    }
-
     /**
      * @param array<string, string> $files
      * @param list<string> $expected_issues
@@ -103,264 +84,88 @@ final class ScanTimeIssuesCacheTest extends TestCase
             new ProjectCacheProvider(),
         );
 
-        $runs = [];
-
-        foreach (['cold', 'warm'] as $run) {
-            RuntimeCaches::clearAll();
-
-            $project_analyzer = new ProjectAnalyzer($config, $providers);
-            $project_analyzer->setPhpVersion($php_version, 'tests');
-            $project_analyzer->check($config->base_dir);
-            $project_analyzer->finish(microtime(true), PSALM_VERSION);
-
-            $issues = [];
-
-            foreach (IssueBuffer::getIssuesData() as $file_issues) {
-                foreach ($file_issues as $issue) {
-                    $issues[] = $issue->type . ' ' . basename($issue->file_name) . ':' . $issue->line_from . ':' . $issue->column_from;
-                }
-            }
-
-            sort($issues);
-            $runs[$run] = $issues;
-        }
+        $cold = $this->analyze($config, $providers, $php_version);
 
         sort($expected_issues);
 
-        self::assertSame($expected_issues, $runs['cold'], 'cold run');
-        self::assertSame($runs['cold'], $runs['warm']);
+        self::assertSame($expected_issues, $cold, 'cold run');
+        self::assertSame($cold, $this->analyze($config, $providers, $php_version), 'warm run');
     }
 
     /**
      * Each case is the files by name, the PHP version, the issues as `Type file:line:column`, and optionally a stub.
+     * Each case groups the issues that are stored the same way, and need the same PHP version.
      *
      * @return iterable<string, array{array<string, string>, string, list<string>}|array{array<string, string>, string, list<string>, string}>
      * @psalm-pure
      */
     public static function provideScanTimeIssues(): iterable
     {
-        yield 'missingClassConstType' => [
+        // stored in the class-like (the untyped constant C is suppressed)
+        yield 'classLike' => [
             [
                 'A.php' => <<<'PHP'
                     <?php
                     abstract class A {
-                        public const B = 0;
-                    }
-                    PHP,
-            ],
-            '8.3',
-            ['MissingClassConstType A.php:3:18'],
-        ];
-
-        yield 'suppressedMissingClassConstType' => [
-            [
-                'A.php' => <<<'PHP'
-                    <?php
-                    abstract class A {
-                        /** @psalm-suppress MissingClassConstType */
-                        public const B = 0;
-                        public const C = 0;
-                    }
-                    PHP,
-            ],
-            '8.3',
-            ['MissingClassConstType A.php:5:18'],
-        ];
-
-        yield 'constantDeclarationInTrait' => [
-            [
-                'A.php' => <<<'PHP'
-                    <?php
-                    trait T {
-                        public const B = 0;
-                    }
-                    PHP,
-            ],
-            '8.1',
-            ['ConstantDeclarationInTrait A.php:3:5'],
-        ];
-
-        yield 'duplicateConstant' => [
-            [
-                'A.php' => <<<'PHP'
-                    <?php
-                    final class A {
                         public const B = 0;
                         public const B = 1;
+                        /** @psalm-suppress MissingClassConstType */
+                        public const C = 0;
+                        public int $x = 0;
+                        public int $x = 1;
+                    }
+                    #[AllowDynamicProperties]
+                    final readonly class D {}
+                    final readonly class R {
+                        public $x;
                     }
                     PHP,
             ],
-            '8.1',
-            ['DuplicateConstant A.php:4:18'],
+            '8.3',
+            [
+                'MissingClassConstType A.php:3:18',
+                'DuplicateConstant A.php:4:18',
+                'DuplicateProperty A.php:8:5',
+                'InvalidAttribute A.php:10:3',
+                'MissingPropertyType A.php:13:12',
+                'MissingPropertyType A.php:13:5',
+            ],
         ];
 
-        yield 'duplicateEnumCase' => [
+        // stored in the class-like
+        yield 'enum' => [
             [
-                'A.php' => <<<'PHP'
+                'E.php' => <<<'PHP'
                     <?php
                     enum E {
                         case A;
                         case A;
                     }
-                    PHP,
-            ],
-            '8.1',
-            ['DuplicateEnumCase A.php:4:5'],
-        ];
-
-        yield 'invalidEnumCaseValue' => [
-            [
-                'A.php' => <<<'PHP'
-                    <?php
-                    enum E: int {
+                    enum F: int {
                         case A = 1.5;
                     }
-                    PHP,
-            ],
-            '8.1',
-            ['InvalidEnumCaseValue A.php:3:5', 'InvalidEnumCaseValue A.php:3:5'],
-        ];
-
-        yield 'duplicateProperty' => [
-            [
-                'A.php' => <<<'PHP'
-                    <?php
-                    final class A {
-                        public int $x = 0;
-                        public int $x = 1;
+                    enum G {
+                        const B = 0;
+                        case B;
                     }
                     PHP,
             ],
-            '8.1',
-            ['DuplicateProperty A.php:4:5'],
-        ];
-
-        yield 'missingPropertyTypeInReadonlyClass' => [
+            '8.3',
             [
-                'A.php' => <<<'PHP'
-                    <?php
-                    final readonly class A {
-                        public $x;
-                    }
-                    PHP,
+                'DuplicateEnumCase E.php:4:5',
+                'InvalidEnumCaseValue E.php:7:5',
+                'InvalidEnumCaseValue E.php:7:5',
+                'DuplicateConstant E.php:11:5',
             ],
-            '8.2',
-            ['MissingPropertyType A.php:3:12', 'MissingPropertyType A.php:3:5'],
         ];
 
-        yield 'privateFinalMethod' => [
+        // stored in the method
+        yield 'method' => [
             [
                 'A.php' => <<<'PHP'
                     <?php
                     final class A {
                         private final function f(): void {}
-                    }
-                    PHP,
-            ],
-            '8.1',
-            ['PrivateFinalMethod A.php:3:5'],
-        ];
-
-        yield 'privateFinalMethodInUnusedTrait' => [
-            [
-                'A.php' => <<<'PHP'
-                    <?php
-                    trait T {
-                        private final function f(): void {}
-                    }
-                    PHP,
-            ],
-            '8.1',
-            ['PrivateFinalMethod A.php:3:5'],
-        ];
-
-        yield 'privateFinalMethodInClassWithDuplicateMethod' => [
-            [
-                'A.php' => <<<'PHP'
-                    <?php
-                    final class A {
-                        private final function f(): void {}
-                        public function g(): void {}
-                        public function g(): void {}
-                    }
-                    PHP,
-            ],
-            '8.1',
-            ['PrivateFinalMethod A.php:3:5', 'DuplicateMethod A.php:5:5'],
-        ];
-
-        yield 'allowDynamicPropertiesOnReadonlyClass' => [
-            [
-                'A.php' => <<<'PHP'
-                    <?php
-                    #[AllowDynamicProperties]
-                    final readonly class A {}
-                    PHP,
-            ],
-            '8.2',
-            ['InvalidAttribute A.php:2:3'],
-        ];
-
-        yield 'unionTypeBeforePhp8' => [
-            [
-                'A.php' => <<<'PHP'
-                    <?php
-                    final class A {
-                        public function f(int|string $a): void {}
-                    }
-                    PHP,
-            ],
-            '7.4',
-            ['ParseError A.php:3:23'],
-        ];
-
-        yield 'intersectionTypeBeforePhp81' => [
-            [
-                'A.php' => <<<'PHP'
-                    <?php
-                    interface I {}
-                    interface J {}
-                    final class A {
-                        public function f(I&J $a): void {}
-                    }
-                    PHP,
-            ],
-            '8.0',
-            ['ParseError A.php:5:23'],
-        ];
-
-        yield 'scalarInIntersectionType' => [
-            [
-                'A.php' => <<<'PHP'
-                    <?php
-                    interface I {}
-                    final class A {
-                        public function f(I&int $a): void {}
-                    }
-                    PHP,
-            ],
-            '8.1',
-            ['ParseError A.php:4:23'],
-        ];
-
-        yield 'redefinedCoreFunction' => [
-            [
-                'A.php' => <<<'PHP'
-                    <?php
-                    function strlen(string $s): int {
-                        return 0;
-                    }
-                    PHP,
-            ],
-            '8.1',
-            ['DuplicateFunction A.php:2:1'],
-        ];
-
-        yield 'promotedPropertyDocumentedTwice' => [
-            [
-                'A.php' => <<<'PHP'
-                    <?php
-                    final class A {
                         /** @param int $x */
                         public function __construct(
                             /** @var int */
@@ -370,25 +175,11 @@ final class ScanTimeIssuesCacheTest extends TestCase
                     PHP,
             ],
             '8.1',
-            ['InvalidDocblock A.php:6:9'],
+            ['PrivateFinalMethod A.php:3:5', 'InvalidDocblock A.php:7:9'],
         ];
 
-        yield 'duplicateClass' => [
-            [
-                'A.php' => <<<'PHP'
-                    <?php
-                    final class A {}
-                    PHP,
-                'B.php' => <<<'PHP'
-                    <?php
-                    final class A {}
-                    PHP,
-            ],
-            '8.1',
-            ['DuplicateClass B.php:2:13'],
-        ];
-
-        yield 'conditionalTaintSource' => [
+        // stored in the method: a taint that can't be registered is in the docblock parsed, or in the storage built
+        yield 'taintDocblocks' => [
             [
                 'A.php' => <<<'PHP'
                     <?php
@@ -397,27 +188,107 @@ final class ScanTimeIssuesCacheTest extends TestCase
                         public function f(): string {
                             return 'a';
                         }
+                        /** @psalm-taint-sink ~(html|(css)) $a */
+                        public function g(string $a): string {
+                            return $a;
+                        }
+                        /**
+                         * @psalm-taint-unescape ~(html|(css))
+                         * @psalm-taint-escape ~(html|(js))
+                         */
+                        public function h(): void {}
                     }
                     PHP,
             ],
             '8.1',
-            ['InvalidDocblock A.php:4:5'],
+            [
+                'InvalidDocblock A.php:4:5',
+                'InvalidDocblock A.php:8:5',
+                'InvalidDocblock A.php:15:5',
+                'InvalidDocblock A.php:15:5',
+            ],
         ];
 
-        yield 'invalidTaintComplementInSink' => [
+        // stored in the file, but for the trait constant, which is stored in the class-like
+        yield 'oldPhpVersion' => [
+            [
+                'A.php' => <<<'PHP'
+                    <?php
+                    interface I {}
+                    interface J {}
+                    final class A {
+                        public function f(int|string $a): void {}
+                        public function g(I&J $a): void {}
+                        public function h(I&int $a): void {}
+                    }
+                    trait T {
+                        public const B = 0;
+                    }
+                    function strlen(string $s): int {
+                        return 0;
+                    }
+                    PHP,
+            ],
+            '7.4',
+            [
+                'ParseError A.php:5:23',
+                'ParseError A.php:6:23',
+                'ParseError A.php:7:23',
+                'ParseError A.php:7:23',
+                'ConstantDeclarationInTrait A.php:10:5',
+                'DuplicateFunction A.php:12:1',
+            ],
+        ];
+
+        // no class uses the trait, so its methods aren't analysed
+        yield 'unusedTrait' => [
+            [
+                'A.php' => <<<'PHP'
+                    <?php
+                    trait T {
+                        private final function f(): void {}
+                    }
+                    PHP,
+            ],
+            '8.1',
+            ['PrivateFinalMethod A.php:3:5'],
+        ];
+
+        // the duplicate method makes the analysis skip the whole file
+        yield 'skippedFile' => [
+            [
+                'A.php' => <<<'PHP'
+                    <?php
+                    function strlen(string $s): int {
+                        return 0;
+                    }
+                    final class A {
+                        private final function f(): void {}
+                        public function g(): void {}
+                        public function g(): void {}
+                    }
+                    PHP,
+            ],
+            '8.1',
+            ['DuplicateFunction A.php:2:1', 'PrivateFinalMethod A.php:6:5', 'DuplicateMethod A.php:8:5'],
+        ];
+
+        // the class declared again by another file makes the analysis skip it, not its file
+        yield 'skippedClassLike' => [
             [
                 'A.php' => <<<'PHP'
                     <?php
                     final class A {
-                        /** @psalm-taint-sink ~(html|(css)) $a */
-                        public function f(string $a): string {
-                            return $a;
-                        }
+                        private final function f(): void {}
                     }
+                    PHP,
+                'B.php' => <<<'PHP'
+                    <?php
+                    final class A {}
                     PHP,
             ],
             '8.1',
-            ['InvalidDocblock A.php:4:5'],
+            ['PrivateFinalMethod A.php:3:5', 'DuplicateClass B.php:2:13'],
         ];
 
         yield 'stubRepeatingDeclarations' => [
@@ -431,5 +302,31 @@ final class ScanTimeIssuesCacheTest extends TestCase
             [],
             'stubs/RefinedClass.phpstub',
         ];
+    }
+
+    /**
+     * @return list<string> the issues as `Type file:line:column`, sorted
+     */
+    private function analyze(Config $config, Providers $providers, string $php_version): array
+    {
+        RuntimeCaches::clearAll();
+
+        $project_analyzer = new ProjectAnalyzer($config, $providers);
+        $project_analyzer->setPhpVersion($php_version, 'tests');
+        $project_analyzer->check($config->base_dir);
+        $project_analyzer->finish(microtime(true), PSALM_VERSION);
+
+        $issues = [];
+
+        foreach (IssueBuffer::getIssuesData() as $file_issues) {
+            foreach ($file_issues as $issue) {
+                $issues[] = $issue->type . ' ' . basename($issue->file_name) . ':' . $issue->line_from . ':'
+                    . $issue->column_from;
+            }
+        }
+
+        sort($issues);
+
+        return $issues;
     }
 }
