@@ -86,20 +86,9 @@ final class Cache
         $dir .= DIRECTORY_SEPARATOR . hash_final($hash);
 
         $this->dir = $dir.DIRECTORY_SEPARATOR;
-        try {
-            if (mkdir($this->dir, 0777, true) === false) {
-                // any other error than directory already exists/permissions issue
-                throw new RuntimeException(
-                    'Failed to create ' . $this->dir . ' cache directory for unknown reasons',
-                );
-            }
-        } catch (RuntimeException $e) {
-            // Race condition (#4483)
-            if (!is_dir($this->dir)) {
-                // rethrow the error with default message
-                // it contains the reason why creation failed
-                throw $e;
-            }
+        // Another process may create the directory between the check and mkdir() (#4483)
+        if (!is_dir($this->dir) && !@mkdir($this->dir, 0777, true) && !is_dir($this->dir)) {
+            throw new RuntimeException('Failed to create ' . $this->dir . ' cache directory');
         }
 
         $lock = fopen($this->dir.'lock', 'c');
