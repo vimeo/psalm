@@ -205,6 +205,29 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'firstClassCallableOfAMethodKeepsTheInheritedReturnType' => [
+                'code' => '<?php
+                    interface Counter {
+                        /** @return positive-int */
+                        public function count();
+                    }
+
+                    final class Items implements Counter {
+                        #[Override]
+                        public function count() {
+                            return 1;
+                        }
+                    }
+
+                    $items = new Items();
+                    $count = $items->count(...);
+                    $result = $count();',
+                'assertions' => [
+                    '$result' => 'int<1, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'notInCallMapTest' => [
                 'code' => '<?php
                     new DOMImplementation();',

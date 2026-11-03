@@ -79,12 +79,24 @@ final class MethodCallReturnTypeFetcher
 
         if ($stmt->isFirstClassCallable()) {
             if ($method_storage) {
+                // the type the method inherits from a parent docblock
+                $callable_return_type = $method_storage->return_type;
+
+                if ($callable_return_type === null) {
+                    $return_type_class = null;
+                    $callable_return_type = $codebase->methods->getMethodReturnType(
+                        $codebase,
+                        $method_id,
+                        $return_type_class,
+                    );
+                }
+
                 return self::getFirstClassCallableType(
                     $codebase,
                     $stmt,
                     new TClosure(
                         $method_storage->params,
-                        $method_storage->return_type,
+                        $callable_return_type,
                         $method_storage->capabilities,
                     ),
                     $template_result,
