@@ -166,6 +166,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+        with:
+          persist-credentials: false
 
       - name: Set up PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
@@ -179,25 +181,32 @@ jobs:
           path: ${{ runner.temp }}
 
       # If the patch is for a commit this job pushed, composer build doesn't
-      # reach a fixed point, and pushing again would loop.
-      - name: Commit and push the patch
+      # reach a fixed point, and pushing again would loop. The check runs from a
+      # copy made before applying the patch, which could otherwise change it.
+      - name: Apply and check the patch
         env:
-          BRANCH: ${{ github.ref_name }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MESSAGE: Update the files composer build generates
         run: |
           if [ "$(git log -1 --format=%s)" = "$MESSAGE" ]; then
             echo "::error::composer build changed the files of its own commit. Apply its patch from the repo root with: bin/ci/apply-composer-build-patch.sh"
             exit 1
           fi
+          cp bin/ci/check-composer-build-patch.php "$RUNNER_TEMP/check-composer-build-patch.php"
           git apply "$RUNNER_TEMP/composer-build.patch"
-          if ! php bin/ci/check-composer-build-patch.php; then
+          if ! php "$RUNNER_TEMP/check-composer-build-patch.php"; then
             echo "::error::Not pushing the patch. Review it, then apply it from the repo root with: bin/ci/apply-composer-build-patch.sh"
             exit 1
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -qam "$MESSAGE"
+
+      - name: Push the patch
+        env:
+          BRANCH: ${{ github.ref_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh auth setup-git
           if ! git push origin "HEAD:refs/heads/$BRANCH"; then
             if [ "$(git ls-remote origin "refs/heads/$BRANCH" | cut -f1)" != "$GITHUB_SHA" ]; then
               echo "::notice::$BRANCH moved past $GITHUB_SHA, whose newer head gets its own composer build"

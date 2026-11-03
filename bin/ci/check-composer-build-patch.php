@@ -5,7 +5,8 @@
  * it is pushed: the patch comes from a job that runs the dependencies' code, so it may only modify the files composer
  * build generates, and the PHP ones may only hold data, no code that could run when Psalm loads them.
  *
- * Usage: php bin/ci/check-composer-build-patch.php (from the repository root, after git apply)
+ * Usage: php check-composer-build-patch.php, from the repository root after git apply; run a copy made before applying
+ * the patch, which could otherwise change this script.
  */
 
 declare(strict_types=1);
@@ -58,8 +59,16 @@ foreach ($status_output === '' ? [] : explode("\0", $status_output) as $entry) {
         continue;
     }
 
+    // TOKEN_PARSE tokenizes keywords used as names (Foo::array(...)) as T_STRING, as PHP parses them
+    try {
+        $tokens = token_get_all((string) file_get_contents($path), TOKEN_PARSE);
+    } catch (ParseError $e) {
+        $errors[] = "$path: {$e->getMessage()}";
+        continue;
+    }
+
     $previous = null;
-    foreach (token_get_all((string) file_get_contents($path)) as $token) {
+    foreach ($tokens as $token) {
         $type = is_array($token) ? $token[0] : $token;
         if (!in_array($type, ALLOWED_TOKENS, true)
             || ($type === '(' && $previous !== T_ARRAY && $previous !== T_DECLARE)
