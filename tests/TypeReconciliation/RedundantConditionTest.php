@@ -23,6 +23,52 @@ final class RedundantConditionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'notInArrayOfTheSameItemTypeAfterAnotherArrayIsNotRedundant' => [
+                'code' => '<?php
+                    interface Related {}
+
+                    /**
+                     * @param array<string, Related> $originals
+                     * @param list<Related> $visited
+                     */
+                    function f(Related $current, array $originals, array $visited): void {
+                        if (in_array($current, $visited, true)) {
+                            return;
+                        }
+
+                        if (!in_array($current, $originals, true)) {
+                            echo "x";
+                        }
+                    }',
+            ],
+            'notInArrayOfTheSameItemTypeInTheSameConditionIsNotRedundant' => [
+                'code' => '<?php
+                    interface Related {}
+
+                    /**
+                     * @param array<string, Related> $originals
+                     * @param list<Related> $visited
+                     */
+                    function f(Related $current, array $originals, array $visited): void {
+                        if (!in_array($current, $visited, true) && !in_array($current, $originals, true)) {
+                            echo "x";
+                        }
+                    }',
+            ],
+            'inArrayOfTheSameItemTypeInTheSameConditionIsNotRedundant' => [
+                'code' => '<?php
+                    interface Related {}
+
+                    /**
+                     * @param array<string, Related> $a
+                     * @param list<Related> $b
+                     */
+                    function f(Related $x, array $a, array $b): void {
+                        if (in_array($x, $a, true) && in_array($x, $b, true)) {
+                            echo "a";
+                        }
+                    }',
+            ],
             'negatedInstanceofOfAGenericSubclassOnAnInterfaceWithTemplateArguments' => [
                 'code' => '<?php
                     /**

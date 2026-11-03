@@ -65,6 +65,7 @@ final class AlgebraAnalyzer
                 && $formula_2_clause->reconcilable
                 && (isset($formula_1_hashes[$hash]) || isset($formula_2_hashes[$hash]))
                 && !array_intersect_key($new_assigned_var_ids, $formula_2_clause->possibilities)
+                && !self::containsInArrayAssertion($formula_2_clause)
             ) {
                 IssueBuffer::maybeAdd(
                     new RedundantCondition(
@@ -138,5 +139,24 @@ final class AlgebraAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * An in_array() assertion holds the type of the items of the array, not the array: two calls with different
+     * arrays of the same item type assert the same thing without one making the other redundant.
+     *
+     * @psalm-pure
+     */
+    private static function containsInArrayAssertion(Clause $clause): bool
+    {
+        foreach ($clause->possibilities as $keyed_possibilities) {
+            foreach ($keyed_possibilities as $possibility) {
+                if ($possibility instanceof InArray || $possibility instanceof NotInArray) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
