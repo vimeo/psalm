@@ -419,6 +419,14 @@ class Reconciler
                         $result_type,
                     );
                 } elseif ($key !== '$this') {
+                    if (!$has_inverted_isset
+                        && !$has_inverted_key_exists
+                        && !$has_empty
+                        && !$is_equality
+                    ) {
+                        self::adjustTObjectWithPropertiesType($key_parts, $existing_types, $result_type);
+                    }
+
                     foreach ($existing_types as $new_key => $_) {
                         if ($new_key === $key) {
                             continue;
@@ -1410,6 +1418,47 @@ class Reconciler
             if ($shape_changed) {
                 $changed_var_ids[$base_key] = true;
             }
+        }
+    }
+
+    /**
+     * What is learnt of a property of an object with properties is learnt of the object.
+     *
+     * @param list<string> $key_parts
+     * @param array<string, Union> $existing_types
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function adjustTObjectWithPropertiesType(
+        array $key_parts,
+        array &$existing_types,
+        Union $result_type,
+    ): void {
+        if (count($key_parts) < 3 || $key_parts[count($key_parts) - 2] !== '->') {
+            return;
+        }
+
+        $property_name = array_pop($key_parts);
+        array_pop($key_parts);
+        $base_key = implode('', $key_parts);
+
+        if (!isset($existing_types[$base_key])) {
+            return;
+        }
+
+        $types = $existing_types[$base_key]->getAtomicTypes();
+        $changed = false;
+
+        foreach ($types as $type_key => $atomic_type) {
+            if ($atomic_type instanceof TObjectWithProperties && isset($atomic_type->properties[$property_name])) {
+                $properties = $atomic_type->properties;
+                $properties[$property_name] = $result_type;
+                $types[$type_key] = $atomic_type->setProperties($properties);
+                $changed = true;
+            }
+        }
+
+        if ($changed) {
+            $existing_types[$base_key] = $existing_types[$base_key]->setTypes($types);
         }
     }
 
