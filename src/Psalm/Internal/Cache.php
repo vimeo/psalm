@@ -191,12 +191,12 @@ final class Cache
         }
 
         $fileHash = stream_get_contents($fp);
+        // Shorter than the length prefix: a writer died after truncating the header
+        if ($fileHash === false || strlen($fileHash) < 4) {
+            fclose($fp);
+            return null;
+        }
         if ($hash === null) {
-            if ($fileHash === '') {
-                fclose($fp);
-                return null;
-            }
-            assert($fileHash !== false);
             $hashLen = unpack('V', $fileHash)[1];
             assert(is_int($hashLen));
             $hash = substr($fileHash, 4, $hashLen);
@@ -236,7 +236,8 @@ final class Cache
         }
         if ($this->persistent) {
             $path = $this->dir . hash('xxh128', $key);
-            $f = fopen("$path.hash", 'w');
+            // 'c' does not truncate: that must wait until the lock is held, or readers see an empty header
+            $f = fopen("$path.hash", 'c');
             Assert::notFalse($f);
             flock($f, LOCK_EX);
             ftruncate($f, 0);

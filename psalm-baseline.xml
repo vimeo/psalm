@@ -1409,11 +1409,6 @@
     <MixedAssignment>
       <code><![CDATA[$dep]]></code>
     </MixedAssignment>
-    <PossiblyFalseArgument>
-      <code><![CDATA[$fileHash]]></code>
-      <code><![CDATA[$fileHash]]></code>
-      <code><![CDATA[$fileHash]]></code>
-    </PossiblyFalseArgument>
     <PossiblyInvalidArrayAccess>
       <code><![CDATA[unpack('V', $fileHash)[1]]]></code>
       <code><![CDATA[unpack('V', $key)[1]]]></code>
