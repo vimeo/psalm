@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ToStringTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -221,6 +223,15 @@ final class ToStringTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'echoObjectWithoutToString' => [
+                'code' => '<?php
+                    final class NoStr {}
+
+                    function g(NoStr $o): void {
+                        echo $o;
+                    }',
+                'error_message' => 'InvalidCast - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:30 - NoStr cannot be cast to string',
+            ],
             'echoClass' => [
                 'code' => '<?php
                     class A {}
