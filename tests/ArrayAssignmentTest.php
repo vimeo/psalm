@@ -126,6 +126,16 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'coalesceAssignmentOnTwoOptionalKeysOfAnArrayWithAShapeIntersection' => [
+                'code' => '<?php
+                    /** @var array{name?: string, age?: int}&array $data */
+                    $data = [];
+                    $data["name"] ??= "noname";
+                    $data["age"] ??= 90;',
+                'assertions' => [
+                    '$data' => 'array{age: int, name: string, ...<array-key, mixed>}',
+                ],
+            ],
             'floatLiteralKeysOutsideTheRangeOfAnIntAreInts' => [
                 'code' => '<?php
                     $big = [1.0e30 => 1];
