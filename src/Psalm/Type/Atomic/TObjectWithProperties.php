@@ -85,17 +85,6 @@ final class TObjectWithProperties extends TObject
         return $cloned;
     }
 
-    /**
-     * Every shape has its own key, as a union can hold several of them
-     *
-     * @psalm-mutation-free
-     */
-    #[Override]
-    public function getKey(bool $include_extra = true): string
-    {
-        return $this->getId();
-    }
-
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {

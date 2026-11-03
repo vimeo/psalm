@@ -861,22 +861,9 @@ final class TypeCombiner
                 return null;
             }
 
-            // an object with properties is a shape, which a named object doesn't have to match, and which
-            // `object` includes
-            if ($type instanceof TObjectWithProperties) {
-                if (!isset($combination->value_types['object'])) {
-                    $combination->value_types[$type_key] = $type;
-                }
-
-                return null;
-            }
-
-            $combination->named_object_types = null;
-
-            foreach ($combination->value_types as $existing_key => $existing_type) {
-                if ($existing_type instanceof TObjectWithProperties) {
-                    unset($combination->value_types[$existing_key]);
-                }
+            // an object with properties is a shape, which a named object doesn't have to match
+            if (!$type instanceof TObjectWithProperties) {
+                $combination->named_object_types = null;
             }
 
             $combination->value_types[$type_key] = $type;

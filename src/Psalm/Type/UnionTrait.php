@@ -50,7 +50,6 @@ use Psalm\Type\Atomic\TNonFalsyLowercaseString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
@@ -677,17 +676,7 @@ trait UnionTrait
      */
     public function hasObject(): bool
     {
-        if (isset($this->types['object'])) {
-            return true;
-        }
-
-        foreach ($this->types as $type) {
-            if ($type instanceof TObjectWithProperties) {
-                return true;
-            }
-        }
-
-        return false;
+        return isset($this->types['object']);
     }
 
     /**

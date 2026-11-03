@@ -208,29 +208,6 @@ final class TypeCombinationTest extends TestCase
                     'Error',
                 ],
             ],
-            'differentObjectsWithProperties' => [
-                'object{bar:int}|object{foo:string}',
-                [
-                    'object{foo: string}',
-                    'object{bar: int}',
-                ],
-            ],
-            'objectIncludesObjectsWithProperties' => [
-                'object',
-                [
-                    'object',
-                    'object{foo: string}',
-                    'Error',
-                ],
-            ],
-            'objectAfterObjectsWithProperties' => [
-                'object',
-                [
-                    'object{foo: string}',
-                    'object{bar: int}',
-                    'object',
-                ],
-            ],
             'complexArrayFallback1' => [
                 'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: list<array<array-key, mixed>>|null, ...<string, mixed>}',
                 [
