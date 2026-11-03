@@ -309,7 +309,8 @@ final class CallableTypeComparator
         ?TCallable $container_type_part,
     ): ?TCallable {
         try {
-            $method_storage = $codebase->methods->getStorage($method_id);
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
+            $method_storage = $codebase->methods->getStorage($declaring_method_id);
             $method_fqcln = $method_id->fq_class_name;
 
             $converted_return_type = null;
@@ -318,13 +319,15 @@ final class CallableTypeComparator
                 $converted_return_type = TypeExpander::expandUnion(
                     $codebase,
                     $method_storage->return_type,
-                    $method_fqcln,
+                    $codebase->classlike_storage_provider->get($declaring_method_id->fq_class_name)->is_trait
+                        ? $method_fqcln
+                        : $declaring_method_id->fq_class_name,
                     $method_fqcln,
                     null,
                 );
             }
 
-            $class_template_types = $codebase->methods->getClassLikeStorageForMethod($method_id)
+            $class_template_types = $codebase->methods->getClassLikeStorageForMethod($declaring_method_id)
                 ->template_types ?? [];
 
             $callable = self::withoutPurityTemplates(
