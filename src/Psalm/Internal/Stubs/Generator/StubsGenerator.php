@@ -319,6 +319,11 @@ final class StubsGenerator
                 continue;
             }
 
+            // no PHP type stands for string|int|float|bool
+            if ($atomic_type instanceof TScalar) {
+                return null;
+            }
+
             if ($atomic_type instanceof Scalar
                 || $atomic_type instanceof TObject
                 || $atomic_type instanceof TArray
