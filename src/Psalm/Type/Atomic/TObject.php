@@ -18,7 +18,7 @@ class TObject extends Atomic
 {
     use UnserializeMemoryUsageSuppressionTrait;
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     #[Override]
     public function getKey(bool $include_extra = true): string
