@@ -248,6 +248,8 @@ foreach ($baseMaps as $version => $data) {
     }
 }
 
+// Equality in reflected versions is insufficient: an override can supply an API missing from another image.
+// Keep it unless reflection makes it redundant in every version where the override exists.
 foreach ($customMaps as $version => $data) {
     foreach ($data as $func => $_) {
         if (!isset($baseMaps[$version][$func])) {

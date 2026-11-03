@@ -3,6 +3,7 @@
 
 declare(strict_types=1);
 
+// Reject a mistagged image before it overwrites the callmap of a different PHP version.
 if (isset($argv[1]) && $argv[1] !== PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION) {
     throw new RuntimeException('Expected PHP ' . $argv[1] . ', running ' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION);
 }
@@ -35,6 +36,7 @@ function typeToString($reflection_type, string $defaultType): string
         throw new LogicException('Unexpected reflection class ' . get_class($reflection_type) . ' found.');
     }
 
+    // Union members already include null; mixed and null also need no nullable suffix.
     if (!$reflection_type instanceof ReflectionUnionType
         && $reflection_type->allowsNull()
         && $type !== 'mixed'
@@ -108,6 +110,7 @@ foreach ([
         $stub = str_replace(['?', '<php'], ['', '<?php'], $stub);
         $stub = str_replace(['public const', 'protected const', 'private const'], 'const', $stub);
     }
+    // Parallel PHP-version runs must not overwrite a shared extension-stub file.
     $temporaryFile = tempnam(sys_get_temp_dir(), 'psalm-callmap-');
     if ($temporaryFile === false) {
         throw new RuntimeException('Cannot prepare the extension stub');
@@ -149,6 +152,7 @@ foreach (get_defined_functions() as $sub) {
     }
 }
 
+// Interfaces are not included in get_declared_classes(); their signatures need separate callmap entries.
 foreach (array_merge(get_declared_classes(), get_declared_interfaces()) as $class) {
     $refl = new ReflectionClass($class);
 

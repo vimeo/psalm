@@ -668,6 +668,7 @@ if ($arg === '--versions-plain') {
 }
 
 if ($arg === '--external-extensions') {
+    // Only bundled extensions follow PHP's version history; separately released extensions need their overrides kept.
     echo json_encode(array_keys(array_filter(SOURCES, static fn(string $source): bool => $source !== 'php'))) . PHP_EOL;
     exit(0);
 }
