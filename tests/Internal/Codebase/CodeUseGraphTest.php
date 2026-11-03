@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Psalm\Tests\Internal\Codebase;
 
 use Closure;
+use Psalm\Context;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Tests\TestCase;
+use ReflectionProperty;
 
 final class CodeUseGraphTest extends TestCase
 {
@@ -94,6 +96,74 @@ final class CodeUseGraphTest extends TestCase
         self::assertSame(
             [CodeUseGraph::fileNode('/write.php') => true],
             $graph->getReferencingNodes($property),
+        );
+    }
+
+    /**
+     * @param lowercase-string $method_id
+     */
+    private static function addMethodReference(
+        CodeUseGraph $graph,
+        string $method_id,
+        string $target_node,
+        string $file_path,
+    ): void {
+        $context = new Context();
+        $context->calling_method_id = $method_id;
+
+        $graph->addReference($target_node, $context, null, CodeUseGraph::EDGE_USE, $file_path);
+    }
+
+    public function testRemovingReferencesFromFileLeavesOtherFilesAndSeesLaterNodes(): void
+    {
+        $graph = new CodeUseGraph();
+        $target = CodeUseGraph::propertyNode('t\\c', 'value');
+        $method_a = CodeUseGraph::functionLikeNode('a\\c::m');
+        $method_b = CodeUseGraph::functionLikeNode('b\\c::m');
+        $method_a2 = CodeUseGraph::functionLikeNode('a\\c::n');
+
+        self::addMethodReference($graph, 'a\\c::m', $target, '/a.php');
+        self::addMethodReference($graph, 'b\\c::m', $target, '/b.php');
+
+        $graph->removeReferencesFromFile('/a.php');
+
+        self::assertSame([$method_b => true], $graph->getReferencingNodes($target));
+
+        // a node added to the file after the removal must be found by the next one
+        self::addMethodReference($graph, 'a\\c::n', $target, '/a.php');
+        self::assertSame([$method_b => true, $method_a2 => true], $graph->getReferencingNodes($target));
+
+        $graph->removeReferencesFromFile('/a.php');
+
+        self::assertSame([$method_b => true], $graph->getReferencingNodes($target));
+        self::assertNull($graph->getNodeFile($method_a));
+        self::assertNull($graph->getNodeFile($method_a2));
+        self::assertSame('/b.php', $graph->getNodeFile($method_b));
+    }
+
+    public function testFileIndexIsNotRebuiltBetweenRemovals(): void
+    {
+        $graph = new CodeUseGraph();
+        $target = CodeUseGraph::propertyNode('t\\c', 'value');
+
+        self::addMethodReference($graph, 'a\\c::m', $target, '/a.php');
+        self::addMethodReference($graph, 'b\\c::m', $target, '/b.php');
+
+        $index = new ReflectionProperty(CodeUseGraph::class, 'file_nodes');
+
+        $graph->removeReferencesFromFile('/a.php');
+        self::assertIsArray($index->getValue($graph), 'the index is built by the first removal');
+
+        $graph->removeReferencesFromFile('/b.php');
+        self::assertSame([], $index->getValue($graph), 'removals update the index instead of dropping it');
+
+        self::addMethodReference($graph, 'c\\c::m', $target, '/c.php');
+        self::assertSame(
+            [
+                '/c.php' => [CodeUseGraph::functionLikeNode('c\\c::m') => true],
+            ],
+            $index->getValue($graph),
+            'additions update the index instead of dropping it',
         );
     }
 
