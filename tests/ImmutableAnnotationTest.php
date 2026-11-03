@@ -20,6 +20,77 @@ final class ImmutableAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'memoizedCallStaysNullableAfterAnAssigningCondition' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    final class Im {
+                        public function random(): ?string {
+                            return null;
+                        }
+
+                        public function flag(): bool {
+                            return true;
+                        }
+                    }
+
+                    $o = new Im();
+                    if ($p = $o->random()) {
+                        echo $p;
+                    }
+                    $n = $o->random();',
+                'assertions' => [
+                    '$n===' => 'null|string',
+                ],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison', 'MissingPureAnnotation'],
+            ],
+            'memoizedCallIsFalsyInTheElseOfAnAssigningCondition' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    final class Im {
+                        public function random(): ?string {
+                            return null;
+                        }
+
+                        public function flag(): bool {
+                            return true;
+                        }
+                    }
+
+                    $o = new Im();
+                    if ($p = $o->random()) {
+                        $m = "a";
+                    } else {
+                        $m = $o->random();
+                    }',
+                'assertions' => [
+                    '$m===' => "''|'0'|'a'|null",
+                ],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison', 'MissingPureAnnotation'],
+            ],
+            'memoizedCallsStayUnnarrowedInTheElseOfAnAssigningConjunction' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    final class Im {
+                        public function random(): ?string {
+                            return null;
+                        }
+
+                        public function flag(): bool {
+                            return true;
+                        }
+                    }
+
+                    $o = new Im();
+                    if ($p = $o->random() && $o->flag()) {
+                        $m = "a";
+                    } else {
+                        $m = $o->random();
+                    }',
+                'assertions' => [
+                    '$m===' => 'null|string',
+                ],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison', 'MissingPureAnnotation'],
+            ],
             'SKIPPED-noMissing' => [
                 'code' => '<?php
                     /** @psalm-immutable */
