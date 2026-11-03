@@ -1459,6 +1459,12 @@ class Reconciler
 
         if ($changed) {
             $existing_types[$base_key] = $existing_types[$base_key]->setTypes($types);
+
+            self::adjustTObjectWithPropertiesType(
+                self::breakUpPathIntoParts($base_key),
+                $existing_types,
+                $existing_types[$base_key],
+            );
         }
     }
 

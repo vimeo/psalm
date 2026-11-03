@@ -199,6 +199,21 @@ final class AnnotationTest extends TestCase
                     '$a===' => 'object{some:int, other:string}',
                 ],
             ],
+            'objectShapeNestedPropertyNotNullNarrowsTheOuterShape' => [
+                'code' => '<?php
+                    /** @return object{b: object{c: null|int, d: string}} */
+                    function getA(): object {
+                        return new stdClass();
+                    }
+
+                    $a = getA();
+                    if ($a->b->c === null) {
+                        throw new Exception("");
+                    }',
+                'assertions' => [
+                    '$a===' => 'object{b:object{c:int, d:string}}',
+                ],
+            ],
             'objectShapePropertyIssetNarrowsTheShape' => [
                 'code' => '<?php
                     /** @return object{some: null|int, other: string} */
