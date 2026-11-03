@@ -773,82 +773,27 @@ final class MethodSignatureTest extends TestCase
                         public function getTraceAsString(): string;
                     }',
             ],
-            'nativeToStringWithoutReturnSignatureIn80' => [
+            'implicitStringableWithoutReturnSignature' => [
                 'code' => '<?php
-                    final class E extends Exception {
-                        public function __toString() { return "exception"; }
+                    final class Text {
+                        public function __toString() {
+                            return "text";
+                        }
                     }
-                    final class Failure extends Error {
-                        public function __toString() { return "error"; }
-                    }
-                    /** @extends ReflectionClass<object> */
-                    final class Reflection extends ReflectionClass {
-                        public function __toString() { return "reflection"; }
-                    }
-                    final class ReflectionInterface implements Reflector {
-                        public function __toString() { return "reflector"; }
-                    }
-                    $exception = (new E())->__toString();
-                    $error = (new Failure())->__toString();
-                    $reflection = (new Reflection(stdClass::class))->__toString();
-                    $reflector = (new ReflectionInterface())->__toString();',
-                'assertions' => [
-                    '$exception' => 'string',
-                    '$error' => 'string',
-                    '$reflection' => 'string',
-                    '$reflector' => 'string',
-                ],
+                    $text = (new Text())->__toString();',
+                'assertions' => ['$text' => 'string'],
                 'ignored_issues' => [],
-                'php_version' => '8.0',
+                'php_version' => '8.1',
             ],
-            'nativeToStringWithoutReturnSignatureIn84' => [
+            'explicitStringableWithoutReturnSignature' => [
                 'code' => '<?php
-                    final class E extends Exception {
-                        public function __toString() { return "exception"; }
+                    final class Text implements Stringable {
+                        public function __toString() {
+                            return "text";
+                        }
                     }
-                    final class Failure extends Error {
-                        public function __toString() { return "error"; }
-                    }
-                    /** @extends ReflectionClass<object> */
-                    final class Reflection extends ReflectionClass {
-                        public function __toString() { return "reflection"; }
-                    }
-                    final class ReflectionInterface implements Reflector {
-                        public function __toString() { return "reflector"; }
-                    }
-                    $exception = (new E())->__toString();
-                    $error = (new Failure())->__toString();
-                    $reflection = (new Reflection(stdClass::class))->__toString();
-                    $reflector = (new ReflectionInterface())->__toString();',
-                'assertions' => [
-                    '$exception' => 'string',
-                    '$error' => 'string',
-                    '$reflection' => 'string',
-                    '$reflector' => 'string',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.4',
-            ],
-            'nativeToStringFromTraits' => [
-                'code' => '<?php
-                    trait StringableTrait {
-                        public function __TOSTRING() { return "exception"; }
-                    }
-                    trait Renderer {
-                        public function render(): string { return "error"; }
-                    }
-                    final class E extends Exception {
-                        use StringableTrait;
-                    }
-                    final class Failure extends Error {
-                        use Renderer { render as __toString; }
-                    }
-                    $exception = (new E())->__toString();
-                    $error = (new Failure())->__toString();',
-                'assertions' => [
-                    '$exception' => 'string',
-                    '$error' => 'string',
-                ],
+                    $text = (new Text())->__toString();',
+                'assertions' => ['$text' => 'string'],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
@@ -1205,6 +1150,85 @@ final class MethodSignatureTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.5',
+            ],
+            'nativeToStringWithoutReturnSignatureIn80' => [
+                'code' => '<?php
+                    final class E extends Exception {
+                        public function __toString() { return "exception"; }
+                    }
+                    final class Failure extends Error {
+                        public function __toString() { return "error"; }
+                    }
+                    /** @extends ReflectionClass<object> */
+                    final class Reflection extends ReflectionClass {
+                        public function __toString() { return "reflection"; }
+                    }
+                    final class ReflectionInterface implements Reflector {
+                        public function __toString() { return "reflector"; }
+                    }
+                    $exception = (new E())->__toString();
+                    $error = (new Failure())->__toString();
+                    $reflection = (new Reflection(stdClass::class))->__toString();
+                    $reflector = (new ReflectionInterface())->__toString();',
+                'assertions' => [
+                    '$exception' => 'string',
+                    '$error' => 'string',
+                    '$reflection' => 'string',
+                    '$reflector' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nativeToStringWithoutReturnSignatureIn84' => [
+                'code' => '<?php
+                    final class E extends Exception {
+                        public function __toString() { return "exception"; }
+                    }
+                    final class Failure extends Error {
+                        public function __toString() { return "error"; }
+                    }
+                    /** @extends ReflectionClass<object> */
+                    final class Reflection extends ReflectionClass {
+                        public function __toString() { return "reflection"; }
+                    }
+                    final class ReflectionInterface implements Reflector {
+                        public function __toString() { return "reflector"; }
+                    }
+                    $exception = (new E())->__toString();
+                    $error = (new Failure())->__toString();
+                    $reflection = (new Reflection(stdClass::class))->__toString();
+                    $reflector = (new ReflectionInterface())->__toString();',
+                'assertions' => [
+                    '$exception' => 'string',
+                    '$error' => 'string',
+                    '$reflection' => 'string',
+                    '$reflector' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'nativeToStringFromTraits' => [
+                'code' => '<?php
+                    trait StringableTrait {
+                        public function __TOSTRING() { return "exception"; }
+                    }
+                    trait Renderer {
+                        public function render(): string { return "error"; }
+                    }
+                    final class E extends Exception {
+                        use StringableTrait;
+                    }
+                    final class Failure extends Error {
+                        use Renderer { render as __toString; }
+                    }
+                    $exception = (new E())->__toString();
+                    $error = (new Failure())->__toString();',
+                'assertions' => [
+                    '$exception' => 'string',
+                    '$error' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
@@ -1870,25 +1894,17 @@ final class MethodSignatureTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
-            'nativeToStringRejectsIncompatibleExplicitReturnType' => [
+            'stringableChildInterfaceStillRequiresDeclaredReturnType' => [
                 'code' => '<?php
-                    final class E extends Exception {
-                        public function __toString(): int { return 1; }
-                    }',
-                'error_message' => 'InvalidToString',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'nativeToStringTraitAliasRequiresReturnSignature' => [
-                'code' => '<?php
-                    trait Renderer {
-                        /** @return string */
-                        public function render() { return "exception"; }
+                    interface TextInterface extends Stringable {
+                        public function __toString(): string;
                     }
-                    final class E extends Exception {
-                        use Renderer { render as __toString; }
+                    final class Text implements TextInterface {
+                        public function __toString() {
+                            return "text";
+                        }
                     }',
-                'error_message' => 'MethodSignatureMustProvideReturnType',
+                'error_message' => 'MethodSignatureMismatch',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
@@ -2090,6 +2106,28 @@ final class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
                 'error_levels' => [],
                 'php_version' => '8.4',
+            ],
+            'nativeToStringRejectsIncompatibleExplicitReturnType' => [
+                'code' => '<?php
+                    final class E extends Exception {
+                        public function __toString(): int { return 1; }
+                    }',
+                'error_message' => 'InvalidToString',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nativeToStringTraitAliasRequiresReturnSignature' => [
+                'code' => '<?php
+                    trait Renderer {
+                        /** @return string */
+                        public function render() { return "exception"; }
+                    }
+                    final class E extends Exception {
+                        use Renderer { render as __toString; }
+                    }',
+                'error_message' => 'MethodSignatureMustProvideReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

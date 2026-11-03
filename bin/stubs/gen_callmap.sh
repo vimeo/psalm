@@ -32,4 +32,3 @@ if [ "$failed" -ne 0 ]; then
 fi
 
 php bin/stubs/gen_callmap.php
-php bin/stubs/gen_callmap.php

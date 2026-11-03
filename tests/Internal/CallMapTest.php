@@ -45,6 +45,22 @@ final class CallMapTest extends TestCase
         }
     }
 
+    public function testMongoDbMonitoringOverridesArePreserved(): void
+    {
+        foreach ([70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 86] as $version) {
+            /** @var TCallMap $map */
+            $map = require self::DICTIONARY_PATH . '/CallMap_' . $version . '.php';
+            self::assertSame(
+                ['void', 'event' => 'MongoDB\\Driver\\Monitoring\\ServerChangedEvent'],
+                $map['mongodb\\driver\\monitoring\\sdamsubscriber::serverchanged'] ?? null,
+            );
+            self::assertSame(
+                ['void', 'level' => 'int', 'domain' => 'string', 'message' => 'string'],
+                $map['mongodb\\driver\\monitoring\\logsubscriber::log'] ?? null,
+            );
+        }
+    }
+
     public function testDictionaryPathMustBeAReadableDirectory(): void
     {
         self::assertDirectoryExists(self::DICTIONARY_PATH, self::DICTIONARY_PATH . " is not a valid directory");

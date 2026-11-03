@@ -144,6 +144,8 @@ final class MethodComparator
         // CallMapHandler needed due to https://github.com/vimeo/psalm/issues/10378
         if (!$guide_classlike_storage->user_defined
             && $implementer_classlike_storage->user_defined
+            // PHP supplies the string return signature for an untyped __toString implementation.
+            && strtolower($cased_guide_method_id) !== 'stringable::__tostring'
             && $codebase->analysis_php_version_id >= 8_01_00
             // PHP supplies string for declared __toString methods, but not trait methods aliased to it.
             && strtolower($implementer_method_storage->cased_name ?? '') !== '__tostring'
