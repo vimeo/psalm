@@ -1933,6 +1933,19 @@ final class ArgumentAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
+        if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
+            // the argument check reports a bad argument itself, but the implicit __toString call is signalled
+            // whether or not a data-flow graph is built
+            $input_type = CastAnalyzer::castStringAttempt(
+                $statements_analyzer,
+                $context,
+                $input_type,
+                $expr,
+                false,
+                false,
+            );
+        }
+
         if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
             return;
         }
@@ -1948,18 +1961,6 @@ final class ArgumentAnalyzer
         // printed by code only running from the command line: to a terminal
         if ($expr->getAttribute(CliOutput::PRINTED_ATTRIBUTE) === true) {
             $removed_taints |= CliOutput::HTML_TAINTS;
-        }
-
-        if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
-            // only the data-flow path is wanted: the argument check reports a bad argument itself
-            $input_type = CastAnalyzer::castStringAttempt(
-                $statements_analyzer,
-                $context,
-                $input_type,
-                $expr,
-                false,
-                false,
-            );
         }
 
         $callable_kind = $in_call_map ? 'builtin' : ($method_id ? 'magic-method' : 'callable-object');

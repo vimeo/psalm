@@ -2863,6 +2863,30 @@ final class CapabilitiesTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'impureToStringCalledImplicitlyByAnArgument' => [
+                'code' => '<?php
+                    final class Imp {
+                        private int $n = 0;
+
+                        public function __toString(): string {
+                            $this->n++;
+
+                            return (string) $this->n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function takesString(string $s): string {
+                        return $s;
+                    }
+
+                    /** @psalm-pure */
+                    function f(Imp $o): string {
+                        return takesString($o);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => ['ImplicitToStringCast'],
+            ],
             'conditionalCapabilitiesOfAFunctionCalledWithoutTheArgument' => [
                 'code' => '<?php
                     /** @psalm-capabilities ($seed is null ? io : pure) */
