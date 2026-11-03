@@ -47,7 +47,7 @@ function normalizeParameters(string $func, array $parameters): array
     $normalizedEntries = [];
     
     foreach ($parameters as $key => $entry) {
-        if ($key === 0) {
+        if ($key === 0 || $key === -1) {
             continue;
         }
         $normalizedKey = $key;

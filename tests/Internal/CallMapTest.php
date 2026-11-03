@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\Depends;
 use Psalm\Tests\TestCase;
 use RegexIterator;
 
+use function array_diff_key;
 use function is_file;
 use function uksort;
 
@@ -29,14 +30,15 @@ final class CallMapTest extends TestCase
             $extensions = require self::DICTIONARY_PATH . '/autogen/CallMapExtensions_' . $version . '.php';
 
             self::assertArrayHasKey('iterator::current', $map);
-            self::assertSame(['mixed'], $map['iterator::current']);
-            self::assertSame(['mixed'], $map['recursiveiterator::current']);
+            self::assertSame('mixed', $map['iterator::current'][0]);
+            self::assertSame('mixed', $map['recursiveiterator::current'][0]);
             self::assertSame('spl', $extensions['recursiveiterator::current']);
             self::assertArrayHasKey('datetimeinterface::format', $map);
             self::assertSame('date', $extensions['datetimeinterface::format']);
 
             if ($version >= 84) {
-                self::assertSame(['int'], $map['datetimeinterface::getmicrosecond']);
+                self::assertSame('int', $map['datetimeinterface::getmicrosecond'][0]);
+                self::assertSame('int', $map['datetimeinterface::getmicrosecond'][-1]);
                 self::assertSame('date', $extensions['datetimeinterface::getmicrosecond']);
             } else {
                 self::assertArrayNotHasKey('datetimeinterface::getmicrosecond', $map);
@@ -52,11 +54,11 @@ final class CallMapTest extends TestCase
             $map = require self::DICTIONARY_PATH . '/CallMap_' . $version . '.php';
             self::assertSame(
                 ['void', 'event' => 'MongoDB\\Driver\\Monitoring\\ServerChangedEvent'],
-                $map['mongodb\\driver\\monitoring\\sdamsubscriber::serverchanged'] ?? null,
+                array_diff_key($map['mongodb\\driver\\monitoring\\sdamsubscriber::serverchanged'] ?? [], [-1 => true]),
             );
             self::assertSame(
                 ['void', 'level' => 'int', 'domain' => 'string', 'message' => 'string'],
-                $map['mongodb\\driver\\monitoring\\logsubscriber::log'] ?? null,
+                array_diff_key($map['mongodb\\driver\\monitoring\\logsubscriber::log'] ?? [], [-1 => true]),
             );
         }
     }
@@ -120,7 +122,7 @@ final class CallMapTest extends TestCase
     {
         foreach ($callMaps as $callMap) {
             foreach ($callMap as $function => $signature) {
-                self::assertArrayKeysAreZeroOrString($signature, "Function " . $function . " in main CallMap has invalid keys");
+                self::assertArrayKeysAreZeroOrString(array_diff_key($signature, [-1 => true]), "Function " . $function . " in main CallMap has invalid keys");
                 self::assertArrayValuesAreStrings($signature, "Function " . $function . " in main CallMap has non-string values");
             }
         }

@@ -125,14 +125,21 @@ final class MethodComparator
             $suppressed_issues,
         );
 
-        if ($guide_method_storage->signature_return_type && $prevent_method_signature_mismatch) {
+        $guide_signature_return_type = !$guide_classlike_storage->user_defined
+            && InternalCallMapHandler::inCallMap($cased_guide_method_id)
+            ? InternalCallMapHandler::getSignatureReturnType($cased_guide_method_id)
+            : $guide_method_storage->signature_return_type;
+
+        if ($guide_signature_return_type && $prevent_method_signature_mismatch
+            && ($guide_classlike_storage->user_defined || $implementer_method_storage->signature_return_type)
+        ) {
             self::compareMethodSignatureReturnTypes(
                 $codebase,
                 $guide_classlike_storage,
                 $implementer_classlike_storage,
                 $guide_method_storage,
                 $implementer_method_storage,
-                $guide_method_storage->signature_return_type,
+                $guide_signature_return_type,
                 $cased_guide_method_id,
                 $implementer_called_class_name,
                 $cased_implementer_method_id,
@@ -141,17 +148,13 @@ final class MethodComparator
             );
         }
 
-        // CallMapHandler needed due to https://github.com/vimeo/psalm/issues/10378
         if (!$guide_classlike_storage->user_defined
             && $implementer_classlike_storage->user_defined
-            // PHP supplies the string return signature for an untyped __toString implementation.
-            && strtolower($cased_guide_method_id) !== 'stringable::__tostring'
-            && $codebase->analysis_php_version_id >= 8_01_00
-            // PHP supplies string for declared __toString methods, but not trait methods aliased to it.
-            && strtolower($implementer_method_storage->cased_name ?? '') !== '__tostring'
-            && (($guide_method_storage->return_type && InternalCallMapHandler::inCallMap($cased_guide_method_id))
-                || $guide_method_storage->signature_return_type
-            ) && !$implementer_method_storage->signature_return_type
+            // PHP 8 supplies string for declared __toString methods, but not trait methods aliased to it.
+            && ($codebase->analysis_php_version_id < 8_00_00
+                || strtolower($implementer_method_storage->cased_name ?? '') !== '__tostring')
+            && $guide_signature_return_type
+            && !$implementer_method_storage->signature_return_type
             && !array_any(
                 $implementer_method_storage->attributes,
                 static fn(AttributeStorage $s): bool => $s->fq_class_name === 'ReturnTypeWillChange',

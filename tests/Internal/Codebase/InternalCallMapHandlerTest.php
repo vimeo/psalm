@@ -30,7 +30,7 @@ use ReflectionMethod;
 use ReflectionParameter;
 use ReflectionType;
 
-use function array_shift;
+use function array_diff_key;
 use function class_exists;
 use function count;
 use function enum_exists;
@@ -259,7 +259,7 @@ final class InternalCallMapHandlerTest extends TestCase
         self::assertArrayKeysAreStrings($callMap, "Returned CallMap has non-string keys");
         self::assertArrayValuesAreArrays($callMap, "Returned CallMap has non-array values");
         foreach ($callMap as $function => $signature) {
-            self::assertArrayKeysAreZeroOrString($signature, "Function " . $function . " in returned CallMap has invalid keys");
+            self::assertArrayKeysAreZeroOrString(array_diff_key($signature, [-1 => true]), "Function " . $function . " in returned CallMap has invalid keys");
             self::assertArrayValuesAreStrings($signature, "Function " . $function . " in returned CallMap has non-string values");
             foreach ($signature as $type) {
                 self::assertStringIsParsableType($type, "Function " . $function . " in returned CallMap contains invalid type declaration " . $type);
@@ -275,6 +275,35 @@ final class InternalCallMapHandlerTest extends TestCase
         $this->assertIsArray($collator_sort_entry->params);
         $this->assertArrayHasKey(1, $collator_sort_entry->params);
         $this->assertEquals('arr', $collator_sort_entry->params[1]->name);
+    }
+
+    public function testSignatureReturnTypesAreSeparateFromAnalysisTypes(): void
+    {
+        $project_analyzer = new ProjectAnalyzer(
+            new TestConfig(),
+            new Providers(new FakeFileProvider(), new FakeParserCacheProvider()),
+        );
+        $project_analyzer->setPhpVersion('8.1', 'tests');
+
+        self::assertNull(InternalCallMapHandler::getSignatureReturnType('AMQPValue::toAmqpValue'));
+        self::assertSame('mixed', InternalCallMapHandler::getSignatureReturnType('JsonSerializable::jsonSerialize')?->getId());
+        self::assertSame('int', InternalCallMapHandler::getSignatureReturnType('strlen')?->getId());
+        self::assertSame(
+            'mixed',
+            InternalCallMapHandler::getSignatureReturnType("max'1")?->getId(),
+        );
+        self::assertNull(InternalCallMapHandler::getSignatureReturnType('not_a_builtin'));
+        $callables = InternalCallMapHandler::getCallablesFromCallMap('strlen');
+        self::assertNotNull($callables);
+        self::assertSame('int<0, max>', $callables[0]->return_type?->getId());
+        $params = $callables[0]->params;
+        self::assertNotNull($params);
+        self::assertArrayHasKey(0, $params);
+        self::assertCount(1, $params);
+        self::assertSame('string', $params[0]->name);
+
+        $project_analyzer->setPhpVersion('8.0', 'tests');
+        self::assertNull(InternalCallMapHandler::getSignatureReturnType('JsonSerializable::jsonSerialize'));
     }
 
     public function testGetCallablesFromCallmapRemovesWPrefixFromParameterNames(): void
@@ -427,8 +456,8 @@ final class InternalCallMapHandlerTest extends TestCase
             return;
         }
 
-        /** @var string $entryReturnType */
-        $entryReturnType = array_shift($callMapEntry);
+        $entryReturnType = $callMapEntry[0];
+        unset($callMapEntry[0], $callMapEntry[-1]);
 
         if ($functionIgnored) {
             try {
@@ -481,8 +510,8 @@ final class InternalCallMapHandlerTest extends TestCase
             return;
         }
 
-        /** @var string $entryReturnType */
-        $entryReturnType = array_shift($callMapEntry);
+        $entryReturnType = $callMapEntry[0];
+        unset($callMapEntry[0], $callMapEntry[-1]);
 
         /** @var array<string, string> $callMapEntry */
         $this->assertEntryParameters($function, $callMapEntry);

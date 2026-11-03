@@ -785,6 +785,46 @@ final class MethodSignatureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'untypedAmqpValueDoesNotRequireNativeReturnType' => [
+                'code' => '<?php
+                    final class Value implements AMQPValue {
+                        /** @return string */
+                        public function toAmqpValue() {
+                            return "value";
+                        }
+                    }
+                    $value = (new Value())->toAmqpValue();',
+                'assertions' => ['$value' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'tentativeReturnTypeWillChangeRemainsSupported' => [
+                'code' => '<?php
+                    final class Value implements JsonSerializable {
+                        /** @return int */
+                        #[ReturnTypeWillChange]
+                        public function jsonSerialize() {
+                            return 1;
+                        }
+                    }
+                    $value = (new Value())->jsonSerialize();',
+                'assertions' => ['$value' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'untypedJsonSerializableBeforeTentativeReturns' => [
+                'code' => '<?php
+                    final class Value implements JsonSerializable {
+                        /** @return int */
+                        public function jsonSerialize() {
+                            return 1;
+                        }
+                    }
+                    $value = (new Value())->jsonSerialize();',
+                'assertions' => ['$value' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'explicitStringableWithoutReturnSignature' => [
                 'code' => '<?php
                     final class Text implements Stringable {
@@ -1917,6 +1957,17 @@ final class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'MethodSignatureMustProvideReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'nativeCallmapSignatureRejectsIncompatibleReturnType' => [
+                'code' => '<?php
+                    final class Counter implements Countable {
+                        public function count(): string {
+                            return "one";
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],

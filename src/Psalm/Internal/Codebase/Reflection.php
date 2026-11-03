@@ -322,6 +322,7 @@ final class Reflection
             InternalCallMapHandler::addReturnTaintFlows($storage, $method_id);
 
             $storage->return_type = $callables[0]->return_type;
+            $storage->signature_return_type = InternalCallMapHandler::getSignatureReturnType($method_id);
             /** @psalm-suppress UnusedMethodCall */
             $storage->return_type->queueClassLikesForScanning($this->codebase);
         } else {
@@ -409,6 +410,7 @@ final class Reflection
 
         $storage = new FunctionStorage();
         $storage->builtin = $reflection_function?->isInternal() ?? true;
+        $storage->signature_return_type = InternalCallMapHandler::getSignatureReturnType($function_id);
 
         if ($callmap_callable !== null
             && $callmap_callable->params !== null

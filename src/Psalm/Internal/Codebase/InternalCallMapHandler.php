@@ -18,6 +18,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\TaintKind;
+use Psalm\Type\Union;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
@@ -25,7 +26,6 @@ use UnexpectedValueException;
 
 use function array_fill_keys;
 use function array_keys;
-use function array_shift;
 use function assert;
 use function class_exists;
 use function count;
@@ -290,13 +290,15 @@ final class InternalCallMapHandler
         $possible_callables = [];
 
         foreach ($call_map_functions as $call_map_function_args) {
-            $return_type = Type::parseString(array_shift($call_map_function_args));
+            assert(isset($call_map_function_args[0]));
+            $return_type = Type::parseString($call_map_function_args[0]);
+            unset($call_map_function_args[0], $call_map_function_args[-1]);
 
             $function_params = [];
 
             $arg_offset = 0;
 
-            /** @var string $arg_name - key type changed with above array_shift */
+            /** @var array<string, string> $call_map_function_args */
             foreach ($call_map_function_args as $arg_name => $arg_type) {
                 $by_reference = false;
                 $optional = false;
@@ -425,6 +427,13 @@ final class InternalCallMapHandler
         self::$taint_sink_map = $taint_map;
 
         return self::$call_map;
+    }
+
+    /** The reflected native or tentative return type, independent of analysis overrides. */
+    public static function getSignatureReturnType(string $method_id): ?Union
+    {
+        $entry = self::getCallMap()[strtolower($method_id)] ?? null;
+        return isset($entry[-1]) ? Type::parseString($entry[-1]) : null;
     }
 
     /**

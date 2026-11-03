@@ -49,16 +49,21 @@ function typeToString($reflection_type, string $defaultType): string
 }
 
 /**
- * @return array<string, array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string}>
+ * @return array<int|string, string>
  */
 function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction, string $defaultReturnType): array
 {
     // phpcs:disable SlevomatCodingStandard.Numbers.RequireNumericLiteralSeparator.RequiredNumericLiteralSeparator
-    $res = PHP_VERSION_ID >= 80100 ? (
+    $signature = PHP_VERSION_ID >= 80100 ? (
         $reflectionFunction->getTentativeReturnType() ?? $reflectionFunction->getReturnType()
     ) : $reflectionFunction->getReturnType();
 
-    $res = [typeToString($res, $defaultReturnType)];
+    $res = [typeToString($signature, $defaultReturnType)];
+
+    // Keep the reflected contract separate from the return type refined by callmap overrides.
+    if ($signature !== null) {
+        $res[-1] = typeToString($signature, 'mixed');
+    }
 
     foreach ($reflectionFunction->getParameters() as $param) {
         $key = $param->getName();

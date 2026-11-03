@@ -71,11 +71,34 @@ InternalCallMapHandlerTest::$ignoredFunctions`.
 
 ## Full callmap format
 
+Each entry keeps its analysis (or "doc") return type at index `0`. The optional
+index `-1` records the native or tentative return type extracted from PHP:
+
+```php
+'strlen' => [
+    0 => 'int<0, max>',
+    -1 => 'int',
+    'string' => 'string',
+],
+'amqpvalue::toamqpvalue' => [
+    0 => 'mixed',
+],
+```
+
+Only the signature return type imposes a native return-type requirement on an
+implementation. A missing `-1` means no reflected return signature; it differs
+from an explicit `-1 => 'mixed'`. Stubs and index `0` still provide the types used
+to analyse calls. PHPDoc compatibility checks are separate from native signature
+checks.
+
+Edit the analysis return type in the overrides, then regenerate. Signature return
+types come from reflection and are retained independently of overrides and
+alternate signatures; the generator does not copy analysis refinements into them.
+
 A callmap (`dictionaries/CallMap_*.php`, and `dictionaries/override/CallMap.php`) has function/method
 names as keys and an array representing the corresponding signature as a value.
 
-First element of that value is a return type (it also doesn't have a key), and
-subsequent elements represent function/method parameters. Parameter name for an
+Entries with string keys represent function/method parameters. Parameter name for an
 optional parameter is postfixed with `=`, references with `&`/`&r_`/`&w_`/`&rw_`
 (depending on the read/write meaning of the reference param) and 
 variadic args are prefixed with `...`.
