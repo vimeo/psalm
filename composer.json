@@ -95,7 +95,7 @@
             "dev-1.x": "1.x-dev"
         },
         "skills": {
-            "source": "resources/skills"
+            "source": "skills"
         }
     },
     "autoload": {

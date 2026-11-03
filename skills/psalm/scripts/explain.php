@@ -22,7 +22,7 @@ function fail(string $message): never
  */
 function findPsalmRoot(): ?string
 {
-    $candidates = [dirname(__DIR__, 4)];
+    $candidates = [dirname(__DIR__, 3)];
     $dir = getcwd();
     while (is_string($dir)) {
         $candidates[] = $dir . '/vendor/vimeo/psalm';

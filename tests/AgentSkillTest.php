@@ -23,11 +23,11 @@ use function str_contains;
 use function str_ends_with;
 
 /**
- * Keeps the user-facing agent skill in resources/skills in sync with the CLI and the docs it names.
+ * Keeps the user-facing agent skill in skills/ in sync with the CLI and the docs it names.
  */
 final class AgentSkillTest extends BaseTestCase
 {
-    private const SKILL_DIR = __DIR__ . '/../resources/skills/psalm';
+    private const SKILL_DIR = __DIR__ . '/../skills/psalm';
 
     private const ISSUE_PATTERN = '/`(?:@psalm-suppress )?((?:Possibly|Mixed|Missing|Invalid|Unused|Tainted|Undefined'
         . '|Less|More|Redundant|Internal|Check|Trace|Unnecessary|Impure|ClassMust)[A-Za-z]*\*?)/';
@@ -100,9 +100,9 @@ final class AgentSkillTest extends BaseTestCase
     public function testSkillShipsWithThePackage(): void
     {
         $gitattributes = (string) file_get_contents(__DIR__ . '/../.gitattributes');
-        $this->assertFalse(str_contains($gitattributes, '/resources '), 'resources/ must not be export-ignored');
+        $this->assertFalse(str_contains($gitattributes, '/skills '), 'skills/ must not be export-ignored');
         $composer = (string) file_get_contents(__DIR__ . '/../composer.json');
-        $this->assertStringContainsString('"source": "resources/skills"', $composer);
+        $this->assertStringContainsString('"source": "skills"', $composer);
     }
 
     /**
