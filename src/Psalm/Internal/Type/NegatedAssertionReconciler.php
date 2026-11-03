@@ -32,6 +32,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -424,6 +425,14 @@ final class NegatedAssertionReconciler extends Reconciler
                         $existing_var_type->addType(new TNonEmptyLowercaseString());
                     } elseif ($string_type::class === TNonspecificLiteralString::class) {
                         $existing_var_type->addType(new TNonEmptyNonspecificLiteralString());
+                    }
+                } elseif ($assertion_type->value === "0") {
+                    // a non-empty string that is not "0" is not falsy
+                    foreach ($existing_var_type->getAtomicTypes() as $existing_key => $existing_atomic) {
+                        if ($existing_atomic::class === TNonEmptyString::class) {
+                            $existing_var_type->removeType($existing_key);
+                            $existing_var_type->addType(new TNonFalsyString());
+                        }
                     }
                 }
             } elseif ($assertion_type::class === TLiteralString::class) {
