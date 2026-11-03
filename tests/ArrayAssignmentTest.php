@@ -126,6 +126,45 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'unsetInABranchThatChecksTheOffsetEmptiesTheArray' => [
+                'code' => '<?php
+                    /** @var non-empty-array<string|int, int> $test */
+                    $test = ["test" => 0];
+                    /** @var string|int $k */
+                    $k = "test";
+                    if (isset($test[$k])) {
+                        unset($test[$k]);
+                    }',
+                'assertions' => [
+                    '$test===' => 'array<int|string, int>',
+                ],
+            ],
+            'unsetInABranchThatChecksALiteralOffsetEmptiesTheArray' => [
+                'code' => '<?php
+                    /** @var non-empty-array<string, int> $test */
+                    $test = ["a" => 0];
+                    if (array_key_exists("a", $test)) {
+                        unset($test["a"]);
+                    }',
+                'assertions' => [
+                    '$test===' => 'array<string, int>',
+                ],
+            ],
+            'unsetInTheElseBranchOfACheckEmptiesTheArray' => [
+                'code' => '<?php
+                    /** @var non-empty-array<string, int> $test */
+                    $test = ["a" => 0];
+                    /** @var string $k */
+                    $k = "a";
+                    if (isset($test[$k])) {
+                        echo 1;
+                    } else {
+                        unset($test[$k]);
+                    }',
+                'assertions' => [
+                    '$test===' => 'array<string, int>',
+                ],
+            ],
             'floatLiteralKeysOutsideTheRangeOfAnIntAreInts' => [
                 'code' => '<?php
                     $big = [1.0e30 => 1];
