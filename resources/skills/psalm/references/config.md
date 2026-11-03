@@ -43,7 +43,7 @@ Without it, the extension's methods return `mixed` and their taint sinks are mis
 
 | Attribute | Default | Effect |
 |---|---|---|
-| `errorLevel` | `1` | 1 strictest … 8 most lenient, see `docs/running_psalm/error_levels.md` |
+| `errorLevel` | `2` | 1 strictest … 8 most lenient, see `docs/running_psalm/error_levels.md` |
 | `findUnusedCode` | `true` | `Unused*` / `PossiblyUnused*` issues |
 | `findUnusedBaselineEntry` | `true` | `UnusedBaselineEntry` for stale baseline entries |
 | `runTaintAnalysis` | `true` | `SECURITY` findings |

@@ -11,9 +11,11 @@ are relative to this skill's directory.
 
 ## Workflow
 
-1. **Baseline.** Run the whole project once. More than 100 issues, issues in more than 10 files, or a
-   request to clean up a codebase or raise `errorLevel`: read [references/cleanup.md](references/cleanup.md)
-   before anything else and follow its phases from there.
+1. **Baseline.** Run the whole project once. Before anything else, read and follow the phases of:
+   - [references/strictness.md](references/strictness.md) for a request to lower `errorLevel` or turn on a
+     stricter option;
+   - [references/cleanup.md](references/cleanup.md) for more than 100 issues, issues in more than 10 files,
+     or a request to clean up a codebase.
 2. **Fix** by the rules in [Fixing issues](#fixing-issues), rerunning Psalm on the files you changed.
 3. **Gate.** Run the whole project after your last edit. Done when it exits `0`, and every change to
    `psalm.xml`, the baseline or a `@psalm-suppress` in the diff is one the user agreed to.

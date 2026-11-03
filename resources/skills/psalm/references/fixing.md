@@ -74,7 +74,3 @@ or raising `errorLevel`, on existing code.
 - `--ignore-baseline` shows every issue, including the ones in the baseline.
 - `UnusedBaselineEntry` means an entry no longer matches anything: run `--update-baseline`.
 
-## Raising errorLevel
-
-`errorLevel` goes from 1 (strictest) to 8. Each level adds issue types: `docs/running_psalm/error_levels.md`.
-To raise it on existing code: lower the number by one, fix or baseline the new issues, repeat.
