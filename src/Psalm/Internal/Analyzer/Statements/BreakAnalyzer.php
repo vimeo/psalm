@@ -48,9 +48,9 @@ final class BreakAnalyzer
             }
 
             if ($loop_scope->iteration_count === 0) {
-                // a variable this break leaves undefined is only possibly defined after the loop
+                // a variable a break out of the loop leaves undefined is only possibly defined after the loop
                 foreach ($loop_scope->possibly_defined_loop_parent_vars as $var_id => $type) {
-                    if (!isset($context->vars_in_scope[$var_id])) {
+                    if (!$leaving_switch && !isset($context->vars_in_scope[$var_id])) {
                         $loop_scope->possibly_defined_loop_parent_vars[$var_id] = $type->setPossiblyUndefined(true);
                     }
                 }
@@ -60,7 +60,7 @@ final class BreakAnalyzer
                         $previous_type = $loop_scope->possibly_defined_loop_parent_vars[$var_id] ?? null;
 
                         $loop_scope->possibly_defined_loop_parent_vars[$var_id] = Type::combineUnionTypes(
-                            $loop_scope->break_count > 0 && $previous_type === null
+                            !$leaving_switch && $loop_scope->break_count > 0 && $previous_type === null
                                 ? $type->setPossiblyUndefined(true)
                                 : $type,
                             $previous_type,
@@ -68,7 +68,9 @@ final class BreakAnalyzer
                     }
                 }
 
-                ++$loop_scope->break_count;
+                if (!$leaving_switch) {
+                    ++$loop_scope->break_count;
+                }
             }
 
             if ($context->finally_scope) {
