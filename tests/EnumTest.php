@@ -20,6 +20,17 @@ final class EnumTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'enumDeclaredInAConditional' => [
+                'code' => '<?php
+                    if (PHP_VERSION_ID >= 80100) {
+                        enum Suit {
+                            case Hearts;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'example' => [
                 'code' => '<?php
                     interface Colourful {

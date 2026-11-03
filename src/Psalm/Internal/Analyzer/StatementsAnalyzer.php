@@ -411,6 +411,73 @@ final class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * A class, enum or interface declared inside another statement, e.g. in a condition
+     */
+    private static function analyzeNestedClassLike(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\ClassLike $stmt,
+        ?Context $global_context,
+    ): void {
+        try {
+            if ($stmt instanceof PhpParser\Node\Stmt\Interface_ && $stmt->name !== null) {
+                (new InterfaceAnalyzer($stmt, $statements_analyzer->source, $stmt->name->name))->analyze();
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_ || $stmt instanceof PhpParser\Node\Stmt\Enum_) {
+                $class_analyzer = new ClassAnalyzer(
+                    $stmt,
+                    $statements_analyzer->source,
+                    $stmt->name->name ?? null,
+                );
+
+                $class_analyzer->analyze(null, $global_context);
+            }
+        } catch (InvalidArgumentException) {
+            // disregard this exception, we'll likely see it elsewhere in the form
+            // of an issue
+        }
+    }
+
+    /**
+     * The statements that declare something, mark a position or are not understood
+     *
+     * @return false|null
+     */
+    private static function analyzeDeclarationStatement(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt $stmt,
+        Context $context,
+        ?Context $global_context,
+    ): ?bool {
+        if ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
+            TraitAnalyzer::analyze($statements_analyzer, $stmt, $context);
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
+            self::analyzeNestedClassLike($statements_analyzer, $stmt, $global_context);
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop
+            || $stmt instanceof PhpParser\Node\Stmt\Goto_
+            || $stmt instanceof PhpParser\Node\Stmt\Label
+        ) {
+            // do nothing
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\Declare_) {
+            DeclareAnalyzer::analyze($statements_analyzer, $stmt, $context);
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\HaltCompiler) {
+            $context->has_returned = true;
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\Block) {
+            foreach ($stmt->stmts as $sub) {
+                self::analyzeStatement($statements_analyzer, $sub, $context, $global_context);
+            }
+        } elseif (IssueBuffer::accepts(
+            new UnrecognizedStatement(
+                'Psalm does not understand ' . $stmt::class,
+                new CodeLocation($statements_analyzer->source, $stmt),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        )) {
+            return false;
+        }
+
+        return null;
+    }
+
+    /**
      * @return false|null
      */
     private static function analyzeStatement(
@@ -674,45 +741,8 @@ final class StatementsAnalyzer extends SourceAnalyzer
             InstancePropertyAssignmentAnalyzer::analyzeStatement($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
             ClassConstAnalyzer::analyzeAssignment($statements_analyzer, $stmt, $context);
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
-            try {
-                $class_analyzer = new ClassAnalyzer(
-                    $stmt,
-                    $statements_analyzer->source,
-                    $stmt->name->name ?? null,
-                );
-
-                $class_analyzer->analyze(null, $global_context);
-            } catch (InvalidArgumentException) {
-                // disregard this exception, we'll likely see it elsewhere in the form
-                // of an issue
-            }
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
-            TraitAnalyzer::analyze($statements_analyzer, $stmt, $context);
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
-            // do nothing
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\Goto_) {
-            // do nothing
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\Label) {
-            // do nothing
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\Declare_) {
-            DeclareAnalyzer::analyze($statements_analyzer, $stmt, $context);
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\HaltCompiler) {
-            $context->has_returned = true;
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\Block) {
-            foreach ($stmt->stmts as $sub) {
-                self::analyzeStatement($statements_analyzer, $sub, $context, $global_context);
-            }
-        } else {
-            if (IssueBuffer::accepts(
-                new UnrecognizedStatement(
-                    'Psalm does not understand ' . $stmt::class,
-                    new CodeLocation($statements_analyzer->source, $stmt),
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            )) {
-                return false;
-            }
+        } elseif (self::analyzeDeclarationStatement($statements_analyzer, $stmt, $context, $global_context) === false) {
+            return false;
         }
 
         if (self::afterStatementAnalysis($stmt, $context, $statements_analyzer) === false) {

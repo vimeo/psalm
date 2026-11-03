@@ -22,6 +22,15 @@ final class InterfaceTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'interfaceDeclaredInAConditional' => [
+                'code' => '<?php
+                    if (PHP_VERSION_ID < 80000) {
+                        interface Stringy
+                        {
+                            public function __toString(): string;
+                        }
+                    }',
+            ],
             'extendsAndImplements' => [
                 'code' => '<?php
                     interface A
