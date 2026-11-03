@@ -24,6 +24,31 @@ final class MixinAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticMethodsOfSeveralMixins' => [
+                'code' => '<?php
+                    interface Mixin
+                    {
+                        public static function mix(): string;
+                    }
+
+                    interface OtherMixin
+                    {
+                        public static function otherMix(): int;
+                    }
+
+                    /**
+                     * @mixin Mixin
+                     * @mixin OtherMixin
+                     */
+                    class Bar {}
+
+                    $a = Bar::mix();
+                    $b = Bar::otherMix();',
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'int',
+                ],
+            ],
             'mixinMethodChargesWhatCallDoes' => [
                 'code' => '<?php
                     final class Connection {
@@ -1128,6 +1153,27 @@ final class MixinAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticMethodOfNoneOfSeveralMixins' => [
+                'code' => '<?php
+                    interface Mixin
+                    {
+                        public static function mix(): void;
+                    }
+
+                    interface OtherMixin
+                    {
+                        public static function otherMix(): void;
+                    }
+
+                    /**
+                     * @mixin Mixin
+                     * @mixin OtherMixin
+                     */
+                    class Bar {}
+
+                    Bar::missing();',
+                'error_message' => 'UndefinedMethod',
+            ],
             'mixinMethodChargesTheCallOfTheClassUsingTheMixin' => [
                 'code' => '<?php
                     final class Connection {

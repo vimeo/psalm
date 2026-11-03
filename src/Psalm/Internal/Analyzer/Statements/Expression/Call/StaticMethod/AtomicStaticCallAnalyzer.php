@@ -453,10 +453,8 @@ final class AtomicStaticCallAnalyzer
                         $mixin_candidates[] = $mixin_candidate;
                     }
 
-                    // Forward to the declared mixins only: each resolves its own transitive chain.
-                    foreach ($class_storage->namedMixins as $mixin_candidate) {
-                        $mixin_candidates[] = $mixin_candidate;
-                    }
+                    // Forward to the declared mixin that has the method: it resolves its own transitive chain.
+                    $mixin_candidates[] = $mixin;
 
                     $mixin_candidates_no_generic = array_filter(
                         $mixin_candidates,
