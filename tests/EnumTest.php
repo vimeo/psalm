@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class EnumTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
@@ -20,6 +22,39 @@ final class EnumTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'enumCaseValueFromAnnotatedIntConstant' => [
+                'code' => '<?php
+                    enum EnumValue: int
+                    {
+                        /** @var int */
+                        public const V_1 = 1;
+                        public const V_2 = 2;
+
+                        case FIRST_VALUE = self::V_1;
+                        case SECOND_VALUE = self::V_2;
+                    }
+
+                    $a = EnumValue::FIRST_VALUE->value;',
+                'assertions' => [
+                    '$a' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCaseValueFromAnnotatedStringConstant' => [
+                'code' => '<?php
+                    enum EnumValue: string
+                    {
+                        /** @var string */
+                        public const V_1 = "a";
+
+                        case FIRST_VALUE = self::V_1;
+                        case SECOND_VALUE = "b";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'example' => [
                 'code' => '<?php
                     interface Colourful {
@@ -777,6 +812,33 @@ final class EnumTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'enumCaseValueFromAFloatConstantAnnotatedAsFloat' => [
+                'code' => '<?php
+                    enum EnumValue: int
+                    {
+                        /** @var float */
+                        public const V_1 = 1.5;
+
+                        case FIRST_VALUE = self::V_1;
+                    }',
+                'error_message' => 'InvalidEnumCaseValue',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCaseValueFromAnAnnotatedConstantOfAnotherType' => [
+                'code' => '<?php
+                    enum EnumValue: int
+                    {
+                        /** @var string */
+                        public const V_1 = "a";
+
+                        case FIRST_VALUE = self::V_1;
+                    }',
+                'error_message' => 'InvalidEnumCaseValue - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:7:25 - Enum case value type should be int',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'enumValueIsNot' => [
                 'code' => '<?php
                     enum Suit: string {
