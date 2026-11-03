@@ -1381,7 +1381,7 @@ final class BinaryOperationTest extends TestCase
                     $bar = "";
                     $interpolated = "{$foo}{$bar}";
                 ',
-                'assertions' => ['$interpolated===' => 'literal-string'],
+                'assertions' => ['$interpolated===' => "''|'bar'|'foo'|'foobar'"],
             ],
             'literalIntConcatCreatesLiteral' => [
                 'code' => '<?php
