@@ -60,7 +60,10 @@ final class ExpressionIdentifier
             return $fq_class_name . '::$' . $stmt->name->name;
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $stmt->name instanceof PhpParser\Node\Identifier) {
+        if (($stmt instanceof PhpParser\Node\Expr\PropertyFetch
+                || $stmt instanceof PhpParser\Node\Expr\NullsafePropertyFetch)
+            && $stmt->name instanceof PhpParser\Node\Identifier
+        ) {
             $object_id = self::getVarId($stmt->var, $this_class_name, $source);
 
             if (!$object_id) {
@@ -179,7 +182,9 @@ final class ExpressionIdentifier
             }
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch) {
+        if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch
+            || $stmt instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+        ) {
             $object_id = self::getExtendedVarId($stmt->var, $this_class_name, $source);
 
             if (!$object_id) {

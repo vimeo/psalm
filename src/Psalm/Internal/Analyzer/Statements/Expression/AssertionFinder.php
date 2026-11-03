@@ -198,6 +198,7 @@ final class AssertionFinder
 
         if ($var_name) {
             $if_types[$var_name] = [[new Truthy()]];
+            $if_types = self::addNullsafeReceiverAssertion($if_types, $conditional, $this_class_name, $source);
 
             if (!$conditional instanceof PhpParser\Node\Expr\MethodCall
                 && !$conditional instanceof PhpParser\Node\Expr\StaticCall
@@ -2179,6 +2180,31 @@ final class AssertionFinder
     }
 
     /**
+     * A non-null `$a?->b` means that `$a` is not null.
+     *
+     * @param non-empty-array<string, non-empty-list<non-empty-list<Assertion>>> $if_types
+     * @return non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>
+     */
+    private static function addNullsafeReceiverAssertion(
+        array $if_types,
+        PhpParser\Node\Expr $expr,
+        ?string $this_class_name,
+        FileSource $source,
+    ): array {
+        if (!$expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
+            return $if_types;
+        }
+
+        $receiver_id = ExpressionIdentifier::getExtendedVarId($expr->var, $this_class_name, $source);
+
+        if ($receiver_id !== null) {
+            $if_types[$receiver_id] = [[new IsNotType(new TNull())]];
+        }
+
+        return $if_types;
+    }
+
+    /**
      * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
@@ -2215,6 +2241,8 @@ final class AssertionFinder
             } else {
                 $if_types[$var_name] = [[new Truthy()]];
             }
+
+            $if_types = self::addNullsafeReceiverAssertion($if_types, $base_conditional, $this_class_name, $source);
         }
 
         if ($codebase

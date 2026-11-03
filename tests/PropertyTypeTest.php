@@ -561,6 +561,73 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullsafePropertyNotNullNarrowsTheReceiver' => [
+                'code' => '<?php
+                    final class B { public ?string $value = null; }
+                    final class A { public ?B $b = null; }
+                    /** @var A $a */
+                    $a = $_GET["a"];
+                    if ($a->b?->value !== null) {
+                        $x = $a->b->value;
+                    } else {
+                        $x = "";
+                    }',
+                'assertions' => [
+                    '$x===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyNotNullNarrowsTheNullsafeFetch' => [
+                'code' => '<?php
+                    final class B { public ?string $value = null; }
+                    final class A { public ?B $b = null; }
+                    /** @var A $a */
+                    $a = $_GET["a"];
+                    if ($a->b?->value !== null) {
+                        $x = $a->b?->value;
+                    } else {
+                        $x = "";
+                    }',
+                'assertions' => [
+                    '$x===' => 'string',
+                ],
+                'ignored_issues' => ['TypeDoesNotContainNull', 'RedundantCondition'],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyTruthyNarrowsTheReceiver' => [
+                'code' => '<?php
+                    final class B { public ?string $value = null; }
+                    final class A { public ?B $b = null; }
+                    /** @var A $a */
+                    $a = $_GET["a"];
+                    if ($a->b?->value) {
+                        $x = $a->b;
+                    } else {
+                        $x = new B();
+                    }',
+                'assertions' => [
+                    '$x===' => 'B',
+                ],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyStaysNullableOutsideTheCheck' => [
+                'code' => '<?php
+                    final class B { public ?string $value = null; }
+                    final class A { public ?B $b = null; }
+                    /** @var A $a */
+                    $a = $_GET["a"];
+                    if ($a->b?->value !== null) {
+                        echo "set";
+                    }
+                    $x = $a->b?->value;',
+                'assertions' => [
+                    '$x===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'newVarInIf' => [
                 'code' => '<?php
                     class A {

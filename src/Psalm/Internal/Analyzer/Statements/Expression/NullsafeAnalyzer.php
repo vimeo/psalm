@@ -32,7 +32,19 @@ final class NullsafeAnalyzer
         PhpParser\Node\Expr $stmt,
         Context $context,
     ): bool {
-        if (!$stmt->var instanceof PhpParser\Node\Expr\Variable) {
+        $receiver_id = $stmt->var instanceof PhpParser\Node\Expr\PropertyFetch
+            ? ExpressionIdentifier::getExtendedVarId(
+                $stmt->var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            )
+            : null;
+
+        if ($receiver_id !== null) {
+            // a chain of variables and properties is analysed as it stands, so that what is known of it applies
+            $tmp_var = $stmt->var;
+            $var_type = $context->vars_in_scope[$receiver_id] ?? null;
+        } elseif (!$stmt->var instanceof PhpParser\Node\Expr\Variable) {
             $was_inside_general_use = $context->inside_general_use;
 
             $context->inside_general_use = true;
@@ -91,11 +103,29 @@ final class NullsafeAnalyzer
             );
         }
 
-        ExpressionAnalyzer::analyze($statements_analyzer, $ternary, $context);
+        $receiver_is_known = $stmt instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            && $receiver_id !== null
+            && $var_type !== null
+            && $var_type->isObjectType()
+            && !$var_type->isNullable()
+            && !$var_type->possibly_undefined
+            && !$var_type->possibly_undefined_from_try;
+
+        // checking a known receiver against null is reported, but must not make the context forget what it knows
+        // of the receiver's properties
+        ExpressionAnalyzer::analyze($statements_analyzer, $ternary, $receiver_is_known ? clone $context : $context);
 
         $ternary_type = $statements_analyzer->node_data->getType($ternary);
 
         $call_type = $statements_analyzer->node_data->getType($ternary->else);
+
+        if ($receiver_is_known) {
+            $fetch = new VirtualPropertyFetch($tmp_var, $stmt->name, $stmt->getAttributes());
+
+            ExpressionAnalyzer::analyze($statements_analyzer, $fetch, $context);
+
+            $call_type = $statements_analyzer->node_data->getType($fetch);
+        }
 
         $statements_analyzer->node_data = $old_node_data;
 
