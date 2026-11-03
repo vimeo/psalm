@@ -235,6 +235,16 @@ final class Cache
         return $content;
     }
 
+    /**
+     * Drops the item from memory, so that the next saveItem() with the same hash isn't skipped as a duplicate.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function forgetItem(string $key): void
+    {
+        unset($this->cache[$key]);
+    }
+
     /** @param T $item */
     public function saveItem(string $key, array|object|string $item, ?string $hash = null): void
     {

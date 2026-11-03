@@ -1035,12 +1035,25 @@ final class Codebase
 
     public function exhumeClassLikeStorage(string $fq_classlike_name, string $file_path): void
     {
+        $this->tryExhumeClassLikeStorage($fq_classlike_name, $file_path);
+    }
+
+    /**
+     * @internal
+     * @return bool false if the cache has no storage for the class-like in the file
+     */
+    public function tryExhumeClassLikeStorage(string $fq_classlike_name, string $file_path): bool
+    {
         $file_contents = $this->file_provider->getContents($file_path);
         $storage = $this->classlike_storage_provider->exhume(
             $fq_classlike_name,
             $file_path,
             $file_contents,
         );
+
+        if ($storage === null) {
+            return false;
+        }
 
         if ($storage->is_trait) {
             $this->classlikes->addFullyQualifiedTraitName($storage->name, $file_path);
@@ -1051,6 +1064,8 @@ final class Codebase
         } else {
             $this->classlikes->addFullyQualifiedClassName($storage->name, $file_path);
         }
+
+        return true;
     }
 
     public static function getPsalmTypeFromReflection(?ReflectionType $type): Union
