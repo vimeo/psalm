@@ -317,6 +317,10 @@ abstract class CallAnalyzer
 
             $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
+            if (!$context->isSuppressingExceptions($statements_analyzer)) {
+                $context->mergeFunctionExceptions($method_storage, $code_location);
+            }
+
             if ($declaring_class_storage->user_defined
                 && isset($declaring_class_storage->documenting_method_ids[$method_name])
             ) {
@@ -338,10 +342,6 @@ abstract class CallAnalyzer
                         }
                     }
                 }
-            }
-
-            if (!$context->isSuppressingExceptions($statements_analyzer)) {
-                $context->mergeFunctionExceptions($method_storage, $code_location);
             }
         }
 
