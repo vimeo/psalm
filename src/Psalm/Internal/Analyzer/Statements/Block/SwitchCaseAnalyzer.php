@@ -608,6 +608,14 @@ final class SwitchCaseAnalyzer
         } else {
             $case_redefined_vars = $case_context->getRedefinedVars($original_context->vars_in_scope);
 
+            // a variable the case unset is possibly undefined afterwards
+            foreach ($case_context->possibly_assigned_var_ids as $var_id => $_) {
+                if (isset($original_context->vars_in_scope[$var_id]) && !isset($case_context->vars_in_scope[$var_id])) {
+                    $case_redefined_vars[$var_id] = $original_context->vars_in_scope[$var_id]
+                        ->setPossiblyUndefined(true);
+                }
+            }
+
             if ($switch_scope->possibly_redefined_vars === null) {
                 $switch_scope->possibly_redefined_vars = $case_redefined_vars;
             } else {

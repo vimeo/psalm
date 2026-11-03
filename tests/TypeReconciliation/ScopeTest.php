@@ -412,6 +412,56 @@ final class ScopeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableUnsetInTheIfIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    function foo(): void {
+                        $x = 1;
+                        if (random_int(0, 1)) {
+                            unset($x);
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableUnsetInTheElseIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    function foo(): void {
+                        $x = 1;
+                        if (random_int(0, 1)) {
+                            echo 1;
+                        } else {
+                            unset($x);
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableUnsetInTheElseifIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    function foo(): void {
+                        $x = 1;
+                        if (random_int(0, 1)) {
+                            echo 1;
+                        } elseif (random_int(0, 1)) {
+                            unset($x);
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableUnsetInASwitchCaseIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    function foo(): void {
+                        $x = 1;
+                        switch (random_int(0, 1)) {
+                            case 1:
+                                unset($x);
+                                break;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'possiblyUndefinedVarInIf' => [
                 'code' => '<?php
                     if (rand(0,100) === 10) {
