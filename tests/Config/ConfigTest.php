@@ -580,19 +580,19 @@ final class ConfigTest extends TestCase
                     </projectFiles>
 
                     <issueHandlers>
-                        <PropertyNotSetInConstructor errorLevel="info">
+                        <UndefinedClass errorLevel="info">
                             <errorLevel type="suppress">
-                                <file name="src/Psalm/Config.php" />
+                                <referencedClass name="Psalm\Badger" />
                             </errorLevel>
-                        </PropertyNotSetInConstructor>
+                        </UndefinedClass>
                         <PluginIssue name="MyIssue" errorLevel="info" />
-                        <PropertyNotSetInConstructor>
-                            <errorLevel type="error">
-                                <directory name="tests" />
-                            </errorLevel>
-                        </PropertyNotSetInConstructor>
-                        <PluginIssue name="MyIssue">
+                        <UndefinedClass>
                             <errorLevel type="suppress">
+                                <referencedClass name="Psalm\Bodger" />
+                            </errorLevel>
+                        </UndefinedClass>
+                        <PluginIssue name="MyIssue">
+                            <errorLevel type="error">
                                 <directory name="tests" />
                             </errorLevel>
                         </PluginIssue>
@@ -602,24 +602,11 @@ final class ConfigTest extends TestCase
         );
 
         $config = $this->project_analyzer->getConfig();
-        $src_file = dirname(__DIR__, 2) . '/src/Psalm/Config.php';
 
-        $this->assertSame(
-            Config::REPORT_SUPPRESS,
-            $config->getReportingLevelForFile('PropertyNotSetInConstructor', $src_file),
-        );
-        $this->assertSame(
-            Config::REPORT_ERROR,
-            $config->getReportingLevelForFile('PropertyNotSetInConstructor', (string) realpath(__FILE__)),
-        );
-        $this->assertSame(
-            Config::REPORT_INFO,
-            $config->getReportingLevelForFile('MyIssue', $src_file),
-        );
-        $this->assertSame(
-            Config::REPORT_SUPPRESS,
-            $config->getReportingLevelForFile('MyIssue', (string) realpath(__FILE__)),
-        );
+        $this->assertSame(Config::REPORT_SUPPRESS, $config->getReportingLevelForClass('UndefinedClass', 'Psalm\Badger'));
+        $this->assertSame(Config::REPORT_SUPPRESS, $config->getReportingLevelForClass('UndefinedClass', 'Psalm\Bodger'));
+        $this->assertSame(Config::REPORT_INFO, $config->getReportingLevelForFile('UndefinedClass', 'unknown.php'));
+        $this->assertSame(Config::REPORT_INFO, $config->getReportingLevelForFile('MyIssue', 'unknown.php'));
     }
 
     public function testIssueHandlerWithCustomErrorLevels(): void
