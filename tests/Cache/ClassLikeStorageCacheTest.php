@@ -16,6 +16,7 @@ use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
+use Psalm\Progress\Progress;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 
@@ -87,7 +88,22 @@ final class ClassLikeStorageCacheTest extends TestCase
         $file_provider->registerFile($dir . 'Sqlite.php', self::CODE);
 
         self::assertSame(['InvalidReturnStatement', 'InvalidReturnType'], $cold);
-        self::assertSame($cold, $this->analyze($config, $providers));
+
+        $renamed_progress = new RecordingProgress();
+        self::assertSame($cold, $this->analyze($config, $providers, $renamed_progress));
+        self::assertContains(
+            $dir . 'Sqlite.php',
+            $renamed_progress->scanned_files,
+            'The cached storage has the other spelling of the path: the file is scanned again',
+        );
+
+        $cached_progress = new RecordingProgress();
+        self::assertSame($cold, $this->analyze($config, $providers, $cached_progress));
+        self::assertNotContains(
+            $dir . 'Sqlite.php',
+            $cached_progress->scanned_files,
+            'The storage of the rescanned file was written to the cache',
+        );
     }
 
     public function testClassLikeStorageCacheLost(): void
@@ -150,11 +166,11 @@ final class ClassLikeStorageCacheTest extends TestCase
     /**
      * @return list<string> the types of the issues
      */
-    private function analyze(Config $config, Providers $providers): array
+    private function analyze(Config $config, Providers $providers, ?Progress $progress = null): array
     {
         RuntimeCaches::clearAll();
 
-        $project_analyzer = new ProjectAnalyzer($config, $providers);
+        $project_analyzer = new ProjectAnalyzer($config, $providers, progress: $progress);
         $project_analyzer->check($config->base_dir);
         $project_analyzer->finish(microtime(true), PSALM_VERSION);
 
