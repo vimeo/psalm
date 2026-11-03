@@ -2863,6 +2863,18 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                     $parent_storage = $classlike_storage_provider->get($overridden_fq_class_name);
 
+                    // `self` of a trait method is the class of the parents that uses the trait
+                    if ($parent_storage->is_trait) {
+                        foreach ($appearing_class_storage->parent_classes as $parent_class_name) {
+                            $parent_class_storage = $classlike_storage_provider->get($parent_class_name);
+
+                            if (in_array($parent_storage->name, $parent_class_storage->used_traits, true)) {
+                                $parent_storage = $parent_class_storage;
+                                break;
+                            }
+                        }
+                    }
+
                     if ($this->function->name->name === '__construct'
                         && !$parent_storage->preserve_constructor_signature
                     ) {
