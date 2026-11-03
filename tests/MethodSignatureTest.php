@@ -301,6 +301,26 @@ final class MethodSignatureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variadicParameterTakesTheOmittedParameters' => [
+                'code' => '<?php
+                    interface I {
+                        public function a(int $x, int $y): void;
+                        public function b(int $x = 1): void;
+                    }
+
+                    final class V implements I {
+                        public function a(int ...$x): void {}
+                        public function b(int ...$x): void {}
+                    }
+
+                    abstract class P {
+                        abstract public function a(int $x, int $y): void;
+                    }
+
+                    final class Q extends P {
+                        public function a(int ...$x): void {}
+                    }',
+            ],
             'overrideDateTimeDiffWithTheNativeParameterName' => [
                 'code' => '<?php
                     class Date extends DateTime {
@@ -1137,6 +1157,30 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'fewerArgumentsThanTheOptionalOnesOfAnInterface' => [
+                'code' => '<?php
+                    interface I {
+                        public function fooFoo(int $a, int $b = 1): void;
+                    }
+
+                    final class A implements I {
+                        public function fooFoo(int $a): void {}
+                    }',
+                'error_message' => 'Method A::fooFoo has fewer parameters than parent method I::fooFoo',
+            ],
+            'fewerArgumentsThanTheOptionalOnesOfAnAbstractTraitMethod' => [
+                'code' => '<?php
+                    trait T {
+                        abstract public function fooFoo(int $a, int $b = 1): void;
+                    }
+
+                    final class A {
+                        use T;
+
+                        public function fooFoo(int $a): void {}
+                    }',
+                'error_message' => 'Method A::fooFoo has fewer parameters than parent method T::fooFoo',
+            ],
             'oneParam' => [
                 'code' => '<?php
                     interface I {

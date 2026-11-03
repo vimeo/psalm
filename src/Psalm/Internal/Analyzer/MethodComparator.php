@@ -44,6 +44,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_any;
+use function end;
 use function in_array;
 use function str_starts_with;
 use function strtolower;
@@ -187,7 +188,17 @@ final class MethodComparator
 
         foreach ($guide_method_storage->params as $i => $guide_param) {
             if (!isset($implementer_method_storage->params[$i])) {
-                if (!$prevent_abstract_override && $i >= $guide_method_storage->required_param_count) {
+                // a variadic parameter takes every argument after the ones before it
+                if ($implementer_method_storage->params !== []
+                    && end($implementer_method_storage->params)->is_variadic
+                ) {
+                    continue;
+                }
+
+                if (!$prevent_abstract_override
+                    && $i >= $guide_method_storage->required_param_count
+                    && !$guide_classlike_storage->user_defined
+                ) {
                     continue;
                 }
 
