@@ -655,6 +655,46 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'interpolatedStringKeepsTheLiteralsOfAUnion' => [
+                'code' => '<?php
+                    /** @var "a"|"b" $lit */
+                    $lit = "a";
+                    $g = "x$lit";
+                    $h = "x" . $lit;',
+                'assertions' => [
+                    '$g===' => "'xa'|'xb'",
+                    '$h===' => "'xa'|'xb'",
+                ],
+            ],
+            'interpolatedStringWithSeveralUnions' => [
+                'code' => '<?php
+                    /** @var "a"|"b" $lit */
+                    $lit = "a";
+                    $g = "x{$lit}y$lit";',
+                'assertions' => [
+                    '$g===' => "'xaya'|'xayb'|'xbya'|'xbyb'",
+                ],
+            ],
+            'interpolatedStringWithALiteralInt' => [
+                'code' => '<?php
+                    /** @var "a"|"b" $lit */
+                    $lit = "a";
+                    $g = "x$lit" . 5;',
+                'assertions' => [
+                    '$g===' => "'xa5'|'xb5'",
+                ],
+            ],
+            'interpolatedStringWithAnIntIsNotALiteralUnion' => [
+                'code' => '<?php
+                    /** @var "a"|"b" $lit */
+                    $lit = "a";
+                    /** @var int $n */
+                    $n = 5;
+                    $g = "x$lit$n";',
+                'assertions' => [
+                    '$g===' => "non-empty-string",
+                ],
+            ],
             'floatOperandsOutsideTheRangeOfAnIntAreNotFolded' => [
                 'code' => '<?php
                     $notANumberModulo = NAN % 3;
