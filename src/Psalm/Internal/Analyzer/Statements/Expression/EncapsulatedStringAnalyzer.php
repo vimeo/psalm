@@ -21,6 +21,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
@@ -41,6 +42,9 @@ final class EncapsulatedStringAnalyzer
         $parent_nodes = [];
 
         $non_empty = false;
+
+        // the string contains a part that is neither '' nor '0', so it is not '' nor '0'
+        $non_falsy = false;
 
         $all_literals = true;
 
@@ -69,6 +73,7 @@ final class EncapsulatedStringAnalyzer
                         ?? $literal_prefixes;
                 }
                 $non_empty = $non_empty || $part->value !== "";
+                $non_falsy = $non_falsy || ($part->value !== "" && $part->value !== "0");
             } elseif ($part_type = $statements_analyzer->node_data->getType($part)) {
                 $casted_part_type = CastAnalyzer::castStringAttempt(
                     $statements_analyzer,
@@ -94,6 +99,22 @@ final class EncapsulatedStringAnalyzer
                         }
                     }
                 }
+
+                $part_is_non_falsy = true;
+
+                foreach ($casted_part_type->getAtomicTypes() as $atomic_part_type) {
+                    if (!$atomic_part_type instanceof TNonFalsyString
+                        && !($atomic_part_type instanceof TLiteralString
+                            && $atomic_part_type->value !== ''
+                            && $atomic_part_type->value !== '0')
+                        && !($atomic_part_type instanceof TLiteralInt && $atomic_part_type->value !== 0)
+                    ) {
+                        $part_is_non_falsy = false;
+                        break;
+                    }
+                }
+
+                $non_falsy = $non_falsy || $part_is_non_falsy;
 
                 if ($literal_string !== null) {
                     if ($casted_part_type->isSingleLiteral()) {
@@ -159,6 +180,8 @@ final class EncapsulatedStringAnalyzer
             }
         }
 
+        $non_empty = $non_empty || $non_falsy;
+
         if ($statements_analyzer->getDataFlowGraphWithSuppressed()) {
             $statements_analyzer->node_data->setLiteralPrefixes($stmt, $literal_prefixes);
         }
@@ -179,7 +202,7 @@ final class EncapsulatedStringAnalyzer
                 );
             } else {
                 $stmt_type = new Union(
-                    [new TNonEmptyString()],
+                    [$non_falsy ? new TNonFalsyString() : new TNonEmptyString()],
                     ['parent_nodes' => $parent_nodes],
                 );
             }

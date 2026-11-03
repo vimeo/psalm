@@ -655,6 +655,35 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'interpolatedStringWithANonFalsyLiteralPartIsNonFalsy' => [
+                'code' => '<?php
+                    /**
+                     * @return non-falsy-string
+                     */
+                    function foo(string $s): string {
+                        return "hello {$s} world";
+                    }',
+            ],
+            'interpolatedStringWithANonFalsyStringPartIsNonFalsy' => [
+                'code' => '<?php
+                    /**
+                     * @param non-falsy-string $s
+                     * @param string $t
+                     * @return non-falsy-string
+                     */
+                    function foo(string $s, string $t): string {
+                        return "{$t}{$s}";
+                    }',
+            ],
+            'interpolatedStringWithANonFalsyIntPartIsNonFalsy' => [
+                'code' => '<?php
+                    /**
+                     * @return non-falsy-string
+                     */
+                    function foo(string $t): string {
+                        return "{$t}" . 5 . "{$t}7";
+                    }',
+            ],
             'floatOperandsOutsideTheRangeOfAnIntAreNotFolded' => [
                 'code' => '<?php
                     $notANumberModulo = NAN % 3;
@@ -1598,6 +1627,38 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'interpolatedStringStartingWithAZeroMayBeFalsy' => [
+                'code' => '<?php
+                    /**
+                     * @return non-falsy-string
+                     */
+                    function foo(string $s): string {
+                        return "0{$s}";
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'interpolatedStringEndingWithAZeroMayBeFalsy' => [
+                'code' => '<?php
+                    /**
+                     * @return non-falsy-string
+                     */
+                    function foo(string $s): string {
+                        return "{$s}0";
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'interpolatedStringWithAZeroIntPartMayBeFalsy' => [
+                'code' => '<?php
+                    /**
+                     * @return non-falsy-string
+                     */
+                    function foo(string $s): string {
+                        $zero = 0;
+
+                        return "{$s}{$zero}";
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
             'moduloOfABigFloatLiteralByZeroIsNever' => [
                 'code' => '<?php
                     $a = 1e30 % 0;',
