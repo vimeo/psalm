@@ -129,6 +129,14 @@ final class CallableTypeComparator
                     return false;
                 }
 
+                // a callable that may be called without the parameter must not require it
+                if ($container_param->is_optional
+                    && !$input_param->is_optional
+                    && !$input_param->is_variadic
+                ) {
+                    return false;
+                }
+
                 if ($container_param->type
                     && !$container_param->type->hasMixed()
                     && !self::isParamContainedBy(

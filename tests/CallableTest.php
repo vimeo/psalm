@@ -20,6 +20,33 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'optionalCallableParamAcceptsAnOptionalClosureParam' => [
+                'code' => '<?php
+                    /** @param callable(string=):string $callable */
+                    function map(callable $callable): void {
+                        echo $callable();
+                    }
+
+                    map(fn(string $a = "d"): string => $a);',
+            ],
+            'optionalCallableParamAcceptsAVariadicClosureParam' => [
+                'code' => '<?php
+                    /** @param callable(string=):string $callable */
+                    function map(callable $callable): void {
+                        echo $callable();
+                    }
+
+                    map(fn(string ...$a): string => "x");',
+            ],
+            'optionalCallableParamAcceptsAClosureWithoutParams' => [
+                'code' => '<?php
+                    /** @param callable(string=):string $callable */
+                    function map(callable $callable): void {
+                        echo $callable();
+                    }
+
+                    map(fn(): string => "x");',
+            ],
             'callableKeyedArrayKeepsTheCallableFlagWhenItsValuesAreNarrowed' => [
                 'code' => '<?php
                     /**
@@ -2542,6 +2569,26 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'optionalCallableParamRejectsARequiredClosureParam' => [
+                'code' => '<?php
+                    /** @param callable(string=):string $callable */
+                    function map(callable $callable): void {
+                        echo $callable();
+                    }
+
+                    map(fn(string $a): string => $a);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'optionalCallableParamRejectsARequiredSecondClosureParam' => [
+                'code' => '<?php
+                    /** @param callable(string, int=):string $callable */
+                    function map(callable $callable): void {
+                        echo $callable("a");
+                    }
+
+                    map(fn(string $a, int $b): string => $a . $b);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
             'undefinedCallableClass' => [
                 'code' => '<?php
                     class A {
