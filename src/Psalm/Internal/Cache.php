@@ -55,8 +55,8 @@ final class Cache
 
     /** @var array<string, list{string, T}> */
     private array $cache = [];
-    /** @var resource */
-    private mixed $lock;
+    /** @var resource|null */
+    private mixed $lock = null;
 
     private readonly bool $arrayCache;
 
@@ -115,6 +115,10 @@ final class Cache
 
     public function consolidate(): void
     {
+        if ($this->lock === null) {
+            return;
+        }
+
         flock($this->lock, LOCK_UN);
         flock($this->lock, LOCK_EX);
 

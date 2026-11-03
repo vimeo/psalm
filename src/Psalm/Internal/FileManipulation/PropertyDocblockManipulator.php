@@ -84,6 +84,10 @@ final class PropertyDocblockManipulator
 
         $file_contents = $codebase->getFileContents($file_path);
 
+        $prop = $stmt->props[0];
+
+        $this->typehint_area_start = (int)$prop->getAttribute('startFilePos') - 1;
+
         if (count($stmt->props) > 1) {
             $config = Config::getInstance();
             if ($config->isInProjectDirs($file_path)) {
@@ -95,14 +99,10 @@ final class PropertyDocblockManipulator
             return;
         }
 
-        $prop = $stmt->props[0];
-
         if ($stmt->type) {
             $this->typehint_start = (int)$stmt->type->getAttribute('startFilePos');
             $this->typehint_end = (int)$stmt->type->getAttribute('endFilePos');
         }
-
-        $this->typehint_area_start = (int)$prop->getAttribute('startFilePos') - 1;
 
         $preceding_newline_pos = strrpos($file_contents, "\n", $this->docblock_end - strlen($file_contents));
 

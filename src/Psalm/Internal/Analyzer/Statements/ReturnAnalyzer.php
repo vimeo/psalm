@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Analyzer\ConstructorExits;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
@@ -58,6 +59,16 @@ use function strtolower;
 final class ReturnAnalyzer
 {
     public static function analyze(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\Return_ $stmt,
+        Context $context,
+    ): void {
+        self::analyzeReturn($statements_analyzer, $stmt, $context);
+
+        ConstructorExits::record($statements_analyzer, $context);
+    }
+
+    private static function analyzeReturn(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Return_ $stmt,
         Context $context,
