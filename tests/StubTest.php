@@ -740,6 +740,44 @@ final class StubTest extends TestCase
     /**
      * @runInSeparateProcess
      */
+    public function testStubDocblocksWithUnknownPsalmTagsDoNotCrash(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/unknown_psalm_annotation.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                $stub = new StubWithTypoedAnnotations();
+                $name = (string) $stub->name;
+                echo StubWithTypoedAnnotations::LIMIT;
+                echo StubEnumWithTypoedAnnotation::Foo->name;',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
     public function testClassAlias(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -1471,5 +1509,42 @@ final class StubTest extends TestCase
 
         $this->expectExceptionMessage('TaintedHtml - src/somefile.php');
         $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * A stub that extends a class from an already scanned real file forces its rescan during stub registration.
+     */
+    public function testRealFileRescannedDuringStubRegistrationKeepsRealClassFlags(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm errorLevel="1">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/stub_depending_on_real_file.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->scanner->addFileToShallowScan(dirname(__DIR__) . '/tests/fixtures/stub_dependency/Lib.php');
+        $codebase->scanFiles();
+        $codebase->config->visitStubFiles($codebase);
+
+        foreach (['StubDependency\Lib', 'StubDependency\Lib2'] as $class_name) {
+            $storage = $codebase->classlike_storage_provider->get($class_name);
+            $this->assertTrue($storage->user_defined, $class_name);
+            $this->assertFalse($storage->stubbed, $class_name);
+        }
+
+        $stub_defined = $codebase->classlike_storage_provider->get('StubDependency\StubbedElsewhere');
+        $this->assertFalse($stub_defined->user_defined);
+        $this->assertTrue($stub_defined->stubbed);
     }
 }

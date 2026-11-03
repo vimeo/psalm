@@ -130,9 +130,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 $context->clauses = [];
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 foreach ($stmt->traits as $trait) {
-                    $fq_trait_name = self::getFQCLNFromNameObject(
-                        $trait,
-                        $this->source->getAliases(),
+                    $fq_trait_name = $codebase->classlikes->getUnAliasedName(
+                        self::getFQCLNFromNameObject($trait, $this->source->getAliases()),
                     );
 
                     $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
@@ -326,6 +325,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         $aliased_name = $codebase->classlikes->getUnAliasedName(
             $fq_class_name,
         );
+
+        // Built-in classlikes only referenced via strings were never queued for scanning
+        $codebase->scanner->registerReflectedClassLikeStorage($aliased_name);
 
         try {
             $class_storage = $codebase->classlike_storage_provider->get($aliased_name);

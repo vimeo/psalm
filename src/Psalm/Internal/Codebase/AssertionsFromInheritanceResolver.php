@@ -40,7 +40,7 @@ final class AssertionsFromInheritanceResolver
 
         foreach ($inherited_classes_and_interfaces as $potential_assertion_providing_class) {
             $potential_assertion_providing_classlike_storage = $this->codebase->classlike_storage_provider->get(
-                $potential_assertion_providing_class,
+                $this->codebase->classlikes->getUnAliasedName($potential_assertion_providing_class),
             );
             if (!isset($potential_assertion_providing_classlike_storage->methods[$method_name_lc])) {
                 continue;

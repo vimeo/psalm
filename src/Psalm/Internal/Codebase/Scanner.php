@@ -73,6 +73,8 @@ use const PHP_EOL;
  *         array<string, bool>,
  *         array<lowercase-string, bool>,
  *         array<string, bool>,
+ *         array<string, bool>,
+ *         array<lowercase-string, string>,
  *         array<string, bool>
  *     },
  *     scanner_data: ThreadData,
@@ -106,6 +108,11 @@ final class Scanner
      * @var array<string, bool>
      */
     private array $deep_scanned_classlike_files = [];
+
+    /**
+     * @var array<string, true>
+     */
+    private array $stub_files = [];
 
     /**
      * @var array<string, string>
@@ -170,7 +177,14 @@ final class Scanner
             return;
         }
 
-        $this->reflection->registerClass(new ReflectionClass($fq_classlike_name));
+        $reflected_class = new ReflectionClass($fq_classlike_name);
+
+        // Only built-in classlikes; a user-defined one loaded in Psalm's own process may differ from the analyzed code
+        if (!$reflected_class->isInternal()) {
+            return;
+        }
+
+        $this->reflection->registerClass($reflected_class);
         $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
     }
 
@@ -200,6 +214,17 @@ final class Scanner
     {
         $this->files_to_scan[$file_path] = $file_path;
         $this->files_to_deep_scan[$file_path] = $file_path;
+    }
+
+    public function addStubFileToDeepScan(string $file_path): void
+    {
+        $this->stub_files[strtolower($file_path)] = true;
+        $this->addFileToDeepScan($file_path);
+    }
+
+    public function isStubFile(string $file_path): bool
+    {
+        return isset($this->stub_files[strtolower($file_path)]);
     }
 
     public function removeFile(string $file_path): void

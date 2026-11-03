@@ -232,6 +232,17 @@ namespace {
     }
 
     /**
+     * Defers the target validation of internal attributes on the same element to runtime.
+     *
+     * @psalm-immutable
+     * @since 8.5
+     */
+    #[\Attribute(\Attribute::TARGET_ALL)]
+    final class DelayedTargetValidation
+    {
+    }
+
+    /**
      * Persistent cURL share handle resource.
      *
      * @since 8.5

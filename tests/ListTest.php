@@ -153,6 +153,48 @@ final class ListTest extends TestCase
                     foo(Foo::VARS);
                     ',
             ],
+            'destructuringIntoOffsetsOfUndefinedVariable' => [
+                'code' => '<?php
+                    if (!isset($ticket[\'custid\']) || !$ticket[\'custid\']) {
+                        [$ticket[\'requestor\'], $ticket[\'requestor_mail\']] = sscanf($ticket[\'req\'], "%[^<]<%[^>]");
+                    } else {
+                        [$ticket[\'requestor_mail\']] = sscanf($ticket[\'req\'], "<%[^>]");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [
+                    'PossiblyUndefinedGlobalVariable',
+                    'UndefinedGlobalVariable',
+                    'PossiblyUndefinedArrayOffset',
+                    'PossiblyNullArrayAccess',
+                    'MixedArrayAccess',
+                    'MixedArrayAssignment',
+                    'MixedAssignment',
+                    'UnusedVariable',
+                    'PossiblyInvalidArrayAccess',
+                    'InvalidArrayOffset',
+                    'MixedArgument',
+                ],
+            ],
+            'destructuringIntoOffsetsOfUndefinedVariableWithUserFunction' => [
+                'code' => '<?php
+                    /** @return list{string, string}|null */
+                    function parse(string $s) { return null; }
+
+                    if (!isset($t[\'id\'])) {
+                        [$t[\'a\'], $t[\'b\']] = parse(\'x\');
+                    } else {
+                        [$t[\'b\']] = parse(\'x\');
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [
+                    'PossiblyUndefinedGlobalVariable',
+                    'UndefinedGlobalVariable',
+                    'PossiblyUndefinedArrayOffset',
+                    'PossiblyNullArrayAccess',
+                    'UnusedVariable',
+                    'PossiblyInvalidArrayAccess',
+                ],
+            ],
         ];
     }
 

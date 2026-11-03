@@ -27,7 +27,7 @@ git commit -m "Updated Psalm phar to commit ${GITHUB_SHA}"
 tag=${GITHUB_REF/refs\/heads\//}
 tag=${tag/refs\/tags\//}
 
-if [ "$EVENT_NAME" == "release" ]; then
+if [[ "$GITHUB_REF" == refs/tags/* ]]; then
     git tag "$tag"
 else
     git checkout "$tag"
@@ -35,7 +35,7 @@ fi
 
 # this script runs on:
 #  1. pushes to master
-#  2. publishing releases
+#  2. publishing releases, or dispatches on their tags
 #
 # So we push master to psalm/phar:master
 # and tags to psalm/phar:$tag

@@ -59,7 +59,9 @@ final class NamespaceAnalyzer extends SourceAnalyzer
         $codebase = $this->getCodebase();
 
         foreach ($this->namespace->stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
+                $leftover_stmts[] = $stmt;
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
                 $this->collectAnalyzableClassLike($stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 $this->visitUse($stmt);

@@ -1283,7 +1283,16 @@ final class BinaryOperationTest extends TestCase
                 'code' => '<?php
                     $a = "hello";
                     $a++;',
-                'error_message' => 'StringIncrement',
+                'error_message' => 'StringIncrement - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Incrementing a non-numeric string is deprecated since PHP 8.5, use str_increment() instead',
+            ],
+            'stringIncrementOnPhp85' => [
+                'code' => '<?php
+                    function next_id(string $id): string {
+                        return ++$id;
+                    }',
+                'error_message' => 'StringIncrement - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34 - Incrementing a non-numeric string is deprecated since PHP 8.5, use str_increment() instead',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
             ],
             'falseIncrement' => [
                 'code' => '<?php

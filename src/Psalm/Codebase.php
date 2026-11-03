@@ -78,7 +78,6 @@ use function array_pop;
 use function array_reverse;
 use function array_values;
 use function count;
-use function dirname;
 use function error_log;
 use function explode;
 use function implode;
@@ -916,7 +915,7 @@ final class Codebase
             return null;
         }
 
-        return $this->functions->getStorage(null, $function_id);
+        return $this->functions->getStorage(null, $function_id, $file_path, $file_path);
     }
 
     /**
@@ -1052,7 +1051,12 @@ final class Codebase
                 return null;
             }
 
-            $function = $this->functions->getStorage(null, $function_id);
+            $function = $this->functions->getStorage(
+                null,
+                $function_id,
+                $reference->file_path,
+                $reference->file_path,
+            );
 
             return new PHPMarkdownContent(
                 $function->getHoverMarkdown(),
@@ -1221,8 +1225,12 @@ final class Codebase
                     return null;
                 }
 
-                return $this->functions->getStorage(null, $function_id)
-                    ->location;
+                return $this->functions->getStorage(
+                    null,
+                    $function_id,
+                    $reference->file_path,
+                    $reference->file_path,
+                )->location;
             }
 
             return $this->classlike_storage_provider->get(
@@ -1388,7 +1396,7 @@ final class Codebase
                     $function_storage = $this->functions->getStorage(
                         null,
                         strtolower($function_symbol),
-                        dirname($file_path),
+                        $file_path,
                         $file_path,
                     );
                 } else {

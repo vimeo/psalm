@@ -16,6 +16,8 @@ use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
@@ -252,7 +254,9 @@ final class AtomicStaticCallAnalyzer
                             true,
                             $context->insideUse(),
                         )) {
-                            $method_storage = $codebase->methods->getStorage($method_identifier);
+                            $method_storage = $codebase->methods->getStorage(
+                                $codebase->methods->getDeclaringMethodId($method_identifier) ?? $method_identifier,
+                            );
 
                             $return_type_candidate = new Union([new TClosure(
                                 'Closure',
@@ -518,6 +522,26 @@ final class AtomicStaticCallAnalyzer
                         $codebase->getMethodReturnType($method_id, $fq_class_name),
                         $codebase->methods->getStorage($declaring_method_id)->pure,
                     )]);
+                } elseif ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->getFirst() === 'parent'
+                    && !$statements_analyzer->isStatic()
+                    && isset($class_storage->pseudo_methods[$method_name_lc])
+                    && $codebase->methodExists(
+                        new MethodIdentifier($method_id->fq_class_name, '__call'),
+                        null,
+                        null,
+                        null,
+                        false,
+                    )
+                ) {
+                    // Same instance-context fallback as ordinary parent::xxx() calls below:
+                    // the closure is bound to $this and dispatches through __call
+                    $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
+                    $return_type_candidate = new Union([new TClosure(
+                        'Closure',
+                        $pseudo_method_storage->params,
+                        $pseudo_method_storage->return_type,
+                        $pseudo_method_storage->pure,
+                    )]);
                 } elseif ($codebase->methodExists(
                     $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
                     new CodeLocation($statements_analyzer, $stmt),
@@ -529,7 +553,9 @@ final class AtomicStaticCallAnalyzer
                         'Closure',
                         null,
                         $codebase->getMethodReturnType($call_static_method_id, $fq_class_name),
-                        $codebase->methods->getStorage($call_static_method_id)->pure,
+                        $codebase->methods->getStorage(
+                            $codebase->methods->getDeclaringMethodId($call_static_method_id) ?? $call_static_method_id,
+                        )->pure,
                     )]);
                 } else {
                     if (IssueBuffer::accepts(
@@ -664,6 +690,8 @@ final class AtomicStaticCallAnalyzer
                         $fq_class_name,
                         $args,
                         $defining_class_storage,
+                        $class_storage,
+                        $lhs_type_part,
                         $pseudo_method_storage,
                         $context,
                     ) === false
@@ -726,6 +754,8 @@ final class AtomicStaticCallAnalyzer
                     $fq_class_name,
                     $args,
                     $defining_class_storage,
+                    $class_storage,
+                    $lhs_type_part,
                     $pseudo_method_storage,
                     $context,
                 ) === false
@@ -902,6 +932,8 @@ final class AtomicStaticCallAnalyzer
         string $static_fq_class_name,
         array $args,
         ClassLikeStorage $class_storage,
+        ClassLikeStorage $static_class_storage,
+        Atomic $lhs_type_part,
         MethodStorage $pseudo_method_storage,
         Context $context,
     ): ?bool {
@@ -912,6 +944,27 @@ final class AtomicStaticCallAnalyzer
             );
         }
 
+        $codebase = $statements_analyzer->getCodebase();
+
+        $declaring_method_id = $class_storage->declaring_pseudo_static_method_ids[$method_id->method_name] ?? null;
+        $declaring_class_storage = $declaring_method_id
+            ? $codebase->classlike_storage_provider->get($declaring_method_id->fq_class_name)
+            : $class_storage;
+
+        $found_generic_params = ClassTemplateParamCollector::collect(
+            $codebase,
+            $declaring_class_storage,
+            $static_class_storage,
+            $method_id->method_name,
+            $lhs_type_part,
+            !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
+        );
+
+        $template_result = new TemplateResult(
+            $pseudo_method_storage->template_types ?? [],
+            $found_generic_params ?? [],
+        );
+
         if (ArgumentsAnalyzer::analyze(
             $statements_analyzer,
             $args,
@@ -919,11 +972,10 @@ final class AtomicStaticCallAnalyzer
             (string) $method_id,
             true,
             $context,
+            $template_result,
         ) === false) {
             return false;
         }
-
-        $codebase = $statements_analyzer->getCodebase();
 
         if (ArgumentsAnalyzer::checkArgumentsMatch(
             $statements_analyzer,
@@ -932,7 +984,7 @@ final class AtomicStaticCallAnalyzer
             $pseudo_method_storage->params,
             $pseudo_method_storage,
             null,
-            new TemplateResult([], []),
+            $template_result,
             new CodeLocation($statements_analyzer, $stmt),
             $context,
         ) === false) {
@@ -971,7 +1023,13 @@ final class AtomicStaticCallAnalyzer
         }
 
         if ($pseudo_method_storage->return_type) {
-            $return_type_candidate = $pseudo_method_storage->return_type;
+            $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
+                $pseudo_method_storage->return_type,
+                $template_result,
+                $method_id,
+                count($args),
+                $codebase,
+            );
 
             $return_type_candidate = TypeExpander::expandUnion(
                 $statements_analyzer->getCodebase(),
@@ -1134,7 +1192,7 @@ final class AtomicStaticCallAnalyzer
         $fake_method_call_expr = new VirtualMethodCall(
             new VirtualVariable($virtual_var_name, $stmt->class->getAttributes()),
             $stmt_name,
-            $stmt->getArgs(),
+            $stmt->args,
             $stmt->getAttributes(),
         );
 

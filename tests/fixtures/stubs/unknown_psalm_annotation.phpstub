@@ -1,0 +1,22 @@
+<?php
+
+class StubWithTypoedAnnotations
+{
+    /**
+     * @var string
+     * @psalm-supress PropertyNotSetInConstructor
+     */
+    public $name = '';
+
+    /**
+     * @var int
+     * @psalm-supress PropertyNotSetInConstructor
+     */
+    public const LIMIT = 1;
+}
+
+enum StubEnumWithTypoedAnnotation
+{
+    /** @psalm-supress DeprecatedClass */
+    case Foo;
+}
