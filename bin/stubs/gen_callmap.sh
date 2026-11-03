@@ -12,7 +12,7 @@ OWNER="${STUBS_IMAGE_OWNER:-danog}"
 SUFFIX="${STUBS_IMAGE_TAG_SUFFIX:-}"
 
 # Single source of truth for the version list (see build_docker.php).
-VERSIONS="$(php "$(dirname "$0")/build_docker.php" --versions-plain)"
+VERSIONS="$(php bin/stubs/build_docker.php --versions-plain)"
 
 pids=()
 for f in $VERSIONS; do
