@@ -18,7 +18,9 @@ vendor/bin/psalm --no-progress --output-format=compact src/Foo.php src/Bar.php
 - Run on the files you changed while iterating. Finish with one run on the whole project: only a full run
   reports unused code (`UnusedClass`, `PossiblyUnusedMethod`, …) and taint paths that cross files.
 - Exit code `0`: no issues. `2`: issues found. `1`: Psalm itself failed (bad config, crash): read the
-  message, it says nothing about the code.
+  message, it says nothing about the code. Judge a run by its exit code, read straight after the command:
+  `compact` prints nothing both on success and when PHP crashes, and a pipe such as `| tail` reports its
+  own exit code instead.
 - Many issues: `--report=psalm.json` writes a JSON report next to the normal output, then
   `php scripts/summary.php psalm.json` prints counts per type and file; `--type=…`, `--file=…`,
   `--changed` narrow it down (see `--help`).
