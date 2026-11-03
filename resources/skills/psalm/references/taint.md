@@ -56,6 +56,24 @@ function requestParam(string $name): string {}
 really escapes for that sink. `TaintedTextWithQuotes` is the separate `has_quotes` taint: a sanitiser for
 HTML attributes escapes both, `@psalm-taint-escape html` and `@psalm-taint-escape has_quotes`.
 
+The other direction, and functions whose body Psalm can't follow:
+
+```php
+/** @psalm-taint-unescape html */
+function decode(string $s): string { return html_entity_decode($s); }
+
+/** @psalm-flow ($format, $args) -> return */
+function fmt(string $format, string ...$args): string { … }
+
+out(decode(htmlspecialchars($_GET['a']))); // TaintedHtml: decode() undoes the escaping
+out(fmt('%s', htmlspecialchars($_GET['b']))); // safe
+out(fmt('%s', $_GET['c']));                   // TaintedHtml
+```
+
+`@psalm-taint-unescape` adds a taint back to what the function returns. `@psalm-flow` declares which
+parameters reach the return value, for functions implemented in an extension, through `eval`, or in code
+Psalm doesn't analyse. More forms: `docs/security_analysis/taint_flow.md`.
+
 ## False positives
 
 - Output of command-line code reported as `TaintedHtml`: `@psalm-cli-only` on the function, method or class.

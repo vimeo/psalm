@@ -3,7 +3,8 @@
 ## Psalter
 
 Psalter rewrites code to fix a set of issues. `vendor/bin/psalter --list-supported-issues` lists them;
-`docs/manipulating_code/fixing.md` shows what each fix does.
+`docs/manipulating_code/fixing.md` shows what each fix does. `vendor/bin/psalm --alter` runs the same tool
+(the only way with the PHAR).
 
 ```bash
 vendor/bin/psalter --issues=MissingReturnType,MissingParamType --dry-run src/Foo.php
@@ -25,9 +26,18 @@ symbol has no caller outside the analysed code (`@api` in [annotations.md](annot
 Moving and renaming classes and methods: `vendor/bin/psalm-refactor`, see
 `docs/manipulating_code/refactoring.md`.
 
+## Order of fixes
+
+Take the first one that applies:
+
+1. Fix the code.
+2. Teach Psalm what it can't see: a stub, the framework's plugin, `ext-*` in `composer.json`, `@api`
+   ([config.md](config.md)).
+3. A suppression the user agreed to, the narrowest that covers the case (below).
+
 ## When the user agrees to suppress
 
-From narrowest to widest; pick the narrowest one that covers the case:
+From narrowest to widest:
 
 1. Inline, on one statement: `/** @psalm-suppress PossiblyNullReference reason */`.
 2. On a function or class docblock: every occurrence inside it.

@@ -31,8 +31,8 @@ wrong is where the fix belongs: a missing return type, a missing template, an un
 
 ## Psalm crashes or hangs
 
-- Exit code `1` with a PHP error or "Psalm crashed": rerun with `--threads=1 --debug` to see the last file it
-  was working on.
-- To find the statement: `--threads=1 --debug-by-line <file>`.
+- Exit code `1` with a PHP error or "Psalm crashed": rerun with `--debug` (it runs on one thread) to see the
+  last file it was working on.
+- To find the statement: `--debug-by-line <file>`.
 - Memory: `--memory-limit=4G`.
 - Reduce it to a small repro: [bug-report.md](bug-report.md).

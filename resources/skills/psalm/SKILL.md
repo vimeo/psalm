@@ -26,6 +26,8 @@ vendor/bin/psalm --no-progress --output-format=compact src/Foo.php src/Bar.php
 - `SECURITY` lines are taint findings, reported in the same run as type errors. Reading their source → sink
   path: [references/taint.md](references/taint.md).
 - After changing `psalm.xml`, stubs or `composer.json`, add `--no-cache` once.
+- Other output formats (`count`, `json-summary`, `by-issue-level`), cache and threads, `--stats`,
+  `--show-info`, `--find-references-to`: [references/cli.md](references/cli.md).
 
 ## Fixing issues
 
