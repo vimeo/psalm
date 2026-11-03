@@ -27,6 +27,19 @@ final class PurityTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'newOfAClassWhoseTemplateConstraintNamesAPurityTemplateAcceptsAPureArgument' => [
+                'code' => '<?php
+                    $append = new AppendIterator();
+                    $append->append(new ArrayIterator([1, 2]));
+                    $append->append(new ArrayIterator(["a", "b"]));
+
+                    function chain(Iterator $iterator): void {
+                        $append = new AppendIterator();
+                        $append->append($iterator);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'newOfAClassExtendingAPurityTemplatedClassResolvesItsUnboundTemplatesToTheirBounds' => [
                 'code' => '<?php
                     /** @psalm-purity-template P */
