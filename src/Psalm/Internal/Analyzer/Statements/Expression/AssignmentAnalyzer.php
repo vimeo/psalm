@@ -1062,7 +1062,14 @@ final class AssignmentAnalyzer
         Context $context,
         ?PhpParser\Node\Stmt $from_stmt,
     ): bool {
+        // a reference stored in a property, an item or a static property is kept after the variable goes away
+        $was_inside_general_use = $context->inside_general_use;
+        $context->inside_general_use = $was_inside_general_use
+            || !$stmt->var instanceof PhpParser\Node\Expr\Variable;
+
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context, false, null, null, null, true);
+
+        $context->inside_general_use = $was_inside_general_use;
 
         $lhs_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,

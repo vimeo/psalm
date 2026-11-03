@@ -494,6 +494,24 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'referenceStoredInAPropertyUsesTheParam' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    final class MyClass
+                    {
+                        private array $arr = [];
+
+                        /** @psalm-api */
+                        public function setArray(array $x): void {
+                            $this->arr = &$x;
+                        }
+
+                        /** @psalm-api */
+                        public function getArray(): array {
+                            return $this->arr;
+                        }
+                    }',
+            ],
             'argumentCastToStringDoesNotReportPossiblyInvalidCast' => [
                 'code' => '<?php
                     /** @psalm-api */
@@ -2186,6 +2204,15 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'referenceToALocalVariableOnlyWrittenLeavesTheParamUnused' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(array $x): void {
+                        $y = &$x;
+                        $y[] = 1;
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
             'argumentStillReportsPossiblyInvalidArgumentWithUnusedCode' => [
                 'code' => '<?php
                     /**
