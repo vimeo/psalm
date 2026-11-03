@@ -20,6 +20,22 @@ final class EnumTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'enumCaseValueFromAConstantDefinedAtRuntime' => [
+                'code' => '<?php
+                    define("SOME", 1);
+
+                    enum Foo: int
+                    {
+                        case ONE = SOME;
+                    }
+
+                    $v = Foo::ONE->value;',
+                'assertions' => [
+                    '$v' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
             'example' => [
                 'code' => '<?php
                     interface Colourful {
