@@ -54,6 +54,47 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'consistentConstructorClassKeepsTheConstructorOfItsParent' => [
+                'code' => '<?php
+                    class Base {
+                        public function __construct(string $name) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        public static function create(): static {
+                            return new static("hello");
+                        }
+                    }
+
+                    $direct = new Child("direct");
+                    $created = Child::create();
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Failure extends ErrorException {}
+
+                    $native = new ErrorException("message", 0, E_WARNING, "file.php", 1);
+                    $failure = new Failure("message", 0, E_WARNING, "file.php", 1);',
+            ],
+            'childOfAConsistentConstructorClassMatchesTheConstructorItInherits' => [
+                'code' => '<?php
+                    class Base {
+                        public function __construct(string $name) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {}
+
+                    class GrandChild extends Child {
+                        public function __construct(string $name, int $optional = 0) {}
+                    }',
+            ],
             'overrideProtectedAccessLevelToPublic' => [
                 'code' => '<?php
                     class A {
@@ -1100,6 +1141,20 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'consistentConstructorClassWithoutAParentConstructorTakesNoArguments' => [
+                'code' => '<?php
+                    class Base {}
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        public static function create(): static {
+                            return new static("hello");
+                        }
+                    }',
+                'error_message' => 'TooManyArguments',
+            ],
             'undefinedClass' => [
                 'code' => '<?php
                     (new Foo());',
