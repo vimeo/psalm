@@ -802,6 +802,7 @@ class Reconciler
 
                 if (!isset($existing_keys[$new_base_key])) {
                     $new_base_type = null;
+                    $has_object_part = false;
 
                     $atomic_types = $existing_keys[$base_key]->getAtomicTypes();
 
@@ -863,11 +864,10 @@ class Reconciler
                         } elseif ($existing_key_type_part instanceof TNamedObject
                             && ($has_isset || $has_inverted_isset || $has_inverted_key_exists)
                         ) {
-                            $has_object_array_access = true;
+                            // the object's offset is unknown, only its array alternatives are narrowed
+                            $has_object_array_access = $has_object_part = true;
 
-                            unset($existing_keys[$new_base_key]);
-
-                            return null;
+                            continue;
                         } elseif (!$existing_key_type_part instanceof TKeyedArray) {
                             return Type::getMixed();
                         } elseif ($array_key[0] === '$'
@@ -904,6 +904,12 @@ class Reconciler
                         );
 
                         $existing_keys[$new_base_key] = $new_base_type;
+                    }
+
+                    if ($has_object_part && ($new_base_type === null || $new_base_type->isMixed())) {
+                        unset($existing_keys[$new_base_key]);
+
+                        return null;
                     }
                 }
 

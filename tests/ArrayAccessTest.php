@@ -550,6 +550,67 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOnArrayOrArrayAccessKeepsTheArrayValueType' => [
+                'code' => '<?php
+                    /** @var array<string, string>|ArrayAccess<string, string> $test */
+                    $test = $_GET["x"];
+                    $a = $test["a"] ?? "a";',
+                'assertions' => [
+                    '$a===' => 'null|string',
+                ],
+            ],
+            'issetOnArrayOrArrayAccessNarrowsTheArray' => [
+                'code' => '<?php
+                    /** @var array<string, string>|ArrayAccess<string, string> $test */
+                    $test = $_GET["x"];
+                    if (isset($test["a"])) {
+                        $a = $test;
+                    } else {
+                        $a = null;
+                    }',
+                'assertions' => [
+                    '$a===' => 'ArrayAccess<string, string>|array{a: string, ...<string, string>}|null',
+                ],
+            ],
+            'issetOnArrayOrArrayAccessWithKnownOffset' => [
+                'code' => '<?php
+                    /** @var array{a: int}|ArrayAccess<string, int> $test */
+                    $test = $_GET["x"];
+                    if (isset($test["a"])) {
+                        $a = $test;
+                    } else {
+                        $a = null;
+                    }',
+                'assertions' => [
+                    '$a===' => 'ArrayAccess<string, int>|array{a: int}|null',
+                ],
+            ],
+            'issetOnMixedArrayOrArrayAccessHasNoValueType' => [
+                'code' => '<?php
+                    /** @var array<string, mixed>|ArrayAccess<string, mixed> $test */
+                    $test = $_GET["x"];
+                    if (isset($test["a"])) {
+                        $a = $test;
+                    } else {
+                        $a = null;
+                    }',
+                'assertions' => [
+                    '$a===' => 'ArrayAccess<string, mixed>|array{a: mixed, ...<string, mixed>}|null',
+                ],
+            ],
+            'issetOnNestedArrayOrArrayAccess' => [
+                'code' => '<?php
+                    /** @var array<string, array<string, int>|ArrayAccess<string, int>> $test */
+                    $test = $_GET["x"];
+                    if (isset($test["a"]["b"])) {
+                        $a = $test["a"];
+                    } else {
+                        $a = null;
+                    }',
+                'assertions' => [
+                    '$a===' => 'ArrayAccess<string, int>|array{b: int, ...<string, int>}|null',
+                ],
+            ],
             'coalesceOnOptionalKeysWithComputedOffset' => [
                 'code' => '<?php
                     /** @return array{a?: int, b?: int} */
