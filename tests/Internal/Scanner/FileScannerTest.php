@@ -48,6 +48,31 @@ final class FileScannerTest extends TestCase
         self::assertEquals($expected_file_storage, $file_storage);
     }
 
+    public function testGlobalDocblockClassesAreQueuedForScanning(): void
+    {
+        $file_provider = new FakeFileProvider();
+        $codebase = new Codebase(
+            new TestConfig(),
+            new Providers($file_provider),
+        );
+
+        $file_provider->registerFile('/dir/file.php', '<?php
+            namespace Foo;
+
+            /**
+             * @global Bar\\GlobalDocClass $dep
+             */
+            function some_function() {
+                global $dep;
+            }');
+
+        $file_scanner = new FileScanner('/dir/file.php', 'file.php', true);
+        $file_storage = new FileStorage('/dir/file.php');
+        $file_scanner->scan($codebase, $file_storage);
+
+        self::assertArrayHasKey('foo\\bar\\globaldocclass', $file_storage->referenced_classlikes);
+    }
+
     /**
      * @return iterable<string, list{Config, string, FileStorage}>
      */

@@ -313,17 +313,25 @@ final class FunctionLikeDocblockScanner
 
         foreach ($docblock_info->globals as $global) {
             try {
-                $storage->global_types[$global['name']] = TypeParser::parseTokens(
+                $global_type = TypeParser::parseTokens(
                     TypeTokenizer::getFullyQualifiedTokens(
                         $global['type'],
                         $aliases,
-                        null,
+                        $function_template_types + $class_template_types,
                         $type_aliases,
+                        $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null,
                     ),
                     null,
-                    [],
-                    [],
+                    $function_template_types + $class_template_types,
+                    $type_aliases,
                     true,
+                );
+                $storage->global_types[$global['name']] = $global_type;
+                /** @psalm-suppress UnusedMethodCall */
+                $global_type->queueClassLikesForScanning(
+                    $codebase,
+                    $file_storage,
+                    $function_template_types + $class_template_types,
                 );
                 $storage->global_type_locations[$global['name']] = new DocblockTypeLocation(
                     $file_scanner,

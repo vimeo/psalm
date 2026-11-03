@@ -184,6 +184,33 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'globalDocblockWithAFunctionTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @global T $obj
+                     * @param T $x
+                     */
+                    function foo(object $x): void {
+                        global $obj;
+                        echo get_class($obj) . get_class($x);
+                    }',
+            ],
+            'globalDocblockWithAClassTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     */
+                    final class Box {
+                        /**
+                         * @global T $thing
+                         */
+                        public function m(): void {
+                            global $thing;
+                            echo get_class($thing);
+                        }
+                    }',
+            ],
             'globalDocblockClassResolvedThroughUse' => [
                 'code' => '<?php
                     namespace Foo;
