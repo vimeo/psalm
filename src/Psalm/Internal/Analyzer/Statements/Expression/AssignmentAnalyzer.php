@@ -906,7 +906,7 @@ final class AssignmentAnalyzer
 
             if (!$var_comment->var_id || $var_comment->var_id === $var_id) {
                 $comment_type = $var_comment_type;
-                $comment_type_location = $type_location;
+                $comment_type_location = $var_comment->from_phpstan ? null : $type_location;
                 return;
             }
 
@@ -914,6 +914,7 @@ final class AssignmentAnalyzer
 
             if ($codebase->find_unused_variables
                 && $type_location
+                && !$var_comment->from_phpstan
                 && (!$not_ignored_docblock_var_ids || isset($not_ignored_docblock_var_ids[$var_comment->var_id]))
                 && isset($context->vars_in_scope[$var_comment->var_id])
                 && $context->vars_in_scope[$var_comment->var_id]->getId() === $var_comment_type->getId()

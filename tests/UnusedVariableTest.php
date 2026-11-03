@@ -29,6 +29,37 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'knownVarTypeOfPhpstanVarIsNotUnnecessary' => [
+                'code' => '<?php
+                    function foo() : string {
+                        return "hello";
+                    }
+
+                    /** @phpstan-var string */
+                    $a = foo();
+
+                    /** @phpstan-var string $b */
+                    $b = foo();
+
+                    /** @return string[] */
+                    function bar() : array {
+                        return ["hello"];
+                    }
+
+                    /** @phpstan-var string $s */
+                    foreach (bar() as $s) {
+                        echo $s;
+                    }
+
+                    /** @return Generator<int, int, string, void> */
+                    function gen(): Generator {
+                        /** @phpstan-var string $x */
+                        $x = yield 1;
+                        echo $x;
+                    }
+
+                    echo $a, $b;',
+            ],
             'callOfCallableNarrowedFromClassStringOrCallable' => [
                 'code' => '<?php
                     /**
