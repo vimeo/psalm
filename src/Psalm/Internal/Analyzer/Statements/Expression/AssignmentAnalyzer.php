@@ -1776,7 +1776,10 @@ final class AssignmentAnalyzer
 
                     $already_in_scope = isset($context->vars_in_scope[$list_var_id]);
 
-                    if (!str_contains($list_var_id, '-') && !str_contains($list_var_id, '[')) {
+                    if (!str_contains($list_var_id, '-')
+                        && !str_contains($list_var_id, '[')
+                        && !str_contains($list_var_id, '::')
+                    ) {
                         $location = new CodeLocation($statements_analyzer, $var);
 
                         if (!$statements_analyzer->hasVariable($list_var_id)) {
