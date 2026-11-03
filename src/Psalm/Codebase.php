@@ -999,10 +999,10 @@ final class Codebase
             $parser_cache_provider = $this->statements_provider->parser_cache_provider;
 
             foreach ($candidate_files as $candidate_file_path) {
-                $hash = $parser_cache_provider->getHash($candidate_file_path);
-                if ($hash !== null &&
-                    $hash !== $this->file_provider->getContents($candidate_file_path)
-                ) {
+                if ($parser_cache_provider->hasChanged(
+                    $candidate_file_path,
+                    $this->file_provider->getContents($candidate_file_path),
+                )) {
                     $diff_files[] = $candidate_file_path;
                 }
             }
@@ -1131,10 +1131,7 @@ final class Codebase
         return $this->statements_provider->getStatementsForFile(
             $file_path,
             $this->analysis_php_version_id,
-            $this->diff_methods
-                || $this->diff_run
-                || $this->language_server
-                || $this->file_reference_provider->cache?->persistent,
+            $this->diff_methods || $this->diff_run || $this->language_server,
             $progress ?? $this->progress,
         );
     }

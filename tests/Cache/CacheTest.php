@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Cache;
 
+use InvalidArgumentException;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
@@ -24,15 +25,43 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use ReflectionProperty;
 
+use function chmod;
+use function fclose;
+use function file_get_contents;
+use function file_put_contents;
+use function flock;
+use function fopen;
+use function function_exists;
+use function glob;
+use function hash;
+use function is_writable;
 use function microtime;
+use function pack;
+use function pcntl_fork;
+use function pcntl_waitpid;
+use function pcntl_wexitstatus;
+use function pcntl_wifexited;
+use function restore_error_handler;
+use function set_error_handler;
 use function str_replace;
+use function substr;
 use function sys_get_temp_dir;
 use function uniqid;
+use function usleep;
 
 use const DIRECTORY_SEPARATOR;
+use const LOCK_SH;
+use const LOCK_UN;
 
 final class CacheTest extends TestCase
 {
+    private const KEY = 'src/A.php';
+
+    /** One directory for the class, a cache directory under it for each test */
+    private static string $cache_root;
+
+    private string $cache_directory;
+
     #[Override]
     public static function setUpBeforeClass(): void
     {
@@ -41,6 +70,16 @@ final class CacheTest extends TestCase
         // hack to isolate Psalm from PHPUnit cli arguments
         global $argv;
         $argv = [];
+
+        self::$cache_root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'psalm-cache-test-' . uniqid('', true);
+    }
+
+    #[Override]
+    public static function tearDownAfterClass(): void
+    {
+        Config::removeCacheDirectory(self::$cache_root);
+
+        parent::tearDownAfterClass();
     }
 
     #[Override]
@@ -49,6 +88,8 @@ final class CacheTest extends TestCase
         parent::setUp();
 
         RuntimeCaches::clearAll();
+
+        $this->cache_directory = self::$cache_root . DIRECTORY_SEPARATOR . uniqid('', true);
     }
 
     /**
@@ -60,6 +101,36 @@ final class CacheTest extends TestCase
         RuntimeCaches::clearAll();
 
         parent::tearDown();
+    }
+
+    private function newConfig(): TestConfig
+    {
+        $config = new TestConfig();
+        $config->cache_directory = $this->cache_directory;
+
+        return $config;
+    }
+
+    /** @return Cache<string> */
+    private function newCache(): Cache
+    {
+        return new Cache($this->newConfig(), 'test');
+    }
+
+    private function newParserCacheProvider(): ParserCacheProvider
+    {
+        return new ParserCacheProvider($this->newConfig(), '');
+    }
+
+    /** The header file of self::KEY: <cache directory>/<subdir>/<config hash>/<hash of the key>.hash */
+    private function headerPath(): string
+    {
+        $paths = glob($this->cache_directory . '/*/*/' . hash('xxh128', self::KEY) . '.hash');
+
+        self::assertNotFalse($paths);
+        self::assertCount(1, $paths);
+
+        return $paths[0];
     }
 
     /**
@@ -138,8 +209,7 @@ final class CacheTest extends TestCase
     #[DataProvider('provideSaveItemRetention')]
     public function testSaveItemRetention(bool $persistent, bool $array_cache, bool $retained): void
     {
-        $config = new TestConfig();
-        $config->cache_directory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'psalm-cache-test-' . uniqid('', true);
+        $config = $this->newConfig();
         $config->array_cache = $array_cache;
 
         /** @var Cache<string> $cache */
@@ -160,6 +230,142 @@ final class CacheTest extends TestCase
         yield 'persistent with array cache' => [true, true, true];
         yield 'persistent without array cache' => [true, false, false];
         yield 'not persistent without array cache' => [false, false, true];
+    }
+
+    /** Callers such as ParserCacheProvider keep the previous file contents as the hash to compare them */
+    public function testGetHashReturnsTheStoredHashAndNotThePayload(): void
+    {
+        $this->newCache()->saveItem(self::KEY, 'the payload', 'the hash');
+
+        // A fresh instance, so the in-memory cache cannot mask a bad disk read
+        self::assertSame('the hash', $this->newCache()->getHash(self::KEY));
+    }
+
+    /** A writer killed mid-write must not leave a valid header of the new contents in front of the old payload */
+    public function testFailedWriteDoesNotLeaveANewHeaderInFrontOfTheOldPayload(): void
+    {
+        $this->newCache()->saveItem(self::KEY, 'old payload', 'old hash');
+
+        $payload_path = substr($this->headerPath(), 0, -5);
+        chmod($payload_path, 0444);
+        if (is_writable($payload_path)) {
+            chmod($payload_path, 0644);
+            self::markTestSkipped('The payload stays writable (running as root?)');
+        }
+
+        try {
+            @$this->newCache()->saveItem(self::KEY, 'new payload', 'new hash');
+        } catch (InvalidArgumentException) {
+            // the payload could not be written
+        } finally {
+            chmod($payload_path, 0644);
+        }
+
+        self::assertNull($this->newCache()->getItem(self::KEY, 'new hash'));
+        self::assertNull($this->newCache()->getHash(self::KEY));
+    }
+
+    /**
+     * A writer that died mid-write leaves a header that is empty or shorter than it declares. Reading,
+     * consolidating and checking for changes must treat it as a miss and not throw.
+     */
+    #[DataProvider('provideUnusableHeaders')]
+    public function testUnusableHeaderIsAMiss(string $header): void
+    {
+        $this->newParserCacheProvider()->saveStatementsToCache(self::KEY, 'the hash', [], []);
+        file_put_contents($this->headerPath(), $header);
+
+        $provider = $this->newParserCacheProvider();
+
+        self::assertNull($provider->getHash(self::KEY));
+        self::assertNull($provider->loadStatementsFromCache(self::KEY, null));
+        self::assertNull($provider->loadStatementsFromCache(self::KEY, 'the hash'));
+        self::assertTrue($provider->hasChanged(self::KEY, 'the hash'));
+
+        $provider->consolidate();
+    }
+
+    /**
+     * @return iterable<string, list{string}>
+     * @psalm-pure
+     */
+    public static function provideUnusableHeaders(): iterable
+    {
+        yield 'empty' => [''];
+        yield 'length prefix only' => [pack('V', 8)];
+        yield 'declared length overruns the header' => [pack('V', 4096) . 'the hash' . self::KEY];
+        yield 'key cut short' => [pack('V', 8) . 'the hash' . substr(self::KEY, 0, 4)];
+    }
+
+    /**
+     * A writer waiting for a reader must not empty the header it is about to replace: truncating it on open
+     * shows readers an empty header for as long as the reader holds the lock. On a very slow machine the child
+     * may not reach the header within the polling window and the bug goes unnoticed, but the test never fails
+     * spuriously.
+     */
+    public function testWriterWaitingForAReaderDoesNotEmptyTheHeader(): void
+    {
+        if (!function_exists('pcntl_fork')) {
+            self::markTestSkipped('pcntl_fork() is unavailable');
+        }
+
+        // built before forking so the child reaches the header within the polling window
+        $writer = $this->newCache();
+        $writer->saveItem(self::KEY, 'old payload', 'old hash');
+
+        $header_path = $this->headerPath();
+        $old_header = file_get_contents($header_path);
+        $reader = fopen($header_path, 'r');
+        self::assertNotFalse($reader);
+        self::assertTrue(flock($reader, LOCK_SH));
+
+        $pid = pcntl_fork();
+        self::assertNotSame(-1, $pid);
+        if ($pid === 0) {
+            // the child must never fall through to PHPUnit
+            $status = 1;
+            try {
+                $writer->saveItem(self::KEY, 'new payload', 'new hash');
+                $status = 0;
+            } finally {
+                exit($status);
+            }
+        }
+
+        try {
+            for ($i = 0; $i < 20; $i++) {
+                usleep(10_000);
+                self::assertSame($old_header, file_get_contents($header_path), 'the header changed under the reader');
+            }
+        } finally {
+            flock($reader, LOCK_UN);
+            fclose($reader);
+        }
+
+        pcntl_waitpid($pid, $wait_status);
+        self::assertTrue(pcntl_wifexited($wait_status) && pcntl_wexitstatus($wait_status) === 0);
+        self::assertSame('new payload', $this->newCache()->getItem(self::KEY, 'new hash'));
+    }
+
+    public function testExistingCacheDirectoryDoesNotRaiseAWarning(): void
+    {
+        $this->newCache();
+
+        $errors = [];
+        set_error_handler(static function (int $code, string $message) use (&$errors): bool {
+            $errors[] = $message;
+
+            return true;
+        });
+
+        try {
+            // the second instance finds the directory created by the first one
+            $this->newCache();
+        } finally {
+            restore_error_handler();
+        }
+
+        self::assertSame([], $errors);
     }
 
     /**
