@@ -18,6 +18,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\Scalar;
 use PhpParser;
@@ -316,6 +317,11 @@ final class StubsGenerator
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TNull) {
                 continue;
+            }
+
+            // no PHP type stands for string|int|float|bool
+            if ($atomic_type instanceof TScalar) {
+                return null;
             }
 
             if ($atomic_type instanceof Scalar
