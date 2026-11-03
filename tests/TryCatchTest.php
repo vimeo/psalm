@@ -20,6 +20,20 @@ final class TryCatchTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedInADoWhileInATryWithAFinallyIsDefinedAfterIt' => [
+                'code' => '<?php
+                    function f(): string {
+                        try {
+                            do {
+                                $foo = "bar";
+                            } while (false);
+                        } finally {
+                            echo "finally";
+                        }
+
+                        return $foo;
+                    }',
+            ],
             'addThrowableInterfaceType' => [
                 'code' => '<?php
                     interface CustomThrowable {}
@@ -505,6 +519,25 @@ final class TryCatchTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableAssignedAfterABreakInADoWhileInATryIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(): string {
+                        try {
+                            do {
+                                if (rand(0, 1)) {
+                                    break;
+                                }
+
+                                $foo = "bar";
+                            } while (false);
+                        } finally {
+                            echo "finally";
+                        }
+
+                        return $foo;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'invalidCatchClass' => [
                 'code' => '<?php
                     class A {}
