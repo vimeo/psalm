@@ -1185,38 +1185,7 @@ final class ArrayFetchAnalyzer
                         );
                     }
                 } else {
-                    $good_types = [];
-                    $bad_types = [];
-                    foreach ($offset_type->getAtomicTypes() as $atomic_key_type) {
-                        if (!$atomic_key_type instanceof TString
-                            && !$atomic_key_type instanceof TInt
-                            && !$atomic_key_type instanceof TArrayKey
-                            && !$atomic_key_type instanceof TMixed
-                            && !$atomic_key_type instanceof TTemplateParam
-                            && !(
-                                $atomic_key_type instanceof TObjectWithProperties
-                                && isset($atomic_key_type->methods['__tostring'])
-                            )
-                        ) {
-                            $bad_types[] = $atomic_key_type;
-
-                            if ($atomic_key_type instanceof TFalse) {
-                                $good_types[] = new TLiteralInt(0);
-                            } elseif ($atomic_key_type instanceof TTrue) {
-                                $good_types[] = new TLiteralInt(1);
-                            } elseif ($atomic_key_type instanceof TBool) {
-                                $good_types[] = new TLiteralInt(0);
-                                $good_types[] = new TLiteralInt(1);
-                            } elseif ($atomic_key_type instanceof TLiteralFloat) {
-                                $int = LiteralCast::toInt($atomic_key_type->value);
-                                $good_types[] = $int === null ? new TInt : new TLiteralInt($int);
-                            } elseif ($atomic_key_type instanceof TFloat) {
-                                $good_types[] = new TInt;
-                            } else {
-                                $good_types[] = new TArrayKey;
-                            }
-                        }
-                    }
+                    [$bad_types, $good_types] = self::splitInvalidOffsetTypes($offset_type->freeze());
 
                     if ($bad_types && $good_types) {
                         $offset_type->substitute(
@@ -1634,9 +1603,21 @@ final class ArrayFetchAnalyzer
                 $type = $type->setTypeParams([
                     $offset_type->isMixed()
                         ? Type::getArrayKey()
-                        : $offset_type->freeze(),
+                        : self::castInvalidOffsetTypes($offset_type->freeze()),
                     $type->type_params[1],
                 ]);
+            }
+
+            $invalid_offset_types = self::getUncastableOffsetTypes($offset_type->freeze());
+
+            if ($invalid_offset_types) {
+                $expected_offset_types[] = 'array-key';
+
+                if (count($invalid_offset_types) < count($offset_type->getAtomicTypes())) {
+                    $has_valid_offset = true;
+                }
+            } else {
+                $has_valid_offset = true;
             }
         } elseif (!$type->isEmptyArray()) {
             $expected_offset_type = $type->type_params[0]->hasMixed()
@@ -2573,5 +2554,90 @@ final class ArrayFetchAnalyzer
             }
         }
         return $has_valid_absolute_offset;
+    }
+
+    /**
+     * An offset type with what PHP can't use as an array key replaced by what it casts to (or array-key)
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public static function castInvalidOffsetTypes(Union $offset_type): Union
+    {
+        [$bad_types, $good_types] = self::splitInvalidOffsetTypes($offset_type);
+
+        if (!$bad_types || !$good_types) {
+            return $offset_type;
+        }
+
+        return $offset_type->getBuilder()->substitute(
+            TypeCombiner::combine($bad_types, null),
+            TypeCombiner::combine($good_types, null),
+        )->freeze();
+    }
+
+    /**
+     * The atomic types of an offset type that can't be used as an array key and that PHP doesn't cast to one
+     *
+     * @return list<Atomic>
+     * @psalm-pure
+     */
+    private static function getUncastableOffsetTypes(Union $offset_type): array
+    {
+        $uncastable = [];
+
+        foreach (self::splitInvalidOffsetTypes($offset_type)[0] as $atomic_type) {
+            if (!$atomic_type instanceof TNull
+                && !$atomic_type instanceof TBool
+                && !$atomic_type instanceof TFloat
+            ) {
+                $uncastable[] = $atomic_type;
+            }
+        }
+
+        return $uncastable;
+    }
+
+    /**
+     * The atomic types of an offset type PHP can't use as an array key, and what it casts them to
+     *
+     * @return array{list<Atomic>, list<Atomic>}
+     * @psalm-pure
+     */
+    private static function splitInvalidOffsetTypes(Union $offset_type): array
+    {
+        $good_types = [];
+        $bad_types = [];
+        foreach ($offset_type->getAtomicTypes() as $atomic_key_type) {
+            if (!$atomic_key_type instanceof TString
+                && !$atomic_key_type instanceof TInt
+                && !$atomic_key_type instanceof TArrayKey
+                && !$atomic_key_type instanceof TMixed
+                && !$atomic_key_type instanceof TTemplateParam
+                && !(
+                    $atomic_key_type instanceof TObjectWithProperties
+                    && isset($atomic_key_type->methods['__tostring'])
+                )
+            ) {
+                $bad_types[] = $atomic_key_type;
+
+                if ($atomic_key_type instanceof TFalse) {
+                    $good_types[] = new TLiteralInt(0);
+                } elseif ($atomic_key_type instanceof TTrue) {
+                    $good_types[] = new TLiteralInt(1);
+                } elseif ($atomic_key_type instanceof TBool) {
+                    $good_types[] = new TLiteralInt(0);
+                    $good_types[] = new TLiteralInt(1);
+                } elseif ($atomic_key_type instanceof TLiteralFloat) {
+                    $int = LiteralCast::toInt($atomic_key_type->value);
+                    $good_types[] = $int === null ? new TInt : new TLiteralInt($int);
+                } elseif ($atomic_key_type instanceof TFloat) {
+                    $good_types[] = new TInt;
+                } else {
+                    $good_types[] = new TArrayKey;
+                }
+            }
+        }
+
+        return [$bad_types, $good_types];
     }
 }

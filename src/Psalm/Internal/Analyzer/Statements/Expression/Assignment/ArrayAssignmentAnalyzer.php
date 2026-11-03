@@ -926,7 +926,9 @@ final class ArrayAssignmentAnalyzer
                     }
                 }
 
-                $array_atomic_key_type = ArrayFetchAnalyzer::replaceOffsetTypeWithInts($key_type);
+                $array_atomic_key_type = ArrayFetchAnalyzer::castInvalidOffsetTypes(
+                    ArrayFetchAnalyzer::replaceOffsetTypeWithInts($key_type),
+                );
             } else {
                 $array_atomic_key_type = Type::getArrayKey();
             }
