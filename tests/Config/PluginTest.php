@@ -771,7 +771,7 @@ final class PluginTest extends TestCase
     public function testMethodProviderTakingAStarTypeParameterAcceptsNothing(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:39:34 - Argument 1 expects never, but stdClass provided');
+        $this->expectExceptionMessage('somefile.php:39:34 - Argument 1 expects never, but stdClass provided');
 
         $this->analyzeWithTemplateParameterPlugin('
             /** @param Box<*> $box */
@@ -783,7 +783,7 @@ final class PluginTest extends TestCase
     public function testMethodProviderTakingABoxOfAStarTypeParameterAcceptsNoBox(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:42:37 - Argument 1 expects Ns\Box<never>, but Ns\Box<stdClass> provided');
+        $this->expectExceptionMessage('somefile.php:42:37 - Argument 1 expects Ns\Box<never>, but Ns\Box<stdClass> provided');
 
         $this->analyzeWithTemplateParameterPlugin('
             /**
@@ -798,7 +798,7 @@ final class PluginTest extends TestCase
     public function testMethodProviderReturningABoxOfAStarTypeParameterKeepsItUnknown(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:41:32 - Argument 1 of Ns\Box::set expects never, but stdClass provided');
+        $this->expectExceptionMessage('somefile.php:41:32 - Argument 1 of Ns\Box::set expects never, but stdClass provided');
 
         $this->analyzeWithTemplateParameterPlugin('
             /** @param Box<*> $box */
