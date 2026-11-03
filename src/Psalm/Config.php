@@ -438,6 +438,8 @@ final class Config
 
     public bool $ensure_array_int_offsets_exist = false;
 
+    public bool $strict_optional_callable_params = false;
+
     public bool $ensure_override_attribute = true;
 
     public bool $suggest_purity_annotations = false;
@@ -1080,6 +1082,7 @@ final class Config
             'includePhpVersionsInErrorBaseline' => 'include_php_versions_in_error_baseline',
             'ensureArrayStringOffsetsExist' => 'ensure_array_string_offsets_exist',
             'ensureArrayIntOffsetsExist' => 'ensure_array_int_offsets_exist',
+            'strictOptionalCallableParams' => 'strict_optional_callable_params',
             'ensureOverrideAttribute' => 'ensure_override_attribute',
             'suggestPurityAnnotations' => 'suggest_purity_annotations',
             'reportMixedIssues' => 'show_mixed_issues',

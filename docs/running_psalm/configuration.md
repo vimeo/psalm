@@ -382,6 +382,22 @@ When `true`, Psalm will complain when referencing an explicit string offset on a
 ```
 When `true`, Psalm will complain when referencing an explicit integer offset on an array e.g. `$arr[7]` without a user first asserting that it exists (either via an `isset` check or via an object-like array). Defaults to `false`.
 
+#### strictOptionalCallableParams
+```xml
+<psalm
+  strictOptionalCallableParams="[bool]"
+>
+```
+When `true`, a callable whose parameter is required is not accepted where a `callable` type declares that parameter optional (`callable(string=): string`), because the receiver may call it without the argument. Defaults to `false`.
+
+```php
+/** @param callable(string=): string $c */
+function map(callable $c): string { return $c(); }
+
+map(fn(string $a): string => $a); // InvalidArgument
+map(fn(string $a = "d"): string => $a); // no issue
+```
+
 #### ensureOverrideAttribute
 ```xml
 <psalm

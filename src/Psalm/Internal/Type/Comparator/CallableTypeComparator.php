@@ -130,7 +130,8 @@ final class CallableTypeComparator
                 }
 
                 // a callable that may be called without the parameter must not require it
-                if ($container_param->is_optional
+                if ($codebase->config->strict_optional_callable_params
+                    && $container_param->is_optional
                     && !$input_param->is_optional
                     && !$input_param->is_variadic
                 ) {

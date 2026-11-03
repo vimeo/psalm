@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -13,6 +16,136 @@ final class CallableTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testRequiredClosureParamIsAcceptedForAnOptionalCallableParamByDefault(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string=):string $callable */
+                function map(callable $callable): void {
+                    echo $callable();
+                }
+
+                map(fn(string $a): string => $a);',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStrictOptionalCallableParamsRejectsARequiredClosureParam(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidArgument');
+
+        Config::getInstance()->strict_optional_callable_params = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string=):string $callable */
+                function map(callable $callable): void {
+                    echo $callable();
+                }
+
+                map(fn(string $a): string => $a);',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStrictOptionalCallableParamsRejectsARequiredSecondClosureParam(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidScalarArgument');
+
+        Config::getInstance()->strict_optional_callable_params = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string, int=):string $callable */
+                function map(callable $callable): void {
+                    echo $callable("a");
+                }
+
+                map(fn(string $a, int $b): string => $a . $b);',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStrictOptionalCallableParamsAcceptsAnOptionalClosureParam(): void
+    {
+        Config::getInstance()->strict_optional_callable_params = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string=):string $callable */
+                function map(callable $callable): void {
+                    echo $callable();
+                }
+
+                map(fn(string $a = "d"): string => $a);',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStrictOptionalCallableParamsAcceptsAVariadicClosureParam(): void
+    {
+        Config::getInstance()->strict_optional_callable_params = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string=):string $callable */
+                function map(callable $callable): void {
+                    echo $callable();
+                }
+
+                map(fn(string ...$a): string => "x");',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStrictOptionalCallableParamsAcceptsAClosureWithoutParams(): void
+    {
+        Config::getInstance()->strict_optional_callable_params = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string=):string $callable */
+                function map(callable $callable): void {
+                    echo $callable();
+                }
+
+                map(fn(): string => "x");',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStrictOptionalCallableParamsKeepsARequiredContainerParamStrict(): void
+    {
+        Config::getInstance()->strict_optional_callable_params = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string):string $callable */
+                function map(callable $callable): void {
+                    echo $callable("a");
+                }
+
+                map(fn(string $a): string => $a);',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     /**
      * @psalm-pure
      */
@@ -20,33 +153,6 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'optionalCallableParamAcceptsAnOptionalClosureParam' => [
-                'code' => '<?php
-                    /** @param callable(string=):string $callable */
-                    function map(callable $callable): void {
-                        echo $callable();
-                    }
-
-                    map(fn(string $a = "d"): string => $a);',
-            ],
-            'optionalCallableParamAcceptsAVariadicClosureParam' => [
-                'code' => '<?php
-                    /** @param callable(string=):string $callable */
-                    function map(callable $callable): void {
-                        echo $callable();
-                    }
-
-                    map(fn(string ...$a): string => "x");',
-            ],
-            'optionalCallableParamAcceptsAClosureWithoutParams' => [
-                'code' => '<?php
-                    /** @param callable(string=):string $callable */
-                    function map(callable $callable): void {
-                        echo $callable();
-                    }
-
-                    map(fn(): string => "x");',
-            ],
             'callableKeyedArrayKeepsTheCallableFlagWhenItsValuesAreNarrowed' => [
                 'code' => '<?php
                     /**
@@ -2569,26 +2675,6 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'optionalCallableParamRejectsARequiredClosureParam' => [
-                'code' => '<?php
-                    /** @param callable(string=):string $callable */
-                    function map(callable $callable): void {
-                        echo $callable();
-                    }
-
-                    map(fn(string $a): string => $a);',
-                'error_message' => 'InvalidArgument',
-            ],
-            'optionalCallableParamRejectsARequiredSecondClosureParam' => [
-                'code' => '<?php
-                    /** @param callable(string, int=):string $callable */
-                    function map(callable $callable): void {
-                        echo $callable("a");
-                    }
-
-                    map(fn(string $a, int $b): string => $a . $b);',
-                'error_message' => 'InvalidScalarArgument',
-            ],
             'undefinedCallableClass' => [
                 'code' => '<?php
                     class A {
