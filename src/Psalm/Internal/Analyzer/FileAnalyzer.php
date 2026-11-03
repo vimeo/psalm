@@ -255,6 +255,20 @@ class FileAnalyzer extends SourceAnalyzer
                         continue;
                     }
 
+                    if ($alias->as_fq_classlike_name !== null
+                        && $codebase->classlikes->classOrInterfaceOrEnumExists($alias->as_fq_classlike_name)
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidTypeImport(
+                                'Type alias ' . $alias->alias_name
+                                . ' imported from ' . $fq_source_classlike
+                                . ' is named like the class ' . $alias->as_fq_classlike_name
+                                . ', use `as` to rename it',
+                                $location,
+                            ),
+                        );
+                    }
+
                     $referenced_class_storage = $codebase->classlike_storage_provider->get(
                         $codebase->classlikes->getUnAliasedName($fq_source_classlike),
                     );
