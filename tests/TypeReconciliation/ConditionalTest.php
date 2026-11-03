@@ -21,6 +21,55 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'orWhoseRightSideReassignsWhatTheLeftOneTestedKeepsTheAssignedType' => [
+                'code' => '<?php
+                    /** @var string $value */
+                    $value = "5";
+
+                    if (!ctype_digit($value) || ($value = intval($value)) < 1) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$value' => 'int<1, max>',
+                ],
+            ],
+            'logicalOrWhoseRightSideReassignsWhatTheLeftOneTestedKeepsTheAssignedType' => [
+                'code' => '<?php
+                    /** @var string $value */
+                    $value = "5";
+
+                    if (!ctype_digit($value) or ($value = intval($value)) < 1) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$value' => 'int<1, max>',
+                ],
+            ],
+            'orWhoseRightSideReassignsAnArrayTheLeftOneTestedAKeyOfKeepsTheAssignedType' => [
+                'code' => '<?php
+                    /** @var array{k?: int} $arr */
+                    $arr = [];
+
+                    if (!isset($arr["k"]) || count($arr = ["z" => "q"]) > 1) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$arr' => 'array{z: string}',
+                ],
+            ],
+            'orWhoseRightSideAssignsAnotherVariableKeepsWhatTheLeftOneTested' => [
+                'code' => '<?php
+                    /** @var string|null $s */
+                    $s = null;
+
+                    if ($s === null || ($n = strlen($s)) > 5) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$s' => 'string',
+                    '$n' => 'int<0, 5>',
+                ],
+            ],
             'nonStrictConditionOnMixedOrNull' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $owners */

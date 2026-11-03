@@ -17,9 +17,12 @@ use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Storage\Assertion\Truthy;
 
+use function array_filter;
 use function array_map;
+use function array_values;
 use function count;
 use function spl_object_id;
+use function strcspn;
 use function substr;
 
 /**
@@ -98,6 +101,16 @@ final class FormulaGenerator
             $right_assigned_var_ids = self::getAssignedVarIds($conditional->right, $this_class_name);
 
             if ($right_assigned_var_ids) {
+                // what the left one tested of the previous value says nothing about the value the right one assigns
+                $left_clauses = array_values(array_filter(
+                    $left_clauses,
+                    static fn(Clause $clause): bool => !self::mentionsAnyVar($clause, $right_assigned_var_ids),
+                ));
+
+                if (!$left_clauses) {
+                    $left_clauses = [new Clause([], $conditional_object_id, $conditional_object_id, true)];
+                }
+
                 $right_clauses = array_map(
                     static fn(Clause $clause): Clause => $clause->wedge || !$clause->reconcilable
                         ? new Clause(
@@ -483,6 +496,21 @@ final class FormulaGenerator
                 $creating_object_id,
             ),
         ];
+    }
+
+    /**
+     * @param array<string, true> $var_ids
+     * @psalm-pure
+     */
+    private static function mentionsAnyVar(Clause $clause, array $var_ids): bool
+    {
+        foreach ($clause->possibilities as $var => $_) {
+            if (isset($var_ids[$var]) || isset($var_ids[substr($var, 0, strcspn($var, '[-'))])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
