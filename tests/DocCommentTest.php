@@ -11,6 +11,8 @@ use Psalm\DocComment;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Scanner\ParsedDocblock;
 
+use function array_values;
+
 final class DocCommentTest extends BaseTestCase
 {
     /**
@@ -136,6 +138,24 @@ final class DocCommentTest extends BaseTestCase
             PHP;
 
         $this->assertSame($expectedDoc, $docComment->render(''));
+    }
+
+    public function testSingleLineDocblockTagHasNoTrailingBlank(): void
+    {
+        $docComment = DocComment::parsePreservingLength(new Doc('/** @return array{a: int} */'));
+
+        $this->assertSame(['array{a: int}'], array_values($docComment->tags['return']));
+    }
+
+    public function testSingleLineDocblockExpandsWithoutTrailingBlank(): void
+    {
+        $docComment = DocComment::parsePreservingLength(new Doc('/** @return array{a: int} */'));
+        $docComment->tags['throws'][] = 'RuntimeException';
+
+        $this->assertSame(
+            "/**\n * @return array{a: int}\n *\n * @throws RuntimeException\n */\n",
+            $docComment->render(''),
+        );
     }
 
     public function testParsingRoundtrip(): void
