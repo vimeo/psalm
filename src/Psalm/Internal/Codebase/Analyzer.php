@@ -439,7 +439,7 @@ final class Analyzer
 
         $all_referencing_methods = $method_dependencies;
 
-        // only needed to invalidate the references to changed members, which a full run has none of
+        // only needed to invalidate the references to changed members, which a run with no changed files has none of
         if ($changed_members || $unchanged_signature_members) {
             foreach ($code_use_graph->getFunctionLikeReferencesToMembers() as $member_id => $referencing_methods) {
                 $all_referencing_methods[$member_id]

@@ -910,7 +910,7 @@ final class CodeUseGraph
 
             unset($this->file_nodes[$node_file][$node_id]);
 
-            if (!$this->file_nodes[$node_file]) {
+            if (!($this->file_nodes[$node_file] ?? [])) {
                 unset($this->file_nodes[$node_file]);
             }
         }

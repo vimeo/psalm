@@ -201,6 +201,93 @@ final class CodeUseGraphTest extends TestCase
         self::assertSame('/b.php', $populated->getNodeFile($method_b));
     }
 
+    public function testMergedNodesAreFoundByALaterFileRemoval(): void
+    {
+        $target = CodeUseGraph::propertyNode('t\\c', 'value');
+        $method_a = CodeUseGraph::functionLikeNode('a\\c::m');
+        $method_b = CodeUseGraph::functionLikeNode('b\\c::m');
+        $method_c = CodeUseGraph::functionLikeNode('c\\c::m');
+
+        $merged = new CodeUseGraph();
+        self::addMethodReference($merged, 'b\\c::m', $target, '/b.php');
+
+        $loaded_source = new CodeUseGraph();
+        self::addMethodReference($loaded_source, 'c\\c::m', $target, '/c.php');
+
+        $graph = new CodeUseGraph();
+        self::addMethodReference($graph, 'a\\c::m', $target, '/a.php');
+
+        // builds the file index
+        $graph->removeReferencesFromFile('/unrelated.php');
+
+        $graph->addGraph($merged);
+        $graph->loadCacheData($loaded_source->getCacheData());
+
+        self::assertSame(
+            [$method_a => true, $method_b => true, $method_c => true],
+            $graph->getReferencingNodes($target),
+        );
+
+        $graph->removeReferencesFromFile('/b.php');
+        self::assertSame([$method_a => true, $method_c => true], $graph->getReferencingNodes($target));
+        self::assertNull($graph->getNodeFile($method_b));
+
+        $graph->removeReferencesFromFile('/c.php');
+        self::assertSame([$method_a => true], $graph->getReferencingNodes($target));
+        self::assertNull($graph->getNodeFile($method_c));
+        self::assertSame('/a.php', $graph->getNodeFile($method_a));
+    }
+
+    public function testRemovingAFileRemovesAllItsNodes(): void
+    {
+        $graph = new CodeUseGraph();
+        $target_one = CodeUseGraph::propertyNode('t\\c', 'one');
+        $target_two = CodeUseGraph::propertyNode('t\\c', 'two');
+        $method_a = CodeUseGraph::functionLikeNode('a\\c::m');
+        $method_a2 = CodeUseGraph::functionLikeNode('a\\c::n');
+        $method_a3 = CodeUseGraph::functionLikeNode('a\\c::o');
+        $method_b = CodeUseGraph::functionLikeNode('b\\c::m');
+
+        self::addMethodReference($graph, 'a\\c::m', $target_one, '/a.php');
+        self::addMethodReference($graph, 'a\\c::n', $target_one, '/a.php');
+        self::addMethodReference($graph, 'a\\c::n', $target_two, '/a.php');
+        self::addMethodReference($graph, 'a\\c::o', $target_two, '/a.php');
+        self::addMethodReference($graph, 'b\\c::m', $target_one, '/b.php');
+        self::addMethodReference($graph, 'b\\c::m', $target_two, '/b.php');
+
+        $graph->removeReferencesFromFile('/a.php');
+
+        self::assertSame([$method_b => true], $graph->getReferencingNodes($target_one));
+        self::assertSame([$method_b => true], $graph->getReferencingNodes($target_two));
+        self::assertNull($graph->getNodeFile($method_a));
+        self::assertNull($graph->getNodeFile($method_a2));
+        self::assertNull($graph->getNodeFile($method_a3));
+        self::assertSame('/b.php', $graph->getNodeFile($method_b));
+    }
+
+    public function testRemovingAFileKeepsTheNodesAskedFor(): void
+    {
+        $graph = new CodeUseGraph();
+        $target_one = CodeUseGraph::propertyNode('t\\c', 'one');
+        $target_two = CodeUseGraph::propertyNode('t\\c', 'two');
+        $method_a = CodeUseGraph::functionLikeNode('a\\c::m');
+        $method_a2 = CodeUseGraph::functionLikeNode('a\\c::n');
+        $method_a3 = CodeUseGraph::functionLikeNode('a\\c::o');
+
+        self::addMethodReference($graph, 'a\\c::m', $target_one, '/a.php');
+        self::addMethodReference($graph, 'a\\c::n', $target_one, '/a.php');
+        self::addMethodReference($graph, 'a\\c::n', $target_two, '/a.php');
+        self::addMethodReference($graph, 'a\\c::o', $target_two, '/a.php');
+
+        $graph->removeReferencesFromFile('/a.php', [$method_a2 => true, $method_a3 => true]);
+
+        self::assertSame([$method_a2 => true], $graph->getReferencingNodes($target_one));
+        self::assertSame([$method_a2 => true, $method_a3 => true], $graph->getReferencingNodes($target_two));
+        self::assertNull($graph->getNodeFile($method_a));
+        self::assertSame('/a.php', $graph->getNodeFile($method_a2));
+        self::assertSame('/a.php', $graph->getNodeFile($method_a3));
+    }
+
     public function testExternalCallerMarksTargetUsed(): void
     {
         $graph = new CodeUseGraph();
