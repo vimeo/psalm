@@ -9,6 +9,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -43,6 +44,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
 use function array_pop;
 use function assert;
 use function count;
@@ -357,7 +359,9 @@ final class Methods
 
             $params = $storage->params;
 
-            if ($storage->has_docblock_param_types) {
+            if ($storage->has_docblock_param_types
+                && array_all($params, static fn(FunctionLikeParameter $param): bool => $param->has_docblock_type)
+            ) {
                 return $params;
             }
 
@@ -387,31 +391,58 @@ final class Methods
             $overriding_fq_class_name = $overridden_method_id->fq_class_name;
 
             foreach ($params as $i => $param) {
-                if (isset($overridden_storage->params[$i]->type)
-                    && $overridden_storage->params[$i]->has_docblock_type
+                $overridden_param = $overridden_storage->params[$i] ?? null;
+
+                if ($param->has_docblock_type
+                    || !$overridden_param
+                    || !$overridden_param->type
+                    || !$overridden_param->has_docblock_type
                 ) {
-                    $params[$i] = clone $param;
-                    /** @var Union $params[$i]->type */
-                    $params[$i]->type = $overridden_storage->params[$i]->type;
-
-                    if ($source) {
-                        $overridden_class_storage = $this->classlike_storage_provider->get($overriding_fq_class_name);
-                        $params[$i]->type = self::localizeType(
-                            $source->getCodebase(),
-                            $params[$i]->type,
-                            $appearing_fq_class_name,
-                            $overridden_class_storage->name,
-                        );
-                    }
-
-                    if ($params[$i]->signature_type
-                        && $params[$i]->signature_type->isNullable()
-                    ) {
-                        $params[$i]->type = $params[$i]->type->getBuilder()->addType(new TNull)->freeze();
-                    }
-
-                    $params[$i]->type_location = $overridden_storage->params[$i]->type_location;
+                    continue;
                 }
+
+                $type = $overridden_param->type;
+
+                if ($source) {
+                    $overridden_class_storage = $this->classlike_storage_provider->get($overriding_fq_class_name);
+                    $type = self::localizeType(
+                        $source->getCodebase(),
+                        $type,
+                        $appearing_fq_class_name,
+                        $overridden_class_storage->name,
+                    );
+                }
+
+                // keep accepting what the override's native type accepts beyond the parent's
+                if ($param->signature_type
+                    && $overridden_param->signature_type
+                    && $param->signature_type->getId() !== $overridden_param->signature_type->getId()
+                ) {
+                    $codebase = $source?->getCodebase() ?? ProjectAnalyzer::getInstance()->getCodebase();
+                    $builder = $type->getBuilder();
+
+                    foreach ($param->signature_type->getAtomicTypes() as $atomic) {
+                        if (!UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            new Union([$atomic]),
+                            $overridden_param->signature_type,
+                        )) {
+                            $builder->addType($atomic);
+                        }
+                    }
+
+                    $type = $builder->freeze();
+                }
+
+                if ($param->signature_type
+                    && $param->signature_type->isNullable()
+                ) {
+                    $type = $type->getBuilder()->addType(new TNull)->freeze();
+                }
+
+                $params[$i] = clone $param;
+                $params[$i]->type = $type;
+                $params[$i]->type_location = $overridden_param->type_location;
             }
 
             return $params;
@@ -654,7 +685,9 @@ final class Methods
             return $candidate_type;
         }
 
-        if (isset($class_storage->documenting_method_ids[$appearing_method_name])) {
+        if (!$storage->has_docblock_return_type
+            && isset($class_storage->documenting_method_ids[$appearing_method_name])
+        ) {
             $overridden_method_id = $class_storage->documenting_method_ids[$appearing_method_name];
 
             // special override to allow inference of Iterator types

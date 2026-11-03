@@ -27,6 +27,27 @@ The rest of this page covers what some projects will notice. The complete list o
     - **Checked contracts:** pure code can call the annotated functions, and every override and implementation is checked not to do more than the annotation allows.
 - **Purity annotations:** `@psalm-mutation-free` and `@psalm-external-mutation-free` are still accepted, but Psalm now suggests `@psalm-capabilities`. The `self-accessing-*` and `self-mutating-*` callable types are removed, `@psalm-purity-from $param` is replaced by purity templates, and purity arguments go in square brackets (`Traversable[pure]<int, string>`).
 - **Dead code in libraries:** graph-based detection also reports code used only by other unused code, cycles included. Mark entry points and public API with `@psalm-api` (or `@api`).
+- **Docblock inheritance is per tag.** An overriding method that documents some of its params still gets the parent's docblock types for the other params, and the parent's `@return` when it has none of its own. An inherited param type also accepts what the override's native type adds:
+    ```php
+    class Store {
+        /**
+         * @param string|null $key
+         * @param list<string> $tags
+         * @return list<string>
+         */
+        public function find($key, array $tags, bool $strict): array { return []; }
+    }
+
+    final class StrictStore extends Store {
+        /** @param bool $strict fail when nothing matches */
+        public function find($key, iterable $tags, bool $strict): array { return []; }
+    }
+
+    $store = new StrictStore();
+    $store->find(1, [], true); // InvalidArgument
+    $store->find('k', new ArrayIterator([]), true); // no issue
+    $found = $store->find('k', [], true); // list<string>
+    ```
 - **`--output-format=compact`** now selects the new compact format. Use `table` for the old output.
 - **PHP 8.1 and 32-bit PHP** are no longer supported for running Psalm. Code targeting older PHP versions can still be analysed.
 - **`psalm/plugin-phpunit`:** Psalm 7 requires `^0.21`. Projects that pin `^0.19` or `^0.20` must raise the constraint.

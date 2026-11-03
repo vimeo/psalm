@@ -812,10 +812,10 @@ final class Populator
                         ?? $declaring_class_storage->pseudo_methods[$declaring_method_name]
                         ?? $declaring_class_storage->pseudo_static_methods[$declaring_method_name];
 
-                    if (($declaring_method_storage->has_docblock_param_types
-                            || $declaring_method_storage->has_docblock_return_type)
-                        && !$method_storage->has_docblock_param_types
-                        && !$method_storage->has_docblock_return_type
+                    // a parent documents this method if it documents a tag the override leaves undocumented
+                    if ((self::documentsParamLeftUndocumented($method_storage, $declaring_method_storage)
+                            || (!$method_storage->has_docblock_return_type
+                                && $declaring_method_storage->has_docblock_return_type))
                         && $method_storage->inherited_return_type !== null
                     ) {
                         if (!isset($storage->documenting_method_ids[$method_name])
@@ -823,14 +823,14 @@ final class Populator
                                 === (string) $declaring_method_id
                         ) {
                             $storage->documenting_method_ids[$method_name] = $declaring_method_id;
-                            $method_storage->inherited_return_type = true;
+                            $method_storage->inherited_return_type = !$method_storage->has_docblock_return_type;
                         } else {
                             if (in_array(
                                 $storage->documenting_method_ids[$method_name]->fq_class_name,
                                 $declaring_class_storage->parent_interfaces,
                             )) {
                                 $storage->documenting_method_ids[$method_name] = $declaring_method_id;
-                                $method_storage->inherited_return_type = true;
+                                $method_storage->inherited_return_type = !$method_storage->has_docblock_return_type;
                             } else {
                                 $documenting_class_storage = $declaring_class_storages
                                     [$storage->documenting_method_ids[$method_name]->fq_class_name];
@@ -864,6 +864,29 @@ final class Populator
                 }
             }
         }
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private static function documentsParamLeftUndocumented(
+        MethodStorage $method_storage,
+        MethodStorage $overridden_method_storage,
+    ): bool {
+        if (!$overridden_method_storage->has_docblock_param_types) {
+            return false;
+        }
+
+        foreach ($method_storage->params as $i => $param) {
+            if (!$param->has_docblock_type
+                && isset($overridden_method_storage->params[$i])
+                && $overridden_method_storage->params[$i]->has_docblock_type
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function populateDataFromTrait(

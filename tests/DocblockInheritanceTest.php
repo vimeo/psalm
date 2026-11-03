@@ -181,6 +181,452 @@ final class DocblockInheritanceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'inheritUndocumentedParamsWhenOverrideDocumentsOthers' => [
+                'code' => '<?php
+                    class ParentClass {
+                        /**
+                         * @param string|null $key
+                         * @param bool $default
+                         * @param bool $strict
+                         */
+                        public function boolean($key = null, $default = false, $strict = false): bool {
+                            return true;
+                        }
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        /**
+                         * {@inheritDoc}
+                         * @param bool $strict
+                         */
+                        public function boolean($key = null, $default = false, $strict = false): bool {
+                            return $key === null ? $default : $strict;
+                        }
+                    }',
+            ],
+            'inheritParamTypesWhenOverrideDocumentsOnlyReturn' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @param list<string> $a
+                         * @return list<string>
+                         */
+                        public function f(array $a): array { return $a; }
+                    }
+
+                    final class C extends P {
+                        /** @return list<string> */
+                        public function f(array $a): array { return $a; }
+                    }',
+            ],
+            'inheritReturnTypeWhenOverrideDocumentsOnlyParams' => [
+                'code' => '<?php
+                    class P {
+                        /** @return list<int> */
+                        public function f(int $a): array { return []; }
+                    }
+
+                    final class C extends P {
+                        /** @param int $a */
+                        public function f(int $a): array { return [$a]; }
+                    }
+
+                    $r = (new C)->f(1);',
+                'assertions' => [
+                    '$r===' => 'list<int>',
+                ],
+            ],
+            'inheritParamTypeByPositionWhenOverrideRenamesIt' => [
+                'code' => '<?php
+                    class P {
+                        /** @param list<string> $items */
+                        public function f(array $items): int { return 0; }
+                    }
+
+                    final class C extends P {
+                        /** @param int|null $extra */
+                        public function f(array $list, $extra = null): int {
+                            return $list ? strlen($list[0]) : 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ParamNameMismatch'],
+            ],
+            'inheritParamUsingParentMethodTemplate' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $a
+                         * @param positive-int $b
+                         * @return T
+                         */
+                        public function f($a, int $b) { return $a; }
+                    }
+
+                    final class C extends P {
+                        /** @param int $b */
+                        public function f($a, int $b) { return $a; }
+                    }
+
+                    $r = (new C)->f("x", 1);',
+                'assertions' => [
+                    '$r===' => '\'x\'',
+                ],
+            ],
+            'inheritParentTemplateParamNextToOverrideTemplates' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $a
+                         * @param int $b
+                         * @return T
+                         */
+                        public function f($a, $b) { return $a; }
+                    }
+
+                    final class C extends P {
+                        /**
+                         * @template U of int
+                         * @param U $b
+                         */
+                        public function f($a, $b) { return $a; }
+                    }
+
+                    $r = (new C)->f("s", 1);',
+                'assertions' => [
+                    '$r===' => '\'s\'',
+                ],
+            ],
+            'undocumentedOverrideWithWiderNativeParamAcceptsIt' => [
+                'code' => '<?php
+                    class P {
+                        /** @param string[] $a */
+                        public function f(array $a): void {}
+                    }
+
+                    final class C extends P {
+                        public function f(iterable $a): void {}
+                    }
+
+                    (new C)->f(new ArrayIterator([]));',
+            ],
+            'inheritReturnFromInterfaceWhenParentClassDocumentsOnlyParams' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return list<int> */
+                        public function f(int $a): array;
+                    }
+
+                    class P implements I {
+                        /** @param int $a */
+                        public function f(int $a): array { return []; }
+                    }
+
+                    final class C extends P {
+                        /** @param int $a */
+                        public function f(int $a): array { return []; }
+                    }
+
+                    $r = (new C)->f(1);',
+                'assertions' => [
+                    '$r===' => 'list<int>',
+                ],
+            ],
+            'partialOverrideKeepsOwnParamTypeAndAcceptsWiderNative' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @param string[] $a
+                         * @param positive-int $b
+                         */
+                        public function f(array $a, int $b): void {}
+                    }
+
+                    final class C extends P {
+                        /** @param int $b */
+                        public function f(iterable $a, int $b): void {}
+                    }
+
+                    (new C)->f(new ArrayIterator([]), 0);',
+            ],
+            'overrideTemplatesStillInferredWhenParamsInherited' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $a
+                         * @param int $b
+                         * @return T
+                         */
+                        public function f($a, $b) { return $a; }
+                    }
+
+                    final class C extends P {
+                        /**
+                         * @template U
+                         * @param U $a
+                         * @return U
+                         */
+                        public function f($a, $b) { return $a; }
+                    }
+
+                    $r = (new C)->f(5, 1);',
+                'assertions' => [
+                    '$r===' => '5',
+                ],
+            ],
+            'narrowerNativeReturnKeptWhenParamsDocumented' => [
+                'code' => '<?php
+                    interface Id {}
+                    final class UserId implements Id {}
+
+                    interface Entity {
+                        /**
+                         * @param int $a
+                         * @return Id
+                         */
+                        function id(int $a): Id;
+                    }
+
+                    final class User implements Entity {
+                        /** @param int $a */
+                        public function id(int $a): UserId { return new UserId(); }
+                    }
+
+                    $u = (new User)->id(1);',
+                'assertions' => [
+                    '$u===' => 'UserId',
+                ],
+            ],
+            'ownDocblockReturnUsedAtCallSiteWhenParamsInherited' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @param list<int> $x
+                         * @return list<int>
+                         */
+                        public function f(array $x): array { return $x; }
+                    }
+
+                    final class C extends P {
+                        /** @return array<int> */
+                        public function f(array $x): array { return $x; }
+                    }
+
+                    $r = (new C)->f([]);',
+                'assertions' => [
+                    '$r===' => 'array<array-key, int>',
+                ],
+                'ignored_issues' => ['LessSpecificImplementedReturnType'],
+            ],
+            'overrideAndInheritedTemplatesInferredAtStaticCalls' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $a
+                         * @param int $b
+                         * @return T
+                         */
+                        public static function f($a, $b) { return $a; }
+                    }
+
+                    final class C extends P {
+                        /**
+                         * @template U
+                         * @param U $a
+                         * @return U
+                         */
+                        public static function f($a, $b) { return $a; }
+
+                        public static function g(): int { return self::f(5, 1); }
+                    }
+
+                    final class D extends P {
+                        /**
+                         * @template U of int
+                         * @param U $b
+                         */
+                        public static function f($a, $b) { return $a; }
+                    }
+
+                    $r = C::f(5, 1);
+                    $s = D::f("s", 1);',
+                'assertions' => [
+                    '$r===' => '5',
+                    '$s===' => '\'s\'',
+                ],
+            ],
+            'overrideTemplatesInferredAtParentCall' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $a
+                         * @param int $b
+                         * @return T
+                         */
+                        public function f($a, $b) { return $a; }
+                    }
+
+                    class C extends P {
+                        /**
+                         * @template U
+                         * @param U $a
+                         * @return U
+                         */
+                        public function f($a, $b) { return $a; }
+                    }
+
+                    final class E extends C {
+                        public function g(): int { return parent::f(5, 1); }
+                    }',
+            ],
+            'inheritParentTemplateParamsWithoutOwnTemplates' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $a
+                         * @param list<T> $b
+                         * @return T
+                         */
+                        public function f($a, array $b, int $c) { return $a; }
+                    }
+
+                    final class C extends P {
+                        /** @param int $c */
+                        public function f($a, array $b, int $c) { return $a; }
+                    }
+
+                    $r = (new C)->f(1, [2], 3);',
+                'assertions' => [
+                    '$r===' => '1|2',
+                ],
+            ],
+            'namedArgumentsFollowTheOverrideWhenParamsInherited' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $a
+                         * @param positive-int $b
+                         * @return T
+                         * @no-named-arguments
+                         */
+                        public function f($a, int $b) { return $a; }
+                    }
+
+                    final class C extends P {
+                        /** @param int $b */
+                        public function f($a, int $b) { return $a; }
+                    }
+
+                    $r = (new C)->f(a: "x", b: 0);',
+                'assertions' => [
+                    '$r===' => '\'x\'',
+                ],
+            ],
+            'namedArgumentsFollowTheOverrideDocumentingOnlyReturn' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $a
+                         * @param positive-int $b
+                         * @return T
+                         * @no-named-arguments
+                         */
+                        public function f($a, int $b) { return $a; }
+                    }
+
+                    final class C extends P {
+                        /** @return mixed */
+                        public function f($a, int $b) { return $a; }
+                    }
+
+                    (new C)->f(a: "x", b: 1);',
+            ],
+            'nativeTypeSpelledDifferentlyDoesNotWidenInheritedType' => [
+                'code' => '<?php
+                    class P {
+                        /** @param iterable<string> $a */
+                        public function f(iterable $a): int { return 0; }
+                    }
+
+                    final class C extends P {
+                        public function f(array|Traversable $a): int {
+                            $n = 0;
+                            foreach ($a as $s) {
+                                $n += strlen($s);
+                            }
+                            return $n;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inheritReturnFromInterfaceWhenParentClassDocumentsOtherParams' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return list<int> */
+                        public function f(int $a, int $b): array;
+                    }
+
+                    class P implements I {
+                        /** @param int $a */
+                        public function f(int $a, int $b): array { return []; }
+                    }
+
+                    final class C extends P {
+                        /** @param int $a */
+                        public function f(int $a, int $b): array { return []; }
+                    }
+
+                    $r = (new C)->f(1, 2);',
+                'assertions' => [
+                    '$r===' => 'list<int>',
+                ],
+            ],
+            'conflictingInterfaceDocblocksInheritNothing' => [
+                'code' => '<?php
+                    interface A {
+                        /** @param list<string> $a */
+                        public function f(array $a, int $b): void;
+                    }
+
+                    interface B {
+                        /** @param array<int> $a */
+                        public function f(array $a, int $b): void;
+                    }
+
+                    final class C implements A, B {
+                        /** @param int $b */
+                        public function f(array $a, int $b): void {}
+                    }
+
+                    (new C)->f([true], 1);',
+            ],
+            'arrayAccessOverrideDocumentingSomeParams' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, string> */
+                    final class C implements ArrayAccess {
+                        /** @param string $value */
+                        public function offsetSet($offset, $value): void {}
+                        public function offsetExists($offset): bool { return true; }
+                        /** @param int $offset */
+                        public function offsetGet($offset) { return ""; }
+                        public function offsetUnset($offset): void {}
+                    }
+
+                    $v = (new C)[1];',
+                'assertions' => [
+                    '$v===' => 'null|string',
+                ],
+            ],
         ];
     }
 
@@ -206,6 +652,173 @@ final class DocblockInheritanceTest extends TestCase
 
                     (new X())->boo([1, 2]);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'callSiteUsesParamTypesInheritedNextToDocumentedOnes' => [
+                'code' => '<?php
+                    class ParentClass {
+                        /**
+                         * @param string|null $key
+                         * @param bool $default
+                         * @param bool $strict
+                         */
+                        public function boolean($key = null, $default = false, $strict = false): bool {
+                            return true;
+                        }
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        /** @param bool $strict */
+                        public function boolean($key = null, $default = false, $strict = false): bool {
+                            return false;
+                        }
+                    }
+
+                    (new ChildClass)->boolean(1);',
+                'error_message' => 'Argument 1 of ChildClass::boolean expects null|string, but 1 provided',
+            ],
+            'overrideParamDocblockStillComparedWithParent' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @param int|string $a
+                         * @param list<string> $b
+                         */
+                        public function f($a, array $b): void {}
+                    }
+
+                    final class C extends P {
+                        /** @param int $a */
+                        public function f($a, array $b): void {}
+                    }',
+                'error_message' => 'MoreSpecificImplementedParamType',
+            ],
+            'inheritVariadicParamType' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @param positive-int $n
+                         * @param non-empty-string ...$xs
+                         */
+                        public function f(int $n, string ...$xs): void {}
+                    }
+
+                    final class C extends P {
+                        /** @param int $n */
+                        public function f(int $n, string ...$xs): void {}
+                    }
+
+                    (new C)->f(1, "");',
+                'error_message' => 'Argument 2 of C::f expects non-empty-string',
+            ],
+            'inheritIntoPromotedConstructorParam' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class P {
+                        /**
+                         * @param list<string> $items
+                         * @param positive-int $n
+                         */
+                        public function __construct(array $items, int $n) {}
+                    }
+
+                    final class C extends P {
+                        /** @param int $n */
+                        public function __construct(public array $items, int $n) {
+                            parent::__construct([], 1);
+                        }
+                    }
+
+                    new C([1], 1);',
+                'error_message' => 'Argument 1 of C::__construct expects list<string>, but',
+                'error_levels' => ['ImmutableDependency'],
+                'php_version' => '8.0',
+            ],
+            'nullableNativeParamAddsNullToInheritedType' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @param string[] $a
+                         * @param positive-int $b
+                         */
+                        public function f(array $a, int $b): void {}
+                    }
+
+                    final class C extends P {
+                        /** @param int $b */
+                        public function f(?array $a, int $b): void {}
+                    }
+
+                    (new C)->f([1], 1);',
+                'error_message' => 'Argument 1 of C::f expects array<array-key, string>|null',
+            ],
+            'inheritClassTemplateParamLocalized' => [
+                'code' => '<?php
+                    /** @template T */
+                    class P {
+                        /**
+                         * @param T $v
+                         * @param positive-int $n
+                         */
+                        public function set($v, int $n): void {}
+                    }
+
+                    /** @extends P<string> */
+                    final class C extends P {
+                        /** @param int $n */
+                        public function set($v, int $n): void {}
+                    }
+
+                    (new C)->set(1, 1);',
+                'error_message' => 'Argument 1 of C::set expects string',
+            ],
+            'parentClassDocblockPreferredOverInterfaceForPartialOverride' => [
+                'code' => '<?php
+                    interface I {
+                        /** @param list<string> $a */
+                        public function f(array $a, int $b): void;
+                    }
+
+                    class P implements I {
+                        /** @param array<string> $a */
+                        public function f(array $a, int $b): void {}
+                    }
+
+                    final class C extends P implements I {
+                        /** @param int $b */
+                        public function f(array $a, int $b): void {}
+                    }
+
+                    (new C)->f([1], 1);',
+                'error_message' => 'Argument 1 of C::f expects array<array-key, string>, but',
+            ],
+            'overrideDocblockReturnStillComparedWhenParamsInherited' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @param int $x
+                         * @return list<int>
+                         */
+                        public function f($x): array { return []; }
+                    }
+
+                    final class C extends P {
+                        /** @return array<int> */
+                        public function f($x): array { return []; }
+                    }',
+                'error_message' => 'LessSpecificImplementedReturnType',
+            ],
+            'returnStatementsCheckedAgainstInheritedReturnType' => [
+                'code' => '<?php
+                    class P {
+                        /** @return list<int> */
+                        public function f(int $a): array { return []; }
+                    }
+
+                    final class C extends P {
+                        /** @param int $a */
+                        public function f(int $a): array { return ["x"]; }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }

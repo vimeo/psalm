@@ -2134,14 +2134,13 @@ final class ArgumentsAnalyzer
         );
 
         if (!$template_types) {
-            return null;
-        }
-
-        if (!$template_result) {
+            // e.g. templates of the method an override inherits param types from
+            if (!$template_result || !$template_result->template_types) {
+                return null;
+            }
+        } elseif (!$template_result) {
             return new TemplateResult($template_types, []);
-        }
-
-        if (!$template_result->template_types) {
+        } elseif (!$template_result->template_types) {
             $template_result->template_types = $template_types;
         }
 

@@ -318,7 +318,6 @@ abstract class CallAnalyzer
             $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
             if ($declaring_class_storage->user_defined
-                && !$method_storage->has_docblock_param_types
                 && isset($declaring_class_storage->documenting_method_ids[$method_name])
             ) {
                 $documenting_method_id = $declaring_class_storage->documenting_method_ids[$method_name];
@@ -326,7 +325,18 @@ abstract class CallAnalyzer
                 $documenting_method_storage = $codebase->methods->getStorage($documenting_method_id);
 
                 if ($documenting_method_storage->template_types) {
-                    $method_storage = $documenting_method_storage;
+                    if (!$method_storage->has_docblock_param_types && !$method_storage->has_docblock_return_type) {
+                        $method_storage = $documenting_method_storage;
+                    } else {
+                        // the override keeps its storage (named arguments, taint sinks), so its own templates and
+                        // those of the params it inherits are both inferred through the template result
+                        $template_result->template_types += $method_storage->template_types ?? [];
+
+                        foreach ($documenting_method_storage->template_types as $template_name => $bounds) {
+                            $template_result->template_types[$template_name]
+                                = ($template_result->template_types[$template_name] ?? []) + $bounds;
+                        }
+                    }
                 }
             }
 

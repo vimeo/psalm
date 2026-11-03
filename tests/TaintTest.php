@@ -5460,6 +5460,52 @@ final class TaintTest extends TestCase
                     v(a: (string) $_GET["x"]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintSinkOfOverrideInheritingTemplatedParam' => [
+                'code' => '<?php // --taint-analysis
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $a
+                         * @param positive-int $b
+                         * @return T
+                         */
+                        public function f($a, int $b) { return $a; }
+                    }
+
+                    final class C extends P {
+                        /**
+                         * @param int $b
+                         * @psalm-taint-sink html $a
+                         */
+                        public function f($a, int $b) { return $a; }
+                    }
+
+                    (new C)->f($_GET["x"], 1);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSinkOfOverrideDocumentingOnlyReturn' => [
+                'code' => '<?php // --taint-analysis
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $a
+                         * @param positive-int $b
+                         * @return T
+                         */
+                        public function f($a, int $b) { return $a; }
+                    }
+
+                    final class C extends P {
+                        /**
+                         * @return mixed
+                         * @psalm-taint-sink html $a
+                         */
+                        public function f($a, int $b) { return $a; }
+                    }
+
+                    (new C)->f($_GET["x"], 1);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintTheVariadicWithAPositionalArgument' => [
                 'code' => '<?php // --taint-analysis
                     function v(string $a = "", string ...$rest): void {
