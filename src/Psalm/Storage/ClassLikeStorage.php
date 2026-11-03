@@ -52,6 +52,13 @@ final class ClassLikeStorage implements HasAttributesInterface
     public bool $deprecated = false;
 
     /**
+     * The literal message of a native #[\Deprecated] attribute, if any.
+     *
+     * @var non-empty-string|null
+     */
+    public ?string $deprecated_message = null;
+
+    /**
      * @var list<non-empty-string>
      */
     public array $internal = [];
@@ -209,6 +216,13 @@ final class ClassLikeStorage implements HasAttributesInterface
      * @var array<lowercase-string, MethodIdentifier>
      */
     public array $declaring_pseudo_method_ids = [];
+
+    /**
+     * Same as $declaring_pseudo_method_ids, but for static pseudo methods
+     *
+     * @var array<lowercase-string, MethodIdentifier>
+     */
+    public array $declaring_pseudo_static_method_ids = [];
 
     /**
      * @var array<lowercase-string, MethodIdentifier>

@@ -317,7 +317,7 @@ final class FunctionLikeDocblockScanner
                 $storage,
                 $codebase,
                 $file_storage,
-                null,
+                $classlike_storage,
             );
         }
 

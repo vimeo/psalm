@@ -1,6 +1,11 @@
 name: Run unit tests
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  # dispatched by the build-stubs workflow after it pushes the files composer build regenerates, which doesn't
+  # trigger pushes
+  workflow_dispatch:
 permissions:
   contents: read
 

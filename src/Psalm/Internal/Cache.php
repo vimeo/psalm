@@ -259,6 +259,10 @@ final class Cache
             flock($f, LOCK_UN);
             fclose($f);
         }
-        $this->cache[$key] = [$hash, $item];
+        // Without a disk cache the array is the only copy. With one, keep it only if arrayCache is on,
+        // otherwise a cold run holds every parsed AST and storage object in memory for nothing.
+        if (!$this->persistent || $this->arrayCache) {
+            $this->cache[$key] = [$hash, $item];
+        }
     }
 }
