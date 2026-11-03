@@ -87,6 +87,27 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         if ($lhs_type_part instanceof TTemplateParam
             && !$lhs_type_part->as->isMixed()
         ) {
+            // every type of a union bound has to have the method
+            if (!$lhs_type_part->as->isSingle()) {
+                foreach ($lhs_type_part->as->getAtomicTypes() as $bound_atomic_type) {
+                    self::analyze(
+                        $statements_analyzer,
+                        $stmt,
+                        $codebase,
+                        $context,
+                        $lhs_type,
+                        $lhs_type_part->replaceAs(new Union([$bound_atomic_type])),
+                        $static_type,
+                        $is_intersection,
+                        $lhs_var_id,
+                        $result,
+                        $inferred_template_result,
+                    );
+                }
+
+                return;
+            }
+
             $extra_types = $lhs_type_part->extra_types;
 
             $lhs_type_part = array_values(
