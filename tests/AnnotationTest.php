@@ -1492,6 +1492,23 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'undefinedClassInASignatureTypeTheDocblockTemplateReplaces' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $a
+                     */
+                    function a(UndefinedClass $a): void {}',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:32',
+            ],
+            'undefinedClassInASignatureTypeTheDocblockUnionReplaces' => [
+                'code' => '<?php
+                    /**
+                     * @param int|string $a
+                     */
+                    function a(?UndefinedClass $a): void {}',
+                'error_message' => 'UndefinedClass',
+            ],
             'invalidTypeInPromotedPropertyDocblock' => [
                 'code' => '<?php
                     class Foo {

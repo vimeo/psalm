@@ -1751,6 +1751,22 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     }
                 }
 
+                // the classes of a native type the docblock type replaces still have to exist
+                if ($signature_type
+                    && $function_param->signature_type_location
+                    && $function_param->type_location !== $function_param->signature_type_location
+                    && $signature_type->getId() !== $function_param->type->getId()
+                    && $signature_type->check(
+                        $this,
+                        $function_param->signature_type_location,
+                        $storage->suppressed_issues,
+                        [],
+                        false,
+                    ) === false
+                ) {
+                    $check_stmts = false;
+                }
+
                 $param_type = $param_type->addParentNodes($parent_nodes);
             } else {
                 $param_type = new Union([new TMixed()], [
