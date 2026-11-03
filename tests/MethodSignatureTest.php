@@ -773,6 +773,30 @@ final class MethodSignatureTest extends TestCase
                         public function getTraceAsString(): string;
                     }',
             ],
+            'implicitStringableWithoutReturnSignature' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString() {
+                            return "text";
+                        }
+                    }
+                    $text = (new Text())->__toString();',
+                'assertions' => ['$text' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'explicitStringableWithoutReturnSignature' => [
+                'code' => '<?php
+                    final class Text implements Stringable {
+                        public function __toString() {
+                            return "text";
+                        }
+                    }
+                    $text = (new Text())->__toString();',
+                'assertions' => ['$text' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'allowExceptionToStringWithNoType' => [
                 'code' => '<?php
                     class E extends Exception {
@@ -1790,6 +1814,20 @@ final class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'stringableChildInterfaceStillRequiresDeclaredReturnType' => [
+                'code' => '<?php
+                    interface TextInterface extends Stringable {
+                        public function __toString(): string;
+                    }
+                    final class Text implements TextInterface {
+                        public function __toString() {
+                            return "text";
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'noTypehintInNativeDescendant' => [
                 'code' => '<?php

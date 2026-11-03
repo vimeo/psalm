@@ -1520,7 +1520,8 @@ final class MethodCallTest extends TestCase
                     function microseconds(DateTimeInterface $date): void {
                         $date->getMicrosecond();
                     }',
-                'error_message' => 'UndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - Method DateTimeInterface::getMicrosecond',
+                // The runtime determines whether this is an absent interface method or a version-gated method.
+                'error_message' => 'src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - Method DateTimeInterface::getMicrosecond',
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],

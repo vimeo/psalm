@@ -50343,6 +50343,13 @@ return array (
   array (
     0 => 'MongoDB\\BSON\\ObjectId|null',
   ),
+  'mongodb\\driver\\monitoring\\logsubscriber::log' => 
+  array (
+    0 => 'void',
+    'level' => 'int',
+    'domain' => 'string',
+    'message' => 'string',
+  ),
   'mongodb\\driver\\monitoring\\removesubscriber' => 
   array (
     0 => 'void',

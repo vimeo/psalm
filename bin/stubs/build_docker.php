@@ -667,6 +667,11 @@ if ($arg === '--versions-plain') {
     exit(0);
 }
 
+if ($arg === '--external-extensions') {
+    echo json_encode(array_keys(array_filter(SOURCES, static fn(string $source): bool => $source !== 'php'))) . PHP_EOL;
+    exit(0);
+}
+
 if ($arg === '--dockerfile') {
     $version = $argv[2] ?? fail('Usage: build_docker.php --dockerfile <version>');
     if (!in_array($version, VERSIONS, true)) {
