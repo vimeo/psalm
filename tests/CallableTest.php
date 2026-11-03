@@ -20,6 +20,31 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'notStringKeepsTheArrayOfAnArrayOrCallable' => [
+                'code' => '<?php
+                    /** @param string|callable|array $param */
+                    function foo($param): void {
+                        if (is_string($param)) {
+                            return;
+                        }
+
+                        if (is_callable($param)) {
+                            return;
+                        }
+                    }',
+            ],
+            'notStringOfAnArrayOrCallableIsAnArrayOrACallableObject' => [
+                'code' => '<?php
+                    /** @param string|callable|array $param */
+                    function foo($param): void {}
+
+                    /** @var string|callable|array $a */
+                    $a = [];
+                    $b = is_string($a) ? null : $a;',
+                'assertions' => [
+                    '$b===' => 'array<array-key, mixed>|callable-object|null',
+                ],
+            ],
             'callableKeyedArrayKeepsTheCallableFlagWhenItsValuesAreNarrowed' => [
                 'code' => '<?php
                     /**
