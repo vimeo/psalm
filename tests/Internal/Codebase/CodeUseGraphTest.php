@@ -167,6 +167,40 @@ final class CodeUseGraphTest extends TestCase
         );
     }
 
+    public function testCacheDataRoundTripsIntoEmptyAndPopulatedGraphs(): void
+    {
+        $target = CodeUseGraph::propertyNode('t\\c', 'value');
+        $other = CodeUseGraph::propertyNode('t\\c', 'other');
+        $method_a = CodeUseGraph::functionLikeNode('a\\c::m');
+        $method_b = CodeUseGraph::functionLikeNode('b\\c::m');
+
+        $source = new CodeUseGraph();
+        self::addMethodReference($source, 'a\\c::m', $target, '/a.php');
+        $source->addReference($target, null, null, CodeUseGraph::EDGE_WRITE, '/w.php');
+
+        $empty = new CodeUseGraph();
+        $empty->loadCacheData($source->getCacheData());
+
+        self::assertSame($source->getReferencingNodes($target), $empty->getReferencingNodes($target));
+        self::assertSame('/a.php', $empty->getNodeFile($method_a));
+
+        // nodes added after loading are indexed on both sides, and files can still be invalidated
+        self::addMethodReference($empty, 'b\\c::m', $other, '/b.php');
+        self::assertSame([$method_b => true], $empty->getReferencingNodes($other));
+        $empty->removeReferencesFromFile('/a.php');
+        self::assertSame([CodeUseGraph::fileNode('/w.php') => true], $empty->getReferencingNodes($target));
+
+        $populated = new CodeUseGraph();
+        self::addMethodReference($populated, 'b\\c::m', $target, '/b.php');
+        $populated->loadCacheData($source->getCacheData());
+
+        self::assertSame(
+            [$method_b => true, $method_a => true, CodeUseGraph::fileNode('/w.php') => true],
+            $populated->getReferencingNodes($target),
+        );
+        self::assertSame('/b.php', $populated->getNodeFile($method_b));
+    }
+
     public function testExternalCallerMarksTargetUsed(): void
     {
         $graph = new CodeUseGraph();

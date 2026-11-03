@@ -1031,9 +1031,23 @@ final class CodeUseGraph
      */
     public function loadCacheData(array $data): void
     {
-        foreach ($data['edges'] as $source_node => $targets) {
-            foreach ($targets as $target_node => $type) {
-                $this->addEdge($source_node, $target_node, $type);
+        if ($this->forward_edges === []) {
+            // cached edges are already deduplicated and never self-referencing
+            $this->forward_edges = $data['edges'];
+
+            foreach ($data['edges'] as $source_node => $targets) {
+                foreach ($targets as $target_node => $type) {
+                    $this->backward_edges[$target_node][$source_node] = $type;
+                }
+            }
+
+            $this->used = null;
+            $this->class_referencing_nodes = null;
+        } else {
+            foreach ($data['edges'] as $source_node => $targets) {
+                foreach ($targets as $target_node => $type) {
+                    $this->addEdge($source_node, $target_node, $type);
+                }
             }
         }
 
