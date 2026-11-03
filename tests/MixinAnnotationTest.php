@@ -11,6 +11,8 @@ use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class MixinAnnotationTest extends TestCase
 {
     use InvalidCodeAnalysisWithIssuesTestTrait;
@@ -24,6 +26,26 @@ final class MixinAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'mixinAfterAnUnparseableMixinTypeIsStillApplied' => [
+                'code' => '<?php
+                    class Foo {
+                        public function hello(): string {
+                            return "hello";
+                        }
+                    }
+
+                    /**
+                     * @mixin Baz<
+                     * @mixin Foo
+                     */
+                    class Bar {}
+
+                    $a = (new Bar)->hello();',
+                'assertions' => [
+                    '$a' => 'string',
+                ],
+                'ignored_issues' => ['InvalidDocblock'],
+            ],
             'mixinMethodChargesWhatCallDoes' => [
                 'code' => '<?php
                     final class Connection {
@@ -1128,6 +1150,14 @@ final class MixinAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'unparseableMixinTypeIsAnInvalidDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @mixin Foo<
+                     */
+                    class Bar {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:27 - No generic params provided for type in docblock for Bar',
+            ],
             'mixinMethodChargesTheCallOfTheClassUsingTheMixin' => [
                 'code' => '<?php
                     final class Connection {
