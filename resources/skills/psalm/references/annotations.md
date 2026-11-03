@@ -1,12 +1,13 @@
 # Annotations cheat sheet
 
 Full reference: `docs/annotating_code/supported_annotations.md` and `docs/annotating_code/type_syntax/`.
+
 ## Prefixes
 
 Write the plain tag wherever Psalm reads it with the same meaning: `@param`, `@return`, `@var`,
 `@template`, `@template-covariant`, `@extends`, `@implements`, `@use`, `@param-out`, `@property`,
-`@method`, `@mixin`, `@readonly`, `@api`, `@pure` (on functions), `@seal-properties`, `@seal-methods`. Other tools (IDEs, PHPStan,
-phpDocumentor) read them too.
+`@method`, `@mixin`, `@readonly`, `@api`, `@pure` (on functions), `@seal-properties`, `@seal-methods`.
+Other tools (IDEs, PHPStan, phpDocumentor) read them too.
 
 The `@psalm-` prefix is for:
 
@@ -137,7 +138,6 @@ function make(string $class): object { … }
 
 ## Variables
 
-- `/** @var Foo $x */` before an assignment overrides the inferred type without a check. It is correct for
-  a value whose type a library guarantees but its signature doesn't say, and for fixing a template on
-  `new`. For outside data, check the type at runtime instead.
+- `/** @var Foo $x */` before an assignment overrides the inferred type without a check: for a value whose
+  type a library guarantees but its signature doesn't say, and for fixing a template on `new`.
 - `@param-out T $ref` for by-reference parameters.

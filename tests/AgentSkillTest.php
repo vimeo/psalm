@@ -46,6 +46,7 @@ final class AgentSkillTest extends BaseTestCase
     #[DataProvider('providerSkillFiles')]
     public function testIssueTypesExist(string $file): void
     {
+        $this->addToAssertionCount(1);
         $issues_dir = __DIR__ . '/../docs/running_psalm/issues/';
         preg_match_all(self::ISSUE_PATTERN, (string) file_get_contents($file), $matches);
         foreach ($matches[1] as $issue) {
@@ -60,6 +61,7 @@ final class AgentSkillTest extends BaseTestCase
     #[DataProvider('providerSkillFiles')]
     public function testCliOptionsExist(string $file): void
     {
+        $this->addToAssertionCount(1);
         $options = [
             ...self::longOptions(Psalm::class),
             ...self::longOptions(Psalter::class),
@@ -75,6 +77,7 @@ final class AgentSkillTest extends BaseTestCase
     #[DataProvider('providerSkillFiles')]
     public function testReferencedPathsExist(string $file): void
     {
+        $this->addToAssertionCount(1);
         $contents = (string) file_get_contents($file);
         $repo = __DIR__ . '/..';
 

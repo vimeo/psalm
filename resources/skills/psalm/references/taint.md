@@ -3,7 +3,6 @@
 Docs: `docs/security_analysis/`. Psalm follows values from taint sources (`$_GET`, `$_POST`, `$_COOKIE`,
 request objects with plugins, …) to sinks (SQL queries, `echo`, shell, file paths, `include`, headers, …)
 and reports a `Tainted*` issue at the sink: `TaintedSql`, `TaintedHtml`, `TaintedShell`, `TaintedFile`, …
-Taint analysis runs in the same run as type checking; `runTaintAnalysis="false"` in `psalm.xml` turns it off.
 
 ## Reading a finding
 
@@ -22,8 +21,7 @@ SECURITY: TaintedHtml - src/a.php:4:1 - Detected tainted HTML
   call to echo - src/a.php:4:6
 ```
 
-In a JSON report the same path is in `taint_trace`. A path that crosses files is only found when all of them
-are analysed: run the whole project before calling a finding fixed.
+In a JSON report the same path is in `taint_trace`.
 
 ## Fixing
 

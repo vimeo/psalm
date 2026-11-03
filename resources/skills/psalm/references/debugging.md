@@ -25,9 +25,7 @@ wrong is where the fix belongs: a missing return type, a missing template, an un
 
 ## Psalm says something that contradicts the code
 
-- Stale cache after editing `psalm.xml`, stubs, plugins or `composer.json`: rerun with `--no-cache`, or
-  `--clear-cache` once.
-- A file outside the analysed set (`vendor/`, `<extraFiles>`) changed: same.
+- Stale cache, also after `vendor/` or `<extraFiles>` changed: `--clear-cache` once.
 - A class or function is unknown: [config.md](config.md) (autoloader, `<extraFiles>`, extensions, plugins).
 - The behaviour depends on the PHP version: `--php-version=8.3` or `phpVersion` in `psalm.xml`.
 

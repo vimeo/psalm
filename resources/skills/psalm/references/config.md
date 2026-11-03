@@ -48,7 +48,6 @@ Without it, the extension's methods return `mixed` and their taint sinks are mis
 | `findUnusedBaselineEntry` | `true` | `UnusedBaselineEntry` for stale baseline entries |
 | `runTaintAnalysis` | `true` | `SECURITY` findings |
 | `phpVersion` | from `composer.json` | target PHP version; `--php-version` overrides it |
-| `errorBaseline` | none | the baseline file |
 | `ensureOverrideAttribute` | `true` | `MissingOverrideAttribute` for overriding methods without `#[\Override]` |
 
 `issueHandlers` and baselines: [fixing.md](fixing.md).
