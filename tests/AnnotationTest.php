@@ -1381,6 +1381,30 @@ final class AnnotationTest extends TestCase
                         }
                     }',
             ],
+            'promotedPropertiesDocumentedTwiceWithSuppressedIssue' => [
+                'code' => '<?php
+                    final class UserRole
+                    {
+                        /** @psalm-param int $id */
+                        public function __construct(
+                            /** @psalm-var int */
+                            public $id,
+                            public int $id2 = 0,
+                        ) {
+                        }
+
+                        public function sum(): int
+                        {
+                            return $this->id + $this->id2;
+                        }
+                    }
+
+                    $role = new UserRole(1, 2);
+                    echo $role->id + $role->id2;
+                    ',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidDocblock'],
+            ],
             'globalDocBlock' => [
                 'code' => '<?php
                     function f(): string {

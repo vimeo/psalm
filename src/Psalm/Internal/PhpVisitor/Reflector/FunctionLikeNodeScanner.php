@@ -579,8 +579,6 @@ final class FunctionLikeNodeScanner
                         ' should be documented as a param or a property, not both',
                         new CodeLocation($this->file_scanner, $param, null, true),
                     );
-
-                    return false;
                 }
 
                 //no docblock type was provided for param but we have one for property
