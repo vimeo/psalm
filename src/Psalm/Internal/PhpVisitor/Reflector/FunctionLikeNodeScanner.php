@@ -35,6 +35,7 @@ use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\TypeVisitor\FunctionPurityTemplateReplacer;
+use Psalm\Issue\CodeIssue;
 use Psalm\Issue\DuplicateFunction;
 use Psalm\Issue\DuplicateMethod;
 use Psalm\Issue\DuplicateParam;
@@ -573,15 +574,13 @@ final class FunctionLikeNodeScanner
 
                 //both way to document type were used
                 if ($param_storage->type && $param_storage->type->from_docblock && $var_comment_type) {
-                    if (IssueBuffer::accepts(
-                        new InvalidDocblock(
-                            'Param ' . $param_storage->name . ' of ' . $cased_function_id .
-                            ' should be documented as a param or a property, not both',
-                            new CodeLocation($this->file_scanner, $param, null, true),
-                        ),
-                    )) {
-                        return false;
-                    }
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        'Param ' . $param_storage->name . ' of ' . $cased_function_id .
+                        ' should be documented as a param or a property, not both',
+                        new CodeLocation($this->file_scanner, $param, null, true),
+                    );
+
+                    return false;
                 }
 
                 //no docblock type was provided for param but we have one for property
@@ -843,6 +842,17 @@ final class FunctionLikeNodeScanner
         }
 
         return false;
+    }
+
+    /**
+     * Keeps an issue of the declaration scanned, to report it when the file is analysed, whether it is scanned or
+     * its storage comes from the cache. The stubs aren't analysed, so their issues are dropped.
+     */
+    private function addScanIssue(FileStorage|FunctionLikeStorage $storage, CodeIssue $issue): void
+    {
+        if (!$this->codebase->register_stub_files) {
+            $storage->docblock_issues[] = $issue;
+        }
     }
 
     /**
@@ -1167,7 +1177,8 @@ final class FunctionLikeNodeScanner
                     $reflection_function = new ReflectionFunction($function_id);
 
                     if ($reflection_function->getFileName() !== $this->file_path) {
-                        IssueBuffer::maybeAdd(
+                        $this->addScanIssue(
+                            $this->file_storage,
                             new DuplicateFunction(
                                 'Method ' . $function_id . ' has already been defined as a core function',
                                 new CodeLocation($this->file_scanner, $stmt, null, true),
@@ -1292,7 +1303,8 @@ final class FunctionLikeNodeScanner
             $storage->abstract = $stmt->isAbstract();
 
             if ($stmt->isPrivate() && $stmt->isFinal() && $method_name_lc !== '__construct') {
-                IssueBuffer::maybeAdd(
+                $this->addScanIssue(
+                    $storage,
                     new PrivateFinalMethod(
                         'Private methods cannot be final',
                         new CodeLocation($this->file_scanner, $stmt, null, true),

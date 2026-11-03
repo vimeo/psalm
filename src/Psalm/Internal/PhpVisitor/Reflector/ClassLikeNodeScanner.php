@@ -44,6 +44,7 @@ use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Internal\TypeVisitor\TypeScanner;
+use Psalm\Issue\CodeIssue;
 use Psalm\Issue\ConstantDeclarationInTrait;
 use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\DuplicateConstant;
@@ -1083,10 +1084,13 @@ final class ClassLikeNodeScanner
                 }
 
                 if ($attribute->fq_class_name === 'AllowDynamicProperties' && $storage->readonly) {
-                    IssueBuffer::maybeAdd(new InvalidAttribute(
-                        'Readonly classes cannot have dynamic properties',
-                        new CodeLocation($this->file_scanner, $attr, null, true),
-                    ));
+                    $this->addScanIssue(
+                        $storage,
+                        new InvalidAttribute(
+                            'Readonly classes cannot have dynamic properties',
+                            new CodeLocation($this->file_scanner, $attr, null, true),
+                        ),
+                    );
                     continue;
                 }
 
@@ -1555,16 +1559,31 @@ final class ClassLikeNodeScanner
         return null;
     }
 
+    /**
+     * Keeps an issue of the declaration scanned, to report it when the class-like is analysed, whether the file is
+     * scanned or its storage comes from the cache. The stubs aren't analysed, and their declarations may repeat
+     * those of the class they refine, so such issues are dropped.
+     */
+    private function addScanIssue(ClassLikeStorage $storage, CodeIssue $issue): void
+    {
+        if (!$this->codebase->register_stub_files) {
+            $storage->docblock_issues[] = $issue;
+        }
+    }
+
     private function visitClassConstDeclaration(
         PhpParser\Node\Stmt\ClassConst $stmt,
         ClassLikeStorage $storage,
         string $fq_classlike_name,
     ): void {
         if ($storage->is_trait && $this->codebase->analysis_php_version_id < 8_02_00) {
-            IssueBuffer::maybeAdd(new ConstantDeclarationInTrait(
-                'Traits cannot declare constants until PHP 8.2.0',
-                new CodeLocation($this->file_scanner, $stmt),
-            ));
+            $this->addScanIssue(
+                $storage,
+                new ConstantDeclarationInTrait(
+                    'Traits cannot declare constants until PHP 8.2.0',
+                    new CodeLocation($this->file_scanner, $stmt),
+                ),
+            );
             return;
         }
 
@@ -1617,11 +1636,14 @@ final class ClassLikeNodeScanner
             if (isset($storage->constants[$const->name->name])
                 || isset($storage->enum_cases[$const->name->name])
             ) {
-                IssueBuffer::maybeAdd(new DuplicateConstant(
-                    'Constant names should be unique',
-                    new CodeLocation($this->file_scanner, $const),
-                    $fq_classlike_name,
-                ));
+                $this->addScanIssue(
+                    $storage,
+                    new DuplicateConstant(
+                        'Constant names should be unique',
+                        new CodeLocation($this->file_scanner, $const),
+                        $fq_classlike_name,
+                    ),
+                );
                 continue;
             }
 
@@ -1729,17 +1751,18 @@ final class ClassLikeNodeScanner
                 && !$storage->final
                 && $stmt->type === null
             ) {
-                IssueBuffer::maybeAdd(
-                    new MissingClassConstType(
-                        sprintf(
-                            'Class constant "%s::%s" should have a declared type.',
-                            $storage->name,
-                            $const->name->name,
-                        ),
-                        new CodeLocation($this->file_scanner, $const),
+                $missing_type_issue = new MissingClassConstType(
+                    sprintf(
+                        'Class constant "%s::%s" should have a declared type.',
+                        $storage->name,
+                        $const->name->name,
                     ),
-                    $suppressed_issues,
+                    new CodeLocation($this->file_scanner, $const),
                 );
+
+                if (!IssueBuffer::isSuppressedInList($missing_type_issue, $suppressed_issues)) {
+                    $this->addScanIssue($storage, $missing_type_issue);
+                }
             }
 
             if ($exists) {
@@ -1760,11 +1783,14 @@ final class ClassLikeNodeScanner
         if ($existing_constant !== null && $existing_constant->location === null) {
             unset($storage->constants[$stmt->name->name]);
         } elseif ($existing_constant !== null) {
-            IssueBuffer::maybeAdd(new DuplicateConstant(
-                'Constant names should be unique',
-                new CodeLocation($this->file_scanner, $stmt),
-                $fq_classlike_name,
-            ));
+            $this->addScanIssue(
+                $storage,
+                new DuplicateConstant(
+                    'Constant names should be unique',
+                    new CodeLocation($this->file_scanner, $stmt),
+                    $fq_classlike_name,
+                ),
+            );
             return;
         }
 
@@ -1789,7 +1815,8 @@ final class ClassLikeNodeScanner
                 } elseif ($case_type->isSingleStringLiteral()) {
                     $enum_value = $case_type->getSingleStringLiteral();
                 } else {
-                    IssueBuffer::maybeAdd(
+                    $this->addScanIssue(
+                        $storage,
                         new InvalidEnumCaseValue(
                             'Case of a backed enum should have either string or int value',
                             $case_location,
@@ -1851,7 +1878,8 @@ final class ClassLikeNodeScanner
                 $deprecated,
             );
         } else {
-            IssueBuffer::maybeAdd(
+            $this->addScanIssue(
+                $storage,
                 new DuplicateEnumCase(
                     'Enum case names should be unique',
                     $case_location,
@@ -1978,7 +2006,8 @@ final class ClassLikeNodeScanner
             $doc_var_location = null;
 
             if (isset($storage->properties[$property->name->name])) {
-                IssueBuffer::maybeAdd(
+                $this->addScanIssue(
+                    $storage,
                     new DuplicateProperty(
                         'Property ' . $fq_classlike_name . '::$' . $property->name->name . ' has already been defined',
                         new CodeLocation($this->file_scanner, $stmt, null, true),
@@ -2015,7 +2044,8 @@ final class ClassLikeNodeScanner
             $property_storage->description = $var_comment ? $var_comment->description : null;
 
             if (!$signature_type && $storage->readonly) {
-                IssueBuffer::maybeAdd(
+                $this->addScanIssue(
+                    $storage,
                     new MissingPropertyType(
                         'Properties of readonly classes must have a type',
                         new CodeLocation($this->file_scanner, $stmt, null, true),

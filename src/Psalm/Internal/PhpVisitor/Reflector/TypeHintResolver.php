@@ -14,8 +14,8 @@ use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Issue\CodeIssue;
 use Psalm\Issue\ParseError;
-use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
@@ -31,6 +31,17 @@ use function strtolower;
  */
 final class TypeHintResolver
 {
+    /**
+     * Keeps an issue of a type hint scanned, to report it when the file is analysed, whether it is scanned or its
+     * storage comes from the cache. The stubs aren't analysed, so their issues are dropped.
+     */
+    private static function addIssue(Codebase $codebase, FileStorage $file_storage, CodeIssue $issue): void
+    {
+        if (!$codebase->register_stub_files) {
+            $file_storage->docblock_issues[] = $issue;
+        }
+    }
+
     /**
      * @param Identifier|IntersectionType|Name|NullableType|UnionType $hint
      */
@@ -51,7 +62,9 @@ final class TypeHintResolver
             }
 
             if ($analysis_php_version_id < 8_00_00) {
-                IssueBuffer::maybeAdd(
+                self::addIssue(
+                    $codebase,
+                    $file_storage,
                     new ParseError(
                         'Union types are not supported in PHP < 8',
                         $code_location,
@@ -82,7 +95,9 @@ final class TypeHintResolver
             }
 
             if ($analysis_php_version_id < 8_01_00) {
-                IssueBuffer::maybeAdd(
+                self::addIssue(
+                    $codebase,
+                    $file_storage,
                     new ParseError(
                         'Intersection types are not supported in PHP < 8.1',
                         $code_location,
@@ -110,7 +125,9 @@ final class TypeHintResolver
 
                 foreach ($resolved_type->getAtomicTypes() as $atomic_type) {
                     if (!$atomic_type instanceof TNamedObject) {
-                        IssueBuffer::maybeAdd(
+                        self::addIssue(
+                            $codebase,
+                            $file_storage,
                             new ParseError(
                                 $resolved_type->hasScalarType()
                                     ? 'Intersection types cannot contain scalar types'
