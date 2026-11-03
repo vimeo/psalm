@@ -71,7 +71,7 @@ final class InstanceofAnalyzer
                     );
                 }
 
-                if (strtolower($fq_class_name) === 'iterable') {
+                if (strtolower($stmt->class->toString()) === 'iterable') {
                     IssueBuffer::maybeAdd(
                         new ReservedWord(
                             'iterable is a reserved word, no object is an instance of it (use is_iterable())',
