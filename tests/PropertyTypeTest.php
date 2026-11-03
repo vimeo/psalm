@@ -561,6 +561,36 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyInitializedByATraitMethodCalledInTheConstructorOfAParentClass' => [
+                'code' => '<?php
+                    trait Timestamped {
+                        protected DateTimeImmutable $createdAt;
+
+                        public function getCreatedAt(): DateTimeImmutable {
+                            return $this->createdAt;
+                        }
+
+                        protected function initTimestamp(DateTimeImmutable $createdAt): void {
+                            $this->createdAt = $createdAt;
+                        }
+                    }
+
+                    abstract class Entity {
+                        use Timestamped;
+
+                        public function __construct(DateTimeImmutable $createdAt) {
+                            $this->initTimestamp($createdAt);
+                        }
+                    }
+
+                    class Article extends Entity {}
+
+                    final class Comment extends Entity {
+                        public function __construct() {
+                            parent::__construct(new DateTimeImmutable());
+                        }
+                    }',
+            ],
             'newVarInIf' => [
                 'code' => '<?php
                     class A {
@@ -2903,6 +2933,27 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'propertyNotInitializedByATraitMethodCalledInTheConstructorOfAParentClass' => [
+                'code' => '<?php
+                    trait Timestamped {
+                        protected DateTimeImmutable $createdAt;
+
+                        protected function initTimestamp(DateTimeImmutable $createdAt): void {
+                            echo $createdAt->format("c");
+                        }
+                    }
+
+                    abstract class Entity {
+                        use Timestamped;
+
+                        public function __construct(DateTimeImmutable $createdAt) {
+                            $this->initTimestamp($createdAt);
+                        }
+                    }
+
+                    class Article extends Entity {}',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
             'undefinedPropertyAssignment' => [
                 'code' => '<?php
                     class A {
