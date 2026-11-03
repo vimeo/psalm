@@ -1849,4 +1849,12 @@ final class TypeParseTest extends TestCase
             }
         }
     }
+
+    public function testClassStringOfAGenericKeepsItsArgumentsInNamespacedString(): void
+    {
+        $type = Type::parseString('class-string<Ns\Box<int>>');
+        self::assertSame('class-string<\Ns\Box<int>>', $type->toNamespacedString(null, [], null, false));
+        self::assertSame('class-string<Box<int>>', $type->toNamespacedString('Ns', [], null, false));
+        self::assertTrue($type->equals(Type::parseString($type->toNamespacedString(null, [], null, false))));
+    }
 }
