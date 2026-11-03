@@ -21,6 +21,25 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'orWhoseBothSidesAssignTheSameVariableKeepsWhatTheLeftOneTested' => [
+                'code' => '<?php
+                    class A {}
+
+                    function getA(): ?A {
+                        return rand(0, 1) ? new A() : null;
+                    }
+
+                    $a = null;
+
+                    if (($a = getA()) || ($a = getA())) {
+                        $b = $a;
+                    } else {
+                        $b = new A();
+                    }',
+                'assertions' => [
+                    '$b' => 'A',
+                ],
+            ],
             'orWhoseRightSideReassignsWhatTheLeftOneTestedKeepsTheAssignedType' => [
                 'code' => '<?php
                     /** @var string $value */

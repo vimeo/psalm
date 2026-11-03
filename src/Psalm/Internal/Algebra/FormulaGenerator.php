@@ -17,6 +17,7 @@ use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Storage\Assertion\Truthy;
 
+use function array_diff_key;
 use function array_filter;
 use function array_map;
 use function array_values;
@@ -102,9 +103,14 @@ final class FormulaGenerator
 
             if ($right_assigned_var_ids) {
                 // what the left one tested of the previous value says nothing about the value the right one assigns
+                $left_tested_var_ids = array_diff_key(
+                    $right_assigned_var_ids,
+                    self::getAssignedVarIds($conditional->left, $this_class_name),
+                );
+
                 $left_clauses = array_values(array_filter(
                     $left_clauses,
-                    static fn(Clause $clause): bool => !self::mentionsAnyVar($clause, $right_assigned_var_ids),
+                    static fn(Clause $clause): bool => !self::mentionsAnyVar($clause, $left_tested_var_ids),
                 ));
 
                 if (!$left_clauses) {
