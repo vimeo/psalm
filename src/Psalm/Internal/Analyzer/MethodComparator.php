@@ -226,6 +226,7 @@ final class MethodComparator
 
         if (($guide_classlike_storage->is_interface
              || $guide_classlike_storage->preserve_constructor_signature
+             || $guide_method_storage->abstract
              || $implementer_method_storage->cased_name !== '__construct')
             && $implementer_method_storage->required_param_count > $guide_method_storage->required_param_count
         ) {

@@ -1588,6 +1588,8 @@ final class Populator
         foreach ($parent_storage->inheritable_method_ids as $method_name_lc => $declaring_method_id) {
             if ($method_name_lc !== '__construct'
                 || $parent_storage->preserve_constructor_signature
+                || $this->classlike_storage_provider->get($declaring_method_id->fq_class_name)
+                    ->methods['__construct']?->abstract
             ) {
                 if ($parent_storage->is_trait) {
                     $declaring_class = $declaring_method_id->fq_class_name;
