@@ -126,6 +126,38 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'repeatedAppendToANestedArrayKeepsTheTypeOfTheElements' => [
+                'code' => '<?php
+                    /**
+                     * @return \\stdClass[][]
+                     */
+                    function build(): array {
+                        $objects = [];
+                        $objects[][] = new \\stdClass();
+                        $objects[][] = new \\stdClass();
+
+                        return $objects;
+                    }
+
+                    $matrix = [];
+                    $matrix[][] = 1;
+                    $matrix[][] = 2;
+                    $matrix[][] = 3;
+
+                    $records = [];
+                    $records[]["k"] = 1;
+                    $records[]["k"] = 2;
+
+                    $loop = [];
+                    foreach ([1, 2] as $i) {
+                        $loop[][] = $i;
+                    }',
+                'assertions' => [
+                    '$matrix===' => 'list{non-empty-list<1>, ...<non-empty-list<1|2|3>>}',
+                    '$records===' => 'list{array{k: 1}, ...<array{k: 1|2}>}',
+                    '$loop===' => 'list<non-empty-list<1|2>>',
+                ],
+            ],
             'floatLiteralKeysOutsideTheRangeOfAnIntAreInts' => [
                 'code' => '<?php
                     $big = [1.0e30 => 1];

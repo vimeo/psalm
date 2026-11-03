@@ -1200,6 +1200,9 @@ final class ArrayAssignmentAnalyzer
         $var_id_additions = [];
         $written_offsets = [];
 
+        // an appended element (`$a[]`) has the id of its array: the variable holds the array, not the new element
+        $parent_is_appended_element = false;
+
         $root_var = end($child_stmts)->var;
 
         // First go from the root element up, and go as far as we can to figure out what
@@ -1254,7 +1257,7 @@ final class ArrayAssignmentAnalyzer
 
             $extended_var_id = $root_var_id . implode('', $var_id_additions);
 
-            if ($parent_var_id && isset($context->vars_in_scope[$parent_var_id])) {
+            if ($parent_var_id && !$parent_is_appended_element && isset($context->vars_in_scope[$parent_var_id])) {
                 $array_type = $context->vars_in_scope[$parent_var_id];
                 $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
             }
@@ -1278,6 +1281,9 @@ final class ArrayAssignmentAnalyzer
                     $child_stmt->dim,
                     $child_stmt_dim_type_or_int,
                 );
+            } elseif (!$is_last && !$array_type->hasMixed()) {
+                // `$a[][] = 1` appends a new element, an array of its own: not the type of an existing one
+                $child_stmt_type = Type::getEmptyArray();
             }
 
             $statements_analyzer->node_data->setType(
@@ -1318,14 +1324,17 @@ final class ArrayAssignmentAnalyzer
                     $rooted_parent_id = $parent_var_id;
                 }
 
-                $context->vars_in_scope[$rooted_parent_id] = $array_type;
-                $context->possibly_assigned_var_ids[$rooted_parent_id] = true;
+                if (!$parent_is_appended_element) {
+                    $context->vars_in_scope[$rooted_parent_id] = $array_type;
+                    $context->possibly_assigned_var_ids[$rooted_parent_id] = true;
+                }
             }
 
             $current_type = $child_stmt_type;
             $current_dim = $child_stmt->dim;
 
             $parent_var_id = $extended_var_id;
+            $parent_is_appended_element = $child_stmt->dim === null;
         }
 
         if ($root_var_id !== null) {
