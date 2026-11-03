@@ -741,7 +741,6 @@
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$context->self]]></code>
-      <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$declaring_property_class]]></code>
       <code><![CDATA[$property_storage->getter_method]]></code>
       <code><![CDATA[$var_id]]></code>
@@ -1094,10 +1093,8 @@
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$context->calling_method_id]]></code>
-      <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$fq_class_name]]></code>
       <code><![CDATA[$fq_class_name]]></code>
-      <code><![CDATA[$statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName()]]></code>
       <code><![CDATA[$storage->template_types]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
@@ -1125,7 +1122,6 @@
       <code><![CDATA[$class_storage->mixin_declaring_fqcln]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
-      <code><![CDATA[$context->self]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/StaticMethod/ExistingAtomicStaticCallAnalyzer.php">
@@ -1179,8 +1175,6 @@
       <code><![CDATA[!$context->self]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
-      <code><![CDATA[$context->self]]></code>
-      <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$context->self]]></code>
     </RiskyTruthyFalsyComparison>
@@ -1242,7 +1236,6 @@
       <code><![CDATA[$stmt_type]]></code>
     </ReferenceConstraintViolation>
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$declaring_property_class]]></code>
       <code><![CDATA[$declaring_property_class]]></code>
