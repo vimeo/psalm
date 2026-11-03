@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class DocblockInheritanceTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -399,6 +401,28 @@ final class DocblockInheritanceTest extends TestCase
                 'assertions' => [
                     '$u===' => 'UserId',
                 ],
+            ],
+            'returnUsingTemplateOfRedocumentedParamNotInherited' => [
+                'code' => '<?php
+                    abstract class Container {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $id
+                         * @return T
+                         */
+                        abstract public function make(string $id): object;
+                    }
+
+                    final class MyContainer extends Container {
+                        /** @param string $id service id or class name */
+                        public function make(string $id): object { return new stdClass(); }
+                    }
+
+                    $x = (new MyContainer)->make(stdClass::class);',
+                'assertions' => [
+                    '$x===' => 'object',
+                ],
+                'ignored_issues' => ['ImplementedReturnTypeMismatch'],
             ],
             'ownDocblockReturnUsedAtCallSiteWhenParamsInherited' => [
                 'code' => '<?php
@@ -819,6 +843,29 @@ final class DocblockInheritanceTest extends TestCase
                         public function f(int $a): array { return ["x"]; }
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'codeAfterCallReturningTemplateOfRedocumentedParamIsAnalyzed' => [
+                'code' => '<?php
+                    abstract class Container {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $id
+                         * @return T
+                         */
+                        abstract public function make(string $id): object;
+                    }
+
+                    final class MyContainer extends Container {
+                        /** @param string $id service id or class name */
+                        public function make(string $id): object { return new stdClass(); }
+                    }
+
+                    function test(MyContainer $c): void {
+                        $c->make(stdClass::class);
+                        echo strlen([]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:37',
+                'error_levels' => ['ImplementedReturnTypeMismatch'],
             ],
         ];
     }

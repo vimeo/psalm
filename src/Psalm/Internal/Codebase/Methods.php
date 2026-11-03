@@ -685,7 +685,7 @@ final class Methods
             return $candidate_type;
         }
 
-        if (!$storage->has_docblock_return_type
+        if ($storage->inherited_return_type
             && isset($class_storage->documenting_method_ids[$appearing_method_name])
         ) {
             $overridden_method_id = $class_storage->documenting_method_ids[$appearing_method_name];

@@ -812,10 +812,11 @@ final class Populator
                         ?? $declaring_class_storage->pseudo_methods[$declaring_method_name]
                         ?? $declaring_class_storage->pseudo_static_methods[$declaring_method_name];
 
+                    $inherits_return_type = self::inheritsReturnType($method_storage, $declaring_method_storage);
+
                     // a parent documents this method if it documents a tag the override leaves undocumented
                     if ((self::documentsParamLeftUndocumented($method_storage, $declaring_method_storage)
-                            || (!$method_storage->has_docblock_return_type
-                                && $declaring_method_storage->has_docblock_return_type))
+                            || $inherits_return_type)
                         && $method_storage->inherited_return_type !== null
                     ) {
                         if (!isset($storage->documenting_method_ids[$method_name])
@@ -823,14 +824,14 @@ final class Populator
                                 === (string) $declaring_method_id
                         ) {
                             $storage->documenting_method_ids[$method_name] = $declaring_method_id;
-                            $method_storage->inherited_return_type = !$method_storage->has_docblock_return_type;
+                            $method_storage->inherited_return_type = $inherits_return_type;
                         } else {
                             if (in_array(
                                 $storage->documenting_method_ids[$method_name]->fq_class_name,
                                 $declaring_class_storage->parent_interfaces,
                             )) {
                                 $storage->documenting_method_ids[$method_name] = $declaring_method_id;
-                                $method_storage->inherited_return_type = !$method_storage->has_docblock_return_type;
+                                $method_storage->inherited_return_type = $inherits_return_type;
                             } else {
                                 $documenting_class_storage = $declaring_class_storages
                                     [$storage->documenting_method_ids[$method_name]->fq_class_name];
@@ -887,6 +888,59 @@ final class Populator
         }
 
         return false;
+    }
+
+    /**
+     * A docblock return type is not inherited when it uses a template of the overridden method that only params the
+     * override documents itself would bind: nothing could infer it at call sites.
+     */
+    private static function inheritsReturnType(
+        MethodStorage $method_storage,
+        MethodStorage $overridden_method_storage,
+    ): bool {
+        if ($method_storage->has_docblock_return_type || !$overridden_method_storage->has_docblock_return_type) {
+            return false;
+        }
+
+        $method_template_types = $overridden_method_storage->template_types;
+
+        if (!$method_template_types || !$overridden_method_storage->return_type) {
+            return true;
+        }
+
+        $inherited_templates = [];
+        $redocumented_templates = [];
+
+        foreach ($method_storage->params as $i => $param) {
+            $overridden_param = $overridden_method_storage->params[$i] ?? null;
+
+            if (!$overridden_param || !$overridden_param->type || !$overridden_param->has_docblock_type) {
+                continue;
+            }
+
+            foreach ($overridden_param->type->getTemplateTypes() as $template_type) {
+                $key = $template_type->param_name . ':' . $template_type->defining_class;
+
+                if ($param->has_docblock_type) {
+                    $redocumented_templates[$key] = true;
+                } else {
+                    $inherited_templates[$key] = true;
+                }
+            }
+        }
+
+        foreach ($overridden_method_storage->return_type->getTemplateTypes() as $template_type) {
+            $key = $template_type->param_name . ':' . $template_type->defining_class;
+
+            if (isset($method_template_types[$template_type->param_name][$template_type->defining_class])
+                && isset($redocumented_templates[$key])
+                && !isset($inherited_templates[$key])
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function populateDataFromTrait(
