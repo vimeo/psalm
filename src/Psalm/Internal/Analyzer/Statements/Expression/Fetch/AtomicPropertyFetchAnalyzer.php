@@ -192,6 +192,24 @@ final class AtomicPropertyFetchAnalyzer
         if (!$codebase->classExists($lhs_type_part->value, null, $context)
             && !$codebase->classlikes->enumExists($lhs_type_part->value, null, $context)
         ) {
+            // an interface intersected with an object shape that has the property
+            if (self::analyzeShapePropertyOfIntersection(
+                $statements_analyzer,
+                $stmt,
+                $context,
+                $in_assignment,
+                $var_id,
+                $stmt_var_id,
+                $stmt_var_type,
+                $intersection_types,
+                $prop_name,
+                $has_valid_fetch_type,
+                $invalid_fetch_types,
+                $is_static_access,
+            )) {
+                return;
+            }
+
             $interface_exists = false;
 
             self::handleNonExistentClass(
@@ -275,28 +293,20 @@ final class AtomicPropertyFetchAnalyzer
             if ($intersection_types !== []
                 && (!$class_storage->final || $codebase->methods->methodExists($codebase, $get_method_id))
             ) {
-                foreach ($intersection_types as $intersection_type) {
-                    if (!$intersection_type instanceof TObjectWithProperties
-                        || !isset($intersection_type->properties[$prop_name])
-                    ) {
-                        continue;
-                    }
-
-                    self::analyze(
-                        $statements_analyzer,
-                        $stmt,
-                        $context,
-                        $in_assignment,
-                        $var_id,
-                        $stmt_var_id,
-                        $stmt_var_type,
-                        $intersection_type,
-                        $prop_name,
-                        $has_valid_fetch_type,
-                        $invalid_fetch_types,
-                        $is_static_access,
-                    );
-
+                if (self::analyzeShapePropertyOfIntersection(
+                    $statements_analyzer,
+                    $stmt,
+                    $context,
+                    $in_assignment,
+                    $var_id,
+                    $stmt_var_id,
+                    $stmt_var_type,
+                    $intersection_types,
+                    $prop_name,
+                    $has_valid_fetch_type,
+                    $invalid_fetch_types,
+                    $is_static_access,
+                )) {
                     return;
                 }
             }
@@ -1278,6 +1288,52 @@ final class AtomicPropertyFetchAnalyzer
         if ($var_id) {
             $context->vars_in_scope[$var_id] = $stmt_type;
         }
+    }
+
+    /**
+     * @param array<Atomic> $intersection_types
+     * @param list<string> $invalid_fetch_types
+     */
+    private static function analyzeShapePropertyOfIntersection(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        Context $context,
+        bool $in_assignment,
+        ?string $var_id,
+        ?string $stmt_var_id,
+        Union $stmt_var_type,
+        array $intersection_types,
+        string $prop_name,
+        bool &$has_valid_fetch_type,
+        array &$invalid_fetch_types,
+        bool $is_static_access,
+    ): bool {
+        foreach ($intersection_types as $intersection_type) {
+            if (!$intersection_type instanceof TObjectWithProperties
+                || !isset($intersection_type->properties[$prop_name])
+            ) {
+                continue;
+            }
+
+            self::analyze(
+                $statements_analyzer,
+                $stmt,
+                $context,
+                $in_assignment,
+                $var_id,
+                $stmt_var_id,
+                $stmt_var_type,
+                $intersection_type,
+                $prop_name,
+                $has_valid_fetch_type,
+                $invalid_fetch_types,
+                $is_static_access,
+            );
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
