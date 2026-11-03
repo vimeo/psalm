@@ -141,11 +141,30 @@ final class Cache
 
         $path = $this->dir . hash('xxh128', $key);
 
-        if (!file_exists($path)) {
+        if (!file_exists("$path.hash") || !file_exists($path)) {
             return null;
         }
 
-        return Providers::safeFileGetContents($path);
+        // "<hash length: 4 bytes><hash><key>", see saveItem()
+        $header = Providers::safeFileGetContents("$path.hash");
+        if (strlen($header) < 4) {
+            return null;
+        }
+
+        $unpacked = unpack('V', $header);
+        if ($unpacked === false || !isset($unpacked[1]) || !is_int($unpacked[1])) {
+            return null;
+        }
+
+        $hashLen = $unpacked[1];
+        if (strlen($header) !== 4 + $hashLen + strlen($key)) {
+            return null;
+        }
+        if (substr_compare($header, $key, 4 + $hashLen) !== 0) {
+            throw new AssertionError("Hash collision on key $key");
+        }
+
+        return substr($header, 4, $hashLen);
     }
 
     /** @return T */
