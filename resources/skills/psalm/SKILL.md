@@ -9,14 +9,23 @@ Notes for the Psalm version this skill ships with. The full docs of the installe
 `vendor/vimeo/psalm/docs/` (online: https://psalm.dev/docs/). Paths like `scripts/…` and `references/…`
 are relative to this skill's directory.
 
+## Workflow
+
+1. **Baseline.** Run the whole project once. Hundreds of issues, or a request to clean up a codebase or
+   raise `errorLevel`: switch to [references/cleanup.md](references/cleanup.md), which splits the work
+   over subagents.
+2. **Fix** by the rules in [Fixing issues](#fixing-issues), rerunning Psalm on the files you changed.
+3. **Gate.** Run the whole project after your last edit. Done when it exits `0`, and every change to
+   `psalm.xml`, the baseline or a `@psalm-suppress` in the diff is one the user agreed to.
+
 ## Running
 
 ```bash
 vendor/bin/psalm --no-progress --output-format=compact src/Foo.php src/Bar.php
 ```
 
-- Run on the files you changed while iterating. Finish with one run on the whole project: only a full run
-  reports unused code (`UnusedClass`, `PossiblyUnusedMethod`, …) and taint paths that cross files.
+- A run on single files is for iterating: only a full run reports unused code (`UnusedClass`,
+  `PossiblyUnusedMethod`, …) and taint paths that cross files.
 - Exit code `0`: no issues. `2`: issues found. `1`: Psalm itself failed (bad config, crash): read the
   message, it says nothing about the code. Judge a run by its exit code, read straight after the command:
   `compact` prints nothing both on success and when PHP crashes, and a pipe such as `| tail` reports its
@@ -65,9 +74,6 @@ for the inferred type with `@psalm-check-type` before editing: [references/debug
   `/** @psalm-suppress IssueType reason */`.
 - **Many mechanical issues** (`MissingReturnType`, `MissingParamType`, `UnusedVariable`, …): Psalter fixes
   them. See [references/fixing.md](references/fixing.md), which also covers baselines.
-
-Done when a run on the whole project after your last edit exits `0`, and every change to `psalm.xml`, the
-baseline or a `@psalm-suppress` in the diff is one the user agreed to.
 
 ## When stuck
 
