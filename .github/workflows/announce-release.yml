@@ -16,6 +16,10 @@ on:
         description: Release tag to announce with this branch's workflow (empty announces the dispatched tag)
         required: false
         type: string
+      platforms:
+        description: Comma-separated platforms to announce on, e.g. x,telegram (empty announces on all)
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.tag || github.ref }}
@@ -38,8 +42,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
 
       - name: Announce
-        run: php bin/ci/announce-release.php ${{ inputs.force && '--force' || '' }} "$TAG"
+        run: php bin/ci/announce-release.php ${{ inputs.force && '--force' || '' }} ${ONLY:+"--only=$ONLY"} "$TAG"
         env:
+          ONLY: ${{ inputs.platforms }}
           TAG: ${{ inputs.tag || github.ref_name }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MASTODON_URL: ${{ secrets.MASTODON_URL }}
