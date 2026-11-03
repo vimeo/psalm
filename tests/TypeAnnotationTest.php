@@ -1134,6 +1134,16 @@ final class TypeAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'typeAliasImportedFromAnExistingClassWithoutTheAliasDoesNotCrash' => [
+                'code' => '<?php
+                    /** @psalm-import-type StageExpression from \\Directory */
+                    abstract class Stage
+                    {
+                        /** @return StageExpression */
+                        abstract public function getExpression(): ?array;
+                    }',
+                'error_message' => 'MismatchingDocblockReturnType',
+            ],
             'invalidTypeAlias' => [
                 'code' => '<?php
                     namespace Barrr;
