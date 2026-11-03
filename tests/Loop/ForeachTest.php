@@ -23,7 +23,7 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-                        'foreachBreakOfSwitchLeavingAVariableUndefinedIsNotABreakOfTheLoop' => [
+            'foreachBreakOfSwitchLeavingAVariableUndefinedIsNotABreakOfTheLoop' => [
                 'code' => '<?php
                     foreach ([1, 2] as $x) {
                         if (rand(0, 1)) {
@@ -41,7 +41,7 @@ final class ForeachTest extends TestCase
 
                     echo $a;',
             ],
-'foreachBreakOfSwitchIsNotABreakOfTheLoop' => [
+            'foreachBreakOfSwitchIsNotABreakOfTheLoop' => [
                 'code' => '<?php
                     foreach ([1, 2] as $x) {
                         switch ($x) {
