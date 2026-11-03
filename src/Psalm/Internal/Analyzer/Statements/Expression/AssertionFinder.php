@@ -3996,7 +3996,7 @@ final class AssertionFinder
                     foreach ($first_var_type->getLiteralStrings() as $array_literal_type) {
                         $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($array_literal_type->value);
                         $literal_key = $string_to_int === false
-                            ? "'" . $array_literal_type->value . "'"
+                            ? ExpressionIdentifier::quoteOffset($array_literal_type->value)
                             : $string_to_int;
                         $if_types[$array_root . "[" . $literal_key . "]"] = [[new ArrayKeyExists()]];
                     }
