@@ -22,6 +22,31 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'anonymousClassUsingTheTraitThatCreatesIt' => [
+                'code' => '<?php
+                    class Operator {}
+
+                    interface SupportsOperator {
+                        public function operator(): Operator;
+                    }
+
+                    trait NestsOperatorTrait {
+                        public function operator(): Operator&SupportsOperator {
+                            return new class extends Operator implements SupportsOperator {
+                                use NestsOperatorTrait;
+                            };
+                        }
+                    }
+
+                    final class NestingBuilder implements SupportsOperator {
+                        use NestsOperatorTrait;
+                    }
+
+                    echo get_class((new NestingBuilder())->operator());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'accessiblePrivateMethodFromTrait' => [
                 'code' => '<?php
                     trait T {
