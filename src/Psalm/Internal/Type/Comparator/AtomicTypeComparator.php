@@ -240,10 +240,18 @@ final class AtomicTypeComparator
                 return true;
             }
 
-            if ($container_type_part instanceof TTemplateParam
-                && ($container_type_part->as->isNullable() || $container_type_part->as->isMixed())
-            ) {
-                return true;
+            if ($container_type_part instanceof TTemplateParam) {
+                if ($container_type_part->as->isNullable() || $container_type_part->as->isMixed()) {
+                    return true;
+                }
+
+                foreach ($container_type_part->as->getAtomicTypes() as $bound_atomic_type) {
+                    if ($bound_atomic_type instanceof TTemplateParam
+                        && self::isContainedBy($codebase, $input_type_part, $bound_atomic_type)
+                    ) {
+                        return true;
+                    }
+                }
             }
 
             return false;
