@@ -494,6 +494,63 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'assignmentInABranchThatThrowsIsSeenAfterTheCatch' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $test = "test";
+
+                        try {
+                            if ($b) {
+                                $test .= " true";
+                                throw new Exception();
+                            }
+                        } catch (Exception $e) {
+                        }
+
+                        return $test . "\n";
+                    }
+
+                    echo test(false);
+                    echo test(true);',
+            ],
+            'assignmentInABranchThatThrowsIsSeenInTheCatch' => [
+                'code' => '<?php
+                    function test(bool $b): void {
+                        $test = "test";
+
+                        try {
+                            if ($b) {
+                                $test = "thrown";
+                                throw new Exception();
+                            }
+                        } catch (Exception $e) {
+                            echo $test;
+                        }
+                    }
+
+                    test(true);',
+            ],
+            'assignmentInABranchThatThrowsInANestedTryIsSeenAfterTheOuterTry' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $test = "test";
+
+                        try {
+                            try {
+                                if ($b) {
+                                    $test = "thrown";
+                                    throw new Exception();
+                                }
+                            } catch (InvalidArgumentException $e) {
+                            }
+                        } catch (Exception $e) {
+                        }
+
+                        return $test;
+                    }
+
+                    echo test(true);',
+            ],
             'argumentCastToStringDoesNotReportPossiblyInvalidCast' => [
                 'code' => '<?php
                     /** @psalm-api */
@@ -2186,6 +2243,28 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'assignmentInABranchThatThrowsIsOverwrittenAfterTheTry' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $test = "test";
+
+                        try {
+                            if ($b) {
+                                $test = "thrown";
+                                throw new Exception();
+                            }
+                        } catch (Exception $e) {
+                        }
+
+                        $test = "done";
+
+                        return $test;
+                    }
+
+                    echo test(true);',
+                'error_message' => 'UnusedVariable',
+                'error_levels' => [],
+            ],
             'argumentStillReportsPossiblyInvalidArgumentWithUnusedCode' => [
                 'code' => '<?php
                     /**

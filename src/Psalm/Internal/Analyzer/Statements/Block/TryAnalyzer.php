@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Scope\FinallyScope;
+use Psalm\Internal\Scope\TryScope;
 use Psalm\Issue\InvalidCatch;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -78,11 +79,30 @@ final class TryAnalyzer
         $context->assigned_var_ids = [];
 
         $was_inside_try = $context->inside_try;
+        $outer_try_scope = $context->try_scope;
+        $try_scope = new TryScope();
         $context->inside_try = true;
+        $context->try_scope = $try_scope;
         if ($statements_analyzer->analyze($stmt->stmts, $context) === false) {
             return false;
         }
         $context->inside_try = $was_inside_try;
+        $context->try_scope = $outer_try_scope;
+
+        foreach ($try_scope->parent_nodes as $try_var_id => $try_parent_nodes) {
+            if ($outer_try_scope !== null) {
+                $outer_try_scope->parent_nodes[$try_var_id] = [
+                    ...($outer_try_scope->parent_nodes[$try_var_id] ?? []),
+                    ...$try_parent_nodes,
+                ];
+            }
+
+            if (isset($context->vars_in_scope[$try_var_id])) {
+                $context->vars_in_scope[$try_var_id] = $context->vars_in_scope[$try_var_id]->setParentNodes(
+                    $context->vars_in_scope[$try_var_id]->parent_nodes + $try_parent_nodes,
+                );
+            }
+        }
 
         $context->has_returned = false;
 
