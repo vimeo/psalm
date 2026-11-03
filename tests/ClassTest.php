@@ -54,6 +54,17 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'classExtendingAnAliasDeclaredLater' => [
+                'code' => '<?php
+                    class Original {
+                        /** @var string */
+                        public $message = "";
+                    }
+
+                    final class Child extends Legacy {}
+
+                    class_alias(Original::class, "Legacy");',
+            ],
             'overrideProtectedAccessLevelToPublic' => [
                 'code' => '<?php
                     class A {
