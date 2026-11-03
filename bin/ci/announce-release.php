@@ -64,11 +64,11 @@ $run = static function (array $command): string {
  */
 $request = static function (string $url, array $headers, array|object|null $body = null): array {
     $curl = curl_init($url);
-    curl_setopt_array($curl, [
-        ...($body === null ? [] : [
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($body, JSON_THROW_ON_ERROR),
-        ]),
+    // + rather than a spread, which would renumber the CURLOPT_* keys
+    curl_setopt_array($curl, ($body === null ? [] : [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode($body, JSON_THROW_ON_ERROR),
+    ]) + [
         CURLOPT_HTTPHEADER => [...$headers, 'Content-Type: application/json', 'User-Agent: psalm-release-bot'],
         CURLOPT_RETURNTRANSFER => true,
         // psalm-post.daniil.it loads x.com before posting
