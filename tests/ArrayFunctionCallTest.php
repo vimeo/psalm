@@ -22,6 +22,30 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayPopAndShiftOfAnArrayElementMakeItPossiblyEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @param array[] $data
+                     * @psalm-suppress RiskyTruthyFalsyComparison
+                     */
+                    function test(array $data): void {
+                        if (empty($data[0])) {
+                            throw new InvalidArgumentException();
+                        }
+
+                        array_pop($data[0]);
+
+                        if (empty($data[0])) {
+                            throw new InvalidArgumentException();
+                        }
+
+                        array_shift($data[0]);
+
+                        if (empty($data[0])) {
+                            throw new InvalidArgumentException();
+                        }
+                    }',
+            ],
             'arraySpliceWithALengthOutsideTheRangeOfAnInt' => [
                 'code' => '<?php
                     $big = [1, 2, 3];
