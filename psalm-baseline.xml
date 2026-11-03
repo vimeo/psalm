@@ -741,7 +741,6 @@
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$context->self]]></code>
-      <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$declaring_property_class]]></code>
       <code><![CDATA[$property_storage->getter_method]]></code>
       <code><![CDATA[$var_id]]></code>
@@ -1242,7 +1241,6 @@
       <code><![CDATA[$stmt_type]]></code>
     </ReferenceConstraintViolation>
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$declaring_property_class]]></code>
       <code><![CDATA[$declaring_property_class]]></code>

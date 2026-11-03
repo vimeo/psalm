@@ -893,6 +893,60 @@ final class InternalAnnotationTest extends TestCase
                     }',
                 'error_message' => 'InternalProperty',
             ],
+            'internalPropertyGetFromTheRootNamespace' => [
+                'code' => '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @internal
+                             * @var ?int
+                             */
+                            public $foo;
+                        }
+                    }
+
+                    namespace {
+                        echo (new \A\Foo)->foo;
+                    }',
+                'error_message' => 'InternalProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:30 - A\Foo::$foo is internal to A but called from root namespace',
+            ],
+            'internalPropertyGetFromAFunction' => [
+                'code' => '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @internal
+                             * @var ?int
+                             */
+                            public $foo;
+                        }
+                    }
+
+                    namespace B {
+                        function bar(\A\Foo $foo): ?int {
+                            return $foo->foo;
+                        }
+                    }',
+                'error_message' => 'InternalProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:36 - A\Foo::$foo is internal to A but called from B',
+            ],
+            'internalPropertySetFromTheRootNamespace' => [
+                'code' => '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @internal
+                             * @var ?int
+                             */
+                            public $foo;
+                        }
+                    }
+
+                    namespace {
+                        $a = new \A\Foo;
+                        $a->foo = 5;
+                    }',
+                'error_message' => 'InternalProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:25 - A\Foo::$foo is internal to A but called from root namespace',
+            ],
             'internalPropertySet' => [
                 'code' => '<?php
                     namespace A {
