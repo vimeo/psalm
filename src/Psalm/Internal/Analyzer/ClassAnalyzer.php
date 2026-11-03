@@ -180,7 +180,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
         $storage = $this->storage;
 
-        if ($this->isSkippedForVisitorIssues()) {
+        if ($storage->has_visitor_issues) {
             return;
         }
 
@@ -1056,25 +1056,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $class_context->vars_in_scope['$this->' . $property_name] = $fleshed_out_type;
             }
         }
-    }
-
-    /**
-     * A class-like with issues found while visiting it is not analysed, so the issues stored by its scan, and those of
-     * its methods, are reported here
-     */
-    private function isSkippedForVisitorIssues(): bool
-    {
-        $storage = $this->storage;
-
-        if (!$storage->has_visitor_issues) {
-            return false;
-        }
-
-        foreach ($this->getCodebase()->getClassLikeScanIssues($storage, $this->getFilePath()) as $scan_issue) {
-            IssueBuffer::maybeAdd($scan_issue);
-        }
-
-        return true;
     }
 
     private function checkPropertyInitialization(

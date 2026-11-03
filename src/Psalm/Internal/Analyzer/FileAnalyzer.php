@@ -124,12 +124,11 @@ class FileAnalyzer extends SourceAnalyzer
             throw new UnpreparedAnalysisException('File ' . $this->file_path . ' has not been properly scanned');
         }
 
-        if ($file_storage->has_visitor_issues) {
-            // nothing of the file is analysed, which would report the issues stored by the scan
-            foreach ($codebase->getScanIssues($file_storage) as $scan_issue) {
-                IssueBuffer::maybeAdd($scan_issue);
-            }
+        foreach ($file_storage->scan_issues as $scan_issue) {
+            IssueBuffer::maybeAdd($scan_issue);
+        }
 
+        if ($file_storage->has_visitor_issues) {
             return;
         }
 

@@ -9,7 +9,6 @@ use Override;
 use PhpParser\Node\Stmt\Trait_;
 use Psalm\Aliases;
 use Psalm\Context;
-use Psalm\IssueBuffer;
 use Psalm\Type;
 
 use function assert;
@@ -99,10 +98,5 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
             $storage,
             $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues(),
         );
-
-        // a trait is analysed only through the classes using it: the issues of its methods are lost if none does
-        foreach ($codebase->getClassLikeScanIssues($storage, $statements_analyzer->getFilePath()) as $scan_issue) {
-            IssueBuffer::maybeAdd($scan_issue);
-        }
     }
 }

@@ -103,6 +103,7 @@ final class FunctionLikeDocblockScanner
         string $cased_function_id,
     ): void {
         $storage->docblock_issues = [...$storage->docblock_issues, ...$docblock_info->docblock_issues];
+        $file_storage->scan_issues = [...$file_storage->scan_issues, ...$docblock_info->scan_issues];
 
         self::handleUnexpectedTags($docblock_info, $storage, $stmt, $file_scanner, $cased_function_id);
 
@@ -410,23 +411,24 @@ final class FunctionLikeDocblockScanner
         $storage->taint_source_keys = [...$storage->taint_source_keys, ...$docblock_info->taint_source_keys];
         $location = new CodeLocation($file_scanner, $stmt, null, true);
 
-        $taint_issues = [];
-
         foreach ($docblock_info->added_taints as $taint) {
-            $t = $codebase->getOrRegisterDocblockTaint($taint, $location, $taint_issues);
+            $t = FunctionLikeDocblockParser::registerTaint($codebase, $taint, $location, $file_storage->scan_issues);
             if ($t !== null) {
                 $storage->added_taints |= $t;
             }
         }
 
         foreach ($docblock_info->removed_taints as $removed_taint) {
-            $t = $codebase->getOrRegisterDocblockTaint($removed_taint, $location, $taint_issues);
+            $t = FunctionLikeDocblockParser::registerTaint(
+                $codebase,
+                $removed_taint,
+                $location,
+                $file_storage->scan_issues,
+            );
             if ($t !== null) {
                 $storage->removed_taints |= $t;
             }
         }
-
-        $storage->docblock_issues = [...$storage->docblock_issues, ...$taint_issues];
         $invalid_annotations = [
             ...$invalid_annotations,
             ...self::handleTaintConditionals(

@@ -50,12 +50,9 @@ final class TypeHintResolver
             }
 
             if ($analysis_php_version_id < 8_00_00) {
-                $codebase->addScanIssue(
-                    $file_storage,
-                    new ParseError(
-                        'Union types are not supported in PHP < 8',
-                        $code_location,
-                    ),
+                $file_storage->scan_issues[] = new ParseError(
+                    'Union types are not supported in PHP < 8',
+                    $code_location,
                 );
             }
 
@@ -82,12 +79,9 @@ final class TypeHintResolver
             }
 
             if ($analysis_php_version_id < 8_01_00) {
-                $codebase->addScanIssue(
-                    $file_storage,
-                    new ParseError(
-                        'Intersection types are not supported in PHP < 8.1',
-                        $code_location,
-                    ),
+                $file_storage->scan_issues[] = new ParseError(
+                    'Intersection types are not supported in PHP < 8.1',
+                    $code_location,
                 );
             }
 
@@ -111,14 +105,11 @@ final class TypeHintResolver
 
                 foreach ($resolved_type->getAtomicTypes() as $atomic_type) {
                     if (!$atomic_type instanceof TNamedObject) {
-                        $codebase->addScanIssue(
-                            $file_storage,
-                            new ParseError(
-                                $resolved_type->hasScalarType()
-                                    ? 'Intersection types cannot contain scalar types'
-                                    : 'Intersection types can only contain class types',
-                                $code_location,
-                            ),
+                        $file_storage->scan_issues[] = new ParseError(
+                            $resolved_type->hasScalarType()
+                                ? 'Intersection types cannot contain scalar types'
+                                : 'Intersection types can only contain class types',
+                            $code_location,
                         );
 
                         return Type::getMixed();

@@ -1083,12 +1083,9 @@ final class ClassLikeNodeScanner
                 }
 
                 if ($attribute->fq_class_name === 'AllowDynamicProperties' && $storage->readonly) {
-                    $this->codebase->addScanIssue(
-                        $storage,
-                        new InvalidAttribute(
-                            'Readonly classes cannot have dynamic properties',
-                            new CodeLocation($this->file_scanner, $attr, null, true),
-                        ),
+                    $this->file_storage->scan_issues[] = new InvalidAttribute(
+                        'Readonly classes cannot have dynamic properties',
+                        new CodeLocation($this->file_scanner, $attr, null, true),
                     );
                     continue;
                 }
@@ -1564,12 +1561,9 @@ final class ClassLikeNodeScanner
         string $fq_classlike_name,
     ): void {
         if ($storage->is_trait && $this->codebase->analysis_php_version_id < 8_02_00) {
-            $this->codebase->addScanIssue(
-                $storage,
-                new ConstantDeclarationInTrait(
-                    'Traits cannot declare constants until PHP 8.2.0',
-                    new CodeLocation($this->file_scanner, $stmt),
-                ),
+            $this->file_storage->scan_issues[] = new ConstantDeclarationInTrait(
+                'Traits cannot declare constants until PHP 8.2.0',
+                new CodeLocation($this->file_scanner, $stmt),
             );
             return;
         }
@@ -1623,13 +1617,10 @@ final class ClassLikeNodeScanner
             if (isset($storage->constants[$const->name->name])
                 || isset($storage->enum_cases[$const->name->name])
             ) {
-                $this->codebase->addScanIssue(
-                    $storage,
-                    new DuplicateConstant(
-                        'Constant names should be unique',
-                        new CodeLocation($this->file_scanner, $const),
-                        $fq_classlike_name,
-                    ),
+                $this->file_storage->scan_issues[] = new DuplicateConstant(
+                    'Constant names should be unique',
+                    new CodeLocation($this->file_scanner, $const),
+                    $fq_classlike_name,
                 );
                 continue;
             }
@@ -1748,7 +1739,7 @@ final class ClassLikeNodeScanner
                 );
 
                 if (!IssueBuffer::isSuppressedInList($missing_type_issue, $suppressed_issues)) {
-                    $this->codebase->addScanIssue($storage, $missing_type_issue);
+                    $this->file_storage->scan_issues[] = $missing_type_issue;
                 }
             }
 
@@ -1770,13 +1761,10 @@ final class ClassLikeNodeScanner
         if ($existing_constant !== null && $existing_constant->location === null) {
             unset($storage->constants[$stmt->name->name]);
         } elseif ($existing_constant !== null) {
-            $this->codebase->addScanIssue(
-                $storage,
-                new DuplicateConstant(
-                    'Constant names should be unique',
-                    new CodeLocation($this->file_scanner, $stmt),
-                    $fq_classlike_name,
-                ),
+            $this->file_storage->scan_issues[] = new DuplicateConstant(
+                'Constant names should be unique',
+                new CodeLocation($this->file_scanner, $stmt),
+                $fq_classlike_name,
             );
             return;
         }
@@ -1802,13 +1790,10 @@ final class ClassLikeNodeScanner
                 } elseif ($case_type->isSingleStringLiteral()) {
                     $enum_value = $case_type->getSingleStringLiteral();
                 } else {
-                    $this->codebase->addScanIssue(
-                        $storage,
-                        new InvalidEnumCaseValue(
-                            'Case of a backed enum should have either string or int value',
-                            $case_location,
-                            $fq_classlike_name,
-                        ),
+                    $this->file_storage->scan_issues[] = new InvalidEnumCaseValue(
+                        'Case of a backed enum should have either string or int value',
+                        $case_location,
+                        $fq_classlike_name,
                     );
                 }
             } else {
@@ -1865,13 +1850,10 @@ final class ClassLikeNodeScanner
                 $deprecated,
             );
         } else {
-            $this->codebase->addScanIssue(
-                $storage,
-                new DuplicateEnumCase(
-                    'Enum case names should be unique',
-                    $case_location,
-                    $fq_classlike_name,
-                ),
+            $this->file_storage->scan_issues[] = new DuplicateEnumCase(
+                'Enum case names should be unique',
+                $case_location,
+                $fq_classlike_name,
             );
         }
     }
@@ -1993,13 +1975,10 @@ final class ClassLikeNodeScanner
             $doc_var_location = null;
 
             if (isset($storage->properties[$property->name->name])) {
-                $this->codebase->addScanIssue(
-                    $storage,
-                    new DuplicateProperty(
-                        'Property ' . $fq_classlike_name . '::$' . $property->name->name . ' has already been defined',
-                        new CodeLocation($this->file_scanner, $stmt, null, true),
-                        $fq_classlike_name . '::$' . $property->name->name,
-                    ),
+                $this->file_storage->scan_issues[] = new DuplicateProperty(
+                    'Property ' . $fq_classlike_name . '::$' . $property->name->name . ' has already been defined',
+                    new CodeLocation($this->file_scanner, $stmt, null, true),
+                    $fq_classlike_name . '::$' . $property->name->name,
                 );
             }
 
@@ -2031,13 +2010,10 @@ final class ClassLikeNodeScanner
             $property_storage->description = $var_comment ? $var_comment->description : null;
 
             if (!$signature_type && $storage->readonly) {
-                $this->codebase->addScanIssue(
-                    $storage,
-                    new MissingPropertyType(
-                        'Properties of readonly classes must have a type',
-                        new CodeLocation($this->file_scanner, $stmt, null, true),
-                        $fq_classlike_name . '::$' . $property->name->name,
-                    ),
+                $this->file_storage->scan_issues[] = new MissingPropertyType(
+                    'Properties of readonly classes must have a type',
+                    new CodeLocation($this->file_scanner, $stmt, null, true),
+                    $fq_classlike_name . '::$' . $property->name->name,
                 );
             }
 

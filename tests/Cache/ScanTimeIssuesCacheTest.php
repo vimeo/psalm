@@ -75,6 +75,7 @@ final class ScanTimeIssuesCacheTest extends TestCase
             );
         }
 
+        // in-memory caches: the warm run gets the storages of the cold one instead of scanning the files again
         $providers = new Providers(
             $file_provider,
             new ParserCacheProvider($config, '', false),
@@ -94,14 +95,14 @@ final class ScanTimeIssuesCacheTest extends TestCase
 
     /**
      * Each case is the files by name, the PHP version, the issues as `Type file:line:column`, and optionally a stub.
-     * Each case groups the issues that are stored the same way, and need the same PHP version.
+     * Each case groups the issues that need the same PHP version.
      *
      * @return iterable<string, array{array<string, string>, string, list<string>}|array{array<string, string>, string, list<string>, string}>
      * @psalm-pure
      */
     public static function provideScanTimeIssues(): iterable
     {
-        // stored in the class-like (the untyped constant C is suppressed)
+        // the untyped constant C is suppressed
         yield 'classLike' => [
             [
                 'A.php' => <<<'PHP'
@@ -159,7 +160,7 @@ final class ScanTimeIssuesCacheTest extends TestCase
             ],
         ];
 
-        // stored in the method
+        // a private final method, and a promoted property documented twice
         yield 'method' => [
             [
                 'A.php' => <<<'PHP'
@@ -178,7 +179,7 @@ final class ScanTimeIssuesCacheTest extends TestCase
             ['PrivateFinalMethod A.php:3:5', 'InvalidDocblock A.php:7:9'],
         ];
 
-        // stored in the method: a taint that can't be registered is in the docblock parsed, or in the storage built
+        // a taint that can't be registered is in the docblock parsed, or in the storage built
         yield 'taintDocblocks' => [
             [
                 'A.php' => <<<'PHP'
@@ -209,7 +210,7 @@ final class ScanTimeIssuesCacheTest extends TestCase
             ],
         ];
 
-        // stored in the file, but for the trait constant, which is stored in the class-like
+        // the PHP version predates the syntax
         yield 'oldPhpVersion' => [
             [
                 'A.php' => <<<'PHP'
@@ -291,7 +292,36 @@ final class ScanTimeIssuesCacheTest extends TestCase
             ['PrivateFinalMethod A.php:3:5', 'DuplicateClass B.php:2:13'],
         ];
 
-        yield 'stubRepeatingDeclarations' => [
+        // the early returns of the analysis of the class-likes don't lose the issues found while scanning them
+        yield 'earlyReturns' => [
+            [
+                'A.php' => <<<'PHP'
+                    <?php
+                    final class A extends UndefinedParent {
+                        private final function f(): void {}
+                    }
+                    final class B implements UndefinedInterface {
+                        private final function g(): void {}
+                    }
+                    interface I extends UndefinedI {
+                        public const B = 0;
+                        public const B = 1;
+                    }
+                    PHP,
+            ],
+            '8.3',
+            [
+                'UndefinedClass A.php:2:23',
+                'PrivateFinalMethod A.php:3:5',
+                'UndefinedClass A.php:5:26',
+                'PrivateFinalMethod A.php:6:5',
+                'MissingClassConstType A.php:9:18',
+                'DuplicateConstant A.php:10:18',
+            ],
+        ];
+
+        // the issues found while scanning a stub aren't reported, as the stubs aren't analysed
+        yield 'stubIssuesAreNotReported' => [
             [
                 'A.php' => <<<'PHP'
                     <?php
@@ -300,7 +330,7 @@ final class ScanTimeIssuesCacheTest extends TestCase
             ],
             '8.3',
             [],
-            'stubs/RefinedClass.phpstub',
+            'stubs/ScanIssues.phpstub',
         ];
     }
 

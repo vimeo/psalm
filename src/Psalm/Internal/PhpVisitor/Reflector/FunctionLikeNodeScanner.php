@@ -573,7 +573,7 @@ final class FunctionLikeNodeScanner
 
                 //both way to document type were used
                 if ($param_storage->type && $param_storage->type->from_docblock && $var_comment_type) {
-                    $storage->docblock_issues[] = new InvalidDocblock(
+                    $this->file_storage->scan_issues[] = new InvalidDocblock(
                         'Param ' . $param_storage->name . ' of ' . $cased_function_id .
                         ' should be documented as a param or a property, not both',
                         new CodeLocation($this->file_scanner, $param, null, true),
@@ -1163,12 +1163,9 @@ final class FunctionLikeNodeScanner
                     $reflection_function = new ReflectionFunction($function_id);
 
                     if ($reflection_function->getFileName() !== $this->file_path) {
-                        $this->codebase->addScanIssue(
-                            $this->file_storage,
-                            new DuplicateFunction(
-                                'Method ' . $function_id . ' has already been defined as a core function',
-                                new CodeLocation($this->file_scanner, $stmt, null, true),
-                            ),
+                        $this->file_storage->scan_issues[] = new DuplicateFunction(
+                            'Method ' . $function_id . ' has already been defined as a core function',
+                            new CodeLocation($this->file_scanner, $stmt, null, true),
                         );
                     }
                 }
@@ -1289,13 +1286,10 @@ final class FunctionLikeNodeScanner
             $storage->abstract = $stmt->isAbstract();
 
             if ($stmt->isPrivate() && $stmt->isFinal() && $method_name_lc !== '__construct') {
-                $this->codebase->addScanIssue(
-                    $storage,
-                    new PrivateFinalMethod(
-                        'Private methods cannot be final',
-                        new CodeLocation($this->file_scanner, $stmt, null, true),
-                        (string) $method_id,
-                    ),
+                $this->file_storage->scan_issues[] = new PrivateFinalMethod(
+                    'Private methods cannot be final',
+                    new CodeLocation($this->file_scanner, $stmt, null, true),
+                    (string) $method_id,
                 );
                 if ($this->codebase->analysis_php_version_id >= 8_00_00) {
                     // ignore `final` on the method as that's what PHP does
