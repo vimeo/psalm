@@ -35,7 +35,6 @@ use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\TypeVisitor\FunctionPurityTemplateReplacer;
-use Psalm\Issue\CodeIssue;
 use Psalm\Issue\DuplicateFunction;
 use Psalm\Issue\DuplicateMethod;
 use Psalm\Issue\DuplicateParam;
@@ -843,17 +842,6 @@ final class FunctionLikeNodeScanner
     }
 
     /**
-     * Keeps an issue of the declaration scanned, to report it when the file is analysed, whether it is scanned or
-     * its storage comes from the cache. The stubs aren't analysed, so their issues are dropped.
-     */
-    private function addScanIssue(FileStorage|FunctionLikeStorage $storage, CodeIssue $issue): void
-    {
-        if (!$this->codebase->register_stub_files) {
-            $storage->docblock_issues[] = $issue;
-        }
-    }
-
-    /**
      * Merges two docblocks into one by unioning their tags. Used to combine a
      * closure's own inline docblock (primary) with the docblock of the variable
      * it is assigned to (secondary), so annotations declared on the variable
@@ -1175,7 +1163,7 @@ final class FunctionLikeNodeScanner
                     $reflection_function = new ReflectionFunction($function_id);
 
                     if ($reflection_function->getFileName() !== $this->file_path) {
-                        $this->addScanIssue(
+                        $this->codebase->addScanIssue(
                             $this->file_storage,
                             new DuplicateFunction(
                                 'Method ' . $function_id . ' has already been defined as a core function',
@@ -1301,7 +1289,7 @@ final class FunctionLikeNodeScanner
             $storage->abstract = $stmt->isAbstract();
 
             if ($stmt->isPrivate() && $stmt->isFinal() && $method_name_lc !== '__construct') {
-                $this->addScanIssue(
+                $this->codebase->addScanIssue(
                     $storage,
                     new PrivateFinalMethod(
                         'Private methods cannot be final',

@@ -222,7 +222,7 @@ final class IssueBuffer
             return true;
         }
 
-        if (self::isSuppressedByList($e, $issue_type, $file_path, $suppressed_issues)) {
+        if (self::isCoveredBySuppression($e, $issue_type, $file_path, $suppressed_issues)) {
             return true;
         }
 
@@ -256,13 +256,13 @@ final class IssueBuffer
     {
         $fqcn_parts = explode('\\', $e::class);
 
-        return self::isSuppressedByList($e, array_pop($fqcn_parts), $e->getFilePath(), $suppressed_issues);
+        return self::isCoveredBySuppression($e, array_pop($fqcn_parts), $e->getFilePath(), $suppressed_issues);
     }
 
     /**
      * @param string[] $suppressed_issues
      */
-    private static function isSuppressedByList(
+    private static function isCoveredBySuppression(
         CodeIssue $e,
         string $issue_type,
         string $file_path,

@@ -261,6 +261,34 @@ final class ScanTimeIssuesCacheTest extends TestCase
             ['PrivateFinalMethod A.php:3:5'],
         ];
 
+        yield 'privateFinalMethodInUnusedTrait' => [
+            [
+                'A.php' => <<<'PHP'
+                    <?php
+                    trait T {
+                        private final function f(): void {}
+                    }
+                    PHP,
+            ],
+            '8.1',
+            ['PrivateFinalMethod A.php:3:5'],
+        ];
+
+        yield 'privateFinalMethodInClassWithDuplicateMethod' => [
+            [
+                'A.php' => <<<'PHP'
+                    <?php
+                    final class A {
+                        private final function f(): void {}
+                        public function g(): void {}
+                        public function g(): void {}
+                    }
+                    PHP,
+            ],
+            '8.1',
+            ['PrivateFinalMethod A.php:3:5', 'DuplicateMethod A.php:5:5'],
+        ];
+
         yield 'allowDynamicPropertiesOnReadonlyClass' => [
             [
                 'A.php' => <<<'PHP'

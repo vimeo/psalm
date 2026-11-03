@@ -2945,31 +2945,8 @@ final class Config
                 continue;
             }
 
-            $file_storage = $codebase->file_storage_provider->get($file_path);
-            $issues = $file_storage->docblock_issues;
-
-            foreach ($file_storage->functions as $function_storage) {
-                $issues = [...$issues, ...$function_storage->docblock_issues];
-            }
-
-            foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
-                if (!$codebase->classlike_storage_provider->has($fq_classlike_name)) {
-                    continue;
-                }
-
-                $classlike_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
-                $issues = [...$issues, ...$classlike_storage->docblock_issues];
-
-                foreach ($classlike_storage->methods as $method_storage) {
-                    $issues = [...$issues, ...$method_storage->docblock_issues];
-                }
-            }
-
-            foreach ($issues as $issue) {
-                // a class of the stub may be declared by another file too
-                if ($issue->code_location->file_path === $file_path) {
-                    IssueBuffer::maybeAddStubIssue($issue);
-                }
+            foreach ($codebase->getScanIssues($codebase->file_storage_provider->get($file_path)) as $issue) {
+                IssueBuffer::maybeAddStubIssue($issue);
             }
         }
     }

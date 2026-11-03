@@ -125,6 +125,11 @@ class FileAnalyzer extends SourceAnalyzer
         }
 
         if ($file_storage->has_visitor_issues) {
+            // nothing of the file is analysed, which would report the issues stored by the scan
+            foreach ($codebase->getScanIssues($file_storage) as $scan_issue) {
+                IssueBuffer::maybeAdd($scan_issue);
+            }
+
             return;
         }
 

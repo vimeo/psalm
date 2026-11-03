@@ -56,6 +56,7 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
@@ -83,6 +84,7 @@ use UnexpectedValueException;
 
 use function array_combine;
 use function array_diff_key;
+use function array_filter;
 use function array_key_exists;
 use function array_pop;
 use function array_reverse;
@@ -598,7 +600,7 @@ final class Codebase
     /**
      * Like getOrRegisterTaint() for a docblock scanned: the issue about a taint that can't be registered is
      * appended to $issues, for the storage to report it each time the file is analysed, instead of being emitted
-     * only when the file is scanned.
+     * only when the file is scanned. Like in addScanIssue(), nothing is added for a stub.
      *
      * @internal
      * @param list<InvalidDocblock> $issues
@@ -612,9 +614,94 @@ final class Codebase
             return $taint;
         }
 
-        $issues[] = new InvalidDocblock($taint, $location);
+        if (!$this->isStubBeingRegistered($location->file_path)) {
+            $issues[] = new InvalidDocblock($taint, $location);
+        }
 
         return null;
+    }
+
+    /**
+     * Keeps an issue found while scanning in the storage, to report it each time the file is analysed, whether it is
+     * scanned or its storage comes from the cache. The stubs aren't analysed, and their declarations may repeat those
+     * of the class they refine, so their issues are dropped.
+     *
+     * @internal
+     */
+    public function addScanIssue(ClassLikeStorage|FileStorage|FunctionLikeStorage $storage, CodeIssue $issue): void
+    {
+        if (!$this->isStubBeingRegistered($issue->getFilePath())) {
+            $storage->docblock_issues[] = $issue;
+        }
+    }
+
+    /**
+     * The issues found when scanning a file, which its analysis reports: those of the file, of its functions and of
+     * its class-likes and their methods. Used when the analysis skips the file, and for the stubs, which it doesn't
+     * analyse.
+     *
+     * @internal
+     * @return list<CodeIssue>
+     * @psalm-capabilities read-props
+     */
+    public function getScanIssues(FileStorage $file_storage): array
+    {
+        $issues = $file_storage->docblock_issues;
+
+        foreach ($file_storage->functions as $function_storage) {
+            $issues = [...$issues, ...$function_storage->docblock_issues];
+        }
+
+        foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
+            if ($this->classlike_storage_provider->has($fq_classlike_name)) {
+                $issues = [
+                    ...$issues,
+                    ...$this->getClassLikeScanIssues(
+                        $this->classlike_storage_provider->get($fq_classlike_name),
+                        $file_storage->file_path,
+                    ),
+                ];
+            }
+        }
+
+        // a class of the file may be declared by another file too
+        return array_values(array_filter(
+            $issues,
+            static fn(CodeIssue $issue): bool => $issue->getFilePath() === $file_storage->file_path,
+        ));
+    }
+
+    /**
+     * The issues found when scanning a class-like and the methods it declares in the file. The analysis of a method
+     * reports its issues, so these are for the methods it doesn't analyse: those of a skipped class-like, or of a
+     * trait no class uses.
+     *
+     * @internal
+     * @return list<CodeIssue>
+     * @psalm-capabilities read-props
+     */
+    public function getClassLikeScanIssues(ClassLikeStorage $storage, string $file_path): array
+    {
+        $issues = $storage->docblock_issues;
+
+        foreach ($storage->methods as $method_storage) {
+            foreach ($method_storage->docblock_issues as $issue) {
+                // the methods of the parents and the traits are part of the storage too
+                if ($issue->getFilePath() === $file_path) {
+                    $issues[] = $issue;
+                }
+            }
+        }
+
+        return $issues;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private function isStubBeingRegistered(string $file_path): bool
+    {
+        return $this->register_stub_files && $this->scanner->isStubFile($file_path);
     }
 
     /**
