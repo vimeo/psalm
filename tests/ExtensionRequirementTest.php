@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ExtensionRequirementTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
@@ -108,6 +110,13 @@ final class ExtensionRequirementTest extends TestCase
                     }
                 ',
                 'error_message' => 'requires using class to extend',
+            ],
+            'unparseableExtensionRequirementIsAnIssue' => [
+                'code' => '<?php
+                    /** @psalm-require-extends SomeBase< */
+                    trait T {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27 -'
+                    . ' No generic params provided for type in docblock for T',
             ],
         ];
     }
