@@ -438,6 +438,27 @@ final class DocblockInheritanceTest extends TestCase
                         public function g(array $a): array { return []; }
                     }',
             ],
+            'inheritedReturnTemplateUsedByNoParamIsResolved' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @template T
+                         * @param positive-int $n
+                         * @return list<T>
+                         */
+                        public function empty(int $n): array { return []; }
+                    }
+
+                    final class C extends P {
+                        /** @param int $n */
+                        public function empty(int $n): array { return []; }
+                    }
+
+                    $c = (new C)->empty(1);',
+                'assertions' => [
+                    '$c===' => 'array<never, never>',
+                ],
+            ],
             'returnUsingTemplateOfRedocumentedParamNotInherited' => [
                 'code' => '<?php
                     abstract class Container {
