@@ -21768,6 +21768,31 @@ return array (
     0 => 'float',
     'value' => 'mixed',
   ),
+  'ds\\collection::clear' => 
+  array (
+    0 => 'void',
+  ),
+  'ds\\collection::copy' => 
+  array (
+    0 => 'Ds\\Collection',
+  ),
+  'ds\\collection::isempty' => 
+  array (
+    0 => 'bool',
+  ),
+  'ds\\collection::toarray' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'ds\\hashable::equals' => 
+  array (
+    0 => 'bool',
+    'object' => 'mixed',
+  ),
+  'ds\\hashable::hash' => 
+  array (
+    0 => 'mixed',
+  ),
   'ds\\heap' => 
   array (
     0 => 'mixed',
@@ -22297,14 +22322,122 @@ return array (
     0 => 'mixed',
     '...values=' => 'mixed',
   ),
+  'ds\\sequence::allocate' => 
+  array (
+    0 => 'void',
+    'capacity' => 'int',
+  ),
   'ds\\sequence::apply' => 
   array (
     0 => 'void',
     'callback' => 'callable[impure]',
   ),
+  'ds\\sequence::capacity' => 
+  array (
+    0 => 'int',
+  ),
+  'ds\\sequence::contains' => 
+  array (
+    0 => 'bool',
+    '...values=' => 'mixed',
+  ),
+  'ds\\sequence::filter' => 
+  array (
+    0 => 'Ds\\Sequence',
+    'callback=' => 'callable[impure]',
+  ),
+  'ds\\sequence::find' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+  ),
+  'ds\\sequence::first' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\sequence::get' => 
+  array (
+    0 => 'mixed',
+    'index' => 'int',
+  ),
+  'ds\\sequence::insert' => 
+  array (
+    0 => 'void',
+    'index' => 'int',
+    '...values=' => 'mixed',
+  ),
+  'ds\\sequence::join' => 
+  array (
+    0 => 'string',
+    'glue=' => 'string',
+  ),
+  'ds\\sequence::last' => 
+  array (
+    0 => 'void',
+  ),
+  'ds\\sequence::map' => 
+  array (
+    0 => 'Ds\\Sequence',
+    'callback' => 'callable[impure]',
+  ),
+  'ds\\sequence::merge' => 
+  array (
+    0 => 'Ds\\Sequence',
+    'values' => 'mixed',
+  ),
+  'ds\\sequence::pop' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\sequence::push' => 
+  array (
+    0 => 'void',
+    '...values=' => 'mixed',
+  ),
+  'ds\\sequence::reduce' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'callable[impure]',
+    'initial=' => 'mixed',
+  ),
+  'ds\\sequence::remove' => 
+  array (
+    0 => 'mixed',
+    'index' => 'int',
+  ),
+  'ds\\sequence::reverse' => 
+  array (
+    0 => 'void',
+  ),
   'ds\\sequence::reversed' => 
   array (
     0 => 'Ds\\Sequence',
+  ),
+  'ds\\sequence::rotate' => 
+  array (
+    0 => 'void',
+    'rotations' => 'int',
+  ),
+  'ds\\sequence::set' => 
+  array (
+    0 => 'void',
+    'index' => 'int',
+    'value' => 'mixed',
+  ),
+  'ds\\sequence::shift' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\sequence::slice' => 
+  array (
+    0 => 'Ds\\Sequence',
+    'index' => 'int',
+    'length=' => 'int|null',
+  ),
+  'ds\\sequence::sort' => 
+  array (
+    0 => 'void',
+    'comparator=' => 'callable[impure]',
   ),
   'ds\\sequence::sorted' => 
   array (
@@ -22314,6 +22447,11 @@ return array (
   'ds\\sequence::sum' => 
   array (
     0 => 'float|int',
+  ),
+  'ds\\sequence::unshift' => 
+  array (
+    0 => 'void',
+    '...values=' => 'mixed',
   ),
   'ds\\set' => 
   array (
