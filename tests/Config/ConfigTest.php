@@ -567,6 +567,61 @@ final class ConfigTest extends TestCase
         $this->assertFalse($config->reportIssueInFile('UndefinedClass', (string) realpath(__FILE__)));
     }
 
+    public function testIssueHandlerGivenTwiceAddsUp(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+
+                    <issueHandlers>
+                        <PropertyNotSetInConstructor errorLevel="info">
+                            <errorLevel type="suppress">
+                                <file name="src/Psalm/Config.php" />
+                            </errorLevel>
+                        </PropertyNotSetInConstructor>
+                        <PluginIssue name="MyIssue" errorLevel="info" />
+                        <PropertyNotSetInConstructor>
+                            <errorLevel type="error">
+                                <directory name="tests" />
+                            </errorLevel>
+                        </PropertyNotSetInConstructor>
+                        <PluginIssue name="MyIssue">
+                            <errorLevel type="suppress">
+                                <directory name="tests" />
+                            </errorLevel>
+                        </PluginIssue>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $config = $this->project_analyzer->getConfig();
+        $src_file = dirname(__DIR__, 2) . '/src/Psalm/Config.php';
+
+        $this->assertSame(
+            Config::REPORT_SUPPRESS,
+            $config->getReportingLevelForFile('PropertyNotSetInConstructor', $src_file),
+        );
+        $this->assertSame(
+            Config::REPORT_ERROR,
+            $config->getReportingLevelForFile('PropertyNotSetInConstructor', (string) realpath(__FILE__)),
+        );
+        $this->assertSame(
+            Config::REPORT_INFO,
+            $config->getReportingLevelForFile('MyIssue', $src_file),
+        );
+        $this->assertSame(
+            Config::REPORT_SUPPRESS,
+            $config->getReportingLevelForFile('MyIssue', (string) realpath(__FILE__)),
+        );
+    }
+
     public function testIssueHandlerWithCustomErrorLevels(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

@@ -1569,24 +1569,22 @@ final class Config
         }
 
         if (isset($config_xml->issueHandlers)) {
+            $loaded_issue_handlers = [];
+
             foreach ($config_xml->issueHandlers as $issue_handlers) {
                 $issue_handler_children = $issue_handlers->children();
                 if ($issue_handler_children) {
                     foreach ($issue_handler_children as $key => $issue_handler) {
-                        if ($key === 'PluginIssue') {
-                            $custom_class_name = (string)$issue_handler['name'];
-                            /** @var string $key */
-                            $config->issue_handlers[$custom_class_name] = IssueHandler::loadFromXMLElement(
+                        /** @var string $key */
+                        $issue_key = $key === 'PluginIssue' ? (string) $issue_handler['name'] : $key;
+
+                        // an issue type given more than once adds up
+                        $loaded_issue_handlers[$issue_key] = $config->issue_handlers[$issue_key]
+                            = IssueHandler::loadFromXMLElement(
                                 $issue_handler,
                                 $base_dir,
+                                $loaded_issue_handlers[$issue_key] ?? null,
                             );
-                        } else {
-                            /** @var string $key */
-                            $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
-                                $issue_handler,
-                                $base_dir,
-                            );
-                        }
                     }
                 }
             }
