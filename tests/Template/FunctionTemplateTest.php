@@ -2810,6 +2810,172 @@ final class FunctionTemplateTest extends TestCase
                         }
                     }',
             ],
+            'narrowTemplateBoundedByUnboundedTemplateOnTypeAssertions' => [
+                'code' => '<?php
+                    /**
+                     * @template U
+                     * @template T of U
+                     * @param T $v
+                     */
+                    function f($v): void {
+                        if (is_object($v)) {
+                            takesObject($v);
+                        }
+                        if (is_string($v)) {
+                            takesString($v);
+                        }
+                        if (is_int($v)) {
+                            takesInt($v);
+                        }
+                        if (is_float($v)) {
+                            takesFloat($v);
+                        }
+                        if (is_bool($v)) {
+                            takesBool($v);
+                        }
+                        if ($v === true) {
+                            takesTrue($v);
+                        }
+                        if ($v === false) {
+                            takesFalse($v);
+                        }
+                        if (is_scalar($v)) {
+                            takesScalar($v);
+                        }
+                        if (is_numeric($v)) {
+                            takesNumeric($v);
+                        }
+                        if (is_array($v)) {
+                            takesArray($v);
+                        }
+                        if (is_callable($v)) {
+                            takesCallable($v);
+                        }
+                    }
+
+                    function takesObject(object $_v): void {}
+                    function takesString(string $_v): void {}
+                    function takesInt(int $_v): void {}
+                    function takesFloat(float $_v): void {}
+                    function takesBool(bool $_v): void {}
+                    function takesTrue(true $_v): void {}
+                    function takesFalse(false $_v): void {}
+                    /** @param scalar $_v */
+                    function takesScalar($_v): void {}
+                    /** @param numeric $_v */
+                    function takesNumeric($_v): void {}
+                    function takesArray(array $_v): void {}
+                    function takesCallable(callable $_v): void {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'narrowTemplateBoundedByBoundedTemplateOnTypeAssertions' => [
+                'code' => '<?php
+                    /**
+                     * @template U of int|string
+                     * @template T of U
+                     * @param T $v
+                     */
+                    function f($v): void {
+                        if (is_string($v)) {
+                            takesString($v);
+                        }
+                        if (is_int($v)) {
+                            takesInt($v);
+                        }
+                        if (is_numeric($v)) {
+                            takesNumeric($v);
+                        }
+                    }
+
+                    function takesString(string $_v): void {}
+                    function takesInt(int $_v): void {}
+                    /** @param numeric $_v */
+                    function takesNumeric($_v): void {}',
+            ],
+            'narrowTemplateBoundedByTemplateChainOnTypeAssertion' => [
+                'code' => '<?php
+                    /**
+                     * @template V
+                     * @template U of V
+                     * @template T of U
+                     * @param T $v
+                     */
+                    function f($v): void {
+                        if (is_object($v)) {
+                            takesObject($v);
+                        }
+                    }
+
+                    function takesObject(object $_v): void {}',
+            ],
+            'narrowTemplateBoundedByTemplateOnTypeAssertionAfterNegatedInstanceof' => [
+                'code' => '<?php
+                    interface PromiseInterface {}
+
+                    /**
+                     * @template TValue
+                     * @template TParam of TValue
+                     * @param TParam $value
+                     */
+                    function f($value): void {
+                        if ($value instanceof PromiseInterface) {
+                            return;
+                        }
+
+                        if (is_object($value) && method_exists($value, "then")) {
+                            takesObject($value);
+                        }
+                    }
+
+                    function takesObject(object $_v): void {}',
+            ],
+            'keepTemplatesInBoundOnInstanceof' => [
+                'code' => '<?php
+                    interface PromiseInterface {}
+
+                    /** @template T */
+                    final class FulfilledPromise implements PromiseInterface {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    final class Create {
+                        /**
+                         * @template TValue
+                         * @template TPromise of PromiseInterface
+                         * @param TValue|TPromise $value
+                         * @return ($value is PromiseInterface ? TPromise : FulfilledPromise<TValue>)
+                         */
+                        public static function promiseFor($value): PromiseInterface {
+                            if ($value instanceof PromiseInterface) {
+                                return $value;
+                            }
+
+                            return new FulfilledPromise($value);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'keepTemplateBoundedByTemplateOnTypeAssertion' => [
+                'code' => '<?php
+                    /**
+                     * @template U
+                     * @template T of U
+                     * @param T $v
+                     * @return T|null
+                     */
+                    function f($v) {
+                        if (is_object($v)) {
+                            return $v;
+                        }
+
+                        return null;
+                    }',
+            ],
         ];
     }
 
@@ -2849,6 +3015,18 @@ final class FunctionTemplateTest extends TestCase
                         takesInt($value);
                     }',
                 'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:34 - Argument 1 of takesInt expects int, but T:fn-baz as int|string provided',
+            ],
+            'templateBoundedByBoundedTemplateIsNeverOtherType' => [
+                'code' => '<?php
+                    /**
+                     * @template U of int
+                     * @template T of U
+                     * @param T $v
+                     */
+                    function f($v): void {
+                        if (is_string($v)) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Docblock-defined type T:fn-f as U:fn-f as int for $v is never string',
             ],
             'invalidTemplatedType' => [
                 'code' => '<?php

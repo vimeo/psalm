@@ -1026,7 +1026,8 @@ final class SimpleAssertionReconciler extends Reconciler
                 $string_types[] = new TString;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasString() || $type->as->hasMixed() || $type->as->hasScalar()) {
+                $bound_types = self::getTypesWithinBound($type->as);
+                if ($bound_types->hasString() || $bound_types->hasMixed() || $bound_types->hasScalar()) {
                     $type = $type->replaceAs(self::reconcileString(
                         $assertion,
                         $type->as,
@@ -1120,7 +1121,8 @@ final class SimpleAssertionReconciler extends Reconciler
                 $int_types[] = new TInt;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasInt() || $type->as->hasMixed()) {
+                $bound_types = self::getTypesWithinBound($type->as);
+                if ($bound_types->hasInt() || $bound_types->hasMixed()) {
                     $type = $type->replaceAs(self::reconcileInt(
                         $assertion,
                         $type->as,
@@ -1199,7 +1201,8 @@ final class SimpleAssertionReconciler extends Reconciler
                 $bool_types[] = new TBool;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasBool() || $type->as->hasMixed()) {
+                $bound_types = self::getTypesWithinBound($type->as);
+                if ($bound_types->hasBool() || $bound_types->hasMixed()) {
                     $type = $type->replaceAs(self::reconcileBool(
                         $assertion,
                         $type->as,
@@ -1282,7 +1285,8 @@ final class SimpleAssertionReconciler extends Reconciler
                 $false_types[] = $type;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasScalar() || $type->as->hasMixed() || $type->as->hasBool()) {
+                $bound_types = self::getTypesWithinBound($type->as);
+                if ($bound_types->hasScalar() || $bound_types->hasMixed() || $bound_types->hasBool()) {
                     $type = $type->replaceAs(self::reconcileFalse(
                         $assertion,
                         $type->as,
@@ -1365,7 +1369,8 @@ final class SimpleAssertionReconciler extends Reconciler
                 $true_types[] = $type;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasScalar() || $type->as->hasMixed() || $type->as->hasBool()) {
+                $bound_types = self::getTypesWithinBound($type->as);
+                if ($bound_types->hasScalar() || $bound_types->hasMixed() || $bound_types->hasBool()) {
                     $type = $type->replaceAs(self::reconcileTrue(
                         $assertion,
                         $type->as,
@@ -1438,7 +1443,8 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($type instanceof Scalar) {
                 $scalar_types[] = $type;
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasScalarType() || $type->as->hasMixed()) {
+                $bound_types = self::getTypesWithinBound($type->as);
+                if ($bound_types->hasScalarType() || $bound_types->hasMixed()) {
                     $type = $type->replaceAs(self::reconcileScalar(
                         $assertion,
                         $type->as,
@@ -1539,7 +1545,8 @@ final class SimpleAssertionReconciler extends Reconciler
                 $numeric_types[] = new TInt();
                 $numeric_types[] = new TNumericString();
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasScalarType() || $type->as->hasMixed()) {
+                $bound_types = self::getTypesWithinBound($type->as);
+                if ($bound_types->hasScalarType() || $bound_types->hasMixed()) {
                     $type = $type->replaceAs(self::reconcileNumeric(
                         $assertion,
                         $type->as,
@@ -1629,7 +1636,8 @@ final class SimpleAssertionReconciler extends Reconciler
                 $object_types[] = $type;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasObjectType() || $type->as->hasMixed()) {
+                $bound_types = self::getTypesWithinBound($type->as);
+                if ($bound_types->hasObjectType() || $bound_types->hasMixed()) {
                     /**
                      * @psalm-suppress PossiblyInvalidArgument This looks wrong, psalm assumes that $assertion_type
                      *                                         can contain TNamedObject due to the reconciliation above
@@ -2311,7 +2319,8 @@ final class SimpleAssertionReconciler extends Reconciler
 
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasArray() || $type->as->hasIterable() || $type->as->hasMixed()) {
+                $bound_types = self::getTypesWithinBound($type->as);
+                if ($bound_types->hasArray() || $bound_types->hasIterable() || $bound_types->hasMixed()) {
                     $type = $type->replaceAs(self::reconcileArray(
                         $assertion,
                         $type->as,
@@ -2679,7 +2688,8 @@ final class SimpleAssertionReconciler extends Reconciler
                 $callable_types[] = $type;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasCallableType() || $type->as->hasMixed()) {
+                $bound_types = self::getTypesWithinBound($type->as);
+                if ($bound_types->hasCallableType() || $bound_types->hasMixed()) {
                     $type = $type->replaceAs(self::reconcileCallable(
                         $assertion,
                         $codebase,
@@ -3040,6 +3050,31 @@ final class SimpleAssertionReconciler extends Reconciler
         }
 
         return TypeCombiner::combine($reconciled_types, $codebase, false, false);
+    }
+
+    /**
+     * A template bounded by another template is within that template's bound, so the assertion can hold for it
+     * whenever it can hold for that bound.
+     *
+     * @psalm-pure
+     */
+    private static function getTypesWithinBound(Union $bound): Union
+    {
+        if (!$bound->hasTemplate()) {
+            return $bound;
+        }
+
+        $types = [];
+
+        foreach ($bound->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam) {
+                $types = [...$types, ...self::getTypesWithinBound($atomic_type->as)->getAtomicTypes()];
+            } else {
+                $types[] = $atomic_type;
+            }
+        }
+
+        return new Union($types);
     }
 
     /**
