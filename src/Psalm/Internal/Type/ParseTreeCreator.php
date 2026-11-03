@@ -99,13 +99,16 @@ final class ParseTreeCreator
                     break;
 
                 case '>':
-                    do {
-                        if ($this->current_leaf->parent === null || $this->current_leaf instanceof PurityTree) {
-                            throw new TypeParseTreeException('Cannot parse generic type');
-                        }
+                    // a trailing comma leaves the generic that was not terminated as the current leaf
+                    if (!$this->current_leaf instanceof GenericTree || $this->current_leaf->terminated) {
+                        do {
+                            if ($this->current_leaf->parent === null || $this->current_leaf instanceof PurityTree) {
+                                throw new TypeParseTreeException('Cannot parse generic type');
+                            }
 
-                        $this->current_leaf = $this->current_leaf->parent;
-                    } while (!$this->current_leaf instanceof GenericTree);
+                            $this->current_leaf = $this->current_leaf->parent;
+                        } while (!$this->current_leaf instanceof GenericTree);
+                    }
 
                     $this->current_leaf->terminated = true;
 
