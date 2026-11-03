@@ -14,7 +14,8 @@ php -r "echo PHP_BINARY;"          # <php>, e.g. /usr/bin/php or C:\php\php.exe
 <php> vendor/bin/psalm --version   # <psalm> = "<php> vendor/bin/psalm", or the PHAR path
 ```
 
-`<report>` is a JSON report path outside the repository, e.g. in the system temp dir.
+`<report>` is a JSON report path outside the repository, in the directory `<php> -r "echo sys_get_temp_dir();"`
+prints: a shell's `/tmp` can be a path that PHP doesn't see.
 
 ## Phase 1 — Baseline and scope (ask first)
 
@@ -35,6 +36,11 @@ so the user can answer them up front: suppressions, a baseline, deleting public 
 
 ## Phase 2 — Fix, one file per subagent, in sequence
 
+Every file goes to a subagent, however small or mechanical its fixes look: here the subagents are the cheaper
+path. Each file the main agent reads and each edit it makes stays in its context for every later turn, so a
+cleanup done inline costs several times more by its end. The main agent runs Psalm and `summary.php`, spawns,
+and reads verdicts.
+
 Repeat until no in-scope issue is left:
 
 1. Pick the in-scope file with the most issues from the current report.
@@ -48,6 +54,9 @@ add new ones elsewhere, so the next file is picked from a fresh report; parallel
 stale results, and parallel Psalm runs compete for memory. Parallel work needs one git worktree per subagent.
 
 Collect the `needs-decision` items from the verdicts and keep going with the other files.
+
+Without a tool to spawn subagents, run the same loop yourself: per file, read only its `summary.php --file`
+listing and the lines around each issue, never the whole report or the whole file.
 
 ## Phase 3 — Gate
 

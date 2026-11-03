@@ -11,11 +11,19 @@ are relative to this skill's directory.
 
 ## Workflow
 
-1. **Baseline.** Run the whole project once. Before anything else, read and follow the phases of:
+1. **Baseline.** Run the whole project once, with the report in the directory
+   `php -r "echo sys_get_temp_dir();"` prints:
+
+   ```bash
+   vendor/bin/psalm --no-progress --output-format=count --report=<tmp>/psalm.json
+   php scripts/summary.php <tmp>/psalm.json
+   ```
+
+   Its first line, `N issues (…) in M files`, picks the path. Before any edit, read and follow the phases of:
+   - [references/cleanup.md](references/cleanup.md) when N is over 100 or M over 10, or for a request to
+     clean up a codebase;
    - [references/strictness.md](references/strictness.md) for a request to lower `errorLevel` or turn on a
-     stricter option;
-   - [references/cleanup.md](references/cleanup.md) for more than 100 issues, issues in more than 10 files,
-     or a request to clean up a codebase.
+     stricter option.
 2. **Fix** by the rules in [Fixing issues](#fixing-issues), rerunning Psalm on the files you changed.
 3. **Gate.** Run the whole project after your last edit. Done when it exits `0`, and every change to
    `psalm.xml`, the baseline or a `@psalm-suppress` in the diff is one the user agreed to.
@@ -54,10 +62,14 @@ for the inferred type with `@psalm-check-type` before editing: [references/debug
   a library guarantees but Psalm can't see; outside data gets a check.
 - **`null` / `false` results** (`find()`, `strpos`, `file_get_contents`, `preg_replace`, `json_encode`): handle
   them explicitly — throw, return early or use a default.
+- **Tests** keep every assertion they make. Narrow with the test library's own assertions
+  (`Assert::notNull()`, `assertIsString()`), which Psalm reads through `@psalm-assert`; an `if`/`throw`
+  in their place weakens the test.
 - **`list<T>`** after `array_filter`, `unset` or `array_diff`: the keys have gaps, wrap in `array_values()`.
 - **Missing or loose types**: add native types first, then a docblock for what PHP can't express:
   `list<User>`, `array{sku: string, qty: int}`, `@template T`, `@psalm-assert`. Syntax and which tags take
-  the `@psalm-` prefix: [references/annotations.md](references/annotations.md).
+  the `@psalm-` prefix, and where a docblock must sit to be read (above attributes):
+  [references/annotations.md](references/annotations.md).
 - **Unused code** (`Unused*`, `PossiblyUnused*`): decide per symbol. `@api` on the class is for code
   with a caller outside the analysed code — a framework, router, container config or the users of a
   library — and that caller should be visible somewhere (a config file, a docblock, an interface). A

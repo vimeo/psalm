@@ -187,9 +187,6 @@ function printCounts(string $title, array $counts, int $limit): void
 $options = parseArguments($argv);
 $issues = readReport($options['report']);
 
-if (!$options['info']) {
-    $issues = array_filter($issues, static fn(array $i): bool => ($i['severity'] ?? '') !== 'info');
-}
 if ($options['types'] !== []) {
     $issues = array_filter($issues, static fn(array $i): bool => in_array($i['type'] ?? '', $options['types'], true));
 }
@@ -216,10 +213,18 @@ if ($options['changed'] !== null) {
         return false;
     });
 }
+$hiddenInfo = 0;
+if (!$options['info']) {
+    $all = count($issues);
+    $issues = array_filter($issues, static fn(array $i): bool => ($i['severity'] ?? '') !== 'info');
+    $hiddenInfo = $all - count($issues);
+}
 $issues = array_values($issues);
 
 if ($issues === []) {
-    echo "No matching issues.\n";
+    echo $hiddenInfo > 0
+        ? "No matching errors; $hiddenInfo info issues match, shown with --info.\n"
+        : "No matching issues.\n";
     exit(0);
 }
 

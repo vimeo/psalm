@@ -18,6 +18,26 @@ The `@psalm-` prefix is for:
 - a type another tool misreads: keep `@return array` for it and add `@psalm-return array{id: int}`. Psalm
   takes the `@psalm-` version.
 
+## Placement
+
+Psalm reads the docblock only where PHP attaches it, and skips a misplaced one silently:
+
+```php
+/**
+ * @param list<int> $ids
+ * @return list<int>
+ */
+#[Test]
+public function ids(array $ids): array {}  // read: docblock above the attributes, one tag per line
+
+#[Test]
+/** @return list<int> */
+public function ids(): array {}            // ignored: docblock after an attribute
+
+/** @param list<int> $ids @return list<int> */
+function ids(array $ids): array {}         // @return ignored: second tag on the same line
+```
+
 ## Arrays
 
 | Type | Means |
