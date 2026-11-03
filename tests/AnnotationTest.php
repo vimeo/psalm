@@ -184,6 +184,20 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'globalDocblockStaticTypeDoesNotCrashAMethodCall' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @global static $bar
+                         * @return void
+                         */
+                        public function instance() {
+                            global $bar;
+
+                            $bar->instance();
+                        }
+                    }',
+            ],
             'varWithoutNameDoesNotTakeNameOfPreviousVarLine' => [
                 'code' => '<?php
                     /**
