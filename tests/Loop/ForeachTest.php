@@ -23,6 +23,23 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachDefinedBeforeEveryBreak' => [
+                'code' => '<?php
+                    foreach ([1, 2, 3, 4] as $_) {
+                        if (rand(0, 1)) {
+                            $car = "Audi";
+                            break;
+                        }
+
+                        $car = "Volvo";
+
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    echo $car;',
+            ],
             'foreachByReferenceWritesIntoTheItemsOfTheArray' => [
                 'code' => '<?php
                     $values = ["key" => ""];
@@ -1363,6 +1380,23 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'foreachBreakBeforeDefinitionAndBreakAfter' => [
+                'code' => '<?php
+                    foreach ([1, 2, 3, 4] as $_) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+
+                        $car = "Volvo";
+
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    echo $car;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:26',
+            ],
             'foreachKeyAndDestructuredValueNotNullAfterBreakingLoopOnNonEmptyArray' => [
                 'code' => '<?php
                     /** @param non-empty-array<int, array{int, string|null}> $argument_map */
