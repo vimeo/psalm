@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Internal;
 
 use Amp\Serialization\Serializer;
-use AssertionError;
 use DirectoryIterator;
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
@@ -118,13 +117,16 @@ final class Cache
             if ($f->isFile() && !$f->isDot()
                 && $f->getExtension() === 'hash'
             ) {
-                $header = file_get_contents($f->getPathname());
-                $parsed = $header === false ? null : self::parseHeader($header);
-                // A cut-short key hashes to another file name
-                if ($parsed === null || hash('xxh128', $parsed[1]) !== $f->getBasename('.hash')) {
+                $header = Providers::safeFileGetContents($f->getPathname());
+                $hash = self::parseHeader($header);
+                if ($hash === null) {
                     continue;
                 }
-                [$hash, $key] = $parsed;
+                $key = substr($header, 4 + strlen($hash));
+                // A cut-short key hashes to another file name
+                if (hash('xxh128', $key) !== $f->getBasename('.hash')) {
+                    continue;
+                }
                 Assert::notNull($this->getItem($key, $hash));
                 unlink($f->getPathname());
                 unlink(substr($f->getPathname(), 0, -5));
@@ -140,11 +142,10 @@ final class Cache
     /**
      * Header layout: "<hash length: 4 bytes><hash><key>", see saveItem().
      *
-     * @param string|null $expectedKey the key the header must belong to, null to accept any
-     * @return array{string, string}|null [hash, key], or null for an empty, truncated or overlong header
+     * @return string|null the stored hash, or null for an empty or truncated header
      * @psalm-pure
      */
-    private static function parseHeader(string $header, ?string $expectedKey = null): ?array
+    private static function parseHeader(string $header): ?string
     {
         if (strlen($header) < 4) {
             return null;
@@ -152,21 +153,11 @@ final class Cache
 
         $unpacked = unpack('V', $header);
         $hashLen = $unpacked === false ? null : ($unpacked[1] ?? null);
-        if (!is_int($hashLen)) {
+        if (!is_int($hashLen) || 4 + $hashLen > strlen($header)) {
             return null;
         }
 
-        $keyLen = strlen($header) - 4 - $hashLen;
-        if ($keyLen < 0 || ($expectedKey !== null && $keyLen !== strlen($expectedKey))) {
-            return null;
-        }
-
-        $key = substr($header, 4 + $hashLen);
-        if ($expectedKey !== null && $key !== $expectedKey) {
-            throw new AssertionError("Hash collision on key $expectedKey");
-        }
-
-        return [substr($header, 4, $hashLen), $key];
+        return substr($header, 4, $hashLen);
     }
 
     public function getHash(string $key): ?string
@@ -185,7 +176,10 @@ final class Cache
             return null;
         }
 
-        return self::parseHeader(Providers::safeFileGetContents("$path.hash"), $key)[0] ?? null;
+        $header = Providers::safeFileGetContents("$path.hash");
+        $stored = self::parseHeader($header);
+
+        return $stored !== null && substr($header, 4 + strlen($stored)) === $key ? $stored : null;
     }
 
     /** Whether contents are stored for the key, even if their header is unusable */
@@ -238,12 +232,16 @@ final class Cache
         }
 
         $header = stream_get_contents($fp);
-        $parsed = $header === false ? null : self::parseHeader($header, $key);
-        if ($parsed === null || ($hash !== null && $parsed[0] !== $hash)) {
+        assert($header !== false);
+        $stored = self::parseHeader($header);
+        if ($stored === null
+            || substr($header, 4 + strlen($stored)) !== $key
+            || ($hash !== null && $stored !== $hash)
+        ) {
             fclose($fp);
             return null;
         }
-        $hash = $parsed[0];
+        $hash = $stored;
 
         $content = file_get_contents($path);
         Assert::notFalse($content);
