@@ -333,12 +333,24 @@ abstract class CallAnalyzer
                         $method_storage = $documenting_method_storage;
                     } else {
                         // the override keeps its storage (named arguments, taint sinks), so its own templates and
-                        // those of the params it inherits are both inferred through the template result
+                        // those of the params it inherits are both inferred through the template result; a template
+                        // only re-documented params would bind stays unbound
                         $template_result->template_types += $method_storage->template_types ?? [];
 
-                        foreach ($documenting_method_storage->template_types as $template_name => $bounds) {
-                            $template_result->template_types[$template_name]
-                                = ($template_result->template_types[$template_name] ?? []) + $bounds;
+                        foreach ($method_params as $i => $param) {
+                            if (!$param->type || ($method_storage->params[$i]->has_docblock_type ?? true)) {
+                                continue;
+                            }
+
+                            foreach ($param->type->getTemplateTypes() as $template_type) {
+                                $bound = $documenting_method_storage->template_types
+                                    [$template_type->param_name][$template_type->defining_class] ?? null;
+
+                                if ($bound !== null) {
+                                    $template_result->template_types
+                                        [$template_type->param_name][$template_type->defining_class] = $bound;
+                                }
+                            }
                         }
                     }
                 }

@@ -903,6 +903,41 @@ final class DocblockInheritanceTest extends TestCase
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:37',
                 'error_levels' => ['ImplementedReturnTypeMismatch'],
             ],
+            'codeAfterCallsReturningTemplateOfRedocumentedParamIsAnalyzedWithoutNativeReturn' => [
+                'code' => '<?php
+                    abstract class Container {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $id
+                         * @param array<string, mixed> $options
+                         * @return T
+                         */
+                        abstract public function make($id, array $options = []);
+
+                        /**
+                         * @template T
+                         * @param callable(): T $factory
+                         * @param positive-int $n
+                         * @return T
+                         */
+                        abstract public function call(callable $factory, int $n);
+                    }
+
+                    final class MyContainer extends Container {
+                        /** @param string $id service id or class name */
+                        public function make($id, array $options = []) { throw new RuntimeException(); }
+
+                        /** @param callable $factory */
+                        public function call(callable $factory, int $n) { throw new RuntimeException(); }
+                    }
+
+                    function test(MyContainer $c): void {
+                        $c->make(stdClass::class);
+                        $c->call(fn() => 1, 1);
+                        echo strlen([]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:31:37',
+            ],
             'mixedNativeParamCollapsesInheritedType' => [
                 'code' => '<?php
                     class P {
