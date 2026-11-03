@@ -126,6 +126,40 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'keyedArrayWithKeysThatAreTypeOperators' => [
+                'code' => '<?php
+                    /**
+                     * @param array{as?: string, of: int, is: bool} $shape
+                     * @return array{as: string, of: int}
+                     */
+                    function read(array $shape): array {
+                        return [
+                            "as" => $shape["as"] ?? "x",
+                            "of" => $shape["of"],
+                        ];
+                    }
+
+                    /** @var array{as: int} $check */
+                    $check = ["as" => 1];
+                    $value = $check["as"];',
+                'assertions' => ['$value===' => 'int'],
+            ],
+            'typeOperatorsAfterAShapeKeyStayOperators' => [
+                'code' => '<?php
+                    /**
+                     * @template T as array{as: int}
+                     * @param T $shape
+                     * @return (T is array{as: 1} ? string : int)
+                     */
+                    function pick(array $shape): string|int {
+                        return $shape["as"] === 1 ? "one" : 2;
+                    }
+
+                    $result = pick(["as" => 2]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'floatLiteralKeysOutsideTheRangeOfAnIntAreInts' => [
                 'code' => '<?php
                     $big = [1.0e30 => 1];
