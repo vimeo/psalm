@@ -121,6 +121,7 @@ use function str_starts_with;
 use function stripslashes;
 use function strlen;
 use function strpos;
+use function strrpos;
 use function strtolower;
 use function strtr;
 use function substr;
@@ -1177,9 +1178,16 @@ final class TypeParser
                 $atomic_type = reset($generic_param_atomics);
 
                 if ($atomic_type instanceof TNamedObject) {
-                    if (defined($atomic_type->value)) {
+                    $constant_name = $atomic_type->value;
+
+                    // an unqualified constant of a namespace falls back to the global one
+                    if (!defined($constant_name) && ($separator_position = strrpos($constant_name, '\\')) !== false) {
+                        $constant_name = substr($constant_name, $separator_position + 1);
+                    }
+
+                    if (defined($constant_name)) {
                         /** @var mixed */
-                        $constant_value = constant($atomic_type->value);
+                        $constant_value = constant($constant_name);
 
                         if (!is_int($constant_value)) {
                             throw new TypeParseTreeException(
