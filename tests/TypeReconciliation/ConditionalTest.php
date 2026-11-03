@@ -21,6 +21,38 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'postIncrementComparedToAPositiveIntInALoop' => [
+                'code' => '<?php
+                    function f(int $remainder): void {
+                        if ($remainder > 0) {
+                            $i = 0;
+
+                            while (true) {
+                                if ($i++ >= $remainder) {
+                                    break;
+                                }
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedVariable'],
+            ],
+            'preIncrementComparedToAPositiveIntInALoop' => [
+                'code' => '<?php
+                    function f(int $remainder): void {
+                        if ($remainder > 0) {
+                            $i = 0;
+
+                            while (true) {
+                                if (++$i >= $remainder) {
+                                    break;
+                                }
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedVariable'],
+            ],
             'nonStrictConditionOnMixedOrNull' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $owners */
@@ -3499,6 +3531,18 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'literalIntComparedToAPositiveIntStillNarrows' => [
+                'code' => '<?php
+                    /** @param int<1, max> $r */
+                    function f(int $r): int {
+                        if (0 >= $r) {
+                            return 0;
+                        }
+
+                        return $r;
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'makeNonNullableNull' => [
                 'code' => '<?php
                     class A { }
