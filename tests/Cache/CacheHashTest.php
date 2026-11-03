@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Cache;
 
+use InvalidArgumentException;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -11,9 +12,11 @@ use Psalm\Config;
 use Psalm\Internal\Cache;
 use Psalm\Internal\RuntimeCaches;
 
+use function chmod;
 use function file_put_contents;
 use function glob;
 use function hash;
+use function is_writable;
 use function pack;
 use function substr;
 use function sys_get_temp_dir;
@@ -144,7 +147,10 @@ final class CacheHashTest extends TestCase
         yield 'total length one byte long' => [pack('V', 8) . 'the hash' . $key . 'x'];
     }
 
-    /** A writer that died mid-write leaves a header shorter than it declares, which must not throw. */
+    /**
+     * A writer that died mid-write leaves a header shorter than it declares, which must not throw,
+     * neither when reading nor when consolidating.
+     */
     #[DataProvider('provideTruncatedHeaders')]
     public function testGetItemTreatsATruncatedHeaderAsAMiss(string $header): void
     {
@@ -155,6 +161,10 @@ final class CacheHashTest extends TestCase
 
         $this->assertNull($this->newCache()->getItem($key, null));
         $this->assertNull($this->newCache()->getItem($key, 'the hash'));
+
+        $this->newCache()->consolidate();
+
+        $this->assertNull($this->newCache()->getItem($key, null));
     }
 
     /**
@@ -163,10 +173,40 @@ final class CacheHashTest extends TestCase
      */
     public static function provideTruncatedHeaders(): iterable
     {
+        yield 'empty' => [''];
         yield 'length prefix only' => [pack('V', 8)];
         yield 'declared length overruns the header' => [pack('V', 4096) . 'the hash'];
         yield 'hash cut short' => [pack('V', 8) . 'the h'];
         yield 'key cut short' => [pack('V', 8) . 'the hash' . 'truncated/'];
+    }
+
+    /**
+     * The header goes last, so a write that fails or is killed after the payload was touched leaves a
+     * miss, not a valid header of the new contents in front of the previous payload.
+     */
+    public function testFailedWriteDoesNotLeaveANewHeaderInFrontOfTheOldPayload(): void
+    {
+        $key = 'failed/write.php';
+
+        $this->newCache()->saveItem($key, ['old payload'], 'old hash');
+
+        $payload_path = $this->entryPath($key);
+        chmod($payload_path, 0444);
+        if (is_writable($payload_path)) {
+            chmod($payload_path, 0644);
+            $this->markTestSkipped('The payload stays writable (running as root?)');
+        }
+
+        try {
+            @$this->newCache()->saveItem($key, ['new payload'], 'new hash');
+        } catch (InvalidArgumentException) {
+            // the payload could not be written
+        } finally {
+            chmod($payload_path, 0644);
+        }
+
+        $this->assertNull($this->newCache()->getItem($key, 'new hash'));
+        $this->assertNull($this->newCache()->getHash($key));
     }
 
     private function entryPath(string $key): string

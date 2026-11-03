@@ -42,6 +42,7 @@ use const DIRECTORY_SEPARATOR;
 use const LOCK_SH;
 use const LOCK_UN;
 use const PHP_BINARY;
+use const PHP_OS_FAMILY;
 
 final class CacheConcurrencyTest extends TestCase
 {
@@ -115,6 +116,10 @@ final class CacheConcurrencyTest extends TestCase
      */
     public function testWriterWaitingForAReaderDoesNotEmptyTheEntry(): void
     {
+        if (PHP_OS_FAMILY === 'Windows') {
+            self::markTestSkipped('The files another process has open cannot be listed on Windows');
+        }
+
         $key = 'some/file/path.php';
 
         $this->newCache()->saveItem($key, ['old payload'], 'old hash');

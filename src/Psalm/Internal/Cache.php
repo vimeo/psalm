@@ -13,6 +13,8 @@ use RuntimeException;
 use Webmozart\Assert\Assert;
 
 use function assert;
+use function error_clear_last;
+use function error_get_last;
 use function fclose;
 use function fflush;
 use function file_exists;
@@ -33,7 +35,6 @@ use function pack;
 use function stream_get_contents;
 use function strlen;
 use function substr;
-use function substr_compare;
 use function unlink;
 use function unpack;
 use function usleep;
@@ -86,9 +87,15 @@ final class Cache
         $dir .= DIRECTORY_SEPARATOR . hash_final($hash);
 
         $this->dir = $dir.DIRECTORY_SEPARATOR;
-        // Another process may create the directory between the check and mkdir() (#4483)
-        if (!is_dir($this->dir) && !@mkdir($this->dir, 0777, true) && !is_dir($this->dir)) {
-            throw new RuntimeException('Failed to create ' . $this->dir . ' cache directory');
+        if (!is_dir($this->dir)) {
+            error_clear_last();
+            // Another process may create the directory between the check and mkdir() (#4483)
+            if (!@mkdir($this->dir, 0777, true) && !is_dir($this->dir)) {
+                $reason = error_get_last()['message'] ?? null;
+                throw new RuntimeException(
+                    'Failed to create ' . $this->dir . ' cache directory' . ($reason !== null ? ": $reason" : ''),
+                );
+            }
         }
 
         $lock = fopen($this->dir.'lock', 'c');
@@ -111,12 +118,13 @@ final class Cache
             if ($f->isFile() && !$f->isDot()
                 && $f->getExtension() === 'hash'
             ) {
-                $key = file_get_contents($f->getPathname());
-                Assert::notFalse($key);
-                /** @var int */
-                $hashLen = unpack('V', $key)[1];
-                $hash = substr($key, 4, $hashLen);
-                $key = substr($key, 4+$hashLen);
+                $header = file_get_contents($f->getPathname());
+                $parsed = $header === false ? null : self::parseHeader($header);
+                // A cut-short key hashes to another file name
+                if ($parsed === null || hash('xxh128', $parsed[1]) !== $f->getBasename('.hash')) {
+                    continue;
+                }
+                [$hash, $key] = $parsed;
                 Assert::notNull($this->getItem($key, $hash));
                 unlink($f->getPathname());
                 unlink(substr($f->getPathname(), 0, -5));
@@ -127,6 +135,38 @@ final class Cache
         file_put_contents($this->dir . 'consolidated', $consolidated, LOCK_EX);
         flock($this->lock, LOCK_UN);
         flock($this->lock, LOCK_SH);
+    }
+
+    /**
+     * Header layout: "<hash length: 4 bytes><hash><key>", see saveItem().
+     *
+     * @param string|null $expectedKey the key the header must belong to, null to accept any
+     * @return array{string, string}|null [hash, key], or null for an empty, truncated or overlong header
+     * @psalm-pure
+     */
+    private static function parseHeader(string $header, ?string $expectedKey = null): ?array
+    {
+        if (strlen($header) < 4) {
+            return null;
+        }
+
+        $unpacked = unpack('V', $header);
+        $hashLen = $unpacked === false ? null : ($unpacked[1] ?? null);
+        if (!is_int($hashLen)) {
+            return null;
+        }
+
+        $keyLen = strlen($header) - 4 - $hashLen;
+        if ($keyLen < 0 || ($expectedKey !== null && $keyLen !== strlen($expectedKey))) {
+            return null;
+        }
+
+        $key = substr($header, 4 + $hashLen);
+        if ($expectedKey !== null && $key !== $expectedKey) {
+            throw new AssertionError("Hash collision on key $expectedKey");
+        }
+
+        return [substr($header, 4, $hashLen), $key];
     }
 
     public function getHash(string $key): ?string
@@ -145,26 +185,7 @@ final class Cache
             return null;
         }
 
-        // "<hash length: 4 bytes><hash><key>", see saveItem()
-        $header = Providers::safeFileGetContents("$path.hash");
-        if (strlen($header) < 4) {
-            return null;
-        }
-
-        $unpacked = unpack('V', $header);
-        if ($unpacked === false || !isset($unpacked[1]) || !is_int($unpacked[1])) {
-            return null;
-        }
-
-        $hashLen = $unpacked[1];
-        if (strlen($header) !== 4 + $hashLen + strlen($key)) {
-            return null;
-        }
-        if (substr_compare($header, $key, 4 + $hashLen) !== 0) {
-            throw new AssertionError("Hash collision on key $key");
-        }
-
-        return substr($header, 4, $hashLen);
+        return self::parseHeader(Providers::safeFileGetContents("$path.hash"), $key)[0] ?? null;
     }
 
     /** Whether contents are stored for the key, even if their header is unusable */
@@ -216,30 +237,13 @@ final class Cache
             throw new RuntimeException("Could not acquire lock for $path.hash");
         }
 
-        $fileHash = stream_get_contents($fp);
-        // Shorter than the length prefix: a writer died after truncating the header
-        if ($fileHash === false || strlen($fileHash) < 4) {
+        $header = stream_get_contents($fp);
+        $parsed = $header === false ? null : self::parseHeader($header, $key);
+        if ($parsed === null || ($hash !== null && $parsed[0] !== $hash)) {
             fclose($fp);
             return null;
         }
-        // A writer that died mid-write leaves a header shorter than it declares
-        $hashLen = $hash === null ? unpack('V', $fileHash)[1] : strlen($hash);
-        assert(is_int($hashLen));
-        if (strlen($fileHash) !== 4 + $hashLen + strlen($key)) {
-            fclose($fp);
-            return null;
-        }
-        if ($hash === null) {
-            $hash = substr($fileHash, 4, $hashLen);
-            if (substr_compare($fileHash, $key, 4 + $hashLen) !== 0) {
-                throw new AssertionError("Hash collision on key $key");
-            }
-        } elseif (substr_compare($fileHash, $hash, 4, $hashLen) !== 0
-            || substr_compare($fileHash, $key, 4 + $hashLen) !== 0
-        ) {
-            fclose($fp);
-            return null;
-        }
+        $hash = $parsed[0];
 
         $content = file_get_contents($path);
         Assert::notFalse($content);
@@ -266,15 +270,18 @@ final class Cache
         }
         if ($this->persistent) {
             $path = $this->dir . hash('xxh128', $key);
+            $header = pack('V', strlen($hash)) . $hash . $key;
+            // Serialized before locking to keep the exclusive lock short
+            $contents = $this->serializer->serialize($item);
             // 'c' does not truncate: that must wait until the lock is held, or readers see an empty header
             $f = fopen("$path.hash", 'c');
             Assert::notFalse($f);
             flock($f, LOCK_EX);
+            // The header goes last: a writer killed anywhere in between leaves an empty or short header,
+            // which readers treat as a miss, instead of a valid header in front of the previous payload
             ftruncate($f, 0);
-            Assert::eq(fwrite($f, pack('V', strlen($hash))), 4);
-            Assert::eq(fwrite($f, $hash), strlen($hash));
-            Assert::eq(fwrite($f, $key), strlen($key));
-            file_put_contents($path, $this->serializer->serialize($item));
+            Assert::eq(file_put_contents($path, $contents), strlen($contents));
+            Assert::eq(fwrite($f, $header), strlen($header));
             fflush($f);
             flock($f, LOCK_UN);
             fclose($f);

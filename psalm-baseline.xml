@@ -1409,14 +1409,6 @@
     <MixedAssignment>
       <code><![CDATA[$dep]]></code>
     </MixedAssignment>
-    <PossiblyInvalidArrayAccess>
-      <code><![CDATA[unpack('V', $fileHash)[1]]]></code>
-      <code><![CDATA[unpack('V', $key)[1]]]></code>
-    </PossiblyInvalidArrayAccess>
-    <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[unpack('V', $fileHash)[1]]]></code>
-      <code><![CDATA[unpack('V', $key)[1]]]></code>
-    </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Cli/LanguageServer.php">
     <InvalidArgument>
