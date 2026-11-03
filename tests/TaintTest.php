@@ -5441,6 +5441,23 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'taintOfAPositionalArgumentAfterTheFirstOneAVariadicCollects' => [
+                'code' => '<?php
+                    /** @psalm-taint-source input */
+                    function tainted(): string {
+                        return "attacker";
+                    }
+
+                    /** @psalm-impure */
+                    function v(string $a = "", string ...$rest): void {
+                        foreach ($rest as $r) {
+                            system($r);
+                        }
+                    }
+
+                    v("", "", tainted());',
+                'error_message' => 'TaintedShell',
+            ],
             'taintAParameterWithItsNamedArgument' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-sink html $a */

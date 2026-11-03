@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -1916,6 +1917,39 @@ final class ArgumentAnalyzer
         }
     }
 
+    /**
+     * A variadic parameter collects the arguments after its own position: their nodes (keyed by the call position)
+     * flow into the node of the parameter, which the body of the method reads
+     */
+    private static function linkVariadicArgumentToParameter(
+        DataFlowGraph $graph,
+        FunctionLikeStorage $function_storage,
+        FunctionLikeParameter $function_param,
+        string $cased_method_id,
+        int $argument_offset,
+        ?CodeLocation $specialization_location,
+        DataFlowNode $method_node,
+    ): void {
+        $declared_offset = DataFlowNode::getDeclaredParameterOffset($function_storage, $function_param);
+
+        if ($declared_offset === null
+            || DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset)
+                <= $declared_offset
+        ) {
+            return;
+        }
+
+        $variadic_node = DataFlowNode::getForMethodArgument(
+            $cased_method_id,
+            $declared_offset,
+            $function_storage,
+            $specialization_location,
+        );
+
+        $graph->addNode($variadic_node);
+        $graph->addPath($method_node, $variadic_node, 'arg');
+    }
+
     private static function processTaintedness(
         StatementsAnalyzer $statements_analyzer,
         string $cased_method_id,
@@ -2186,6 +2220,18 @@ final class ArgumentAnalyzer
         }
 
         $graph->addNode($method_node);
+
+        if ($function_param->is_variadic && $function_storage && $called_body_suffix === null) {
+            self::linkVariadicArgumentToParameter(
+                $graph,
+                $function_storage,
+                $function_param,
+                $cased_method_id,
+                $argument_offset,
+                $specialization_location,
+                $method_node,
+            );
+        }
 
         if ($taint_flow_graph && $function_storage && !$in_call_map) {
             $callable_param_method_id = $cased_method_id;
