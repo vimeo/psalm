@@ -9,6 +9,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\Path;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Type\TaintKind;
@@ -18,10 +19,13 @@ use function array_keys;
 use function array_reverse;
 use function json_encode;
 use function ksort;
+use function memory_get_usage;
 use function range;
+use function serialize;
 use function sort;
 use function str_repeat;
 use function str_starts_with;
+use function unserialize;
 
 use const JSON_THROW_ON_ERROR;
 
@@ -411,5 +415,31 @@ final class TaintFlowGraphTest extends TestCase
         }
 
         return $issue_types;
+    }
+
+    /**
+     * A forked worker's graph reaches the main process serialized, with hundreds of thousands of paths on a large
+     * codebase. Unserializing an object without __unserialize() also builds a table of its properties
+     * (https://github.com/php/php-src/issues/10126), which takes more memory than the path itself.
+     */
+    public function testUnserializedPathsHaveNoPropertyTable(): void
+    {
+        $paths = [];
+        foreach (range(1, 10_000) as $i) {
+            $paths[] = new Path('arg', $i, TaintKind::INPUT_HTML);
+        }
+
+        $serialized = serialize($paths);
+        unset($paths);
+
+        $before = memory_get_usage();
+        /** @var list<Path> $paths */
+        $paths = unserialize($serialized);
+        $bytes_per_path = (memory_get_usage() - $before) / 10_000;
+
+        // ~590 bytes a path with a property table, ~210 without
+        $this->assertLessThan(400, $bytes_per_path);
+        $this->assertSame(TaintKind::INPUT_HTML, $paths[0]->added_taints);
+        $this->assertSame(10_000, $paths[9_999]->length);
     }
 }
