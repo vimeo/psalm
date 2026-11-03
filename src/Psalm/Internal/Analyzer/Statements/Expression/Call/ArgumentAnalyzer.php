@@ -521,6 +521,21 @@ final class ArgumentAnalyzer
                 $unpacked_atomic_array = $arg_value_type->getArray();
                 $arg_key_allowed = true;
 
+                foreach ($arg_value_type->getAtomicTypes() as $unpacked_atomic_type) {
+                    if (!$unpacked_atomic_type->isIterable($codebase)) {
+                        IssueBuffer::maybeAdd(
+                            new PossiblyInvalidArgument(
+                                'Tried to unpack non-iterable ' . $arg_value_type->getId(),
+                                new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                                $cased_method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+
+                        break;
+                    }
+                }
+
                 if ($unpacked_atomic_array instanceof TKeyedArray) {
                     if (!$allow_named_args && !$unpacked_atomic_array->getGenericKeyType()->isInt()) {
                         $arg_key_allowed = false;
