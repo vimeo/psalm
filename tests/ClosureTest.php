@@ -22,6 +22,65 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'closureByRefWriteBeforeAnEarlyReturnIsKept' => [
+                'code' => '<?php
+                    $hasOne = false;
+
+                    $f = static function (int $x) use (&$hasOne): int {
+                        if ($x === 1) {
+                            $hasOne = true;
+
+                            return 0;
+                        }
+
+                        return $x;
+                    };',
+                'assertions' => [
+                    '$hasOne' => 'bool',
+                ],
+            ],
+            'closureByRefWriteBeforeEachReturnIsKept' => [
+                'code' => '<?php
+                    $count = 0;
+
+                    $f = static function (int $x) use (&$count): int {
+                        if ($x === 1) {
+                            $count = 5;
+
+                            return 0;
+                        }
+
+                        if ($x === 2) {
+                            $count = 7;
+
+                            return 1;
+                        }
+
+                        return $x;
+                    };',
+                'assertions' => [
+                    '$count===' => '0|5|7',
+                ],
+            ],
+            'closureByRefVariableNotWrittenBeforeAReturnKeepsItsType' => [
+                'code' => '<?php
+                    $flag = false;
+                    $other = 1;
+
+                    $f = static function (int $x) use (&$flag, &$other): int {
+                        if ($x === 1) {
+                            $other = 2;
+
+                            return 0;
+                        }
+
+                        return $x;
+                    };',
+                'assertions' => [
+                    '$flag' => 'false',
+                    '$other' => 'int',
+                ],
+            ],
             'byRefUseVarUnsetInClosure' => [
                 'code' => '<?php
                     function reserve(): Closure {

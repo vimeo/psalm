@@ -62,6 +62,25 @@ final class ReturnAnalyzer
         PhpParser\Node\Stmt\Return_ $stmt,
         Context $context,
     ): void {
+        self::analyzeReturn($statements_analyzer, $stmt, $context);
+
+        // what a closure wrote to a variable it captures by reference stays written when it returns
+        $closure = $statements_analyzer->getSource();
+
+        if ($closure instanceof ClosureAnalyzer) {
+            foreach ($context->captured_by_ref as $var_id => $_) {
+                if (isset($context->vars_in_scope[$var_id])) {
+                    $closure->captured_by_ref_types_at_return[$var_id][] = $context->vars_in_scope[$var_id];
+                }
+            }
+        }
+    }
+
+    private static function analyzeReturn(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\Return_ $stmt,
+        Context $context,
+    ): void {
         $doc_comment = $stmt->getDocComment();
 
         $var_comments = [];

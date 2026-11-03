@@ -568,6 +568,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 // closure wrote through the reference before is not known anymore
                 $byref_type = $ref_context->vars_in_scope[$var_id] ?? Type::getMixed();
 
+                if ($this instanceof ClosureAnalyzer && isset($this->captured_by_ref_types_at_return[$var_id])) {
+                    $byref_type = Type::combineUnionTypeArray(
+                        [$byref_type, ...$this->captured_by_ref_types_at_return[$var_id]],
+                        $codebase,
+                    );
+                }
+
                 $byref_vars[$var_id] = $byref_type;
                 $context->vars_in_scope[$var_id] = $byref_type;
             }

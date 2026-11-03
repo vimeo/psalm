@@ -85,6 +85,13 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
      */
     public array $captured_by_ref_writes = [];
 
+    /**
+     * The types of the variables captured by reference where the closure body returns.
+     *
+     * @var array<string, list<Union>>
+     */
+    public array $captured_by_ref_types_at_return = [];
+
     public function getRecursiveVarId(): ?string
     {
         /** @var mixed $var_id */
