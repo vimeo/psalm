@@ -152,7 +152,10 @@ final class MethodCallReturnTypeFetcher
             }
         }
 
-        if (InternalCallMapHandler::inCallMap((string) $call_map_id)) {
+        // Enum factories and cases() need value-dependent resolution, not the interface's generic static type.
+        if (InternalCallMapHandler::inCallMap((string) $call_map_id)
+            && !$codebase->classlike_storage_provider->get($fq_class_name)->is_enum
+        ) {
             if (($template_result->lower_bounds || $class_storage->stubbed)
                 && ($method_storage = ($class_storage->methods[$method_id->method_name] ?? null))
                 && $method_storage->return_type

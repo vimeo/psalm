@@ -20,6 +20,46 @@ final class EnumTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'instanceEnumCallsRetainCaseTypes' => [
+                'code' => '<?php
+                    enum Status: string {
+                        case Open = "o";
+                        case Closed = "c";
+                    }
+                    enum Flag {
+                        case On;
+                        case Off;
+                    }
+                    enum IntStatus: int {
+                        case Open = 1;
+                        case Closed = 2;
+                    }
+
+                    $from = Status::Open->from("c");
+                    $tryFrom = Status::Open->tryFrom("c");
+                    $missing = Status::Open->tryFrom("missing");
+                    $backedCases = Status::Open->cases();
+                    $unitCases = Flag::On->cases();
+                    $intFrom = IntStatus::Open->from(2);
+                    $intTryFrom = IntStatus::Open->tryFrom(2);
+                    /** @var Status */
+                    $receiver = Status::Open;
+                    $broadFrom = $receiver->from("c");
+                    $broadCases = $receiver->cases();',
+                'assertions' => [
+                    '$from===' => 'enum(Status::Closed)',
+                    '$tryFrom===' => 'enum(Status::Closed)|null',
+                    '$missing===' => 'null',
+                    '$backedCases===' => 'list{enum(Status::Open), enum(Status::Closed)}',
+                    '$unitCases===' => 'list{enum(Flag::On), enum(Flag::Off)}',
+                    '$intFrom===' => 'enum(IntStatus::Closed)',
+                    '$intTryFrom===' => 'enum(IntStatus::Closed)|null',
+                    '$broadFrom===' => 'enum(Status::Closed)',
+                    '$broadCases===' => 'list{enum(Status::Open), enum(Status::Closed)}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'example' => [
                 'code' => '<?php
                     interface Colourful {
