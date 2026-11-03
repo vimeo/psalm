@@ -50,9 +50,13 @@ for the inferred type with `@psalm-check-type` before editing: [references/debug
   library — and that caller should be visible somewhere (a config file, a docblock, an interface). A
   method or property of application code with no such caller is dead code: delete it. When a deletion
   reaches a constructor parameter or a field filled from the database or config, name it in your summary
-  so the user can keep it.
+  so the user can keep it. `ClassMustBeFinal` is the same decision: `@api` on a class others may extend,
+  such as a library's public classes; `final` otherwise.
 - **SECURITY**: fix the data flow — bound parameters for SQL, `htmlspecialchars()` for HTML,
-  `escapeshellarg()` for shell. Other sinks and sanitisers: [references/taint.md](references/taint.md).
+  `escapeshellarg()` for shell. Psalm can't follow every check: after one it can't see (a path resolved
+  and kept inside an allowed directory, a project's own escaping function), declare it with
+  `@psalm-taint-escape` for exactly the taint kinds the check removes. Output of command-line code:
+  `@psalm-cli-only`. More sinks and sanitisers: [references/taint.md](references/taint.md).
 - **Suppression is the user's call.** `@psalm-suppress`, `issueHandlers`, `errorLevel`,
   `runTaintAnalysis="false"` and baseline changes hide issues; propose one with the reason and wait for a yes
   unless the user already asked for it. Scope an agreed suppression to one statement:
@@ -60,12 +64,13 @@ for the inferred type with `@psalm-check-type` before editing: [references/debug
 - **Many mechanical issues** (`MissingReturnType`, `MissingParamType`, `UnusedVariable`, …): Psalter fixes
   them. See [references/fixing.md](references/fixing.md), which also covers baselines.
 
-Done when a run on the whole project exits `0`, and every change to `psalm.xml`, the baseline or a
-`@psalm-suppress` in the diff is one the user agreed to.
+Done when a run on the whole project after your last edit exits `0`, and every change to `psalm.xml`, the
+baseline or a `@psalm-suppress` in the diff is one the user agreed to.
 
 ## When stuck
 
 - A wrong or `mixed` type you can't place, a crash or a hang: [references/debugging.md](references/debugging.md).
-- A class, function or extension Psalm doesn't know: [references/config.md](references/config.md) (stubs,
-  plugins, `ext-*`, `projectFiles` vs `extraFiles`).
+- A class, function or extension Psalm doesn't know (`UndefinedClass` for code that exists, `mixed` from an
+  extension): code Psalm should know but not check goes in `<extraFiles>`; stubs, plugins and `ext-*` in
+  [references/config.md](references/config.md).
 - Psalm looks wrong: [references/bug-report.md](references/bug-report.md).

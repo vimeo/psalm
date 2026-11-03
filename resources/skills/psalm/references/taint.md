@@ -39,6 +39,28 @@ Fix the flow at the sink, for the kind of sink:
 A value can only carry the taints its type can hold: `(int) $_GET['id']` carries no SQL or HTML, and after
 `in_array($sort, ['name', 'date'], true)` the value is one of the literals and carries nothing.
 
+A check Psalm can't follow still needs declaring. A path kept inside a directory:
+
+```php
+$path = realpath($this->directory . '/' . $name);
+if ($path === false || !str_starts_with($path, $this->directory . DIRECTORY_SEPARATOR)) {
+    return null;
+}
+/**
+ * @psalm-taint-escape file
+ * @psalm-taint-escape ssrf
+ * @psalm-taint-escape url_path
+ * @psalm-taint-escape url_component
+ */
+$safe = $path;
+return file_get_contents($safe);
+```
+
+Name each kind the check removes and only those: a path resolved inside the directory is no longer a
+user-chosen path, and `realpath()` never returns a URL. The kinds are listed in
+`docs/security_analysis/index.md`; `input` names them all at once and fits only a function that really
+removes every kind.
+
 ## A project-specific sanitiser or sink
 
 ```php
