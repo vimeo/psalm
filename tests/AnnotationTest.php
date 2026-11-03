@@ -184,6 +184,21 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'globalDocblockClassResolvedThroughUse' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    use Exception as Err;
+
+                    /**
+                     * @global Err $bar
+                     * @global \Throwable $baz
+                     */
+                    function foo(): void {
+                        global $bar, $baz;
+                        echo $bar->getMessage() . $baz->getMessage();
+                    }',
+            ],
             'varWithoutNameDoesNotTakeNameOfPreviousVarLine' => [
                 'code' => '<?php
                     /**
@@ -1492,6 +1507,37 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'globalDocblockClassWithWrongCasing' => [
+                'code' => '<?php
+                    /**
+                     * @global throwable $bar
+                     */
+                    function foo(): void {
+                        global $bar;
+                    }',
+                'error_message' => 'InvalidClass',
+            ],
+            'globalDocblockUndefinedClass' => [
+                'code' => '<?php
+                    /**
+                     * @global thahjhbe $bar
+                     */
+                    function foo(): void {
+                        global $bar;
+                    }',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
+            'globalDocblockUndefinedClassAfterAValidGlobal' => [
+                'code' => '<?php
+                    /**
+                     * @global Exception $bar
+                     * @global thahjhbe $baz
+                     */
+                    function foo(): void {
+                        global $bar, $baz;
+                    }',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
             'invalidTypeInPromotedPropertyDocblock' => [
                 'code' => '<?php
                     class Foo {

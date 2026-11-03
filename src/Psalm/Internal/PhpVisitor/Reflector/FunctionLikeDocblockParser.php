@@ -197,6 +197,8 @@ final class FunctionLikeDocblockParser
                                 0,
                                 $offset - $comment->getStartFilePos(),
                             ),
+                            'start' => $offset,
+                            'end' => $offset + strlen($line_parts[0]),
                         ];
                     }
                 } else {

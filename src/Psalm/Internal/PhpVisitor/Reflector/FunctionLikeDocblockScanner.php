@@ -321,6 +321,15 @@ final class FunctionLikeDocblockScanner
                         $type_aliases,
                     ),
                     null,
+                    [],
+                    [],
+                    true,
+                );
+                $storage->global_type_locations[$global['name']] = new DocblockTypeLocation(
+                    $file_scanner,
+                    $global['start'],
+                    $global['end'],
+                    $global['line_number'],
                 );
             } catch (TypeParseTreeException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(

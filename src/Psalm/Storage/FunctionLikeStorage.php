@@ -6,6 +6,7 @@ namespace Psalm\Storage;
 
 use Override;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Issue\CodeIssue;
 use Psalm\Type\Union;
@@ -94,6 +95,11 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * @var array<string, Union>
      */
     public array $global_types = [];
+
+    /**
+     * @var array<string, DocblockTypeLocation>
+     */
+    public array $global_type_locations = [];
 
     /**
      * An array holding the class template "as" types.
