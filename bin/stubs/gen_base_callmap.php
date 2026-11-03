@@ -36,6 +36,7 @@ function typeToString($reflection_type, string $defaultType): string
         throw new LogicException('Unexpected reflection class ' . get_class($reflection_type) . ' found.');
     }
 
+    // Union members already include null; mixed and null also need no nullable suffix.
     if (!$reflection_type instanceof ReflectionUnionType
         && $reflection_type->allowsNull()
         && $type !== 'mixed'
@@ -151,6 +152,7 @@ foreach (get_defined_functions() as $sub) {
     }
 }
 
+// Interfaces are not included in get_declared_classes(); their signatures need separate callmap entries.
 foreach (array_merge(get_declared_classes(), get_declared_interfaces()) as $class) {
     $refl = new ReflectionClass($class);
 
