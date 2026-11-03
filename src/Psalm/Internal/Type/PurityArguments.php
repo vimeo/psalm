@@ -144,14 +144,15 @@ final class PurityArguments
      * class whose templates have no bounds but purity bounds is no more specific than a use without
      * arguments, which any instance fits: those bounds stand for whatever the instance binds the
      * templates to, and are not compared invariantly. The bound of a bounded type template
-     * (`@template T as object`) is still the argument, as it is without purity templates.
+     * (`@template T as object`) is still the argument, as it is without purity templates. Either way
+     * the argument is marked as filled from the template, which any `*` argument fits.
      *
      * @psalm-mutation-free
      */
     public static function getOmittedArgument(Union $bound): Union
     {
         return $bound->isMixed() || Capabilities::isPurityType($bound)
-            ? $bound->setProperties(['had_template' => true])
-            : $bound;
+            ? $bound->setProperties(['had_template' => true, 'from_template_default' => true])
+            : $bound->setProperties(['from_template_default' => true]);
     }
 }

@@ -9,6 +9,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TGenericObject;
@@ -68,7 +69,7 @@ final class YieldFromAnalyzer
                         && strtolower($atomic_type->value) === 'generator'
                         && isset($atomic_type->type_params[3])
                     ) {
-                        $yield_from_type = $atomic_type->type_params[3];
+                        $yield_from_type = StarProjection::readAs($atomic_type->type_params[3]);
                     } elseif ($atomic_type instanceof TArray) {
                         $yield_from_type = Type::getNull();
                     } elseif ($atomic_type instanceof TKeyedArray) {

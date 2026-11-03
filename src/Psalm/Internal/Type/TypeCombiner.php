@@ -51,6 +51,7 @@ use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TScalar;
+use Psalm\Type\Atomic\TStarProjection;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
@@ -106,6 +107,26 @@ final class TypeCombiner
             return new Union([$types[0]]);
         }
 
+        foreach ($types as $type) {
+            if ($type instanceof TStarProjection) {
+                return self::combineIntoStar($types, $codebase);
+            }
+        }
+
+        return self::combineTypes($types, $codebase, $overwrite_empty_array, $allow_mixed_union, $literal_limit);
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     * @param  non-empty-list<Atomic> $types
+     */
+    private static function combineTypes(
+        array $types,
+        ?Codebase $codebase,
+        bool $overwrite_empty_array,
+        bool $allow_mixed_union,
+        int $literal_limit,
+    ): Union {
         $combination = new TypeCombination();
 
         $from_docblock = false;
@@ -182,8 +203,7 @@ final class TypeCombiner
             && !$combination->extra_types
         ) {
             $array_param_types = $combination->array_type_params;
-            $traversable_param_types = $combination->builtin_type_params['Traversable']
-                ?? [Type::getMixed(), Type::getMixed()];
+            $traversable_param_types = self::getTraversableParamsForIterable($combination);
 
             $combined_param_types = [];
 
@@ -408,6 +428,54 @@ final class TypeCombiner
     }
 
     /**
+     * Combining type arguments (`Box<*>|Box<int>`), `*` absorbs the other ones: the unknown type is any of the
+     * types known of each `*` or given next to it, or nothing narrower than the template's bound when one `*` is
+     * not known to be more
+     *
+     * @param  non-empty-list<Atomic> $types
+     * @psalm-external-mutation-free
+     */
+    private static function combineIntoStar(array $types, ?Codebase $codebase): Union
+    {
+        $known_types = [];
+        $from_docblock = false;
+
+        foreach ($types as $type) {
+            $from_docblock = $from_docblock || $type->from_docblock;
+
+            if (!$type instanceof TStarProjection) {
+                $known_types[] = $type;
+            } elseif ($type->as === null) {
+                return new Union([new TStarProjection(null, $from_docblock)]);
+            } else {
+                $known_types = [...$known_types, ...array_values($type->as->getAtomicTypes())];
+            }
+        }
+
+        return new Union([new TStarProjection(
+            self::combine($known_types, $codebase, false, false),
+            $from_docblock,
+        )]);
+    }
+
+    /**
+     * The key and value types of the combined Traversables, folded into a builtin iterable with their `*` arguments
+     * read, like `iterable<*>` in TypeParser::getTypeFromGenericTree()
+     *
+     * @return list<Union>
+     * @psalm-mutation-free
+     */
+    private static function getTraversableParamsForIterable(TypeCombination $combination): array
+    {
+        $traversable_params = $combination->builtin_type_params['Traversable'] ?? [];
+
+        return [
+            StarProjection::readAs($traversable_params[0] ?? Type::getMixed()),
+            StarProjection::readAs($traversable_params[1] ?? Type::getMixed()),
+        ];
+    }
+
+    /**
      * @psalm-external-mutation-free
      * @psalm-suppress ImpurePropertyAssignment We're not actually mutating any external instance
      */
@@ -557,7 +625,7 @@ final class TypeCombiner
             $traversable_params = $combination->builtin_type_params['Traversable'] ?? null;
             self::addIterablePurity($combination, $traversable_params[2] ?? Type::getImpure());
             $traversable_params = isset($traversable_params[1])
-                ? [$traversable_params[0], $traversable_params[1]]
+                ? [StarProjection::readAs($traversable_params[0]), StarProjection::readAs($traversable_params[1])]
                 : null;
 
             if (!isset($combination->builtin_type_params['iterable'])) {
@@ -695,7 +763,8 @@ final class TypeCombiner
                 /** @psalm-suppress PropertyTypeCoercion */
                 $combination->builtin_type_params[$type_key][$i] = Type::combineUnionTypes(
                     $combination->builtin_type_params[$type_key][$i] ?? null,
-                    $type_param,
+                    // see getTraversableParamsForIterable()
+                    $type_key === 'iterable' ? StarProjection::readAs($type_param) : $type_param,
                     $codebase,
                     $overwrite_empty_array,
                 );

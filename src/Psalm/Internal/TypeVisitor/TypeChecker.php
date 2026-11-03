@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityArguments;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -42,6 +43,7 @@ use Psalm\Type\Atomic\TGlobalConstant;
 use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TStarProjection;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\TypeNode;
@@ -108,6 +110,11 @@ final class TypeChecker extends TypeVisitor
         }
 
         if ($type->checked) {
+            return self::DONT_TRAVERSE_CHILDREN;
+        }
+
+        // what is known of a `*` is the bound of its template, checked where the template is declared
+        if ($type instanceof TStarProjection) {
             return self::DONT_TRAVERSE_CHILDREN;
         }
 
@@ -385,6 +392,15 @@ final class TypeChecker extends TypeVisitor
                         $template_result,
                         $codebase,
                     );
+
+                    // a `*` argument fits any bound, and stands for its bound in the bounds of the other templates
+                    // (`TKey of key-of<TArray>` on a `Lookup<*, 'a'>`)
+                    if (StarProjection::isStar($type_param)) {
+                        $template_result->lower_bounds[$expected_template_name][$defining_class][]
+                            = new TemplateBound($expected_type_param);
+
+                        continue;
+                    }
 
                     $type_param = TypeExpander::expandUnion(
                         $codebase,

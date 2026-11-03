@@ -37,6 +37,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\StarProjectionVisitor;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\InvalidPassByReference;
@@ -1521,8 +1522,14 @@ final class ArgumentsAnalyzer
                     );
 
                     if ($template_result->lower_bounds) {
+                        // the caller reads what the function-like leaves in the parameter, like a return type
                         $original_by_ref_out_type = TemplateInferredTypeReplacer::replace(
-                            $original_by_ref_out_type,
+                            StarProjectionVisitor::project(
+                                $original_by_ref_out_type,
+                                $template_result,
+                                $codebase,
+                                false,
+                            ),
                             $template_result,
                             $codebase,
                         );

@@ -30,6 +30,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\StarProjectionVisitor;
 use Psalm\Issue\IfThisIsMismatch;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
@@ -468,7 +469,12 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             }
 
             $assertionsResolver = new AssertionsFromInheritanceResolver($codebase);
-            $assertions = $assertionsResolver->resolve($method_storage, $class_storage);
+            // the types a method asserts are read from the receiver, like its return type
+            $assertions = StarProjectionVisitor::projectAssertions(
+                $assertionsResolver->resolve($method_storage, $class_storage),
+                $template_result,
+                $codebase,
+            );
 
             if ($assertions) {
                 self::applyAssertionsToContext(
@@ -489,7 +495,11 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $lhs_var_id,
                         $codebase,
                     ),
-                    $method_storage->if_true_assertions,
+                    StarProjectionVisitor::projectAssertions(
+                        $method_storage->if_true_assertions,
+                        $template_result,
+                        $codebase,
+                    ),
                 );
                 if ($lhs_var_id === null) {
                     $possibilities = array_filter(
@@ -512,7 +522,11 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $lhs_var_id,
                         $codebase,
                     ),
-                    $method_storage->if_false_assertions,
+                    StarProjectionVisitor::projectAssertions(
+                        $method_storage->if_false_assertions,
+                        $template_result,
+                        $codebase,
+                    ),
                 );
                 if ($lhs_var_id === null) {
                     $possibilities = array_filter(

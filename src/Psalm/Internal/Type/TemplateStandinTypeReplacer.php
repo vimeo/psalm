@@ -27,7 +27,9 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
@@ -141,6 +143,7 @@ final class TemplateStandinTypeReplacer
         }
 
         $had_template = false;
+        $is_unknown_mixed = false;
 
         foreach ($original_atomic_types as $key => $atomic_type) {
             $atomic_types = [...$atomic_types, ...self::handleAtomicStandin(
@@ -160,6 +163,15 @@ final class TemplateStandinTypeReplacer
                 count($original_atomic_types) === 1,
                 $had_template,
             )];
+
+            $is_unknown_mixed = $is_unknown_mixed
+                || ($add_lower_bound
+                    && $atomic_type instanceof TTemplateParam
+                    && StarProjection::readsUnknownMixed($atomic_type, $template_result));
+        }
+
+        if ($replace && $is_unknown_mixed) {
+            $atomic_types = [new TMixed()];
         }
 
         if ($replace) {
@@ -245,6 +257,8 @@ final class TemplateStandinTypeReplacer
                 $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
                 $codebase,
             );
+
+            $most_specific_type = StarProjection::readOrWrite($most_specific_type, $atomic_type->as, $add_lower_bound);
 
             return array_values($most_specific_type->getAtomicTypes());
         }
@@ -677,7 +691,11 @@ final class TemplateStandinTypeReplacer
         int $depth,
         bool &$had_template,
     ): array {
-        if ($atomic_type->defining_class === $calling_class) {
+        // the class's own template stays itself inside the class, unless another instance binds it to `*`
+        // (`$this->next->set($this->value)` with a `Node<*> $next`)
+        if ($atomic_type->defining_class === $calling_class
+            && !StarProjection::isTemplateBoundToStar($atomic_type, $template_result)
+        ) {
             return [$atomic_type];
         }
 
@@ -733,7 +751,11 @@ final class TemplateStandinTypeReplacer
         if ($replace) {
             $atomic_types = [];
 
-            if ($replacement_type->hasMixed()
+            if (StarProjection::isStar($replacement_type)) {
+                $atomic_types = array_values(
+                    StarProjection::readOrWrite($replacement_type, $atomic_type->as, $add_lower_bound)->getAtomicTypes(),
+                );
+            } elseif ($replacement_type->hasMixed()
                 && !$atomic_type->as->hasMixed()
             ) {
                 foreach ($atomic_type->as->getAtomicTypes() as $as_atomic_type) {
@@ -853,6 +875,12 @@ final class TemplateStandinTypeReplacer
             $as_resolver->traverse($as);
 
             $atomic_type = $atomic_type->replaceAs($as);
+
+            // a `*` argument (`Pair<int, *>` given for `Pair<int, T>`) tells nothing about the
+            // template but what is known of the unknown type: it is bound to that, never to the star
+            if ($input_type !== null && StarProjection::isStar($input_type)) {
+                $input_type = StarProjection::readAs($input_type, $atomic_type->as);
+            }
 
             if ($input_type
                 && !$template_result->readonly
@@ -1055,7 +1083,7 @@ final class TemplateStandinTypeReplacer
     }
 
     /**
-     * @return non-empty-list<TClassString>
+     * @return non-empty-list<TClassString|TNever>
      */
     public static function handleTemplateParamClassStandin(
         TTemplateParamClass $atomic_type,
@@ -1072,6 +1100,14 @@ final class TemplateStandinTypeReplacer
         int $depth,
         bool $was_single,
     ): array {
+        // `class-string<TSecond>` on a `Pair<int, *>`: like the template itself, it accepts nothing where a
+        // value is passed to it, and is a class-string of the bound where one is handed out
+        if (StarProjection::isTemplateBoundToStar($atomic_type, $template_result)) {
+            return $add_lower_bound
+                ? [new TClassString($atomic_type->as, $atomic_type->as_type)]
+                : [new TNever()];
+        }
+
         if ($atomic_type->defining_class === $calling_class) {
             return [$atomic_type];
         }
@@ -1452,9 +1488,15 @@ final class TemplateStandinTypeReplacer
                 $params = $template_extends[$container_type_part_value];
 
                 $new_input_params = [];
+                $replacement_result = new TemplateResult([], $replacement_templates);
 
                 foreach ($params as $extended_input_param_type) {
                     $new_input_param = null;
+                    // `LBox<*>` with `@extends Box<list<T>>` is a `Box<*>` that reads as `list<object>`: what it
+                    // binds Box's template to is unknown too
+                    $is_star_projected = false;
+                    $is_whole_template = $extended_input_param_type->isSingle()
+                        && $extended_input_param_type->getSingleAtomic() instanceof TTemplateParam;
 
                     foreach ($extended_input_param_type->getAtomicTypes() as $extended_template) {
                         $extended_templates = $extended_template instanceof TTemplateParam
@@ -1484,7 +1526,12 @@ final class TemplateStandinTypeReplacer
                                     true,
                                 );
 
-                                $candidate_param_types[] = ($input_type_params[$old_params_offset] ?? Type::getMixed())
+                                $candidate_param_type = $input_type_params[$old_params_offset] ?? Type::getMixed();
+
+                                $is_star_projected = $is_star_projected
+                                    || (!$is_whole_template && StarProjection::isStar($candidate_param_type));
+
+                                $candidate_param_types[] = $candidate_param_type
                                     ->setProperties(['from_template_default' => true]);
                             }
                         }
@@ -1497,13 +1544,18 @@ final class TemplateStandinTypeReplacer
                         );
                     }
 
+                    $is_star_projected = $is_star_projected
+                        || StarProjection::mentionsStarTemplate($new_input_param, $replacement_result);
+
                     $new_input_param = TemplateInferredTypeReplacer::replace(
                         $new_input_param,
-                        new TemplateResult([], $replacement_templates),
+                        $replacement_result,
                         $codebase,
                     );
 
-                    $new_input_params[] = $new_input_param;
+                    $new_input_params[] = $is_star_projected
+                        ? StarProjection::createForArgument($extended_input_param_type, $replacement_result, $codebase)
+                        : $new_input_param;
                 }
 
                 $input_type_params = $new_input_params;

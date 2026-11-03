@@ -33,6 +33,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Internal\TypeVisitor\StarProjectionVisitor;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\ImpurePropertyFetch;
@@ -853,12 +854,17 @@ final class AtomicPropertyFetchAnalyzer
         return true;
     }
 
+    /**
+     * @param bool $for_write whether the property is being assigned, which projects templates bound to `*`
+     *                        the other way (see {@see StarProjectionVisitor})
+     */
     public static function localizePropertyType(
         Codebase $codebase,
         Union $class_property_type,
         TGenericObject $lhs_type_part,
         ClassLikeStorage $property_class_storage,
         ClassLikeStorage $property_declaring_class_storage,
+        bool $for_write = false,
     ): Union {
         $template_types = CallAnalyzer::getTemplateTypesForCall(
             $codebase,
@@ -886,9 +892,30 @@ final class AtomicPropertyFetchAnalyzer
                 }
             }
 
+            $composed_template_params = null;
+
             foreach ($template_types as $type_name => $_) {
                 if (isset($extended_types[$property_declaring_class_storage->name][$type_name])) {
                     $mapped_type = $extended_types[$property_declaring_class_storage->name][$type_name];
+
+                    // a composed argument (`@extends Base<Box<TModel>>`) is bound like for a method call, which
+                    // applies the object's arguments to it and projects a `*` (`Composed<*>` binds `Box<*>`)
+                    if (!$mapped_type->hasTemplate() && $mapped_type->getTemplateTypes() !== []) {
+                        $composed_template_params ??= ClassTemplateParamCollector::collect(
+                            $codebase,
+                            $property_declaring_class_storage,
+                            $property_class_storage,
+                            null,
+                            $lhs_type_part,
+                        );
+
+                        if (isset($composed_template_params[$type_name][$property_declaring_class_storage->name])) {
+                            $template_types[$type_name][$property_declaring_class_storage->name]
+                                = $composed_template_params[$type_name][$property_declaring_class_storage->name];
+                        }
+
+                        continue;
+                    }
 
                     foreach ($mapped_type->getAtomicTypes() as $mapped_type_atomic) {
                         if (!$mapped_type_atomic instanceof TTemplateParam) {
@@ -915,9 +942,11 @@ final class AtomicPropertyFetchAnalyzer
                 }
             }
 
+            $template_result = new TemplateResult([], $template_types);
+
             $class_property_type = TemplateInferredTypeReplacer::replace(
-                $class_property_type,
-                new TemplateResult([], $template_types),
+                StarProjectionVisitor::project($class_property_type, $template_result, $codebase, $for_write),
+                $template_result,
                 $codebase,
             );
         }

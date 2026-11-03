@@ -747,6 +747,137 @@ final class PluginTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testMethodProviderReturningAStarTypeParameterGivesItsBound(): void
+    {
+        // the plugin hands out the `*` of Box<*> as is: it is a value of the bound
+        $this->analyzeWithTemplateParameterPlugin('
+            /** @param Box<*> $box */
+            function run(Box $box): void {
+                takesObject($box->get());
+            }');
+    }
+
+    public function testMethodProviderWrappingAStarTypeParameterGivesItsBound(): void
+    {
+        $this->analyzeWithTemplateParameterPlugin('
+            /** @param Box<*> $box */
+            function run(Box $box): void {
+                foreach ($box->all() as $item) {
+                    takesObject($item);
+                }
+            }');
+    }
+
+    public function testMethodProviderTakingAStarTypeParameterAcceptsNothing(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:39:34 - Argument 1 expects never, but stdClass provided');
+
+        $this->analyzeWithTemplateParameterPlugin('
+            /** @param Box<*> $box */
+            function run(Box $box): void {
+                $box->consumer()(new \stdClass());
+            }');
+    }
+
+    public function testMethodProviderTakingABoxOfAStarTypeParameterAcceptsNoBox(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:42:37 - Argument 1 expects Ns\Box<never>, but Ns\Box<stdClass> provided');
+
+        $this->analyzeWithTemplateParameterPlugin('
+            /**
+             * @param Box<*> $box
+             * @param Box<\stdClass> $other
+             */
+            function run(Box $box, Box $other): void {
+                $box->boxConsumer()($other);
+            }');
+    }
+
+    public function testMethodProviderReturningABoxOfAStarTypeParameterKeepsItUnknown(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:41:32 - Argument 1 of Ns\Box::set expects never, but stdClass provided');
+
+        $this->analyzeWithTemplateParameterPlugin('
+            /** @param Box<*> $box */
+            function run(Box $box): void {
+                foreach ($box->boxes() as $item) {
+                    takesObject($item->get());
+                    $item->set(new \stdClass());
+                }
+            }');
+    }
+
+    private function analyzeWithTemplateParameterPlugin(string $code): void
+    {
+        require_once __DIR__ . '/Plugin/TemplateParameterPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\TemplateParameterPlugin" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                /** @template T of object */
+                final class Box {
+                    /** @return T */
+                    public function get(): object {
+                        throw new \Exception();
+                    }
+
+                    /** @return list<T> */
+                    public function all(): array {
+                        throw new \Exception();
+                    }
+
+                    /** @return \Closure(T): void */
+                    public function consumer(): \Closure {
+                        throw new \Exception();
+                    }
+
+                    /** @param T $value */
+                    public function set(object $value): void {}
+
+                    /** @return list<Box<T>> */
+                    public function boxes(): array {
+                        throw new \Exception();
+                    }
+
+                    /** @return \Closure(Box<T>): void */
+                    public function boxConsumer(): \Closure {
+                        throw new \Exception();
+                    }
+                }
+
+                function takesObject(object $value): void {}
+' . $code,
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testFunctionProviderHooks(): void
     {
         require_once __DIR__ . '/Plugin/FunctionPlugin.php';

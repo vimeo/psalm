@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use AssertionError;
 use Psalm\Codebase;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
@@ -204,6 +205,15 @@ final class ClassTemplateParamCollector
         TGenericObject $lhs_type_part,
         ?TemplateResult $template_result = null,
     ): ?Union {
+        // `@extends Box<list<T>>` on an `LBox<*>`: what Box's template is bound to is unknown too, so it is `*`,
+        // knowing it reads as a `list<object>`
+        if ($template_result !== null
+            && !($input_type_extends->isSingle() && $input_type_extends->getSingleAtomic() instanceof TTemplateParam)
+            && StarProjection::mentionsStarTemplate($input_type_extends, $template_result)
+        ) {
+            return StarProjection::createForArgument($input_type_extends, $template_result, $codebase);
+        }
+
         $output_type_extends = null;
         foreach ($input_type_extends->getAtomicTypes() as $type_extends_atomic) {
             if ($type_extends_atomic instanceof TTemplateParam) {

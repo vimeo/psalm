@@ -13,11 +13,14 @@ use Psalm\Internal\Provider\ReturnTypeProvider\DateTimeModifyReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DomNodeAppendChild;
 use Psalm\Internal\Provider\ReturnTypeProvider\ImagickPixelColorReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\PdoStatementReturnTypeProvider;
+use Psalm\Internal\Type\StarProjection;
+use Psalm\Internal\TypeVisitor\StarValueVisitor;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\StatementsSource;
 use Psalm\Type\Union;
 
+use function array_any;
 use function is_subclass_of;
 use function strtolower;
 
@@ -105,7 +108,11 @@ final class MethodReturnTypeProvider
             $result = $class_handler($event);
 
             if ($result) {
-                return $result;
+                // a provider may build its result from a `*` argument of the receiver (`getTemplateTypeParameters()`)
+                return $template_type_parameters !== null
+                    && array_any($template_type_parameters, StarProjection::isStar(...))
+                        ? StarValueVisitor::read($result, $statements_source->getCodebase())
+                        : $result;
             }
         }
 

@@ -9,6 +9,7 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\Variable;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
@@ -17,6 +18,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\StarProjectionVisitor;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
@@ -303,6 +305,43 @@ final class CallableTypeComparator
         return true;
     }
 
+    /**
+     * The callable of a method of a generic object (`[$box, 'set']`, an invokable `Box<int>`) with the class
+     * templates bound by the object: calling it writes to the method's parameters, so `*` ones accept nothing
+     */
+    private static function bindReceiverTemplates(
+        Codebase $codebase,
+        TCallable $callable,
+        Atomic\TGenericObject $receiver,
+        MethodIdentifier $declaring_method_id,
+    ): TCallable {
+        if (!$codebase->classlike_storage_provider->has($receiver->value)) {
+            return $callable;
+        }
+
+        $receiver_template_types = ClassTemplateParamCollector::collect(
+            $codebase,
+            $codebase->methods->getClassLikeStorageForMethod($declaring_method_id),
+            $codebase->classlike_storage_provider->get($receiver->value),
+            $declaring_method_id->method_name,
+            $receiver,
+        );
+
+        if ($receiver_template_types === null) {
+            return $callable;
+        }
+
+        $template_result = new TemplateResult([], $receiver_template_types);
+
+        $bound_callable = TemplateInferredTypeReplacer::replace(
+            StarProjectionVisitor::project(new Union([$callable]), $template_result, $codebase, false),
+            $template_result,
+            $codebase,
+        )->getSingleAtomic();
+
+        return $bound_callable instanceof TCallable ? $bound_callable : $callable;
+    }
+
     private static function getCallableFromMethodId(
         Codebase $codebase,
         MethodIdentifier $method_id,
@@ -522,6 +561,19 @@ final class CallableTypeComparator
             $method_id = self::getCallableMethodIdFromTKeyedArray($input_type_part, $codebase);
             if ($method_id && $method_id !== 'not-callable') {
                 $callable = self::getCallableFromMethodId($codebase, $method_id, $container_type_part);
+                $receiver_type = $input_type_part->properties[0] ?? null;
+                $receiver = $receiver_type !== null && $receiver_type->isSingle()
+                    ? $receiver_type->getSingleAtomic()
+                    : null;
+
+                if ($callable && $receiver instanceof Atomic\TGenericObject) {
+                    $callable = self::bindReceiverTemplates(
+                        $codebase,
+                        $callable,
+                        $receiver,
+                        $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id,
+                    );
+                }
 
                 if ($callable) {
                     return $callable;
@@ -595,6 +647,15 @@ final class CallableTypeComparator
                             $template_result,
                         ),
                     );
+
+                    if ($input_type_part instanceof Atomic\TGenericObject) {
+                        $callable = self::bindReceiverTemplates(
+                            $codebase,
+                            $callable,
+                            $input_type_part,
+                            $declaring_method_id,
+                        );
+                    }
 
                     if ($template_result) {
                         $callable = TemplateInferredTypeReplacer::replace(

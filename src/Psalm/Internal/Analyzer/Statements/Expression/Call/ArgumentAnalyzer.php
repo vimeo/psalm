@@ -27,6 +27,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -379,9 +380,13 @@ final class ArgumentAnalyzer
                 $context->calling_function_id ?: $context->calling_method_id,
             );
 
+            // a `*` binding tells what the receiver's template accepts, not what an argument typed with the calling
+            // class's own template is (`$this->next->set($this->value)` with a `Node<*> $next`)
             $arg_value_type = TemplateStandinTypeReplacer::replace(
                 $arg_value_type,
-                $readonly_template_result,
+                StarProjection::bindsStar($readonly_template_result)
+                    ? StarProjection::withoutStarBindings($readonly_template_result)
+                    : $readonly_template_result,
                 $codebase,
                 $statements_analyzer,
                 $arg_value_type,
@@ -1823,7 +1828,11 @@ final class ArgumentAnalyzer
                         ) {
                             $new_type_params = [];
                             foreach ($input_atomic_type->type_params as $i => $type_param) {
-                                if ($type_param->isNever() && isset($param_atomic_type->type_params[$i])) {
+                                // a `*` param says nothing about what the value holds
+                                if ($type_param->isNever()
+                                    && isset($param_atomic_type->type_params[$i])
+                                    && !StarProjection::isStar($param_atomic_type->type_params[$i])
+                                ) {
                                     $input_type_changed = true;
 
                                     $new_type_params[$i] = $param_atomic_type->type_params[$i];
