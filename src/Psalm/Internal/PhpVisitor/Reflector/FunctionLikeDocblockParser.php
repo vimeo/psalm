@@ -455,7 +455,7 @@ final class FunctionLikeDocblockParser
                 }
 
                 if (count($param_parts) >= 2) {
-                    $t = $codebase->getOrRegisterTaint($param_parts[0], $code_location);
+                    $t = $codebase->getOrRegisterDocblockTaint($param_parts[0], $code_location, $info->docblock_issues);
                     if ($t !== null) {
                         $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => $t];
                     }
@@ -481,7 +481,7 @@ final class FunctionLikeDocblockParser
 
                     if (str_starts_with($taint_type, 'exec_')) {
                         $taint_type = substr($taint_type, 5);
-                        $t = $codebase->getOrRegisterTaint($taint_type, $code_location);
+                        $t = $codebase->getOrRegisterDocblockTaint($taint_type, $code_location, $info->docblock_issues);
                         if ($t !== null) {
                             $info->taint_sink_params[] = ['name' => $param_parts[0], 'taint' => $t];
                         }
@@ -498,7 +498,7 @@ final class FunctionLikeDocblockParser
                 }
 
                 if ($param_parts[0]) {
-                    $t = $codebase->getOrRegisterTaint($param_parts[0], $code_location);
+                    $t = $codebase->getOrRegisterDocblockTaint($param_parts[0], $code_location, $info->docblock_issues);
                     $keys = isset($param_parts[1]) && str_starts_with($param_parts[1], 'return[')
                         ? self::parseReturnKeys($param_parts[1])
                         : null;
@@ -535,7 +535,11 @@ final class FunctionLikeDocblockParser
 
                 if ($param_parts[0]) {
                     if ($param_parts[0] !== 'none') {
-                        $t = $codebase->getOrRegisterTaint($param_parts[0], $code_location);
+                        $t = $codebase->getOrRegisterDocblockTaint(
+                            $param_parts[0],
+                            $code_location,
+                            $info->docblock_issues,
+                        );
                         if ($t !== null) {
                             $info->taint_source_types |= $t;
                         }

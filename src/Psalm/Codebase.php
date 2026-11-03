@@ -93,6 +93,7 @@ use function explode;
 use function implode;
 use function in_array;
 use function intdiv;
+use function is_int;
 use function is_numeric;
 use function is_string;
 use function krsort;
@@ -571,19 +572,62 @@ final class Codebase
      * A complement, `~(kind|kind)` or `~kind`, is every taint but the kinds listed, including the custom taints and
      * those not registered yet.
      *
-     * Returns null and emits an issue if a code location is passed and there are no more taint slots.
+     * Returns null and emits an issue if a code location is passed and the taint can't be registered, e.g. when
+     * there are no more taint slots.
      *
-     * @throws RuntimeException if no code location is passed and there are no more taint slots.
+     * @throws RuntimeException if no code location is passed and the taint can't be registered.
      * @return ($location is null ? int : int|null)
      */
     public function getOrRegisterTaint(string $taint_type, ?CodeLocation $location = null): ?int
+    {
+        $taint = $this->resolveTaint($taint_type);
+
+        if (is_int($taint)) {
+            return $taint;
+        }
+
+        if ($location === null) {
+            throw new RuntimeException($taint);
+        }
+
+        IssueBuffer::maybeAdd(new InvalidDocblock($taint, $location));
+
+        return null;
+    }
+
+    /**
+     * Like getOrRegisterTaint() for a docblock scanned: the issue about a taint that can't be registered is
+     * appended to $issues, for the storage to report it each time the file is analysed, instead of being emitted
+     * only when the file is scanned.
+     *
+     * @internal
+     * @param list<InvalidDocblock> $issues
+     * @param-out list<InvalidDocblock> $issues
+     */
+    public function getOrRegisterDocblockTaint(string $taint_type, CodeLocation $location, array &$issues): ?int
+    {
+        $taint = $this->resolveTaint($taint_type);
+
+        if (is_int($taint)) {
+            return $taint;
+        }
+
+        $issues[] = new InvalidDocblock($taint, $location);
+
+        return null;
+    }
+
+    /**
+     * @return int|string the ID of the taint, or why it can't be registered
+     */
+    private function resolveTaint(string $taint_type): int|string
     {
         if (isset($this->taint_map[$taint_type])) {
             return $this->taint_map[$taint_type];
         }
 
         if (str_starts_with($taint_type, '~')) {
-            return $this->getTaintComplement($taint_type, $location);
+            return $this->getTaintComplement($taint_type);
         }
 
         // When scanning runs in forked worker processes, register new taints in the parent's single
@@ -592,14 +636,14 @@ final class Codebase
         // different workers could be given the same bit -- or one taint two different bits -- silently
         // corrupting the merged storage and the taint findings built from it.
         if ($this->taint_registration_channel !== null) {
-            return $this->registerTaintViaParent($this->taint_registration_channel, $taint_type, $location);
+            return $this->registerTaintViaParent($this->taint_registration_channel, $taint_type);
         }
 
         if ($this->taint_count+1 === (PHP_INT_SIZE * 8)) {
-            return $this->reportTaintSlotsExhausted($location);
+            return $this->getTaintSlotsExhaustedError();
         }
         if ($taint_type[0] === '(') {
-            return $this->reportTaintRegistrationError('Conditional taints cannot be used in this context', $location);
+            return 'Conditional taints cannot be used in this context';
         }
         $id = 1 << ($this->taint_count++);
         $this->custom_taints[$id] = $taint_type;
@@ -631,11 +675,11 @@ final class Codebase
      */
     public function registerTaintFromWorker(string $taint_type): array
     {
-        try {
-            $id = $this->getOrRegisterTaint($taint_type);
-        } catch (RuntimeException) {
-            // No taint slots left (getOrRegisterTaint throws when no location is available); the worker
-            // re-emits the diagnostic against the offending code location.
+        $id = $this->resolveTaint($taint_type);
+
+        if (!is_int($id)) {
+            // The taint can't be registered, e.g. no taint slots are left; the worker re-emits the diagnostic
+            // against the offending code location.
             $id = null;
         }
 
@@ -645,10 +689,10 @@ final class Codebase
     /**
      * @param Channel<array{id: int|null, count: int}, string> $channel
      */
-    private function registerTaintViaParent(Channel $channel, string $taint_type, ?CodeLocation $location): ?int
+    private function registerTaintViaParent(Channel $channel, string $taint_type): int|string
     {
         if ($taint_type[0] === '(') {
-            return $this->reportTaintRegistrationError('Conditional taints cannot be used in this context', $location);
+            return 'Conditional taints cannot be used in this context';
         }
 
         $channel->send($taint_type);
@@ -656,7 +700,7 @@ final class Codebase
         $this->taint_count = $response['count'];
 
         if ($response['id'] === null) {
-            return $this->reportTaintSlotsExhausted($location);
+            return $this->getTaintSlotsExhaustedError();
         }
 
         $this->taint_map[$taint_type] = $response['id'];
@@ -665,7 +709,10 @@ final class Codebase
         return $response['id'];
     }
 
-    private function reportTaintSlotsExhausted(?CodeLocation $location): ?int
+    /**
+     * @psalm-capabilities read-props
+     */
+    private function getTaintSlotsExhaustedError(): string
     {
         $taints = implode(',', $this->custom_taints);
         $err = "No more taint slots left (using $taints), ";
@@ -676,13 +723,13 @@ final class Codebase
                 ' or use fewer custom taints and use some of the built-in taints!';
         }
 
-        return $this->reportTaintRegistrationError($err, $location);
+        return $err;
     }
 
     /**
      * Every taint but the kinds listed by the complement $taint_type (see getOrRegisterTaint())
      */
-    private function getTaintComplement(string $taint_type, ?CodeLocation $location): ?int
+    private function getTaintComplement(string $taint_type): int|string
     {
         $kinds = substr($taint_type, 1);
 
@@ -695,29 +742,19 @@ final class Codebase
         foreach (explode('|', $kinds) as $kind) {
             // a complement lists taints, not other complements or conditional taints
             if ($kind === '' || $kind[0] === '~' || $kind[0] === '(' || str_contains($kind, ')')) {
-                return $this->reportTaintRegistrationError('Invalid taint complement ' . $taint_type, $location);
+                return 'Invalid taint complement ' . $taint_type;
             }
 
-            $taint = $this->getOrRegisterTaint($kind, $location);
+            $taint = $this->resolveTaint($kind);
 
-            if ($taint === null) {
-                return null;
+            if (!is_int($taint)) {
+                return $taint;
             }
 
             $excluded_taints |= $taint;
         }
 
         return TaintKind::ALL & ~$excluded_taints;
-    }
-
-    private function reportTaintRegistrationError(string $err, ?CodeLocation $location): ?int
-    {
-        if ($location !== null) {
-            IssueBuffer::maybeAdd(new InvalidDocblock($err, $location));
-            return null;
-        }
-
-        throw new RuntimeException($err);
     }
 
     /**

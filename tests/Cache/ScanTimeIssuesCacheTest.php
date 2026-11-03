@@ -360,6 +360,38 @@ final class ScanTimeIssuesCacheTest extends TestCase
             ['DuplicateClass B.php:2:13'],
         ];
 
+        yield 'conditionalTaintSource' => [
+            [
+                'A.php' => <<<'PHP'
+                    <?php
+                    final class A {
+                        /** @psalm-taint-source (html) */
+                        public function f(): string {
+                            return 'a';
+                        }
+                    }
+                    PHP,
+            ],
+            '8.1',
+            ['InvalidDocblock A.php:4:5'],
+        ];
+
+        yield 'invalidTaintComplementInSink' => [
+            [
+                'A.php' => <<<'PHP'
+                    <?php
+                    final class A {
+                        /** @psalm-taint-sink ~(html|(css)) $a */
+                        public function f(string $a): string {
+                            return $a;
+                        }
+                    }
+                    PHP,
+            ],
+            '8.1',
+            ['InvalidDocblock A.php:4:5'],
+        ];
+
         yield 'stubRepeatingDeclarations' => [
             [
                 'A.php' => <<<'PHP'
