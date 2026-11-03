@@ -1000,6 +1000,11 @@ final class ArithmeticOpAnalyzer
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
             $result = $operand1 * $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
+            // zero to a negative power is INF, with a deprecation since PHP 8.4
+            if ($operand1 == 0 && $operand2 < 0) {
+                return Type::getFloat();
+            }
+
             $result = $operand1 ** $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
             $result = $operand1 | $operand2;
@@ -1008,8 +1013,18 @@ final class ArithmeticOpAnalyzer
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor) {
             $result = $operand1 ^ $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft) {
+            // a shift by a negative number always throws
+            if ($operand2 < 0) {
+                return Type::getNever();
+            }
+
             $result = $operand1 << $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight) {
+            // a shift by a negative number always throws
+            if ($operand2 < 0) {
+                return Type::getNever();
+            }
+
             $result = $operand1 >> $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Div) {
             if ($operand2 === 0 || $operand2 === 0.0) {
