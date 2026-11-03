@@ -650,11 +650,15 @@ final class Scanner
         );
 
         if ($from_cache) {
+            $exhumed_classlike_names = [];
+
             foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
+                $already_in_memory = $this->codebase->classlike_storage_provider->has($fq_classlike_name);
+
                 if (!$this->codebase->tryExhumeClassLikeStorage($fq_classlike_name, $file_path)) {
                     // the cache has the storage of the file, but not that of a class-like it declares: scan again
-                    foreach ($file_storage->classlikes_in_file as $declared_classlike_name) {
-                        $this->codebase->classlike_storage_provider->remove($declared_classlike_name);
+                    foreach ($exhumed_classlike_names as $exhumed_classlike_name) {
+                        $this->codebase->classlike_storage_provider->remove($exhumed_classlike_name);
                     }
 
                     $from_cache = false;
@@ -668,6 +672,10 @@ final class Scanner
                     );
 
                     break;
+                }
+
+                if (!$already_in_memory) {
+                    $exhumed_classlike_names[] = $fq_classlike_name;
                 }
             }
         }

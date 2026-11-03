@@ -91,6 +91,7 @@ final class ClassLikeStorageCacheTest extends TestCase
 
         $renamed_progress = new RecordingProgress();
         self::assertSame($cold, $this->analyze($config, $providers, $renamed_progress));
+        self::assertSame($dir . 'Sqlite.php', $providers->file_storage_provider->get($dir . 'Sqlite.php')->file_path);
         self::assertContains(
             $dir . 'Sqlite.php',
             $renamed_progress->scanned_files,
@@ -99,6 +100,7 @@ final class ClassLikeStorageCacheTest extends TestCase
 
         $cached_progress = new RecordingProgress();
         self::assertSame($cold, $this->analyze($config, $providers, $cached_progress));
+        self::assertSame($dir . 'Sqlite.php', $providers->file_storage_provider->get($dir . 'Sqlite.php')->file_path);
         self::assertNotContains(
             $dir . 'Sqlite.php',
             $cached_progress->scanned_files,

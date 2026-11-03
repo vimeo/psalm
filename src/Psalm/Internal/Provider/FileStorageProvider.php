@@ -78,12 +78,12 @@ final class FileStorageProvider
 
         $cached_value = $this->cache->getLatestFromCache($file_path, $file_contents);
 
-        // the cache doesn't tell the spellings of a path apart, but the locations in the storage, and the storages of
-        // the class-likes in the file, have the spelling they were scanned with
         if (!$cached_value) {
             return false;
         }
 
+        // the cache doesn't tell the spellings of a path apart, but the locations in the storage, and the storages of
+        // the class-likes in the file, have the spelling they were scanned with
         if ($cached_value->file_path !== $original_file_path) {
             // the scan replaces the entry, which the cache would otherwise skip as already stored
             $this->cache->forget($file_path);
