@@ -33,6 +33,7 @@ use ReflectionType;
 use function array_diff_key;
 use function class_exists;
 use function count;
+use function dirname;
 use function enum_exists;
 use function explode;
 use function function_exists;
@@ -284,6 +285,19 @@ final class InternalCallMapHandlerTest extends TestCase
             new Providers(new FakeFileProvider(), new FakeParserCacheProvider()),
         );
         $project_analyzer->setPhpVersion('8.1', 'tests');
+
+        /** @var array<string, array<int|string, string>> $disk_map */
+        $disk_map = require dirname(__DIR__, 3) . '/dictionaries/CallMap_81.php';
+        self::assertArrayNotHasKey(0, $disk_map['jsonserializable::jsonserialize']);
+        self::assertArrayHasKey(-1, $disk_map['jsonserializable::jsonserialize']);
+        self::assertSame('mixed', $disk_map['jsonserializable::jsonserialize'][-1]);
+        self::assertArrayHasKey(0, $disk_map['strlen']);
+        self::assertSame('int<0, max>', $disk_map['strlen'][0]);
+        unset($disk_map);
+        $loaded_map = InternalCallMapHandler::getCallMap();
+        self::assertArrayHasKey(0, $loaded_map['jsonserializable::jsonserialize']);
+        self::assertSame('mixed', $loaded_map['jsonserializable::jsonserialize'][0]);
+        unset($loaded_map);
 
         self::assertNull(InternalCallMapHandler::getSignatureReturnType('AMQPValue::toAmqpValue'));
         self::assertSame('mixed', InternalCallMapHandler::getSignatureReturnType('JsonSerializable::jsonSerialize')?->getId());

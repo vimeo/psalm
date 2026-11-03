@@ -83,6 +83,9 @@ index `-1` records the native or tentative return type extracted from PHP:
 'amqpvalue::toamqpvalue' => [
     0 => 'mixed',
 ],
+'jsonserializable::jsonserialize' => [
+    -1 => 'mixed',
+],
 ```
 
 Only the signature return type imposes a native return-type requirement on an
@@ -90,6 +93,10 @@ implementation. A missing `-1` means no reflected return signature; it differs
 from an explicit `-1 => 'mixed'`. Stubs and index `0` still provide the types used
 to analyse calls. PHPDoc compatibility checks are separate from native signature
 checks.
+
+Generated files omit index `0` when its type equals index `-1`; the signature then
+also supplies the analysis return type. `getCallMap()` restores index `0` when
+loading a compact file so existing consumers always find the analysis return there.
 
 Edit the analysis return type in the overrides, then regenerate. Signature return
 types come from reflection and are retained independently of overrides and

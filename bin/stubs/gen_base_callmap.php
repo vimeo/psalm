@@ -62,7 +62,7 @@ function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction, string 
 
     // Keep the reflected contract separate from the return type refined by callmap overrides.
     if ($signature !== null) {
-        $res[-1] = typeToString($signature, 'mixed');
+        $res = [-1 => typeToString($signature, 'mixed')];
     }
 
     foreach ($reflectionFunction->getParameters() as $param) {

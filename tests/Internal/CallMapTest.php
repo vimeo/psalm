@@ -21,11 +21,24 @@ final class CallMapTest extends TestCase
 {
     protected const DICTIONARY_PATH = 'dictionaries';
 
+    /** @return TCallMap */
+    private static function loadCallMap(string $path): array
+    {
+        /** @var TCallMap $map */
+        $map = require $path;
+        foreach ($map as &$entry) {
+            if (!isset($entry[0]) && isset($entry[-1])) {
+                $entry = [0 => $entry[-1]] + $entry;
+            }
+        }
+        unset($entry);
+        return $map;
+    }
+
     public function testReflectedInterfaceMethods(): void
     {
         foreach ([70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 86] as $version) {
-            /** @var TCallMap $map */
-            $map = require self::DICTIONARY_PATH . '/autogen/CallMap_' . $version . '.php';
+            $map = self::loadCallMap(self::DICTIONARY_PATH . '/autogen/CallMap_' . $version . '.php');
             /** @var array<string, string> $extensions */
             $extensions = require self::DICTIONARY_PATH . '/autogen/CallMapExtensions_' . $version . '.php';
 
@@ -50,8 +63,7 @@ final class CallMapTest extends TestCase
     public function testMongoDbMonitoringOverridesArePreserved(): void
     {
         foreach ([70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 86] as $version) {
-            /** @var TCallMap $map */
-            $map = require self::DICTIONARY_PATH . '/CallMap_' . $version . '.php';
+            $map = self::loadCallMap(self::DICTIONARY_PATH . '/CallMap_' . $version . '.php');
             self::assertSame(
                 ['void', 'event' => 'MongoDB\\Driver\\Monitoring\\ServerChangedEvent'],
                 array_diff_key($map['mongodb\\driver\\monitoring\\sdamsubscriber::serverchanged'] ?? [], [-1 => true]),
@@ -66,8 +78,7 @@ final class CallMapTest extends TestCase
     public function testDsLegacyInterfaceOverridesArePreserved(): void
     {
         foreach ([70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 86] as $version) {
-            /** @var TCallMap $map */
-            $map = require self::DICTIONARY_PATH . '/CallMap_' . $version . '.php';
+            $map = self::loadCallMap(self::DICTIONARY_PATH . '/CallMap_' . $version . '.php');
             self::assertSame('bool', $map['ds\\hashable::equals'][0] ?? null);
             self::assertSame('void', $map['ds\\collection::clear'][0] ?? null);
             self::assertSame('mixed', $map['ds\\sequence::first'][0] ?? null);

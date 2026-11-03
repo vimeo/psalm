@@ -42,9 +42,10 @@ foreach ($new_local as $name => $data) {
     }
     // Foreign analysis refinements must not replace the locally reflected contract.
     if (isset($local_b[$name][-1])) {
+        $data[0] ??= $data[-1];
         $data[-1] = $local_b[$name][-1];
     }
-    $return_type = $data[0];
+    $return_type = $data[0] ?? $data[-1];
     unset($data[0]);
     echo '\'' . str_replace("'", "\'", $name) . '\' => [\'' . str_replace("'", "\'", $return_type) . '\'';
 

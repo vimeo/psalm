@@ -6192,7 +6192,6 @@ return array (
   ),
   'couchbase\\analyticsexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\analyticsexception::getcode' => 
@@ -6225,7 +6224,6 @@ return array (
   ),
   'couchbase\\analyticsexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\analyticsindexmanager::connectlink' => 
@@ -6316,50 +6314,42 @@ return array (
   ),
   'couchbase\\analyticsoptions::clientcontextid' => 
   array (
-    0 => 'Couchbase\\AnalyticsOptions',
     -1 => 'Couchbase\\AnalyticsOptions',
     'value' => 'string',
   ),
   'couchbase\\analyticsoptions::namedparameters' => 
   array (
-    0 => 'Couchbase\\AnalyticsOptions',
     -1 => 'Couchbase\\AnalyticsOptions',
     'pairs' => 'array<array-key, mixed>',
   ),
   'couchbase\\analyticsoptions::positionalparameters' => 
   array (
-    0 => 'Couchbase\\AnalyticsOptions',
     -1 => 'Couchbase\\AnalyticsOptions',
     'args' => 'array<array-key, mixed>',
   ),
   'couchbase\\analyticsoptions::priority' => 
   array (
-    0 => 'Couchbase\\AnalyticsOptions',
     -1 => 'Couchbase\\AnalyticsOptions',
     'urgent' => 'bool',
   ),
   'couchbase\\analyticsoptions::raw' => 
   array (
-    0 => 'Couchbase\\AnalyticsOptions',
     -1 => 'Couchbase\\AnalyticsOptions',
     'key' => 'string',
     'value' => 'mixed',
   ),
   'couchbase\\analyticsoptions::readonly' => 
   array (
-    0 => 'Couchbase\\AnalyticsOptions',
     -1 => 'Couchbase\\AnalyticsOptions',
     'arg' => 'bool',
   ),
   'couchbase\\analyticsoptions::scanconsistency' => 
   array (
-    0 => 'Couchbase\\AnalyticsOptions',
     -1 => 'Couchbase\\AnalyticsOptions',
     'arg' => 'string',
   ),
   'couchbase\\analyticsoptions::timeout' => 
   array (
-    0 => 'Couchbase\\AnalyticsOptions',
     -1 => 'Couchbase\\AnalyticsOptions',
     'arg' => 'int',
   ),
@@ -6374,23 +6364,19 @@ return array (
   ),
   'couchbase\\analyticsresult::metadata' => 
   array (
-    0 => 'Couchbase\\QueryMetaData',
     -1 => 'Couchbase\\QueryMetaData',
   ),
   'couchbase\\analyticsresult::rows' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\appendoptions::durabilitylevel' => 
   array (
-    0 => 'Couchbase\\AppendOptions',
     -1 => 'Couchbase\\AppendOptions',
     'arg' => 'int',
   ),
   'couchbase\\appendoptions::timeout' => 
   array (
-    0 => 'Couchbase\\AppendOptions',
     -1 => 'Couchbase\\AppendOptions',
     'arg' => 'int',
   ),
@@ -6415,7 +6401,6 @@ return array (
   ),
   'couchbase\\authenticationexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\authenticationexception::getcode' => 
@@ -6448,54 +6433,45 @@ return array (
   ),
   'couchbase\\authenticationexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\azureblobexternalanalyticslink::accountkey' => 
   array (
-    0 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
     -1 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
     'accountKey' => 'string',
   ),
   'couchbase\\azureblobexternalanalyticslink::accountname' => 
   array (
-    0 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
     -1 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
     'accountName' => 'string',
   ),
   'couchbase\\azureblobexternalanalyticslink::blobendpoint' => 
   array (
-    0 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
     -1 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
     'blobEndpoint' => 'string',
   ),
   'couchbase\\azureblobexternalanalyticslink::connectionstring' => 
   array (
-    0 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
     -1 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
     'connectionString' => 'string',
   ),
   'couchbase\\azureblobexternalanalyticslink::dataverse' => 
   array (
-    0 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
     -1 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
     'dataverse' => 'string',
   ),
   'couchbase\\azureblobexternalanalyticslink::endpointsuffix' => 
   array (
-    0 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
     -1 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
     'suffix' => 'string',
   ),
   'couchbase\\azureblobexternalanalyticslink::name' => 
   array (
-    0 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
     -1 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
     'name' => 'string',
   ),
   'couchbase\\azureblobexternalanalyticslink::sharedaccesssignature' => 
   array (
-    0 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
     -1 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
     'signature' => 'string',
   ),
@@ -6520,7 +6496,6 @@ return array (
   ),
   'couchbase\\badinputexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\badinputexception::getcode' => 
@@ -6553,7 +6528,6 @@ return array (
   ),
   'couchbase\\badinputexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\baseexception::__clone' => 
@@ -6577,7 +6551,6 @@ return array (
   ),
   'couchbase\\baseexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\baseexception::getcode' => 
@@ -6610,7 +6583,6 @@ return array (
   ),
   'couchbase\\baseexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\basicdecoderv1' => 
@@ -6629,7 +6601,6 @@ return array (
   ),
   'couchbase\\binarycollection::append' => 
   array (
-    0 => 'Couchbase\\MutationResult',
     -1 => 'Couchbase\\MutationResult',
     'id' => 'string',
     'value' => 'string',
@@ -6637,26 +6608,22 @@ return array (
   ),
   'couchbase\\binarycollection::decrement' => 
   array (
-    0 => 'Couchbase\\CounterResult',
     -1 => 'Couchbase\\CounterResult',
     'id' => 'string',
     'options=' => 'Couchbase\\DecrementOptions|null',
   ),
   'couchbase\\binarycollection::increment' => 
   array (
-    0 => 'Couchbase\\CounterResult',
     -1 => 'Couchbase\\CounterResult',
     'id' => 'string',
     'options=' => 'Couchbase\\IncrementOptions|null',
   ),
   'couchbase\\binarycollection::name' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\binarycollection::prepend' => 
   array (
-    0 => 'Couchbase\\MutationResult',
     -1 => 'Couchbase\\MutationResult',
     'id' => 'string',
     'value' => 'string',
@@ -6683,7 +6650,6 @@ return array (
   ),
   'couchbase\\bindingsexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\bindingsexception::getcode' => 
@@ -6716,7 +6682,6 @@ return array (
   ),
   'couchbase\\bindingsexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\booleanfieldsearchquery::__construct' => 
@@ -6726,13 +6691,11 @@ return array (
   ),
   'couchbase\\booleanfieldsearchquery::boost' => 
   array (
-    0 => 'Couchbase\\BooleanFieldSearchQuery',
     -1 => 'Couchbase\\BooleanFieldSearchQuery',
     'boost' => 'float',
   ),
   'couchbase\\booleanfieldsearchquery::field' => 
   array (
-    0 => 'Couchbase\\BooleanFieldSearchQuery',
     -1 => 'Couchbase\\BooleanFieldSearchQuery',
     'field' => 'string',
   ),
@@ -6746,7 +6709,6 @@ return array (
   ),
   'couchbase\\booleansearchquery::boost' => 
   array (
-    0 => 'Couchbase\\BooleanSearchQuery',
     -1 => 'Couchbase\\BooleanSearchQuery',
     'boost' => 'float',
   ),
@@ -6756,19 +6718,16 @@ return array (
   ),
   'couchbase\\booleansearchquery::must' => 
   array (
-    0 => 'Couchbase\\BooleanSearchQuery',
     -1 => 'Couchbase\\BooleanSearchQuery',
     'query' => 'Couchbase\\ConjunctionSearchQuery',
   ),
   'couchbase\\booleansearchquery::mustnot' => 
   array (
-    0 => 'Couchbase\\BooleanSearchQuery',
     -1 => 'Couchbase\\BooleanSearchQuery',
     'query' => 'Couchbase\\DisjunctionSearchQuery',
   ),
   'couchbase\\booleansearchquery::should' => 
   array (
-    0 => 'Couchbase\\BooleanSearchQuery',
     -1 => 'Couchbase\\BooleanSearchQuery',
     'query' => 'Couchbase\\DisjunctionSearchQuery',
   ),
@@ -6796,7 +6755,6 @@ return array (
   ),
   'couchbase\\bucket::collections' => 
   array (
-    0 => 'Couchbase\\CollectionManager',
     -1 => 'Couchbase\\CollectionManager',
   ),
   'couchbase\\bucket::counter' => 
@@ -6815,12 +6773,10 @@ return array (
   ),
   'couchbase\\bucket::defaultcollection' => 
   array (
-    0 => 'Couchbase\\Collection',
     -1 => 'Couchbase\\Collection',
   ),
   'couchbase\\bucket::defaultscope' => 
   array (
-    0 => 'Couchbase\\Scope',
     -1 => 'Couchbase\\Scope',
   ),
   'couchbase\\bucket::diag' => 
@@ -6960,7 +6916,6 @@ return array (
   ),
   'couchbase\\bucket::name' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\bucket::ping' => 
@@ -7025,7 +6980,6 @@ return array (
   ),
   'couchbase\\bucket::scope' => 
   array (
-    0 => 'Couchbase\\Scope',
     -1 => 'Couchbase\\Scope',
     'name' => 'string',
   ),
@@ -7080,12 +7034,10 @@ return array (
   ),
   'couchbase\\bucket::viewindexes' => 
   array (
-    0 => 'Couchbase\\ViewIndexManager',
     -1 => 'Couchbase\\ViewIndexManager',
   ),
   'couchbase\\bucket::viewquery' => 
   array (
-    0 => 'Couchbase\\ViewResult',
     -1 => 'Couchbase\\ViewResult',
     'designDoc' => 'string',
     'viewName' => 'string',
@@ -7135,12 +7087,10 @@ return array (
   ),
   'couchbase\\bucketmanager::getallbuckets' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\bucketmanager::getbucket' => 
   array (
-    0 => 'Couchbase\\BucketSettings',
     -1 => 'Couchbase\\BucketSettings',
     'name' => 'string',
   ),
@@ -7204,7 +7154,6 @@ return array (
   ),
   'couchbase\\bucketmissingexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\bucketmissingexception::getcode' => 
@@ -7237,128 +7186,105 @@ return array (
   ),
   'couchbase\\bucketmissingexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\bucketsettings::buckettype' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\bucketsettings::compressionmode' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\bucketsettings::enableflush' => 
   array (
-    0 => 'Couchbase\\BucketSettings',
     -1 => 'Couchbase\\BucketSettings',
     'enable' => 'bool',
   ),
   'couchbase\\bucketsettings::enablereplicaindexes' => 
   array (
-    0 => 'Couchbase\\BucketSettings',
     -1 => 'Couchbase\\BucketSettings',
     'enable' => 'bool',
   ),
   'couchbase\\bucketsettings::evictionpolicy' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\bucketsettings::flushenabled' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
   ),
   'couchbase\\bucketsettings::maxttl' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'couchbase\\bucketsettings::minimaldurabilitylevel' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'couchbase\\bucketsettings::name' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\bucketsettings::numreplicas' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'couchbase\\bucketsettings::ramquotamb' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'couchbase\\bucketsettings::replicaindexes' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
   ),
   'couchbase\\bucketsettings::setbuckettype' => 
   array (
-    0 => 'Couchbase\\BucketSettings',
     -1 => 'Couchbase\\BucketSettings',
     'type' => 'string',
   ),
   'couchbase\\bucketsettings::setcompressionmode' => 
   array (
-    0 => 'Couchbase\\BucketSettings',
     -1 => 'Couchbase\\BucketSettings',
     'mode' => 'string',
   ),
   'couchbase\\bucketsettings::setevictionpolicy' => 
   array (
-    0 => 'Couchbase\\BucketSettings',
     -1 => 'Couchbase\\BucketSettings',
     'policy' => 'string',
   ),
   'couchbase\\bucketsettings::setmaxttl' => 
   array (
-    0 => 'Couchbase\\BucketSettings',
     -1 => 'Couchbase\\BucketSettings',
     'ttlSeconds' => 'int',
   ),
   'couchbase\\bucketsettings::setminimaldurabilitylevel' => 
   array (
-    0 => 'Couchbase\\BucketSettings',
     -1 => 'Couchbase\\BucketSettings',
     'durabilityLevel' => 'int',
   ),
   'couchbase\\bucketsettings::setname' => 
   array (
-    0 => 'Couchbase\\BucketSettings',
     -1 => 'Couchbase\\BucketSettings',
     'name' => 'string',
   ),
   'couchbase\\bucketsettings::setnumreplicas' => 
   array (
-    0 => 'Couchbase\\BucketSettings',
     -1 => 'Couchbase\\BucketSettings',
     'numReplicas' => 'int',
   ),
   'couchbase\\bucketsettings::setramquotamb' => 
   array (
-    0 => 'Couchbase\\BucketSettings',
     -1 => 'Couchbase\\BucketSettings',
     'sizeInMb' => 'int',
   ),
   'couchbase\\bucketsettings::setstoragebackend' => 
   array (
-    0 => 'Couchbase\\BucketSettings',
     -1 => 'Couchbase\\BucketSettings',
     'policy' => 'string',
   ),
   'couchbase\\bucketsettings::storagebackend' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\casmismatchexception::__clone' => 
@@ -7382,7 +7308,6 @@ return array (
   ),
   'couchbase\\casmismatchexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\casmismatchexception::getcode' => 
@@ -7415,7 +7340,6 @@ return array (
   ),
   'couchbase\\casmismatchexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\classicauthenticator::bucket' => 
@@ -7438,12 +7362,10 @@ return array (
   ),
   'couchbase\\cluster::analyticsindexes' => 
   array (
-    0 => 'Couchbase\\AnalyticsIndexManager',
     -1 => 'Couchbase\\AnalyticsIndexManager',
   ),
   'couchbase\\cluster::analyticsquery' => 
   array (
-    0 => 'Couchbase\\AnalyticsResult',
     -1 => 'Couchbase\\AnalyticsResult',
     'statement' => 'string',
     'options=' => 'Couchbase\\AnalyticsOptions|null',
@@ -7461,13 +7383,11 @@ return array (
   ),
   'couchbase\\cluster::bucket' => 
   array (
-    0 => 'Couchbase\\Bucket',
     -1 => 'Couchbase\\Bucket',
     'name' => 'string',
   ),
   'couchbase\\cluster::buckets' => 
   array (
-    0 => 'Couchbase\\BucketManager',
     -1 => 'Couchbase\\BucketManager',
   ),
   'couchbase\\cluster::manager' => 
@@ -7484,24 +7404,20 @@ return array (
   ),
   'couchbase\\cluster::query' => 
   array (
-    0 => 'Couchbase\\QueryResult',
     -1 => 'Couchbase\\QueryResult',
     'statement' => 'string',
     'options=' => 'Couchbase\\QueryOptions|null',
   ),
   'couchbase\\cluster::queryindexes' => 
   array (
-    0 => 'Couchbase\\QueryIndexManager',
     -1 => 'Couchbase\\QueryIndexManager',
   ),
   'couchbase\\cluster::searchindexes' => 
   array (
-    0 => 'Couchbase\\SearchIndexManager',
     -1 => 'Couchbase\\SearchIndexManager',
   ),
   'couchbase\\cluster::searchquery' => 
   array (
-    0 => 'Couchbase\\SearchResult',
     -1 => 'Couchbase\\SearchResult',
     'indexName' => 'string',
     'query' => 'Couchbase\\SearchQuery',
@@ -7509,7 +7425,6 @@ return array (
   ),
   'couchbase\\cluster::users' => 
   array (
-    0 => 'Couchbase\\UserManager',
     -1 => 'Couchbase\\UserManager',
   ),
   'couchbase\\clustermanager::__construct' => 
@@ -7561,40 +7476,34 @@ return array (
   ),
   'couchbase\\clusteroptions::credentials' => 
   array (
-    0 => 'Couchbase\\ClusterOptions',
     -1 => 'Couchbase\\ClusterOptions',
     'username' => 'string',
     'password' => 'string',
   ),
   'couchbase\\collection::binary' => 
   array (
-    0 => 'Couchbase\\BinaryCollection',
     -1 => 'Couchbase\\BinaryCollection',
   ),
   'couchbase\\collection::exists' => 
   array (
-    0 => 'Couchbase\\ExistsResult',
     -1 => 'Couchbase\\ExistsResult',
     'id' => 'string',
     'options=' => 'Couchbase\\ExistsOptions|null',
   ),
   'couchbase\\collection::get' => 
   array (
-    0 => 'Couchbase\\GetResult',
     -1 => 'Couchbase\\GetResult',
     'id' => 'string',
     'options=' => 'Couchbase\\GetOptions|null',
   ),
   'couchbase\\collection::getallreplicas' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
     'id' => 'string',
     'options=' => 'Couchbase\\GetAllReplicasOptions|null',
   ),
   'couchbase\\collection::getandlock' => 
   array (
-    0 => 'Couchbase\\GetResult',
     -1 => 'Couchbase\\GetResult',
     'id' => 'string',
     'lockTime' => 'int',
@@ -7602,7 +7511,6 @@ return array (
   ),
   'couchbase\\collection::getandtouch' => 
   array (
-    0 => 'Couchbase\\GetResult',
     -1 => 'Couchbase\\GetResult',
     'id' => 'string',
     'expiry' => 'int',
@@ -7610,21 +7518,18 @@ return array (
   ),
   'couchbase\\collection::getanyreplica' => 
   array (
-    0 => 'Couchbase\\GetReplicaResult',
     -1 => 'Couchbase\\GetReplicaResult',
     'id' => 'string',
     'options=' => 'Couchbase\\GetAnyReplicaOptions|null',
   ),
   'couchbase\\collection::getmulti' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
     'ids' => 'array<array-key, mixed>',
     'options=' => 'Couchbase\\RemoveOptions|null',
   ),
   'couchbase\\collection::insert' => 
   array (
-    0 => 'Couchbase\\MutationResult',
     -1 => 'Couchbase\\MutationResult',
     'id' => 'string',
     'value' => 'mixed',
@@ -7632,7 +7537,6 @@ return array (
   ),
   'couchbase\\collection::lookupin' => 
   array (
-    0 => 'Couchbase\\LookupInResult',
     -1 => 'Couchbase\\LookupInResult',
     'id' => 'string',
     'specs' => 'array<array-key, mixed>',
@@ -7640,7 +7544,6 @@ return array (
   ),
   'couchbase\\collection::mutatein' => 
   array (
-    0 => 'Couchbase\\MutateInResult',
     -1 => 'Couchbase\\MutateInResult',
     'id' => 'string',
     'specs' => 'array<array-key, mixed>',
@@ -7648,26 +7551,22 @@ return array (
   ),
   'couchbase\\collection::name' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\collection::remove' => 
   array (
-    0 => 'Couchbase\\MutationResult',
     -1 => 'Couchbase\\MutationResult',
     'id' => 'string',
     'options=' => 'Couchbase\\RemoveOptions|null',
   ),
   'couchbase\\collection::removemulti' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
     'entries' => 'array<array-key, mixed>',
     'options=' => 'Couchbase\\RemoveOptions|null',
   ),
   'couchbase\\collection::replace' => 
   array (
-    0 => 'Couchbase\\MutationResult',
     -1 => 'Couchbase\\MutationResult',
     'id' => 'string',
     'value' => 'mixed',
@@ -7675,7 +7574,6 @@ return array (
   ),
   'couchbase\\collection::touch' => 
   array (
-    0 => 'Couchbase\\MutationResult',
     -1 => 'Couchbase\\MutationResult',
     'id' => 'string',
     'expiry' => 'int',
@@ -7683,7 +7581,6 @@ return array (
   ),
   'couchbase\\collection::unlock' => 
   array (
-    0 => 'Couchbase\\Result',
     -1 => 'Couchbase\\Result',
     'id' => 'string',
     'cas' => 'string',
@@ -7691,7 +7588,6 @@ return array (
   ),
   'couchbase\\collection::upsert' => 
   array (
-    0 => 'Couchbase\\MutationResult',
     -1 => 'Couchbase\\MutationResult',
     'id' => 'string',
     'value' => 'mixed',
@@ -7699,7 +7595,6 @@ return array (
   ),
   'couchbase\\collection::upsertmulti' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
     'entries' => 'array<array-key, mixed>',
     'options=' => 'Couchbase\\UpsertOptions|null',
@@ -7726,12 +7621,10 @@ return array (
   ),
   'couchbase\\collectionmanager::getallscopes' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\collectionmanager::getscope' => 
   array (
-    0 => 'Couchbase\\ScopeSpec',
     -1 => 'Couchbase\\ScopeSpec',
     'name' => 'string',
   ),
@@ -7756,7 +7649,6 @@ return array (
   ),
   'couchbase\\collectionmissingexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\collectionmissingexception::getcode' => 
@@ -7789,34 +7681,28 @@ return array (
   ),
   'couchbase\\collectionmissingexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\collectionspec::name' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\collectionspec::scopename' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\collectionspec::setmaxexpiry' => 
   array (
-    0 => 'Couchbase\\CollectionSpec',
     -1 => 'Couchbase\\CollectionSpec',
     'ms' => 'int',
   ),
   'couchbase\\collectionspec::setname' => 
   array (
-    0 => 'Couchbase\\CollectionSpec',
     -1 => 'Couchbase\\CollectionSpec',
     'name' => 'string',
   ),
   'couchbase\\collectionspec::setscopename' => 
   array (
-    0 => 'Couchbase\\CollectionSpec',
     -1 => 'Couchbase\\CollectionSpec',
     'name' => 'string',
   ),
@@ -7827,13 +7713,11 @@ return array (
   ),
   'couchbase\\conjunctionsearchquery::boost' => 
   array (
-    0 => 'Couchbase\\ConjunctionSearchQuery',
     -1 => 'Couchbase\\ConjunctionSearchQuery',
     'boost' => 'float',
   ),
   'couchbase\\conjunctionsearchquery::every' => 
   array (
-    0 => 'Couchbase\\ConjunctionSearchQuery',
     -1 => 'Couchbase\\ConjunctionSearchQuery',
     '...queries=' => 'Couchbase\\SearchQuery',
   ),
@@ -7843,13 +7727,11 @@ return array (
   ),
   'couchbase\\connectanalyticslinkoptions::dataversename' => 
   array (
-    0 => 'Couchbase\\ConnectAnalyticsLinkOptions',
     -1 => 'Couchbase\\ConnectAnalyticsLinkOptions',
     'dataverseName' => 'string',
   ),
   'couchbase\\connectanalyticslinkoptions::linkname' => 
   array (
-    0 => 'Couchbase\\ConnectAnalyticsLinkOptions',
     -1 => 'Couchbase\\ConnectAnalyticsLinkOptions',
     'linkName' => 'Couchbase\\bstring',
   ),
@@ -7865,163 +7747,135 @@ return array (
   ),
   'couchbase\\couchbaseremoteanalyticslink::dataverse' => 
   array (
-    0 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
     -1 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
     'dataverse' => 'string',
   ),
   'couchbase\\couchbaseremoteanalyticslink::encryption' => 
   array (
-    0 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
     -1 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
     'settings' => 'Couchbase\\EncryptionSettings',
   ),
   'couchbase\\couchbaseremoteanalyticslink::hostname' => 
   array (
-    0 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
     -1 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
     'hostname' => 'string',
   ),
   'couchbase\\couchbaseremoteanalyticslink::name' => 
   array (
-    0 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
     -1 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
     'name' => 'string',
   ),
   'couchbase\\couchbaseremoteanalyticslink::password' => 
   array (
-    0 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
     -1 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
     'password' => 'string',
   ),
   'couchbase\\couchbaseremoteanalyticslink::username' => 
   array (
-    0 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
     -1 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
     'username' => 'string',
   ),
   'couchbase\\counterresult::cas' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\counterresult::content' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'couchbase\\counterresult::mutationtoken' => 
   array (
-    0 => 'Couchbase\\MutationToken',
     -1 => 'Couchbase\\MutationToken',
   ),
   'couchbase\\createanalyticsdatasetoptions::condition' => 
   array (
-    0 => 'Couchbase\\CreateAnalyticsDatasetOptions',
     -1 => 'Couchbase\\CreateAnalyticsDatasetOptions',
     'condition' => 'string',
   ),
   'couchbase\\createanalyticsdatasetoptions::dataversename' => 
   array (
-    0 => 'Couchbase\\CreateAnalyticsDatasetOptions',
     -1 => 'Couchbase\\CreateAnalyticsDatasetOptions',
     'dataverseName' => 'string',
   ),
   'couchbase\\createanalyticsdatasetoptions::ignoreifexists' => 
   array (
-    0 => 'Couchbase\\CreateAnalyticsDatasetOptions',
     -1 => 'Couchbase\\CreateAnalyticsDatasetOptions',
     'shouldIgnore' => 'bool',
   ),
   'couchbase\\createanalyticsdataverseoptions::ignoreifexists' => 
   array (
-    0 => 'Couchbase\\CreateAnalyticsDataverseOptions',
     -1 => 'Couchbase\\CreateAnalyticsDataverseOptions',
     'shouldIgnore' => 'bool',
   ),
   'couchbase\\createanalyticsindexoptions::dataversename' => 
   array (
-    0 => 'Couchbase\\CreateAnalyticsIndexOptions',
     -1 => 'Couchbase\\CreateAnalyticsIndexOptions',
     'dataverseName' => 'string',
   ),
   'couchbase\\createanalyticsindexoptions::ignoreifexists' => 
   array (
-    0 => 'Couchbase\\CreateAnalyticsIndexOptions',
     -1 => 'Couchbase\\CreateAnalyticsIndexOptions',
     'shouldIgnore' => 'bool',
   ),
   'couchbase\\createanalyticslinkoptions::timeout' => 
   array (
-    0 => 'Couchbase\\CreateAnalyticsLinkOptions',
     -1 => 'Couchbase\\CreateAnalyticsLinkOptions',
     'arg' => 'int',
   ),
   'couchbase\\createqueryindexoptions::condition' => 
   array (
-    0 => 'Couchbase\\CreateQueryIndexOptions',
     -1 => 'Couchbase\\CreateQueryIndexOptions',
     'condition' => 'string',
   ),
   'couchbase\\createqueryindexoptions::deferred' => 
   array (
-    0 => 'Couchbase\\CreateQueryIndexOptions',
     -1 => 'Couchbase\\CreateQueryIndexOptions',
     'isDeferred' => 'bool',
   ),
   'couchbase\\createqueryindexoptions::ignoreifexists' => 
   array (
-    0 => 'Couchbase\\CreateQueryIndexOptions',
     -1 => 'Couchbase\\CreateQueryIndexOptions',
     'shouldIgnore' => 'bool',
   ),
   'couchbase\\createqueryindexoptions::numreplicas' => 
   array (
-    0 => 'Couchbase\\CreateQueryIndexOptions',
     -1 => 'Couchbase\\CreateQueryIndexOptions',
     'number' => 'int',
   ),
   'couchbase\\createqueryprimaryindexoptions::deferred' => 
   array (
-    0 => 'Couchbase\\CreateQueryPrimaryIndexOptions',
     -1 => 'Couchbase\\CreateQueryPrimaryIndexOptions',
     'isDeferred' => 'bool',
   ),
   'couchbase\\createqueryprimaryindexoptions::ignoreifexists' => 
   array (
-    0 => 'Couchbase\\CreateQueryPrimaryIndexOptions',
     -1 => 'Couchbase\\CreateQueryPrimaryIndexOptions',
     'shouldIgnore' => 'bool',
   ),
   'couchbase\\createqueryprimaryindexoptions::indexname' => 
   array (
-    0 => 'Couchbase\\CreateQueryPrimaryIndexOptions',
     -1 => 'Couchbase\\CreateQueryPrimaryIndexOptions',
     'name' => 'string',
   ),
   'couchbase\\createqueryprimaryindexoptions::numreplicas' => 
   array (
-    0 => 'Couchbase\\CreateQueryPrimaryIndexOptions',
     -1 => 'Couchbase\\CreateQueryPrimaryIndexOptions',
     'number' => 'int',
   ),
   'couchbase\\daterangefacetresult::count' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'couchbase\\daterangefacetresult::end' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\daterangefacetresult::name' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\daterangefacetresult::start' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\daterangesearchfacet::__construct' => 
@@ -8032,7 +7886,6 @@ return array (
   ),
   'couchbase\\daterangesearchfacet::addrange' => 
   array (
-    0 => 'Couchbase\\DateRangeSearchFacet',
     -1 => 'Couchbase\\DateRangeSearchFacet',
     'name' => 'string',
     'start=' => 'int|string',
@@ -8048,26 +7901,22 @@ return array (
   ),
   'couchbase\\daterangesearchquery::boost' => 
   array (
-    0 => 'Couchbase\\DateRangeSearchQuery',
     -1 => 'Couchbase\\DateRangeSearchQuery',
     'boost' => 'float',
   ),
   'couchbase\\daterangesearchquery::datetimeparser' => 
   array (
-    0 => 'Couchbase\\DateRangeSearchQuery',
     -1 => 'Couchbase\\DateRangeSearchQuery',
     'dateTimeParser' => 'string',
   ),
   'couchbase\\daterangesearchquery::end' => 
   array (
-    0 => 'Couchbase\\DateRangeSearchQuery',
     -1 => 'Couchbase\\DateRangeSearchQuery',
     'end' => 'int|string',
     'inclusive=' => 'bool',
   ),
   'couchbase\\daterangesearchquery::field' => 
   array (
-    0 => 'Couchbase\\DateRangeSearchQuery',
     -1 => 'Couchbase\\DateRangeSearchQuery',
     'field' => 'string',
   ),
@@ -8077,38 +7926,32 @@ return array (
   ),
   'couchbase\\daterangesearchquery::start' => 
   array (
-    0 => 'Couchbase\\DateRangeSearchQuery',
     -1 => 'Couchbase\\DateRangeSearchQuery',
     'start' => 'int|string',
     'inclusive=' => 'bool',
   ),
   'couchbase\\decrementoptions::delta' => 
   array (
-    0 => 'Couchbase\\DecrementOptions',
     -1 => 'Couchbase\\DecrementOptions',
     'arg' => 'int',
   ),
   'couchbase\\decrementoptions::durabilitylevel' => 
   array (
-    0 => 'Couchbase\\DecrementOptions',
     -1 => 'Couchbase\\DecrementOptions',
     'arg' => 'int',
   ),
   'couchbase\\decrementoptions::expiry' => 
   array (
-    0 => 'Couchbase\\DecrementOptions',
     -1 => 'Couchbase\\DecrementOptions',
     'arg' => 'Couchbase\\mixed',
   ),
   'couchbase\\decrementoptions::initial' => 
   array (
-    0 => 'Couchbase\\DecrementOptions',
     -1 => 'Couchbase\\DecrementOptions',
     'arg' => 'int',
   ),
   'couchbase\\decrementoptions::timeout' => 
   array (
-    0 => 'Couchbase\\DecrementOptions',
     -1 => 'Couchbase\\DecrementOptions',
     'arg' => 'int',
   ),
@@ -8126,35 +7969,29 @@ return array (
   ),
   'couchbase\\designdocument::name' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\designdocument::setname' => 
   array (
-    0 => 'Couchbase\\DesignDocument',
     -1 => 'Couchbase\\DesignDocument',
     'name' => 'string',
   ),
   'couchbase\\designdocument::setviews' => 
   array (
-    0 => 'Couchbase\\DesignDocument',
     -1 => 'Couchbase\\DesignDocument',
     'views' => 'array<array-key, mixed>',
   ),
   'couchbase\\designdocument::views' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\disconnectanalyticslinkoptions::dataversename' => 
   array (
-    0 => 'Couchbase\\DisconnectAnalyticsLinkOptions',
     -1 => 'Couchbase\\DisconnectAnalyticsLinkOptions',
     'dataverseName' => 'string',
   ),
   'couchbase\\disconnectanalyticslinkoptions::linkname' => 
   array (
-    0 => 'Couchbase\\DisconnectAnalyticsLinkOptions',
     -1 => 'Couchbase\\DisconnectAnalyticsLinkOptions',
     'linkName' => 'Couchbase\\bstring',
   ),
@@ -8165,13 +8002,11 @@ return array (
   ),
   'couchbase\\disjunctionsearchquery::boost' => 
   array (
-    0 => 'Couchbase\\DisjunctionSearchQuery',
     -1 => 'Couchbase\\DisjunctionSearchQuery',
     'boost' => 'float',
   ),
   'couchbase\\disjunctionsearchquery::either' => 
   array (
-    0 => 'Couchbase\\DisjunctionSearchQuery',
     -1 => 'Couchbase\\DisjunctionSearchQuery',
     '...queries=' => 'Couchbase\\SearchQuery',
   ),
@@ -8181,7 +8016,6 @@ return array (
   ),
   'couchbase\\disjunctionsearchquery::min' => 
   array (
-    0 => 'Couchbase\\DisjunctionSearchQuery',
     -1 => 'Couchbase\\DisjunctionSearchQuery',
     'min' => 'int',
   ),
@@ -8206,7 +8040,6 @@ return array (
   ),
   'couchbase\\dmlfailureexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\dmlfailureexception::getcode' => 
@@ -8239,7 +8072,6 @@ return array (
   ),
   'couchbase\\dmlfailureexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\docidsearchquery::__construct' => 
@@ -8248,19 +8080,16 @@ return array (
   ),
   'couchbase\\docidsearchquery::boost' => 
   array (
-    0 => 'Couchbase\\DocIdSearchQuery',
     -1 => 'Couchbase\\DocIdSearchQuery',
     'boost' => 'float',
   ),
   'couchbase\\docidsearchquery::docids' => 
   array (
-    0 => 'Couchbase\\DocIdSearchQuery',
     -1 => 'Couchbase\\DocIdSearchQuery',
     '...documentIds=' => 'string',
   ),
   'couchbase\\docidsearchquery::field' => 
   array (
-    0 => 'Couchbase\\DocIdSearchQuery',
     -1 => 'Couchbase\\DocIdSearchQuery',
     'field' => 'string',
   ),
@@ -8289,7 +8118,6 @@ return array (
   ),
   'couchbase\\documentnotfoundexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\documentnotfoundexception::getcode' => 
@@ -8322,66 +8150,55 @@ return array (
   ),
   'couchbase\\documentnotfoundexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\dropanalyticsdatasetoptions::dataversename' => 
   array (
-    0 => 'Couchbase\\DropAnalyticsDatasetOptions',
     -1 => 'Couchbase\\DropAnalyticsDatasetOptions',
     'dataverseName' => 'string',
   ),
   'couchbase\\dropanalyticsdatasetoptions::ignoreifnotexists' => 
   array (
-    0 => 'Couchbase\\DropAnalyticsDatasetOptions',
     -1 => 'Couchbase\\DropAnalyticsDatasetOptions',
     'shouldIgnore' => 'bool',
   ),
   'couchbase\\dropanalyticsdataverseoptions::ignoreifnotexists' => 
   array (
-    0 => 'Couchbase\\DropAnalyticsDataverseOptions',
     -1 => 'Couchbase\\DropAnalyticsDataverseOptions',
     'shouldIgnore' => 'bool',
   ),
   'couchbase\\dropanalyticsindexoptions::dataversename' => 
   array (
-    0 => 'Couchbase\\DropAnalyticsIndexOptions',
     -1 => 'Couchbase\\DropAnalyticsIndexOptions',
     'dataverseName' => 'string',
   ),
   'couchbase\\dropanalyticsindexoptions::ignoreifnotexists' => 
   array (
-    0 => 'Couchbase\\DropAnalyticsIndexOptions',
     -1 => 'Couchbase\\DropAnalyticsIndexOptions',
     'shouldIgnore' => 'bool',
   ),
   'couchbase\\dropanalyticslinkoptions::timeout' => 
   array (
-    0 => 'Couchbase\\DropAnalyticsLinkOptions',
     -1 => 'Couchbase\\DropAnalyticsLinkOptions',
     'arg' => 'int',
   ),
   'couchbase\\dropqueryindexoptions::ignoreifnotexists' => 
   array (
-    0 => 'Couchbase\\DropQueryIndexOptions',
     -1 => 'Couchbase\\DropQueryIndexOptions',
     'shouldIgnore' => 'bool',
   ),
   'couchbase\\dropqueryprimaryindexoptions::ignoreifnotexists' => 
   array (
-    0 => 'Couchbase\\DropQueryPrimaryIndexOptions',
     -1 => 'Couchbase\\DropQueryPrimaryIndexOptions',
     'shouldIgnore' => 'bool',
   ),
   'couchbase\\dropqueryprimaryindexoptions::indexname' => 
   array (
-    0 => 'Couchbase\\DropQueryPrimaryIndexOptions',
     -1 => 'Couchbase\\DropQueryPrimaryIndexOptions',
     'name' => 'string',
   ),
   'couchbase\\dropuseroptions::domainname' => 
   array (
-    0 => 'Couchbase\\DropUserOptions',
     -1 => 'Couchbase\\DropUserOptions',
     'name' => 'string',
   ),
@@ -8406,7 +8223,6 @@ return array (
   ),
   'couchbase\\durabilityexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\durabilityexception::getcode' => 
@@ -8439,7 +8255,6 @@ return array (
   ),
   'couchbase\\durabilityexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\encryptionsettings::certificate' => 
@@ -8464,18 +8279,15 @@ return array (
   ),
   'couchbase\\existsoptions::timeout' => 
   array (
-    0 => 'Couchbase\\ExistsOptions',
     -1 => 'Couchbase\\ExistsOptions',
     'arg' => 'int',
   ),
   'couchbase\\existsresult::cas' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\existsresult::exists' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
   ),
   'couchbase\\fastlzcompress' => 
@@ -8498,13 +8310,11 @@ return array (
   ),
   'couchbase\\geoboundingboxsearchquery::boost' => 
   array (
-    0 => 'Couchbase\\GeoBoundingBoxSearchQuery',
     -1 => 'Couchbase\\GeoBoundingBoxSearchQuery',
     'boost' => 'float',
   ),
   'couchbase\\geoboundingboxsearchquery::field' => 
   array (
-    0 => 'Couchbase\\GeoBoundingBoxSearchQuery',
     -1 => 'Couchbase\\GeoBoundingBoxSearchQuery',
     'field' => 'string',
   ),
@@ -8521,13 +8331,11 @@ return array (
   ),
   'couchbase\\geodistancesearchquery::boost' => 
   array (
-    0 => 'Couchbase\\GeoDistanceSearchQuery',
     -1 => 'Couchbase\\GeoDistanceSearchQuery',
     'boost' => 'float',
   ),
   'couchbase\\geodistancesearchquery::field' => 
   array (
-    0 => 'Couchbase\\GeoDistanceSearchQuery',
     -1 => 'Couchbase\\GeoDistanceSearchQuery',
     'field' => 'string',
   ),
@@ -8542,13 +8350,11 @@ return array (
   ),
   'couchbase\\geopolygonquery::boost' => 
   array (
-    0 => 'Couchbase\\GeoPolygonQuery',
     -1 => 'Couchbase\\GeoPolygonQuery',
     'boost' => 'float',
   ),
   'couchbase\\geopolygonquery::field' => 
   array (
-    0 => 'Couchbase\\GeoPolygonQuery',
     -1 => 'Couchbase\\GeoPolygonQuery',
     'field' => 'string',
   ),
@@ -8558,177 +8364,146 @@ return array (
   ),
   'couchbase\\getallreplicasoptions::decoder' => 
   array (
-    0 => 'Couchbase\\GetAllReplicasOptions',
     -1 => 'Couchbase\\GetAllReplicasOptions',
     'arg' => 'callable[impure]',
   ),
   'couchbase\\getallreplicasoptions::timeout' => 
   array (
-    0 => 'Couchbase\\GetAllReplicasOptions',
     -1 => 'Couchbase\\GetAllReplicasOptions',
     'arg' => 'int',
   ),
   'couchbase\\getallusersoptions::domainname' => 
   array (
-    0 => 'Couchbase\\GetAllUsersOptions',
     -1 => 'Couchbase\\GetAllUsersOptions',
     'name' => 'string',
   ),
   'couchbase\\getanalyticslinksoptions::dataverse' => 
   array (
-    0 => 'Couchbase\\DropAnalyticsLinkOptions',
     -1 => 'Couchbase\\DropAnalyticsLinkOptions',
     'dataverse' => 'string',
   ),
   'couchbase\\getanalyticslinksoptions::linktype' => 
   array (
-    0 => 'Couchbase\\DropAnalyticsLinkOptions',
     -1 => 'Couchbase\\DropAnalyticsLinkOptions',
     'type' => 'string',
   ),
   'couchbase\\getanalyticslinksoptions::name' => 
   array (
-    0 => 'Couchbase\\DropAnalyticsLinkOptions',
     -1 => 'Couchbase\\DropAnalyticsLinkOptions',
     'name' => 'string',
   ),
   'couchbase\\getanalyticslinksoptions::timeout' => 
   array (
-    0 => 'Couchbase\\DropAnalyticsLinkOptions',
     -1 => 'Couchbase\\DropAnalyticsLinkOptions',
     'arg' => 'int',
   ),
   'couchbase\\getandlockoptions::decoder' => 
   array (
-    0 => 'Couchbase\\GetAndLockOptions',
     -1 => 'Couchbase\\GetAndLockOptions',
     'arg' => 'callable[impure]',
   ),
   'couchbase\\getandlockoptions::timeout' => 
   array (
-    0 => 'Couchbase\\GetAndLockOptions',
     -1 => 'Couchbase\\GetAndLockOptions',
     'arg' => 'int',
   ),
   'couchbase\\getandtouchoptions::decoder' => 
   array (
-    0 => 'Couchbase\\GetAndTouchOptions',
     -1 => 'Couchbase\\GetAndTouchOptions',
     'arg' => 'callable[impure]',
   ),
   'couchbase\\getandtouchoptions::timeout' => 
   array (
-    0 => 'Couchbase\\GetAndTouchOptions',
     -1 => 'Couchbase\\GetAndTouchOptions',
     'arg' => 'int',
   ),
   'couchbase\\getanyreplicaoptions::decoder' => 
   array (
-    0 => 'Couchbase\\GetAnyReplicaOptions',
     -1 => 'Couchbase\\GetAnyReplicaOptions',
     'arg' => 'callable[impure]',
   ),
   'couchbase\\getanyreplicaoptions::timeout' => 
   array (
-    0 => 'Couchbase\\GetAnyReplicaOptions',
     -1 => 'Couchbase\\GetAnyReplicaOptions',
     'arg' => 'int',
   ),
   'couchbase\\getoptions::decoder' => 
   array (
-    0 => 'Couchbase\\GetOptions',
     -1 => 'Couchbase\\GetOptions',
     'arg' => 'callable[impure]',
   ),
   'couchbase\\getoptions::project' => 
   array (
-    0 => 'Couchbase\\GetOptions',
     -1 => 'Couchbase\\GetOptions',
     'arg' => 'array<array-key, mixed>',
   ),
   'couchbase\\getoptions::timeout' => 
   array (
-    0 => 'Couchbase\\GetOptions',
     -1 => 'Couchbase\\GetOptions',
     'arg' => 'int',
   ),
   'couchbase\\getoptions::withexpiry' => 
   array (
-    0 => 'Couchbase\\GetOptions',
     -1 => 'Couchbase\\GetOptions',
     'arg' => 'bool',
   ),
   'couchbase\\getreplicaresult::cas' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\getreplicaresult::content' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\getreplicaresult::isreplica' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
   ),
   'couchbase\\getresult::cas' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\getresult::content' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\getresult::expirytime' => 
   array (
-    0 => 'DateTimeInterface',
     -1 => 'DateTimeInterface',
   ),
   'couchbase\\getuseroptions::domainname' => 
   array (
-    0 => 'Couchbase\\GetUserOptions',
     -1 => 'Couchbase\\GetUserOptions',
     'name' => 'string',
   ),
   'couchbase\\group::description' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\group::ldapgroupreference' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\group::name' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\group::roles' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\group::setdescription' => 
   array (
-    0 => 'Couchbase\\Group',
     -1 => 'Couchbase\\Group',
     'description' => 'string',
   ),
   'couchbase\\group::setname' => 
   array (
-    0 => 'Couchbase\\Group',
     -1 => 'Couchbase\\Group',
     'name' => 'string',
   ),
   'couchbase\\group::setroles' => 
   array (
-    0 => 'Couchbase\\Group',
     -1 => 'Couchbase\\Group',
     'roles' => 'array<array-key, mixed>',
   ),
@@ -8753,7 +8528,6 @@ return array (
   ),
   'couchbase\\httpexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\httpexception::getcode' => 
@@ -8786,36 +8560,30 @@ return array (
   ),
   'couchbase\\httpexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\incrementoptions::delta' => 
   array (
-    0 => 'Couchbase\\IncrementOptions',
     -1 => 'Couchbase\\IncrementOptions',
     'arg' => 'int',
   ),
   'couchbase\\incrementoptions::durabilitylevel' => 
   array (
-    0 => 'Couchbase\\IncrementOptions',
     -1 => 'Couchbase\\IncrementOptions',
     'arg' => 'int',
   ),
   'couchbase\\incrementoptions::expiry' => 
   array (
-    0 => 'Couchbase\\IncrementOptions',
     -1 => 'Couchbase\\IncrementOptions',
     'arg' => 'Couchbase\\mixed',
   ),
   'couchbase\\incrementoptions::initial' => 
   array (
-    0 => 'Couchbase\\IncrementOptions',
     -1 => 'Couchbase\\IncrementOptions',
     'arg' => 'int',
   ),
   'couchbase\\incrementoptions::timeout' => 
   array (
-    0 => 'Couchbase\\IncrementOptions',
     -1 => 'Couchbase\\IncrementOptions',
     'arg' => 'int',
   ),
@@ -8840,7 +8608,6 @@ return array (
   ),
   'couchbase\\indexfailureexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\indexfailureexception::getcode' => 
@@ -8873,7 +8640,6 @@ return array (
   ),
   'couchbase\\indexfailureexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\indexnotfoundexception::__clone' => 
@@ -8897,7 +8663,6 @@ return array (
   ),
   'couchbase\\indexnotfoundexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\indexnotfoundexception::getcode' => 
@@ -8930,30 +8695,25 @@ return array (
   ),
   'couchbase\\indexnotfoundexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\insertoptions::durabilitylevel' => 
   array (
-    0 => 'Couchbase\\InsertOptions',
     -1 => 'Couchbase\\InsertOptions',
     'arg' => 'int',
   ),
   'couchbase\\insertoptions::encoder' => 
   array (
-    0 => 'Couchbase\\InsertOptions',
     -1 => 'Couchbase\\InsertOptions',
     'arg' => 'callable[impure]',
   ),
   'couchbase\\insertoptions::expiry' => 
   array (
-    0 => 'Couchbase\\InsertOptions',
     -1 => 'Couchbase\\InsertOptions',
     'arg' => 'int',
   ),
   'couchbase\\insertoptions::timeout' => 
   array (
-    0 => 'Couchbase\\InsertOptions',
     -1 => 'Couchbase\\InsertOptions',
     'arg' => 'int',
   ),
@@ -8978,7 +8738,6 @@ return array (
   ),
   'couchbase\\invalidconfigurationexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\invalidconfigurationexception::getcode' => 
@@ -9011,7 +8770,6 @@ return array (
   ),
   'couchbase\\invalidconfigurationexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\invalidrangeexception::__clone' => 
@@ -9035,7 +8793,6 @@ return array (
   ),
   'couchbase\\invalidrangeexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\invalidrangeexception::getcode' => 
@@ -9068,7 +8825,6 @@ return array (
   ),
   'couchbase\\invalidrangeexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\invalidstateexception::__clone' => 
@@ -9092,7 +8848,6 @@ return array (
   ),
   'couchbase\\invalidstateexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\invalidstateexception::getcode' => 
@@ -9125,7 +8880,6 @@ return array (
   ),
   'couchbase\\invalidstateexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\keydeletedexception::__clone' => 
@@ -9149,7 +8903,6 @@ return array (
   ),
   'couchbase\\keydeletedexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\keydeletedexception::getcode' => 
@@ -9182,7 +8935,6 @@ return array (
   ),
   'couchbase\\keydeletedexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\keyexistsexception::__clone' => 
@@ -9206,7 +8958,6 @@ return array (
   ),
   'couchbase\\keyexistsexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\keyexistsexception::getcode' => 
@@ -9239,7 +8990,6 @@ return array (
   ),
   'couchbase\\keyexistsexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\keylockedexception::__clone' => 
@@ -9263,7 +9013,6 @@ return array (
   ),
   'couchbase\\keylockedexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\keylockedexception::getcode' => 
@@ -9296,7 +9045,6 @@ return array (
   ),
   'couchbase\\keylockedexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\keyspacenotfoundexception::__clone' => 
@@ -9320,7 +9068,6 @@ return array (
   ),
   'couchbase\\keyspacenotfoundexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\keyspacenotfoundexception::getcode' => 
@@ -9353,7 +9100,6 @@ return array (
   ),
   'couchbase\\keyspacenotfoundexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\keyvalueexception::__clone' => 
@@ -9377,7 +9123,6 @@ return array (
   ),
   'couchbase\\keyvalueexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\keyvalueexception::getcode' => 
@@ -9410,18 +9155,15 @@ return array (
   ),
   'couchbase\\keyvalueexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\loggingmeter::flushinterval' => 
   array (
-    0 => 'Couchbase\\LoggingMeter',
     -1 => 'Couchbase\\LoggingMeter',
     'duration' => 'int',
   ),
   'couchbase\\loggingmeter::valuerecorder' => 
   array (
-    0 => 'Couchbase\\ValueRecorder',
     -1 => 'Couchbase\\ValueRecorder',
     'name' => 'string',
     'tags' => 'array<array-key, mixed>',
@@ -9476,41 +9218,34 @@ return array (
   ),
   'couchbase\\lookupinoptions::timeout' => 
   array (
-    0 => 'Couchbase\\LookupInOptions',
     -1 => 'Couchbase\\LookupInOptions',
     'arg' => 'int',
   ),
   'couchbase\\lookupinoptions::withexpiry' => 
   array (
-    0 => 'Couchbase\\LookupInOptions',
     -1 => 'Couchbase\\LookupInOptions',
     'arg' => 'bool',
   ),
   'couchbase\\lookupinresult::cas' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\lookupinresult::content' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
     'index' => 'int',
   ),
   'couchbase\\lookupinresult::exists' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
     'index' => 'int',
   ),
   'couchbase\\lookupinresult::expirytime' => 
   array (
-    0 => 'DateTimeInterface',
     -1 => 'DateTimeInterface',
   ),
   'couchbase\\lookupinresult::status' => 
   array (
-    0 => 'int',
     -1 => 'int',
     'index' => 'int',
   ),
@@ -9520,7 +9255,6 @@ return array (
   ),
   'couchbase\\matchallsearchquery::boost' => 
   array (
-    0 => 'Couchbase\\MatchAllSearchQuery',
     -1 => 'Couchbase\\MatchAllSearchQuery',
     'boost' => 'float',
   ),
@@ -9534,7 +9268,6 @@ return array (
   ),
   'couchbase\\matchnonesearchquery::boost' => 
   array (
-    0 => 'Couchbase\\MatchNoneSearchQuery',
     -1 => 'Couchbase\\MatchNoneSearchQuery',
     'boost' => 'float',
   ),
@@ -9549,19 +9282,16 @@ return array (
   ),
   'couchbase\\matchphrasesearchquery::analyzer' => 
   array (
-    0 => 'Couchbase\\MatchPhraseSearchQuery',
     -1 => 'Couchbase\\MatchPhraseSearchQuery',
     'analyzer' => 'string',
   ),
   'couchbase\\matchphrasesearchquery::boost' => 
   array (
-    0 => 'Couchbase\\MatchPhraseSearchQuery',
     -1 => 'Couchbase\\MatchPhraseSearchQuery',
     'boost' => 'float',
   ),
   'couchbase\\matchphrasesearchquery::field' => 
   array (
-    0 => 'Couchbase\\MatchPhraseSearchQuery',
     -1 => 'Couchbase\\MatchPhraseSearchQuery',
     'field' => 'string',
   ),
@@ -9576,25 +9306,21 @@ return array (
   ),
   'couchbase\\matchsearchquery::analyzer' => 
   array (
-    0 => 'Couchbase\\MatchSearchQuery',
     -1 => 'Couchbase\\MatchSearchQuery',
     'analyzer' => 'string',
   ),
   'couchbase\\matchsearchquery::boost' => 
   array (
-    0 => 'Couchbase\\MatchSearchQuery',
     -1 => 'Couchbase\\MatchSearchQuery',
     'boost' => 'float',
   ),
   'couchbase\\matchsearchquery::field' => 
   array (
-    0 => 'Couchbase\\MatchSearchQuery',
     -1 => 'Couchbase\\MatchSearchQuery',
     'field' => 'string',
   ),
   'couchbase\\matchsearchquery::fuzziness' => 
   array (
-    0 => 'Couchbase\\MatchSearchQuery',
     -1 => 'Couchbase\\MatchSearchQuery',
     'fuzziness' => 'int',
   ),
@@ -9604,13 +9330,11 @@ return array (
   ),
   'couchbase\\matchsearchquery::prefixlength' => 
   array (
-    0 => 'Couchbase\\MatchSearchQuery',
     -1 => 'Couchbase\\MatchSearchQuery',
     'prefixLength' => 'int',
   ),
   'couchbase\\meter::valuerecorder' => 
   array (
-    0 => 'Couchbase\\ValueRecorder',
     -1 => 'Couchbase\\ValueRecorder',
     'name' => 'string',
     'tags' => 'array<array-key, mixed>',
@@ -9762,54 +9486,45 @@ return array (
   ),
   'couchbase\\mutateinoptions::cas' => 
   array (
-    0 => 'Couchbase\\MutateInOptions',
     -1 => 'Couchbase\\MutateInOptions',
     'arg' => 'string',
   ),
   'couchbase\\mutateinoptions::durabilitylevel' => 
   array (
-    0 => 'Couchbase\\MutateInOptions',
     -1 => 'Couchbase\\MutateInOptions',
     'arg' => 'int',
   ),
   'couchbase\\mutateinoptions::expiry' => 
   array (
-    0 => 'Couchbase\\MutateInOptions',
     -1 => 'Couchbase\\MutateInOptions',
     'arg' => 'Couchbase\\mixed',
   ),
   'couchbase\\mutateinoptions::preserveexpiry' => 
   array (
-    0 => 'Couchbase\\MutateInOptions',
     -1 => 'Couchbase\\MutateInOptions',
     'shouldPreserve' => 'bool',
   ),
   'couchbase\\mutateinoptions::storesemantics' => 
   array (
-    0 => 'Couchbase\\MutateInOptions',
     -1 => 'Couchbase\\MutateInOptions',
     'arg' => 'int',
   ),
   'couchbase\\mutateinoptions::timeout' => 
   array (
-    0 => 'Couchbase\\MutateInOptions',
     -1 => 'Couchbase\\MutateInOptions',
     'arg' => 'int',
   ),
   'couchbase\\mutateinresult::cas' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\mutateinresult::content' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
     'index' => 'int',
   ),
   'couchbase\\mutateinresult::mutationtoken' => 
   array (
-    0 => 'Couchbase\\MutationToken',
     -1 => 'Couchbase\\MutationToken',
   ),
   'couchbase\\mutateinsertspec::__construct' => 
@@ -9845,12 +9560,10 @@ return array (
   ),
   'couchbase\\mutationresult::cas' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\mutationresult::mutationtoken' => 
   array (
-    0 => 'Couchbase\\MutationToken',
     -1 => 'Couchbase\\MutationToken',
   ),
   'couchbase\\mutationstate::__construct' => 
@@ -9859,7 +9572,6 @@ return array (
   ),
   'couchbase\\mutationstate::add' => 
   array (
-    0 => 'Couchbase\\MutationState',
     -1 => 'Couchbase\\MutationState',
     'source' => 'Couchbase\\MutationResult',
   ),
@@ -9998,7 +9710,6 @@ return array (
   ),
   'couchbase\\networkexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\networkexception::getcode' => 
@@ -10031,12 +9742,10 @@ return array (
   ),
   'couchbase\\networkexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\noopmeter::valuerecorder' => 
   array (
-    0 => 'Couchbase\\ValueRecorder',
     -1 => 'Couchbase\\ValueRecorder',
     'name' => 'string',
     'tags' => 'array<array-key, mixed>',
@@ -10049,7 +9758,6 @@ return array (
   ),
   'couchbase\\numericrangefacetresult::count' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'couchbase\\numericrangefacetresult::max' => 
@@ -10062,7 +9770,6 @@ return array (
   ),
   'couchbase\\numericrangefacetresult::name' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\numericrangesearchfacet::__construct' => 
@@ -10073,7 +9780,6 @@ return array (
   ),
   'couchbase\\numericrangesearchfacet::addrange' => 
   array (
-    0 => 'Couchbase\\NumericRangeSearchFacet',
     -1 => 'Couchbase\\NumericRangeSearchFacet',
     'name' => 'string',
     'min=' => 'float|null',
@@ -10089,13 +9795,11 @@ return array (
   ),
   'couchbase\\numericrangesearchquery::boost' => 
   array (
-    0 => 'Couchbase\\NumericRangeSearchQuery',
     -1 => 'Couchbase\\NumericRangeSearchQuery',
     'boost' => 'float',
   ),
   'couchbase\\numericrangesearchquery::field' => 
   array (
-    0 => 'Couchbase\\NumericRangeSearchQuery',
     -1 => 'Couchbase\\NumericRangeSearchQuery',
     'field' => 'string',
   ),
@@ -10105,26 +9809,22 @@ return array (
   ),
   'couchbase\\numericrangesearchquery::max' => 
   array (
-    0 => 'Couchbase\\NumericRangeSearchQuery',
     -1 => 'Couchbase\\NumericRangeSearchQuery',
     'max' => 'float',
     'inclusive=' => 'bool',
   ),
   'couchbase\\numericrangesearchquery::min' => 
   array (
-    0 => 'Couchbase\\NumericRangeSearchQuery',
     -1 => 'Couchbase\\NumericRangeSearchQuery',
     'min' => 'float',
     'inclusive=' => 'bool',
   ),
   'couchbase\\origin::name' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\origin::type' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\parsingfailureexception::__clone' => 
@@ -10148,7 +9848,6 @@ return array (
   ),
   'couchbase\\parsingfailureexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\parsingfailureexception::getcode' => 
@@ -10181,7 +9880,6 @@ return array (
   ),
   'couchbase\\parsingfailureexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\partialviewexception::__clone' => 
@@ -10205,7 +9903,6 @@ return array (
   ),
   'couchbase\\partialviewexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\partialviewexception::getcode' => 
@@ -10238,7 +9935,6 @@ return array (
   ),
   'couchbase\\partialviewexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\passthrudecoder' => 
@@ -10284,7 +9980,6 @@ return array (
   ),
   'couchbase\\pathexistsexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\pathexistsexception::getcode' => 
@@ -10317,7 +10012,6 @@ return array (
   ),
   'couchbase\\pathexistsexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\pathnotfoundexception::__clone' => 
@@ -10341,7 +10035,6 @@ return array (
   ),
   'couchbase\\pathnotfoundexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\pathnotfoundexception::getcode' => 
@@ -10374,7 +10067,6 @@ return array (
   ),
   'couchbase\\pathnotfoundexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\phrasesearchquery::__construct' => 
@@ -10384,13 +10076,11 @@ return array (
   ),
   'couchbase\\phrasesearchquery::boost' => 
   array (
-    0 => 'Couchbase\\PhraseSearchQuery',
     -1 => 'Couchbase\\PhraseSearchQuery',
     'boost' => 'float',
   ),
   'couchbase\\phrasesearchquery::field' => 
   array (
-    0 => 'Couchbase\\PhraseSearchQuery',
     -1 => 'Couchbase\\PhraseSearchQuery',
     'field' => 'string',
   ),
@@ -10419,7 +10109,6 @@ return array (
   ),
   'couchbase\\planningfailureexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\planningfailureexception::getcode' => 
@@ -10452,7 +10141,6 @@ return array (
   ),
   'couchbase\\planningfailureexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\prefixsearchquery::__construct' => 
@@ -10462,13 +10150,11 @@ return array (
   ),
   'couchbase\\prefixsearchquery::boost' => 
   array (
-    0 => 'Couchbase\\PrefixSearchQuery',
     -1 => 'Couchbase\\PrefixSearchQuery',
     'boost' => 'float',
   ),
   'couchbase\\prefixsearchquery::field' => 
   array (
-    0 => 'Couchbase\\PrefixSearchQuery',
     -1 => 'Couchbase\\PrefixSearchQuery',
     'field' => 'string',
   ),
@@ -10497,7 +10183,6 @@ return array (
   ),
   'couchbase\\preparedstatementexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\preparedstatementexception::getcode' => 
@@ -10530,18 +10215,15 @@ return array (
   ),
   'couchbase\\preparedstatementexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\prependoptions::durabilitylevel' => 
   array (
-    0 => 'Couchbase\\PrependOptions',
     -1 => 'Couchbase\\PrependOptions',
     'arg' => 'int',
   ),
   'couchbase\\prependoptions::timeout' => 
   array (
-    0 => 'Couchbase\\PrependOptions',
     -1 => 'Couchbase\\PrependOptions',
     'arg' => 'int',
   ),
@@ -10566,7 +10248,6 @@ return array (
   ),
   'couchbase\\queryerrorexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\queryerrorexception::getcode' => 
@@ -10599,7 +10280,6 @@ return array (
   ),
   'couchbase\\queryerrorexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\queryexception::__clone' => 
@@ -10623,7 +10303,6 @@ return array (
   ),
   'couchbase\\queryexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\queryexception::getcode' => 
@@ -10656,42 +10335,34 @@ return array (
   ),
   'couchbase\\queryexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\queryindex::condition' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\queryindex::indexkey' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\queryindex::isprimary' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
   ),
   'couchbase\\queryindex::keyspace' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\queryindex::name' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\queryindex::state' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\queryindex::type' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\queryindexmanager::builddeferredindexes' => 
@@ -10728,7 +10399,6 @@ return array (
   ),
   'couchbase\\queryindexmanager::getallindexes' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
     'bucketName' => 'string',
   ),
@@ -10742,161 +10412,133 @@ return array (
   ),
   'couchbase\\querymetadata::clientcontextid' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\querymetadata::errors' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\querymetadata::metrics' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\querymetadata::profile' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\querymetadata::requestid' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\querymetadata::signature' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\querymetadata::status' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\querymetadata::warnings' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\queryoptions::adhoc' => 
   array (
-    0 => 'Couchbase\\QueryOptions',
     -1 => 'Couchbase\\QueryOptions',
     'arg' => 'bool',
   ),
   'couchbase\\queryoptions::clientcontextid' => 
   array (
-    0 => 'Couchbase\\QueryOptions',
     -1 => 'Couchbase\\QueryOptions',
     'arg' => 'string',
   ),
   'couchbase\\queryoptions::consistentwith' => 
   array (
-    0 => 'Couchbase\\QueryOptions',
     -1 => 'Couchbase\\QueryOptions',
     'arg' => 'Couchbase\\MutationState',
   ),
   'couchbase\\queryoptions::flexindex' => 
   array (
-    0 => 'Couchbase\\QueryOptions',
     -1 => 'Couchbase\\QueryOptions',
     'arg' => 'bool',
   ),
   'couchbase\\queryoptions::maxparallelism' => 
   array (
-    0 => 'Couchbase\\QueryOptions',
     -1 => 'Couchbase\\QueryOptions',
     'arg' => 'int',
   ),
   'couchbase\\queryoptions::metrics' => 
   array (
-    0 => 'Couchbase\\QueryOptions',
     -1 => 'Couchbase\\QueryOptions',
     'arg' => 'bool',
   ),
   'couchbase\\queryoptions::namedparameters' => 
   array (
-    0 => 'Couchbase\\QueryOptions',
     -1 => 'Couchbase\\QueryOptions',
     'pairs' => 'array<array-key, mixed>',
   ),
   'couchbase\\queryoptions::pipelinebatch' => 
   array (
-    0 => 'Couchbase\\QueryOptions',
     -1 => 'Couchbase\\QueryOptions',
     'arg' => 'int',
   ),
   'couchbase\\queryoptions::pipelinecap' => 
   array (
-    0 => 'Couchbase\\QueryOptions',
     -1 => 'Couchbase\\QueryOptions',
     'arg' => 'int',
   ),
   'couchbase\\queryoptions::positionalparameters' => 
   array (
-    0 => 'Couchbase\\QueryOptions',
     -1 => 'Couchbase\\QueryOptions',
     'args' => 'array<array-key, mixed>',
   ),
   'couchbase\\queryoptions::profile' => 
   array (
-    0 => 'Couchbase\\QueryOptions',
     -1 => 'Couchbase\\QueryOptions',
     'arg' => 'int',
   ),
   'couchbase\\queryoptions::raw' => 
   array (
-    0 => 'Couchbase\\QueryOptions',
     -1 => 'Couchbase\\QueryOptions',
     'key' => 'string',
     'value' => 'mixed',
   ),
   'couchbase\\queryoptions::readonly' => 
   array (
-    0 => 'Couchbase\\QueryOptions',
     -1 => 'Couchbase\\QueryOptions',
     'arg' => 'bool',
   ),
   'couchbase\\queryoptions::scancap' => 
   array (
-    0 => 'Couchbase\\QueryOptions',
     -1 => 'Couchbase\\QueryOptions',
     'arg' => 'int',
   ),
   'couchbase\\queryoptions::scanconsistency' => 
   array (
-    0 => 'Couchbase\\QueryOptions',
     -1 => 'Couchbase\\QueryOptions',
     'arg' => 'int',
   ),
   'couchbase\\queryoptions::scopename' => 
   array (
-    0 => 'Couchbase\\QueryOptions',
     -1 => 'Couchbase\\QueryOptions',
     'arg' => 'string',
   ),
   'couchbase\\queryoptions::scopequalifier' => 
   array (
-    0 => 'Couchbase\\QueryOptions',
     -1 => 'Couchbase\\QueryOptions',
     'arg' => 'string',
   ),
   'couchbase\\queryoptions::timeout' => 
   array (
-    0 => 'Couchbase\\QueryOptions',
     -1 => 'Couchbase\\QueryOptions',
     'arg' => 'int',
   ),
   'couchbase\\queryresult::metadata' => 
   array (
-    0 => 'Couchbase\\QueryMetaData',
     -1 => 'Couchbase\\QueryMetaData',
   ),
   'couchbase\\queryresult::rows' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\queryserviceexception::__clone' => 
@@ -10920,7 +10562,6 @@ return array (
   ),
   'couchbase\\queryserviceexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\queryserviceexception::getcode' => 
@@ -10953,7 +10594,6 @@ return array (
   ),
   'couchbase\\queryserviceexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\querystringsearchquery::__construct' => 
@@ -10963,7 +10603,6 @@ return array (
   ),
   'couchbase\\querystringsearchquery::boost' => 
   array (
-    0 => 'Couchbase\\QueryStringSearchQuery',
     -1 => 'Couchbase\\QueryStringSearchQuery',
     'boost' => 'float',
   ),
@@ -10992,7 +10631,6 @@ return array (
   ),
   'couchbase\\quotalimitedexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\quotalimitedexception::getcode' => 
@@ -11025,7 +10663,6 @@ return array (
   ),
   'couchbase\\quotalimitedexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\ratelimitedexception::__clone' => 
@@ -11049,7 +10686,6 @@ return array (
   ),
   'couchbase\\ratelimitedexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\ratelimitedexception::getcode' => 
@@ -11082,7 +10718,6 @@ return array (
   ),
   'couchbase\\ratelimitedexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\regexpsearchquery::__construct' => 
@@ -11092,13 +10727,11 @@ return array (
   ),
   'couchbase\\regexpsearchquery::boost' => 
   array (
-    0 => 'Couchbase\\RegexpSearchQuery',
     -1 => 'Couchbase\\RegexpSearchQuery',
     'boost' => 'float',
   ),
   'couchbase\\regexpsearchquery::field' => 
   array (
-    0 => 'Couchbase\\RegexpSearchQuery',
     -1 => 'Couchbase\\RegexpSearchQuery',
     'field' => 'string',
   ),
@@ -11108,61 +10741,51 @@ return array (
   ),
   'couchbase\\removeoptions::cas' => 
   array (
-    0 => 'Couchbase\\RemoveOptions',
     -1 => 'Couchbase\\RemoveOptions',
     'arg' => 'string',
   ),
   'couchbase\\removeoptions::durabilitylevel' => 
   array (
-    0 => 'Couchbase\\RemoveOptions',
     -1 => 'Couchbase\\RemoveOptions',
     'arg' => 'int',
   ),
   'couchbase\\removeoptions::timeout' => 
   array (
-    0 => 'Couchbase\\RemoveOptions',
     -1 => 'Couchbase\\RemoveOptions',
     'arg' => 'int',
   ),
   'couchbase\\replaceanalyticslinkoptions::timeout' => 
   array (
-    0 => 'Couchbase\\ReplaceAnalyticsLinkOptions',
     -1 => 'Couchbase\\ReplaceAnalyticsLinkOptions',
     'arg' => 'int',
   ),
   'couchbase\\replaceoptions::cas' => 
   array (
-    0 => 'Couchbase\\ReplaceOptions',
     -1 => 'Couchbase\\ReplaceOptions',
     'arg' => 'string',
   ),
   'couchbase\\replaceoptions::durabilitylevel' => 
   array (
-    0 => 'Couchbase\\ReplaceOptions',
     -1 => 'Couchbase\\ReplaceOptions',
     'arg' => 'int',
   ),
   'couchbase\\replaceoptions::encoder' => 
   array (
-    0 => 'Couchbase\\ReplaceOptions',
     -1 => 'Couchbase\\ReplaceOptions',
     'arg' => 'callable[impure]',
   ),
   'couchbase\\replaceoptions::expiry' => 
   array (
-    0 => 'Couchbase\\ReplaceOptions',
     -1 => 'Couchbase\\ReplaceOptions',
     'arg' => 'Couchbase\\mixed',
   ),
   'couchbase\\replaceoptions::preserveexpiry' => 
   array (
-    0 => 'Couchbase\\ReplaceOptions',
     -1 => 'Couchbase\\ReplaceOptions',
     'shouldPreserve' => 'bool',
   ),
   'couchbase\\replaceoptions::timeout' => 
   array (
-    0 => 'Couchbase\\ReplaceOptions',
     -1 => 'Couchbase\\ReplaceOptions',
     'arg' => 'int',
   ),
@@ -11187,7 +10810,6 @@ return array (
   ),
   'couchbase\\requestcanceledexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\requestcanceledexception::getcode' => 
@@ -11220,19 +10842,16 @@ return array (
   ),
   'couchbase\\requestcanceledexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\requestspan::addtag' => 
   array (
-    0 => 'Couchbase\\void',
     -1 => 'Couchbase\\void',
     'key' => 'string',
     'value' => 'mixed',
   ),
   'couchbase\\requestspan::end' => 
   array (
-    0 => 'Couchbase\\void',
     -1 => 'Couchbase\\void',
   ),
   'couchbase\\requesttracer::requestspan' => 
@@ -11243,117 +10862,96 @@ return array (
   ),
   'couchbase\\result::cas' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\role::bucket' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\role::collection' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\role::name' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\role::scope' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\role::setbucket' => 
   array (
-    0 => 'Couchbase\\Role',
     -1 => 'Couchbase\\Role',
     'bucket' => 'string',
   ),
   'couchbase\\role::setcollection' => 
   array (
-    0 => 'Couchbase\\Role',
     -1 => 'Couchbase\\Role',
     'bucket' => 'string',
   ),
   'couchbase\\role::setname' => 
   array (
-    0 => 'Couchbase\\Role',
     -1 => 'Couchbase\\Role',
     'name' => 'string',
   ),
   'couchbase\\role::setscope' => 
   array (
-    0 => 'Couchbase\\Role',
     -1 => 'Couchbase\\Role',
     'bucket' => 'string',
   ),
   'couchbase\\roleanddescription::description' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\roleanddescription::displayname' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\roleanddescription::role' => 
   array (
-    0 => 'Couchbase\\Role',
     -1 => 'Couchbase\\Role',
   ),
   'couchbase\\roleandorigin::origins' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\roleandorigin::role' => 
   array (
-    0 => 'Couchbase\\Role',
     -1 => 'Couchbase\\Role',
   ),
   'couchbase\\s3externalanalyticslink::accesskeyid' => 
   array (
-    0 => 'Couchbase\\S3ExternalAnalyticsLink',
     -1 => 'Couchbase\\S3ExternalAnalyticsLink',
     'accessKeyId' => 'string',
   ),
   'couchbase\\s3externalanalyticslink::dataverse' => 
   array (
-    0 => 'Couchbase\\S3ExternalAnalyticsLink',
     -1 => 'Couchbase\\S3ExternalAnalyticsLink',
     'dataverse' => 'string',
   ),
   'couchbase\\s3externalanalyticslink::name' => 
   array (
-    0 => 'Couchbase\\S3ExternalAnalyticsLink',
     -1 => 'Couchbase\\S3ExternalAnalyticsLink',
     'name' => 'string',
   ),
   'couchbase\\s3externalanalyticslink::region' => 
   array (
-    0 => 'Couchbase\\S3ExternalAnalyticsLink',
     -1 => 'Couchbase\\S3ExternalAnalyticsLink',
     'region' => 'string',
   ),
   'couchbase\\s3externalanalyticslink::secretaccesskey' => 
   array (
-    0 => 'Couchbase\\S3ExternalAnalyticsLink',
     -1 => 'Couchbase\\S3ExternalAnalyticsLink',
     'secretAccessKey' => 'string',
   ),
   'couchbase\\s3externalanalyticslink::serviceendpoint' => 
   array (
-    0 => 'Couchbase\\S3ExternalAnalyticsLink',
     -1 => 'Couchbase\\S3ExternalAnalyticsLink',
     'serviceEndpoint' => 'string',
   ),
   'couchbase\\s3externalanalyticslink::sessiontoken' => 
   array (
-    0 => 'Couchbase\\S3ExternalAnalyticsLink',
     -1 => 'Couchbase\\S3ExternalAnalyticsLink',
     'sessionToken' => 'string',
   ),
@@ -11365,25 +10963,21 @@ return array (
   ),
   'couchbase\\scope::analyticsquery' => 
   array (
-    0 => 'Couchbase\\AnalyticsResult',
     -1 => 'Couchbase\\AnalyticsResult',
     'statement' => 'string',
     'options=' => 'Couchbase\\AnalyticsOptions|null',
   ),
   'couchbase\\scope::collection' => 
   array (
-    0 => 'Couchbase\\Collection',
     -1 => 'Couchbase\\Collection',
     'name' => 'string',
   ),
   'couchbase\\scope::name' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\scope::query' => 
   array (
-    0 => 'Couchbase\\QueryResult',
     -1 => 'Couchbase\\QueryResult',
     'statement' => 'string',
     'options=' => 'Couchbase\\QueryOptions|null',
@@ -11409,7 +11003,6 @@ return array (
   ),
   'couchbase\\scopemissingexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\scopemissingexception::getcode' => 
@@ -11442,17 +11035,14 @@ return array (
   ),
   'couchbase\\scopemissingexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\scopespec::collections' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\scopespec::name' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\searchexception::__clone' => 
@@ -11476,7 +11066,6 @@ return array (
   ),
   'couchbase\\searchexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\searchexception::getcode' => 
@@ -11509,42 +11098,34 @@ return array (
   ),
   'couchbase\\searchexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\searchfacetresult::dateranges' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\searchfacetresult::field' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\searchfacetresult::missing' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'couchbase\\searchfacetresult::numericranges' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\searchfacetresult::other' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'couchbase\\searchfacetresult::terms' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\searchfacetresult::total' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'couchbase\\searchindex::jsonserialize' => 
@@ -11553,79 +11134,65 @@ return array (
   ),
   'couchbase\\searchindex::params' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\searchindex::setparams' => 
   array (
-    0 => 'Couchbase\\SearchIndex',
     -1 => 'Couchbase\\SearchIndex',
     'params' => 'string',
   ),
   'couchbase\\searchindex::setsourcename' => 
   array (
-    0 => 'Couchbase\\SearchIndex',
     -1 => 'Couchbase\\SearchIndex',
     'params' => 'string',
   ),
   'couchbase\\searchindex::setsourceparams' => 
   array (
-    0 => 'Couchbase\\SearchIndex',
     -1 => 'Couchbase\\SearchIndex',
     'params' => 'string',
   ),
   'couchbase\\searchindex::setsourcetype' => 
   array (
-    0 => 'Couchbase\\SearchIndex',
     -1 => 'Couchbase\\SearchIndex',
     'type' => 'string',
   ),
   'couchbase\\searchindex::setsourceuuid' => 
   array (
-    0 => 'Couchbase\\SearchIndex',
     -1 => 'Couchbase\\SearchIndex',
     'uuid' => 'string',
   ),
   'couchbase\\searchindex::settype' => 
   array (
-    0 => 'Couchbase\\SearchIndex',
     -1 => 'Couchbase\\SearchIndex',
     'type' => 'string',
   ),
   'couchbase\\searchindex::setuuid' => 
   array (
-    0 => 'Couchbase\\SearchIndex',
     -1 => 'Couchbase\\SearchIndex',
     'uuid' => 'string',
   ),
   'couchbase\\searchindex::sourcename' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\searchindex::sourceparams' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\searchindex::sourcetype' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\searchindex::sourceuuid' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\searchindex::type' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\searchindex::uuid' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\searchindexmanager::allowquerying' => 
@@ -11656,18 +11223,15 @@ return array (
   ),
   'couchbase\\searchindexmanager::getallindexes' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\searchindexmanager::getindex' => 
   array (
-    0 => 'Couchbase\\SearchIndex',
     -1 => 'Couchbase\\SearchIndex',
     'name' => 'string',
   ),
   'couchbase\\searchindexmanager::getindexeddocumentscount' => 
   array (
-    0 => 'int',
     -1 => 'int',
     'indexName' => 'string',
   ),
@@ -11693,74 +11257,61 @@ return array (
   ),
   'couchbase\\searchmetadata::errorcount' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'couchbase\\searchmetadata::maxscore' => 
   array (
-    0 => 'float',
     -1 => 'float',
   ),
   'couchbase\\searchmetadata::metrics' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\searchmetadata::successcount' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'couchbase\\searchmetadata::took' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'couchbase\\searchmetadata::totalhits' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'couchbase\\searchoptions::collections' => 
   array (
-    0 => 'Couchbase\\SearchOptions',
     -1 => 'Couchbase\\SearchOptions',
     'collectionNames' => 'array<array-key, mixed>',
   ),
   'couchbase\\searchoptions::consistentwith' => 
   array (
-    0 => 'Couchbase\\SearchOptions',
     -1 => 'Couchbase\\SearchOptions',
     'index' => 'string',
     'state' => 'Couchbase\\MutationState',
   ),
   'couchbase\\searchoptions::disablescoring' => 
   array (
-    0 => 'Couchbase\\SearchOptions',
     -1 => 'Couchbase\\SearchOptions',
     'disabled' => 'bool',
   ),
   'couchbase\\searchoptions::explain' => 
   array (
-    0 => 'Couchbase\\SearchOptions',
     -1 => 'Couchbase\\SearchOptions',
     'explain' => 'bool',
   ),
   'couchbase\\searchoptions::facets' => 
   array (
-    0 => 'Couchbase\\SearchOptions',
     -1 => 'Couchbase\\SearchOptions',
     'facets' => 'array<array-key, mixed>',
   ),
   'couchbase\\searchoptions::fields' => 
   array (
-    0 => 'Couchbase\\SearchOptions',
     -1 => 'Couchbase\\SearchOptions',
     'fields' => 'array<array-key, mixed>',
   ),
   'couchbase\\searchoptions::highlight' => 
   array (
-    0 => 'Couchbase\\SearchOptions',
     -1 => 'Couchbase\\SearchOptions',
     'style=' => 'null|string',
     'fields=' => 'array<array-key, mixed>|null',
@@ -11771,25 +11322,21 @@ return array (
   ),
   'couchbase\\searchoptions::limit' => 
   array (
-    0 => 'Couchbase\\SearchOptions',
     -1 => 'Couchbase\\SearchOptions',
     'limit' => 'int',
   ),
   'couchbase\\searchoptions::skip' => 
   array (
-    0 => 'Couchbase\\SearchOptions',
     -1 => 'Couchbase\\SearchOptions',
     'skip' => 'int',
   ),
   'couchbase\\searchoptions::sort' => 
   array (
-    0 => 'Couchbase\\SearchOptions',
     -1 => 'Couchbase\\SearchOptions',
     'specs' => 'array<array-key, mixed>',
   ),
   'couchbase\\searchoptions::timeout' => 
   array (
-    0 => 'Couchbase\\SearchOptions',
     -1 => 'Couchbase\\SearchOptions',
     'ms' => 'int',
   ),
@@ -11964,17 +11511,14 @@ return array (
   ),
   'couchbase\\searchresult::facets' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\searchresult::metadata' => 
   array (
-    0 => 'Couchbase\\SearchMetaData',
     -1 => 'Couchbase\\SearchMetaData',
   ),
   'couchbase\\searchresult::rows' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\searchsort::__construct' => 
@@ -12008,7 +11552,6 @@ return array (
   ),
   'couchbase\\searchsortfield::descending' => 
   array (
-    0 => 'Couchbase\\SearchSortField',
     -1 => 'Couchbase\\SearchSortField',
     'descending' => 'bool',
   ),
@@ -12034,13 +11577,11 @@ return array (
   ),
   'couchbase\\searchsortfield::missing' => 
   array (
-    0 => 'Couchbase\\SearchSortField',
     -1 => 'Couchbase\\SearchSortField',
     'missing' => 'string',
   ),
   'couchbase\\searchsortfield::mode' => 
   array (
-    0 => 'Couchbase\\SearchSortField',
     -1 => 'Couchbase\\SearchSortField',
     'mode' => 'string',
   ),
@@ -12050,7 +11591,6 @@ return array (
   ),
   'couchbase\\searchsortfield::type' => 
   array (
-    0 => 'Couchbase\\SearchSortField',
     -1 => 'Couchbase\\SearchSortField',
     'type' => 'string',
   ),
@@ -12063,7 +11603,6 @@ return array (
   ),
   'couchbase\\searchsortgeodistance::descending' => 
   array (
-    0 => 'Couchbase\\SearchSortGeoDistance',
     -1 => 'Couchbase\\SearchSortGeoDistance',
     'descending' => 'bool',
   ),
@@ -12093,7 +11632,6 @@ return array (
   ),
   'couchbase\\searchsortgeodistance::unit' => 
   array (
-    0 => 'Couchbase\\SearchSortGeoDistance',
     -1 => 'Couchbase\\SearchSortGeoDistance',
     'unit' => 'string',
   ),
@@ -12103,7 +11641,6 @@ return array (
   ),
   'couchbase\\searchsortid::descending' => 
   array (
-    0 => 'Couchbase\\SearchSortId',
     -1 => 'Couchbase\\SearchSortId',
     'descending' => 'bool',
   ),
@@ -12137,7 +11674,6 @@ return array (
   ),
   'couchbase\\searchsortscore::descending' => 
   array (
-    0 => 'Couchbase\\SearchSortScore',
     -1 => 'Couchbase\\SearchSortScore',
     'descending' => 'bool',
   ),
@@ -12186,7 +11722,6 @@ return array (
   ),
   'couchbase\\servicemissingexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\servicemissingexception::getcode' => 
@@ -12219,7 +11754,6 @@ return array (
   ),
   'couchbase\\servicemissingexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\spatialviewquery::__construct' => 
@@ -12291,7 +11825,6 @@ return array (
   ),
   'couchbase\\subdocumentexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\subdocumentexception::getcode' => 
@@ -12324,7 +11857,6 @@ return array (
   ),
   'couchbase\\subdocumentexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\tempfailexception::__clone' => 
@@ -12348,7 +11880,6 @@ return array (
   ),
   'couchbase\\tempfailexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\tempfailexception::getcode' => 
@@ -12381,17 +11912,14 @@ return array (
   ),
   'couchbase\\tempfailexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\termfacetresult::count' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'couchbase\\termfacetresult::term' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\termrangesearchquery::__construct' => 
@@ -12400,13 +11928,11 @@ return array (
   ),
   'couchbase\\termrangesearchquery::boost' => 
   array (
-    0 => 'Couchbase\\TermRangeSearchQuery',
     -1 => 'Couchbase\\TermRangeSearchQuery',
     'boost' => 'float',
   ),
   'couchbase\\termrangesearchquery::field' => 
   array (
-    0 => 'Couchbase\\TermRangeSearchQuery',
     -1 => 'Couchbase\\TermRangeSearchQuery',
     'field' => 'string',
   ),
@@ -12416,14 +11942,12 @@ return array (
   ),
   'couchbase\\termrangesearchquery::max' => 
   array (
-    0 => 'Couchbase\\TermRangeSearchQuery',
     -1 => 'Couchbase\\TermRangeSearchQuery',
     'max' => 'string',
     'inclusive=' => 'bool',
   ),
   'couchbase\\termrangesearchquery::min' => 
   array (
-    0 => 'Couchbase\\TermRangeSearchQuery',
     -1 => 'Couchbase\\TermRangeSearchQuery',
     'min' => 'string',
     'inclusive=' => 'bool',
@@ -12445,19 +11969,16 @@ return array (
   ),
   'couchbase\\termsearchquery::boost' => 
   array (
-    0 => 'Couchbase\\TermSearchQuery',
     -1 => 'Couchbase\\TermSearchQuery',
     'boost' => 'float',
   ),
   'couchbase\\termsearchquery::field' => 
   array (
-    0 => 'Couchbase\\TermSearchQuery',
     -1 => 'Couchbase\\TermSearchQuery',
     'field' => 'string',
   ),
   'couchbase\\termsearchquery::fuzziness' => 
   array (
-    0 => 'Couchbase\\TermSearchQuery',
     -1 => 'Couchbase\\TermSearchQuery',
     'fuzziness' => 'int',
   ),
@@ -12467,7 +11988,6 @@ return array (
   ),
   'couchbase\\termsearchquery::prefixlength' => 
   array (
-    0 => 'Couchbase\\TermSearchQuery',
     -1 => 'Couchbase\\TermSearchQuery',
     'prefixLength' => 'int',
   ),
@@ -12533,7 +12053,6 @@ return array (
   ),
   'couchbase\\timeoutexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\timeoutexception::getcode' => 
@@ -12566,130 +12085,107 @@ return array (
   ),
   'couchbase\\timeoutexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\touchoptions::timeout' => 
   array (
-    0 => 'Couchbase\\TouchOptions',
     -1 => 'Couchbase\\TouchOptions',
     'arg' => 'int',
   ),
   'couchbase\\unlockoptions::timeout' => 
   array (
-    0 => 'Couchbase\\UnlockOptions',
     -1 => 'Couchbase\\UnlockOptions',
     'arg' => 'int',
   ),
   'couchbase\\upsertoptions::durabilitylevel' => 
   array (
-    0 => 'Couchbase\\UpsertOptions',
     -1 => 'Couchbase\\UpsertOptions',
     'arg' => 'int',
   ),
   'couchbase\\upsertoptions::encoder' => 
   array (
-    0 => 'Couchbase\\UpsertOptions',
     -1 => 'Couchbase\\UpsertOptions',
     'arg' => 'callable[impure]',
   ),
   'couchbase\\upsertoptions::expiry' => 
   array (
-    0 => 'Couchbase\\UpsertOptions',
     -1 => 'Couchbase\\UpsertOptions',
     'arg' => 'Couchbase\\mixed',
   ),
   'couchbase\\upsertoptions::preserveexpiry' => 
   array (
-    0 => 'Couchbase\\UpsertOptions',
     -1 => 'Couchbase\\UpsertOptions',
     'shouldPreserve' => 'bool',
   ),
   'couchbase\\upsertoptions::timeout' => 
   array (
-    0 => 'Couchbase\\UpsertOptions',
     -1 => 'Couchbase\\UpsertOptions',
     'arg' => 'int',
   ),
   'couchbase\\upsertuseroptions::domainname' => 
   array (
-    0 => 'Couchbase\\DropUserOptions',
     -1 => 'Couchbase\\DropUserOptions',
     'name' => 'string',
   ),
   'couchbase\\user::displayname' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\user::groups' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\user::roles' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\user::setdisplayname' => 
   array (
-    0 => 'Couchbase\\User',
     -1 => 'Couchbase\\User',
     'name' => 'string',
   ),
   'couchbase\\user::setgroups' => 
   array (
-    0 => 'Couchbase\\User',
     -1 => 'Couchbase\\User',
     'groups' => 'array<array-key, mixed>',
   ),
   'couchbase\\user::setpassword' => 
   array (
-    0 => 'Couchbase\\User',
     -1 => 'Couchbase\\User',
     'password' => 'string',
   ),
   'couchbase\\user::setroles' => 
   array (
-    0 => 'Couchbase\\User',
     -1 => 'Couchbase\\User',
     'roles' => 'array<array-key, mixed>',
   ),
   'couchbase\\user::setusername' => 
   array (
-    0 => 'Couchbase\\User',
     -1 => 'Couchbase\\User',
     'username' => 'string',
   ),
   'couchbase\\user::username' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\userandmetadata::domain' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\userandmetadata::effectiveroles' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\userandmetadata::externalgroups' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\userandmetadata::passwordchanged' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\userandmetadata::user' => 
   array (
-    0 => 'Couchbase\\User',
     -1 => 'Couchbase\\User',
   ),
   'couchbase\\usermanager::dropgroup' => 
@@ -12705,29 +12201,24 @@ return array (
   ),
   'couchbase\\usermanager::getallgroups' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\usermanager::getallusers' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
     'options=' => 'Couchbase\\GetAllUsersOptions|null',
   ),
   'couchbase\\usermanager::getgroup' => 
   array (
-    0 => 'Couchbase\\Group',
     -1 => 'Couchbase\\Group',
     'name' => 'string',
   ),
   'couchbase\\usermanager::getroles' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\usermanager::getuser' => 
   array (
-    0 => 'Couchbase\\UserAndMetadata',
     -1 => 'Couchbase\\UserAndMetadata',
     'name' => 'string',
     'options=' => 'Couchbase\\GetUserOptions|null',
@@ -12761,7 +12252,6 @@ return array (
   ),
   'couchbase\\valuerecorder::recordvalue' => 
   array (
-    0 => 'Couchbase\\void',
     -1 => 'Couchbase\\void',
     'value' => 'int',
   ),
@@ -12786,7 +12276,6 @@ return array (
   ),
   'couchbase\\valuetoobigexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\valuetoobigexception::getcode' => 
@@ -12819,39 +12308,32 @@ return array (
   ),
   'couchbase\\valuetoobigexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\view::map' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\view::name' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\view::reduce' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\view::setmap' => 
   array (
-    0 => 'Couchbase\\View',
     -1 => 'Couchbase\\View',
     'mapJsCode' => 'string',
   ),
   'couchbase\\view::setname' => 
   array (
-    0 => 'Couchbase\\View',
     -1 => 'Couchbase\\View',
     'name' => 'string',
   ),
   'couchbase\\view::setreduce' => 
   array (
-    0 => 'Couchbase\\View',
     -1 => 'Couchbase\\View',
     'reduceJsCode' => 'string',
   ),
@@ -12876,7 +12358,6 @@ return array (
   ),
   'couchbase\\viewexception::context' => 
   array (
-    0 => 'Couchbase\\object',
     -1 => 'Couchbase\\object',
   ),
   'couchbase\\viewexception::getcode' => 
@@ -12909,7 +12390,6 @@ return array (
   ),
   'couchbase\\viewexception::ref' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\viewindexmanager::dropdesigndocument' => 
@@ -12919,12 +12399,10 @@ return array (
   ),
   'couchbase\\viewindexmanager::getalldesigndocuments' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\viewindexmanager::getdesigndocument' => 
   array (
-    0 => 'Couchbase\\DesignDocument',
     -1 => 'Couchbase\\DesignDocument',
     'name' => 'string',
   ),
@@ -12935,29 +12413,24 @@ return array (
   ),
   'couchbase\\viewmetadata::debug' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\viewmetadata::totalrows' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'couchbase\\viewoptions::group' => 
   array (
-    0 => 'Couchbase\\ViewOptions',
     -1 => 'Couchbase\\ViewOptions',
     'arg' => 'bool',
   ),
   'couchbase\\viewoptions::grouplevel' => 
   array (
-    0 => 'Couchbase\\ViewOptions',
     -1 => 'Couchbase\\ViewOptions',
     'arg' => 'int',
   ),
   'couchbase\\viewoptions::idrange' => 
   array (
-    0 => 'Couchbase\\ViewOptions',
     -1 => 'Couchbase\\ViewOptions',
     'start' => 'mixed',
     'end' => 'mixed',
@@ -12965,38 +12438,32 @@ return array (
   ),
   'couchbase\\viewoptions::includedocuments' => 
   array (
-    0 => 'Couchbase\\ViewOptions',
     -1 => 'Couchbase\\ViewOptions',
     'arg' => 'bool',
     'maxConcurrentDocuments=' => 'int',
   ),
   'couchbase\\viewoptions::key' => 
   array (
-    0 => 'Couchbase\\ViewOptions',
     -1 => 'Couchbase\\ViewOptions',
     'arg' => 'mixed',
   ),
   'couchbase\\viewoptions::keys' => 
   array (
-    0 => 'Couchbase\\ViewOptions',
     -1 => 'Couchbase\\ViewOptions',
     'args' => 'array<array-key, mixed>',
   ),
   'couchbase\\viewoptions::limit' => 
   array (
-    0 => 'Couchbase\\ViewOptions',
     -1 => 'Couchbase\\ViewOptions',
     'arg' => 'int',
   ),
   'couchbase\\viewoptions::order' => 
   array (
-    0 => 'Couchbase\\ViewOptions',
     -1 => 'Couchbase\\ViewOptions',
     'arg' => 'int',
   ),
   'couchbase\\viewoptions::range' => 
   array (
-    0 => 'Couchbase\\ViewOptions',
     -1 => 'Couchbase\\ViewOptions',
     'start' => 'mixed',
     'end' => 'mixed',
@@ -13004,32 +12471,27 @@ return array (
   ),
   'couchbase\\viewoptions::raw' => 
   array (
-    0 => 'Couchbase\\ViewOptions',
     -1 => 'Couchbase\\ViewOptions',
     'key' => 'string',
     'value' => 'mixed',
   ),
   'couchbase\\viewoptions::reduce' => 
   array (
-    0 => 'Couchbase\\ViewOptions',
     -1 => 'Couchbase\\ViewOptions',
     'arg' => 'bool',
   ),
   'couchbase\\viewoptions::scanconsistency' => 
   array (
-    0 => 'Couchbase\\ViewOptions',
     -1 => 'Couchbase\\ViewOptions',
     'arg' => 'int',
   ),
   'couchbase\\viewoptions::skip' => 
   array (
-    0 => 'Couchbase\\ViewOptions',
     -1 => 'Couchbase\\ViewOptions',
     'arg' => 'int',
   ),
   'couchbase\\viewoptions::timeout' => 
   array (
-    0 => 'Couchbase\\ViewOptions',
     -1 => 'Couchbase\\ViewOptions',
     'arg' => 'int',
   ),
@@ -13122,12 +12584,10 @@ return array (
   ),
   'couchbase\\viewresult::metadata' => 
   array (
-    0 => 'Couchbase\\ViewMetaData',
     -1 => 'Couchbase\\ViewMetaData',
   ),
   'couchbase\\viewresult::rows' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'couchbase\\viewrow::document' => 
@@ -13136,7 +12596,6 @@ return array (
   ),
   'couchbase\\viewrow::id' => 
   array (
-    0 => 'string',
     -1 => 'string',
   ),
   'couchbase\\viewrow::key' => 
@@ -13149,7 +12608,6 @@ return array (
   ),
   'couchbase\\watchqueryindexesoptions::watchprimary' => 
   array (
-    0 => 'Couchbase\\WatchQueryIndexesOptions',
     -1 => 'Couchbase\\WatchQueryIndexesOptions',
     'shouldWatch' => 'bool',
   ),
@@ -13160,13 +12618,11 @@ return array (
   ),
   'couchbase\\wildcardsearchquery::boost' => 
   array (
-    0 => 'Couchbase\\WildcardSearchQuery',
     -1 => 'Couchbase\\WildcardSearchQuery',
     'boost' => 'float',
   ),
   'couchbase\\wildcardsearchquery::field' => 
   array (
-    0 => 'Couchbase\\WildcardSearchQuery',
     -1 => 'Couchbase\\WildcardSearchQuery',
     'field' => 'string',
   ),
@@ -18614,7 +18070,6 @@ return array (
   ),
   'ds\\collection::copy' => 
   array (
-    0 => 'Ds\\Collection',
     -1 => 'Ds\\Collection',
   ),
   'ds\\collection::count' => 
@@ -18627,7 +18082,6 @@ return array (
   ),
   'ds\\collection::isempty' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
   ),
   'ds\\collection::jsonserialize' => 
@@ -18636,7 +18090,6 @@ return array (
   ),
   'ds\\collection::toarray' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'ds\\deque::__construct' => 
@@ -18656,7 +18109,6 @@ return array (
   ),
   'ds\\deque::capacity' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'ds\\deque::clear' => 
@@ -18665,23 +18117,19 @@ return array (
   ),
   'ds\\deque::contains' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
     '...values=' => 'mixed',
   ),
   'ds\\deque::copy' => 
   array (
-    0 => 'Ds\\Collection',
     -1 => 'Ds\\Collection',
   ),
   'ds\\deque::count' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'ds\\deque::filter' => 
   array (
-    0 => 'Ds\\Sequence',
     -1 => 'Ds\\Sequence',
     'callback=' => 'callable[impure]|null',
   ),
@@ -18701,7 +18149,6 @@ return array (
   ),
   'ds\\deque::getiterator' => 
   array (
-    0 => 'Traversable|null',
     -1 => 'Traversable|null',
   ),
   'ds\\deque::insert' => 
@@ -18712,12 +18159,10 @@ return array (
   ),
   'ds\\deque::isempty' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
   ),
   'ds\\deque::join' => 
   array (
-    0 => 'string',
     -1 => 'string',
     'glue=' => 'string',
   ),
@@ -18731,19 +18176,16 @@ return array (
   ),
   'ds\\deque::map' => 
   array (
-    0 => 'Ds\\Sequence',
     -1 => 'Ds\\Sequence',
     'callback' => 'callable[impure]',
   ),
   'ds\\deque::merge' => 
   array (
-    0 => 'Ds\\Sequence',
     -1 => 'Ds\\Sequence',
     'values' => 'mixed',
   ),
   'ds\\deque::offsetexists' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
     'offset' => 'mixed',
   ),
@@ -18789,7 +18231,6 @@ return array (
   ),
   'ds\\deque::reversed' => 
   array (
-    0 => 'Ds\\Sequence',
     -1 => 'Ds\\Sequence',
   ),
   'ds\\deque::rotate' => 
@@ -18809,7 +18250,6 @@ return array (
   ),
   'ds\\deque::slice' => 
   array (
-    0 => 'Ds\\Sequence',
     -1 => 'Ds\\Sequence',
     'index' => 'int',
     'length=' => 'int|null',
@@ -18821,7 +18261,6 @@ return array (
   ),
   'ds\\deque::sorted' => 
   array (
-    0 => 'Ds\\Sequence',
     -1 => 'Ds\\Sequence',
     'comparator=' => 'callable[impure]|null',
   ),
@@ -18831,7 +18270,6 @@ return array (
   ),
   'ds\\deque::toarray' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'ds\\deque::unshift' => 
@@ -18841,7 +18279,6 @@ return array (
   ),
   'ds\\hashable::equals' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
     'obj' => 'mixed',
   ),
@@ -18866,7 +18303,6 @@ return array (
   ),
   'ds\\map::capacity' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'ds\\map::clear' => 
@@ -18875,29 +18311,24 @@ return array (
   ),
   'ds\\map::copy' => 
   array (
-    0 => 'Ds\\Collection',
     -1 => 'Ds\\Collection',
   ),
   'ds\\map::count' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'ds\\map::diff' => 
   array (
-    0 => 'Ds\\Map',
     -1 => 'Ds\\Map',
     'map' => 'Ds\\Map',
   ),
   'ds\\map::filter' => 
   array (
-    0 => 'Ds\\Map',
     -1 => 'Ds\\Map',
     'callback=' => 'callable[impure]|null',
   ),
   'ds\\map::first' => 
   array (
-    0 => 'Ds\\Pair',
     -1 => 'Ds\\Pair',
   ),
   'ds\\map::get' => 
@@ -18908,30 +18339,25 @@ return array (
   ),
   'ds\\map::getiterator' => 
   array (
-    0 => 'Traversable|null',
     -1 => 'Traversable|null',
   ),
   'ds\\map::haskey' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
     'key' => 'mixed',
   ),
   'ds\\map::hasvalue' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
     'value' => 'mixed',
   ),
   'ds\\map::intersect' => 
   array (
-    0 => 'Ds\\Map',
     -1 => 'Ds\\Map',
     'map' => 'Ds\\Map',
   ),
   'ds\\map::isempty' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
   ),
   'ds\\map::jsonserialize' => 
@@ -18940,7 +18366,6 @@ return array (
   ),
   'ds\\map::keys' => 
   array (
-    0 => 'Ds\\Set',
     -1 => 'Ds\\Set',
   ),
   'ds\\map::ksort' => 
@@ -18950,30 +18375,25 @@ return array (
   ),
   'ds\\map::ksorted' => 
   array (
-    0 => 'Ds\\Map',
     -1 => 'Ds\\Map',
     'comparator=' => 'callable[impure]|null',
   ),
   'ds\\map::last' => 
   array (
-    0 => 'Ds\\Pair',
     -1 => 'Ds\\Pair',
   ),
   'ds\\map::map' => 
   array (
-    0 => 'Ds\\Map',
     -1 => 'Ds\\Map',
     'callback' => 'callable[impure]',
   ),
   'ds\\map::merge' => 
   array (
-    0 => 'Ds\\Map',
     -1 => 'Ds\\Map',
     'values' => 'mixed',
   ),
   'ds\\map::offsetexists' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
     'offset' => 'mixed',
   ),
@@ -18995,7 +18415,6 @@ return array (
   ),
   'ds\\map::pairs' => 
   array (
-    0 => 'Ds\\Sequence',
     -1 => 'Ds\\Sequence',
   ),
   'ds\\map::put' => 
@@ -19027,18 +18446,15 @@ return array (
   ),
   'ds\\map::reversed' => 
   array (
-    0 => 'Ds\\Map',
     -1 => 'Ds\\Map',
   ),
   'ds\\map::skip' => 
   array (
-    0 => 'Ds\\Pair',
     -1 => 'Ds\\Pair',
     'position' => 'int',
   ),
   'ds\\map::slice' => 
   array (
-    0 => 'Ds\\Map',
     -1 => 'Ds\\Map',
     'index' => 'int',
     'length=' => 'int|null',
@@ -19050,7 +18466,6 @@ return array (
   ),
   'ds\\map::sorted' => 
   array (
-    0 => 'Ds\\Map',
     -1 => 'Ds\\Map',
     'comparator=' => 'callable[impure]|null',
   ),
@@ -19060,23 +18475,19 @@ return array (
   ),
   'ds\\map::toarray' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'ds\\map::union' => 
   array (
-    0 => 'Ds\\Map',
     -1 => 'Ds\\Map',
     'map' => 'Ds\\Map',
   ),
   'ds\\map::values' => 
   array (
-    0 => 'Ds\\Sequence',
     -1 => 'Ds\\Sequence',
   ),
   'ds\\map::xor' => 
   array (
-    0 => 'Ds\\Map',
     -1 => 'Ds\\Map',
     'map' => 'Ds\\Map',
   ),
@@ -19092,7 +18503,6 @@ return array (
   ),
   'ds\\pair::copy' => 
   array (
-    0 => 'Ds\\Pair',
     -1 => 'Ds\\Pair',
   ),
   'ds\\pair::isempty' => 
@@ -19105,7 +18515,6 @@ return array (
   ),
   'ds\\pair::toarray' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'ds\\priorityqueue::__construct' => 
@@ -19119,7 +18528,6 @@ return array (
   ),
   'ds\\priorityqueue::capacity' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'ds\\priorityqueue::clear' => 
@@ -19128,22 +18536,18 @@ return array (
   ),
   'ds\\priorityqueue::copy' => 
   array (
-    0 => 'Ds\\Collection',
     -1 => 'Ds\\Collection',
   ),
   'ds\\priorityqueue::count' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'ds\\priorityqueue::getiterator' => 
   array (
-    0 => 'Traversable|null',
     -1 => 'Traversable|null',
   ),
   'ds\\priorityqueue::isempty' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
   ),
   'ds\\priorityqueue::jsonserialize' => 
@@ -19166,7 +18570,6 @@ return array (
   ),
   'ds\\priorityqueue::toarray' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'ds\\queue::__construct' => 
@@ -19181,7 +18584,6 @@ return array (
   ),
   'ds\\queue::capacity' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'ds\\queue::clear' => 
@@ -19190,22 +18592,18 @@ return array (
   ),
   'ds\\queue::copy' => 
   array (
-    0 => 'Ds\\Collection',
     -1 => 'Ds\\Collection',
   ),
   'ds\\queue::count' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'ds\\queue::getiterator' => 
   array (
-    0 => 'Traversable|null',
     -1 => 'Traversable|null',
   ),
   'ds\\queue::isempty' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
   ),
   'ds\\queue::jsonserialize' => 
@@ -19214,7 +18612,6 @@ return array (
   ),
   'ds\\queue::offsetexists' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
     'offset' => 'mixed',
   ),
@@ -19249,7 +18646,6 @@ return array (
   ),
   'ds\\queue::toarray' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'ds\\sequence::allocate' => 
@@ -19264,7 +18660,6 @@ return array (
   ),
   'ds\\sequence::capacity' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'ds\\sequence::clear' => 
@@ -19273,13 +18668,11 @@ return array (
   ),
   'ds\\sequence::contains' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
     '...values=' => 'mixed',
   ),
   'ds\\sequence::copy' => 
   array (
-    0 => 'Ds\\Collection',
     -1 => 'Ds\\Collection',
   ),
   'ds\\sequence::count' => 
@@ -19288,7 +18681,6 @@ return array (
   ),
   'ds\\sequence::filter' => 
   array (
-    0 => 'Ds\\Sequence',
     -1 => 'Ds\\Sequence',
     'callback=' => 'callable[impure]|null',
   ),
@@ -19318,12 +18710,10 @@ return array (
   ),
   'ds\\sequence::isempty' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
   ),
   'ds\\sequence::join' => 
   array (
-    0 => 'string',
     -1 => 'string',
     'glue=' => 'string',
   ),
@@ -19337,13 +18727,11 @@ return array (
   ),
   'ds\\sequence::map' => 
   array (
-    0 => 'Ds\\Sequence',
     -1 => 'Ds\\Sequence',
     'callback' => 'callable[impure]',
   ),
   'ds\\sequence::merge' => 
   array (
-    0 => 'Ds\\Sequence',
     -1 => 'Ds\\Sequence',
     'values' => 'mixed',
   ),
@@ -19413,7 +18801,6 @@ return array (
   ),
   'ds\\sequence::slice' => 
   array (
-    0 => 'Ds\\Sequence',
     -1 => 'Ds\\Sequence',
     'index' => 'int',
     'length=' => 'int|null',
@@ -19434,7 +18821,6 @@ return array (
   ),
   'ds\\sequence::toarray' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'ds\\sequence::unshift' => 
@@ -19459,7 +18845,6 @@ return array (
   ),
   'ds\\set::capacity' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'ds\\set::clear' => 
@@ -19468,29 +18853,24 @@ return array (
   ),
   'ds\\set::contains' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
     '...values=' => 'mixed',
   ),
   'ds\\set::copy' => 
   array (
-    0 => 'Ds\\Collection',
     -1 => 'Ds\\Collection',
   ),
   'ds\\set::count' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'ds\\set::diff' => 
   array (
-    0 => 'Ds\\Set',
     -1 => 'Ds\\Set',
     'set' => 'Ds\\Set',
   ),
   'ds\\set::filter' => 
   array (
-    0 => 'Ds\\Set',
     -1 => 'Ds\\Set',
     'predicate=' => 'callable[impure]|null',
   ),
@@ -19505,18 +18885,15 @@ return array (
   ),
   'ds\\set::getiterator' => 
   array (
-    0 => 'Traversable|null',
     -1 => 'Traversable|null',
   ),
   'ds\\set::intersect' => 
   array (
-    0 => 'Ds\\Set',
     -1 => 'Ds\\Set',
     'set' => 'Ds\\Set',
   ),
   'ds\\set::isempty' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
   ),
   'ds\\set::join' => 
@@ -19534,19 +18911,16 @@ return array (
   ),
   'ds\\set::map' => 
   array (
-    0 => 'Ds\\Set',
     -1 => 'Ds\\Set',
     'callback' => 'callable[impure]',
   ),
   'ds\\set::merge' => 
   array (
-    0 => 'Ds\\Set',
     -1 => 'Ds\\Set',
     'values' => 'mixed',
   ),
   'ds\\set::offsetexists' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
     'offset' => 'mixed',
   ),
@@ -19583,12 +18957,10 @@ return array (
   ),
   'ds\\set::reversed' => 
   array (
-    0 => 'Ds\\Set',
     -1 => 'Ds\\Set',
   ),
   'ds\\set::slice' => 
   array (
-    0 => 'Ds\\Set',
     -1 => 'Ds\\Set',
     'index' => 'int',
     'length=' => 'int|null',
@@ -19600,7 +18972,6 @@ return array (
   ),
   'ds\\set::sorted' => 
   array (
-    0 => 'Ds\\Set',
     -1 => 'Ds\\Set',
     'comparator=' => 'callable[impure]|null',
   ),
@@ -19610,18 +18981,15 @@ return array (
   ),
   'ds\\set::toarray' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'ds\\set::union' => 
   array (
-    0 => 'Ds\\Set',
     -1 => 'Ds\\Set',
     'set' => 'Ds\\Set',
   ),
   'ds\\set::xor' => 
   array (
-    0 => 'Ds\\Set',
     -1 => 'Ds\\Set',
     'set' => 'Ds\\Set',
   ),
@@ -19637,7 +19005,6 @@ return array (
   ),
   'ds\\stack::capacity' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'ds\\stack::clear' => 
@@ -19646,22 +19013,18 @@ return array (
   ),
   'ds\\stack::copy' => 
   array (
-    0 => 'Ds\\Collection',
     -1 => 'Ds\\Collection',
   ),
   'ds\\stack::count' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'ds\\stack::getiterator' => 
   array (
-    0 => 'Traversable|null',
     -1 => 'Traversable|null',
   ),
   'ds\\stack::isempty' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
   ),
   'ds\\stack::jsonserialize' => 
@@ -19670,7 +19033,6 @@ return array (
   ),
   'ds\\stack::offsetexists' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
     'offset' => 'mixed',
   ),
@@ -19705,7 +19067,6 @@ return array (
   ),
   'ds\\stack::toarray' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'ds\\vector::__construct' => 
@@ -19725,7 +19086,6 @@ return array (
   ),
   'ds\\vector::capacity' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'ds\\vector::clear' => 
@@ -19734,23 +19094,19 @@ return array (
   ),
   'ds\\vector::contains' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
     '...values=' => 'mixed',
   ),
   'ds\\vector::copy' => 
   array (
-    0 => 'Ds\\Collection',
     -1 => 'Ds\\Collection',
   ),
   'ds\\vector::count' => 
   array (
-    0 => 'int',
     -1 => 'int',
   ),
   'ds\\vector::filter' => 
   array (
-    0 => 'Ds\\Sequence',
     -1 => 'Ds\\Sequence',
     'callback=' => 'callable[impure]|null',
   ),
@@ -19770,7 +19126,6 @@ return array (
   ),
   'ds\\vector::getiterator' => 
   array (
-    0 => 'Traversable|null',
     -1 => 'Traversable|null',
   ),
   'ds\\vector::insert' => 
@@ -19781,12 +19136,10 @@ return array (
   ),
   'ds\\vector::isempty' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
   ),
   'ds\\vector::join' => 
   array (
-    0 => 'string',
     -1 => 'string',
     'glue=' => 'string',
   ),
@@ -19800,19 +19153,16 @@ return array (
   ),
   'ds\\vector::map' => 
   array (
-    0 => 'Ds\\Sequence',
     -1 => 'Ds\\Sequence',
     'callback' => 'callable[impure]',
   ),
   'ds\\vector::merge' => 
   array (
-    0 => 'Ds\\Sequence',
     -1 => 'Ds\\Sequence',
     'values' => 'mixed',
   ),
   'ds\\vector::offsetexists' => 
   array (
-    0 => 'bool',
     -1 => 'bool',
     'offset' => 'mixed',
   ),
@@ -19858,7 +19208,6 @@ return array (
   ),
   'ds\\vector::reversed' => 
   array (
-    0 => 'Ds\\Sequence',
     -1 => 'Ds\\Sequence',
   ),
   'ds\\vector::rotate' => 
@@ -19878,7 +19227,6 @@ return array (
   ),
   'ds\\vector::slice' => 
   array (
-    0 => 'Ds\\Sequence',
     -1 => 'Ds\\Sequence',
     'index' => 'int',
     'length=' => 'int|null',
@@ -19890,7 +19238,6 @@ return array (
   ),
   'ds\\vector::sorted' => 
   array (
-    0 => 'Ds\\Sequence',
     -1 => 'Ds\\Sequence',
     'comparator=' => 'callable[impure]|null',
   ),
@@ -19900,7 +19247,6 @@ return array (
   ),
   'ds\\vector::toarray' => 
   array (
-    0 => 'array<array-key, mixed>',
     -1 => 'array<array-key, mixed>',
   ),
   'ds\\vector::unshift' => 

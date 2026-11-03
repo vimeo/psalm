@@ -46,6 +46,7 @@ foreach (glob(__DIR__."/../../dictionaries/autogen/CallMap_*.php") as $file) {
     $signatureReturnTypes = [];
     foreach ($baseMaps[$version] as $func => $params) {
         if (isset($params[-1])) {
+            $baseMaps[$version][$func][0] ??= $params[-1];
             $signatureReturnTypes[$func] = $params[-1];
         }
     }

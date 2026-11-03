@@ -226,6 +226,13 @@ function assertTypeValidity(string $base, string $custom, string $msgPrefix): st
 
 function writeCallMap(string $file, array $callMap): void
 {
+    foreach ($callMap as &$entry) {
+        if (isset($entry[-1]) && ($entry[0] ?? null) === $entry[-1]) {
+            unset($entry[0]);
+        }
+    }
+    unset($entry);
+
     file_put_contents($file, '<?php // phpcs:ignoreFile
 
 return '.var_export($callMap, true).';');
