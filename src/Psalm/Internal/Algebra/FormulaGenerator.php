@@ -17,9 +17,13 @@ use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Storage\Assertion\Truthy;
 
+use function array_diff_key;
+use function array_filter;
 use function array_map;
+use function array_values;
 use function count;
 use function spl_object_id;
+use function strcspn;
 use function substr;
 
 /**
@@ -64,6 +68,20 @@ final class FormulaGenerator
                 $inside_negation,
                 $cache,
             );
+
+            // what the left one tested of the previous value of a variable the right one assigns says nothing
+            // of the value that follows the assignment
+            $left_tested_var_ids = array_diff_key(
+                self::getAssignedVarIds($conditional->right, $this_class_name),
+                self::getAssignedVarIds($conditional->left, $this_class_name),
+            );
+
+            if ($left_tested_var_ids) {
+                $left_assertions = array_values(array_filter(
+                    $left_assertions,
+                    static fn(Clause $clause): bool => !self::mentionsAnyVar($clause, $left_tested_var_ids),
+                ));
+            }
 
             return [...$left_assertions, ...$right_assertions];
         }
@@ -483,6 +501,21 @@ final class FormulaGenerator
                 $creating_object_id,
             ),
         ];
+    }
+
+    /**
+     * @param array<string, true> $var_ids
+     * @psalm-pure
+     */
+    private static function mentionsAnyVar(Clause $clause, array $var_ids): bool
+    {
+        foreach ($clause->possibilities as $var => $_) {
+            if (isset($var_ids[$var]) || isset($var_ids[substr($var, 0, strcspn($var, '[-'))])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

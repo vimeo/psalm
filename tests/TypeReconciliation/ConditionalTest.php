@@ -21,6 +21,44 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'andWhoseRightSideReassignsWhatTheLeftOneTestedUsesTheAssignedValue' => [
+                'code' => '<?php
+                    function getDefaultName(): ?string {
+                        return null;
+                    }
+
+                    function test(?string $name): int {
+                        if (null === $name && null !== $name = getDefaultName()) {
+                            return strlen($name);
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'logicalAndWhoseRightSideReassignsWhatTheLeftOneTestedUsesTheAssignedValue' => [
+                'code' => '<?php
+                    function getDefaultName(): ?string {
+                        return null;
+                    }
+
+                    function test(?string $name): int {
+                        if (null === $name and null !== $name = getDefaultName()) {
+                            return strlen($name);
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'andWhoseRightSideAssignsAnotherVariableKeepsWhatTheLeftOneTested' => [
+                'code' => '<?php
+                    function test(?string $s): int {
+                        if ($s !== null && ($n = strlen($s)) > 5) {
+                            return strlen($s) + $n;
+                        }
+
+                        return 0;
+                    }',
+            ],
             'nonStrictConditionOnMixedOrNull' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $owners */
