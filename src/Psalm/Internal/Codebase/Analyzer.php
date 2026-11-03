@@ -427,12 +427,6 @@ final class Analyzer
 
         $method_dependencies = $file_reference_provider->getAllMethodDependencies();
 
-        $all_referencing_methods = $method_dependencies;
-
-        foreach ($code_use_graph->getFunctionLikeReferencesToMembers() as $member_id => $referencing_methods) {
-            $all_referencing_methods[$member_id] = ($all_referencing_methods[$member_id] ?? []) + $referencing_methods;
-        }
-
         $method_param_uses = $file_reference_provider->getAllMethodParamUses();
 
         $references_to_mixed_member_names = $file_reference_provider->getAllReferencesToMixedMemberNames();
@@ -441,6 +435,17 @@ final class Analyzer
         // Finish loading cached data from disk
 
         $changed_members = $statements_provider->getChangedMembers();
+        $unchanged_signature_members = $statements_provider->getUnchangedSignatureMembers();
+
+        $all_referencing_methods = $method_dependencies;
+
+        // only needed to invalidate the references to changed members, which a full run has none of
+        if ($changed_members || $unchanged_signature_members) {
+            foreach ($code_use_graph->getFunctionLikeReferencesToMembers() as $member_id => $referencing_methods) {
+                $all_referencing_methods[$member_id]
+                    = ($all_referencing_methods[$member_id] ?? []) + $referencing_methods;
+            }
+        }
 
         foreach ($changed_members as $file_path => $members_by_file) {
             foreach ($members_by_file as $changed_member => $_) {
@@ -466,7 +471,7 @@ final class Analyzer
 
         $newly_invalidated_methods = [];
 
-        foreach ($statements_provider->getUnchangedSignatureMembers() as $file_unchanged_signature_members) {
+        foreach ($unchanged_signature_members as $file_unchanged_signature_members) {
             $newly_invalidated_methods = array_merge($newly_invalidated_methods, $file_unchanged_signature_members);
 
             foreach ($file_unchanged_signature_members as $unchanged_signature_member_id => $_) {
