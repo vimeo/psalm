@@ -18,6 +18,30 @@ final class ArrayAccessTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testEmptyBranchOffsetMayBeUndefined(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedStringArrayOffset - somefile.php:8');
+
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @param array<string, int> $arr
+                 * @psalm-suppress RiskyTruthyFalsyComparison
+                 */
+                function f(array $arr): void {
+                    if (empty($arr["x"])) {
+                        echo $arr["x"];
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testEnsureArrayOffsetsExist(): void
     {
         $this->expectException(CodeException::class);
@@ -550,6 +574,23 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'emptyOffsetOfArrayKeepsValueType' => [
+                'code' => '<?php
+                    /** @var array<string, int> $arr */
+                    $arr = [];
+                    /** @var array<int, string> $list */
+                    $list = [];
+
+                    $v = empty($arr["x"]) ? $arr["x"] : 0;
+                    $w = empty($list[0]) ? $list[0] : "";
+                    $x = !empty($arr["x"]) ? 0 : $arr["x"];',
+                'assertions' => [
+                    '$v' => 'int',
+                    '$w' => 'string',
+                    '$x' => 'int',
+                ],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
             'coalesceOnOptionalKeysWithComputedOffset' => [
                 'code' => '<?php
                     /** @return array{a?: int, b?: int} */
