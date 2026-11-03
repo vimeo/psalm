@@ -11,6 +11,7 @@ use Psalm\Config;
 use function addcslashes;
 use function mb_strlen;
 use function mb_substr;
+use function preg_replace_callback;
 use function strlen;
 
 /**
@@ -86,8 +87,16 @@ class TLiteralString extends TString
         if (!$exact) {
             return 'string';
         }
-        // quote control characters, backslashes and double quote
-        $no_newline_value = addcslashes($this->value, "\0..\37\\\"");
+        // quote control characters, backslashes and double quote; PHP has no \a and \b escapes
+        $no_newline_value = (string) preg_replace_callback(
+            '/\\\\(.)/s',
+            static fn(array $match): string => match ($match[1]) {
+                'a' => '\\007',
+                'b' => '\\010',
+                default => $match[0],
+            },
+            addcslashes($this->value, "\0..\37\177\\\""),
+        );
         if (mb_strlen($this->value) > 80) {
             return "'" . mb_substr($no_newline_value, 0, 80) . '...' . "'";
         }
