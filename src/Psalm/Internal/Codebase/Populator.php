@@ -812,11 +812,15 @@ final class Populator
                         ?? $declaring_class_storage->pseudo_methods[$declaring_method_name]
                         ?? $declaring_class_storage->pseudo_static_methods[$declaring_method_name];
 
-                    $inherits_return_type = self::inheritsReturnType($method_storage, $declaring_method_storage);
+                    $orphans_return_template = self::returnUsesTemplateOfRedocumentedParams(
+                        $method_storage,
+                        $declaring_method_storage,
+                    );
+                    $inherits_return_type = !$method_storage->has_docblock_return_type && !$orphans_return_template;
 
                     // a parent documents this method if it documents a tag the override leaves undocumented
                     if ((self::documentsParamLeftUndocumented($method_storage, $declaring_method_storage)
-                            || $inherits_return_type)
+                            || ($inherits_return_type && $declaring_method_storage->has_docblock_return_type))
                         && $method_storage->inherited_return_type !== null
                     ) {
                         if (!isset($storage->documenting_method_ids[$method_name])
@@ -891,12 +895,12 @@ final class Populator
     }
 
     /**
-     * A docblock return type is not inherited when it uses a template of the overridden method that only params the
-     * override documents itself would bind: nothing could infer it at call sites.
+     * Whether the overridden method's docblock return type uses a template of that method that only params the
+     * override documents itself would bind: nothing could infer it at call sites, so it is not inherited.
      *
      * @psalm-capabilities read-props
      */
-    private static function inheritsReturnType(
+    private static function returnUsesTemplateOfRedocumentedParams(
         MethodStorage $method_storage,
         MethodStorage $overridden_method_storage,
     ): bool {
@@ -910,7 +914,7 @@ final class Populator
             || $method_template_types === []
             || !$overridden_method_storage->return_type
         ) {
-            return true;
+            return false;
         }
 
         $inherited_templates = [];
@@ -941,11 +945,11 @@ final class Populator
                 && isset($redocumented_templates[$key])
                 && !isset($inherited_templates[$key])
             ) {
-                return false;
+                return true;
             }
         }
 
-        return true;
+        return false;
     }
 
     private function populateDataFromTrait(

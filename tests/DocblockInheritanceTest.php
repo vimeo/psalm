@@ -402,6 +402,42 @@ final class DocblockInheritanceTest extends TestCase
                     '$u===' => 'UserId',
                 ],
             ],
+            'undocumentedOverrideNotComparedWithReturnOfOtherAncestor' => [
+                'code' => '<?php
+                    class GP {
+                        /**
+                         * @param list<string> $a
+                         * @param int $b
+                         * @return list<int>
+                         */
+                        public function f(array $a, $b): array { return []; }
+                    }
+
+                    class P extends GP {
+                        /** @param int $b */
+                        public function f(array $a, $b): array { return []; }
+                    }
+
+                    final class D extends P {
+                        public function f(array $a, $b): array { return []; }
+                    }',
+            ],
+            'undocumentedOverrideNotComparedWithInterfaceReturn' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return list<int> */
+                        public function g(array $a): array;
+                    }
+
+                    class Q {
+                        /** @param list<string> $a */
+                        public function g(array $a): array { return []; }
+                    }
+
+                    final class E extends Q implements I {
+                        public function g(array $a): array { return []; }
+                    }',
+            ],
             'returnUsingTemplateOfRedocumentedParamNotInherited' => [
                 'code' => '<?php
                     abstract class Container {
