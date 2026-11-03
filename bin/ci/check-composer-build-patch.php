@@ -57,8 +57,14 @@ foreach ($status_output === '' ? [] : explode("\0", $status_output) as $entry) {
     }
 
     if (str_ends_with($path, '.md')) {
+        if (str_contains((string) file_get_contents($path), "\0")) {
+            $errors[] = "$path: contains a NUL byte";
+            continue;
+        }
+
         $in_hunk = false;
-        foreach (explode("\n", $run(['git', 'diff', '-U0', '--', $path])) as $line) {
+        $diff = $run(['git', 'diff', '--text', '--no-textconv', '--no-ext-diff', '-U0', '--', $path]);
+        foreach (explode("\n", $diff) as $line) {
             $in_hunk = $in_hunk || str_starts_with($line, '@@');
             if ($in_hunk
                 && str_starts_with($line, '+')
