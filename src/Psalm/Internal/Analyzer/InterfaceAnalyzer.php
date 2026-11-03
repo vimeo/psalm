@@ -72,13 +72,14 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
 
                 $parent_reference_location = new CodeLocation($this, $extended_interface);
 
-                if (!$codebase->classOrInterfaceExists(
+                if (self::checkFullyQualifiedClassLikeName(
+                    $this,
                     $extended_interface_name,
                     $parent_reference_location,
                     $class_context,
-                )) {
-                    // we should not normally get here
-                    return;
+                    $class_storage->suppressed_issues + $this->getSuppressedIssues(),
+                ) === false) {
+                    continue;
                 }
 
                 try {
