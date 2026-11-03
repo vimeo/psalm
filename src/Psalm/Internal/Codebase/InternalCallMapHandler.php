@@ -290,8 +290,8 @@ final class InternalCallMapHandler
         $possible_callables = [];
 
         foreach ($call_map_functions as $call_map_function_args) {
-            assert(isset($call_map_function_args[0]));
-            $return_type = Type::parseString($call_map_function_args[0]);
+            assert(isset($call_map_function_args[0]) || isset($call_map_function_args[-1]));
+            $return_type = Type::parseString($call_map_function_args[0] ?? $call_map_function_args[-1]);
             unset($call_map_function_args[0], $call_map_function_args[-1]);
 
             $function_params = [];
@@ -403,14 +403,6 @@ final class InternalCallMapHandler
 
         /** @var non-empty-array<lowercase-string, array<int|string, string>> */
         $call_map = require(dirname(__DIR__, 4) . "/dictionaries/CallMap_$analyzer_version_int.php");
-
-        // Compact files omit duplicate analysis returns; preserve the in-memory callmap contract.
-        foreach ($call_map as &$entry) {
-            if (!isset($entry[0]) && isset($entry[-1])) {
-                $entry = [0 => $entry[-1]] + $entry;
-            }
-        }
-        unset($entry);
 
         self::$call_map = $call_map;
         // the callables of the CallMap of another version

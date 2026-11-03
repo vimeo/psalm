@@ -21,36 +21,23 @@ final class CallMapTest extends TestCase
 {
     protected const DICTIONARY_PATH = 'dictionaries';
 
-    /** @return TCallMap */
-    private static function loadCallMap(string $path): array
-    {
-        /** @var TCallMap $map */
-        $map = require $path;
-        foreach ($map as &$entry) {
-            if (!isset($entry[0]) && isset($entry[-1])) {
-                $entry = [0 => $entry[-1]] + $entry;
-            }
-        }
-        unset($entry);
-        return $map;
-    }
-
     public function testReflectedInterfaceMethods(): void
     {
         foreach ([70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 86] as $version) {
-            $map = self::loadCallMap(self::DICTIONARY_PATH . '/autogen/CallMap_' . $version . '.php');
+            /** @var TCallMap $map */
+            $map = require self::DICTIONARY_PATH . '/autogen/CallMap_' . $version . '.php';
             /** @var array<string, string> $extensions */
             $extensions = require self::DICTIONARY_PATH . '/autogen/CallMapExtensions_' . $version . '.php';
 
             self::assertArrayHasKey('iterator::current', $map);
-            self::assertSame('mixed', $map['iterator::current'][0]);
-            self::assertSame('mixed', $map['recursiveiterator::current'][0]);
+            self::assertSame('mixed', $map['iterator::current'][0] ?? $map['iterator::current'][-1]);
+            self::assertSame('mixed', $map['recursiveiterator::current'][0] ?? $map['recursiveiterator::current'][-1]);
             self::assertSame('spl', $extensions['recursiveiterator::current']);
             self::assertArrayHasKey('datetimeinterface::format', $map);
             self::assertSame('date', $extensions['datetimeinterface::format']);
 
             if ($version >= 84) {
-                self::assertSame('int', $map['datetimeinterface::getmicrosecond'][0]);
+                self::assertSame('int', $map['datetimeinterface::getmicrosecond'][0] ?? $map['datetimeinterface::getmicrosecond'][-1]);
                 self::assertSame('int', $map['datetimeinterface::getmicrosecond'][-1]);
                 self::assertSame('date', $extensions['datetimeinterface::getmicrosecond']);
             } else {
@@ -63,14 +50,19 @@ final class CallMapTest extends TestCase
     public function testMongoDbMonitoringOverridesArePreserved(): void
     {
         foreach ([70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 86] as $version) {
-            $map = self::loadCallMap(self::DICTIONARY_PATH . '/CallMap_' . $version . '.php');
+            /** @var TCallMap $map */
+            $map = require self::DICTIONARY_PATH . '/CallMap_' . $version . '.php';
+            $server_changed = $map['mongodb\\driver\\monitoring\\sdamsubscriber::serverchanged'] ?? [];
+            $log = $map['mongodb\\driver\\monitoring\\logsubscriber::log'] ?? [];
+            self::assertSame('void', $server_changed[0] ?? $server_changed[-1] ?? null);
+            self::assertSame('void', $log[0] ?? $log[-1] ?? null);
             self::assertSame(
-                ['void', 'event' => 'MongoDB\\Driver\\Monitoring\\ServerChangedEvent'],
-                array_diff_key($map['mongodb\\driver\\monitoring\\sdamsubscriber::serverchanged'] ?? [], [-1 => true]),
+                ['event' => 'MongoDB\\Driver\\Monitoring\\ServerChangedEvent'],
+                array_diff_key($server_changed, [0 => true, -1 => true]),
             );
             self::assertSame(
-                ['void', 'level' => 'int', 'domain' => 'string', 'message' => 'string'],
-                array_diff_key($map['mongodb\\driver\\monitoring\\logsubscriber::log'] ?? [], [-1 => true]),
+                ['level' => 'int', 'domain' => 'string', 'message' => 'string'],
+                array_diff_key($log, [0 => true, -1 => true]),
             );
         }
     }
@@ -78,10 +70,11 @@ final class CallMapTest extends TestCase
     public function testDsLegacyInterfaceOverridesArePreserved(): void
     {
         foreach ([70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 86] as $version) {
-            $map = self::loadCallMap(self::DICTIONARY_PATH . '/CallMap_' . $version . '.php');
-            self::assertSame('bool', $map['ds\\hashable::equals'][0] ?? null);
-            self::assertSame('void', $map['ds\\collection::clear'][0] ?? null);
-            self::assertSame('mixed', $map['ds\\sequence::first'][0] ?? null);
+            /** @var TCallMap $map */
+            $map = require self::DICTIONARY_PATH . '/CallMap_' . $version . '.php';
+            self::assertSame('bool', $map['ds\\hashable::equals'][0] ?? $map['ds\\hashable::equals'][-1] ?? null);
+            self::assertSame('void', $map['ds\\collection::clear'][0] ?? $map['ds\\collection::clear'][-1] ?? null);
+            self::assertSame('mixed', $map['ds\\sequence::first'][0] ?? $map['ds\\sequence::first'][-1] ?? null);
         }
     }
 

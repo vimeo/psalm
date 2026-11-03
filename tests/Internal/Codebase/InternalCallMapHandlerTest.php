@@ -295,8 +295,7 @@ final class InternalCallMapHandlerTest extends TestCase
         self::assertSame('int<0, max>', $disk_map['strlen'][0]);
         unset($disk_map);
         $loaded_map = InternalCallMapHandler::getCallMap();
-        self::assertArrayHasKey(0, $loaded_map['jsonserializable::jsonserialize']);
-        self::assertSame('mixed', $loaded_map['jsonserializable::jsonserialize'][0]);
+        self::assertArrayNotHasKey(0, $loaded_map['jsonserializable::jsonserialize']);
         unset($loaded_map);
 
         self::assertNull(InternalCallMapHandler::getSignatureReturnType('AMQPValue::toAmqpValue'));
@@ -307,6 +306,9 @@ final class InternalCallMapHandlerTest extends TestCase
             InternalCallMapHandler::getSignatureReturnType("max'1")?->getId(),
         );
         self::assertNull(InternalCallMapHandler::getSignatureReturnType('not_a_builtin'));
+        $json_callables = InternalCallMapHandler::getCallablesFromCallMap('JsonSerializable::jsonSerialize');
+        self::assertNotNull($json_callables);
+        self::assertSame('mixed', $json_callables[0]->return_type?->getId());
         $callables = InternalCallMapHandler::getCallablesFromCallMap('strlen');
         self::assertNotNull($callables);
         self::assertSame('int<0, max>', $callables[0]->return_type?->getId());
@@ -470,7 +472,7 @@ final class InternalCallMapHandlerTest extends TestCase
             return;
         }
 
-        $entryReturnType = $callMapEntry[0];
+        $entryReturnType = $callMapEntry[0] ?? $callMapEntry[-1];
         unset($callMapEntry[0], $callMapEntry[-1]);
 
         if ($functionIgnored) {
@@ -524,7 +526,7 @@ final class InternalCallMapHandlerTest extends TestCase
             return;
         }
 
-        $entryReturnType = $callMapEntry[0];
+        $entryReturnType = $callMapEntry[0] ?? $callMapEntry[-1];
         unset($callMapEntry[0], $callMapEntry[-1]);
 
         /** @var array<string, string> $callMapEntry */

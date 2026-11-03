@@ -95,8 +95,8 @@ to analyse calls. PHPDoc compatibility checks are separate from native signature
 checks.
 
 Generated files omit index `0` when its type equals index `-1`; the signature then
-also supplies the analysis return type. `getCallMap()` restores index `0` when
-loading a compact file so existing consumers always find the analysis return there.
+also supplies the analysis return type. Read it with `$entry[0] ?? $entry[-1]`;
+`getCallMap()` preserves the compact entries without recreating index `0`.
 
 Edit the analysis return type in the overrides, then regenerate. Signature return
 types come from reflection and are retained independently of overrides and
