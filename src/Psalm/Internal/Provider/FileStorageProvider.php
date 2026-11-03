@@ -61,6 +61,7 @@ final class FileStorageProvider
 
     public function has(string $file_path, ?string $file_contents = null): bool
     {
+        $original_file_path = $file_path;
         $file_path = strtolower($file_path);
 
         if (isset(self::$storage[$file_path])) {
@@ -77,7 +78,9 @@ final class FileStorageProvider
 
         $cached_value = $this->cache->getLatestFromCache($file_path, $file_contents);
 
-        if (!$cached_value) {
+        // the cache doesn't tell the spellings of a path apart, but the locations in the storage, and the storages of
+        // the class-likes in the file, have the spelling they were scanned with
+        if (!$cached_value || $cached_value->file_path !== $original_file_path) {
             return false;
         }
 
