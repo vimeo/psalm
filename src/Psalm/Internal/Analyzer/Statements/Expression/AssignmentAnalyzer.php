@@ -368,6 +368,7 @@ final class AssignmentAnalyzer
                 && (!$not_ignored_docblock_var_ids || isset($not_ignored_docblock_var_ids[$extended_var_id]))
                 && $temp_assign_value_type->getId() === $comment_type->getId()
                 && !$comment_type->isMixed(true)
+                && !self::isTypeFromPhpstanVar($var_comments, $var_id)
             ) {
                 if ($codebase->alter_code
                     && isset($statements_analyzer->getProjectAnalyzer()->getIssuesToFix()['UnnecessaryVarAnnotation'])
@@ -829,6 +830,23 @@ final class AssignmentAnalyzer
         }
     }
 
+    /**
+     * @param list<VarDocblockComment> $var_comments
+     * @psalm-capabilities read-props
+     */
+    private static function isTypeFromPhpstanVar(array $var_comments, ?string $var_id): bool
+    {
+        $from_phpstan = false;
+
+        foreach ($var_comments as $var_comment) {
+            if ($var_comment->var_id === null || $var_comment->var_id === $var_id) {
+                $from_phpstan = $var_comment->from_phpstan;
+            }
+        }
+
+        return $from_phpstan;
+    }
+
     public static function assignTypeFromVarDocblock(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node $stmt,
@@ -906,7 +924,7 @@ final class AssignmentAnalyzer
 
             if (!$var_comment->var_id || $var_comment->var_id === $var_id) {
                 $comment_type = $var_comment_type;
-                $comment_type_location = $var_comment->from_phpstan ? null : $type_location;
+                $comment_type_location = $type_location;
                 return;
             }
 
