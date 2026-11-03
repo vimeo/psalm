@@ -70,6 +70,19 @@ final class TypeHintResolver
                     $analysis_php_version_id,
                 );
 
+                if ($type !== null) {
+                    foreach ($resolved_type->getAtomicTypes() as $resolved_key => $_) {
+                        if (isset($type->getAtomicTypes()[$resolved_key])) {
+                            IssueBuffer::maybeAdd(
+                                new ParseError(
+                                    'Duplicate type ' . $resolved_key . ' is redundant',
+                                    $code_location,
+                                ),
+                            );
+                        }
+                    }
+                }
+
                 $type = Type::combineUnionTypes($resolved_type, $type);
             }
 
