@@ -24,6 +24,7 @@ use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Issue\InvalidTypeImport;
 use Psalm\Issue\UncaughtThrowInGlobalScope;
 use Psalm\IssueBuffer;
+use Psalm\Node\Stmt\VirtualNop;
 use Psalm\NodeTypeProvider;
 use Psalm\Plugin\EventHandler\Event\AfterFileAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
@@ -303,10 +304,17 @@ class FileAnalyzer extends SourceAnalyzer
                     $namespace_analyzer->getAliasedClassesFlipped();
                 $this->namespace_aliased_classes_flipped_replaceable[$namespace_name] =
                     $namespace_analyzer->getAliasedClassesFlippedReplaceable();
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
-                $this->visitUse($stmt);
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
-                $this->visitGroupUse($stmt);
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_ || $stmt instanceof PhpParser\Node\Stmt\GroupUse) {
+                if ($stmt instanceof PhpParser\Node\Stmt\Use_) {
+                    $this->visitUse($stmt);
+                } else {
+                    $this->visitGroupUse($stmt);
+                }
+
+                // the docblock before a `use` documents the file (`@var` of the variables it is included into)
+                if ($stmt->getDocComment() !== null) {
+                    $leftover_stmts[] = new VirtualNop($stmt->getAttributes());
+                }
             } else {
                 if ($stmt instanceof PhpParser\Node\Stmt\If_) {
                     foreach ($stmt->stmts as $if_stmt) {

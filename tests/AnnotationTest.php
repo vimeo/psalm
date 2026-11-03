@@ -184,6 +184,22 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'fileLevelVarDocblockBeforeAUseStatement' => [
+                'code' => '<?php
+                    /**
+                     * @var string $foo
+                     * @var int $count
+                     */
+
+                    use stdClass;
+                    use Exception as E;
+
+                    echo strlen($foo) + $count;
+                    echo get_class(new stdClass());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'varWithoutNameDoesNotTakeNameOfPreviousVarLine' => [
                 'code' => '<?php
                     /**
@@ -1492,6 +1508,17 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'fileLevelVarDocblockBeforeAUseStatementOnlyDeclaresItsOwnVariables' => [
+                'code' => '<?php
+                    /**
+                     * @var string $foo
+                     */
+
+                    use stdClass;
+
+                    echo strlen($other);',
+                'error_message' => 'UndefinedGlobalVariable',
+            ],
             'invalidTypeInPromotedPropertyDocblock' => [
                 'code' => '<?php
                     class Foo {
