@@ -1507,6 +1507,32 @@ final class ForeachTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
+            'continueTooManyLevels' => [
+                'code' => '<?php
+                    foreach ([1, 2] as $i) {
+                        continue 2;
+                    }',
+                'error_message' => 'ContinueOutsideLoop - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25',
+            ],
+            'breakTooManyLevels' => [
+                'code' => '<?php
+                    foreach ([1, 2] as $i) {
+                        foreach ([3, 4] as $j) {
+                            break 3;
+                        }
+                    }',
+                'error_message' => 'ContinueOutsideLoop - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'continueTooManyLevelsInSwitch' => [
+                'code' => '<?php
+                    foreach ([1, 2] as $i) {
+                        switch ($i) {
+                            case 1:
+                                continue 3;
+                        }
+                    }',
+                'error_message' => 'ContinueOutsideLoop - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
+            ],
             'possiblyUndefinedVariableInForeachDueToBreakBefore' => [
                 'code' => '<?php
                     foreach ([1, 2, 3, 4] as $b) {
