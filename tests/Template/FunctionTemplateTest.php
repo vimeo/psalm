@@ -2479,6 +2479,337 @@ final class FunctionTemplateTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'narrowTemplateBoundOnNegatedInstanceof' => [
+                'code' => '<?php
+                    interface Node {}
+                    final class A implements Node {}
+                    final class B implements Node {}
+
+                    function takesA(A $_a): void {}
+
+                    /**
+                     * @template T as Node
+                     * @param T $node
+                     */
+                    function f(Node $node): void {
+                        if (!$node instanceof A && !$node instanceof B) {
+                            return;
+                        }
+
+                        if (!$node instanceof B) {
+                            takesA($node);
+                        }
+                    }',
+            ],
+            'narrowTemplateBoundOfThreeTypesOnNegatedInstanceof' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+                    final class C {}
+
+                    /** @param A|B $_ab */
+                    function takesAOrB(object $_ab): void {}
+
+                    /**
+                     * @template T as A|B|C
+                     * @param T $abc
+                     */
+                    function f(object $abc): void {
+                        if (!$abc instanceof C) {
+                            takesAOrB($abc);
+                        }
+                    }',
+            ],
+            'narrowTemplateBoundInUnionOnNegatedInstanceof' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    function takesA(A $_a): void {}
+
+                    /**
+                     * @template T as A|B
+                     * @param T|null $ab
+                     */
+                    function f(?object $ab): void {
+                        if ($ab !== null && !$ab instanceof B) {
+                            takesA($ab);
+                        }
+                    }',
+            ],
+            'narrowTemplateBoundOnNegatedInstanceofOfSupertype' => [
+                'code' => '<?php
+                    interface I {}
+                    class ParentA {}
+                    final class A extends ParentA implements I {}
+                    final class B {}
+
+                    function takesB(B $_b): void {}
+
+                    /**
+                     * @template T as A|B
+                     * @param T $ab
+                     */
+                    function notParent(object $ab): void {
+                        if (!$ab instanceof ParentA) {
+                            takesB($ab);
+                        }
+                    }
+
+                    /**
+                     * @template T as A|B
+                     * @param T $ab
+                     */
+                    function notInterface(object $ab): void {
+                        if (!$ab instanceof I) {
+                            takesB($ab);
+                        }
+                    }',
+            ],
+            'templateBoundNotNarrowedOnNegatedInstanceofOfUnrelatedInterface' => [
+                'code' => '<?php
+                    interface I {}
+                    class A {}
+                    class B {}
+
+                    /** @param A|B $_ab */
+                    function takesAOrB(object $_ab): void {}
+
+                    /**
+                     * @template T as A|B
+                     * @param T $ab
+                     */
+                    function f(object $ab): void {
+                        if (!$ab instanceof I) {
+                            takesAOrB($ab);
+                        }
+                    }',
+            ],
+            'narrowTemplateBoundOnNegatedTraversable' => [
+                'code' => '<?php
+                    /** @param array<int> $_a */
+                    function takesArray(array $_a): void {}
+
+                    /**
+                     * @template T as iterable<int>
+                     * @param T $i
+                     */
+                    function f(iterable $i): void {
+                        if (!$i instanceof Traversable) {
+                            takesArray($i);
+                        }
+                    }',
+            ],
+            'narrowTemplateBoundOnNegatedLiteralEquality' => [
+                'code' => '<?php
+                    enum Suit {
+                        case Hearts;
+                        case Spades;
+                    }
+
+                    /** @param 2|3 $_i */
+                    function takesTwoOrThree(int $_i): void {}
+
+                    /** @param Suit::Spades $_s */
+                    function takesSpades(Suit $_s): void {}
+
+                    /**
+                     * @template T as 1|2|3
+                     * @param T $i
+                     */
+                    function notOne(int $i): void {
+                        if ($i !== 1) {
+                            takesTwoOrThree($i);
+                        }
+                    }
+
+                    /**
+                     * @template T as Suit
+                     * @param T $s
+                     */
+                    function notHearts(Suit $s): void {
+                        if ($s !== Suit::Hearts) {
+                            takesSpades($s);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'templateBoundNotWidenedOnNegatedArrayAssertion' => [
+                'code' => '<?php
+                    /** @param array<int, string> $_a */
+                    function takesIntToString(array $_a): void {}
+
+                    /** @param array<string, int> $_a */
+                    function takesStringToInt(array $_a): void {}
+
+                    /** @psalm-assert-if-true array<string> $_a */
+                    function isStringArray(array $_a): bool {
+                        return true;
+                    }
+
+                    /**
+                     * @template T as array<int, string>
+                     * @param T $a
+                     */
+                    function notList(array $a): void {
+                        if (!array_is_list($a)) {
+                            takesIntToString($a);
+                        }
+                    }
+
+                    /**
+                     * @template T as array<string, int>
+                     * @param T $a
+                     */
+                    function notStringArray(array $a): void {
+                        if (!isStringArray($a)) {
+                            takesStringToInt($a);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'templateEnumCaseBoundEmptiedByNegatedEqualityIsNotReported' => [
+                'code' => '<?php
+                    enum Suit {
+                        case Hearts;
+                        case Spades;
+                    }
+
+                    /**
+                     * @template T as Suit
+                     * @param T $s
+                     */
+                    function matchDefault(Suit $s): int {
+                        return match ($s) {
+                            Suit::Hearts => 1,
+                            Suit::Spades => 2,
+                            default => 3,
+                        };
+                    }
+
+                    /**
+                     * @template T as Suit::Hearts
+                     * @param T $s
+                     */
+                    function notHearts(Suit $s): void {
+                        if ($s !== Suit::Hearts) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'templateBoundNotCheckedOnNegatedEqualityToALiteralBesideIt' => [
+                'code' => '<?php
+                    enum Suit {
+                        case Hearts;
+                        case Spades;
+                        case Clubs;
+                    }
+
+                    /**
+                     * @template T as "a"|"b"
+                     * @param T|"" $s
+                     */
+                    function notEmptyString(string $s): void {
+                        if ($s !== "") {}
+                    }
+
+                    /**
+                     * @template T as 1|2
+                     * @param T|3 $i
+                     */
+                    function notThree(int $i): void {
+                        if ($i !== 3) {}
+                    }
+
+                    /**
+                     * @template T as Suit::Hearts|Suit::Spades
+                     * @param T|Suit::Clubs $s
+                     */
+                    function notClubs(Suit $s): void {
+                        if ($s !== Suit::Clubs) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'narrowTemplateBoundOnNegatedIsA' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    function takesA(A $_a): void {}
+
+                    /**
+                     * @template T as A|B
+                     * @param T $ab
+                     */
+                    function f(object $ab): void {
+                        if (!is_a($ab, B::class)) {
+                            takesA($ab);
+                        }
+                    }',
+            ],
+            'narrowClassTemplateBoundOnNegatedInstanceof' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    function takesA(A $_a): void {}
+
+                    /** @template T as A|B */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public object $value) {}
+
+                        public function f(): void {
+                            if (!$this->value instanceof B) {
+                                takesA($this->value);
+                            }
+                        }
+                    }',
+            ],
+            'narrowNestedTemplateBoundOnNegatedInstanceof' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    function takesA(A $_a): void {}
+
+                    /**
+                     * @template T as A|B
+                     * @template U as T
+                     * @param U $ab
+                     */
+                    function f(object $ab): void {
+                        if (!$ab instanceof B) {
+                            takesA($ab);
+                        }
+                    }',
+            ],
+            'narrowIntersectedTemplateBoundOnNegatedInstanceof' => [
+                'code' => '<?php
+                    interface I {}
+                    final class A {}
+                    final class B {}
+
+                    /** @param A&I $_a */
+                    function takesAAndI(object $_a): void {}
+
+                    /**
+                     * @template T as A|B
+                     * @param T&I $ab
+                     */
+                    function f(object $ab): void {
+                        if (!$ab instanceof B) {
+                            takesAAndI($ab);
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -3181,6 +3512,50 @@ final class FunctionTemplateTest extends TestCase
                         throw new Exception();
                     }',
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:24 - Class, interface or enum named Missing does not exist',
+            ],
+            'templateBoundOfSupertypeNotNarrowedOnNegatedInstanceofOfSubtype' => [
+                'code' => '<?php
+                    interface Node {}
+                    final class A implements Node {}
+
+                    function takesA(A $_a): void {}
+
+                    /**
+                     * @template T as Node
+                     * @param T $node
+                     */
+                    function f(Node $node): void {
+                        if (!$node instanceof A) {
+                            takesA($node);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'templateBoundEmptiedByNegatedInstanceof' => [
+                'code' => '<?php
+                    class ParentA {}
+                    final class A extends ParentA {}
+                    final class B extends ParentA {}
+
+                    /**
+                     * @template T as A|B
+                     * @param T $a
+                     */
+                    function f(ParentA $a): void {
+                        if (!$a instanceof ParentA) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'templateBoundEmptiedByNegatedLiteralEquality' => [
+                'code' => '<?php
+                    /**
+                     * @template T as 1
+                     * @param T $i
+                     */
+                    function f(int $i): void {
+                        if ($i !== 1) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
             ],
         ];
     }
