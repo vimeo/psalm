@@ -3,7 +3,8 @@
 /**
  * Checks the changes applied to the working tree from the patch of the "Build docker image for stubs" workflow before
  * it is pushed: the patch comes from a job that runs the dependencies' code, so it may only modify the files composer
- * build generates, and the PHP ones may only hold data, no code that could run when Psalm loads them.
+ * build generates, the PHP ones may only hold data, no code that could run when Psalm loads them, and the docs may only
+ * gain links to issue pages.
  *
  * Usage: php check-composer-build-patch.php, from the repository root after git apply; run a copy made before applying
  * the patch, which could otherwise change this script.
@@ -55,7 +56,20 @@ foreach ($status_output === '' ? [] : explode("\0", $status_output) as $entry) {
         continue;
     }
 
-    if (!str_ends_with($path, '.php')) {
+    if (str_ends_with($path, '.md')) {
+        $in_hunk = false;
+        foreach (explode("\n", $run(['git', 'diff', '-U0', '--', $path])) as $line) {
+            $in_hunk = $in_hunk || str_starts_with($line, '@@');
+            if ($in_hunk
+                && str_starts_with($line, '+')
+                && $line !== '+'
+                && preg_match('~^\+ - \[([A-Za-z0-9]+)\]\(issues/\1\.md\)$~', $line) !== 1
+            ) {
+                $errors[] = "$path: adds a line that isn't a link to an issue page: " . substr($line, 1);
+                continue 2;
+            }
+        }
+
         continue;
     }
 
