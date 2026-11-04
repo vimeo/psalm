@@ -18,8 +18,12 @@
  *    channel's URL), an announcement channel where the bot may send messages and mention everyone; the post pings
  *    everyone and is published to the servers following the channel.
  *
+ * X and Mastodon only get the latest major's minor and major releases, and its patch releases with user-facing
+ * changes (a Features, Fixes or other section besides Internal changes and Docs), but no pre-releases; Telegram and
+ * Discord get every release.
+ *
  * --only announces on the given platforms alone (e.g. --only=x,telegram), to retry those that failed without posting
- * twice on the others.
+ * twice on the others, or to announce on X or Mastodon a release they skip.
  *
  * Drafts aren't announced, nor releases published more than a day ago unless --force is given, so that
  * auto-release.php dispatching the announcement on the last tag of each branch doesn't announce old releases.
@@ -99,7 +103,10 @@ $request = static function (string $url, array $headers, array|object|null $body
 };
 
 $release = json_decode(
-    $run(['gh', 'release', 'view', $tag, '--repo', $repository, '--json', 'tagName,url,isDraft,publishedAt']),
+    $run([
+        'gh', 'release', 'view', $tag, '--repo', $repository,
+        '--json', 'tagName,url,isDraft,isPrerelease,publishedAt,body',
+    ]),
     true,
     512,
     JSON_THROW_ON_ERROR,
@@ -114,6 +121,37 @@ if (!$force && strtotime($release['publishedAt']) < time() - 86_400) {
     echo "$tag was published on {$release['publishedAt']}, more than a day ago, not announcing it" . PHP_EOL;
     exit(0);
 }
+
+// public feeds only get releases worth a post: one a day for every branch buries the ones that matter, and posts
+// nobody engages with make X show the account's other posts less
+$feed_skip_reason = (static function () use ($release, $run, $repository): ?string {
+    if ($release['isPrerelease']) {
+        return 'it is a pre-release';
+    }
+
+    // without a tag, gh views the release marked as latest
+    $latest = json_decode(
+        $run(['gh', 'release', 'view', '--repo', $repository, '--json', 'tagName']),
+        true,
+        512,
+        JSON_THROW_ON_ERROR,
+    )['tagName'];
+    if ((int) $release['tagName'] < (int) $latest) {
+        return "it is older than the latest major ($latest)";
+    }
+
+    // a minor or major release always has news, and its notes may be written by hand without these sections
+    if (str_ends_with($release['tagName'], '.0')) {
+        return null;
+    }
+
+    preg_match_all('/^### (.+?)\s*$/m', $release['body'], $sections);
+    if (array_diff($sections[1], ['Internal changes', 'Docs']) === []) {
+        return 'it is a patch release whose notes have no Features, Fixes or other user-facing section';
+    }
+
+    return null;
+})();
 
 $text = "Psalm {$release['tagName']} has been released: {$release['url']} #psalm";
 echo $text . PHP_EOL;
@@ -185,6 +223,12 @@ if ($unknown !== []) {
 $failed = false;
 foreach ($platforms as $platform => [$secrets, $announce]) {
     if ($only !== null && !in_array(strtolower($platform), $only, true)) {
+        continue;
+    }
+
+    // naming the platform in --only announces there anyway
+    if (in_array($platform, ['X', 'Mastodon'], true) && $feed_skip_reason !== null && $only === null) {
+        echo "Not announcing $tag on $platform: $feed_skip_reason" . PHP_EOL;
         continue;
     }
 
