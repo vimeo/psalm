@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\EventDispatcher;
 use Psalm\IssueBuffer;
+use Psalm\Report;
 use Psalm\Report\ReportOptions;
 
 use function microtime;
@@ -145,5 +146,46 @@ final class IssueBufferTest extends TestCase
         $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('No errors found!', $output);
+    }
+
+    private static function reportOptions(string $format): ReportOptions
+    {
+        $options = new ReportOptions();
+        $options->format = $format;
+
+        return $options;
+    }
+
+    public function testASarifReportOfATaintAnalysisInGithubActionsDoesNotFail(): void
+    {
+        self::assertTrue(IssueBuffer::skipsFailingExitCode(
+            true,
+            [self::reportOptions(Report::TYPE_JSON), self::reportOptions(Report::TYPE_SARIF)],
+            true,
+        ));
+    }
+
+    public function testANonSarifReportOfATaintAnalysisInGithubActionsFails(): void
+    {
+        self::assertFalse(IssueBuffer::skipsFailingExitCode(
+            true,
+            [self::reportOptions(Report::TYPE_JSON)],
+            true,
+        ));
+    }
+
+    public function testASarifReportOutsideGithubActionsFails(): void
+    {
+        self::assertFalse(IssueBuffer::skipsFailingExitCode(true, [self::reportOptions(Report::TYPE_SARIF)], false));
+    }
+
+    public function testASarifReportWithoutTaintAnalysisFails(): void
+    {
+        self::assertFalse(IssueBuffer::skipsFailingExitCode(false, [self::reportOptions(Report::TYPE_SARIF)], true));
+    }
+
+    public function testNoReportFails(): void
+    {
+        self::assertFalse(IssueBuffer::skipsFailingExitCode(true, [], true));
     }
 }
