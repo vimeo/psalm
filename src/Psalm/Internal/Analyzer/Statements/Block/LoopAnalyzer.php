@@ -636,6 +636,7 @@ final class LoopAnalyzer
 
         if ($context->collect_exceptions) {
             $context->mergeExceptions($for_context);
+            $context->mergeExceptions($inner_loop_context);
         }
 
         return null;
