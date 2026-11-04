@@ -173,17 +173,10 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
-     * The type of a variable captured by a closure, as seen in its body. The value is shared with
-     * the enclosing scope, so an object the enclosing scope created is not fresh in the closure:
-     * the closure may be called more than once, and writing that object writes state that outlives
-     * the call. Only the enclosing scope and the closure hold it, though, so it is state of the
-     * closure, as the objects a class instance creates are its own. The same holds for the objects
-     * in a captured array, for a capture by reference, and for a closure capturing state of the
-     * closure it is created in.
-     */
-    /**
      * The enclosing scope can change a captured reference after the closure is created, so the value it held
      * at that point says nothing about the value the closure sees.
+     *
+     * @psalm-pure
      */
     private static function widenLiteralsOfByRefCapture(Union $type): Union
     {
@@ -206,6 +199,15 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         return $type->setTypes($widened);
     }
 
+    /**
+     * The type of a variable captured by a closure, as seen in its body. The value is shared with
+     * the enclosing scope, so an object the enclosing scope created is not fresh in the closure:
+     * the closure may be called more than once, and writing that object writes state that outlives
+     * the call. Only the enclosing scope and the closure hold it, though, so it is state of the
+     * closure, as the objects a class instance creates are its own. The same holds for the objects
+     * in a captured array, for a capture by reference, and for a closure capturing state of the
+     * closure it is created in.
+     */
     private static function getCapturedType(Union $type): Union
     {
         (new CapturedValueVisitor())->traverse($type);
