@@ -1292,7 +1292,7 @@ final class AtomicPropertyFetchAnalyzer
 
     /**
      * @param array<Atomic> $intersection_types
-     * @param list<string> $invalid_fetch_types
+     * @param array<string> $invalid_fetch_types
      */
     private static function analyzeShapePropertyOfIntersection(
         StatementsAnalyzer $statements_analyzer,
