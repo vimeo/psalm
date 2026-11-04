@@ -69,8 +69,7 @@ use function strtolower;
 final class ClassConstAnalyzer
 {
     /**
-     * @psalm-suppress ComplexMethod to be refactored. We should probably regroup the two big if about $stmt->class and
-     * analyse the ::class int $stmt->name separately
+     * @psalm-pure
      */
     private static function widenLiterals(Union $type): Union
     {
@@ -93,6 +92,10 @@ final class ClassConstAnalyzer
         return $type->setTypes($widened);
     }
 
+    /**
+     * @psalm-suppress ComplexMethod to be refactored. We should probably regroup the two big if about $stmt->class and
+     * analyse the ::class int $stmt->name separately
+     */
     public static function analyzeFetch(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ClassConstFetch $stmt,
