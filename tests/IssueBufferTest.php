@@ -148,6 +148,10 @@ final class IssueBufferTest extends TestCase
         $this->assertStringContainsString('No errors found!', $output);
     }
 
+    /**
+     * @param Report::TYPE_* $format
+     * @psalm-pure
+     */
     private static function reportOptions(string $format): ReportOptions
     {
         $options = new ReportOptions();
