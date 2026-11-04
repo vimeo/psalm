@@ -93,6 +93,35 @@ if ($found) {
 }
 PHP
 
+# The bundled plugins name both the phar's own libraries and the analysed project's. A name left prefixed that isn't
+# one of the libraries they use as tools is an analysed name the plugin would never match.
+PHAR="$PWD/build/psalm.phar" php <<'PHP'
+<?php
+$phar = 'phar://' . realpath(getenv('PHAR'));
+$tools = ['phpparser', 'composer\installedversions', 'composer\semver', 'sebastianbergmann\diff', 'webmozart\assert'];
+$found = [];
+foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($phar . '/vendor/psalm', FilesystemIterator::SKIP_DOTS)) as $file) {
+    $path = substr($file->getPathname(), strlen($phar) + 1);
+    if (!str_starts_with($path, 'vendor/psalm/plugin-') || $file->getExtension() !== 'php') {
+        continue;
+    }
+    preg_match_all('/PsalmPhar\\\\{1,2}([A-Za-z_][A-Za-z0-9_\\\\]*)/', file_get_contents($file->getPathname()), $names);
+    foreach ($names[1] as $name) {
+        $name = strtolower(rtrim(str_replace('\\\\', '\\', $name), '\\'));
+        foreach ($tools as $tool) {
+            if ($name === $tool || str_starts_with($name, $tool . '\\')) {
+                continue 2;
+            }
+        }
+        $found[] = $path . ': ' . $name;
+    }
+}
+if ($found) {
+    fwrite(STDERR, "The bundled plugins name prefixed classes that aren't the phar's tools:\n" . implode(PHP_EOL, array_unique($found)) . PHP_EOL);
+    exit(1);
+}
+PHP
+
 rm -rf /tmp/psalmTest
 mkdir -p /tmp/psalmTest
 cd /tmp/psalmTest
@@ -133,6 +162,102 @@ cat > decimal/psalm.xml <<'EOF'
 </psalm>
 EOF
 $OLDPWD/build/psalm.phar --root=decimal --no-cache --no-progress
+
+# Bundled plugins must still match the analysed libraries: with plugin-phpunit working, FooTest is not reported as unused
+php -r '$c = json_decode(file_get_contents("composer.json"), true); $c["autoload-dev"]["psr-4"]["Tests\\"] = "tests/"; file_put_contents("composer.json", json_encode($c));'
+composer require --dev phpunit/phpunit:^11
+mkdir tests
+cat > tests/FooTest.php <<'EOF'
+<?php
+
+namespace Tests;
+
+final class FooTest extends \PHPUnit\Framework\TestCase
+{
+    public function testFoo(): void
+    {
+        $this->assertTrue(true);
+    }
+}
+EOF
+cat > psalm.xml <<'EOF'
+<?xml version="1.0"?>
+<psalm errorLevel="1" findUnusedCode="true">
+    <projectFiles>
+        <directory name="tests"/>
+    </projectFiles>
+</psalm>
+EOF
+$OLDPWD/build/psalm.phar --no-cache --no-progress
+
+# plugin-laravel boots the project's application and works on its objects (Illuminate and Symfony classes, helpers)
+composer create-project --no-scripts --no-interaction laravel/laravel:^12 laravel
+mkdir -p laravel/app/Console/Commands
+cat > laravel/app/Console/Commands/GreetCommand.php <<'EOF'
+<?php
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+
+final class GreetCommand extends Command
+{
+    protected $signature = 'app:greet {name}';
+
+    public function handle(): void
+    {
+        $this->info((string) $this->argument('nmae'));
+    }
+}
+EOF
+cat > laravel/psalm.xml <<'EOF'
+<?xml version="1.0"?>
+<psalm errorLevel="8">
+    <projectFiles>
+        <directory name="app"/>
+    </projectFiles>
+    <plugins>
+        <pluginClass class="Psalm\LaravelPlugin\Plugin">
+            <failOnInternalError value="true"/>
+        </pluginClass>
+    </plugins>
+</psalm>
+EOF
+# exit code 2 only means issues were found (a crash exits with 1); the plugin must report the misspelled argument
+output=$($OLDPWD/build/psalm.phar --root=laravel --no-cache --no-progress --output-format=compact) || [ $? -eq 2 ]
+echo "$output"
+grep -q InvalidConsoleArgumentName <<< "$output"
+
+# plugin-symfony matches the project's Symfony classes: it must report the mode that isn't an InputArgument constant
+composer create-project --no-scripts --no-interaction symfony/skeleton:^7 symfony
+mkdir -p symfony/src/Command
+cat > symfony/src/Command/GreetCommand.php <<'EOF'
+<?php
+
+namespace App\Command;
+
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
+
+final class GreetCommand extends Command
+{
+    protected function configure(): void
+    {
+        $this->setDefinition([new InputArgument('name', 4)]);
+    }
+}
+EOF
+cat > symfony/psalm.xml <<'EOF'
+<?xml version="1.0"?>
+<psalm errorLevel="8">
+    <projectFiles>
+        <directory name="src"/>
+    </projectFiles>
+</psalm>
+EOF
+output=$($OLDPWD/build/psalm.phar --root=symfony --no-cache --no-progress --output-format=compact) || [ $? -eq 2 ]
+echo "$output"
+grep -q InvalidConsoleArgumentValue <<< "$output"
 
 cd $OLDPWD
 rm -rf /tmp/psalmTest

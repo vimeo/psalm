@@ -131,11 +131,13 @@ return [
 
             return $contents;
         },
-        // Psalm's code also names the analysed code's classes and functions (Decimal\Decimal, lz4_compress()), and
-        // scoper prefixes those too. Strip the prefix again from names the phar doesn't ship, and from everything inside
-        // string literals, which name analysed code (bin/ci/build-phar.sh checks that none names a shipped namespace).
+        // Psalm's code and the bundled plugins also name the analysed code's classes and functions (Decimal\Decimal,
+        // lz4_compress(), PHPUnit\Framework\TestCase), and scoper prefixes those too. Strip the prefix again from names
+        // the phar doesn't ship, and from everything inside string literals, which name analysed code
+        // (bin/ci/build-phar.sh checks the result).
         function (string $filePath, string $prefix, string $contents) use ($isShipped): string {
-            if (!str_starts_with($filePath, 'src/Psalm/')) {
+            $plugin = str_starts_with($filePath, 'vendor/psalm/plugin-');
+            if (!$plugin && !str_starts_with($filePath, 'src/Psalm/')) {
                 return $contents;
             }
 
@@ -155,10 +157,17 @@ return [
 
                 $result .= preg_replace_callback(
                     $name,
-                    static fn(array $m): string => $inString
-                        || !$isShipped(strtolower(str_replace($m[1], '\\', $m[2])))
-                        ? $m[2]
-                        : $m[0],
+                    static function (array $m) use ($inString, $isShipped, $plugin): string {
+                        $unprefixed = strtolower(str_replace($m[1], '\\', $m[2]));
+                        $keep = !$inString
+                            && $isShipped($unprefixed)
+                            // Symfony names in the bundled plugins are the project's: plugin-symfony analyses Symfony
+                            // code, and plugin-laravel works on objects of the booted application (e.g. the
+                            // InputArgument instances Laravel's console Parser returns)
+                            && !($plugin && str_starts_with($unprefixed, 'symfony\\'));
+
+                        return $keep ? $m[0] : $m[2];
+                    },
                     $text
                 );
             }
@@ -180,6 +189,11 @@ return [
         // Extensions php-scoper has no stubs for:
         '/^lz4_/',
         '/^uv_/',
+        // Laravel helpers plugin-laravel calls on the analysed application:
+        'class_basename',
+        'class_uses_recursive',
+        'now',
+        'today',
     ],
     'exclude-constants' => [
         'PSALM_VERSION',
@@ -191,5 +205,7 @@ return [
         // Scripts of the dependencies (CI, tooling) never run inside the phar. Scoped, the functions they declare
         // would be exposed as global aliases to functions the phar never loads.
         ...$filesIn(__DIR__ . '/vendor/*/*/{bin,tools}'),
+        // Stubs of the analysed libraries that bundled plugins register must keep the libraries' names.
+        ...$filesIn(__DIR__ . '/vendor/psalm/plugin-*/stubs'),
     ],
 ];
