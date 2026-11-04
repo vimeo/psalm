@@ -308,6 +308,10 @@ final class CallableTypeComparator
         MethodIdentifier $method_id,
         ?TCallable $container_type_part,
     ): ?TCallable {
+        if (!$codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
+            return null;
+        }
+
         try {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
             $method_storage = $codebase->methods->getStorage($declaring_method_id);
