@@ -215,11 +215,11 @@ When `true`, strings can be used as classes, meaning `$some_string::someMethod()
 ```
 When `true`, disables wildcard suppression of all issues with `@psalm-suppress all`. Defaults to `true`.
 
-#### memoizeMethodCallResults
+#### memorizeMethodCallResults
 
 ```xml
 <psalm
-  memoizeMethodCallResults="[bool]"
+  memorizeMethodCallResults="[bool]"
 >
 ```
 When `true`, the results of method calls without arguments passed are remembered between repeated calls of that method on a given object. Defaults to `false`.
