@@ -15,8 +15,8 @@
  *  - Telegram: TELEGRAM_BOT_TOKEN (from @BotFather) and TELEGRAM_CHAT_ID (the channel, e.g. @psalmphp, where the bot
  *    must be an administrator allowed to post messages).
  *
- * X only gets the latest major's minor and major releases, and its patch releases with user-facing changes (a
- * Features, Fixes or other section besides Internal changes and Docs), but no pre-releases; the other platforms get
+ * X and Mastodon only get the latest major's minor and major releases, and its patch releases with user-facing
+ * changes (a Features, Fixes or other section besides Internal changes and Docs), but no pre-releases; Telegram gets
  * every release.
  *
  * Drafts aren't announced, nor releases published more than a day ago unless --force is given, so that
@@ -105,9 +105,9 @@ if (!$force && strtotime($release['publishedAt']) < time() - 86_400) {
     exit(0);
 }
 
-// X only gets releases worth a post: one a day for every branch buries the ones that matter, and posts nobody
-// engages with make X show the account's other posts less
-$x_skip_reason = (static function () use ($release, $run, $repository): ?string {
+// public feeds only get releases worth a post: one a day for every branch buries the ones that matter, and posts
+// nobody engages with make X show the account's other posts less
+$feed_skip_reason = (static function () use ($release, $run, $repository): ?string {
     if ($release['isPrerelease']) {
         return 'it is a pre-release';
     }
@@ -172,8 +172,8 @@ $platforms = [
 
 $failed = false;
 foreach ($platforms as $platform => [$secrets, $announce]) {
-    if ($platform === 'X' && $x_skip_reason !== null) {
-        echo "Not announcing $tag on X: $x_skip_reason" . PHP_EOL;
+    if (in_array($platform, ['X', 'Mastodon'], true) && $feed_skip_reason !== null) {
+        echo "Not announcing $tag on $platform: $feed_skip_reason" . PHP_EOL;
         continue;
     }
 
