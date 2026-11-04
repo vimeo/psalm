@@ -18,6 +18,36 @@ final class ConstantTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testConstantDefinedInSeveralBranchesIsTheUnionInAnotherFile(): void
+    {
+        // the constants of other files are known without including them
+        $this->project_analyzer->getCodebase()->all_constants_global = true;
+
+        $file1 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file1.php';
+        $file2 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file2.php';
+
+        $this->addFile(
+            $file1,
+            '<?php
+                if (rand(0, 1)) {
+                    define("BRANCHED", "x");
+                } else {
+                    define("BRANCHED", "y");
+                }
+            ',
+        );
+
+        $this->addFile(
+            $file2,
+            '<?php
+                /** @psalm-check-type-exact $value = \'x\'|\'y\' */
+                $value = BRANCHED;
+            ',
+        );
+
+        $this->analyzeFile($file2, new Context());
+    }
+
     public function testGlobalConstantOfEnumCasesFromAnotherFile(): void
     {
         $this->project_analyzer->setPhpVersion('8.1', 'tests');

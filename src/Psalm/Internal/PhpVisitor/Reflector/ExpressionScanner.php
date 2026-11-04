@@ -288,16 +288,17 @@ final class ExpressionScanner
                     $config = Config::getInstance();
 
                     // defined in several branches, the constant has the value of one of the definitions
+                    $stored_const_type = Type::combineUnionTypes(
+                        ($functionlike_storage && !$config->hoist_constants
+                            ? $functionlike_storage->defined_constants[$const_name] ?? null
+                            : $file_storage->constants[$const_name] ?? null),
+                        $const_type,
+                    );
+
                     if ($functionlike_storage && !$config->hoist_constants) {
-                        $functionlike_storage->defined_constants[$const_name] = Type::combineUnionTypes(
-                            $functionlike_storage->defined_constants[$const_name] ?? null,
-                            $const_type,
-                        );
+                        $functionlike_storage->defined_constants[$const_name] = $stored_const_type;
                     } else {
-                        $file_storage->constants[$const_name] = Type::combineUnionTypes(
-                            $file_storage->constants[$const_name] ?? null,
-                            $const_type,
-                        );
+                        $file_storage->constants[$const_name] = $stored_const_type;
                         $file_storage->declaring_constants[$const_name] = $file_storage->file_path;
                     }
 
@@ -306,7 +307,7 @@ final class ExpressionScanner
                         || $codebase->all_constants_global
                         ) && (!defined($const_name) || !$const_type->isMixed())
                     ) {
-                        $codebase->addGlobalConstantType($const_name, $const_type);
+                        $codebase->addGlobalConstantType($const_name, $stored_const_type);
                     }
                 }
             }
