@@ -116,8 +116,9 @@ final class ArrayAssignmentAnalyzer
 
     /**
      * Puts what a call leaves in an array item passed to it by reference into the arrays holding it, with the types
-     * the argument was analysed with: its keys aren't evaluated again. Only arrays are written: offsets of anything
-     * else are written through the reference PHP takes to them, not through offsetSet().
+     * the argument was analysed with: its keys aren't evaluated again. Only arrays, and mixed values for their
+     * taints, are written: offsets of anything else are written through the reference PHP takes to them, not
+     * through offsetSet().
      */
     public static function assignByRefItem(
         StatementsAnalyzer $statements_analyzer,
@@ -153,6 +154,7 @@ final class ArrayAssignmentAnalyzer
                     && !$atomic_type instanceof TKeyedArray
                     && !$atomic_type instanceof TNull
                     && !$atomic_type instanceof TNever
+                    && !$array_type->hasMixed()
                 ) {
                     return;
                 }
@@ -182,7 +184,10 @@ final class ArrayAssignmentAnalyzer
             $array_type = $array_types[$i];
             $key_values = self::getDimKeyValues($statements_analyzer, $item->dim);
 
-            if ($key_values) {
+            if ($array_type->hasMixed()) {
+                // what a mixed value holds isn't known, only that the item flows into it
+                $new_array_type = $array_type;
+            } elseif ($key_values) {
                 $new_array_type = self::writeUnderKeys($codebase, $array_type, $key_values, $value_type);
             } else {
                 $child_id = $i === 0
