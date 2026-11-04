@@ -3957,7 +3957,7 @@ final class ArrayFunctionCallTest extends TestCase
                         return array_first($values) ?? 0;
                     }',
                 'error_message' => 'MixedReturnStatement',
-                'error_levels' => [],
+                'error_levels' => ['PossiblyInvalidArgument'],
                 'php_version' => '8.5',
             ],
             'arrayFirstOfUnpackedArgumentStaysMixed' => [
