@@ -128,6 +128,16 @@ final class ReferenceTest extends TestCase
                         return $o["x"]["y"];
                     }',
             ],
+            'itemsPassedByReferenceInALoopOverTheirKeysAreDefined' => [
+                'code' => '<?php
+                    $m = [];
+                    foreach (["a", "b"] as $k) {
+                        preg_match("/a/", "s", $m[$k]);
+                    }',
+                'assertions' => [
+                    '$m===' => 'array{a: array<array-key, string>, b: array<array-key, string>}',
+                ],
+            ],
             'itemOfArrayAccessPassedByReferenceIsNotSet' => [
                 'code' => '<?php
                     /** @param ArrayObject<int, list<int>> $o */

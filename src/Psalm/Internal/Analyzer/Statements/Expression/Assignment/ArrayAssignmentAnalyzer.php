@@ -180,20 +180,9 @@ final class ArrayAssignmentAnalyzer
 
             $array_type = $array_types[$i];
             $key_values = self::getDimKeyValues($statements_analyzer, $item->dim);
-            $dim_type = $statements_analyzer->node_data->getType($item->dim);
 
-            if (count($key_values) === 1) {
-                $new_array_type = self::updateTypeWithKeyValues(
-                    $codebase,
-                    self::addKeyToArrayType($array_type, $key_values[0]->value, $value_type),
-                    $value_type,
-                    $key_values,
-                );
-            } elseif ($key_values) {
-                $new_array_type = self::updateTypeWithKeyValues($codebase, $array_type, $value_type, $key_values);
-
-                // the item is under one of the keys: each keeps what it held too
-                $new_array_type = Type::combineUnionTypes($array_type, $new_array_type, $codebase);
+            if ($key_values) {
+                $new_array_type = self::writeUnderKeys($codebase, $array_type, $key_values, $value_type);
             } else {
                 $child_id = $i === 0
                     ? ExpressionIdentifier::getExtendedVarId($item, $fq_class_name, $statements_analyzer)
@@ -230,7 +219,7 @@ final class ArrayAssignmentAnalyzer
             [$offset_type, $var_id_addition] = self::getArrayAssignmentOffsetType(
                 $statements_analyzer,
                 $item,
-                $dim_type ?? Type::getArrayKey(),
+                $statements_analyzer->node_data->getType($item->dim) ?? Type::getArrayKey(),
             );
             $written_offsets[] = [$var_id_addition, $offset_type !== null];
 
@@ -242,9 +231,7 @@ final class ArrayAssignmentAnalyzer
         $item_id = ExpressionIdentifier::getExtendedVarId($stmt, $fq_class_name, $statements_analyzer);
 
         if ($item_id !== null) {
-            if (isset($context->vars_in_scope[$item_id])) {
-                $context->removeDescendents($item_id, $context->vars_in_scope[$item_id]);
-            }
+            $context->removeDescendents($item_id, $context->vars_in_scope[$item_id] ?? $item_type);
 
             $context->vars_in_scope[$item_id] = $item_type->setProperties(['by_ref' => false]);
             $context->possibly_assigned_var_ids[$item_id] = true;
@@ -328,34 +315,46 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
-     * The array type with an item of type $value_type under $key, which arrays of any key and arrays without that
-     * key are given for an assignment under it
+     * The array type with $value under the key of $key_values, if one, else under one of them: there, an item
+     * the array surely has may stay
      *
-     * @psalm-pure
+     * @param non-empty-list<TLiteralInt|TLiteralString> $key_values
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
-    private static function addKeyToArrayType(Union $array_type, int|string $key, Union $value_type): Union
+    private static function writeUnderKeys(Codebase $codebase, Union $array, array $key_values, Union $value): Union
     {
         $types = [];
 
-        foreach ($array_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TArray && !$atomic_type->isEmptyArray()) {
-                $atomic_type = TKeyedArray::make([$key => $value_type], null, $atomic_type->type_params);
-            } elseif ($atomic_type instanceof TKeyedArray && !isset($atomic_type->properties[$key])) {
-                $properties = $atomic_type->properties;
-                $properties[$key] = $value_type;
-                $atomic_type = TKeyedArray::make(
-                    $properties,
-                    $atomic_type->class_strings,
-                    $atomic_type->fallback_params,
-                    $atomic_type->is_list && $key === count($atomic_type->properties),
-                    $atomic_type->from_docblock,
-                );
+        foreach ($array->getAtomicTypes() as $atomic_type) {
+            // an array of any key is known under the keys from now on, and an empty array or null becomes an array
+            $keyed = $atomic_type instanceof TKeyedArray ? $atomic_type : null;
+            $fallback_params = $atomic_type instanceof TArray && !$atomic_type->isEmptyArray()
+                ? $atomic_type->type_params
+                : $keyed?->fallback_params;
+            $properties = $keyed->properties ?? [];
+            $is_list = $keyed && $keyed->is_list;
+
+            foreach ($key_values as $key_value) {
+                $key = $key_value->value;
+                $old = $properties[$key] ?? null;
+                $is_list = $is_list
+                    && ($old !== null || ($key === count($properties) && $key === $keyed?->getMinCount()));
+
+                if (count($key_values) === 1 || ($old !== null && $old->possibly_undefined)) {
+                    $properties[$key] = $value;
+                } elseif ($old !== null) {
+                    $properties[$key] = Type::combineUnionTypes($old, $value, $codebase);
+                } else {
+                    $properties[$key] = Type::combineUnionTypes($fallback_params[1] ?? null, $value, $codebase)
+                        ->setPossiblyUndefined(true);
+                }
             }
 
-            $types[] = $atomic_type;
+            $types[] = TKeyedArray::make($properties, $keyed?->class_strings, $fallback_params, $is_list)
+                ->setFromDocblock($keyed->from_docblock ?? false);
         }
 
-        return $array_type->setTypes($types);
+        return $array->setTypes($types);
     }
 
     /**
