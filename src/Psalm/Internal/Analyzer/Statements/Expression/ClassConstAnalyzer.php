@@ -39,14 +39,22 @@ use Psalm\IssueBuffer;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
@@ -64,6 +72,27 @@ final class ClassConstAnalyzer
      * @psalm-suppress ComplexMethod to be refactored. We should probably regroup the two big if about $stmt->class and
      * analyse the ::class int $stmt->name separately
      */
+    private static function widenLiterals(Union $type): Union
+    {
+        $widened = [];
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TLiteralInt) {
+                $atomic = new TInt();
+            } elseif ($atomic instanceof TLiteralFloat) {
+                $atomic = new TFloat();
+            } elseif ($atomic instanceof TLiteralString) {
+                $atomic = new TString();
+            } elseif ($atomic instanceof TTrue || $atomic instanceof TFalse) {
+                $atomic = new TBool();
+            }
+
+            $widened[$atomic->getKey()] = $atomic;
+        }
+
+        return $type->setTypes($widened);
+    }
+
     public static function analyzeFetch(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ClassConstFetch $stmt,
@@ -403,6 +432,13 @@ final class ClassConstAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
+            }
+
+            // a trait is analysed for each class using it, and each class gives the constant its own value
+            if (($first_part_lc === 'self' || $first_part_lc === 'static')
+                && $statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer
+            ) {
+                $class_constant_type = self::widenLiterals($class_constant_type);
             }
 
             if ($first_part_lc !== 'static' || $const_class_storage->final || $class_constant_type->from_docblock
