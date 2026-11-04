@@ -325,6 +325,9 @@ final class ExistingAtomicStaticCallAnalyzer
                 'method ' . $cased_method_id,
             );
 
+            $declared_return_type = $method_storage->return_type;
+            $signature_return_type = $method_storage->signature_return_type;
+
             if ($codebase->find_unused_variables
                 && !$stmt->isFirstClassCallable()
                 && !$context->inside_conditional
@@ -334,14 +337,17 @@ final class ExistingAtomicStaticCallAnalyzer
                 && !$context->inside_call
                 && !$context->inside_return
                 && !$context->inside_unset
+                && $method_storage->is_static
                 && $method_storage->isMutationFree()
+                && ($declared_return_type === null
+                    || !($declared_return_type->isVoid() || $declared_return_type->isNever()))
+                && ($signature_return_type === null
+                    || !($signature_return_type->isVoid() || $signature_return_type->isNever()))
                 && Capabilities::allowsAnyOf(Capabilities::MUTATION_FREE, $call_capabilities)
                 && !$method_storage->assertions
                 && !$method_storage->if_true_assertions
                 && !$method_storage->if_false_assertions
                 && !$method_storage->throws
-                && !$method_storage->return_type?->isNever()
-                && !$method_storage->signature_return_type?->isNever()
                 && !MethodCallPurityAnalyzer::isCalledForItsTemplatesEffects($method_storage)
             ) {
                 IssueBuffer::maybeAdd(
