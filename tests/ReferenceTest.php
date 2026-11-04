@@ -91,6 +91,43 @@ final class ReferenceTest extends TestCase
                     '$a===' => "list{'a'|int, 'b'|int}",
                 ],
             ],
+            'listItemPassedByReferenceUnderItsKeyKeepsTheList' => [
+                'code' => '<?php
+                    /** @param list<list<int>> $lists */
+                    function sort_each(array $lists): void {
+                        foreach ($lists as $i => $_) {
+                            sort($lists[$i]);
+                        }
+
+                        takes_lists($lists);
+                    }
+
+                    /** @param list<list<int>> $lists */
+                    function sort_each_counted(array $lists): void {
+                        for ($i = 0; $i < count($lists); $i++) {
+                            sort($lists[$i]);
+                        }
+
+                        takes_lists($lists);
+                    }
+
+                    /** @param list<list<int>> $lists */
+                    function takes_lists(array $lists): void {}',
+            ],
+            'newItemPassedByReferenceKeepsTheOtherItemsDefined' => [
+                'code' => '<?php
+                    function first_match(string $s): string {
+                        $o = ["x" => "y"];
+                        preg_match("/a/", $s, $o["m"]);
+                        return $o["x"];
+                    }
+
+                    function nested_match(string $s): string {
+                        $o = ["x" => ["y" => "z"]];
+                        preg_match("/a/", $s, $o["x"]["m"]);
+                        return $o["x"]["y"];
+                    }',
+            ],
             'itemOfArrayAccessPassedByReferenceIsNotSet' => [
                 'code' => '<?php
                     /** @param ArrayObject<int, list<int>> $o */

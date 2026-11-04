@@ -168,58 +168,7 @@ final class ArrayAssignmentAnalyzer
             return;
         }
 
-        // the item of an array property is written through the property
-        if ($item instanceof PhpParser\Node\Expr\PropertyFetch
-            && ($prop_name = InstancePropertyFetchAnalyzer::getPropertyName($statements_analyzer, $item)) !== null
-            && ($object_type = $statements_analyzer->node_data->getType($item->var)) !== null
-        ) {
-            $object_id = ExpressionIdentifier::getVarId($item->var, $fq_class_name, $statements_analyzer);
-
-            foreach ($object_type->getAtomicTypes() as $atomic_type) {
-                if (!$atomic_type instanceof TNamedObject) {
-                    continue;
-                }
-
-                $property_id = $atomic_type->value . '::$' . $prop_name;
-                $declaring_class_storage = ArgumentsAnalyzer::getDeclaringClassStorage(
-                    $statements_analyzer,
-                    $property_id,
-                    $prop_name,
-                );
-
-                if ($declaring_class_storage !== null) {
-                    $property_storage = $declaring_class_storage->properties[$prop_name];
-
-                    InstancePropertyAssignmentAnalyzer::checkReadonlyPropertyWrite(
-                        $statements_analyzer,
-                        $item,
-                        $property_id,
-                        $property_storage,
-                        $context,
-                        $object_type->reference_free && $object_type->allow_mutations,
-                    );
-                    InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
-                        $statements_analyzer,
-                        $item,
-                        $property_id,
-                        $property_storage,
-                        $declaring_class_storage,
-                        $context,
-                        $object_id,
-                    );
-                }
-            }
-
-            self::trackPropertyElementImpurity($statements_analyzer, $item, $context);
-        } elseif ($item instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
-            $statements_analyzer->signalMutation(
-                Capabilities::WRITE_GLOBALS,
-                $context,
-                'writing a static property',
-                ImpureStaticProperty::class,
-                $item,
-            );
-        }
+        self::checkByRefItemPropertyWrite($statements_analyzer, $item, $context);
 
         PropertyBagTaints::taintAssignment($statements_analyzer, $stmt, $item_type, $context);
 
@@ -234,17 +183,9 @@ final class ArrayAssignmentAnalyzer
             $dim_type = $statements_analyzer->node_data->getType($item->dim);
 
             if (count($key_values) === 1) {
-                // the item is known under its key, the other items are what they were
-                $keyed_types = [];
-                foreach ($array_type->getAtomicTypes() as $atomic_type) {
-                    $keyed_types[] = $atomic_type instanceof TArray && !$atomic_type->isEmptyArray()
-                        ? TKeyedArray::make([$key_values[0]->value => $value_type], null, $atomic_type->type_params)
-                        : $atomic_type;
-                }
-
                 $new_array_type = self::updateTypeWithKeyValues(
                     $codebase,
-                    $array_type->setTypes($keyed_types),
+                    self::addKeyToArrayType($array_type, $key_values[0]->value, $value_type),
                     $value_type,
                     $key_values,
                 );
@@ -254,15 +195,21 @@ final class ArrayAssignmentAnalyzer
                 // the item is under one of the keys: each keeps what it held too
                 $new_array_type = Type::combineUnionTypes($array_type, $new_array_type, $codebase);
             } else {
-                $new_array_type = Type::combineUnionTypes(
-                    $array_type,
-                    new Union([new TNonEmptyArray([
-                        $dim_type && !$dim_type->hasMixed() ? $dim_type : Type::getArrayKey(),
-                        $value_type,
-                    ])]),
+                $child_id = $i === 0
+                    ? ExpressionIdentifier::getExtendedVarId($item, $fq_class_name, $statements_analyzer)
+                    : $array_ids[$i - 1];
+
+                $new_array_type = self::updateArrayAssignmentChildType(
+                    $statements_analyzer,
                     $codebase,
-                    true,
-                    true,
+                    $item->dim,
+                    $context,
+                    $value_type,
+                    $array_type,
+                    $child_id !== null
+                        && isset($context->vars_in_scope[$child_id])
+                        && !$context->vars_in_scope[$child_id]->possibly_undefined,
+                    $array_ids[$i],
                 );
             }
 
@@ -313,6 +260,102 @@ final class ArrayAssignmentAnalyzer
         if ($context->inside_conditional) {
             $context->assigned_var_ids[$root_var_id] = (int) $stmt->getAttribute('startFilePos');
         }
+    }
+
+    /**
+     * Writing the item of an array property writes the property
+     */
+    private static function checkByRefItemPropertyWrite(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $item,
+        Context $context,
+    ): void {
+        if ($item instanceof PhpParser\Node\Expr\PropertyFetch
+            && ($prop_name = InstancePropertyFetchAnalyzer::getPropertyName($statements_analyzer, $item)) !== null
+            && ($object_type = $statements_analyzer->node_data->getType($item->var)) !== null
+        ) {
+            $object_id = ExpressionIdentifier::getVarId(
+                $item->var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            foreach ($object_type->getAtomicTypes() as $atomic_type) {
+                if (!$atomic_type instanceof TNamedObject) {
+                    continue;
+                }
+
+                $property_id = $atomic_type->value . '::$' . $prop_name;
+                $declaring_class_storage = ArgumentsAnalyzer::getDeclaringClassStorage(
+                    $statements_analyzer,
+                    $property_id,
+                    $prop_name,
+                );
+
+                if ($declaring_class_storage !== null) {
+                    $property_storage = $declaring_class_storage->properties[$prop_name];
+
+                    InstancePropertyAssignmentAnalyzer::checkReadonlyPropertyWrite(
+                        $statements_analyzer,
+                        $item,
+                        $property_id,
+                        $property_storage,
+                        $context,
+                        $object_type->reference_free && $object_type->allow_mutations,
+                    );
+                    InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
+                        $statements_analyzer,
+                        $item,
+                        $property_id,
+                        $property_storage,
+                        $declaring_class_storage,
+                        $context,
+                        $object_id,
+                    );
+                }
+            }
+
+            self::trackPropertyElementImpurity($statements_analyzer, $item, $context);
+        } elseif ($item instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
+            $statements_analyzer->signalMutation(
+                Capabilities::WRITE_GLOBALS,
+                $context,
+                'writing a static property',
+                ImpureStaticProperty::class,
+                $item,
+            );
+        }
+    }
+
+    /**
+     * The array type with an item of type $value_type under $key, which arrays of any key and arrays without that
+     * key are given for an assignment under it
+     *
+     * @psalm-pure
+     */
+    private static function addKeyToArrayType(Union $array_type, int|string $key, Union $value_type): Union
+    {
+        $types = [];
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TArray && !$atomic_type->isEmptyArray()) {
+                $atomic_type = TKeyedArray::make([$key => $value_type], null, $atomic_type->type_params);
+            } elseif ($atomic_type instanceof TKeyedArray && !isset($atomic_type->properties[$key])) {
+                $properties = $atomic_type->properties;
+                $properties[$key] = $value_type;
+                $atomic_type = TKeyedArray::make(
+                    $properties,
+                    $atomic_type->class_strings,
+                    $atomic_type->fallback_params,
+                    $atomic_type->is_list && $key === count($atomic_type->properties),
+                    $atomic_type->from_docblock,
+                );
+            }
+
+            $types[] = $atomic_type;
+        }
+
+        return $array_type->setTypes($types);
     }
 
     /**
