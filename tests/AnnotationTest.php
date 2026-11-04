@@ -1496,7 +1496,7 @@ final class AnnotationTest extends TestCase
                 'code' => '<?php
                     class Foo {
                         public function __construct(
-                            /** @var array<int, > */
+                            /** @var array<int,, string> */
                             public array $bar,
                         ) {}
                     }',
