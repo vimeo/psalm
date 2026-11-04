@@ -637,9 +637,12 @@ final class ArrayFunctionArgumentsAnalyzer
                 $var_atomic_types = array_values($context->vars_in_scope[$var_id]->getAtomicTypes());
 
                 while ($array_atomic_type = array_shift($var_atomic_types)) {
-                    // once an element is removed, the array is no longer of the template type
+                    // once an element is removed, the array is no longer of the template type, only of its bound
                     if ($array_atomic_type instanceof TTemplateParam && !$array_atomic_type->as->isMixed()) {
-                        $var_atomic_types = [...$var_atomic_types, ...array_values($array_atomic_type->as->getAtomicTypes())];
+                        $var_atomic_types = [
+                            ...$var_atomic_types,
+                            ...array_values($array_atomic_type->as->getAtomicTypes()),
+                        ];
                         continue;
                     }
 

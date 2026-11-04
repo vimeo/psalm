@@ -11,11 +11,15 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -118,8 +122,14 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
                 }
 
                 $possibly_empty = $possibly_empty || !$atomic_type->isNonEmpty();
-            } elseif ($atomic_type instanceof TNull || $atomic_type instanceof TFalse) {
-                // throws a TypeError, reported by the callmap signature
+            } elseif ($atomic_type instanceof Scalar
+                || $atomic_type instanceof TNull
+                || $atomic_type instanceof TObject
+                || $atomic_type instanceof TNamedObject
+                || $atomic_type instanceof TResource
+                || $atomic_type instanceof TClosedResource
+            ) {
+                // not an array: throws a TypeError, reported by the callmap signature
                 continue;
             } else {
                 // e.g. mixed, iterable or class-string-map: keep the callmap signature
