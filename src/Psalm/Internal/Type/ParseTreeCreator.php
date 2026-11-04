@@ -112,6 +112,17 @@ final class ParseTreeCreator
                     break;
 
                 case '}':
+                    // after a trailing comma the array itself is the current leaf
+                    if ($this->current_leaf instanceof KeyedArrayTree
+                        && $this->current_leaf->children !== []
+                        && $this->t > 0
+                        && $this->type_tokens[$this->t - 1][0] === ','
+                    ) {
+                        $this->current_leaf->terminated = true;
+
+                        break;
+                    }
+
                     do {
                         if ($this->current_leaf->parent === null) {
                             throw new TypeParseTreeException('Cannot parse array type');
