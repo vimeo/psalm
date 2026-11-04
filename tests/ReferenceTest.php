@@ -457,6 +457,29 @@ final class ReferenceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayCreatedByAnItemPassedByReferenceInALoopIsPossiblyUndefined' => [
+                'code' => '<?php
+                    /** @param list<string> $s */
+                    function f(array $s): string {
+                        foreach ($s as $str) {
+                            /** @psalm-suppress PossiblyUndefinedVariable */
+                            preg_match("/(.*)/", $str, $out["m"]);
+                        }
+                        return $out["m"][1] ?? "";
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:8',
+            ],
+            'arrayCreatedByAnItemPassedByReferenceInAnIfIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(string $s): string {
+                        if (rand(0, 1)) {
+                            /** @psalm-suppress UndefinedVariable, MixedArrayAccess */
+                            preg_match("/(.*)/", $s, $out["m"]);
+                        }
+                        return $out["m"][1] ?? "";
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7',
+            ],
             'itemOfReadonlyPropertyPassedByReference' => [
                 'code' => '<?php
                     final class A {

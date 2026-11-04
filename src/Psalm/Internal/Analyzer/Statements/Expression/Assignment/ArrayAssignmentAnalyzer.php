@@ -139,8 +139,17 @@ final class ArrayAssignmentAnalyzer
             if ($array_id !== null && isset($context->vars_in_scope[$array_id])) {
                 $array_type = $context->vars_in_scope[$array_id];
             } elseif ($item->var instanceof Variable && $array_id !== null) {
-                // PHP creates the array
+                // PHP creates the array (see VariableFetchAnalyzer)
                 $array_type = Type::getEmptyArray();
+                $context->vars_possibly_in_scope[$array_id] = true;
+
+                if (!$statements_analyzer->hasVariable($array_id)) {
+                    $statements_analyzer->registerVariable(
+                        $array_id,
+                        new CodeLocation($statements_analyzer, $item->var),
+                        $context->branch_point,
+                    );
+                }
             } else {
                 $array_type = $statements_analyzer->node_data->getType($item->var);
             }
