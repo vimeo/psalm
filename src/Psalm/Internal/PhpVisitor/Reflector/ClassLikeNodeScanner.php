@@ -429,7 +429,14 @@ final class ClassLikeNodeScanner
 
                 foreach ($type_aliases as $type_alias) {
                     // finds issues, if there are any; `_` is checked where the alias is used
-                    TypeParser::parseTokens($type_alias->replacement_tokens, null, [], [], false, true);
+                    TypeParser::parseTokens(
+                        $type_alias->replacement_tokens,
+                        null,
+                        [],
+                        $this->type_aliases + $type_aliases,
+                        false,
+                        true,
+                    );
                 }
 
                 $this->type_aliases += $type_aliases;
