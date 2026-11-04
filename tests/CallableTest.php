@@ -90,6 +90,32 @@ final class CallableTest extends TestCase
                     '$a===' => 'E',
                 ],
             ],
+            'callableArrayToInheritedStaticMethodOfFinalClassResolvesStaticToIt' => [
+                'code' => '<?php
+                    abstract class Foo {
+                        final private function __construct() {}
+
+                        public static function create(): static {
+                            return new static();
+                        }
+                    }
+
+                    final class Bar extends Foo {}
+
+                    /**
+                     * @template T
+                     * @param callable(): T $fn
+                     * @return T
+                     */
+                    function apply(callable $fn) {
+                        return $fn();
+                    }
+
+                    $a = apply([Bar::class, "create"]);',
+                'assertions' => [
+                    '$a===' => 'Bar',
+                ],
+            ],
             'callableArrayToInheritedMethodExpandsSelfToDeclaringClass' => [
                 'code' => '<?php
                     /**

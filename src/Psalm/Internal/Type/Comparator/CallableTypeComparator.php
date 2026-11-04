@@ -324,6 +324,9 @@ final class CallableTypeComparator
                         : $declaring_method_id->fq_class_name,
                     $method_fqcln,
                     null,
+                    true,
+                    false,
+                    $codebase->classlike_storage_provider->get($method_fqcln)->final,
                 );
             }
 
