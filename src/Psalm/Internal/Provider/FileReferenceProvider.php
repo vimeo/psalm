@@ -278,6 +278,15 @@ final class FileReferenceProvider
         if ($this->cache && (!$this->loaded_from_cache || $force_reload)) {
             $this->loaded_from_cache = true;
 
+            $code_use_graph_data = $this->cache->getCachedCodeUseGraph();
+
+            // a graph saved without edges cannot tell which files reference a file
+            if ($code_use_graph_data === null
+                || ($this->code_use_graph->record_edges && !($code_use_graph_data['edges_recorded'] ?? true))
+            ) {
+                return false;
+            }
+
             $file_references = $this->cache->getCachedFileReferences();
 
             if ($file_references === null) {
@@ -342,12 +351,6 @@ final class FileReferenceProvider
 
             self::$classlike_files = $classlike_files;
 
-            $code_use_graph_data = $this->cache->getCachedCodeUseGraph();
-
-            if ($code_use_graph_data === null) {
-                return false;
-            }
-
             $this->code_use_graph->loadCacheData($code_use_graph_data);
 
             self::$file_maps = $this->cache->getFileMapCache() ?: [];
@@ -363,25 +366,28 @@ final class FileReferenceProvider
      */
     public function updateReferenceCache(Codebase $codebase, array $visited_files): void
     {
-        foreach ($visited_files as $file => $_) {
-            $all_file_references = array_values(array_unique(
-                array_merge(
-                    self::$file_references[$file]['a'] ?? [],
-                    $this->calculateFilesReferencingFile($codebase, $file),
-                ),
-            ));
+        // the references of a file are derived from the edges
+        if ($this->code_use_graph->record_edges) {
+            foreach ($visited_files as $file => $_) {
+                $all_file_references = array_values(array_unique(
+                    array_merge(
+                        self::$file_references[$file]['a'] ?? [],
+                        $this->calculateFilesReferencingFile($codebase, $file),
+                    ),
+                ));
 
-            $inheritance_references = array_values(array_unique(
-                array_merge(
-                    self::$file_references[$file]['i'] ?? [],
-                    $this->calculateFilesInheritingFile($codebase, $file),
-                ),
-            ));
+                $inheritance_references = array_values(array_unique(
+                    array_merge(
+                        self::$file_references[$file]['i'] ?? [],
+                        $this->calculateFilesInheritingFile($codebase, $file),
+                    ),
+                ));
 
-            self::$file_references[$file] = [
-                'a' => $all_file_references,
-                'i' => $inheritance_references,
-            ];
+                self::$file_references[$file] = [
+                    'a' => $all_file_references,
+                    'i' => $inheritance_references,
+                ];
+            }
         }
 
         if ($this->cache) {

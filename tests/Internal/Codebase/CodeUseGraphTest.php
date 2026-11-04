@@ -5,11 +5,19 @@ declare(strict_types=1);
 namespace Psalm\Tests\Internal\Codebase;
 
 use Closure;
+use Psalm\CodeLocation\Raw;
 use Psalm\Context;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Codebase\MutationLevelResolver;
 use Psalm\Tests\TestCase;
 use ReflectionProperty;
 
+use function array_keys;
+use function basename;
+
+/**
+ * @psalm-import-type MutationInfo from MutationLevelResolver
+ */
 final class CodeUseGraphTest extends TestCase
 {
     /**
@@ -286,6 +294,115 @@ final class CodeUseGraphTest extends TestCase
         self::assertNull($graph->getNodeFile($method_a));
         self::assertSame('/a.php', $graph->getNodeFile($method_a2));
         self::assertSame('/a.php', $graph->getNodeFile($method_a3));
+    }
+
+    public function testGraphWithoutEdgesRecordsNeitherEdgesNorTheirFilesAndLocations(): void
+    {
+        $target = CodeUseGraph::propertyNode('t\\c', 'value');
+        $method = CodeUseGraph::functionLikeNode('a\\c::m');
+        $graph = new CodeUseGraph(collect_locations: true, record_edges: false);
+
+        $context = new Context();
+        $context->calling_method_id = 'a\\c::m';
+        $graph->addReference($target, $context, new Raw('', '/a.php', 'a.php', 0, 0));
+        $graph->addEdge($method, $target);
+        $graph->markAsPublicApi($method);
+
+        self::assertSame([], $graph->getAllReferences());
+        self::assertSame([], $graph->getReferenceLocations($target));
+        self::assertNull($graph->getNodeFile($method));
+
+        $cache_data = $graph->getCacheData();
+        self::assertSame([], $cache_data['edges']);
+        self::assertSame([], $cache_data['node_files']);
+        self::assertFalse($cache_data['edges_recorded']);
+    }
+
+    public function testGraphRecordingEdgesDoesNotRecordANodeUsingItself(): void
+    {
+        $method = CodeUseGraph::functionLikeNode('a\\c::m');
+        $graph = new CodeUseGraph(record_edges: true);
+
+        $graph->addEdge($method, $method);
+
+        self::assertSame([], $graph->getAllReferences());
+    }
+
+    public function testGraphWithEdgesNotesTheFilesOfItsReferencesOnly(): void
+    {
+        $method = CodeUseGraph::functionLikeNode('a\\c::m');
+        $graph = new CodeUseGraph();
+        self::addMethodReference($graph, 'a\\c::m', CodeUseGraph::propertyNode('t\\c', 'value'), '/a.php');
+
+        self::assertTrue($graph->getCacheData()['edges_recorded']);
+
+        // the file of a node with mutation info comes from its references
+        $other_method = CodeUseGraph::functionLikeNode('b\\c::m');
+        $graph->addMutationInfo($other_method, self::mutationInfo('/b.php'));
+        self::assertSame('/a.php', $graph->getNodeFile($method));
+        self::assertNull($graph->getNodeFile($other_method));
+    }
+
+    public function testCachedEdgesAreNotLoadedIntoAGraphWithoutEdges(): void
+    {
+        $target = CodeUseGraph::propertyNode('t\\c', 'value');
+        $method = CodeUseGraph::functionLikeNode('a\\c::m');
+
+        $source = new CodeUseGraph();
+        self::addMethodReference($source, 'a\\c::m', $target, '/a.php');
+        $source->addMutationInfo($method, self::mutationInfo('/a.php'));
+
+        $graph = new CodeUseGraph(record_edges: false);
+        $graph->loadCacheData($source->getCacheData());
+
+        self::assertSame([], $graph->getAllReferences());
+        self::assertSame([], $graph->getCacheData()['edges']);
+        self::assertSame('/a.php', $graph->getNodeFile($method));
+        self::assertArrayHasKey($method, $graph->getMutationInfo());
+    }
+
+    public function testMutationInfoOfAGraphWithoutEdgesIsRemovedWithItsFile(): void
+    {
+        $method = CodeUseGraph::functionLikeNode('a\\c::m');
+        $other_method = CodeUseGraph::functionLikeNode('b\\c::m');
+        $graph = new CodeUseGraph(record_edges: false);
+
+        // builds the index of the files, which the nodes added later must be found in
+        $graph->removeReferencesFromFile('/none.php');
+
+        $graph->addMutationInfo($method, self::mutationInfo('/a.php'));
+        $graph->addMutationInfo($other_method, self::mutationInfo('/b.php'));
+        self::assertSame('/a.php', $graph->getNodeFile($method));
+
+        // the first file seen stays
+        $graph->addMutationInfo($method, self::mutationInfo('/moved.php'));
+        self::assertSame('/a.php', $graph->getNodeFile($method));
+
+        $graph->removeReferencesFromFile('/a.php');
+
+        self::assertSame([$other_method], array_keys($graph->getMutationInfo()));
+    }
+
+    /**
+     * @return MutationInfo
+     * @psalm-pure
+     */
+    private static function mutationInfo(string $file_path): array
+    {
+        return [
+            'intrinsic' => 0,
+            'allowed' => 0,
+            'callees' => [],
+            'default_intrinsic' => 0,
+            'default_callees' => [],
+            'location' => new Raw('', $file_path, basename($file_path), 0, 0),
+            'cased_name' => 'm',
+            'suppressed_issues' => [],
+            'class' => null,
+            'start' => 0,
+            'fresh' => true,
+            'report' => true,
+        ];
     }
 
     public function testExternalCallerMarksTargetUsed(): void

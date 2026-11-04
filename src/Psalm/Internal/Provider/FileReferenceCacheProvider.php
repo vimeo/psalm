@@ -76,7 +76,8 @@ final class FileReferenceCacheProvider
      * @return array{
      *     edges: array<string, array<string, string>>,
      *     node_files: array<string, string>,
-     *     mutation_info: array<string, MutationInfo>
+     *     mutation_info: array<string, MutationInfo>,
+     *     edges_recorded?: bool
      * }|null
      */
     public function getCachedCodeUseGraph(): ?array
@@ -85,7 +86,8 @@ final class FileReferenceCacheProvider
          * @var array{
          *     edges: array<string, array<string, string>>,
          *     node_files: array<string, string>,
-         *     mutation_info: array<string, MutationInfo>
+         *     mutation_info: array<string, MutationInfo>,
+         *     edges_recorded?: bool
          * }|null
          */
         return $this->cache->getItem(self::CODE_USE_GRAPH_CACHE_NAME);
@@ -125,7 +127,8 @@ final class FileReferenceCacheProvider
      * @param array{
      *     edges: array<string, array<string, string>>,
      *     node_files: array<string, string>,
-     *     mutation_info: array<string, MutationInfo>
+     *     mutation_info: array<string, MutationInfo>,
+     *     edges_recorded?: bool
      * } $data
      */
     public function setCachedCodeUseGraph(array $data): void

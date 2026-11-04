@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
+use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
@@ -222,6 +223,89 @@ final class FileReferenceTest extends TestCase
         self::assertInstanceOf(IssueData::class, $issue);
         self::assertSame('InvalidReturnStatement', $issue->type);
         self::assertSame([$file_path], $cache->getCachedFileReferences()[$file_path]['i'] ?? null);
+    }
+
+    public function testCacheSavedWithoutEdgesIsOnlyLoadedByRunsThatDoNotNeedThem(): void
+    {
+        $cache = new FileReferenceCacheProvider(new TestConfig(), '', false);
+        $file_path = $this->scanFileWithReferenceCache($cache);
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->code_use_graph->record_edges = false;
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        self::assertFalse($cache->getCachedCodeUseGraph()['edges_recorded'] ?? null);
+
+        // a run needing the edges loads nothing of the cache, `--diff` would trust the analysed methods it has
+        FileReferenceProvider::clearCache();
+        $needs_edges = new FileReferenceProvider($this->file_provider, $cache);
+        self::assertFalse($needs_edges->loadReferenceCache());
+        self::assertSame([], $needs_edges->getAnalyzedMethods());
+
+        FileReferenceProvider::clearCache();
+        $without_edges = new FileReferenceProvider($this->file_provider, $cache);
+        $without_edges->code_use_graph->record_edges = false;
+        self::assertTrue($without_edges->loadReferenceCache());
+        self::assertArrayHasKey($file_path, $without_edges->getAnalyzedMethods());
+    }
+
+    public function testCacheSavedWithEdgesIsLoadedByAnyRun(): void
+    {
+        $cache = new FileReferenceCacheProvider(new TestConfig(), '', false);
+        $this->scanFileWithReferenceCache($cache);
+        $this->project_analyzer->getCodebase()->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        self::assertTrue($cache->getCachedCodeUseGraph()['edges_recorded'] ?? null);
+
+        $needs_edges = new FileReferenceProvider($this->file_provider, $cache);
+        self::assertTrue($needs_edges->loadReferenceCache());
+        self::assertNotSame([], $needs_edges->code_use_graph->getAllReferences());
+
+        // the edges stay in the cache, but nothing reads them
+        $without_edges = new FileReferenceProvider($this->file_provider, $cache);
+        $without_edges->code_use_graph->record_edges = false;
+        self::assertTrue($without_edges->loadReferenceCache());
+        self::assertSame([], $without_edges->code_use_graph->getAllReferences());
+    }
+
+    public function testCacheSavedBeforeEdgesWereOptionalIsLoadedByRunsNeedingThem(): void
+    {
+        $cache = new FileReferenceCacheProvider(new TestConfig(), '', false);
+        $this->scanFileWithReferenceCache($cache);
+        $this->project_analyzer->getCodebase()->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        $cached = $cache->getCachedCodeUseGraph();
+        self::assertNotNull($cached);
+        self::assertArrayHasKey('edges_recorded', $cached);
+        unset($cached['edges_recorded']);
+        $cache->setCachedCodeUseGraph($cached);
+
+        $needs_edges = new FileReferenceProvider($this->file_provider, $cache);
+        self::assertTrue($needs_edges->loadReferenceCache());
+        self::assertNotSame([], $needs_edges->code_use_graph->getAllReferences());
+    }
+
+    public function testUpdatingReferenceCacheWithoutEdgesLeavesTheFileReferences(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $file_path = self::$src_dir_path . 'a.php';
+        $this->file_provider->registerFile($file_path, '<?php class A {}');
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $codebase->scanFiles();
+
+        $provider = $codebase->file_reference_provider;
+        $provider->code_use_graph->record_edges = false;
+        $provider->addFileInheritanceToClass('/b.php', 'a');
+        $provider->code_use_graph->addReference(
+            CodeUseGraph::classNode('a'),
+            null,
+            null,
+            CodeUseGraph::EDGE_USE,
+            '/b.php',
+        );
+        $provider->updateReferenceCache($codebase, [$file_path => true]);
+
+        self::assertSame([], $provider->getFilesInheritingFromFile($file_path));
+        self::assertSame([], $provider->getFilesReferencingFile($file_path));
     }
 
     public function testAnalysisWritesTheReferenceCacheOnce(): void

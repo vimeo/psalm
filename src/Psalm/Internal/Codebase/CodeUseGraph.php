@@ -203,6 +203,11 @@ final class CodeUseGraph
      */
     public function __construct(
         public bool $collect_locations = false,
+        /**
+         * Whether edges (and their locations) are recorded. Only unused code detection, reference
+         * lookups and the `--diff` file references read them, not the mutation info.
+         */
+        public bool $record_edges = true,
     ) {
     }
 
@@ -421,7 +426,7 @@ final class CodeUseGraph
      */
     public function addEdge(string $source_node, string $target_node, string $type = self::EDGE_USE): void
     {
-        if ($source_node === $target_node) {
+        if (!$this->record_edges || $source_node === $target_node) {
             return;
         }
 
@@ -457,6 +462,10 @@ final class CodeUseGraph
         string $type = self::EDGE_USE,
         ?string $file_path = null,
     ): void {
+        if (!$this->record_edges) {
+            return;
+        }
+
         $file_path = $location?->file_path ?? $file_path;
 
         $calling_method_id = $context?->calling_method_id;
@@ -477,12 +486,8 @@ final class CodeUseGraph
 
         $this->addEdge($source_node, $target_node, $type);
 
-        if ($file_path !== null && !isset($this->node_files[$source_node])) {
-            $this->node_files[$source_node] = $file_path;
-
-            if ($this->file_nodes !== null) {
-                $this->file_nodes[$file_path][$source_node] = true;
-            }
+        if ($file_path !== null) {
+            $this->noteNodeFile($source_node, $file_path);
         }
 
         if ($location !== null && $this->collect_locations) {
@@ -490,6 +495,22 @@ final class CodeUseGraph
             $this->locations[$target_node][$location_hash] = $location;
             $this->source_locations[$source_node][$target_node][$location_hash] = true;
             $this->location_sources[$target_node][$location_hash][$source_node] = true;
+        }
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    private function noteNodeFile(string $node_id, string $file_path): void
+    {
+        if (isset($this->node_files[$node_id])) {
+            return;
+        }
+
+        $this->node_files[$node_id] = $file_path;
+
+        if ($this->file_nodes !== null) {
+            $this->file_nodes[$file_path][$node_id] = true;
         }
     }
 
@@ -574,6 +595,11 @@ final class CodeUseGraph
     {
         $this->mutation_info[$node_id] = $info;
         $this->mutation_levels = null;
+
+        if (!$this->record_edges) {
+            // stale info is pruned by file, which addReference() notes only while edges are recorded
+            $this->noteNodeFile($node_id, $info['location']->file_path);
+        }
     }
 
     /**
@@ -990,7 +1016,8 @@ final class CodeUseGraph
      * @return array{
      *     edges: array<string, array<string, string>>,
      *     node_files: array<string, string>,
-     *     mutation_info: array<string, MutationInfo>
+     *     mutation_info: array<string, MutationInfo>,
+     *     edges_recorded: bool
      * }
      * @psalm-mutation-free
      */
@@ -1016,6 +1043,7 @@ final class CodeUseGraph
             'edges' => $edges,
             'node_files' => $this->node_files,
             'mutation_info' => $mutation_info,
+            'edges_recorded' => $this->record_edges,
         ];
     }
 
@@ -1025,28 +1053,31 @@ final class CodeUseGraph
      * @param array{
      *     edges: array<string, array<string, string>>,
      *     node_files: array<string, string>,
-     *     mutation_info?: array<string, MutationInfo>
+     *     mutation_info?: array<string, MutationInfo>,
+     *     edges_recorded?: bool
      * } $data
      * @psalm-external-mutation-free
      */
     public function loadCacheData(array $data): void
     {
-        if ($this->forward_edges === []) {
-            // cached edges are already deduplicated and never self-referencing
-            $this->forward_edges = $data['edges'];
+        if ($this->record_edges) {
+            if ($this->forward_edges === []) {
+                // cached edges are already deduplicated and never self-referencing
+                $this->forward_edges = $data['edges'];
 
-            foreach ($data['edges'] as $source_node => $targets) {
-                foreach ($targets as $target_node => $type) {
-                    $this->backward_edges[$target_node][$source_node] = $type;
+                foreach ($data['edges'] as $source_node => $targets) {
+                    foreach ($targets as $target_node => $type) {
+                        $this->backward_edges[$target_node][$source_node] = $type;
+                    }
                 }
-            }
 
-            $this->used = null;
-            $this->class_referencing_nodes = null;
-        } else {
-            foreach ($data['edges'] as $source_node => $targets) {
-                foreach ($targets as $target_node => $type) {
-                    $this->addEdge($source_node, $target_node, $type);
+                $this->used = null;
+                $this->class_referencing_nodes = null;
+            } else {
+                foreach ($data['edges'] as $source_node => $targets) {
+                    foreach ($targets as $target_node => $type) {
+                        $this->addEdge($source_node, $target_node, $type);
+                    }
                 }
             }
         }
