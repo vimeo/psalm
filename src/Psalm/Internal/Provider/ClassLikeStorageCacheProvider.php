@@ -73,7 +73,7 @@ final class ClassLikeStorageCacheProvider
         string $fq_classlike_name_lc,
         ?string $file_path,
         string $file_contents,
-    ): ClassLikeStorage {
+    ): ?ClassLikeStorage {
         return $this->cache->getItem(
             $file_path."\0".$fq_classlike_name_lc,
             hash('xxh128', $file_contents),

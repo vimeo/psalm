@@ -15,9 +15,11 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Scanner\DocblockParser;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\CapabilitiesParseException;
+use RuntimeException;
 
 use function array_keys;
 use function array_shift;
@@ -377,6 +379,26 @@ final class FunctionLikeDocblockParser
     }
 
     /**
+     * Registers the taint a docblock names. What is wrong with it is added to the issues found while scanning.
+     *
+     * @param list<CodeIssue> $scan_issues
+     */
+    public static function registerTaint(
+        Codebase $codebase,
+        string $taint_type,
+        CodeLocation $code_location,
+        array &$scan_issues,
+    ): ?int {
+        try {
+            return $codebase->getOrRegisterTaint($taint_type);
+        } catch (RuntimeException $e) {
+            $scan_issues[] = new InvalidDocblock($e->getMessage(), $code_location);
+
+            return null;
+        }
+    }
+
+    /**
      * Reads `@psalm-taint-sink (<conditional>) $param`
      */
     private static function parseConditionalTaintSink(
@@ -455,7 +477,7 @@ final class FunctionLikeDocblockParser
                 }
 
                 if (count($param_parts) >= 2) {
-                    $t = $codebase->getOrRegisterTaint($param_parts[0], $code_location);
+                    $t = self::registerTaint($codebase, $param_parts[0], $code_location, $info->scan_issues);
                     if ($t !== null) {
                         $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => $t];
                     }
@@ -481,7 +503,7 @@ final class FunctionLikeDocblockParser
 
                     if (str_starts_with($taint_type, 'exec_')) {
                         $taint_type = substr($taint_type, 5);
-                        $t = $codebase->getOrRegisterTaint($taint_type, $code_location);
+                        $t = self::registerTaint($codebase, $taint_type, $code_location, $info->scan_issues);
                         if ($t !== null) {
                             $info->taint_sink_params[] = ['name' => $param_parts[0], 'taint' => $t];
                         }
@@ -498,7 +520,7 @@ final class FunctionLikeDocblockParser
                 }
 
                 if ($param_parts[0]) {
-                    $t = $codebase->getOrRegisterTaint($param_parts[0], $code_location);
+                    $t = self::registerTaint($codebase, $param_parts[0], $code_location, $info->scan_issues);
                     $keys = isset($param_parts[1]) && str_starts_with($param_parts[1], 'return[')
                         ? self::parseReturnKeys($param_parts[1])
                         : null;
@@ -535,7 +557,7 @@ final class FunctionLikeDocblockParser
 
                 if ($param_parts[0]) {
                     if ($param_parts[0] !== 'none') {
-                        $t = $codebase->getOrRegisterTaint($param_parts[0], $code_location);
+                        $t = self::registerTaint($codebase, $param_parts[0], $code_location, $info->scan_issues);
                         if ($t !== null) {
                             $info->taint_source_types |= $t;
                         }
