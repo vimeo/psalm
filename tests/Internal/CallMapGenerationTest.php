@@ -25,6 +25,9 @@ final class CallMapGenerationTest extends TestCase
             self::markTestSkipped('The generation script requires a POSIX shell environment.');
         }
 
+        $path = getenv('PATH');
+        self::assertNotFalse($path, 'PATH must be available to run the generation script.');
+
         $directory = sys_get_temp_dir() . '/psalm-callmap-test-' . uniqid();
         $repository = $directory . '/repository with spaces';
         $commands = $directory . '/commands';
@@ -61,7 +64,7 @@ final class CallMapGenerationTest extends TestCase
                 ['bash', 'bin/stubs/gen_callmap.sh'],
                 $repository,
                 [
-                    'PATH' => $commands . ':' . getenv('PATH'),
+                    'PATH' => $commands . ':' . $path,
                     'MERGE_MARKER' => $directory . '/merged',
                     'EXPECTED_ROOT' => $repository,
                 ],
@@ -77,7 +80,7 @@ final class CallMapGenerationTest extends TestCase
                 ['bash', $repository . '/bin/stubs/gen_callmap.sh'],
                 $directory,
                 [
-                    'PATH' => $commands . ':' . getenv('PATH'),
+                    'PATH' => $commands . ':' . $path,
                     'MERGE_MARKER' => $directory . '/merged',
                     'EXPECTED_ROOT' => $repository,
                 ],
