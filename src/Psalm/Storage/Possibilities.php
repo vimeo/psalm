@@ -7,10 +7,12 @@ namespace Psalm\Storage;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
 use function is_string;
 use function str_replace;
+use function strtolower;
 
 /**
  * @psalm-capabilities read-props|write-this-props|write-props|write-refs
@@ -41,6 +43,7 @@ final class Possibilities
         TemplateResult $template_result,
         ?string $this_var_id,
         ?Codebase $codebase,
+        ?string $self_class = null,
     ): self {
         $assertion_rules = [];
 
@@ -56,6 +59,14 @@ final class Possibilities
                 );
 
                 foreach ($union->getAtomicTypes() as $atomic_type) {
+                    // `self` written in a trait method means the class using the trait
+                    if ($self_class !== null
+                        && $atomic_type instanceof TNamedObject
+                        && strtolower($atomic_type->value) === 'self'
+                    ) {
+                        $atomic_type = new TNamedObject($self_class);
+                    }
+
                     $assertion = $assertion->setAtomicType($atomic_type);
                     $assertion_rules[] = $assertion;
                 }
