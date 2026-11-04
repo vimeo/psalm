@@ -3067,6 +3067,218 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'arrayPopShiftListElement' => [
+                'code' => '<?php
+                    /** @return list{int, string} */
+                    function getPair(): array { return [1, "a"]; }
+                    /** @return list{0: int, 1: string, 2?: float} */
+                    function getTriple(): array { return [1, "a"]; }
+
+                    $pair = getPair();
+                    $pairLast = array_pop($pair);
+                    $triple = getTriple();
+                    $tripleLast = array_pop($triple);
+                    $literal = [1, "a"];
+                    $literalLast = array_pop($literal);
+                    $literalFirst = array_shift($literal);',
+                'assertions' => [
+                    '$pairLast===' => 'string',
+                    '$tripleLast===' => 'float|string',
+                    '$literalLast===' => '\'a\'',
+                    '$literalFirst===' => '1',
+                ],
+            ],
+            'arrayPopOptionalLastElement' => [
+                'code' => '<?php
+                    /** @return list{0: int, 1: string, 2?: float} */
+                    function getTriple(): array { return [1, "a"]; }
+                    /** @return list{0: int, 1?: string} */
+                    function getPair(): array { return [1]; }
+
+                    $triple = getTriple();
+                    array_pop($triple);
+                    $pair = getPair();
+                    array_pop($pair);',
+                'assertions' => [
+                    '$triple===' => 'list{0: int, 1?: string}',
+                    '$pair===' => 'list{0?: int}',
+                ],
+            ],
+            'arrayPopShiftTemplateBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of non-empty-list<int>
+                     * @param T $arr
+                     * @return list<int>
+                     */
+                    function withoutLast(array $arr): array {
+                        $last = array_pop($arr);
+                        /** @psalm-check-type-exact $last = int */
+                        /** @psalm-check-type-exact $arr = list<int> */
+                        return $arr;
+                    }
+
+                    /**
+                     * @template T of list{int, string}
+                     * @param T $arr
+                     * @return list{string}
+                     */
+                    function withoutFirst(array $arr): array {
+                        $first = array_shift($arr);
+                        /** @psalm-check-type-exact $first = int */
+                        /** @psalm-check-type-exact $arr = list{string} */
+                        return $arr;
+                    }
+
+                    /**
+                     * @template T
+                     * @param non-empty-list<T> $arr
+                     * @return T
+                     */
+                    function lastElement(array $arr) {
+                        return array_pop($arr);
+                    }
+
+                    $a = lastElement([new DateTime()]);',
+                'assertions' => [
+                    '$a===' => 'DateTime',
+                ],
+            ],
+            'arrayPopShiftUnionOfTemplateArrays' => [
+                'code' => '<?php
+                    /**
+                     * @template T of list{int}
+                     * @template U of list{string, float}
+                     * @param T $t
+                     * @param U $u
+                     */
+                    function f(array $t, array $u, bool $b): void {
+                        $x = $b ? $t : $u;
+                        $popped = array_pop($x);
+                        /** @psalm-check-type-exact $popped = float|int */
+                        /** @psalm-check-type-exact $x = list{0?: string} */
+                        $y = $b ? $t : $u;
+                        $shifted = array_shift($y);
+                        /** @psalm-check-type-exact $shifted = int|string */
+                        /** @psalm-check-type-exact $y = list{0?: float} */
+                    }
+
+                    /**
+                     * @template T of list<int>
+                     * @param T $t
+                     * @param list{string} $l
+                     */
+                    function g(array $t, array $l, bool $b): void {
+                        $x = $b ? $t : $l;
+                        $popped = array_pop($x);
+                        /** @psalm-check-type-exact $popped = int|null|string */
+                        /** @psalm-check-type-exact $x = list<int> */
+                    }',
+            ],
+            'arrayPopSeveralOptionalElements' => [
+                'code' => '<?php
+                    /** @return list{0: int, 1?: string, 2?: float} */
+                    function get(): array { return [1]; }
+
+                    $l = get();
+                    $last = array_pop($l);',
+                'assertions' => [
+                    '$last===' => 'float|int|string',
+                    '$l===' => 'list{0?: int, 1?: string}',
+                ],
+            ],
+            'arrayPopShiftUnsealedList' => [
+                'code' => '<?php
+                    /** @return list{int, string, ...<float>} */
+                    function get(): array { return [1, "a"]; }
+
+                    $l = get();
+                    $last = array_pop($l);
+                    $m = get();
+                    $first = array_shift($m);',
+                'assertions' => [
+                    '$last===' => 'float|string',
+                    '$first===' => 'int',
+                    '$m===' => 'list{string, ...<float>}',
+                ],
+            ],
+            'arrayPopShiftIgnoreNonArrayMembers' => [
+                'code' => '<?php
+                    /** @param list<int>|string $l */
+                    function f($l): void {
+                        $popped = array_pop($l);
+                        /** @psalm-check-type-exact $popped = int|null */
+                    }
+
+                    /** @param list{int, string}|DateTime $l */
+                    function g($l): void {
+                        $shifted = array_shift($l);
+                        /** @psalm-check-type-exact $shifted = int */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyInvalidArgument'],
+            ],
+            'arrayFirstIgnoreNonArrayMembers' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int>|string $l */
+                    function f($l): void {
+                        $first = array_first($l);
+                        /** @psalm-check-type-exact $first = int */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyInvalidArgument'],
+                'php_version' => '8.5',
+            ],
+            'arrayPopShiftOffset' => [
+                'code' => '<?php
+                    $a = [[1, "s"]];
+                    array_pop($a[0]);
+                    $popped = array_pop($a[0]);
+
+                    /** @param array<string, list{int, string}> $m */
+                    function f(array $m, string $k): void {
+                        array_shift($m[$k]);
+                        $shifted = array_shift($m[$k]);
+                        /** @psalm-check-type-exact $shifted = int|string */
+                    }
+
+                    function g(): int {
+                        $l = [[1, 2]];
+                        $i = 0;
+                        array_pop($l[$i++]);
+                        /** @psalm-check-type-exact $i = 1 */
+                        return $i;
+                    }',
+                'assertions' => [
+                    '$popped===' => "'s'|1",
+                ],
+            ],
+            'arrayPopShiftEmptyTemplateArray' => [
+                'code' => '<?php
+                    /**
+                     * @template T of list<int>
+                     * @param T $a
+                     * @return T
+                     */
+                    function f(array $a): array {
+                        if (!$a) {
+                            array_pop($a);
+                            array_shift($a);
+                        }
+                        return $a;
+                    }',
+            ],
+            'arrayAnyAllCallbackOfCallResult' => [
+                'code' => '<?php
+                    /** @return array<string, int> */
+                    function getMap(): array { return ["one" => 1]; }
+
+                    $a = array_any(getMap(), fn (int $value, mixed $key): bool => $value > 0);
+                    $b = array_all(getMap(), fn (int $value, string $key): bool => $key !== "");',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
@@ -3577,6 +3789,47 @@ final class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'MixedReturnStatement',
                 'ignored_issues' => [],
                 'php_version' => '8.5',
+            ],
+            'arrayPopOfIterableUnionStaysMixed' => [
+                'code' => '<?php
+                    /** @param list<int>|iterable<string> $l */
+                    function f(iterable $l): int {
+                        return array_pop($l) ?? 0;
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => ['PossiblyInvalidArgument'],
+            ],
+            'arrayPopTemplateArrayIsNoLongerTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $a
+                     * @return T
+                     */
+                    function f(array $a): array {
+                        array_pop($a);
+                        return $a;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'arrayPopOffsetOfUnionIndex' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        $a = [[1, "s"], [2, 3.5]];
+                        $k = $b ? 0 : 1;
+                        array_pop($a[$k]);
+                        return array_pop($a[0]);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'arrayPopOffsetMayHaveLostElements' => [
+                'code' => '<?php
+                    function f(): string {
+                        $a = [[1, "s"]];
+                        array_pop($a[0]);
+                        return array_pop($a[0]);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }

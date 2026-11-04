@@ -5,16 +5,21 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -64,6 +69,40 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
             return null;
         }
 
+        $value_type = self::getElementType(
+            $codebase,
+            $array_type,
+            $event->getFunctionId() === 'array_first',
+        );
+
+        if (!$value_type) {
+            return null;
+        }
+
+        $offset_type = Type::getMixed();
+        ArrayFetchAnalyzer::taintArrayFetch(
+            $statements_source,
+            $array_arg->value,
+            null,
+            $value_type,
+            $offset_type,
+        );
+
+        return $value_type;
+    }
+
+    /**
+     * The type of the first or last value of an array of the given type, also used for array_shift()/array_pop().
+     * Returns null when it can't be inferred.
+     *
+     * Without $ordered, any value of a list may come first or last.
+     */
+    public static function getElementType(
+        Codebase $codebase,
+        Union $array_type,
+        bool $is_first,
+        bool $ordered = true,
+    ): ?Union {
         $atomic_types = $array_type->getAtomicTypes();
         $value_type = null;
         $possibly_empty = false;
@@ -79,18 +118,24 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
                 $atomic_value_type = $atomic_type->type_params[1];
                 $possibly_empty = $possibly_empty || !$atomic_type instanceof TNonEmptyArray;
             } elseif ($atomic_type instanceof TKeyedArray) {
-                if (!$atomic_type->is_list || !isset($atomic_type->properties[0])) {
+                if (!$ordered || !$atomic_type->is_list || !isset($atomic_type->properties[0])) {
                     // a shape doesn't fix the order of its keys
                     $atomic_value_type = $atomic_type->getGenericValueType();
-                } elseif ($event->getFunctionId() === 'array_first') {
+                } elseif ($is_first) {
                     $atomic_value_type = $atomic_type->properties[0]->setPossiblyUndefined(false);
                 } else {
                     $atomic_value_type = self::getLastListElementType($atomic_type);
                 }
 
                 $possibly_empty = $possibly_empty || !$atomic_type->isNonEmpty();
-            } elseif ($atomic_type instanceof TNull || $atomic_type instanceof TFalse) {
-                // throws a TypeError, reported by the callmap signature
+            } elseif ($atomic_type instanceof Scalar
+                || $atomic_type instanceof TNull
+                || $atomic_type instanceof TObject
+                || $atomic_type instanceof TNamedObject
+                || $atomic_type instanceof TResource
+                || $atomic_type instanceof TClosedResource
+            ) {
+                // not an array: throws a TypeError, reported by the callmap signature
                 continue;
             } else {
                 // e.g. mixed, iterable or class-string-map: keep the callmap signature
@@ -115,15 +160,6 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
 
             $value_type = $value_type->freeze();
         }
-
-        $offset_type = Type::getMixed();
-        ArrayFetchAnalyzer::taintArrayFetch(
-            $statements_source,
-            $array_arg->value,
-            null,
-            $value_type,
-            $offset_type,
-        );
 
         return $value_type;
     }

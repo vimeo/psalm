@@ -21,11 +21,15 @@ final class TaintTest extends TestCase
     /**
      * @dataProvider providerValidCodeParse
      */
-    public function testValidCode(string $code): void
+    public function testValidCode(string $code, ?string $php_version = null): void
     {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
+        }
+
+        if ($php_version !== null) {
+            $this->project_analyzer->setPhpVersion($php_version, 'tests');
         }
 
         $file_path = self::$src_dir_path . 'somefile.php';
@@ -71,11 +75,20 @@ final class TaintTest extends TestCase
     }
 
     /**
-     * @return array<string, array{code:string}>
+     * @return array<string, array{code: string, php_version?: string}>
      */
     public function providerValidCodeParse(): array
     {
         return [
+            'arrayAnyKeyNotTaintedByValue' => [
+                'code' => '<?php
+                    $values = ["a" => (string) $_GET["v"]];
+                    array_any($values, function (string $value, string $key): bool {
+                        echo $key;
+                        return true;
+                    });',
+                'php_version' => '8.4',
+            ],
             'firstClassCallableOfTaintPropagatingFunction' => [
                 'code' => '<?php
                     // CallLike::getArgs() asserts !isFirstClassCallable(); a taint-propagating
@@ -2322,6 +2335,16 @@ final class TaintTest extends TestCase
 
                     foo([$_GET["a"]]);',
                 'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughArrayAnyKey' => [
+                'code' => '<?php
+                    $values = [(string) $_GET["k"] => 1];
+                    array_any($values, function (int $value, string $key): bool {
+                        echo $key;
+                        return true;
+                    });',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.4',
             ],
             'taintThroughArrayFirst' => [
                 'code' => '<?php
