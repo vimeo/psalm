@@ -657,6 +657,10 @@ final class ClassLikeNodeScanner
 
                 if ($pseudo_method_storage->is_static) {
                     $storage->pseudo_static_methods[$lc_method_name] = $pseudo_method_storage;
+                    $storage->declaring_pseudo_static_method_ids[$lc_method_name] = new MethodIdentifier(
+                        $fq_classlike_name,
+                        $lc_method_name,
+                    );
                 } else {
                     $storage->pseudo_methods[$lc_method_name] = $pseudo_method_storage;
                     $storage->declaring_pseudo_method_ids[$lc_method_name] = new MethodIdentifier(
@@ -821,6 +825,21 @@ final class ClassLikeNodeScanner
                     || $attribute->fq_class_name === 'Deprecated'
                 ) {
                     $storage->deprecated = true;
+                }
+
+                if ($attribute->fq_class_name === 'Deprecated') {
+                    foreach ($attribute->args as $i => $arg) {
+                        if (($arg->name ?? ($i === 0 ? 'message' : null)) === 'message'
+                            && $arg->type instanceof Union
+                            && $arg->type->isSingleStringLiteral()
+                        ) {
+                            $message = $arg->type->getSingleStringLiteral()->value;
+
+                            if ($message !== '') {
+                                $storage->deprecated_message = $message;
+                            }
+                        }
+                    }
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\Internal' && !$storage->internal) {
