@@ -10,7 +10,10 @@ use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use function function_exists;
+
 use const DIRECTORY_SEPARATOR;
+use const PHP_VERSION_ID;
 
 final class ArrayFunctionCallTest extends TestCase
 {
@@ -35,6 +38,39 @@ final class ArrayFunctionCallTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testArrayFirstLastUserDefinedBeforePhp85(): void
+    {
+        if (PHP_VERSION_ID < 8_05_00 && function_exists('array_first')) {
+            // symfony/polyfill-php85, required by symfony/console 8 on PHP 8.4, defines it in this process
+            $this->markTestSkipped('array_first() is defined by a polyfill');
+        }
+
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    /** @param list<int> $input */
+                    function array_first(array $input): string {
+                        return implode(",", $input);
+                    }
+
+                    /** @param list<int> $input */
+                    function array_last(array $input): string {
+                        return implode(",", $input);
+                    }
+
+                    $first = array_first([1, 2]);
+                    $last = array_last([3, 4]);',
+        );
+
+        $context = new Context();
+        $this->analyzeFile('somefile.php', $context);
+
+        $this->assertSame('string', $context->vars_in_scope['$first']->getId());
+        $this->assertSame('string', $context->vars_in_scope['$last']->getId());
     }
 
     /**
@@ -3222,27 +3258,6 @@ final class ArrayFunctionCallTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.5',
-            ],
-            'arrayFirstLastUserDefinedBeforePhp85' => [
-                'code' => '<?php
-                    /** @param list<int> $input */
-                    function array_first(array $input): string {
-                        return implode(",", $input);
-                    }
-
-                    /** @param list<int> $input */
-                    function array_last(array $input): string {
-                        return implode(",", $input);
-                    }
-
-                    $first = array_first([1, 2]);
-                    $last = array_last([3, 4]);',
-                'assertions' => [
-                    '$first===' => 'string',
-                    '$last===' => 'string',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.4',
             ],
             'arrayPopShiftListElement' => [
                 'code' => '<?php
