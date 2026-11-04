@@ -2,6 +2,9 @@
 
 Every option: `vendor/bin/psalm --help`.
 
+Run Psalm on the PHP version CI uses: a Psalm installed in a tool directory (`tools/psalm`,
+`bamarni/composer-bin-plugin`) has its own lock file and may need a newer PHP than the package.
+
 ## Output formats
 
 | `--output-format=` | For |
