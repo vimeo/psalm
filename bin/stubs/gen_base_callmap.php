@@ -8,6 +8,13 @@ if (isset($argv[1]) && $argv[1] !== PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION)
     throw new RuntimeException('Expected PHP ' . $argv[1] . ', running ' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION);
 }
 
+// Reject incomplete images before missing reflection metadata erases native override contracts.
+foreach (explode(' ', $argv[2] ?? '') as $extension) {
+    if ($extension !== '' && !extension_loaded($extension)) {
+        throw new RuntimeException('Required extension is not loaded: ' . $extension);
+    }
+}
+
 $callmap = [];
 // the extension of each entry: gen_callmap.php keeps the overrides of the extensions a version's image lacks
 $extensions = [];

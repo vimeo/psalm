@@ -7,6 +7,8 @@ namespace Psalm\Tests;
 use Override;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\MethodComparator;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -18,6 +20,75 @@ final class MethodSignatureTest extends TestCase
     use InvalidCodeAnalysisWithIssuesTestTrait;
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function testStubNativeReturnWithoutGeneratedMetadata(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.5', 'tests');
+        self::assertNull(InternalCallMapHandler::getSignatureReturnType('Ds\\Collection::isEmpty'));
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                use Ds\\Collection;
+
+                final class Bag {
+                    /** @psalm-mutation-free */
+                    public function isEmpty(): int {
+                        return 1;
+                    }
+                }',
+        );
+        $this->analyzeFile('somefile.php', new Context());
+        $codebase = $this->project_analyzer->getCodebase();
+        $implementer = $codebase->classlike_storage_provider->get('Bag');
+        $guide = $codebase->classlike_storage_provider->get('Ds\\Collection');
+        $method = $implementer->methods['isempty'];
+        self::assertNotNull($method->location);
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MethodSignatureMismatch');
+        MethodComparator::compare(
+            $codebase,
+            null,
+            $implementer,
+            $guide,
+            $method,
+            $guide->methods['isempty'],
+            'Bag',
+            $method->visibility,
+            $method->location,
+            [],
+        );
+    }
+
+    public function testCallmapOnlyNativeReturnRequiresSignature(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        // Declare the API without its native type, as extension stubs need not duplicate callmap metadata.
+        $this->addStubFile(
+            'mysqli-result.phpstub',
+            '<?php
+                /** @template TValue */
+                class mysqli_result {
+                    /** @return false|float|int|null|string */
+                    public function fetch_column(int $column = 0) {}
+                }',
+        );
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @extends mysqli_result<array<string, mixed>> */
+                abstract class Result extends mysqli_result {
+                    /** @return int */
+                    public function fetch_column(int $column = 0) {
+                        return 1;
+                    }
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MethodSignatureMustProvideReturnType');
+        $this->analyzeFile('somefile.php', new Context());
+    }
 
     public function testExtendSoapClientWithDocblockTypes(): void
     {
@@ -1969,7 +2040,7 @@ final class MethodSignatureTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
-            'nativeStubSignatureWithoutCallmapMetadataIn82' => [
+            'nativeMysqliSignatureIn82' => [
                 'code' => '<?php
                     final class Connection extends mysqli {
                         public function execute_query(string $query, ?array $params = null): int {
@@ -1980,7 +2051,7 @@ final class MethodSignatureTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
-            'nativeStubSignatureWithoutCallmapMetadataIn85' => [
+            'nativeMysqliSignatureIn85' => [
                 'code' => '<?php
                     final class Connection extends mysqli {
                         public function execute_query(string $query, ?array $params = null): int {
@@ -1991,7 +2062,7 @@ final class MethodSignatureTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.5',
             ],
-            'nativeStubWithoutCallmapMetadataRequiresReturnSignature' => [
+            'nativeMysqliRequiresReturnSignature' => [
                 'code' => '<?php
                     final class Connection extends mysqli {
                         public function execute_query(string $query, ?array $params = null) {

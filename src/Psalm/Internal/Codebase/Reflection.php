@@ -20,6 +20,7 @@ use Psalm\Type;
 use Psalm\Type\Union;
 use ReflectionClass;
 use ReflectionFunction;
+use ReflectionFunctionAbstract;
 use ReflectionMethod;
 use ReflectionParameter;
 use ReflectionType;
@@ -29,6 +30,8 @@ use function array_merge;
 use function function_exists;
 use function strtolower;
 
+use const PHP_MAJOR_VERSION;
+use const PHP_MINOR_VERSION;
 use const PHP_VERSION_ID;
 
 /**
@@ -307,6 +310,7 @@ final class Reflection
             : ($method->isProtected() ? ClassLikeAnalyzer::VISIBILITY_PROTECTED : ClassLikeAnalyzer::VISIBILITY_PUBLIC);
 
         $callables = InternalCallMapHandler::getCallablesFromCallMap($method_id);
+        $storage->signature_return_type = $this->getSignatureReturnType($method, $method_id);
 
         if ($callables && $callables[0]->params !== null && $callables[0]->return_type !== null) {
             $storage->setParams([]);
@@ -322,7 +326,6 @@ final class Reflection
             InternalCallMapHandler::addReturnTaintFlows($storage, $method_id);
 
             $storage->return_type = $callables[0]->return_type;
-            $storage->signature_return_type = InternalCallMapHandler::getSignatureReturnType($method_id);
             /** @psalm-suppress UnusedMethodCall */
             $storage->return_type->queueClassLikesForScanning($this->codebase);
         } else {
@@ -334,6 +337,7 @@ final class Reflection
                 $param_array = $this->getReflectionParamData($param);
                 $storage->addParam($param_array);
             }
+            $storage->return_type = $storage->signature_return_type;
         }
 
         $storage->required_param_count = 0;
@@ -410,7 +414,7 @@ final class Reflection
 
         $storage = new FunctionStorage();
         $storage->builtin = $reflection_function?->isInternal() ?? true;
-        $storage->signature_return_type = InternalCallMapHandler::getSignatureReturnType($function_id);
+        $storage->signature_return_type = $this->getSignatureReturnType($reflection_function, $function_id);
 
         if ($callmap_callable !== null
             && $callmap_callable->params !== null
@@ -453,6 +457,23 @@ final class Reflection
         return $storage;
     }
 
+    private function getSignatureReturnType(?ReflectionFunctionAbstract $reflection, string $id): ?Union
+    {
+        $signature = InternalCallMapHandler::getSignatureReturnType($id);
+        // An installed extension can provide APIs absent from the generator images. Its reflection
+        // describes the running PHP version, so do not use it to infer contracts of another version.
+        if ($signature !== null
+            || $reflection === null
+            || $this->codebase->getMajorAnalysisPhpVersion() !== PHP_MAJOR_VERSION
+            || $this->codebase->getMinorAnalysisPhpVersion() !== PHP_MINOR_VERSION
+        ) {
+            return $signature;
+        }
+
+        $return_type = $reflection->getReturnType() ?? $reflection->getTentativeReturnType();
+        return $return_type === null ? null : self::getPsalmTypeFromReflectionType($return_type);
+    }
+
     public static function getPsalmTypeFromReflectionType(?ReflectionType $reflection_type = null): Union
     {
         if (!$reflection_type) {
@@ -460,13 +481,7 @@ final class Reflection
         }
 
         // as PHP writes it (?int, A|B, (A&B)|null), which Psalm parses
-        $type = (string) $reflection_type;
-
-        if ($reflection_type->allowsNull()) {
-            $type .= '|null';
-        }
-
-        return Type::parseString($type);
+        return Type::parseString((string) $reflection_type);
     }
 
     private function registerInheritedMethods(

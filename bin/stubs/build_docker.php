@@ -40,7 +40,8 @@ const BASE_IMAGE_PACKAGES = [
 const EXTENSIONS = [
     'memcached', 'grpc', 'soap', 'swoole', 'zookeeper',
     'amqp', 'apcu', 'zmq', 'ds', 'event', 'ev', 'redis', 'mongodb', 'imagick', 'pcntl',
-    'pgsql', 'intl', 'gmp', 'mbstring', 'pdo_mysql', 'xml', 'dom', 'iconv', 'zip', 'igbinary', 'gd', 'bcmath',
+    'pgsql', 'intl', 'gmp', 'mbstring', 'mysqli', 'pdo_mysql', 'pdo_pgsql',
+    'snmp', 'tidy', 'xsl', 'xml', 'dom', 'iconv', 'zip', 'igbinary', 'gd', 'bcmath',
 ];
 
 /** Extensions added on top of EXTENSIONS for specific versions. */
@@ -174,7 +175,12 @@ const SOURCES = [
     'intl' => 'php',
     'gmp' => 'php',
     'mbstring' => 'php',
+    'mysqli' => 'php',
     'pdo_mysql' => 'php',
+    'pdo_pgsql' => 'php',
+    'snmp' => 'php',
+    'tidy' => 'php',
+    'xsl' => 'php',
     'xml' => 'php',
     'dom' => 'php',
     'iconv' => 'php',
@@ -664,6 +670,18 @@ if ($arg === '--excludes') {
 
 if ($arg === '--versions-plain') {
     echo implode(' ', VERSIONS) . PHP_EOL;
+    exit(0);
+}
+
+if ($arg === '--extensions-plain') {
+    $version = $argv[2] ?? fail('Usage: build_docker.php --extensions-plain <version>');
+    if (!in_array($version, VERSIONS, true)) {
+        fail("Unsupported version '$version'.");
+    }
+    echo implode(' ', array_map(
+        static fn(string $extension): string => explode('-', $extension, 2)[0],
+        extensionsFor($version),
+    )) . PHP_EOL;
     exit(0);
 }
 

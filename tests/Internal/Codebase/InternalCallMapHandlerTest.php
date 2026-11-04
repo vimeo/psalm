@@ -322,6 +322,36 @@ final class InternalCallMapHandlerTest extends TestCase
         self::assertNull(InternalCallMapHandler::getSignatureReturnType('JsonSerializable::jsonSerialize'));
     }
 
+    public function testBundledExtensionNativeReturnMetadata(): void
+    {
+        $project_analyzer = new ProjectAnalyzer(
+            new TestConfig(),
+            new Providers(new FakeFileProvider(), new FakeParserCacheProvider()),
+        );
+
+        foreach (['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6'] as $version) {
+            $project_analyzer->setPhpVersion($version, 'tests');
+            foreach (['SNMP::getErrno', 'tidy::getStatus', 'XSLTProcessor::getSecurityPrefs'] as $method) {
+                self::assertSame(
+                    $version >= '8.1' ? 'int' : null,
+                    InternalCallMapHandler::getSignatureReturnType($method)?->getId(),
+                    $version . ': ' . $method,
+                );
+            }
+            self::assertSame(
+                $version >= '8.1' ? 'false|float|int|null|string' : null,
+                InternalCallMapHandler::getSignatureReturnType('mysqli_result::fetch_column')?->getId(),
+                $version,
+            );
+            self::assertSame(
+                $version >= '8.1' ? 'bool|mysqli_result' : null,
+                InternalCallMapHandler::getSignatureReturnType('mysqli::query')?->getId(),
+                $version,
+            );
+            self::assertNull(InternalCallMapHandler::getSignatureReturnType('mysqli::__construct'), $version);
+        }
+    }
+
     public function testGetCallablesFromCallmapRemovesWPrefixFromParameterNames(): void
     {
         $entries = InternalCallMapHandler::getCallablesFromCallMap('curl_multi_exec'); // has &w_still_running parameter as second parameter
@@ -694,7 +724,7 @@ final class InternalCallMapHandlerTest extends TestCase
             }
         }
 
-        // Reflection::getPsalmTypeFromReflectionType adds |null to mixed types so skip comparison
+        // Mixed permits narrower analysis types, including non-nullable ones.
         if (!$expectedType->hasMixed()) {
             $this->assertSame($expectedType->isNullable(), $callMapType->isNullable(), "{$msgPrefix} type '{$specified}' missing null from reflected type '{$reflected}'");
             //$this->assertSame($expectedType->hasBool(), $callMapType->hasBool(), "{$msgPrefix} type '{$specified}' missing bool from reflected type '{$reflected}'");

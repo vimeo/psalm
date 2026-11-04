@@ -29875,6 +29875,1022 @@ return array (
   array (
     0 => 'mixed',
   ),
+  'mysqli::__construct' => 
+  array (
+    0 => 'void',
+    'host=' => 'mixed',
+    'user=' => 'mixed',
+    'password=' => 'mixed',
+    'database=' => 'mixed',
+    'port=' => 'mixed',
+    'socket=' => 'mixed',
+  ),
+  'mysqli::autocommit' => 
+  array (
+    0 => 'mixed',
+    'mode' => 'mixed',
+  ),
+  'mysqli::begin_transaction' => 
+  array (
+    0 => 'mixed',
+    'flags=' => 'mixed',
+    'name=' => 'mixed',
+  ),
+  'mysqli::change_user' => 
+  array (
+    0 => 'mixed',
+    'user' => 'mixed',
+    'password' => 'mixed',
+    'database' => 'mixed',
+  ),
+  'mysqli::character_set_name' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli::commit' => 
+  array (
+    0 => 'mixed',
+    'flags=' => 'mixed',
+    'name=' => 'mixed',
+  ),
+  'mysqli::connect' => 
+  array (
+    0 => 'mixed',
+    'host=' => 'mixed',
+    'user=' => 'mixed',
+    'password=' => 'mixed',
+    'database=' => 'mixed',
+    'port=' => 'mixed',
+    'socket=' => 'mixed',
+  ),
+  'mysqli::debug' => 
+  array (
+    0 => 'mixed',
+    'debug_options' => 'mixed',
+  ),
+  'mysqli::dump_debug_info' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli::escape_string' => 
+  array (
+    0 => 'mixed',
+    'string_to_escape' => 'mixed',
+  ),
+  'mysqli::get_charset' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli::get_client_info' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli::get_connection_stats' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli::get_server_info' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli::get_warnings' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli::init' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli::kill' => 
+  array (
+    0 => 'mixed',
+    'connection_id' => 'mixed',
+  ),
+  'mysqli::more_results' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli::multi_query' => 
+  array (
+    0 => 'mixed',
+    'query' => 'mixed',
+  ),
+  'mysqli::next_result' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli::options' => 
+  array (
+    0 => 'mixed',
+    'option' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'mysqli::ping' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli::poll' => 
+  array (
+    0 => 'mixed',
+    '&read' => 'array<array-key, mixed>|null',
+    '&write' => 'array<array-key, mixed>|null',
+    '&error' => 'array<array-key, mixed>|null',
+    'sec' => 'mixed',
+    'usec=' => 'mixed',
+  ),
+  'mysqli::prepare' => 
+  array (
+    0 => 'mixed',
+    'query' => 'mixed',
+  ),
+  'mysqli::query' => 
+  array (
+    0 => 'mixed',
+    'query' => 'mixed',
+    'resultmode=' => 'mixed',
+  ),
+  'mysqli::real_connect' => 
+  array (
+    0 => 'mixed',
+    'host=' => 'mixed',
+    'user=' => 'mixed',
+    'password=' => 'mixed',
+    'database=' => 'mixed',
+    'port=' => 'mixed',
+    'socket=' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'mysqli::real_escape_string' => 
+  array (
+    0 => 'mixed',
+    'string_to_escape' => 'mixed',
+  ),
+  'mysqli::real_query' => 
+  array (
+    0 => 'mixed',
+    'query' => 'mixed',
+  ),
+  'mysqli::reap_async_query' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli::refresh' => 
+  array (
+    0 => 'mixed',
+    'options' => 'mixed',
+  ),
+  'mysqli::release_savepoint' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+  ),
+  'mysqli::rollback' => 
+  array (
+    0 => 'mixed',
+    'flags=' => 'mixed',
+    'name=' => 'mixed',
+  ),
+  'mysqli::savepoint' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+  ),
+  'mysqli::select_db' => 
+  array (
+    0 => 'mixed',
+    'database' => 'mixed',
+  ),
+  'mysqli::set_charset' => 
+  array (
+    0 => 'mixed',
+    'charset' => 'mixed',
+  ),
+  'mysqli::set_opt' => 
+  array (
+    0 => 'mixed',
+    'option' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'mysqli::ssl_set' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'cert' => 'mixed',
+    'certificate_authority' => 'mixed',
+    'certificate_authority_path' => 'mixed',
+    'cipher' => 'mixed',
+  ),
+  'mysqli::stat' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli::stmt_init' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli::store_result' => 
+  array (
+    0 => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'mysqli::thread_safe' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli::use_result' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_affected_rows' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_autocommit' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'mode' => 'mixed',
+  ),
+  'mysqli_begin_transaction' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'flags=' => 'mixed',
+    'name=' => 'mixed',
+  ),
+  'mysqli_change_user' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'user' => 'mixed',
+    'password' => 'mixed',
+    'database' => 'mixed',
+  ),
+  'mysqli_character_set_name' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_close' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_commit' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'flags=' => 'mixed',
+    'name=' => 'mixed',
+  ),
+  'mysqli_connect' => 
+  array (
+    0 => 'mixed',
+    'host=' => 'mixed',
+    'user=' => 'mixed',
+    'password=' => 'mixed',
+    'database=' => 'mixed',
+    'port=' => 'mixed',
+    'socket=' => 'mixed',
+  ),
+  'mysqli_connect_errno' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_connect_error' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_data_seek' => 
+  array (
+    0 => 'mixed',
+    'result' => 'mixed',
+    'offset' => 'mixed',
+  ),
+  'mysqli_debug' => 
+  array (
+    0 => 'mixed',
+    'debug_options' => 'mixed',
+  ),
+  'mysqli_dump_debug_info' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_errno' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_error' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_error_list' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_escape_string' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'query' => 'mixed',
+    'resultmode=' => 'mixed',
+  ),
+  'mysqli_execute' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_fetch_all' => 
+  array (
+    0 => 'mixed',
+    'result' => 'mixed',
+    'result_type=' => 'mixed',
+  ),
+  'mysqli_fetch_array' => 
+  array (
+    0 => 'mixed',
+    'result' => 'mixed',
+    'result_type=' => 'mixed',
+  ),
+  'mysqli_fetch_assoc' => 
+  array (
+    0 => 'mixed',
+    'result' => 'mixed',
+  ),
+  'mysqli_fetch_field' => 
+  array (
+    0 => 'mixed',
+    'result' => 'mixed',
+  ),
+  'mysqli_fetch_field_direct' => 
+  array (
+    0 => 'mixed',
+    'result' => 'mixed',
+    'field_nr' => 'mixed',
+  ),
+  'mysqli_fetch_fields' => 
+  array (
+    0 => 'mixed',
+    'result' => 'mixed',
+  ),
+  'mysqli_fetch_lengths' => 
+  array (
+    0 => 'mixed',
+    'result' => 'mixed',
+  ),
+  'mysqli_fetch_object' => 
+  array (
+    0 => 'mixed',
+    'result' => 'mixed',
+    'class_name=' => 'mixed',
+    'params=' => 'array<array-key, mixed>',
+  ),
+  'mysqli_fetch_row' => 
+  array (
+    0 => 'mixed',
+    'result' => 'mixed',
+  ),
+  'mysqli_field_count' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_field_seek' => 
+  array (
+    0 => 'mixed',
+    'result' => 'mixed',
+    'field_nr' => 'mixed',
+  ),
+  'mysqli_field_tell' => 
+  array (
+    0 => 'mixed',
+    'result' => 'mixed',
+  ),
+  'mysqli_free_result' => 
+  array (
+    0 => 'mixed',
+    'result' => 'mixed',
+  ),
+  'mysqli_get_charset' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_get_client_info' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_get_client_stats' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_get_client_version' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_get_connection_stats' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_get_host_info' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_get_links_stats' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_get_proto_info' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_get_server_info' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_get_server_version' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_get_warnings' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_info' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_init' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_insert_id' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_kill' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'connection_id' => 'mixed',
+  ),
+  'mysqli_more_results' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_multi_query' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'query=' => 'mixed',
+  ),
+  'mysqli_next_result' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_num_fields' => 
+  array (
+    0 => 'mixed',
+    'result' => 'mixed',
+  ),
+  'mysqli_num_rows' => 
+  array (
+    0 => 'mixed',
+    'result' => 'mixed',
+  ),
+  'mysqli_options' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'option' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'mysqli_ping' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_poll' => 
+  array (
+    0 => 'mixed',
+    '&read' => 'array<array-key, mixed>|null',
+    '&write' => 'array<array-key, mixed>|null',
+    '&error' => 'array<array-key, mixed>|null',
+    'sec' => 'mixed',
+    'usec=' => 'mixed',
+  ),
+  'mysqli_prepare' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'query' => 'mixed',
+  ),
+  'mysqli_query' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'query' => 'mixed',
+    'resultmode=' => 'mixed',
+  ),
+  'mysqli_real_connect' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'host=' => 'mixed',
+    'user=' => 'mixed',
+    'password=' => 'mixed',
+    'database=' => 'mixed',
+    'port=' => 'mixed',
+    'socket=' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'mysqli_real_escape_string' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'string_to_escape' => 'mixed',
+  ),
+  'mysqli_real_query' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'query=' => 'mixed',
+  ),
+  'mysqli_reap_async_query' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_refresh' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'options' => 'mixed',
+  ),
+  'mysqli_release_savepoint' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'name' => 'mixed',
+  ),
+  'mysqli_report' => 
+  array (
+    0 => 'mixed',
+    'flags' => 'mixed',
+  ),
+  'mysqli_result::__construct' => 
+  array (
+    0 => 'void',
+  ),
+  'mysqli_result::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_result::data_seek' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'mixed',
+  ),
+  'mysqli_result::fetch_all' => 
+  array (
+    0 => 'mixed',
+    'result_type=' => 'mixed',
+  ),
+  'mysqli_result::fetch_array' => 
+  array (
+    0 => 'mixed',
+    'result_type=' => 'mixed',
+  ),
+  'mysqli_result::fetch_assoc' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_result::fetch_field' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_result::fetch_field_direct' => 
+  array (
+    0 => 'mixed',
+    'field_nr' => 'mixed',
+  ),
+  'mysqli_result::fetch_fields' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_result::fetch_object' => 
+  array (
+    0 => 'mixed',
+    'class_name=' => 'mixed',
+    'params=' => 'array<array-key, mixed>',
+  ),
+  'mysqli_result::fetch_row' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_result::field_seek' => 
+  array (
+    0 => 'mixed',
+    'field_nr' => 'mixed',
+  ),
+  'mysqli_result::free' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_result::free_result' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_rollback' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'flags=' => 'mixed',
+    'name=' => 'mixed',
+  ),
+  'mysqli_savepoint' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'name' => 'mixed',
+  ),
+  'mysqli_select_db' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'database' => 'mixed',
+  ),
+  'mysqli_set_charset' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'charset' => 'mixed',
+  ),
+  'mysqli_set_opt' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sql_exception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sql_exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'mysqli_sql_exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sql_exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sql_exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sql_exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sql_exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sql_exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sql_exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sql_exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sql_exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sqlstate' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_ssl_set' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'key' => 'mixed',
+    'cert' => 'mixed',
+    'certificate_authority' => 'mixed',
+    'certificate_authority_path' => 'mixed',
+    'cipher' => 'mixed',
+  ),
+  'mysqli_stat' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_stmt::__construct' => 
+  array (
+    0 => 'void',
+  ),
+  'mysqli_stmt::attr_get' => 
+  array (
+    0 => 'mixed',
+    'attribute' => 'mixed',
+  ),
+  'mysqli_stmt::attr_set' => 
+  array (
+    0 => 'mixed',
+    'attribute' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'mysqli_stmt::bind_param' => 
+  array (
+    0 => 'mixed',
+    'types' => 'mixed',
+    '&...vars' => 'mixed',
+  ),
+  'mysqli_stmt::bind_result' => 
+  array (
+    0 => 'mixed',
+    '&...vars' => 'mixed',
+  ),
+  'mysqli_stmt::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_stmt::data_seek' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'mixed',
+  ),
+  'mysqli_stmt::execute' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_stmt::fetch' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_stmt::free_result' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_stmt::get_result' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_stmt::get_warnings' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_stmt::more_results' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_stmt::next_result' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_stmt::num_rows' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_stmt::prepare' => 
+  array (
+    0 => 'mixed',
+    'query' => 'mixed',
+  ),
+  'mysqli_stmt::reset' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_stmt::result_metadata' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_stmt::send_long_data' => 
+  array (
+    0 => 'mixed',
+    'param_nr' => 'mixed',
+    'data' => 'mixed',
+  ),
+  'mysqli_stmt::store_result' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_stmt_affected_rows' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_stmt_attr_get' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+    'attribute' => 'mixed',
+  ),
+  'mysqli_stmt_attr_set' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+    'attribute' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'mysqli_stmt_bind_param' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+    'types' => 'mixed',
+    '&...vars' => 'mixed',
+  ),
+  'mysqli_stmt_bind_result' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+    '&...vars' => 'mixed',
+  ),
+  'mysqli_stmt_close' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_stmt_data_seek' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+    'offset' => 'mixed',
+  ),
+  'mysqli_stmt_errno' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_stmt_error' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_stmt_error_list' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_stmt_execute' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_stmt_fetch' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_stmt_field_count' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_stmt_free_result' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_stmt_get_result' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_stmt_get_warnings' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_stmt_init' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_stmt_insert_id' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_stmt_more_results' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_stmt_next_result' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_stmt_num_rows' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_stmt_param_count' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_stmt_prepare' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+    'query' => 'mixed',
+  ),
+  'mysqli_stmt_reset' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_stmt_result_metadata' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_stmt_send_long_data' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+    'param_nr' => 'mixed',
+    'data' => 'mixed',
+  ),
+  'mysqli_stmt_sqlstate' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_stmt_store_result' => 
+  array (
+    0 => 'mixed',
+    'stmt' => 'mixed',
+  ),
+  'mysqli_store_result' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'mysqli_thread_id' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_thread_safe' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_use_result' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
+  'mysqli_warning::__construct' => 
+  array (
+    0 => 'void',
+  ),
+  'mysqli_warning::next' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_warning_count' => 
+  array (
+    0 => 'mixed',
+    'link' => 'mixed',
+  ),
   'natcasesort' => 
   array (
     0 => 'mixed',
@@ -39725,6 +40741,326 @@ return array (
   array (
     0 => 'mixed',
     'seconds' => 'mixed',
+  ),
+  'snmp2_get' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'community' => 'mixed',
+    'object_id' => 'mixed',
+    'timeout=' => 'mixed',
+    'retries=' => 'mixed',
+  ),
+  'snmp2_getnext' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'community' => 'mixed',
+    'object_id' => 'mixed',
+    'timeout=' => 'mixed',
+    'retries=' => 'mixed',
+  ),
+  'snmp2_real_walk' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'community' => 'mixed',
+    'object_id' => 'mixed',
+    'timeout=' => 'mixed',
+    'retries=' => 'mixed',
+  ),
+  'snmp2_set' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'community' => 'mixed',
+    'object_id' => 'mixed',
+    'type' => 'mixed',
+    'value' => 'mixed',
+    'timeout=' => 'mixed',
+    'retries=' => 'mixed',
+  ),
+  'snmp2_walk' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'community' => 'mixed',
+    'object_id' => 'mixed',
+    'timeout=' => 'mixed',
+    'retries=' => 'mixed',
+  ),
+  'snmp3_get' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'sec_name' => 'mixed',
+    'sec_level' => 'mixed',
+    'auth_protocol' => 'mixed',
+    'auth_passphrase' => 'mixed',
+    'priv_protocol' => 'mixed',
+    'priv_passphrase' => 'mixed',
+    'object_id' => 'mixed',
+    'timeout=' => 'mixed',
+    'retries=' => 'mixed',
+  ),
+  'snmp3_getnext' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'sec_name' => 'mixed',
+    'sec_level' => 'mixed',
+    'auth_protocol' => 'mixed',
+    'auth_passphrase' => 'mixed',
+    'priv_protocol' => 'mixed',
+    'priv_passphrase' => 'mixed',
+    'object_id' => 'mixed',
+    'timeout=' => 'mixed',
+    'retries=' => 'mixed',
+  ),
+  'snmp3_real_walk' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'sec_name' => 'mixed',
+    'sec_level' => 'mixed',
+    'auth_protocol' => 'mixed',
+    'auth_passphrase' => 'mixed',
+    'priv_protocol' => 'mixed',
+    'priv_passphrase' => 'mixed',
+    'object_id' => 'mixed',
+    'timeout=' => 'mixed',
+    'retries=' => 'mixed',
+  ),
+  'snmp3_set' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'sec_name' => 'mixed',
+    'sec_level' => 'mixed',
+    'auth_protocol' => 'mixed',
+    'auth_passphrase' => 'mixed',
+    'priv_protocol' => 'mixed',
+    'priv_passphrase' => 'mixed',
+    'object_id' => 'mixed',
+    'type' => 'mixed',
+    'value' => 'mixed',
+    'timeout=' => 'mixed',
+    'retries=' => 'mixed',
+  ),
+  'snmp3_walk' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'sec_name' => 'mixed',
+    'sec_level' => 'mixed',
+    'auth_protocol' => 'mixed',
+    'auth_passphrase' => 'mixed',
+    'priv_protocol' => 'mixed',
+    'priv_passphrase' => 'mixed',
+    'object_id' => 'mixed',
+    'timeout=' => 'mixed',
+    'retries=' => 'mixed',
+  ),
+  'snmp::__construct' => 
+  array (
+    0 => 'void',
+    'version' => 'mixed',
+    'host' => 'mixed',
+    'community' => 'mixed',
+    'timeout=' => 'mixed',
+    'retries=' => 'mixed',
+  ),
+  'snmp::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmp::get' => 
+  array (
+    0 => 'mixed',
+    'object_id' => 'mixed',
+    'use_orignames=' => 'mixed',
+  ),
+  'snmp::geterrno' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmp::geterror' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmp::getnext' => 
+  array (
+    0 => 'mixed',
+    'object_id' => 'mixed',
+    'use_orignames=' => 'mixed',
+  ),
+  'snmp::set' => 
+  array (
+    0 => 'mixed',
+    'object_id' => 'mixed',
+    'type' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'snmp::setsecurity' => 
+  array (
+    0 => 'mixed',
+    'sec_level' => 'mixed',
+    'auth_protocol' => 'mixed',
+    'auth_passphrase' => 'mixed',
+    'priv_protocol' => 'mixed',
+    'priv_passphrase' => 'mixed',
+    'contextName' => 'mixed',
+    'contextEngineID' => 'mixed',
+  ),
+  'snmp::walk' => 
+  array (
+    0 => 'mixed',
+    'object_id' => 'mixed',
+    'suffix_keys' => 'mixed',
+    'max_repetitions' => 'mixed',
+    'non_repeaters' => 'mixed',
+  ),
+  'snmp_get_quick_print' => 
+  array (
+    0 => 'mixed',
+    'd' => 'mixed',
+  ),
+  'snmp_get_valueretrieval' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmp_read_mib' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+  ),
+  'snmp_set_enum_print' => 
+  array (
+    0 => 'mixed',
+    'enum_print' => 'mixed',
+  ),
+  'snmp_set_oid_numeric_print' => 
+  array (
+    0 => 'mixed',
+    'oid_format' => 'mixed',
+  ),
+  'snmp_set_oid_output_format' => 
+  array (
+    0 => 'mixed',
+    'oid_format' => 'mixed',
+  ),
+  'snmp_set_quick_print' => 
+  array (
+    0 => 'mixed',
+    'quick_print' => 'mixed',
+  ),
+  'snmp_set_valueretrieval' => 
+  array (
+    0 => 'mixed',
+    'method' => 'mixed',
+  ),
+  'snmpexception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmpexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'snmpexception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmpexception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmpexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmpexception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmpexception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmpexception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmpexception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmpexception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmpexception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmpget' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'community' => 'mixed',
+    'object_id' => 'mixed',
+    'timeout=' => 'mixed',
+    'retries=' => 'mixed',
+  ),
+  'snmpgetnext' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'community' => 'mixed',
+    'object_id' => 'mixed',
+    'timeout=' => 'mixed',
+    'retries=' => 'mixed',
+  ),
+  'snmprealwalk' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'community' => 'mixed',
+    'object_id' => 'mixed',
+    'timeout=' => 'mixed',
+    'retries=' => 'mixed',
+  ),
+  'snmpset' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'community' => 'mixed',
+    'object_id' => 'mixed',
+    'type' => 'mixed',
+    'value' => 'mixed',
+    'timeout=' => 'mixed',
+    'retries=' => 'mixed',
+  ),
+  'snmpwalk' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'community' => 'mixed',
+    'object_id' => 'mixed',
+    'timeout=' => 'mixed',
+    'retries=' => 'mixed',
+  ),
+  'snmpwalkoid' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'community' => 'mixed',
+    'object_id' => 'mixed',
+    'timeout=' => 'mixed',
+    'retries=' => 'mixed',
   ),
   'soapclient::__call' => 
   array (
@@ -52693,6 +54029,236 @@ return array (
   array (
     0 => 'mixed',
   ),
+  'tidy::__construct' => 
+  array (
+    0 => 'void',
+  ),
+  'tidy::body' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy::cleanrepair' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy::diagnose' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy::getconfig' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy::gethtmlver' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy::getopt' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy::getoptdoc' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy::getrelease' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy::getstatus' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy::head' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy::html' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy::isxhtml' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy::isxml' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy::parsefile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy::parsestring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy::repairfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy::repairstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy::root' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy_access_count' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy_clean_repair' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy_config_count' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy_diagnose' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy_error_count' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy_get_body' => 
+  array (
+    0 => 'mixed',
+    'tidy' => 'mixed',
+  ),
+  'tidy_get_config' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy_get_error_buffer' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy_get_head' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy_get_html' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy_get_html_ver' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy_get_opt_doc' => 
+  array (
+    0 => 'mixed',
+    'resource' => 'mixed',
+    'optname' => 'mixed',
+  ),
+  'tidy_get_output' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy_get_release' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy_get_root' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy_get_status' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy_getopt' => 
+  array (
+    0 => 'mixed',
+    'option' => 'mixed',
+  ),
+  'tidy_is_xhtml' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy_is_xml' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidy_parse_file' => 
+  array (
+    0 => 'mixed',
+    'file' => 'mixed',
+    'config_options=' => 'mixed',
+    'encoding=' => 'mixed',
+    'use_include_path=' => 'mixed',
+  ),
+  'tidy_parse_string' => 
+  array (
+    0 => 'mixed',
+    'input' => 'mixed',
+    'config_options=' => 'mixed',
+    'encoding=' => 'mixed',
+  ),
+  'tidy_repair_file' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+    'config_file=' => 'mixed',
+    'encoding=' => 'mixed',
+    'use_include_path=' => 'mixed',
+  ),
+  'tidy_repair_string' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'config_file=' => 'mixed',
+    'encoding=' => 'mixed',
+  ),
+  'tidy_warning_count' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidynode::__construct' => 
+  array (
+    0 => 'void',
+  ),
+  'tidynode::getparent' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidynode::haschildren' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidynode::hassiblings' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidynode::isasp' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidynode::iscomment' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidynode::ishtml' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidynode::isjste' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidynode::isphp' => 
+  array (
+    0 => 'mixed',
+  ),
+  'tidynode::istext' => 
+  array (
+    0 => 'mixed',
+  ),
   'time' => 
   array (
     0 => 'mixed',
@@ -53990,6 +55556,69 @@ return array (
     0 => 'mixed',
     'xmlwriter' => 'mixed',
     'content' => 'mixed',
+  ),
+  'xsltprocessor::getparameter' => 
+  array (
+    0 => 'mixed',
+    'namespace' => 'mixed',
+    'name' => 'mixed',
+  ),
+  'xsltprocessor::getsecurityprefs' => 
+  array (
+    0 => 'mixed',
+  ),
+  'xsltprocessor::hasexsltsupport' => 
+  array (
+    0 => 'mixed',
+  ),
+  'xsltprocessor::importstylesheet' => 
+  array (
+    0 => 'mixed',
+    'doc' => 'mixed',
+  ),
+  'xsltprocessor::registerphpfunctions' => 
+  array (
+    0 => 'mixed',
+    'restrict=' => 'mixed',
+  ),
+  'xsltprocessor::removeparameter' => 
+  array (
+    0 => 'mixed',
+    'namespace' => 'mixed',
+    'name' => 'mixed',
+  ),
+  'xsltprocessor::setparameter' => 
+  array (
+    0 => 'mixed',
+    'namespace' => 'mixed',
+    'name' => 'mixed',
+    'value=' => 'mixed',
+  ),
+  'xsltprocessor::setprofiling' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+  ),
+  'xsltprocessor::setsecurityprefs' => 
+  array (
+    0 => 'mixed',
+    'securityPrefs' => 'mixed',
+  ),
+  'xsltprocessor::transformtodoc' => 
+  array (
+    0 => 'mixed',
+    'doc' => 'mixed',
+  ),
+  'xsltprocessor::transformtouri' => 
+  array (
+    0 => 'mixed',
+    'doc' => 'mixed',
+    'uri' => 'mixed',
+  ),
+  'xsltprocessor::transformtoxml' => 
+  array (
+    0 => 'mixed',
+    'doc' => 'mixed',
   ),
   'zend_version' => 
   array (

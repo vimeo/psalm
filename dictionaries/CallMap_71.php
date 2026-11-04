@@ -52265,8 +52265,8 @@ return array (
   'mysqli::__construct' => 
   array (
     0 => 'void',
-    'hostname=' => 'string',
-    'username=' => 'string',
+    'host=' => 'string',
+    'user=' => 'string',
     'password=' => 'string',
     'database=' => 'string',
     'port=' => 'int',
@@ -52275,7 +52275,7 @@ return array (
   'mysqli::autocommit' => 
   array (
     0 => 'bool',
-    'enable' => 'bool',
+    'mode' => 'bool',
   ),
   'mysqli::begin_transaction' => 
   array (
@@ -52286,7 +52286,7 @@ return array (
   'mysqli::change_user' => 
   array (
     0 => 'bool',
-    'username' => 'string',
+    'user' => 'string',
     'password' => 'string',
     'database' => 'null|string',
   ),
@@ -52307,8 +52307,8 @@ return array (
   'mysqli::connect' => 
   array (
     0 => 'false|null',
-    'hostname=' => 'string',
-    'username=' => 'string',
+    'host=' => 'string',
+    'user=' => 'string',
     'password=' => 'string',
     'database=' => 'string',
     'port=' => 'int',
@@ -52317,7 +52317,7 @@ return array (
   'mysqli::debug' => 
   array (
     0 => 'true',
-    'options' => 'string',
+    'debug_options' => 'string',
   ),
   'mysqli::dump_debug_info' => 
   array (
@@ -52326,7 +52326,7 @@ return array (
   'mysqli::escape_string' => 
   array (
     0 => 'string',
-    'string' => 'string',
+    'string_to_escape' => 'string',
   ),
   'mysqli::get_charset' => 
   array (
@@ -52340,6 +52340,10 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
+  'mysqli::get_server_info' => 
+  array (
+    0 => 'mixed',
+  ),
   'mysqli::get_warnings' => 
   array (
     0 => 'mysqli_warning',
@@ -52351,7 +52355,7 @@ return array (
   'mysqli::kill' => 
   array (
     0 => 'bool',
-    'process_id' => 'int',
+    'connection_id' => 'int',
   ),
   'mysqli::more_results' => 
   array (
@@ -52380,10 +52384,10 @@ return array (
   array (
     0 => 'false|int',
     '&w read' => 'array<array-key, mixed>|null',
+    '&w write' => 'array<array-key, mixed>|null',
     '&w error' => 'array<array-key, mixed>|null',
-    '&w reject' => 'array<array-key, mixed>',
-    'seconds' => 'int',
-    'microseconds=' => 'int',
+    'sec' => 'int',
+    'usec=' => 'int',
   ),
   'mysqli::prepare' => 
   array (
@@ -52394,13 +52398,13 @@ return array (
   array (
     0 => 'bool|mysqli_result',
     'query' => 'string',
-    'result_mode=' => 'int',
+    'resultmode=' => 'int',
   ),
   'mysqli::real_connect' => 
   array (
     0 => 'bool',
-    'hostname=' => 'null|string',
-    'username=' => 'null|string',
+    'host=' => 'null|string',
+    'user=' => 'null|string',
     'password=' => 'null|string',
     'database=' => 'null|string',
     'port=' => 'int|null',
@@ -52410,7 +52414,7 @@ return array (
   'mysqli::real_escape_string' => 
   array (
     0 => 'string',
-    'string' => 'string',
+    'string_to_escape' => 'string',
   ),
   'mysqli::real_query' => 
   array (
@@ -52424,7 +52428,7 @@ return array (
   'mysqli::refresh' => 
   array (
     0 => 'bool',
-    'flags' => 'int',
+    'options' => 'int',
   ),
   'mysqli::release_savepoint' => 
   array (
@@ -52462,10 +52466,10 @@ return array (
   array (
     0 => 'true',
     'key' => 'null|string',
-    'certificate' => 'null|string',
-    'ca_certificate' => 'null|string',
-    'ca_path' => 'null|string',
-    'cipher_algos' => 'null|string',
+    'cert' => 'null|string',
+    'certificate_authority' => 'null|string',
+    'certificate_authority_path' => 'null|string',
+    'cipher' => 'null|string',
   ),
   'mysqli::stat' => 
   array (
@@ -52478,7 +52482,7 @@ return array (
   'mysqli::store_result' => 
   array (
     0 => 'false|mysqli_result',
-    'mode=' => 'int',
+    'flags=' => 'int',
   ),
   'mysqli::thread_safe' => 
   array (
@@ -52491,51 +52495,51 @@ return array (
   'mysqli_affected_rows' => 
   array (
     0 => 'int<-1, max>|numeric-string',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_autocommit' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
-    'enable' => 'bool',
+    'link' => 'mysqli',
+    'mode' => 'bool',
   ),
   'mysqli_begin_transaction' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
     'flags=' => 'int',
     'name=' => 'string',
   ),
   'mysqli_change_user' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
-    'username' => 'string',
+    'link' => 'mysqli',
+    'user' => 'string',
     'password' => 'string',
     'database' => 'null|string',
   ),
   'mysqli_character_set_name' => 
   array (
     0 => 'string',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_close' => 
   array (
     0 => 'true',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_commit' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
     'flags=' => 'int',
     'name=' => 'string',
   ),
   'mysqli_connect' => 
   array (
     0 => 'false|mysqli',
-    'hostname=' => 'string',
-    'username=' => 'string',
+    'host=' => 'string',
+    'user=' => 'string',
     'password=' => 'string',
     'database=' => 'string',
     'port=' => 'int',
@@ -52558,7 +52562,7 @@ return array (
   'mysqli_debug' => 
   array (
     0 => 'true',
-    'options' => 'string',
+    'debug_options' => 'string',
   ),
   'mysqli_disable_reads_from_master' => 
   array (
@@ -52573,7 +52577,7 @@ return array (
   'mysqli_dump_debug_info' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_embedded_server_end' => 
   array (
@@ -52599,34 +52603,35 @@ return array (
   'mysqli_errno' => 
   array (
     0 => 'int',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_error' => 
   array (
     0 => 'string',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_error_list' => 
   array (
     0 => 'array<array-key, mixed>',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_escape_string' => 
   array (
     0 => 'string',
-    'mysql' => 'mysqli',
-    'string' => 'string',
+    'link' => 'mysqli',
+    'query' => 'string',
+    'resultmode=' => 'mixed',
   ),
   'mysqli_execute' => 
   array (
     0 => 'bool',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_fetch_all' => 
   array (
     0 => 'list<array<array-key, float|int|null|string>>',
     'result' => 'mysqli_result',
-    'mode=' => '3',
+    'result_type=' => '3',
   ),
   'mysqli_fetch_all\'1' => 
   array (
@@ -52644,7 +52649,7 @@ return array (
   array (
     0 => 'array<array-key, float|int|null|string>|false|null',
     'result' => 'mysqli_result',
-    'mode=' => '3',
+    'result_type=' => '3',
   ),
   'mysqli_fetch_array\'1' => 
   array (
@@ -52672,7 +52677,7 @@ return array (
   array (
     0 => 'false|object{name:string, orgname:string, table:string, orgtable:string, max_length:int, length:int, charsetnr:int, flags:int, type:int, decimals:int, db:string, def:\'\', catalog:\'def\'}',
     'result' => 'mysqli_result',
-    'index' => 'int',
+    'field_nr' => 'int',
   ),
   'mysqli_fetch_fields' => 
   array (
@@ -52688,8 +52693,8 @@ return array (
   array (
     0 => 'false|null|object',
     'result' => 'mysqli_result',
-    'class=' => 'string',
-    'constructor_args=' => 'array<array-key, mixed>',
+    'class_name=' => 'string',
+    'params=' => 'array<array-key, mixed>',
   ),
   'mysqli_fetch_row' => 
   array (
@@ -52699,13 +52704,13 @@ return array (
   'mysqli_field_count' => 
   array (
     0 => 'int',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_field_seek' => 
   array (
     0 => 'bool',
     'result' => 'mysqli_result',
-    'index' => 'int',
+    'field_nr' => 'int',
   ),
   'mysqli_field_tell' => 
   array (
@@ -52724,12 +52729,12 @@ return array (
   'mysqli_get_charset' => 
   array (
     0 => 'null|object',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_get_client_info' => 
   array (
     0 => 'string',
-    'mysql=' => 'mysqli|null',
+    'link' => 'mysqli|null',
   ),
   'mysqli_get_client_stats' => 
   array (
@@ -52738,16 +52743,17 @@ return array (
   'mysqli_get_client_version' => 
   array (
     0 => 'int',
+    'link' => 'mixed',
   ),
   'mysqli_get_connection_stats' => 
   array (
     0 => 'array<array-key, mixed>',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_get_host_info' => 
   array (
     0 => 'string',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_get_links_stats' => 
   array (
@@ -52756,27 +52762,27 @@ return array (
   'mysqli_get_proto_info' => 
   array (
     0 => 'int',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_get_server_info' => 
   array (
     0 => 'string',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_get_server_version' => 
   array (
     0 => 'int',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_get_warnings' => 
   array (
     0 => 'mysqli_warning',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_info' => 
   array (
     0 => 'null|string',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_init' => 
   array (
@@ -52785,13 +52791,13 @@ return array (
   'mysqli_insert_id' => 
   array (
     0 => 'int|string',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_kill' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
-    'process_id' => 'int',
+    'link' => 'mysqli',
+    'connection_id' => 'int',
   ),
   'mysqli_link_construct' => 
   array (
@@ -52806,18 +52812,18 @@ return array (
   'mysqli_more_results' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_multi_query' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
-    'query' => 'string',
+    'link' => 'mysqli',
+    'query=' => 'string',
   ),
   'mysqli_next_result' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_num_fields' => 
   array (
@@ -52832,43 +52838,43 @@ return array (
   'mysqli_options' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
     'option' => 'int',
     'value' => 'int|string',
   ),
   'mysqli_ping' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_poll' => 
   array (
     0 => 'false|int',
     '&w read' => 'array<array-key, mixed>|null',
+    '&w write' => 'array<array-key, mixed>|null',
     '&w error' => 'array<array-key, mixed>|null',
-    '&w reject' => 'array<array-key, mixed>',
-    'seconds' => 'int',
-    'microseconds=' => 'int',
+    'sec' => 'int',
+    'usec=' => 'int',
   ),
   'mysqli_prepare' => 
   array (
     0 => 'false|mysqli_stmt',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
     'query' => 'string',
   ),
   'mysqli_query' => 
   array (
     0 => 'bool|mysqli_result',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
     'query' => 'string',
-    'result_mode=' => 'int',
+    'resultmode=' => 'int',
   ),
   'mysqli_real_connect' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
-    'hostname=' => 'null|string',
-    'username=' => 'null|string',
+    'link' => 'mysqli',
+    'host=' => 'null|string',
+    'user=' => 'null|string',
     'password=' => 'null|string',
     'database=' => 'null|string',
     'port=' => 'int|null',
@@ -52878,30 +52884,30 @@ return array (
   'mysqli_real_escape_string' => 
   array (
     0 => 'string',
-    'mysql' => 'mysqli',
-    'string' => 'string',
+    'link' => 'mysqli',
+    'string_to_escape' => 'string',
   ),
   'mysqli_real_query' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
-    'query' => 'string',
+    'link' => 'mysqli',
+    'query=' => 'string',
   ),
   'mysqli_reap_async_query' => 
   array (
     0 => 'false|mysqli_result',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_refresh' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
-    'flags' => 'int',
+    'link' => 'mysqli',
+    'options' => 'int',
   ),
   'mysqli_release_savepoint' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
     'name' => 'string',
   ),
   'mysqli_report' => 
@@ -52912,8 +52918,6 @@ return array (
   'mysqli_result::__construct' => 
   array (
     0 => 'void',
-    'mysql' => 'mysqli',
-    'result_mode=' => 'int',
   ),
   'mysqli_result::close' => 
   array (
@@ -52927,7 +52931,7 @@ return array (
   'mysqli_result::fetch_all' => 
   array (
     0 => 'list<array<array-key, float|int|null|string>>',
-    'mode=' => '3',
+    'result_type=' => '3',
   ),
   'mysqli_result::fetch_all\'1' => 
   array (
@@ -52942,7 +52946,7 @@ return array (
   'mysqli_result::fetch_array' => 
   array (
     0 => 'array<array-key, float|int|null|string>|false|null',
-    'mode=' => '3',
+    'result_type=' => '3',
   ),
   'mysqli_result::fetch_array\'1' => 
   array (
@@ -52965,7 +52969,7 @@ return array (
   'mysqli_result::fetch_field_direct' => 
   array (
     0 => 'false|object{name:string, orgname:string, table:string, orgtable:string, max_length:int, length:int, charsetnr:int, flags:int, type:int, decimals:int, db:string, def:\'\', catalog:\'def\'}',
-    'index' => 'int',
+    'field_nr' => 'int',
   ),
   'mysqli_result::fetch_fields' => 
   array (
@@ -52974,8 +52978,8 @@ return array (
   'mysqli_result::fetch_object' => 
   array (
     0 => 'false|null|object',
-    'class=' => 'string',
-    'constructor_args=' => 'array<array-key, mixed>',
+    'class_name=' => 'string',
+    'params=' => 'array<array-key, mixed>',
   ),
   'mysqli_result::fetch_row' => 
   array (
@@ -52984,7 +52988,7 @@ return array (
   'mysqli_result::field_seek' => 
   array (
     0 => 'bool',
-    'index' => 'int',
+    'field_nr' => 'int',
   ),
   'mysqli_result::free' => 
   array (
@@ -52997,7 +53001,7 @@ return array (
   'mysqli_rollback' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
     'flags=' => 'int',
     'name=' => 'string',
   ),
@@ -53020,7 +53024,7 @@ return array (
   'mysqli_savepoint' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
     'name' => 'string',
   ),
   'mysqli_savepoint_libmysql' => 
@@ -53030,7 +53034,7 @@ return array (
   'mysqli_select_db' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
     'database' => 'string',
   ),
   'mysqli_send_query' => 
@@ -53042,7 +53046,7 @@ return array (
   'mysqli_set_charset' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
     'charset' => 'string',
   ),
   'mysqli_set_local_infile_default' => 
@@ -53059,9 +53063,6 @@ return array (
   'mysqli_set_opt' => 
   array (
     0 => 'bool',
-    'mysql' => 'mysqli',
-    'option' => 'int',
-    'value' => 'int|string',
   ),
   'mysqli_slave_query' => 
   array (
@@ -53069,31 +53070,76 @@ return array (
     'link' => 'mysqli',
     'query' => 'string',
   ),
+  'mysqli_sql_exception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sql_exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'mysqli_sql_exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sql_exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sql_exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sql_exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sql_exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sql_exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sql_exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sql_exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mysqli_sql_exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
   'mysqli_sqlstate' => 
   array (
     0 => 'string',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_ssl_set' => 
   array (
     0 => 'true',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
     'key' => 'null|string',
-    'certificate' => 'null|string',
-    'ca_certificate' => 'null|string',
-    'ca_path' => 'null|string',
-    'cipher_algos' => 'null|string',
+    'cert' => 'null|string',
+    'certificate_authority' => 'null|string',
+    'certificate_authority_path' => 'null|string',
+    'cipher' => 'null|string',
   ),
   'mysqli_stat' => 
   array (
     0 => 'false|string',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_stmt::__construct' => 
   array (
     0 => 'void',
-    'mysql' => 'mysqli',
-    'query=' => 'string',
   ),
   'mysqli_stmt::attr_get' => 
   array (
@@ -53110,14 +53156,12 @@ return array (
   array (
     0 => 'bool',
     'types' => 'string',
-    '&var' => 'mixed',
-    '&...vars=' => 'mixed',
+    '&...vars' => 'mixed',
   ),
   'mysqli_stmt::bind_result' => 
   array (
     0 => 'bool',
-    '&w var1' => 'mixed',
-    '&...w vars=' => 'mixed',
+    '&...w vars' => 'mixed',
   ),
   'mysqli_stmt::close' => 
   array (
@@ -53176,7 +53220,7 @@ return array (
   'mysqli_stmt::send_long_data' => 
   array (
     0 => 'bool',
-    'param_num' => 'int',
+    'param_nr' => 'int',
     'data' => 'string',
   ),
   'mysqli_stmt::store_result' => 
@@ -53186,165 +53230,163 @@ return array (
   'mysqli_stmt_affected_rows' => 
   array (
     0 => 'int<-1, max>|numeric-string',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_stmt_attr_get' => 
   array (
     0 => 'int',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
     'attribute' => 'int',
   ),
   'mysqli_stmt_attr_set' => 
   array (
     0 => 'bool',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
     'attribute' => 'int',
     'value' => 'int',
   ),
   'mysqli_stmt_bind_param' => 
   array (
     0 => 'bool',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
     'types' => 'string',
-    '&var' => 'mixed',
-    '&...vars=' => 'mixed',
+    '&...vars' => 'mixed',
   ),
   'mysqli_stmt_bind_result' => 
   array (
     0 => 'bool',
-    'statement' => 'mysqli_stmt',
-    '&w var1' => 'mixed',
-    '&...w vars=' => 'mixed',
+    'stmt' => 'mysqli_stmt',
+    '&...w vars' => 'mixed',
   ),
   'mysqli_stmt_close' => 
   array (
     0 => 'true',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_stmt_data_seek' => 
   array (
     0 => 'void',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
     'offset' => 'int',
   ),
   'mysqli_stmt_errno' => 
   array (
     0 => 'int',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_stmt_error' => 
   array (
     0 => 'string',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_stmt_error_list' => 
   array (
     0 => 'array<array-key, mixed>',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_stmt_execute' => 
   array (
     0 => 'bool',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_stmt_fetch' => 
   array (
     0 => 'bool|null',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_stmt_field_count' => 
   array (
     0 => 'int',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_stmt_free_result' => 
   array (
     0 => 'void',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_stmt_get_result' => 
   array (
     0 => 'false|mysqli_result',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_stmt_get_warnings' => 
   array (
     0 => 'object',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_stmt_init' => 
   array (
     0 => 'mysqli_stmt',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_stmt_insert_id' => 
   array (
     0 => 'mixed',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_stmt_more_results' => 
   array (
     0 => 'bool',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_stmt_next_result' => 
   array (
     0 => 'bool',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_stmt_num_rows' => 
   array (
     0 => 'int',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_stmt_param_count' => 
   array (
     0 => 'int',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_stmt_prepare' => 
   array (
     0 => 'bool',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
     'query' => 'string',
   ),
   'mysqli_stmt_reset' => 
   array (
     0 => 'bool',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_stmt_result_metadata' => 
   array (
     0 => 'false|mysqli_result',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_stmt_send_long_data' => 
   array (
     0 => 'bool',
-    'statement' => 'mysqli_stmt',
-    'param_num' => 'int',
+    'stmt' => 'mysqli_stmt',
+    'param_nr' => 'int',
     'data' => 'string',
   ),
   'mysqli_stmt_sqlstate' => 
   array (
     0 => 'string',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_stmt_store_result' => 
   array (
     0 => 'bool',
-    'statement' => 'mysqli_stmt',
+    'stmt' => 'mysqli_stmt',
   ),
   'mysqli_store_result' => 
   array (
     0 => 'false|mysqli_result',
-    'mysql' => 'mysqli',
-    'mode=' => 'int',
+    'link' => 'mysqli',
+    'flags=' => 'int',
   ),
   'mysqli_thread_id' => 
   array (
     0 => 'int',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_thread_safe' => 
   array (
@@ -53353,7 +53395,7 @@ return array (
   'mysqli_use_result' => 
   array (
     0 => 'false|mysqli_result',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqli_warning::__construct' => 
   array (
@@ -53366,7 +53408,7 @@ return array (
   'mysqli_warning_count' => 
   array (
     0 => 'int',
-    'mysql' => 'mysqli',
+    'link' => 'mysqli',
   ),
   'mysqlnd_memcache_get_config' => 
   array (
@@ -72512,7 +72554,7 @@ return array (
   'snmp2_get' => 
   array (
     0 => 'false|string',
-    'hostname' => 'string',
+    'host' => 'string',
     'community' => 'string',
     'object_id' => 'array<array-key, mixed>|string',
     'timeout=' => 'int',
@@ -72521,7 +72563,7 @@ return array (
   'snmp2_getnext' => 
   array (
     0 => 'false|string',
-    'hostname' => 'string',
+    'host' => 'string',
     'community' => 'string',
     'object_id' => 'array<array-key, mixed>|string',
     'timeout=' => 'int',
@@ -72530,7 +72572,7 @@ return array (
   'snmp2_real_walk' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'hostname' => 'string',
+    'host' => 'string',
     'community' => 'string',
     'object_id' => 'array<array-key, mixed>|string',
     'timeout=' => 'int',
@@ -72539,7 +72581,7 @@ return array (
   'snmp2_set' => 
   array (
     0 => 'bool',
-    'hostname' => 'string',
+    'host' => 'string',
     'community' => 'string',
     'object_id' => 'array<array-key, mixed>|string',
     'type' => 'array<array-key, mixed>|string',
@@ -72550,7 +72592,7 @@ return array (
   'snmp2_walk' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'hostname' => 'string',
+    'host' => 'string',
     'community' => 'string',
     'object_id' => 'array<array-key, mixed>|string',
     'timeout=' => 'int',
@@ -72559,13 +72601,13 @@ return array (
   'snmp3_get' => 
   array (
     0 => 'false|string',
-    'hostname' => 'string',
-    'security_name' => 'string',
-    'security_level' => 'string',
+    'host' => 'string',
+    'sec_name' => 'string',
+    'sec_level' => 'string',
     'auth_protocol' => 'string',
     'auth_passphrase' => 'string',
-    'privacy_protocol' => 'string',
-    'privacy_passphrase' => 'string',
+    'priv_protocol' => 'string',
+    'priv_passphrase' => 'string',
     'object_id' => 'array<array-key, mixed>|string',
     'timeout=' => 'int',
     'retries=' => 'int',
@@ -72573,13 +72615,13 @@ return array (
   'snmp3_getnext' => 
   array (
     0 => 'false|string',
-    'hostname' => 'string',
-    'security_name' => 'string',
-    'security_level' => 'string',
+    'host' => 'string',
+    'sec_name' => 'string',
+    'sec_level' => 'string',
     'auth_protocol' => 'string',
     'auth_passphrase' => 'string',
-    'privacy_protocol' => 'string',
-    'privacy_passphrase' => 'string',
+    'priv_protocol' => 'string',
+    'priv_passphrase' => 'string',
     'object_id' => 'array<array-key, mixed>|string',
     'timeout=' => 'int',
     'retries=' => 'int',
@@ -72587,13 +72629,13 @@ return array (
   'snmp3_real_walk' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'hostname' => 'string',
-    'security_name' => 'string',
-    'security_level' => 'string',
+    'host' => 'string',
+    'sec_name' => 'string',
+    'sec_level' => 'string',
     'auth_protocol' => 'string',
     'auth_passphrase' => 'string',
-    'privacy_protocol' => 'string',
-    'privacy_passphrase' => 'string',
+    'priv_protocol' => 'string',
+    'priv_passphrase' => 'string',
     'object_id' => 'array<array-key, mixed>|string',
     'timeout=' => 'int',
     'retries=' => 'int',
@@ -72601,13 +72643,13 @@ return array (
   'snmp3_set' => 
   array (
     0 => 'bool',
-    'hostname' => 'string',
-    'security_name' => 'string',
-    'security_level' => 'string',
+    'host' => 'string',
+    'sec_name' => 'string',
+    'sec_level' => 'string',
     'auth_protocol' => 'string',
     'auth_passphrase' => 'string',
-    'privacy_protocol' => 'string',
-    'privacy_passphrase' => 'string',
+    'priv_protocol' => 'string',
+    'priv_passphrase' => 'string',
     'object_id' => 'array<array-key, mixed>|string',
     'type' => 'array<array-key, mixed>|string',
     'value' => 'array<array-key, mixed>|string',
@@ -72617,13 +72659,13 @@ return array (
   'snmp3_walk' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'hostname' => 'string',
-    'security_name' => 'string',
-    'security_level' => 'string',
+    'host' => 'string',
+    'sec_name' => 'string',
+    'sec_level' => 'string',
     'auth_protocol' => 'string',
     'auth_passphrase' => 'string',
-    'privacy_protocol' => 'string',
-    'privacy_passphrase' => 'string',
+    'priv_protocol' => 'string',
+    'priv_passphrase' => 'string',
     'object_id' => 'array<array-key, mixed>|string',
     'timeout=' => 'int',
     'retries=' => 'int',
@@ -72632,7 +72674,7 @@ return array (
   array (
     0 => 'void',
     'version' => 'int',
-    'hostname' => 'string',
+    'host' => 'string',
     'community' => 'string',
     'timeout=' => 'int',
     'retries=' => 'int',
@@ -72644,8 +72686,8 @@ return array (
   'snmp::get' => 
   array (
     0 => 'array<array-key, mixed>|false|string',
-    'objectId' => 'array<array-key, mixed>|string',
-    'preserveKeys=' => 'bool',
+    'object_id' => 'array<array-key, mixed>|string',
+    'use_orignames=' => 'bool',
   ),
   'snmp::geterrno' => 
   array (
@@ -72658,37 +72700,39 @@ return array (
   'snmp::getnext' => 
   array (
     0 => 'array<array-key, mixed>|false|string',
-    'objectId' => 'array<array-key, mixed>|string',
+    'object_id' => 'array<array-key, mixed>|string',
+    'use_orignames=' => 'mixed',
   ),
   'snmp::set' => 
   array (
     0 => 'bool',
-    'objectId' => 'array<array-key, mixed>|string',
+    'object_id' => 'array<array-key, mixed>|string',
     'type' => 'array<array-key, mixed>|string',
     'value' => 'array<array-key, mixed>|string',
   ),
   'snmp::setsecurity' => 
   array (
     0 => 'bool',
-    'securityLevel' => 'string',
-    'authProtocol=' => 'string',
-    'authPassphrase=' => 'string',
-    'privacyProtocol=' => 'string',
-    'privacyPassphrase=' => 'string',
-    'contextName=' => 'string',
-    'contextEngineId=' => 'string',
+    'sec_level' => 'string',
+    'auth_protocol' => 'string',
+    'auth_passphrase' => 'string',
+    'priv_protocol' => 'string',
+    'priv_passphrase' => 'string',
+    'contextName' => 'string',
+    'contextEngineID' => 'string',
   ),
   'snmp::walk' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'objectId' => 'array<array-key, mixed>|string',
-    'suffixAsKey=' => 'bool',
-    'maxRepetitions=' => 'int',
-    'nonRepeaters=' => 'int',
+    'object_id' => 'array<array-key, mixed>|string',
+    'suffix_keys' => 'bool',
+    'max_repetitions' => 'int',
+    'non_repeaters' => 'int',
   ),
   'snmp_get_quick_print' => 
   array (
     0 => 'bool',
+    'd' => 'mixed',
   ),
   'snmp_get_valueretrieval' => 
   array (
@@ -72702,32 +72746,79 @@ return array (
   'snmp_set_enum_print' => 
   array (
     0 => 'true',
-    'enable' => 'bool',
+    'enum_print' => 'bool',
   ),
   'snmp_set_oid_numeric_print' => 
   array (
     0 => 'true',
-    'format' => 'int',
+    'oid_format' => 'int',
   ),
   'snmp_set_oid_output_format' => 
   array (
     0 => 'true',
-    'format' => 'int',
+    'oid_format' => 'int',
   ),
   'snmp_set_quick_print' => 
   array (
     0 => 'bool',
-    'enable' => 'bool',
+    'quick_print' => 'bool',
   ),
   'snmp_set_valueretrieval' => 
   array (
     0 => 'true',
     'method' => 'int',
   ),
+  'snmpexception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmpexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'snmpexception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmpexception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmpexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmpexception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmpexception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmpexception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmpexception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmpexception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'snmpexception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
   'snmpget' => 
   array (
     0 => 'false|string',
-    'hostname' => 'string',
+    'host' => 'string',
     'community' => 'string',
     'object_id' => 'array<array-key, mixed>|string',
     'timeout=' => 'int',
@@ -72736,7 +72827,7 @@ return array (
   'snmpgetnext' => 
   array (
     0 => 'false|string',
-    'hostname' => 'string',
+    'host' => 'string',
     'community' => 'string',
     'object_id' => 'array<array-key, mixed>|string',
     'timeout=' => 'int',
@@ -72745,7 +72836,7 @@ return array (
   'snmprealwalk' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'hostname' => 'string',
+    'host' => 'string',
     'community' => 'string',
     'object_id' => 'array<array-key, mixed>|string',
     'timeout=' => 'int',
@@ -72754,7 +72845,7 @@ return array (
   'snmpset' => 
   array (
     0 => 'bool',
-    'hostname' => 'string',
+    'host' => 'string',
     'community' => 'string',
     'object_id' => 'array<array-key, mixed>|string',
     'type' => 'array<array-key, string>|string',
@@ -72765,7 +72856,7 @@ return array (
   'snmpwalk' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'hostname' => 'string',
+    'host' => 'string',
     'community' => 'string',
     'object_id' => 'array<array-key, mixed>|string',
     'timeout=' => 'int',
@@ -72774,7 +72865,7 @@ return array (
   'snmpwalkoid' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'hostname' => 'string',
+    'host' => 'string',
     'community' => 'string',
     'object_id' => 'array<array-key, mixed>|string',
     'timeout=' => 'int',
@@ -93845,10 +93936,6 @@ return array (
   'tidy::__construct' => 
   array (
     0 => 'void',
-    'filename=' => 'string',
-    'config=' => 'array<array-key, mixed>|string',
-    'encoding=' => 'string',
-    'useIncludePath=' => 'bool',
   ),
   'tidy::body' => 
   array (
@@ -93873,12 +93960,10 @@ return array (
   'tidy::getopt' => 
   array (
     0 => 'bool|int|string',
-    'option' => 'string',
   ),
   'tidy::getoptdoc' => 
   array (
     0 => 'string',
-    'option' => 'string',
   ),
   'tidy::getrelease' => 
   array (
@@ -93907,32 +93992,18 @@ return array (
   'tidy::parsefile' => 
   array (
     0 => 'bool',
-    'filename' => 'string',
-    'config=' => 'array<array-key, mixed>|string',
-    'encoding=' => 'string',
-    'useIncludePath=' => 'bool',
   ),
   'tidy::parsestring' => 
   array (
     0 => 'bool',
-    'string' => 'string',
-    'config=' => 'array<array-key, mixed>|string',
-    'encoding=' => 'string',
   ),
   'tidy::repairfile' => 
   array (
     0 => 'string',
-    'filename' => 'string',
-    'config=' => 'array<array-key, mixed>|string',
-    'encoding=' => 'string',
-    'useIncludePath=' => 'bool',
   ),
   'tidy::repairstring' => 
   array (
     0 => 'string',
-    'string' => 'string',
-    'config=' => 'array<array-key, mixed>|string',
-    'encoding=' => 'string',
   ),
   'tidy::root' => 
   array (
@@ -93941,27 +94012,22 @@ return array (
   'tidy_access_count' => 
   array (
     0 => 'int',
-    'tidy' => 'tidy',
   ),
   'tidy_clean_repair' => 
   array (
     0 => 'bool',
-    'tidy' => 'tidy',
   ),
   'tidy_config_count' => 
   array (
     0 => 'int',
-    'tidy' => 'tidy',
   ),
   'tidy_diagnose' => 
   array (
     0 => 'bool',
-    'tidy' => 'tidy',
   ),
   'tidy_error_count' => 
   array (
     0 => 'int',
-    'tidy' => 'tidy',
   ),
   'tidy_get_body' => 
   array (
@@ -93971,38 +94037,32 @@ return array (
   'tidy_get_config' => 
   array (
     0 => 'array<array-key, mixed>',
-    'tidy' => 'tidy',
   ),
   'tidy_get_error_buffer' => 
   array (
     0 => 'string',
-    'tidy' => 'tidy',
   ),
   'tidy_get_head' => 
   array (
     0 => 'null|tidyNode',
-    'tidy' => 'tidy',
   ),
   'tidy_get_html' => 
   array (
     0 => 'null|tidyNode',
-    'tidy' => 'tidy',
   ),
   'tidy_get_html_ver' => 
   array (
     0 => 'int',
-    'tidy' => 'tidy',
   ),
   'tidy_get_opt_doc' => 
   array (
     0 => 'string',
-    'tidy' => 'tidy',
-    'option' => 'string',
+    'resource' => 'tidy',
+    'optname' => 'string',
   ),
   'tidy_get_output' => 
   array (
     0 => 'string',
-    'tidy' => 'tidy',
   ),
   'tidy_get_release' => 
   array (
@@ -94011,28 +94071,23 @@ return array (
   'tidy_get_root' => 
   array (
     0 => 'null|tidyNode',
-    'tidy' => 'tidy',
   ),
   'tidy_get_status' => 
   array (
     0 => 'int',
-    'tidy' => 'tidy',
   ),
   'tidy_getopt' => 
   array (
     0 => 'bool|int|string',
-    'tidy' => 'tidy',
     'option' => 'string',
   ),
   'tidy_is_xhtml' => 
   array (
     0 => 'bool',
-    'tidy' => 'tidy',
   ),
   'tidy_is_xml' => 
   array (
     0 => 'bool',
-    'tidy' => 'tidy',
   ),
   'tidy_load_config' => 
   array (
@@ -94043,31 +94098,31 @@ return array (
   'tidy_parse_file' => 
   array (
     0 => 'tidy',
-    'filename' => 'string',
-    'config=' => 'array<array-key, mixed>|string',
+    'file' => 'string',
+    'config_options=' => 'array<array-key, mixed>|string',
     'encoding=' => 'string',
-    'useIncludePath=' => 'bool',
+    'use_include_path=' => 'bool',
   ),
   'tidy_parse_string' => 
   array (
     0 => 'tidy',
-    'string' => 'string',
-    'config=' => 'array<array-key, mixed>|string',
+    'input' => 'string',
+    'config_options=' => 'array<array-key, mixed>|string',
     'encoding=' => 'string',
   ),
   'tidy_repair_file' => 
   array (
     0 => 'string',
     'filename' => 'string',
-    'config=' => 'array<array-key, mixed>|string',
+    'config_file=' => 'array<array-key, mixed>|string',
     'encoding=' => 'string',
-    'useIncludePath=' => 'bool',
+    'use_include_path=' => 'bool',
   ),
   'tidy_repair_string' => 
   array (
     0 => 'string',
-    'string' => 'string',
-    'config=' => 'array<array-key, mixed>|string',
+    'data' => 'string',
+    'config_file=' => 'array<array-key, mixed>|string',
     'encoding=' => 'string',
   ),
   'tidy_reset_config' => 
@@ -94093,7 +94148,6 @@ return array (
   'tidy_warning_count' => 
   array (
     0 => 'int',
-    'tidy' => 'tidy',
   ),
   'tidynode::__construct' => 
   array (
@@ -100374,12 +100428,12 @@ return array (
   'xsltprocessor::importstylesheet' => 
   array (
     0 => 'bool',
-    'stylesheet' => 'object',
+    'doc' => 'object',
   ),
   'xsltprocessor::registerphpfunctions' => 
   array (
     0 => 'void',
-    'functions=' => 'array<array-key, mixed>|null|string',
+    'restrict=' => 'array<array-key, mixed>|null|string',
   ),
   'xsltprocessor::removeparameter' => 
   array (
@@ -100392,7 +100446,7 @@ return array (
     0 => 'bool',
     'namespace' => 'string',
     'name' => 'string',
-    'value' => 'string',
+    'value=' => 'string',
   ),
   'xsltprocessor::setparameter\'1' => 
   array (
@@ -100408,24 +100462,23 @@ return array (
   'xsltprocessor::setsecurityprefs' => 
   array (
     0 => 'int',
-    'preferences' => 'int',
+    'securityPrefs' => 'int',
   ),
   'xsltprocessor::transformtodoc' => 
   array (
     0 => 'DOMDocument|false',
-    'document' => 'DOMNode',
-    'returnClass=' => 'null|string',
+    'doc' => 'DOMNode',
   ),
   'xsltprocessor::transformtouri' => 
   array (
     0 => 'int',
-    'document' => 'DOMDocument',
+    'doc' => 'DOMDocument',
     'uri' => 'string',
   ),
   'xsltprocessor::transformtoxml' => 
   array (
     0 => 'false|string',
-    'document' => 'DOMDocument',
+    'doc' => 'DOMDocument',
   ),
   'yac::__construct' => 
   array (

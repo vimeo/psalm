@@ -35118,7 +35118,7 @@ return array (
   ),
   'mysqli::get_charset' => 
   array (
-    0 => 'object',
+    0 => 'null|object',
   ),
   'mysqli::get_client_info' => 
   array (
@@ -35459,12 +35459,6 @@ return array (
     0 => 'array<string, float|int|null|string>|false|null',
     'result' => 'mysqli_result',
   ),
-  'mysqli_fetch_column' => 
-  array (
-    0 => 'false|float|int|null|string',
-    'result' => 'mysqli_result',
-    'column=' => 'int',
-  ),
   'mysqli_fetch_field' => 
   array (
     0 => 'false|object{name:string, orgname:string, table:string, orgtable:string, max_length:0, length:int, charsetnr:int, flags:int, type:int, decimals:int, db:string, def:\'\', catalog:\'def\'}',
@@ -35708,14 +35702,8 @@ return array (
   ),
   'mysqli_report' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'flags' => 'int',
-  ),
-  'mysqli_result::__construct' => 
-  array (
-    0 => 'void',
-    'mysql' => 'mysqli',
-    'result_mode=' => 'int',
   ),
   'mysqli_result::close' => 
   array (
@@ -35759,11 +35747,6 @@ return array (
   'mysqli_result::fetch_assoc' => 
   array (
     0 => 'array<string, float|int|null|string>|false|null',
-  ),
-  'mysqli_result::fetch_column' => 
-  array (
-    0 => 'false|float|int|null|string',
-    'column=' => 'int',
   ),
   'mysqli_result::fetch_field' => 
   array (
@@ -35896,12 +35879,6 @@ return array (
     0 => 'false|string',
     'mysql' => 'mysqli',
   ),
-  'mysqli_stmt::__construct' => 
-  array (
-    0 => 'void',
-    'mysql' => 'mysqli',
-    'query=' => 'null|string',
-  ),
   'mysqli_stmt::attr_get' => 
   array (
     0 => 'int',
@@ -35917,13 +35894,11 @@ return array (
   array (
     0 => 'bool',
     'types' => 'string',
-    '&var' => 'mixed',
     '&...vars=' => 'mixed',
   ),
   'mysqli_stmt::bind_result' => 
   array (
     0 => 'bool',
-    '&w var1' => 'mixed',
     '&...w vars=' => 'mixed',
   ),
   'mysqli_stmt::close' => 
@@ -35954,7 +35929,7 @@ return array (
   ),
   'mysqli_stmt::get_warnings' => 
   array (
-    0 => 'object',
+    0 => 'false|mysqli_warning',
   ),
   'mysqli_stmt::more_results' => 
   array (
@@ -36014,14 +35989,12 @@ return array (
     0 => 'bool',
     'statement' => 'mysqli_stmt',
     'types' => 'string',
-    '&var' => 'mixed',
     '&...vars=' => 'mixed',
   ),
   'mysqli_stmt_bind_result' => 
   array (
     0 => 'bool',
     'statement' => 'mysqli_stmt',
-    '&w var1' => 'mixed',
     '&...w vars=' => 'mixed',
   ),
   'mysqli_stmt_close' => 
@@ -36078,7 +36051,7 @@ return array (
   ),
   'mysqli_stmt_get_warnings' => 
   array (
-    0 => 'object',
+    0 => 'false|mysqli_warning',
     'statement' => 'mysqli_stmt',
   ),
   'mysqli_stmt_init' => 
@@ -36088,7 +36061,7 @@ return array (
   ),
   'mysqli_stmt_insert_id' => 
   array (
-    0 => 'mixed',
+    0 => 'int|string',
     'statement' => 'mysqli_stmt',
   ),
   'mysqli_stmt_more_results' => 
@@ -36163,10 +36136,6 @@ return array (
   array (
     0 => 'false|mysqli_result',
     'mysql' => 'mysqli',
-  ),
-  'mysqli_warning::__construct' => 
-  array (
-    0 => 'void',
   ),
   'mysqli_warning::next' => 
   array (
@@ -51415,7 +51384,7 @@ return array (
   ),
   'snmp_set_quick_print' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'enable' => 'bool',
   ),
   'snmp_set_valueretrieval' => 
@@ -62369,10 +62338,6 @@ return array (
     0 => 'int',
     'tidy' => 'tidy',
   ),
-  'tidynode::__construct' => 
-  array (
-    0 => 'void',
-  ),
   'tidynode::getparent' => 
   array (
     0 => 'null|tidyNode',
@@ -68591,7 +68556,7 @@ return array (
     0 => 'bool',
     'namespace' => 'string',
     'name' => 'string',
-    'value' => 'string',
+    'value=' => 'null|string',
   ),
   'xsltprocessor::setparameter\'1' => 
   array (
@@ -68601,7 +68566,7 @@ return array (
   ),
   'xsltprocessor::setprofiling' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'filename' => 'null|string',
   ),
   'xsltprocessor::setsecurityprefs' => 
@@ -68623,7 +68588,7 @@ return array (
   ),
   'xsltprocessor::transformtoxml' => 
   array (
-    0 => 'false|string',
+    0 => 'false|null|string',
     'document' => 'DOMDocument',
   ),
   'yac::__construct' => 
