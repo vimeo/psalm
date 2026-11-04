@@ -271,7 +271,9 @@ final class ParseTreeCreator
             && $current_token[0][0] === '$'
             && strlen($current_token[0]) > 1
         ) {
-            $this->current_leaf->name = substr($current_token[0], 1);
+            /** @var non-empty-string $name */
+            $name = substr($current_token[0], 1);
+            $this->current_leaf->name = $name;
 
             return;
         }
