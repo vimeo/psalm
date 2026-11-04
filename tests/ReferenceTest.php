@@ -63,6 +63,49 @@ final class ReferenceTest extends TestCase
                         proc_close($process);
                     }',
             ],
+            'arrayItemPassedByReferenceHasItsKeyEvaluatedOnce' => [
+                'code' => '<?php
+                    $a = [[3, 1], [2, 4]];
+                    $i = 0;
+                    sort($a[$i++]);
+                    $j = $i;',
+                'assertions' => [
+                    '$j===' => '1',
+                    '$a===' => 'list{non-empty-list<1|3>, list{2, 4}}',
+                ],
+            ],
+            'arrayItemPassedByReferenceUnderOneOfSeveralKeys' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $value
+                     * @param-out int $value
+                     */
+                    function set_int(&$value): void {
+                        $value = 5;
+                    }
+
+                    $a = ["a", "b"];
+                    $k = rand(0, 1) ? 0 : 1;
+                    set_int($a[$k]);',
+                'assertions' => [
+                    '$a===' => "list{'a'|int, 'b'|int}",
+                ],
+            ],
+            'itemOfArrayAccessPassedByReferenceIsNotSet' => [
+                'code' => '<?php
+                    /** @param ArrayObject<int, list<int>> $o */
+                    function sort_first(ArrayObject $o): void {
+                        sort($o[0]);
+                    }',
+            ],
+            'itemOfMixedPassedByReferenceIsNotAssigned' => [
+                'code' => '<?php
+                    /** @param mixed $m */
+                    function sort_item($m): void {
+                        /** @psalm-suppress MixedArrayAccess, MixedArgument */
+                        sort($m["k"]);
+                    }',
+            ],
             'referenceAssignmentToNonReferenceCountsAsUse' => [
                 'code' => '<?php
                     $b = &$a;
@@ -353,6 +396,20 @@ final class ReferenceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'itemOfReadonlyPropertyPassedByReference' => [
+                'code' => '<?php
+                    final class A {
+                        /** @param array{x: list<int>} $items */
+                        public function __construct(public readonly array $items) {}
+
+                        public function run(): void {
+                            sort($this->items["x"]);
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'referenceReuseForeachValue' => [
                 'code' => '<?php
                     /** @var array<int> */

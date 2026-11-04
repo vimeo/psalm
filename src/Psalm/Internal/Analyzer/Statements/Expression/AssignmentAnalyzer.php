@@ -1273,21 +1273,8 @@ final class AssignmentAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            // the array holds what the call leaves in the item, as if it was assigned to it; the argument
-            // itself keeps the type it was passed with
-            $arg_type = $statements_analyzer->node_data->getType($stmt);
-
-            ArrayAssignmentAnalyzer::analyze(
-                $statements_analyzer,
-                $stmt,
-                $context,
-                null,
-                $by_ref_out_type,
-            );
-
-            if ($arg_type !== null) {
-                $statements_analyzer->node_data->setType($stmt, $arg_type);
-            }
+            // the array holds what the call leaves in the item
+            ArrayAssignmentAnalyzer::assignByRefItem($statements_analyzer, $stmt, $by_ref_out_type, $context);
 
             // and the call may read the item: the array is used
             $root_var = $stmt->var;
