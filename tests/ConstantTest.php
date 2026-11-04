@@ -250,6 +250,43 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'defineInSeveralSwitchBranchesWithoutDefault' => [
+                'code' => '<?php
+                    switch (random_int(1, 3)) {
+                        case 1:
+                            define("ASD", "x");
+                            break;
+                        case 2:
+                            define("ASD", "y");
+                            break;
+                    }
+
+                    if (ASD === "x") {
+                        echo "x";
+                    }
+
+                    if (ASD === "y") {
+                        echo "y";
+                    }
+
+                    $value = ASD;',
+                'assertions' => [
+                    '$value===' => '\'x\'|\'y\'',
+                ],
+            ],
+            'defineInBothBranchesOfAnIf' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        define("CHOICE", 1);
+                    } else {
+                        define("CHOICE", 2);
+                    }
+
+                    $value = CHOICE;',
+                'assertions' => [
+                    '$value===' => '1|2',
+                ],
+            ],
             'bitwiseOperationsOnFloatConstantsOutsideTheRangeOfAnIntAreNotFolded' => [
                 'code' => '<?php
                     class A {

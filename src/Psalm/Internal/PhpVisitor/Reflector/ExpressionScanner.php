@@ -287,10 +287,17 @@ final class ExpressionScanner
 
                     $config = Config::getInstance();
 
+                    // defined in several branches, the constant has the value of one of the definitions
                     if ($functionlike_storage && !$config->hoist_constants) {
-                        $functionlike_storage->defined_constants[$const_name] = $const_type;
+                        $functionlike_storage->defined_constants[$const_name] = Type::combineUnionTypes(
+                            $functionlike_storage->defined_constants[$const_name] ?? null,
+                            $const_type,
+                        );
                     } else {
-                        $file_storage->constants[$const_name] = $const_type;
+                        $file_storage->constants[$const_name] = Type::combineUnionTypes(
+                            $file_storage->constants[$const_name] ?? null,
+                            $const_type,
+                        );
                         $file_storage->declaring_constants[$const_name] = $file_storage->file_path;
                     }
 
