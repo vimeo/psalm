@@ -4218,7 +4218,7 @@ final class ClassTemplateTest extends TestCase
             'undefined class in function dockblock' => [
                 'code' => '<?php
                     /**
-                     * @psalm-suppress UndefinedDocblockClass
+                     * @psalm-suppress UndefinedDocblockClass, UndefinedClass
                      *
                      * @param DoesNotExist<int> $baz
                      */
