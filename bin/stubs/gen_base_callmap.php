@@ -3,6 +3,11 @@
 
 declare(strict_types=1);
 
+// Reject a mistagged image before it overwrites the callmap of a different PHP version.
+if (isset($argv[1]) && $argv[1] !== PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION) {
+    throw new RuntimeException('Expected PHP ' . $argv[1] . ', running ' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION);
+}
+
 $callmap = [];
 // the extension of each entry: gen_callmap.php keeps the overrides of the extensions a version's image lacks
 $extensions = [];
@@ -93,12 +98,26 @@ foreach ([
         continue;
     }
     $stub = file_get_contents("https://github.com/JetBrains/phpstorm-stubs/raw/refs/heads/master/$stub");
+    if ($stub === false) {
+        throw new RuntimeException('Cannot download the extension stub');
+    }
     if (PHP_MAJOR_VERSION === 7 && PHP_MINOR_VERSION === 0) {
         $stub = str_replace(['?', '<php'], ['', '<?php'], $stub);
         $stub = str_replace(['public const', 'protected const', 'private const'], 'const', $stub);
     }
-    file_put_contents('temp.php', $stub);
-    require 'temp.php';
+    // Parallel PHP-version runs must not overwrite a shared extension-stub file.
+    $temporaryFile = tempnam(sys_get_temp_dir(), 'psalm-callmap-');
+    if ($temporaryFile === false) {
+        throw new RuntimeException('Cannot prepare the extension stub');
+    }
+    try {
+        if (file_put_contents($temporaryFile, $stub) === false) {
+            throw new RuntimeException('Cannot write the extension stub');
+        }
+        require $temporaryFile;
+    } finally {
+        unlink($temporaryFile);
+    }
 }
 
 foreach (get_defined_functions() as $sub) {
