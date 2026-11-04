@@ -353,6 +353,32 @@ final class ReferenceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'issueInTheKeyOfAnArrayItemPassedByReference' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, list<int>> $a
+                     * @param array{k?: string} $b
+                     */
+                    function f(array $a, array $b): void {
+                        sort($a[$b["k"]]);
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33',
+            ],
+            'emptyArrayAccessInTheKeyOfAnArrayItemPassedByReference' => [
+                'code' => '<?php
+                    /** @param array<string, list<int>> $a */
+                    function f(array $a): void {
+                        $e = [];
+                        sort($a[$e[0]]);
+                    }',
+                'error_message' => 'EmptyArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
+            ],
+            'itemOfAnEmptyArrayPassedToAParameterPhpDoesNotTakeByReference' => [
+                'code' => '<?php
+                    $pipes = [];
+                    fclose($pipes[0]);',
+                'error_message' => 'EmptyArrayAccess',
+            ],
             'referenceReuseForeachValue' => [
                 'code' => '<?php
                     /** @var array<int> */

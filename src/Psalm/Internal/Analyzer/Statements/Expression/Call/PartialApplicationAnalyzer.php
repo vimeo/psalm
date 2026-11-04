@@ -535,18 +535,8 @@ final class PartialApplicationAnalyzer
             // read like an ordinary by-reference argument: a missing offset is created, not an empty access
             $was_inside_by_ref_offset = $context->inside_by_ref_offset;
             $context->inside_by_ref_offset = $location instanceof ArrayDimFetch;
-            $suppress_empty_array_access = !$location instanceof Variable
-                && !isset($statements_analyzer->getSuppressedIssues()['EmptyArrayAccess']);
-
-            if ($suppress_empty_array_access) {
-                $statements_analyzer->addSuppressedIssues(['EmptyArrayAccess']);
-            }
 
             $result = ExpressionAnalyzer::analyze($statements_analyzer, $location, $context);
-
-            if ($suppress_empty_array_access) {
-                $statements_analyzer->removeSuppressedIssues(['EmptyArrayAccess']);
-            }
 
             $context->inside_by_ref_offset = $was_inside_by_ref_offset;
 

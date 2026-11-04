@@ -141,15 +141,21 @@ final class ArrayFetchAnalyzer
             $was_inside_isset = $context->inside_isset;
             $context->inside_isset = false;
 
+            $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+            $context->inside_by_ref_offset = false;
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->dim, $context) === false) {
                 $context->inside_isset = $was_inside_isset;
                 $context->inside_unset = $was_inside_unset;
                 $context->inside_general_use = $was_inside_general_use;
+                $context->inside_by_ref_offset = $was_inside_by_ref_offset;
 
                 return false;
             }
 
             $context->inside_isset = $was_inside_isset;
+
+            $context->inside_by_ref_offset = $was_inside_by_ref_offset;
 
             $context->inside_unset = $was_inside_unset;
 
@@ -177,11 +183,20 @@ final class ArrayFetchAnalyzer
             $used_key_type = Type::getInt();
         }
 
-        if (ExpressionAnalyzer::analyze(
+        // PHP creates the offsets passed by reference along the arrays only, not inside what the root is fetched from
+        $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+        $context->inside_by_ref_offset = $was_inside_by_ref_offset
+            && $stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch;
+
+        $analyzed_var = ExpressionAnalyzer::analyze(
             $statements_analyzer,
             $stmt->var,
             $context,
-        ) === false) {
+        );
+
+        $context->inside_by_ref_offset = $was_inside_by_ref_offset;
+
+        if ($analyzed_var === false) {
             return false;
         }
 
