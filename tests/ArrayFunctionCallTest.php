@@ -3017,6 +3017,81 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'arrayPopShiftListElement' => [
+                'code' => '<?php
+                    /** @return list{int, string} */
+                    function getPair(): array { return [1, "a"]; }
+                    /** @return list{0: int, 1: string, 2?: float} */
+                    function getTriple(): array { return [1, "a"]; }
+
+                    $pair = getPair();
+                    $pairLast = array_pop($pair);
+                    $triple = getTriple();
+                    $tripleLast = array_pop($triple);
+                    $literal = [1, "a"];
+                    $literalLast = array_pop($literal);
+                    $literalFirst = array_shift($literal);',
+                'assertions' => [
+                    '$pairLast===' => 'string',
+                    '$tripleLast===' => 'float|string',
+                    '$literalLast===' => '\'a\'',
+                    '$literalFirst===' => '1',
+                ],
+            ],
+            'arrayPopOptionalLastElement' => [
+                'code' => '<?php
+                    /** @return list{0: int, 1: string, 2?: float} */
+                    function getTriple(): array { return [1, "a"]; }
+                    /** @return list{0: int, 1?: string} */
+                    function getPair(): array { return [1]; }
+
+                    $triple = getTriple();
+                    array_pop($triple);
+                    $pair = getPair();
+                    array_pop($pair);',
+                'assertions' => [
+                    '$triple===' => 'list{0: int, 1?: string}',
+                    '$pair===' => 'list{0?: int}',
+                ],
+            ],
+            'arrayPopShiftTemplateBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of non-empty-list<int>
+                     * @param T $arr
+                     * @return list<int>
+                     */
+                    function withoutLast(array $arr): array {
+                        $last = array_pop($arr);
+                        /** @psalm-check-type-exact $last = int */
+                        return $arr;
+                    }
+
+                    /**
+                     * @template T of list{int, string}
+                     * @param T $arr
+                     * @return list{string}
+                     */
+                    function withoutFirst(array $arr): array {
+                        $first = array_shift($arr);
+                        /** @psalm-check-type-exact $first = int */
+                        return $arr;
+                    }
+
+                    /**
+                     * @template T
+                     * @param non-empty-list<T> $arr
+                     * @return T
+                     */
+                    function lastElement(array $arr) {
+                        return array_pop($arr);
+                    }
+
+                    $a = lastElement([new DateTime()]);',
+                'assertions' => [
+                    '$a===' => 'DateTime',
+                ],
+            ],
         ];
     }
 

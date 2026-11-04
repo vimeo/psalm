@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
@@ -64,6 +65,34 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
             return null;
         }
 
+        $value_type = self::getElementType(
+            $codebase,
+            $array_type,
+            $event->getFunctionId() === 'array_first',
+        );
+
+        if (!$value_type) {
+            return null;
+        }
+
+        $offset_type = Type::getMixed();
+        ArrayFetchAnalyzer::taintArrayFetch(
+            $statements_source,
+            $array_arg->value,
+            null,
+            $value_type,
+            $offset_type,
+        );
+
+        return $value_type;
+    }
+
+    /**
+     * The type of the first or last value of an array of the given type, also used for array_shift()/array_pop().
+     * Returns null when it can't be inferred.
+     */
+    public static function getElementType(Codebase $codebase, Union $array_type, bool $is_first): ?Union
+    {
         $atomic_types = $array_type->getAtomicTypes();
         $value_type = null;
         $possibly_empty = false;
@@ -82,7 +111,7 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
                 if (!$atomic_type->is_list || !isset($atomic_type->properties[0])) {
                     // a shape doesn't fix the order of its keys
                     $atomic_value_type = $atomic_type->getGenericValueType();
-                } elseif ($event->getFunctionId() === 'array_first') {
+                } elseif ($is_first) {
                     $atomic_value_type = $atomic_type->properties[0]->setPossiblyUndefined(false);
                 } else {
                     $atomic_value_type = self::getLastListElementType($atomic_type);
@@ -115,15 +144,6 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
 
             $value_type = $value_type->freeze();
         }
-
-        $offset_type = Type::getMixed();
-        ArrayFetchAnalyzer::taintArrayFetch(
-            $statements_source,
-            $array_arg->value,
-            null,
-            $value_type,
-            $offset_type,
-        );
 
         return $value_type;
     }
