@@ -1969,6 +1969,39 @@ final class MethodSignatureTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'nativeStubSignatureWithoutCallmapMetadataIn82' => [
+                'code' => '<?php
+                    final class Connection extends mysqli {
+                        public function execute_query(string $query, ?array $params = null): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'nativeStubSignatureWithoutCallmapMetadataIn85' => [
+                'code' => '<?php
+                    final class Connection extends mysqli {
+                        public function execute_query(string $query, ?array $params = null): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'nativeStubWithoutCallmapMetadataRequiresReturnSignature' => [
+                'code' => '<?php
+                    final class Connection extends mysqli {
+                        public function execute_query(string $query, ?array $params = null) {
+                            return false;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMustProvideReturnType',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'nativeCallmapSignatureRejectsIncompatibleReturnType' => [
                 'code' => '<?php
                     final class Counter implements Countable {

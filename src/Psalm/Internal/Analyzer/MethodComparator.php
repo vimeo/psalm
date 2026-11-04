@@ -125,9 +125,11 @@ final class MethodComparator
             $suppressed_issues,
         );
 
+        // Override-only callmap entries may lack native metadata already supplied by a stub.
         $guide_signature_return_type = !$guide_classlike_storage->user_defined
             && InternalCallMapHandler::inCallMap($cased_guide_method_id)
-            ? InternalCallMapHandler::getSignatureReturnType($cased_guide_method_id)
+            ? (InternalCallMapHandler::getSignatureReturnType($cased_guide_method_id)
+                ?? $guide_method_storage->signature_return_type)
             : $guide_method_storage->signature_return_type;
 
         if ($guide_signature_return_type && $prevent_method_signature_mismatch
