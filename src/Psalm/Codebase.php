@@ -1587,9 +1587,6 @@ final class Codebase
         $this->global_constant_types_by_wildcard = [];
     }
 
-    /**
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
-     */
     public function getFunctionStorageForSymbol(string $file_path, string $symbol): ?FunctionLikeStorage
     {
         if (strpos($symbol, '::')) {
@@ -1617,7 +1614,7 @@ final class Codebase
             return null;
         }
 
-        return $this->functions->getStorage(null, $function_id, $file_path, $file_path);
+        return $this->functions->getStorageForSymbolLookup($function_id, $file_path);
     }
 
     /**
@@ -1753,12 +1750,7 @@ final class Codebase
                 return null;
             }
 
-            $function = $this->functions->getStorage(
-                null,
-                $function_id,
-                $reference->file_path,
-                $reference->file_path,
-            );
+            $function = $this->functions->getStorageForSymbolLookup($function_id, $reference->file_path);
 
             return new PHPMarkdownContent(
                 $function->getHoverMarkdown(),
@@ -1927,12 +1919,7 @@ final class Codebase
                     return null;
                 }
 
-                return $this->functions->getStorage(
-                    null,
-                    $function_id,
-                    $reference->file_path,
-                    $reference->file_path,
-                )->location;
+                return $this->functions->getStorageForSymbolLookup($function_id, $reference->file_path)->location;
             }
 
             return $this->classlike_storage_provider->get(
