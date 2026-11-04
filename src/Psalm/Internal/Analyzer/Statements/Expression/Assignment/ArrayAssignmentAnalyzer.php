@@ -27,6 +27,7 @@ use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\ImpureStaticProperty;
 use Psalm\Issue\InvalidArrayAssignment;
@@ -318,6 +319,8 @@ final class ArrayAssignmentAnalyzer
      * The array type with $value under the key of $key_values, if one, else under one of them: there, an item
      * the array surely has may stay
      *
+     * Not pure, as Type::combineUnionTypes() isn't.
+     *
      * @param non-empty-list<TLiteralInt|TLiteralString> $key_values
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
@@ -354,7 +357,8 @@ final class ArrayAssignmentAnalyzer
                 ->setFromDocblock($keyed->from_docblock ?? false);
         }
 
-        return $array->setTypes($types);
+        // the keyed arrays null and an array become would replace each other in a union
+        return $array->setTypes(TypeCombiner::combine($types, $codebase)->getAtomicTypes());
     }
 
     /**

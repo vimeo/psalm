@@ -138,6 +138,20 @@ final class ReferenceTest extends TestCase
                     '$m===' => 'array{a: array<array-key, string>, b: array<array-key, string>}',
                 ],
             ],
+            'itemPassedByReferenceIntoANullableArrayKeepsItsItems' => [
+                'code' => '<?php
+                    /** @param array{y: int}|null $a */
+                    function keyed(?array $a): int {
+                        settype($a["x"], "int");
+                        return $a["y"] ?? 0;
+                    }
+
+                    /** @param array<string, int>|null $a */
+                    function generic(?array $a): int {
+                        settype($a["x"], "int");
+                        return $a["z"] ?? 0;
+                    }',
+            ],
             'itemOfArrayAccessPassedByReferenceIsNotSet' => [
                 'code' => '<?php
                     /** @param ArrayObject<int, list<int>> $o */
