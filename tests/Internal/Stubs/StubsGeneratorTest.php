@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Internal\Stubs;
 
+use PhpParser\Node\Identifier;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\Tests\TestCase;
 use Psalm\Type;
@@ -22,7 +23,7 @@ final class StubsGeneratorTest extends TestCase
     {
         $type = StubsGenerator::getParserTypeFromPsalmType(Type::getInt());
 
-        self::assertNotNull($type);
-        self::assertSame('int', (string) $type);
+        self::assertInstanceOf(Identifier::class, $type);
+        self::assertSame('int', $type->name);
     }
 }
