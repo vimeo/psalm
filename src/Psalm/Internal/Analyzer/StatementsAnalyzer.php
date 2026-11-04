@@ -412,6 +412,108 @@ final class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * @param list<array{string, bool}> $checked_types
+     */
+    private static function analyzeCheckedTypes(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt $stmt,
+        Context $context,
+        array $checked_types,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        foreach ($checked_types as [$check_type_line, $is_exact]) {
+            [$checked_var, $check_type_string] = array_map(
+                'trim',
+                explode('=', self::joinDocblockLines($check_type_line), 2),
+            ) + ['', ''];
+
+            if ($check_type_string === '' || $checked_var === '') {
+                IssueBuffer::maybeAdd(
+                    new InvalidDocblock(
+                        "Invalid format for @psalm-check-type" . ($is_exact ? "-exact" : ""),
+                        new CodeLocation($statements_analyzer->source, $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            } else {
+                $checked_var_id = $checked_var;
+                $possibly_undefined = strrpos($checked_var_id, "?") === strlen($checked_var_id) - 1;
+                if ($possibly_undefined) {
+                    $checked_var_id = substr($checked_var_id, 0, strlen($checked_var_id) - 1);
+                }
+
+                if (!isset($context->vars_in_scope[$checked_var_id])) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            "Attempt to check undefined variable $checked_var_id",
+                            new CodeLocation($statements_analyzer->source, $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                } else {
+                    try {
+                        $checked_type = $context->vars_in_scope[$checked_var_id];
+
+                        $path = $statements_analyzer->getRootFilePath();
+                        $file_storage = $codebase->file_storage_provider->get($path);
+
+                        $check_tokens = TypeTokenizer::getFullyQualifiedTokens(
+                            $check_type_string,
+                            $statements_analyzer->getAliases(),
+                            $statements_analyzer->getTemplateTypeMap(),
+                            $file_storage->type_aliases,
+                        );
+                        $check_type = TypeParser::parseTokens(
+                            $check_tokens,
+                            null,
+                            $statements_analyzer->getTemplateTypeMap() ?? [],
+                            $file_storage->type_aliases,
+                            true,
+                        );
+
+                        /** @psalm-suppress InaccessibleProperty We just created this type */
+                        $check_type->possibly_undefined = $possibly_undefined;
+
+                        if ($check_type->possibly_undefined !== $checked_type->possibly_undefined
+                            || !UnionTypeComparator::isContainedBy($codebase, $checked_type, $check_type)
+                            || ($is_exact && !UnionTypeComparator::isContainedBy($codebase, $check_type, $checked_type))
+                        ) {
+                            $check_var = $checked_var_id . ($checked_type->possibly_undefined ? "?" : "");
+                            IssueBuffer::maybeAdd(
+                                new CheckType(
+                                    "Checked variable $checked_var = {$check_type->getId()} does not match "
+                                        . "$check_var = {$checked_type->getId()}",
+                                    new CodeLocation($statements_analyzer->source, $stmt),
+                                ),
+                                $statements_analyzer->getSuppressedIssues(),
+                            );
+                        }
+                    } catch (TypeParseTreeException $e) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidDocblock(
+                                $e->getMessage(),
+                                new CodeLocation($statements_analyzer->source, $stmt),
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * A tag over several docblock lines carries the ` * ` of each line.
+     *
+     * @psalm-pure
+     */
+    private static function joinDocblockLines(string $tag_text): string
+    {
+        return (string) preg_replace('/\s*\n\s*\*?\s*/', ' ', $tag_text);
+    }
+
+    /**
      * @return false|null
      */
     private static function analyzeStatement(
@@ -752,85 +854,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
             }
         }
 
-        foreach ($checked_types as [$check_type_line, $is_exact]) {
-            // a type over several docblock lines carries the ` * ` of each line
-            $check_type_line = (string) preg_replace('/\s*\n\s*\*?\s*/', ' ', $check_type_line);
-
-            [$checked_var, $check_type_string] = array_map('trim', explode('=', $check_type_line, 2)) + ['', ''];
-
-            if ($check_type_string === '' || $checked_var === '') {
-                IssueBuffer::maybeAdd(
-                    new InvalidDocblock(
-                        "Invalid format for @psalm-check-type" . ($is_exact ? "-exact" : ""),
-                        new CodeLocation($statements_analyzer->source, $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } else {
-                $checked_var_id = $checked_var;
-                $possibly_undefined = strrpos($checked_var_id, "?") === strlen($checked_var_id) - 1;
-                if ($possibly_undefined) {
-                    $checked_var_id = substr($checked_var_id, 0, strlen($checked_var_id) - 1);
-                }
-
-                if (!isset($context->vars_in_scope[$checked_var_id])) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidDocblock(
-                            "Attempt to check undefined variable $checked_var_id",
-                            new CodeLocation($statements_analyzer->source, $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } else {
-                    try {
-                        $checked_type = $context->vars_in_scope[$checked_var_id];
-
-                        $path = $statements_analyzer->getRootFilePath();
-                        $file_storage = $codebase->file_storage_provider->get($path);
-
-                        $check_tokens = TypeTokenizer::getFullyQualifiedTokens(
-                            $check_type_string,
-                            $statements_analyzer->getAliases(),
-                            $statements_analyzer->getTemplateTypeMap(),
-                            $file_storage->type_aliases,
-                        );
-                        $check_type = TypeParser::parseTokens(
-                            $check_tokens,
-                            null,
-                            $statements_analyzer->getTemplateTypeMap() ?? [],
-                            $file_storage->type_aliases,
-                            true,
-                        );
-
-                        /** @psalm-suppress InaccessibleProperty We just created this type */
-                        $check_type->possibly_undefined = $possibly_undefined;
-
-                        if ($check_type->possibly_undefined !== $checked_type->possibly_undefined
-                            || !UnionTypeComparator::isContainedBy($codebase, $checked_type, $check_type)
-                            || ($is_exact && !UnionTypeComparator::isContainedBy($codebase, $check_type, $checked_type))
-                        ) {
-                            $check_var = $checked_var_id . ($checked_type->possibly_undefined ? "?" : "");
-                            IssueBuffer::maybeAdd(
-                                new CheckType(
-                                    "Checked variable $checked_var = {$check_type->getId()} does not match "
-                                        . "$check_var = {$checked_type->getId()}",
-                                    new CodeLocation($statements_analyzer->source, $stmt),
-                                ),
-                                $statements_analyzer->getSuppressedIssues(),
-                            );
-                        }
-                    } catch (TypeParseTreeException $e) {
-                        IssueBuffer::maybeAdd(
-                            new InvalidDocblock(
-                                $e->getMessage(),
-                                new CodeLocation($statements_analyzer->source, $stmt),
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
-                    }
-                }
-            }
-        }
+        self::analyzeCheckedTypes($statements_analyzer, $stmt, $context, $checked_types);
 
         return null;
     }
