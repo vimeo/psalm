@@ -453,6 +453,43 @@ final class Scanner
                 || (isset($this->files_to_deep_scan[$file_path]) && !$this->scanned_files[$file_path]));
     }
 
+    /**
+     * Scanning a file with a cached storage takes about a tenth of the time of one without, and less than sending
+     * its storage back to the process that forked, so only the files without one are worth forking for.
+     *
+     * @param positive-int $max_pool_size
+     * @param int<0, max> $file_count
+     * @param int<0, max> $uncached_count the files among them without a cached storage
+     * @psalm-pure
+     */
+    public static function getScanPoolSize(int $max_pool_size, int $file_count, int $uncached_count): int
+    {
+        if ($file_count <= 512 || $uncached_count * 8 <= $file_count - $uncached_count) {
+            return 1;
+        }
+
+        return (int) ceil(min($max_pool_size, $uncached_count / 256));
+    }
+
+    /**
+     * @param array<string, string> $file_paths
+     * @return int<0, max>
+     */
+    private function countUncachedFiles(array $file_paths): int
+    {
+        $uncached = 0;
+
+        foreach ($file_paths as $file_path) {
+            $contents_hash = $this->file_provider->getContentsHash($file_path);
+
+            if (!$this->file_storage_provider->isCached($file_path, $contents_hash)) {
+                ++$uncached;
+            }
+        }
+
+        return $uncached;
+    }
+
     private function scanFilePaths(int $pool_size): bool
     {
         $files_to_scan = array_filter(
@@ -473,11 +510,9 @@ final class Scanner
             ksort($files_to_scan, SORT_STRING);
         }
 
-        if (!$this->is_forked && $pool_size > 1 && count($files_to_scan) > 512) {
-            $pool_size = (int) ceil(min($pool_size, count($files_to_scan) / 256));
-        } else {
-            $pool_size = 1;
-        }
+        $pool_size = !$this->is_forked && $pool_size > 1
+            ? self::getScanPoolSize($pool_size, count($files_to_scan), $this->countUncachedFiles($files_to_scan))
+            : 1;
 
         $this->progress->expand(count($files_to_scan));
         if ($pool_size > 1) {
