@@ -126,6 +126,40 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'literalVariableKeyReadsItsOffsetAfterIssetGuard' => [
+                'code' => '<?php
+                    class Test {
+                        /** @var array{lkey?: list<int>, skey?: string} */
+                        public array $props = [];
+
+                        public function store(string $name): void {
+                            if ($name === "lkey") {
+                                if (!isset($this->props[$name])) {
+                                    $this->props[$name] = [];
+                                }
+
+                                $this->props[$name][] = 1;
+                            }
+                        }
+                    }',
+            ],
+            'literalIntVariableKeyReadsItsOffsetAfterIssetGuard' => [
+                'code' => '<?php
+                    class Test {
+                        /** @var array{0?: list<int>, 1?: string} */
+                        public array $props = [];
+
+                        public function store(int $index): void {
+                            if ($index === 0) {
+                                if (!isset($this->props[$index])) {
+                                    $this->props[$index] = [];
+                                }
+
+                                $this->props[$index][] = 1;
+                            }
+                        }
+                    }',
+            ],
             'floatLiteralKeysOutsideTheRangeOfAnIntAreInts' => [
                 'code' => '<?php
                     $big = [1.0e30 => 1];
@@ -2625,6 +2659,22 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nonLiteralVariableKeyStillReadsEveryOffsetAfterIssetGuard' => [
+                'code' => '<?php
+                    class Test {
+                        /** @var array{lkey?: list<int>, skey?: string} */
+                        public array $props = [];
+
+                        public function store(string $name): void {
+                            if (!isset($this->props[$name])) {
+                                $this->props[$name] = [];
+                            }
+
+                            $this->props[$name][] = 1;
+                        }
+                    }',
+                'error_message' => 'PropertyTypeCoercion',
+            ],
             'templateBoundedByDecimalIntStringIsNotItsKeyType' => [
                 'code' => '<?php
                     /**
