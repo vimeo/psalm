@@ -3268,6 +3268,17 @@ final class ArrayFunctionCallTest extends TestCase
                         return $a;
                     }',
             ],
+            'arrayAnyAllCallbackOfCallResult' => [
+                'code' => '<?php
+                    /** @return array<string, int> */
+                    function getMap(): array { return ["one" => 1]; }
+
+                    $a = array_any(getMap(), fn (int $value, mixed $key): bool => $value > 0);
+                    $b = array_all(getMap(), fn (int $value, string $key): bool => $key !== "");',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
