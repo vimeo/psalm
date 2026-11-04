@@ -329,6 +329,47 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
+     * The expressions an item is reached through besides the arrays holding it: the keys, what the root array is
+     * fetched from, or the root itself when it is not a variable or a property
+     *
+     * @return list<PhpParser\Node\Expr>
+     * @psalm-capabilities read-props
+     */
+    public static function getOperands(PhpParser\Node\Expr\ArrayDimFetch $stmt): array
+    {
+        $operands = [];
+        $root = $stmt;
+
+        while ($root instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            if ($root->dim) {
+                $operands[] = $root->dim;
+            }
+
+            $root = $root->var;
+        }
+
+        if ($root instanceof PhpParser\Node\Expr\PropertyFetch) {
+            $operands[] = $root->var;
+            $root_children = [$root->name];
+        } elseif ($root instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
+            $root_children = [$root->class, $root->name];
+        } elseif ($root instanceof Variable) {
+            $root_children = [$root->name];
+        } else {
+            $operands[] = $root;
+            $root_children = [];
+        }
+
+        foreach ($root_children as $root_child) {
+            if ($root_child instanceof PhpParser\Node\Expr) {
+                $operands[] = $root_child;
+            }
+        }
+
+        return $operands;
+    }
+
+    /**
      * Writing an element of a property writes the object holding the property.
      * InstancePropertyAssignmentAnalyzer::trackPropertyImpurity() charges this when the object is in
      * a variable, or was reached from global state, but not when it is anything else, like what a

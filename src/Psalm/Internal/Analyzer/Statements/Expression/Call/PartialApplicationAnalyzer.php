@@ -603,15 +603,25 @@ final class PartialApplicationAnalyzer
             AssignmentAnalyzer::assignByRefParam($statements_analyzer, $location, $param_type, $type, $context, false);
         } elseif ($location instanceof ArrayDimFetch) {
             // PHP creates a missing item, but a property holding the array is not assigned
-            if (ArrayAssignmentAnalyzer::updateArrayType(
-                $statements_analyzer,
-                $location,
-                null,
-                $type,
-                $context,
-                true,
-                false,
-            ) === false) {
+            $node_data = $statements_analyzer->node_data;
+            $operands = ArrayAssignmentAnalyzer::getOperands($location);
+            $node_data->markEvaluated($operands);
+
+            try {
+                $updated = ArrayAssignmentAnalyzer::updateArrayType(
+                    $statements_analyzer,
+                    $location,
+                    null,
+                    $type,
+                    $context,
+                    true,
+                    false,
+                );
+            } finally {
+                $node_data->unmarkEvaluated($operands);
+            }
+
+            if ($updated === false) {
                 return false;
             }
         } elseif ($var_id !== null) {

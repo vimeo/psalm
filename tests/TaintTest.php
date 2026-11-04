@@ -5450,6 +5450,51 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'taintAnItemOfAStaticPropertyPassedByReference' => [
+                'code' => '<?php // --taint-analysis
+                    final class Box {
+                        /** @var array<string, array<array-key, string>> */
+                        public static array $items = [];
+                    }
+
+                    function fill(string $s): void {
+                        preg_match("/(.*)/", $s, Box::$items["x"]);
+                    }
+
+                    function output(): void {
+                        echo Box::$items["x"][1];
+                    }
+
+                    $s = $_GET["q"];
+                    if (is_string($s)) {
+                        fill($s);
+                        output();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAnItemOfAPropertyPassedByReference' => [
+                'code' => '<?php // --taint-analysis
+                    final class Box {
+                        /** @var array<string, array<array-key, string>> */
+                        public array $items = [];
+
+                        public function fill(string $s): void {
+                            preg_match("/(.*)/", $s, $this->items["x"]);
+                        }
+
+                        public function output(): void {
+                            echo $this->items["x"][1];
+                        }
+                    }
+
+                    $s = $_GET["q"];
+                    if (is_string($s)) {
+                        $b = new Box();
+                        $b->fill($s);
+                        $b->output();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAParameterWithItsNamedArgument' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-sink html $a */
