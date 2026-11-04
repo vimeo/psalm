@@ -829,6 +829,29 @@ final class MethodSignatureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'nativeToStringFromTraits' => [
+                'code' => '<?php
+                    trait StringableTrait {
+                        public function __TOSTRING() { return "exception"; }
+                    }
+                    trait Renderer {
+                        public function render(): string { return "error"; }
+                    }
+                    final class E extends Exception {
+                        use StringableTrait;
+                    }
+                    final class Failure extends Error {
+                        use Renderer { render as __toString; }
+                    }
+                    $exception = (new E())->__toString();
+                    $error = (new Failure())->__toString();',
+                'assertions' => [
+                    '$exception' => 'string',
+                    '$error' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'allowExceptionToStringWithNoType' => [
                 'code' => '<?php
                     class E extends Exception {
@@ -1855,6 +1878,19 @@ final class MethodSignatureTest extends TestCase
                 'error_message' => 'InvalidToString',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'nativeToStringTraitAliasRequiresReturnSignature' => [
+                'code' => '<?php
+                    trait Renderer {
+                        /** @return string */
+                        public function render() { return "exception"; }
+                    }
+                    final class E extends Exception {
+                        use Renderer { render as __toString; }
+                    }',
+                'error_message' => 'MethodSignatureMustProvideReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'noTypehintInNativeDescendant' => [
                 'code' => '<?php
