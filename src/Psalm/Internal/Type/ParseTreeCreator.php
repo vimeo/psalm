@@ -265,6 +265,17 @@ final class ParseTreeCreator
      */
     private function parseCallableParam(array $current_token, ParseTree $current_parent): void
     {
+        // the `=` or `...` written right after the type has already made the param: `int= $name`
+        if ($this->current_leaf instanceof CallableParamTree
+            && $this->current_leaf->name === null
+            && $current_token[0][0] === '$'
+            && strlen($current_token[0]) > 1
+        ) {
+            $this->current_leaf->name = substr($current_token[0], 1);
+
+            return;
+        }
+
         $variadic = false;
         $has_default = false;
 
