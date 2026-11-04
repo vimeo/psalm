@@ -49,7 +49,6 @@ final class ParserCacheProvider
         string $file_path,
         ?string $file_content_hash,
     ): ?array {
-        /** @var array{list<PhpParser\Node\Stmt>, list<array{string, array<string, mixed>}>}|null $item */
         $item = $this->stmtCache->getItem($file_path, $file_content_hash);
 
         if ($item === null) {
