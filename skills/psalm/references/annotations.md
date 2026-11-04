@@ -142,7 +142,10 @@ function make(string $class): object { … }
 ## Properties and purity
 
 - `@readonly` on a property: assignable only in the constructor. Prefer the native `readonly`.
-- `@psalm-immutable` on a class: all properties read-only, methods may only read properties.
+- `@psalm-immutable` on a class: all properties read-only, methods may only read properties. The
+  constructor must be pure too, default values of its parameters included:
+  `__construct(Options $o = new Options())` and `$o ?? Options::default()` are `ImpureMethodCall` unless
+  that constructor or factory is pure.
 - `@pure` on a function: the result depends only on its arguments.
 - `@psalm-capabilities read-props|io` lists the side effects a function may have (replaces
   `@psalm-mutation-free` and `@psalm-external-mutation-free`, which still work). See

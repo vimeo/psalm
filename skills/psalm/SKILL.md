@@ -22,8 +22,8 @@ are relative to this skill's directory.
    Its first line, `N issues (…) in M files`, picks the path. Before any edit, read and follow the phases of:
    - [references/cleanup.md](references/cleanup.md) when N is over 100 or M over 10, or for a request to
      clean up a codebase;
-   - [references/strictness.md](references/strictness.md) for a request to lower `errorLevel` or turn on a
-     stricter option.
+   - [references/strictness.md](references/strictness.md) for a request to lower `errorLevel`, turn on a
+     stricter option, or tighten the types of code that already passes.
 2. **Fix** by the rules in [Fixing issues](#fixing-issues), rerunning Psalm on the files you changed.
 3. **Gate.** Run the whole project after your last edit. Done when it exits `0`, and every change to
    `psalm.xml`, the baseline or a `@psalm-suppress` in the diff is one the user agreed to.
@@ -47,6 +47,8 @@ vendor/bin/psalm --no-progress --output-format=compact src/Foo.php src/Bar.php
 - `SECURITY` lines are taint findings, reported in the same run as type errors. Reading their source → sink
   path: [references/taint.md](references/taint.md).
 - After changing `psalm.xml`, stubs or `composer.json`, add `--no-cache` once.
+- Run Psalm on the PHP version CI uses. A Psalm installed in a tool directory (`tools/psalm`,
+  `bamarni/composer-bin-plugin`) has its own lock file and may need a newer PHP than the package itself.
 - Other output formats (`count`, `json-summary`, `by-issue-level`), cache and threads, `--stats`,
   `--show-info`, `--find-references-to`: [references/cli.md](references/cli.md).
 
@@ -59,7 +61,10 @@ for the inferred type with `@psalm-check-type` before editing: [references/debug
   runtime checks (`is_array`, `is_string`, `isset`, `instanceof`) and throw on invalid input. Check array
   elements in place: after `isset($data['dsn']) && is_string($data['dsn'])`, `$data['dsn']` itself is a
   `string`, so no intermediate variable is needed. `@var` is an unchecked cast, meant for values whose type
-  a library guarantees but Psalm can't see; outside data gets a check.
+  a library guarantees but Psalm can't see; outside data gets a check. A property the framework fills
+  through reflection (console options, attribute or config values) is the exception: its `@var` declares
+  the contract, and a runtime check there would change behaviour, such as the exception type. Write the
+  type the framework really passes, `null` and `''` included.
 - **`null` / `false` results** (`find()`, `strpos`, `file_get_contents`, `preg_replace`, `json_encode`): handle
   them explicitly — throw, return early or use a default.
 - **Tests** keep every assertion they make. Narrow with the test library's own assertions

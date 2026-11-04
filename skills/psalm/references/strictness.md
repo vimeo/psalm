@@ -2,7 +2,8 @@
 
 Lowering `errorLevel` by one, or turning on a stricter option (`ensureOverrideAttribute`, `findUnusedCode`).
 Which issue types each level adds: `docs/running_psalm/error_levels.md`. Go one level at a time; each level
-is its own pass through the phases below.
+is its own pass through the phases below. Tightening the types of code that already passes, with the level
+unchanged: [Tightening passing types](#tightening-passing-types).
 
 ## Phase 0 — Facts
 
@@ -72,3 +73,44 @@ One type at a time: `php scripts/summary.php <report> --type=<Type> --snippets`.
 2. Agreed leftovers: `--set-baseline=<file>` rewrites the whole baseline, old entries included.
 3. **Gate:** `vendor/bin/psalm --no-progress --no-cache` exits `0`.
 4. Further target: start again at Phase 1 with the next level.
+
+## Tightening passing types
+
+Psalm is green and the request is for narrower types. Psalm reports nothing here, so go through the
+public API, interfaces first, and look for:
+
+- `string` that is never empty: `non-empty-string`; a class name: `class-string<T>`;
+- `array` that is a list or has known keys: `list<T>`, `non-empty-list<T>`, `array{…}`;
+- `int` with a range: `positive-int`, `int<0, max>`;
+- registries, collections and containers without generics: `@template`;
+- value objects: native `readonly`, `@psalm-immutable` (its constructor must be pure, see
+  [annotations.md](annotations.md)).
+
+`@psalm-check-type-exact` ([debugging.md](debugging.md)) shows what Psalm infers today before you write
+the new type.
+
+A narrowed `@param` on an interface is inherited by every implementation without its own docblock, so a
+guard there becomes `RedundantCondition`:
+
+```php
+interface Named
+{
+    /** @param non-empty-string $name */
+    public function set(string $name): void;
+}
+
+final class Impl implements Named
+{
+    #[\Override]
+    public function set(string $name): void { assert($name !== ''); }  // RedundantCondition
+}
+
+final class Impl2 implements Named
+{
+    /** @param string $name */
+    #[\Override]
+    public function set(string $name): void { assert($name !== ''); }  // no issue: keeps its own guard
+}
+```
+
+**Gate:** the whole project exits `0` and the tests pass.
