@@ -159,6 +159,44 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertObjectShapeOnObject' => [
+                'code' => '<?php
+                    /** @psalm-assert object{a: int} $obj */
+                    function assertShape(mixed $obj): void {}
+
+                    function getObject(): object {
+                        return new stdClass;
+                    }
+
+                    $b = getObject();
+                    assertShape($b);',
+                'assertions' => [
+                    '$b===' => 'object{a:int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertObjectShapeOnObjectKeepsEarlierShape' => [
+                'code' => '<?php
+                    /** @psalm-assert object{a: int} $obj */
+                    function assertA(mixed $obj): void {}
+
+                    /** @psalm-assert object{b: string} $obj */
+                    function assertB(mixed $obj): void {}
+
+                    function getObject(): object {
+                        return new stdClass;
+                    }
+
+                    $b = getObject();
+                    assertA($b);
+                    assertB($b);',
+                'assertions' => [
+                    '$b===' => 'object{a:int}&object{b:string}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assertKeyOfAClassConstantNarrowsToItsKeys' => [
                 'code' => '<?php
                     final class OwnerTypes {
