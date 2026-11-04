@@ -6,12 +6,15 @@ namespace Psalm\Internal;
 
 use Override;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\IsIdentical;
+use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\ImmutableNonCloneableTrait;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNamedObject;
 use Stringable;
 
 use function array_diff_key;
@@ -257,7 +260,12 @@ final class Clause implements Stringable
                             || $inner_type instanceof TLiteralFloat
                             || $inner_type instanceof TLiteralString
                             || $inner_type instanceof TClassConstant
-                            || $inner_type instanceof TEnumCase))
+                            || $inner_type instanceof TEnumCase
+                            // `$x instanceof static` is an identity with the static type, and the negation of
+                            // either form is the other one
+                            || (($type instanceof IsIdentical || $type instanceof IsNotIdentical)
+                                && $inner_type instanceof TNamedObject
+                                && $inner_type->is_static)))
                 ) {
                     $impossibility[] = $type->getNegation();
                 }

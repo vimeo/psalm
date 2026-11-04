@@ -21,6 +21,66 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedInstanceofStaticWithThrowNarrowsToStatic' => [
+                'code' => '<?php
+                    abstract class Geometry {
+                        public static function fromText(Geometry $geometry): static {
+                            if (!$geometry instanceof static) {
+                                throw new Exception();
+                            }
+
+                            return $geometry;
+                        }
+                    }',
+            ],
+            'negatedInstanceofStaticWithReturnNarrowsObjectToStatic' => [
+                'code' => '<?php
+                    abstract class Geometry {
+                        public function name(): string {
+                            return "geometry";
+                        }
+
+                        public static function describe(object $value): string {
+                            if (!$value instanceof static) {
+                                return "";
+                            }
+
+                            return $value->name();
+                        }
+                    }',
+            ],
+            'negatedInstanceofStaticInOrConditionNarrowsAfterIt' => [
+                'code' => '<?php
+                    abstract class Geometry {
+                        public function name(): string {
+                            return "geometry";
+                        }
+
+                        public static function describe(object $value): string {
+                            if (!$value instanceof static && !$value instanceof Countable) {
+                                return "";
+                            }
+
+                            return $value instanceof Countable ? "countable" : $value->name();
+                        }
+                    }',
+            ],
+            'instanceofStaticElseBranchKeepsTheParentType' => [
+                'code' => '<?php
+                    abstract class Geometry {
+                        public function name(): string {
+                            return "geometry";
+                        }
+
+                        public function other(Geometry $other): string {
+                            if ($other instanceof static) {
+                                return "same";
+                            }
+
+                            return $other->name();
+                        }
+                    }',
+            ],
             'nonStrictConditionOnMixedOrNull' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $owners */
