@@ -23,6 +23,48 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'iteratorCurrentNullIsNotPartOfTheForeachValueType' => [
+                'code' => '<?php
+                    class Foo {
+                        public function bar(): void {}
+                    }
+
+                    /**
+                     * @implements Iterator<int, Foo>
+                     */
+                    class FooIterator implements Iterator {
+                        /** @var list<Foo> */
+                        private array $items = [];
+                        private int $position = 0;
+
+                        public function current(): ?Foo {
+                            return $this->items[$this->position] ?? null;
+                        }
+
+                        public function next(): void {
+                            $this->position++;
+                        }
+
+                        public function key(): ?int {
+                            return $this->valid() ? $this->position : null;
+                        }
+
+                        public function valid(): bool {
+                            return $this->position < count($this->items);
+                        }
+
+                        public function rewind(): void {
+                            $this->position = 0;
+                        }
+                    }
+
+                    function f(FooIterator $iterator): void {
+                        foreach ($iterator as $key => $foo) {
+                            echo $key + 1;
+                            $foo->bar();
+                        }
+                    }',
+            ],
             'foreachByReferenceWritesIntoTheItemsOfTheArray' => [
                 'code' => '<?php
                     $values = ["key" => ""];
@@ -1363,6 +1405,48 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'iteratorCurrentNullStaysWhenTheTemplateValueIsNullable' => [
+                'code' => '<?php
+                    class Foo {
+                        public function bar(): void {}
+                    }
+
+                    /**
+                     * @implements Iterator<int, Foo|null>
+                     */
+                    class FooIterator implements Iterator {
+                        /** @var list<Foo> */
+                        private array $items = [];
+                        private int $position = 0;
+
+                        public function current(): ?Foo {
+                            return $this->items[$this->position] ?? null;
+                        }
+
+                        public function next(): void {
+                            $this->position++;
+                        }
+
+                        public function key(): ?int {
+                            return $this->valid() ? $this->position : null;
+                        }
+
+                        public function valid(): bool {
+                            return $this->position < count($this->items);
+                        }
+
+                        public function rewind(): void {
+                            $this->position = 0;
+                        }
+                    }
+
+                    function f(FooIterator $iterator): void {
+                        foreach ($iterator as $foo) {
+                            $foo->bar();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
             'foreachKeyAndDestructuredValueNotNullAfterBreakingLoopOnNonEmptyArray' => [
                 'code' => '<?php
                     /** @param non-empty-array<int, array{int, string|null}> $argument_map */
