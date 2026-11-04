@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_column;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -19,6 +23,37 @@ final class RedundantConditionTest extends TestCase
     /**
      * @psalm-pure
      */
+    public function testNeverFromAnImpossibleGuardIsNotAnInvalidCast(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @param positive-int $i
+                 * @return negative-int
+                 */
+                function returnsNegativeInt(int $i): int {
+                    if ($i <= 0) {
+                        throw new Error("Invalid argument $i");
+                    }
+
+                    return -$i;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            ['DocblockTypeContradiction'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
