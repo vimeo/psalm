@@ -434,17 +434,24 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             || $node instanceof PhpParser\Node\Expr\AssignOp
             || $node instanceof PhpParser\Node\Expr\AssignRef
         ) {
-            if ($node->var instanceof PhpParser\Node\Expr\PropertyFetch
-                && $node->var->var instanceof PhpParser\Node\Expr\Variable
-                && $node->var->var->name === 'this'
-                && $node->var->name instanceof PhpParser\Node\Identifier
+            // `$this->prop[...] = ...` changes the value of `$this->prop` as well
+            $assigned_var = $node->var;
+
+            while ($assigned_var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                $assigned_var = $assigned_var->var;
+            }
+
+            if ($assigned_var instanceof PhpParser\Node\Expr\PropertyFetch
+                && $assigned_var->var instanceof PhpParser\Node\Expr\Variable
+                && $assigned_var->var->name === 'this'
+                && $assigned_var->name instanceof PhpParser\Node\Identifier
             ) {
                 if ($this->functionlike_node_scanners) {
                     $functionlike_node_scanner = end($this->functionlike_node_scanners);
                     $functionlike_storage = $functionlike_node_scanner->storage;
 
                     if ($functionlike_storage instanceof MethodStorage) {
-                        $functionlike_storage->this_property_mutations[$node->var->name->name] = true;
+                        $functionlike_storage->this_property_mutations[$assigned_var->name->name] = true;
                     }
                 }
             }
