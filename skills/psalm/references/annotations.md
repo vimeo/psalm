@@ -94,7 +94,9 @@ function names(): Collection { … }
 - `new Collection()` without a constructor argument of type `T` is `Collection<mixed>`. Fix `T` on the
   assignment: `/** @var Collection<string> $names */ $names = new Collection();`.
 - Extending: `@extends Collection<User>`, `@implements IteratorAggregate<int, User>`, `@use SomeTrait<User>`.
-- A class name as an argument: `@param class-string<T> $class` with `@return T`.
+- A class name as an argument: `@param class-string<T> $class` with `@return T`. A container that looks
+  the object up checks it, and Psalm narrows to `T` without a `@var`:
+  `if (!$service instanceof $class) { throw … }`.
 - `@template-covariant T` when `Collection<Child>` must be accepted where `Collection<Parent>` is expected;
   `T` may then only appear in return positions.
 - Details: `docs/annotating_code/templated_annotations.md`.
