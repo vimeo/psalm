@@ -15,6 +15,10 @@
  *  - Telegram: TELEGRAM_BOT_TOKEN (from @BotFather) and TELEGRAM_CHAT_ID (the channel, e.g. @psalmphp, where the bot
  *    must be an administrator allowed to post messages).
  *
+ * X only gets the latest major's minor and major releases, and its patch releases with user-facing changes (a
+ * Features, Fixes or other section besides Internal changes and Docs), but no pre-releases; the other platforms get
+ * every release.
+ *
  * Drafts aren't announced, nor releases published more than a day ago unless --force is given, so that
  * auto-release.php dispatching the announcement on the last tag of each branch doesn't announce old releases.
  *
@@ -82,7 +86,10 @@ $post = static function (string $url, array $headers, array $body): array {
 };
 
 $release = json_decode(
-    $run(['gh', 'release', 'view', $tag, '--repo', $repository, '--json', 'tagName,url,isDraft,publishedAt']),
+    $run([
+        'gh', 'release', 'view', $tag, '--repo', $repository,
+        '--json', 'tagName,url,isDraft,isPrerelease,publishedAt,body',
+    ]),
     true,
     512,
     JSON_THROW_ON_ERROR,
@@ -97,6 +104,37 @@ if (!$force && strtotime($release['publishedAt']) < time() - 86_400) {
     echo "$tag was published on {$release['publishedAt']}, more than a day ago, not announcing it" . PHP_EOL;
     exit(0);
 }
+
+// X only gets releases worth a post: one a day for every branch buries the ones that matter, and posts nobody
+// engages with make X show the account's other posts less
+$x_skip_reason = (static function () use ($release, $run, $repository): ?string {
+    if ($release['isPrerelease']) {
+        return 'it is a pre-release';
+    }
+
+    // without a tag, gh views the release marked as latest
+    $latest = json_decode(
+        $run(['gh', 'release', 'view', '--repo', $repository, '--json', 'tagName']),
+        true,
+        512,
+        JSON_THROW_ON_ERROR,
+    )['tagName'];
+    if ((int) $release['tagName'] < (int) $latest) {
+        return "it is older than the latest major ($latest)";
+    }
+
+    // a minor or major release always has news, and its notes may be written by hand without these sections
+    if (str_ends_with($release['tagName'], '.0')) {
+        return null;
+    }
+
+    preg_match_all('/^### (.+?)\s*$/m', $release['body'], $sections);
+    if (array_diff($sections[1], ['Internal changes', 'Docs']) === []) {
+        return 'it is a patch release whose notes have no Features, Fixes or other user-facing section';
+    }
+
+    return null;
+})();
 
 $text = "Psalm {$release['tagName']} has been released: {$release['url']} #psalm";
 echo $text . PHP_EOL;
@@ -134,6 +172,11 @@ $platforms = [
 
 $failed = false;
 foreach ($platforms as $platform => [$secrets, $announce]) {
+    if ($platform === 'X' && $x_skip_reason !== null) {
+        echo "Not announcing $tag on X: $x_skip_reason" . PHP_EOL;
+        continue;
+    }
+
     $values = array_map(static fn(string $secret): string => (string) getenv($secret), $secrets);
     if (in_array('', $values, true)) {
         echo "::notice::Not announcing $tag on $platform: " . implode(', ', $secrets) . ' must be set' . PHP_EOL;
