@@ -160,36 +160,22 @@ final class IssueBufferTest extends TestCase
         return $options;
     }
 
-    public function testASarifReportOfATaintAnalysisInGithubActionsDoesNotFail(): void
+    public function testASarifReportAmongTheGeneratedReportsIsRecognised(): void
     {
-        self::assertTrue(IssueBuffer::skipsFailingExitCode(
-            true,
+        self::assertTrue(IssueBuffer::hasSarifReport(
             [self::reportOptions(Report::TYPE_JSON), self::reportOptions(Report::TYPE_SARIF)],
-            true,
         ));
     }
 
-    public function testANonSarifReportOfATaintAnalysisInGithubActionsFails(): void
+    public function testOtherReportsAreNotSarif(): void
     {
-        self::assertFalse(IssueBuffer::skipsFailingExitCode(
-            true,
-            [self::reportOptions(Report::TYPE_JSON)],
-            true,
+        self::assertFalse(IssueBuffer::hasSarifReport(
+            [self::reportOptions(Report::TYPE_JSON), self::reportOptions(Report::TYPE_CHECKSTYLE)],
         ));
     }
 
-    public function testASarifReportOutsideGithubActionsFails(): void
+    public function testNoGeneratedReportIsNotSarif(): void
     {
-        self::assertFalse(IssueBuffer::skipsFailingExitCode(true, [self::reportOptions(Report::TYPE_SARIF)], false));
-    }
-
-    public function testASarifReportWithoutTaintAnalysisFails(): void
-    {
-        self::assertFalse(IssueBuffer::skipsFailingExitCode(false, [self::reportOptions(Report::TYPE_SARIF)], true));
-    }
-
-    public function testNoReportFails(): void
-    {
-        self::assertFalse(IssueBuffer::skipsFailingExitCode(true, [], true));
+        self::assertFalse(IssueBuffer::hasSarifReport([]));
     }
 }

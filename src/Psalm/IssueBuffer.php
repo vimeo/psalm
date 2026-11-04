@@ -933,33 +933,23 @@ final class IssueBuffer
         // runs), so cached taint sinks/sources keep matching after the analysis is reused from cache.
         $project_analyzer->persistCustomTaints();
 
+        // a taint analysis run in GitHub Actions that writes a SARIF report exits successfully, so that a following
+        // step can upload the report; every other combination exits with an error when issues were found
         if ($error_count
-            && !self::skipsFailingExitCode(
-                $codebase->taint_flow_graph !== null,
-                $project_analyzer->generated_report_options,
-                isset($_SERVER['GITHUB_WORKFLOW']),
-            )
+            && !($codebase->taint_flow_graph
+                && self::hasSarifReport($project_analyzer->generated_report_options)
+                && isset($_SERVER['GITHUB_WORKFLOW']))
         ) {
             exit(2);
         }
     }
 
     /**
-     * A taint analysis run in GitHub Actions that writes a SARIF report exits successfully, so that a following
-     * step can upload the report; every other combination exits with an error when issues were found.
-     *
      * @param array<ReportOptions> $generated_report_options
      * @psalm-mutation-free
      */
-    public static function skipsFailingExitCode(
-        bool $ran_taint_analysis,
-        array $generated_report_options,
-        bool $in_github_actions,
-    ): bool {
-        if (!$ran_taint_analysis || !$in_github_actions) {
-            return false;
-        }
-
+    public static function hasSarifReport(array $generated_report_options): bool
+    {
         foreach ($generated_report_options as $report_options) {
             if ($report_options->format === Report::TYPE_SARIF) {
                 return true;
