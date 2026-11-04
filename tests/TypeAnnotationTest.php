@@ -20,6 +20,34 @@ final class TypeAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'checkTypeOverSeveralDocblockLines' => [
+                'code' => '<?php
+                    function f(): void {
+                        $response = ["status" => 0, "message" => "success"];
+
+                        /**
+                         * @psalm-check-type $response = array{
+                         *   status: int,
+                         *   message: string
+                         * }
+                         */
+                        echo json_encode($response);
+                    }',
+            ],
+            'checkTypeExactOverSeveralDocblockLines' => [
+                'code' => '<?php
+                    function f(): void {
+                        $response = ["status" => 0, "message" => "success"];
+
+                        /**
+                         * @psalm-check-type-exact $response = array{
+                         *   message: "success",
+                         *   status: 0
+                         * }
+                         */
+                        echo json_encode($response);
+                    }',
+            ],
             'atInArrayKey' => [
                 'code' => '<?php
 

@@ -86,6 +86,7 @@ use function count;
 use function explode;
 use function fwrite;
 use function is_string;
+use function preg_replace;
 use function preg_split;
 use function reset;
 use function round;
@@ -752,6 +753,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
 
         foreach ($checked_types as [$check_type_line, $is_exact]) {
+            // a type over several docblock lines carries the ` * ` of each line
+            $check_type_line = (string) preg_replace('/\s*\n\s*\*?\s*/', ' ', $check_type_line);
+
             [$checked_var, $check_type_string] = array_map('trim', explode('=', $check_type_line, 2)) + ['', ''];
 
             if ($check_type_string === '' || $checked_var === '') {
