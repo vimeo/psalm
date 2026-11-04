@@ -21,6 +21,52 @@ final class EmptyTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyComparedAfterAChildMethodIncrementsIt' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public int $n = 0;
+
+                        public function check(): void
+                        {
+                            $this->n = 0;
+
+                            $this->increment();
+
+                            if ($this->n === 0) {
+                                echo "zero";
+                            }
+                        }
+
+                        public function increment(): void
+                        {
+                            $this->n++;
+                        }
+                    }',
+            ],
+            'emptyOnPropertyAChildMethodUnsetsAnOffsetOf' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public array $data = [1];
+
+                        public function check(): void
+                        {
+                            $this->data = [1];
+
+                            $this->clear();
+
+                            if (empty($this->data)) {
+                                echo "empty";
+                            }
+                        }
+
+                        public function clear(): void
+                        {
+                            unset($this->data[0]);
+                        }
+                    }',
+            ],
             'emptyOnPropertyAChildMethodAppendsTo' => [
                 'code' => '<?php
                     class Foo

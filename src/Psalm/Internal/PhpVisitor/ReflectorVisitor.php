@@ -430,29 +430,38 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             }
         }
 
+        // what `$this->prop` is changed through: `$this->prop = ...`, `$this->prop[...] = ...`, `$this->prop++`
+        // and `unset($this->prop[...])`
+        $changed_vars = [];
+
         if ($node instanceof PhpParser\Node\Expr\Assign
             || $node instanceof PhpParser\Node\Expr\AssignOp
             || $node instanceof PhpParser\Node\Expr\AssignRef
+            || $node instanceof PhpParser\Node\Expr\PreInc
+            || $node instanceof PhpParser\Node\Expr\PostInc
+            || $node instanceof PhpParser\Node\Expr\PreDec
+            || $node instanceof PhpParser\Node\Expr\PostDec
         ) {
-            // `$this->prop[...] = ...` changes the value of `$this->prop` as well
-            $assigned_var = $node->var;
+            $changed_vars = [$node->var];
+        } elseif ($node instanceof PhpParser\Node\Stmt\Unset_) {
+            $changed_vars = $node->vars;
+        }
 
-            while ($assigned_var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-                $assigned_var = $assigned_var->var;
+        foreach ($changed_vars as $changed_var) {
+            while ($changed_var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                $changed_var = $changed_var->var;
             }
 
-            if ($assigned_var instanceof PhpParser\Node\Expr\PropertyFetch
-                && $assigned_var->var instanceof PhpParser\Node\Expr\Variable
-                && $assigned_var->var->name === 'this'
-                && $assigned_var->name instanceof PhpParser\Node\Identifier
+            if ($changed_var instanceof PhpParser\Node\Expr\PropertyFetch
+                && $changed_var->var instanceof PhpParser\Node\Expr\Variable
+                && $changed_var->var->name === 'this'
+                && $changed_var->name instanceof PhpParser\Node\Identifier
+                && $this->functionlike_node_scanners
             ) {
-                if ($this->functionlike_node_scanners) {
-                    $functionlike_node_scanner = end($this->functionlike_node_scanners);
-                    $functionlike_storage = $functionlike_node_scanner->storage;
+                $functionlike_storage = end($this->functionlike_node_scanners)->storage;
 
-                    if ($functionlike_storage instanceof MethodStorage) {
-                        $functionlike_storage->this_property_mutations[$assigned_var->name->name] = true;
-                    }
+                if ($functionlike_storage instanceof MethodStorage) {
+                    $functionlike_storage->this_property_mutations[$changed_var->name->name] = true;
                 }
             }
         }
