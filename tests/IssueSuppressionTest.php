@@ -9,10 +9,14 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
+use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use function get_class;
 use function getcwd;
+use function substr_count;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -227,6 +231,87 @@ final class IssueSuppressionTest extends TestCase
         $context = new Context();
 
         $this->analyzeFile((string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', $context);
+    }
+
+    /**
+     * Scans $file_path and runs an AfterCodebasePopulated plugin hook like the one in psalm-plugin-phpunit, which
+     * appends a suppression to class Foo's storage; analyzeFile() alone doesn't dispatch that event.
+     */
+    private function scanWithSuppressionAppendingPlugin(string $file_path): void
+    {
+        $hook = new class implements AfterCodebasePopulatedInterface {
+            /**
+             * @return void
+             * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
+             */
+            #[Override]
+            public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event)
+            {
+                // like psalm-plugin-phpunit does for MissingConstructor
+                $event->getCodebase()->classlike_storage_provider->get('foo')->suppressed_issues[] = 'MissingConstructor';
+            }
+        };
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->eventDispatcher->after_codebase_populated[] = get_class($hook);
+
+        $this->project_analyzer->initExtraFiles();
+        $this->project_analyzer->initProjectFiles();
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $codebase->scanFiles();
+        $codebase->config->eventDispatcher->dispatchAfterCodebasePopulated(new AfterCodebasePopulatedEvent($codebase));
+    }
+
+    public function testPluginAddedClassSuppressionIsNotReportedAsUnused(): void
+    {
+        $this->expectNotToPerformAssertions();
+
+        $this->project_analyzer->getCodebase()->find_unused_code = "always";
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-suppress PossiblyUnusedProperty */
+                final class Foo {
+                    public string $bar = "baz";
+                }
+
+                $_foo = new Foo();
+            ',
+        );
+        $this->scanWithSuppressionAppendingPlugin($file_path);
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+        IssueBuffer::processUnusedSuppressions($this->project_analyzer->getCodebase()->file_provider);
+    }
+
+    public function testUnusedDocblockSuppressionIsReportedOnceWithPluginAddedSuppression(): void
+    {
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-suppress UndefinedVariable */
+                final class Foo {
+                    public string $bar = "baz";
+                }
+            ',
+        );
+        $this->scanWithSuppressionAppendingPlugin($file_path);
+
+        $message = '';
+        try {
+            $this->analyzeFile($file_path, new Context(), false);
+            $this->project_analyzer->consolidateAnalyzedData();
+            IssueBuffer::processUnusedSuppressions($this->project_analyzer->getCodebase()->file_provider);
+        } catch (CodeException $e) {
+            $message = $e->getMessage();
+        }
+
+        $this->assertSame(1, substr_count($message, 'UnusedPsalmSuppress'), $message);
     }
 
     public function testPossiblyUnusedPropertySuppressedOnClass(): void
