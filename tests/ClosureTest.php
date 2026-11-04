@@ -125,9 +125,9 @@ final class ClosureTest extends TestCase
                 ',
                 'assertions' => [
                     '$testBefore===' => '123',
-                    '$testInsideBefore===' => "'test'|123|null",
+                    '$testInsideBefore===' => "'test'|int|null",
                     '$testInsideAfter===' => "'test'|null",
-                    '$test===' => "'test'|123",
+                    '$test===' => "'test'|int",
 
                     '$doNotContaminate===' => '123',
                 ],
