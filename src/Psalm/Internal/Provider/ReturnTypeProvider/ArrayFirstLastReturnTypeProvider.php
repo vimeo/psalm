@@ -94,9 +94,15 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
     /**
      * The type of the first or last value of an array of the given type, also used for array_shift()/array_pop().
      * Returns null when it can't be inferred.
+     *
+     * Without $ordered, any value of a list may come first or last.
      */
-    public static function getElementType(Codebase $codebase, Union $array_type, bool $is_first): ?Union
-    {
+    public static function getElementType(
+        Codebase $codebase,
+        Union $array_type,
+        bool $is_first,
+        bool $ordered = true,
+    ): ?Union {
         $atomic_types = $array_type->getAtomicTypes();
         $value_type = null;
         $possibly_empty = false;
@@ -112,7 +118,7 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
                 $atomic_value_type = $atomic_type->type_params[1];
                 $possibly_empty = $possibly_empty || !$atomic_type instanceof TNonEmptyArray;
             } elseif ($atomic_type instanceof TKeyedArray) {
-                if (!$atomic_type->is_list || !isset($atomic_type->properties[0])) {
+                if (!$ordered || !$atomic_type->is_list || !isset($atomic_type->properties[0])) {
                     // a shape doesn't fix the order of its keys
                     $atomic_value_type = $atomic_type->getGenericValueType();
                 } elseif ($is_first) {

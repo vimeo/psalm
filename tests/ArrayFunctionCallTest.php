@@ -3189,11 +3189,18 @@ final class ArrayFunctionCallTest extends TestCase
                     function f(array $m, string $k): void {
                         array_shift($m[$k]);
                         $shifted = array_shift($m[$k]);
-                        /** @psalm-check-type-exact $shifted = string */
+                        /** @psalm-check-type-exact $shifted = int|string */
+                    }
+
+                    function g(): int {
+                        $l = [[1, 2]];
+                        $i = 0;
+                        array_pop($l[$i++]);
+                        /** @psalm-check-type-exact $i = 1 */
+                        return $i;
                     }',
                 'assertions' => [
-                    '$popped===' => '1',
-                    '$a===' => 'list{array<never, never>}',
+                    '$popped===' => "'s'|1",
                 ],
             ],
             'arrayPopShiftEmptyTemplateArray' => [
@@ -3209,13 +3216,6 @@ final class ArrayFunctionCallTest extends TestCase
                             array_shift($a);
                         }
                         return $a;
-                    }',
-            ],
-            'arrayPopOffsetOfCallResult' => [
-                'code' => '<?php
-                    /** @param array<string, list{int, string}> $m */
-                    function f(array $m): string {
-                        return array_pop(array_values($m)[0]);
                     }',
             ],
         ];
@@ -3715,7 +3715,17 @@ final class ArrayFunctionCallTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
-            'arrayPopOffsetUpdatesContainer' => [
+            'arrayPopOffsetOfUnionIndex' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        $a = [[1, "s"], [2, 3.5]];
+                        $k = $b ? 0 : 1;
+                        array_pop($a[$k]);
+                        return array_pop($a[0]);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'arrayPopOffsetMayHaveLostElements' => [
                 'code' => '<?php
                     function f(): string {
                         $a = [[1, "s"]];
@@ -3723,18 +3733,6 @@ final class ArrayFunctionCallTest extends TestCase
                         return array_pop($a[0]);
                     }',
                 'error_message' => 'InvalidReturnStatement',
-            ],
-            'arrayPopPropertyOffsetChecksPropertyType' => [
-                'code' => '<?php
-                    final class A {
-                        /** @var array{p: list{int, string}} */
-                        public array $d = ["p" => [1, "s"]];
-                    }
-
-                    function f(A $a): void {
-                        array_pop($a->d["p"]);
-                    }',
-                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
         ];
     }

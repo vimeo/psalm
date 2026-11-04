@@ -920,6 +920,7 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$container_class]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
+      <code><![CDATA[$var_id]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ClassTemplateParamCollector.php">

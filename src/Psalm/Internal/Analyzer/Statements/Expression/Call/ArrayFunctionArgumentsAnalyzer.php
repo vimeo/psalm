@@ -629,28 +629,12 @@ final class ArrayFunctionArgumentsAnalyzer
             $statements_analyzer,
         );
 
-        // an offset of a variable or property, e.g. $a[0] or $this->a[$k], but not f()[0]
-        $offset_root = $arg->value;
-        while ($offset_root instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            $offset_root = $offset_root->var;
-        }
-        $is_offset = $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
-            && ($offset_root instanceof PhpParser\Node\Expr\Variable
-                || $offset_root instanceof PhpParser\Node\Expr\PropertyFetch
-                || $offset_root instanceof PhpParser\Node\Expr\StaticPropertyFetch);
+        if ($var_id) {
+            $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
 
-        if ($var_id !== null || $is_offset) {
-            if ($var_id !== null) {
-                $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
-            }
-
-            // an offset that wasn't assigned or read on its own has no entry in the context
-            $current_type = ($var_id !== null ? $context->vars_in_scope[$var_id] ?? null : null)
-                ?? ($is_offset ? $statements_analyzer->node_data->getType($arg->value) : null);
-
-            if ($current_type) {
+            if (isset($context->vars_in_scope[$var_id])) {
                 $array_atomic_types = [];
-                $var_atomic_types = array_values($current_type->getAtomicTypes());
+                $var_atomic_types = array_values($context->vars_in_scope[$var_id]->getAtomicTypes());
 
                 while ($array_atomic_type = array_shift($var_atomic_types)) {
                     // once an element is removed, the array is no longer of the template type, only of its bound
@@ -760,16 +744,8 @@ final class ArrayFunctionArgumentsAnalyzer
                 }
                 // several atomics may be arrays, which a Union would index by the same key
                 $array_type = TypeCombiner::combine($array_atomic_types, $statements_analyzer->getCodebase());
-
-                if ($is_offset && $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-                    // like $a[0] = ..., so that the array holding the offset is updated too
-                    ArrayAssignmentAnalyzer::analyze($statements_analyzer, $arg->value, $context, null, $array_type);
-                    // the return type is inferred from the array before the call
-                    $statements_analyzer->node_data->setType($arg->value, $current_type);
-                } elseif ($var_id !== null) {
-                    $context->removeDescendents($var_id, $array_type);
-                    $context->vars_in_scope[$var_id] = $array_type;
-                }
+                $context->removeDescendents($var_id, $array_type);
+                $context->vars_in_scope[$var_id] = $array_type;
             }
         }
     }
