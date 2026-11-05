@@ -479,17 +479,21 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $template_result,
                     $context,
                     $statements_analyzer,
+                    $fq_class_name,
                 );
             }
 
-            if ($method_storage->if_true_assertions) {
+            $if_true_assertions = $assertionsResolver->resolveIfTrue($method_storage, $class_storage);
+
+            if ($if_true_assertions) {
                 $possibilities = array_map(
                     static fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
                         $template_result,
                         $lhs_var_id,
                         $codebase,
+                        $fq_class_name,
                     ),
-                    $method_storage->if_true_assertions,
+                    $if_true_assertions,
                 );
                 if ($lhs_var_id === null) {
                     $possibilities = array_filter(
@@ -505,14 +509,17 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 );
             }
 
-            if ($method_storage->if_false_assertions) {
+            $if_false_assertions = $assertionsResolver->resolveIfFalse($method_storage, $class_storage);
+
+            if ($if_false_assertions) {
                 $possibilities = array_map(
                     static fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
                         $template_result,
                         $lhs_var_id,
                         $codebase,
+                        $fq_class_name,
                     ),
-                    $method_storage->if_false_assertions,
+                    $if_false_assertions,
                 );
                 if ($lhs_var_id === null) {
                     $possibilities = array_filter(

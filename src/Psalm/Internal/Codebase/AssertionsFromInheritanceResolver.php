@@ -35,9 +35,50 @@ final class AssertionsFromInheritanceResolver
         MethodStorage $method_storage,
         ClassLikeStorage $called_class,
     ): array {
+        return $this->resolveKind($method_storage, $called_class, 'assertions');
+    }
+
+    /**
+     * @return array<int,Possibilities>
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public function resolveIfTrue(
+        MethodStorage $method_storage,
+        ClassLikeStorage $called_class,
+    ): array {
+        return $this->resolveKind($method_storage, $called_class, 'if_true_assertions');
+    }
+
+    /**
+     * @return array<int,Possibilities>
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public function resolveIfFalse(
+        MethodStorage $method_storage,
+        ClassLikeStorage $called_class,
+    ): array {
+        return $this->resolveKind($method_storage, $called_class, 'if_false_assertions');
+    }
+
+    /**
+     * @param 'assertions'|'if_true_assertions'|'if_false_assertions' $kind
+     * @return array<int,Possibilities>
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private function resolveKind(
+        MethodStorage $method_storage,
+        ClassLikeStorage $called_class,
+        string $kind,
+    ): array {
         $method_name_lc = strtolower($method_storage->cased_name ?? '');
 
-        $assertions = $method_storage->assertions;
+        $pick = static fn(MethodStorage $storage): array => match ($kind) {
+            'assertions' => $storage->assertions,
+            'if_true_assertions' => $storage->if_true_assertions,
+            'if_false_assertions' => $storage->if_false_assertions,
+        };
+
+        $assertions = $pick($method_storage);
         $inherited_classes_and_interfaces = array_values(array_filter([
             ...$called_class->parent_classes,
             ...$called_class->class_implements,
@@ -58,7 +99,7 @@ final class AssertionsFromInheritanceResolver
              * Since the inheritance does not provide its own assertions, we have to detect those
              * from inherited classes
              */
-            $assertions += $potential_assertion_providing_method_storage->assertions;
+            $assertions += $pick($potential_assertion_providing_method_storage);
         }
 
         return $assertions;

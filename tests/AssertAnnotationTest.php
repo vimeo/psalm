@@ -159,6 +159,56 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticInAnAssertionOfAnInheritedMethodIsTheCalledClass' => [
+                'code' => '<?php
+                    interface Comparable {
+                        /** @psalm-assert-if-true static $object */
+                        public function equals(Comparable $object): bool;
+
+                        /** @psalm-assert-if-false static $object */
+                        public function differs(Comparable $object): bool;
+
+                        /** @psalm-assert static $object */
+                        public function mustEqual(Comparable $object): void;
+                    }
+
+                    final class Money implements Comparable {
+                        public int $amount = 0;
+
+                        public function equals(Comparable $object): bool {
+                            return $object instanceof self && $object->amount === $this->amount;
+                        }
+
+                        public function differs(Comparable $object): bool {
+                            return !$this->equals($object);
+                        }
+
+                        public function mustEqual(Comparable $object): void {
+                        }
+
+                        public function ifTrue(Comparable $object): int {
+                            if ($this->equals($object)) {
+                                return $object->amount;
+                            }
+
+                            return 0;
+                        }
+
+                        public function ifFalse(Comparable $object): int {
+                            if ($this->differs($object)) {
+                                return 0;
+                            }
+
+                            return $object->amount;
+                        }
+
+                        public function always(Comparable $object): int {
+                            $this->mustEqual($object);
+
+                            return $object->amount;
+                        }
+                    }',
+            ],
             'assertKeyOfAClassConstantNarrowsToItsKeys' => [
                 'code' => '<?php
                     final class OwnerTypes {
@@ -3427,6 +3477,30 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticInAnAssertionOnAnInterfaceReceiverIsTheInterface' => [
+                'code' => '<?php
+                    interface Comparable {
+                        /** @psalm-assert-if-true static $object */
+                        public function equals(Comparable $object): bool;
+                    }
+
+                    final class Money implements Comparable {
+                        public int $amount = 0;
+
+                        public function equals(Comparable $object): bool {
+                            return true;
+                        }
+                    }
+
+                    function total(Comparable $left, Comparable $right): int {
+                        if ($left->equals($right)) {
+                            return $right->amount;
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'NoInterfaceProperties - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:36',
+            ],
             'assertInstanceOfMultipleInterfaces' => [
                 'code' => '<?php
                     class A {
