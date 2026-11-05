@@ -205,6 +205,23 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'inaccessibleStaticMethodForwardedToCallStaticHasItsReturnType' => [
+                'code' => '<?php
+                    final class Factory {
+                        private static function make(): int {
+                            return 1;
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return $name;
+                        }
+                    }
+
+                    $made = Factory::make();',
+                'assertions' => ['$made' => 'string'],
+                'ignored_issues' => ['InaccessibleMethod'],
+            ],
             'staticCallOfInaccessibleMethodGoesToCallStatic' => [
                 'code' => <<<'PHP'
                     <?php
