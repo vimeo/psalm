@@ -1601,7 +1601,7 @@ final class ArrayFetchAnalyzer
         if ($in_assignment) {
             if ($type->isEmptyArray()) {
                 $type = $type->setTypeParams([
-                    $offset_type->isMixed()
+                    $offset_type->hasMixed()
                         ? Type::getArrayKey()
                         : self::castInvalidOffsetTypes($offset_type->freeze()),
                     $type->type_params[1],
@@ -2062,7 +2062,7 @@ final class ArrayFetchAnalyzer
 
                     $new_key_type = Type::combineUnionTypes(
                         $generic_key_type,
-                        $offset_type->isMixed() ? Type::getArrayKey() : $offset_type->freeze(),
+                        $offset_type->hasMixed() ? Type::getArrayKey() : $offset_type->freeze(),
                     );
 
                     if (!$stmt->dim) {
