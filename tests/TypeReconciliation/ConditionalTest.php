@@ -21,6 +21,55 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'orWhoseRightSideAssignsAnotherVariableKeepsWhatTheLeftOneTested' => [
+                'code' => '<?php
+                    /** @var string|null $s */
+                    $s = null;
+
+                    if ($s === null || ($n = strlen($s)) > 5) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$s' => 'string',
+                    '$n' => 'int<0, 5>',
+                ],
+            ],
+            'orWhoseRightSideReassignsAnArrayTheLeftOneTestedAKeyOfKeepsTheAssignedType' => [
+                'code' => '<?php
+                    /** @var array{k?: int} $arr */
+                    $arr = [];
+
+                    if (!isset($arr["k"]) || count($arr = ["z" => "q"]) > 1) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$arr' => 'array{z: string}',
+                ],
+            ],
+            'logicalOrWhoseRightSideReassignsWhatTheLeftOneTestedKeepsTheAssignedType' => [
+                'code' => '<?php
+                    /** @var string $value */
+                    $value = "5";
+
+                    if (!ctype_digit($value) or ($value = intval($value)) < 1) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$value' => 'int<1, max>',
+                ],
+            ],
+            'orWhoseRightSideReassignsWhatTheLeftOneTestedKeepsTheAssignedType' => [
+                'code' => '<?php
+                    /** @var string $value */
+                    $value = "5";
+
+                    if (!ctype_digit($value) || ($value = intval($value)) < 1) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$value' => 'int<1, max>',
+                ],
+            ],
             'orWhoseBothSidesAssignTheSameVariableKeepsWhatTheLeftOneTested' => [
                 'code' => '<?php
                     class A {}
@@ -40,53 +89,30 @@ final class ConditionalTest extends TestCase
                     '$b' => 'A',
                 ],
             ],
-            'orWhoseRightSideReassignsWhatTheLeftOneTestedKeepsTheAssignedType' => [
+            'orredClausesOfOneVariableAreAllKept' => [
                 'code' => '<?php
-                    /** @var string $value */
-                    $value = "5";
+                    interface I1 {}
+                    interface I2 {}
 
-                    if (!ctype_digit($value) || ($value = intval($value)) < 1) {
-                        throw new Exception();
+                    /** @param mixed $d */
+                    function f($d): string {
+                        if (!is_array($d) && (!$d instanceof I1 || !$d instanceof I2)) {
+                            throw new Exception("array or I1&I2");
+                        }
+
+                        return is_array($d) ? "array" : get_class($d);
+                    }
+
+                    /** @var mixed $x */
+                    $x = null;
+
+                    if (is_string($x) || ($x instanceof I1 && $x instanceof I2)) {
+                        $result = $x;
+                    } else {
+                        $result = "";
                     }',
                 'assertions' => [
-                    '$value' => 'int<1, max>',
-                ],
-            ],
-            'logicalOrWhoseRightSideReassignsWhatTheLeftOneTestedKeepsTheAssignedType' => [
-                'code' => '<?php
-                    /** @var string $value */
-                    $value = "5";
-
-                    if (!ctype_digit($value) or ($value = intval($value)) < 1) {
-                        throw new Exception();
-                    }',
-                'assertions' => [
-                    '$value' => 'int<1, max>',
-                ],
-            ],
-            'orWhoseRightSideReassignsAnArrayTheLeftOneTestedAKeyOfKeepsTheAssignedType' => [
-                'code' => '<?php
-                    /** @var array{k?: int} $arr */
-                    $arr = [];
-
-                    if (!isset($arr["k"]) || count($arr = ["z" => "q"]) > 1) {
-                        throw new Exception();
-                    }',
-                'assertions' => [
-                    '$arr' => 'array{z: string}',
-                ],
-            ],
-            'orWhoseRightSideAssignsAnotherVariableKeepsWhatTheLeftOneTested' => [
-                'code' => '<?php
-                    /** @var string|null $s */
-                    $s = null;
-
-                    if ($s === null || ($n = strlen($s)) > 5) {
-                        throw new Exception();
-                    }',
-                'assertions' => [
-                    '$s' => 'string',
-                    '$n' => 'int<0, 5>',
+                    '$result' => 'I1&I2|string',
                 ],
             ],
             'nonStrictConditionOnMixedOrNull' => [
