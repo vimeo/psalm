@@ -21,53 +21,15 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'ternaryElseKnowsVarAssignedInOrCondition' => [
-                'code' => '<?php
-                    /** @return string[] */
-                    function getData(): array { return []; }
-                    function check(): bool { return true; }
-                    $r = (check() || !($data = getData())) ? 1 : $data;',
-                'assertions' => [
-                    '$r===' => '1|non-empty-array<array-key, string>',
-                ],
-            ],
-            'ternaryElseKnowsVarAssignedInLogicalOrCondition' => [
-                'code' => '<?php
-                    /** @return string[] */
-                    function getData(): array { return []; }
-                    function check(): bool { return true; }
-                    $r = (check() or !($data = getData())) ? 1 : $data;',
-                'assertions' => [
-                    '$r===' => '1|non-empty-array<array-key, string>',
-                ],
-            ],
-            'ternaryElseKnowsVarAssignedInLongOrCondition' => [
-                'code' => '<?php
-                    /** @return string[] */
-                    function getData(): array { return []; }
-                    function check(): bool { return true; }
-                    $r = (check() || check() || !($data = getData())) ? 1 : $data;',
-                'assertions' => [
-                    '$r===' => '1|non-empty-array<array-key, string>',
-                ],
-            ],
-            'ternaryElseKnowsVarAssignedAtStartOfOrCondition' => [
-                'code' => '<?php
-                    /** @return string[] */
-                    function getData(): array { return []; }
-                    function check(): bool { return true; }
-                    $r = (!($data = getData()) || check()) ? 1 : $data;',
-                'assertions' => [
-                    '$r===' => '1|non-empty-array<array-key, string>',
-                ],
-            ],
-            'ifElseKnowsVarAssignedInOrCondition' => [
+            'elseifElseKnowsVarAssignedInOrCondition' => [
                 'code' => '<?php
                     /** @return string[] */
                     function getData(): array { return []; }
                     function check(): bool { return true; }
                     if (check() || !($data = getData())) {
                         $r = 1;
+                    } elseif (check()) {
+                        $r = $data;
                     } else {
                         $r = $data;
                     }',
@@ -90,20 +52,84 @@ final class ConditionalTest extends TestCase
                     '$r===' => '1|2|non-empty-array<array-key, string>',
                 ],
             ],
-            'elseifElseKnowsVarAssignedInOrCondition' => [
+            'ifElseKnowsVarAssignedInOrCondition' => [
                 'code' => '<?php
                     /** @return string[] */
                     function getData(): array { return []; }
                     function check(): bool { return true; }
                     if (check() || !($data = getData())) {
                         $r = 1;
-                    } elseif (check()) {
-                        $r = $data;
                     } else {
                         $r = $data;
                     }',
                 'assertions' => [
                     '$r===' => '1|non-empty-array<array-key, string>',
+                ],
+            ],
+            'ternaryElseKnowsVarAssignedAtStartOfOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    $r = (!($data = getData()) || check()) ? 1 : $data;',
+                'assertions' => [
+                    '$r===' => '1|non-empty-array<array-key, string>',
+                ],
+            ],
+            'ternaryElseKnowsVarAssignedInLongOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    $r = (check() || check() || !($data = getData())) ? 1 : $data;',
+                'assertions' => [
+                    '$r===' => '1|non-empty-array<array-key, string>',
+                ],
+            ],
+            'ternaryElseKnowsVarAssignedInLogicalOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    $r = (check() or !($data = getData())) ? 1 : $data;',
+                'assertions' => [
+                    '$r===' => '1|non-empty-array<array-key, string>',
+                ],
+            ],
+            'ternaryElseKnowsVarAssignedInOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    $r = (check() || !($data = getData())) ? 1 : $data;',
+                'assertions' => [
+                    '$r===' => '1|non-empty-array<array-key, string>',
+                ],
+            ],
+            'orredClausesOfOneVariableAreAllKept' => [
+                'code' => '<?php
+                    interface I1 {}
+                    interface I2 {}
+
+                    /** @param mixed $d */
+                    function f($d): string {
+                        if (!is_array($d) && (!$d instanceof I1 || !$d instanceof I2)) {
+                            throw new Exception("array or I1&I2");
+                        }
+
+                        return is_array($d) ? "array" : get_class($d);
+                    }
+
+                    /** @var mixed $x */
+                    $x = null;
+
+                    if (is_string($x) || ($x instanceof I1 && $x instanceof I2)) {
+                        $result = $x;
+                    } else {
+                        $result = "";
+                    }',
+                'assertions' => [
+                    '$result' => 'I1&I2|string',
                 ],
             ],
             'nonStrictConditionOnMixedOrNull' => [
@@ -3549,6 +3575,30 @@ final class ConditionalTest extends TestCase
                     '$inside' => 'Countable|null',
                     '$after' => 'Countable|string',
                 ],
+            ],
+            'isArrayOrNegatedIssetGuardNarrowsAfterReturn' => [
+                'code' => '<?php
+                    function f(string|int|array $t, array $map): string {
+                        if (is_array($t) || !isset($map[(string) $t])) {
+                            return "";
+                        }
+
+                        return (string) $t;
+                    }
+
+                    /** @var string|int|array $t */
+                    $t = $_GET["t"];
+                    /** @var array $map */
+                    $map = [];
+                    if (is_array($t) || !isset($map[(string) $t])) {
+                        return;
+                    }
+                    $s = $t;',
+                'assertions' => [
+                    '$s' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
