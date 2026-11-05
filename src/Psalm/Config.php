@@ -1226,7 +1226,10 @@ final class Config
             && version_compare((string) phpversion('zstd'), '0.15.0', '>=');
         $has_zlib = function_exists('gzinflate') && function_exists('gzdeflate');
         $automatic = $has_zstd ? 'zstd' : ($has_zlib ? 'deflate' : 'off');
-        $requested = isset($config_xml['compressor']) ? (string) $config_xml['compressor'] : $automatic;
+        $requested = (string) ($config_xml['compressor'] ?? 'auto');
+        if ($requested === 'auto') {
+            $requested = $automatic;
+        }
         $missing = match ($requested) {
             'zstd' => $has_zstd ? null : 'ext-zstd 0.15.0 or later',
             'lz4' => function_exists('lz4_compress') && function_exists('lz4_uncompress') ? null : 'ext-lz4',

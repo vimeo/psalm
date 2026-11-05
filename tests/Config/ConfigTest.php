@@ -2835,9 +2835,21 @@ final class ConfigTest extends TestCase
     {
         $default = Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm/>');
         $requested = Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm compressor="zstd"/>');
+        $auto = Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm compressor="auto"/>');
 
         $this->assertSame('zstd', $default->compressor);
+        $this->assertSame('zstd', $auto->compressor);
         $this->assertSame('zstd', $requested->compressor);
         $this->assertSame([], $requested->config_warnings);
+    }
+
+    public function testAutoCompressorResolvesLikeAnAbsentAttributeWithoutAWarning(): void
+    {
+        $absent = Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm/>');
+        $auto = Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm compressor="auto"/>');
+
+        $this->assertSame($absent->compressor, $auto->compressor);
+        $this->assertSame($absent->config_warnings, $auto->config_warnings);
+        $this->assertContains($auto->compressor, ['zstd', 'deflate', 'off']);
     }
 }

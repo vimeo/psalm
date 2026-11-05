@@ -590,16 +590,17 @@ Defaults to `false`.
   serializer="['igbinary'|'default']"
 >
 ```
-Allows you to hard-code a serializer for Psalm to use when caching data. By default, Psalm uses `ext-igbinary` *if* the version is greater than or equal to 2.0.5, otherwise it defaults to PHP's built-in serializer.
+Allows you to hard-code a serializer for Psalm to use when caching data. By default, Psalm uses `ext-igbinary` *if* the version is greater than or equal to 2.0.5, otherwise it defaults to PHP's built-in serializer. The value `default` means PHP's built-in serializer, not the automatic choice.
 
 #### compressor
 ```xml
 <psalm
-  compressor="['zstd'|'lz4'|'deflate'|'off']"
+  compressor="['auto'|'zstd'|'lz4'|'deflate'|'off']"
 >
 ```
-Allows you to hard-code a compressor for Psalm's cache. By default, Psalm uses `ext-zstd` (version 0.15.0 or later) if it's enabled, otherwise `ext-zlib` deflate if it's enabled, otherwise no compression.
-If the extension of the compressor you ask for is missing, Psalm warns and uses that default.
+Allows you to hard-code a compressor for Psalm's cache. The default is `auto`: `ext-zstd` (version 0.15.0 or later) if it's enabled, otherwise `ext-zlib` deflate if it's enabled, otherwise no compression.
+If the extension of the compressor you ask for is missing, Psalm warns and uses `auto`.
+Caches are stored per compressor, so to restore a cache built on another machine (for example on CI), set the compressor explicitly.
 
 #### threads
 ```xml

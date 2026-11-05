@@ -36,7 +36,7 @@
         <xs:attribute name="name" type="xs:string" />
         <xs:attribute name="phpVersion" type="xs:string" />
         <xs:attribute name="serializer" type="SerializerType" />
-        <xs:attribute name="compressor" type="CompressorType" />
+        <xs:attribute name="compressor" type="CompressorType" default="auto" />
 
         <xs:attribute name="addParamDefaultToDocblockType" type="xs:boolean" default="false" />
         <xs:attribute name="allowFileIncludes" type="xs:boolean" default="true" />
@@ -786,6 +786,7 @@
 
     <xs:simpleType name="CompressorType">
         <xs:restriction base="xs:string">
+            <xs:enumeration value="auto"/>
             <xs:enumeration value="zstd"/>
             <xs:enumeration value="lz4"/>
             <xs:enumeration value="deflate"/>
