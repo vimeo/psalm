@@ -2792,6 +2792,16 @@ final class UnusedVariableTest extends TestCase
                     echo $a;',
                 'error_message' => 'UnusedVariable',
             ],
+            'keyOfAnItemPassedByReferenceToASortFunctionIsIncrementedOnce' => [
+                'code' => '<?php
+                    /** @param array<int, mixed> $a */
+                    function f(array $a): void {
+                        $i = 0;
+                        asort($a[$i++]);
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:34',
+                'error_levels' => ['MixedArgument'],
+            ],
             'unusedVarWithAdditionOp' => [
                 'code' => '<?php
                     $a = 5;
