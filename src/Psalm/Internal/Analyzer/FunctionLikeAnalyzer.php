@@ -720,11 +720,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         if (!$this->function instanceof VirtualNode
-            && ($this->function instanceof Function_
-                || $this->function instanceof ClassMethod
-                || $this->function instanceof Closure
-                || $this->function instanceof ArrowFunction
-            )
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
