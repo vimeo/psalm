@@ -7,6 +7,7 @@ namespace Psalm\Internal\Provider\AddRemoveTaints;
 use Override;
 use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\Functions;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 use Psalm\Type\TaintKind;
@@ -79,7 +80,10 @@ final class JsonEncodeTainter implements RemoveTaintsInterface
 
         $function_id = strtolower($name instanceof PhpParser\Node\Name\FullyQualified
             ? $name->toString()
-            : $functions->getFullyQualifiedFunctionNameFromString($name->toString(), $statements_analyzer));
+            : Functions::getFullyQualifiedFunctionNameFromString(
+                $name->toString(),
+                $statements_analyzer->getAliases(),
+            ));
 
         if ($function_id === 'json_encode') {
             return true;
