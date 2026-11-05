@@ -16,12 +16,9 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
-use Psalm\Type\Atomic\TLiteralFloat;
-use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
-use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
@@ -40,24 +37,28 @@ final class EncapsulatedStringAnalyzer
         Context $context,
     ): bool {
         $parent_nodes = [];
-
         $non_empty = false;
-
         $all_literals = true;
-
         $literal_string = "";
+        $impossible = false;
 
         foreach ($stmt->parts as $part) {
             if ($part instanceof Expr) {
+                $was_inside_general_use = $context->inside_general_use;
+                $context->inside_general_use = true;
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $part, $context) === false) {
+                    $context->inside_general_use = $was_inside_general_use;
                     return false;
                 }
+
+                $context->inside_general_use = $was_inside_general_use;
             }
 
             if ($part instanceof InterpolatedStringPart) {
                 if ($literal_string !== null) {
                     $literal_string .= $part->value;
                 }
+
                 $non_empty = $non_empty || $part->value !== "";
             } elseif ($part_type = $statements_analyzer->node_data->getType($part)) {
                 $casted_part_type = CastAnalyzer::castStringAttempt(
@@ -67,30 +68,65 @@ final class EncapsulatedStringAnalyzer
                     $part,
                 );
 
-                if (!$casted_part_type->allLiterals()) {
-                    $all_literals = false;
-                } elseif (!$non_empty) {
-                    // Check if all literals are nonempty
-                    $non_empty = true;
-                    foreach ($casted_part_type->getAtomicTypes() as $atomic_literal) {
-                        if (!$atomic_literal instanceof TLiteralInt
-                            && !$atomic_literal instanceof TNonspecificLiteralInt
-                            && !$atomic_literal instanceof TLiteralFloat
-                            && !$atomic_literal instanceof TNonEmptyNonspecificLiteralString
-                            && !($atomic_literal instanceof TLiteralString && $atomic_literal->value !== "")
-                        ) {
-                            $non_empty = false;
-                            break;
-                        }
-                    }
+                if ($casted_part_type->isNever()) {
+                    $impossible = true;
+
+                    continue;
                 }
 
-                if ($literal_string !== null) {
-                    if ($casted_part_type->isSingleLiteral()) {
-                        $literal_string .= $casted_part_type->getSingleLiteral()->value;
-                    } else {
-                        $literal_string = null;
+
+                $is_non_empty_part = true;
+                $part_is_all_literals = true;
+                $part_literal_string = null;
+                $could_specify_literals = true;
+                foreach ($casted_part_type->getAtomicTypes() as $casted_part_atomic) {
+                    if (!$casted_part_atomic instanceof TString) {
+                        $part_is_all_literals = false;
+                        $could_specify_literals = false;
+                        continue;
                     }
+
+                    if (!$casted_part_atomic instanceof TNonEmptyString
+                        && !$casted_part_atomic instanceof TNonEmptyNonspecificLiteralString
+                        && !($casted_part_atomic instanceof TLiteralString && $casted_part_atomic->value !== '')
+                    ) {
+                        $is_non_empty_part = false;
+                    }
+
+                    if (!$part_is_all_literals || !$could_specify_literals) {
+                        continue;
+                    }
+
+                    if ($casted_part_atomic instanceof TLiteralString) {
+                        if ($part_literal_string === null) {
+                            $part_literal_string = $casted_part_atomic->value;
+                        } elseif ($part_literal_string !== $casted_part_atomic->value) {
+                            $part_literal_string = null;
+                            $could_specify_literals = false;
+                        }
+
+                        continue;
+                    }
+
+                    if ($casted_part_atomic instanceof TNonspecificLiteralString) {
+                        $literal_string = null;
+                        $part_literal_string = null;
+                        $could_specify_literals = false;
+
+                        continue;
+                    }
+
+                    $part_is_all_literals = false;
+                }
+
+                $non_empty = $non_empty || $is_non_empty_part;
+                $all_literals = $all_literals && $part_is_all_literals;
+                if (!$part_is_all_literals || !$could_specify_literals) {
+                    $literal_string = null;
+                } elseif ($part_literal_string !== null && $literal_string !== null) {
+                    $literal_string .= $part_literal_string;
+                } else {
+                    $literal_string = null;
                 }
 
                 if ($statements_analyzer->data_flow_graph
@@ -134,36 +170,26 @@ final class EncapsulatedStringAnalyzer
             }
         }
 
-        if ($non_empty) {
-            if ($literal_string !== null) {
-                $stmt_type = new Union(
-                    [Type::getAtomicStringFromLiteral($literal_string)],
-                    ['parent_nodes' => $parent_nodes],
-                );
-            } elseif ($all_literals) {
-                $stmt_type = new Union(
-                    [new TNonEmptyNonspecificLiteralString()],
-                    ['parent_nodes' => $parent_nodes],
-                );
-            } else {
-                $stmt_type = new Union(
-                    [new TNonEmptyString()],
-                    ['parent_nodes' => $parent_nodes],
-                );
-            }
+        if ($impossible) {
+            $resulting_string = new Type\Atomic\TNever();
+        } elseif ($literal_string !== null) {
+            $resulting_string = Type::getAtomicStringFromLiteral($literal_string);
+        } elseif ($non_empty && $all_literals) {
+            $resulting_string = new TNonEmptyNonspecificLiteralString();
+        } elseif ($non_empty) {
+            $resulting_string = new TNonEmptyString();
         } elseif ($all_literals) {
-            $stmt_type = new Union(
-                [new TNonspecificLiteralString()],
-                ['parent_nodes' => $parent_nodes],
-            );
+            $resulting_string = new TNonspecificLiteralString();
         } else {
-            $stmt_type = new Union(
-                [new TString()],
-                ['parent_nodes' => $parent_nodes],
-            );
+            $resulting_string = new TString();
         }
 
-        $statements_analyzer->node_data->setType($stmt, $stmt_type);
+        $resulting_type = new Union(
+            [$resulting_string],
+            ['parent_nodes' => $parent_nodes],
+        );
+
+        $statements_analyzer->node_data->setType($stmt, $resulting_type);
 
         return true;
     }
