@@ -28,6 +28,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
@@ -1207,7 +1208,8 @@ final class ArrayFetchAnalyzer
                                 $good_types[] = new TLiteralInt(0);
                                 $good_types[] = new TLiteralInt(1);
                             } elseif ($atomic_key_type instanceof TLiteralFloat) {
-                                $good_types[] = new TLiteralInt((int)$atomic_key_type->value);
+                                $int = LiteralCast::toInt($atomic_key_type->value);
+                                $good_types[] = $int === null ? new TInt : new TLiteralInt($int);
                             } elseif ($atomic_key_type instanceof TFloat) {
                                 $good_types[] = new TInt;
                             } else {
@@ -1630,7 +1632,7 @@ final class ArrayFetchAnalyzer
         if ($in_assignment) {
             if ($type->isEmptyArray()) {
                 $type = $type->setTypeParams([
-                    $offset_type->isMixed()
+                    $offset_type->hasMixed()
                         ? Type::getArrayKey()
                         : $offset_type->freeze(),
                     $type->type_params[1],
@@ -2079,7 +2081,7 @@ final class ArrayFetchAnalyzer
 
                     $new_key_type = Type::combineUnionTypes(
                         $generic_key_type,
-                        $offset_type->isMixed() ? Type::getArrayKey() : $offset_type->freeze(),
+                        $offset_type->hasMixed() ? Type::getArrayKey() : $offset_type->freeze(),
                     );
 
                     if (!$stmt->dim) {
