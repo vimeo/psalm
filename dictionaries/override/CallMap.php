@@ -5706,7 +5706,7 @@ return array (
   'datetimeinterface::diff' => 
   array (
     0 => 'DateInterval',
-    'datetime2' => 'DateTimeInterface',
+    'targetObject' => 'DateTimeInterface',
     'absolute=' => 'bool',
   ),
   'datetimeinterface::format' => 
