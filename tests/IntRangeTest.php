@@ -1034,6 +1034,327 @@ final class IntRangeTest extends TestCase
                     '$z' => 'int<min, 9223372036854775807>|null',
                 ],
             ],
+            'intRangeInGenericWidensToInt' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array-key
+                     */
+                    class Box {
+                        /** @var T */
+                        private $value;
+                        /** @param T $value */
+                        public function __construct($value) { $this->value = $value; }
+                        /** @return T */
+                        public function get() { return $this->value; }
+                    }
+
+                    /** @return Box<int> */
+                    function makeBox(): Box {
+                        /** @var Box<int<0, 5>> */
+                        $box = new Box(3);
+                        return $box;
+                    }',
+            ],
+            'intRangeNegativeInGenericWidensToInt' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array-key
+                     */
+                    class Box {
+                        /** @var T */
+                        private $value;
+                        /** @param T $value */
+                        public function __construct($value) { $this->value = $value; }
+                        /** @return T */
+                        public function get() { return $this->value; }
+                    }
+
+                    /** @return Box<int> */
+                    function makeBox(): Box {
+                        /** @var Box<int<min, -1>> */
+                        $box = new Box(-5);
+                        return $box;
+                    }',
+            ],
+            'positiveIntGreaterThan1IsNotRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @param positive-int $a
+                     */
+                    function scope(int $a): int{
+                        assert($a > 1);
+                        return $a;
+                    }',
+            ],
+            'boundedRangeGreaterThanMinIsNotRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @param int<5, 10> $a
+                     */
+                    function scope(int $a): int{
+                        assert($a > 5);
+                        return $a;
+                    }',
+            ],
+            'intRangeComparisonWithIntMinPlusOne' => [
+                'code' => '<?php
+                    /**
+                     * @param int<min, 0> $value
+                     */
+                    function foo(int $value): string {
+                        if ($value < -9223372036854775807) {
+                            return "impossible";
+                        }
+                        return "ok";
+                    }',
+            ],
+            'assertGreaterOrEqualNarrowsToIntRange' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, max> $min
+                     * @return int<0, max>
+                     */
+                    function f(int $min, int $max): int {
+                        assert($max >= $min);
+                        return $max;
+                    }',
+            ],
+            'assertGreaterThanNarrowsToIntRange' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, max> $min
+                     * @return int<1, max>
+                     */
+                    function f(int $min, int $max): int {
+                        assert($max > $min);
+                        return $max;
+                    }',
+            ],
+            'assertLessThanOrEqualNarrowsToIntRange' => [
+                'code' => '<?php
+                    /**
+                     * @param int<min, 10> $max
+                     * @return int<min, 10>
+                     */
+                    function f(int $min, int $max): int {
+                        assert($min <= $max);
+                        return $min;
+                    }',
+            ],
+            'intRangeBoundComparisonNarrowsBothOperands' => [
+                'code' => '<?php
+                    /**
+                     * @param int<5, max> $a
+                     * @param int<min, 20> $b
+                     */
+                    function f(int $a, int $b): void {
+                        if ($b >= $a) {
+                            /** @psalm-check-type-exact $a = int<5, 20> */;
+                            /** @psalm-check-type-exact $b = int<5, 20> */;
+                        }
+                    }',
+            ],
+            'intRangeBoundComparisonIsNotAppliedToElseBranch' => [
+                'code' => '<?php
+                    /**
+                     * @param int<5, max> $min
+                     */
+                    function f(int $min, int $max): void {
+                        if ($max >= $min) {
+                            return;
+                        }
+                        // $max = 100, $min = 200 ends up here
+                        if ($max > 10) {
+                            echo "possible";
+                        }
+                    }',
+            ],
+            'intRangeBoundComparisonUsesLowestBoundOfUnion' => [
+                'code' => '<?php
+                    /**
+                     * @param int<5, max>|int<-10, -1> $min
+                     */
+                    function f(int $min, int $max): void {
+                        if ($max >= $min) {
+                            /** @psalm-check-type-exact $max = int<-10, max> */;
+                        }
+                    }',
+            ],
+            'intRangeBoundComparisonIgnoresNonIntOperand' => [
+                'code' => '<?php
+                    /**
+                     * @param int<5, max>|null $min
+                     */
+                    function f(?int $min, int $max): void {
+                        if ($max >= $min) {
+                            // $max >= null is true for any int
+                            if ($max < 0) {
+                                echo "possible";
+                            }
+                        }
+                    }',
+            ],
+            'intRangeBoundComparisonImpliedAssertionIsNotRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, max> $a
+                     * @param int<1, max> $b
+                     */
+                    function f(int $a, int $b): void {
+                        // implies $b > 0, which is always true, but the condition itself is not
+                        if ($a < $b) {
+                            echo "possible";
+                        }
+                    }',
+            ],
+            'intRangeBoundComparisonKeepsNullOfOtherOperand' => [
+                'code' => '<?php
+                    /**
+                     * @param int<min, 0> $b
+                     */
+                    function f(?int $a, int $b): void {
+                        // null < -1 is true
+                        if ($a < $b) {
+                            /** @psalm-check-type-exact $a = int<min, -1>|null */;
+                        }
+                    }',
+            ],
+            'intRangeBoundComparisonIsNotATautologyWithComplement' => [
+                'code' => '<?php
+                    /**
+                     * @param int<5, max> $b
+                     */
+                    function f(int $a, int $b, bool $flag): void {
+                        if (($a >= $b || $a < 5) && $flag) {
+                            return;
+                        }
+                        // $a = 10, $b = 20, $flag = true ends up here
+                        if ($flag) {
+                            echo "reachable";
+                        }
+                    }',
+            ],
+            'intRangeBoundComparisonHasNoComplementInOrClause' => [
+                'code' => '<?php
+                    /**
+                     * @param int<5, max> $b
+                     * @param int<0, max> $c
+                     */
+                    function f(int $a, int $b, int $c, bool $flag): void {
+                        if (($a >= $b) && (($a >= $c) === false || $flag)) {
+                            // $a = 10, $b = 5, $c = 20, $flag = false ends up here
+                            if ($flag) {
+                                echo "possible";
+                            }
+                        }
+                    }',
+            ],
+            'intRangeBoundComparisonIgnoresOperandsThatWriteVariables' => [
+                'code' => '<?php
+                    /**
+                     * @param int<10, 20> $hi
+                     * @param int<5, 10> $lo
+                     */
+                    function f(int $hi, int $lo): void {
+                        // $hi = 10, $lo = 5 ends up here with $a = 5
+                        if (($a = $hi) > ($a = $lo)) {
+                            if ($a === 5) {
+                                echo "reachable";
+                            }
+                        }
+                    }',
+            ],
+            'intRangeBoundComparisonIgnoresOperandsWithByRefCalls' => [
+                'code' => '<?php
+                    /** @return int<5, 10> */
+                    function change(int &$n): int {
+                        $n = -100;
+                        return 5;
+                    }
+
+                    function f(int $a): void {
+                        $xs = [$a];
+                        // f(20) ends up here with $xs[0] = -100
+                        if ($xs[0] > change($xs[0])) {
+                            if ($xs[0] < 0) {
+                                echo "reachable";
+                            }
+                        }
+                    }',
+            ],
+            'intRangeBoundComparisonIgnoresMagicProperties' => [
+                'code' => '<?php
+                    /**
+                     * @property-read int<5, 10> $magic
+                     */
+                    final class C {
+                        public int $value = 20;
+
+                        public function __get(string $name): int {
+                            $this->value = -100;
+                            return 5;
+                        }
+                    }
+
+                    function f(C $c): void {
+                        // reading $c->magic sets $c->value to -100
+                        if ($c->value > $c->magic) {
+                            if ($c->value < 0) {
+                                echo "reachable";
+                            }
+                        }
+                    }',
+            ],
+            'intRangeBoundComparisonUsesHighestBoundOfUnion' => [
+                'code' => '<?php
+                    /**
+                     * @param int<min, -5>|int<1, 10> $b
+                     */
+                    function f(int $a, int $b): void {
+                        if ($a <= $b) {
+                            /** @psalm-check-type-exact $a = int<min, 10> */;
+                        }
+                    }',
+            ],
+            'intRangeUnionInGenericWidensToDeclaredParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /** @param Box<int|bool> $box */
+                    function takesBox(Box $box): void {}
+
+                    /** @param Box<int<0, 5>|int<10, 20>|bool> $box */
+                    function f(Box $box): void {
+                        takesBox($box);
+                        /** @psalm-check-type-exact $box = Box<bool|int> */;
+                    }',
+            ],
+            'literalLeftOperandNarrowsIntRangeRightOperand' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, max> $x
+                     */
+                    function f(int $x): void {
+                        if (5 >= $x) {
+                            /** @psalm-check-type-exact $x = int<0, 5> */;
+                        }
+                    }',
+            ],
+            'intRangeComparisonNearIntMinKeepsNull' => [
+                'code' => '<?php
+                    function f(?int $value): void {
+                        // null < PHP_INT_MIN is true
+                        if ($value < -9223372036854775807 - 1) {
+                            /** @psalm-check-type-exact $value = null */;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -1041,6 +1362,151 @@ final class IntRangeTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'intRangeInGenericIsNotWidenedForFixedInheritedParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /** @extends Box<int<0, 5>> */
+                    final class SmallBox extends Box {}
+
+                    /** @param Box<int> $box */
+                    function takesBox(Box $box): void {}
+
+                    function f(SmallBox $box): void {
+                        takesBox($box);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'intRangeInGenericKeepsInvarianceThroughInheritance' => [
+                'code' => '<?php
+                    /**
+                     * @template X
+                     * @template Y
+                     */
+                    class Pair {
+                        /**
+                         * @param X $x
+                         * @param Y $y
+                         */
+                        public function __construct(public mixed $x, public mixed $y) {}
+                    }
+
+                    /**
+                     * @template X
+                     * @template Y
+                     * @extends Pair<Y, X>
+                     */
+                    final class Flipped extends Pair {}
+
+                    /** @param Pair<int, string> $pair */
+                    function takesPair(Pair $pair): void {}
+
+                    /** @param Flipped<string, int<0, 5>> $flipped */
+                    function f(Flipped $flipped): void {
+                        takesPair($flipped);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'intRangeInGenericWidensArgumentAfterCall' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /** @param Box<int> $box */
+                    function setNegative(Box $box): void {
+                        $box->value = -100;
+                    }
+
+                    /**
+                     * @param Box<int<0, 5>> $box
+                     * @return int<0, 5>
+                     */
+                    function f(Box $box): int {
+                        setNegative($box);
+                        return $box->value;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'intRangeComparisonBelowIntMinIsContradiction' => [
+                'code' => '<?php
+                    /**
+                     * @param int<min, 0> $value
+                     */
+                    function foo(int $value): string {
+                        if ($value < -9223372036854775807 - 1) {
+                            return "impossible";
+                        }
+                        return "ok";
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'intRangeInGenericKeepsInvarianceOfOtherMembers' => [
+                'code' => '<?php
+                    class Animal {}
+                    class Dog extends Animal {}
+
+                    /**
+                     * @template T
+                     */
+                    class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /** @param Box<Animal|int<0, 5>> $box */
+                    function takesBox(Box $box): void {}
+
+                    /** @param Box<Dog|int<0, 5>> $box */
+                    function f(Box $box): void {
+                        takesBox($box);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'intRangeBoundComparisonImpossible' => [
+                'code' => '<?php
+                    /**
+                     * @param int<5, max> $a
+                     * @param int<min, 3> $b
+                     */
+                    function f(int $a, int $b): void {
+                        if ($b >= $a) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'intRangeComparisonNearIntMaxRemovesNull' => [
+                'code' => '<?php
+                    function f(?int $value): void {
+                        if ($value > 9223372036854775807) {
+                            echo "impossible";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'intRangeComparisonNearIntMaxIsContradiction' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, max> $value
+                     */
+                    function foo(int $value): void {
+                        if ($value > 9223372036854775807) {
+                            echo "impossible";
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'intRangeNotContained' => [
                 'code' => '<?php
                     /**
@@ -1062,6 +1528,36 @@ final class IntRangeTest extends TestCase
                         assert($a === 0);
                     }',
                 'error_message' => 'DocblockTypeContradiction',
+            ],
+            'positiveIntGreaterThanZeroIsRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @param positive-int $a
+                     */
+                    function scope(int $a): void{
+                        assert($a > 0);
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'negativeIntLessThanZeroIsRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @param negative-int $a
+                     */
+                    function scope(int $a): void{
+                        assert($a < 0);
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'boundedRangeGreaterThanBelowMinIsRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @param int<5, 10> $a
+                     */
+                    function scope(int $a): void{
+                        assert($a > 4);
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
             ],
             'assertRedundantInferior' => [
                 'code' => '<?php
