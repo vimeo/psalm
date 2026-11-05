@@ -41,7 +41,7 @@ All issue types needs to be listed in `config.xsd`, which is used to validate `p
 
 ## Add a doc page for your new issue
 
-Every issue needs to be documented. Create a markdown file in `docs/running_psalm/issues` folder. Make sure to include a snippet of code illustrating your issue. Important: snippets must use fenced php code block and must include opening PHP tag (`<?php`). The snippet must actually produce the issue you're documenting. It's checked by our test suite.
+Every issue needs to be documented. Create a markdown file in `docs/running_psalm/issues` folder. Make sure to include a snippet of code illustrating your issue. Important: only the first fenced `php` code block of the page is tested, and it must start with the opening PHP tag (`<?php`), otherwise it is treated as inline HTML and raises no issue. The snippet must actually produce the issue you're documenting. It's checked by our test suite.
 
 ## Add links to the doc page
 
