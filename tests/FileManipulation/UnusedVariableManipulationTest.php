@@ -709,6 +709,139 @@ final class UnusedVariableManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['UnusedVariable'],
                 'safe_types' => true,
             ],
+            'dontRemovePipeCall' => [
+                'input' => '<?php
+                    function foo(string $x, Closure $f): void {
+                        $a = $x |> $f;
+                    }',
+                'output' => '<?php
+                    function foo(string $x, Closure $f): void {
+                        $x |> $f;
+                    }',
+                'php_version' => '8.5',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'dontRemovePipeWithImpureOperand' => [
+                'input' => '<?php
+                    function sideEffect(): string { echo "side effect"; return "b"; }
+
+                    final class K {
+                        public string $x = "a";
+
+                        public function run(): void {
+                            $unused = $this->x |> str_replace("a", sideEffect(), ?);
+                        }
+                    }',
+                'output' => '<?php
+                    function sideEffect(): string { echo "side effect"; return "b"; }
+
+                    final class K {
+                        public string $x = "a";
+
+                        public function run(): void {
+                            $this->x |> str_replace("a", sideEffect(), ?);
+                        }
+                    }',
+                'php_version' => '8.6',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'keepSideEffectAfterPropertyFetch' => [
+                'input' => '<?php
+                    function sideEffect(): string { echo "SIDE EFFECT"; return "b"; }
+
+                    final class K {
+                        public string $x = "a";
+
+                        public function run(): void {
+                            $a = str_replace($this->x, sideEffect(), "a");
+                        }
+                    }',
+                'output' => '<?php
+                    function sideEffect(): string { echo "SIDE EFFECT"; return "b"; }
+
+                    final class K {
+                        public string $x = "a";
+
+                        public function run(): void {
+                            str_replace($this->x, sideEffect(), "a");
+                        }
+                    }',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'keepSideEffectInsidePropertyFetchObject' => [
+                'input' => '<?php
+                    final class O {
+                        public string $x = "a";
+                    }
+
+                    function getObj(): O { echo "SIDE EFFECT"; return new O(); }
+
+                    function foo(): void {
+                        $a = getObj()->x;
+                    }',
+                'output' => '<?php
+                    final class O {
+                        public string $x = "a";
+                    }
+
+                    function getObj(): O { echo "SIDE EFFECT"; return new O(); }
+
+                    function foo(): void {
+                        getObj()->x;
+                    }',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'keepSideEffectAfterStaticPropertyFetch' => [
+                'input' => '<?php
+                    function sideEffect(): string { echo "SIDE EFFECT"; return "b"; }
+
+                    final class K {
+                        public static string $x = "a";
+
+                        public function run(): void {
+                            $a = str_replace(self::$x, sideEffect(), "a");
+                        }
+                    }',
+                'output' => '<?php
+                    function sideEffect(): string { echo "SIDE EFFECT"; return "b"; }
+
+                    final class K {
+                        public static string $x = "a";
+
+                        public function run(): void {
+                            str_replace(self::$x, sideEffect(), "a");
+                        }
+                    }',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'removeUnusedPropertyFetchOnly' => [
+                'input' => '<?php
+                    final class K {
+                        public string $x = "a";
+
+                        public function run(): void {
+                            $a = $this->x;
+                        }
+                    }',
+                'output' => '<?php
+                    final class K {
+                        public string $x = "a";
+
+                        public function run(): void {
+                        }
+                    }',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
         ];
     }
 }
