@@ -18,6 +18,105 @@ final class ConditionalReturnTypeTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'overlappingIterableConditional' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param iterable<mixed, mixed> $i
+                     * @return ($i is list ? 'list' : 'iter')
+                     */
+                    function describe(iterable $i) {
+                        return is_array($i) && array_is_list($i) ? 'list' : 'iter';
+                    }
+                    /** @return list<int>|iterable<mixed, mixed> */
+                    function source(): iterable { return []; }
+                    $value = describe(source());
+                    PHP,
+                'assertions' => ['$value===' => "'iter'|'list'"],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'incompatibleIterableConditional' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param iterable<string, string> $i
+                     * @return ($i is list<int>|Traversable<int, int> ? 'yes' : 'no')
+                     */
+                    function describe(iterable $i) { return 'no'; }
+                    /** @return iterable<string, string> */
+                    function source(): iterable { return []; }
+                    $value = describe(source());
+                    PHP,
+                'assertions' => ['$value===' => "'no'"],
+            ],
+            'overlapAlongsideFalseCandidate' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param T $i
+                     * @return (T is list ? 'list' : 'iter')
+                     */
+                    function describe($i) { return is_array($i) && array_is_list($i) ? 'list' : 'iter'; }
+                    /** @return string|iterable<mixed, mixed> */
+                    function source() { return []; }
+                    $value = describe(source());
+                    PHP,
+                'assertions' => ['$value===' => "'iter'|'list'"],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'overlapRefinesTemplateBranch' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param T $i
+                     * @return (T is list ? T : null)
+                     */
+                    function describe($i) { return is_array($i) && array_is_list($i) ? $i : null; }
+                    /** @return list<int>|iterable<mixed, mixed> */
+                    function source() { return []; }
+                    $value = describe(source());
+                    PHP,
+                'assertions' => ['$value===' => "list<mixed>|null"],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'unknownTraversableConditionalKeepsBothBranches' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is iterable<int, int> ? 'yes' : 'no')
+                     */
+                    function describe($value) { throw new Exception(); }
+                    /** @return Traversable */
+                    function source(): Traversable { return new ArrayIterator([]); }
+                    $value = describe(source());
+                    PHP,
+                'assertions' => ['$value===' => "'no'|'yes'"],
+            ],
+            'iterableIntersectionFitsUnion' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<int, int>|(Traversable<int, int>&Countable) $value */
+                    function accept($value): void {}
+                    /** @param iterable<int, int>&Countable $value */
+                    function test(iterable $value): void { accept($value); }
+                    PHP,
+            ],
+            'iterableObjectIntersectionFitsTraversable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param Traversable<int, int>&Countable $value */
+                    function accept($value): void {}
+                    /** @param iterable<int, int>&Countable $value */
+                    function test(iterable $value): void { accept($value); }
+                    PHP,
+            ],
             'conditionalReturnTypeSimple' => [
                 'code' => '<?php
 
@@ -1136,6 +1235,46 @@ final class ConditionalReturnTypeTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'incompatibleIterableArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int>|Traversable<int, int> $x */
+                    function accept($x): void {}
+                    /** @param iterable<string, string> $i */
+                    function test(iterable $i): void { accept($i); }
+                    PHP,
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'nestedTraversableArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<int, Traversable>|int $x */
+                    function accept($x): void {}
+                    /** @param iterable<string, string> $i */
+                    function test(iterable $i): void { accept($i); }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+            ],
+            'iterableIntersectionPreservesConstraint' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<int, int>|(Traversable<int, int>&Iterator) $value */
+                    function accept($value): void {}
+                    /** @param iterable<int, int>&Countable $value */
+                    function test(iterable $value): void { accept($value); }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+            ],
+            'iterableIntersectionPreservesGenerics' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, string>|Traversable<string, string> $value */
+                    function accept($value): void {}
+                    /** @param iterable<int, int>&Countable $value */
+                    function test(iterable $value): void { accept($value); }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+            ],
             'conditionalReturnTypeWithoutIsTypeIsReportedInsteadOfCrashing' => [
                 'code' => '<?php
                     /**

@@ -1315,7 +1315,7 @@ class Reconciler
         }
     }
 
-    protected static function refineArrayKey(Union $key_type): Union
+    public static function refineArrayKey(Union $key_type): Union
     {
         return self::refineArrayKeyInner($key_type) ?? $key_type;
     }
