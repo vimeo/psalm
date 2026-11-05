@@ -1347,6 +1347,49 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$d' => 'list<int>',
                 ],
             ],
+            'staticPseudoMethodAnalyzesNarrowingArgumentOnce' => [
+                'code' => '<?php
+                    /** @method static int foo(DateTimeImmutable $x) */
+                    final class StatPseudo
+                    {
+                        public static function __callStatic(string $name, array $arguments): mixed
+                        {
+                            return 1;
+                        }
+                    }
+
+                    function f(?DateTimeImmutable $d): void
+                    {
+                        StatPseudo::foo($d ?? throw new LogicException());
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticCallOnUnionOfMagicAndRealClassAnalyzesNarrowingArgumentOnce' => [
+                'code' => '<?php
+                    final class Real
+                    {
+                        public static function foo(?DateTimeImmutable $d): void {}
+                    }
+
+                    /** @psalm-no-seal-methods */
+                    final class Magic
+                    {
+                        public static function __callStatic(string $name, array $arguments): mixed
+                        {
+                            return 1;
+                        }
+                    }
+
+                    function f(Magic|Real $o, ?DateTimeImmutable $d): void
+                    {
+                        $o::foo($d ?? throw new LogicException());
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
