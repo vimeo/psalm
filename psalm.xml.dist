@@ -13,6 +13,7 @@
     errorBaseline="psalm-baseline.xml"
     allFunctionsGlobal="true"
     ensureOverrideAttribute="true"
+    suggestPurityAnnotations="true"
     allConstantsGlobal="true"
     runTaintAnalysis="true"
     findUnusedPsalmSuppress="true"
