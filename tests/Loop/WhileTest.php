@@ -21,6 +21,36 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedInTheConditionIsDefinedAfterTheLoop' => [
+                'code' => '<?php
+                    $result = 1;
+                    while ($result = random_int(0, 6)) {
+                        echo "again";
+                    }
+                    /** @psalm-check-type-exact $result = 0 */;
+
+                    $fresh = 1;
+                    unset($fresh);
+                    while ($next = random_int(0, 6)) {
+                        echo "again";
+                    }
+                    /** @psalm-check-type-exact $next = 0 */;
+
+                    while (6 !== $dice = random_int(1, 6)) {
+                        echo "again";
+                    }
+                    echo $dice;
+
+                    for (; 6 !== $roll = random_int(1, 6);) {
+                        echo "again";
+                    }
+                    echo $roll;
+
+                    while (($first = random_int(0, 3)) && random_int(0, 1)) {
+                        echo "again";
+                    }
+                    echo $first;',
+            ],
             'variableAssignedLaterInTheBodyHoldsWhatThePreviousIterationLeft' => [
                 'code' => '<?php
                     function f(): void {
@@ -731,6 +761,15 @@ final class WhileTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableAssignedOnlyInTheSkippableOperandOfTheConditionIsPossiblyUndefined' => [
+                'code' => '<?php
+                    while (rand(0, 1) && ($value = rand())) {
+                        echo "again";
+                    }
+
+                    echo $value;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
             'whileTrueNoBreak' => [
                 'code' => '<?php
                     while (true) {

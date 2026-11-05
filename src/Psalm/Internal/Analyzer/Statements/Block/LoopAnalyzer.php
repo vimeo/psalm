@@ -487,6 +487,28 @@ final class LoopAnalyzer
             }
         }
 
+        // the condition is evaluated before the body, so a variable it always assigns holds that value, narrowed by
+        // the condition's falsiness, once the loop is left, whether or not the body ran
+        $condition_assigned_types = [];
+
+        if ($pre_conditions && !$is_do) {
+            foreach (self::getAssignmentsOfEveryEvaluation($pre_conditions[0]) as $var_id => $assignment) {
+                $assigned_type = $statements_analyzer->node_data->getType($assignment);
+
+                if ($assigned_type === null) {
+                    continue;
+                }
+
+                $condition_assigned_types[$var_id] = $assigned_type->addParentNodes(
+                    ($loop_context->vars_in_scope[$var_id] ?? $assigned_type)->parent_nodes,
+                );
+
+                if (!isset($loop_parent_context->vars_in_scope[$var_id])) {
+                    $loop_parent_context->vars_in_scope[$var_id] = $condition_assigned_types[$var_id];
+                }
+            }
+        }
+
         if ($pre_conditions && $pre_condition_clauses && !$does_sometimes_break) {
             // if the loop contains an assertion and there are no break statements, we can negate that assertion
             // and apply it to the current context
@@ -505,7 +527,7 @@ final class LoopAnalyzer
                 [$vars_in_scope_reconciled, $_] = Reconciler::reconcileKeyedTypes(
                     $negated_pre_condition_types,
                     [],
-                    $continue_context->vars_in_scope,
+                    [...$continue_context->vars_in_scope, ...$condition_assigned_types],
                     $continue_context->references_in_scope,
                     $changed_var_ids,
                     [],
@@ -861,6 +883,41 @@ final class LoopAnalyzer
         }
 
         return $always_assigned_before_loop_body_vars;
+    }
+
+    /**
+     * @return array<string, PhpParser\Node\Expr\Assign> the assignments to a variable that every evaluation makes
+     * @psalm-capabilities read-props
+     */
+    private static function getAssignmentsOfEveryEvaluation(PhpParser\Node\Expr $expr): array
+    {
+        if ($expr instanceof PhpParser\Node\Expr\Assign) {
+            return [
+                ...self::getAssignmentsOfEveryEvaluation($expr->expr),
+                ...$expr->var instanceof PhpParser\Node\Expr\Variable && is_string($expr->var->name)
+                    ? ['$' . $expr->var->name => $expr]
+                    : [],
+            ];
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\BinaryOp
+            && !$expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+            && !$expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            && !$expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+            && !$expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+            && !$expr instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
+        ) {
+            return [
+                ...self::getAssignmentsOfEveryEvaluation($expr->left),
+                ...self::getAssignmentsOfEveryEvaluation($expr->right),
+            ];
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\BooleanNot || $expr instanceof PhpParser\Node\Expr\Cast) {
+            return self::getAssignmentsOfEveryEvaluation($expr->expr);
+        }
+
+        return [];
     }
 
     /**
