@@ -18,6 +18,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
@@ -350,7 +351,9 @@ final class CastAnalyzer
 
         IssueBuffer::maybeAdd(
             new UnrecognizedExpression(
-                'Psalm does not understand the cast ' . $stmt::class,
+                $stmt instanceof PhpParser\Node\Expr\Cast\Unset_
+                    ? 'The (unset) cast was removed in PHP 8.0'
+                    : 'Psalm does not understand the cast ' . $stmt::class,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
             ),
             $statements_analyzer->getSuppressedIssues(),
@@ -394,10 +397,12 @@ final class CastAnalyzer
             }
 
             if ($atomic_type instanceof TFloat) {
-                if ($atomic_type instanceof TLiteralFloat) {
-                    $valid_ints[] = new TLiteralInt((int) $atomic_type->value);
-                } else {
+                $int = $atomic_type instanceof TLiteralFloat ? LiteralCast::toInt($atomic_type->value) : null;
+
+                if ($int === null) {
                     $castable_types[] = new TInt();
+                } else {
+                    $valid_ints[] = new TLiteralInt($int);
                 }
 
                 continue;
@@ -749,6 +754,7 @@ final class CastAnalyzer
         Union $stmt_type,
         PhpParser\Node\Expr $stmt,
         bool $explicit_cast = false,
+        bool $report_issues = true,
     ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -880,7 +886,7 @@ final class CastAnalyzer
             $invalid_casts[] = $atomic_type->getId();
         }
 
-        if ($invalid_casts) {
+        if ($invalid_casts && $report_issues) {
             if ($valid_strings || $castable_types) {
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidCast(
@@ -936,7 +942,7 @@ final class CastAnalyzer
             || $atomic_type instanceof TNumeric
         ) {
             if ($atomic_type instanceof TLiteralInt || $atomic_type instanceof TLiteralFloat) {
-                return [Type::getAtomicStringFromLiteral((string) $atomic_type->value)];
+                return [Type::getAtomicStringFromLiteral(LiteralCast::toString($atomic_type->value))];
             }
 
             if ($atomic_type instanceof TNonspecificLiteralInt) {

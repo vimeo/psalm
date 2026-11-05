@@ -360,11 +360,9 @@ final class TypeExpander
         }
 
         if ($return_type instanceof TTypeAlias) {
-            $declaring_fq_classlike_name = $return_type->declaring_fq_classlike_name;
-
-            if ($declaring_fq_classlike_name === 'self' && $self_class) {
-                $declaring_fq_classlike_name = $self_class;
-            }
+            $declaring_fq_classlike_name = $return_type->declaring_fq_classlike_name === 'self' && $self_class
+                ? $self_class
+                : $codebase->classlikes->getUnAliasedName($return_type->declaring_fq_classlike_name);
 
             if (!($evaluate_class_constants
                 && $codebase->classlikes->doesClassLikeExist(strtolower($declaring_fq_classlike_name))
@@ -557,13 +555,20 @@ final class TypeExpander
                 $type_params[0] = ArrayAnalyzer::castArrayKeyType($type_params[0]);
             }
 
-            // `Foo[pure]` for a class with type templates
+            // `Foo<A>` leaving out trailing templates with a default, `Foo[pure]` for a class with type templates
             if ($return_type instanceof TGenericObject
                 && $codebase->classlike_storage_provider->has($return_type->value)
             ) {
+                $class_storage = $codebase->classlike_storage_provider->get($return_type->value);
+
                 $type_params = PurityArguments::align(
-                    $type_params,
-                    $codebase->classlike_storage_provider->get($return_type->value),
+                    TemplateDefaults::fillAndExpandTypeArguments(
+                        $type_params,
+                        $class_storage,
+                        $codebase,
+                        $return_type->from_docblock,
+                    ),
+                    $class_storage,
                 );
             }
 
@@ -636,13 +641,16 @@ final class TypeExpander
                 unset($property_type);
             }
             if ($changed) {
-                $return_type = TKeyedArray::make(
+                $expanded = TKeyedArray::make(
                     $properties,
                     $return_type->class_strings,
                     $fallback_params,
                     $return_type->is_list,
                     $return_type->from_docblock,
                 );
+                $return_type = $expanded instanceof TKeyedArray
+                    ? $expanded->setIsCallable($return_type->is_callable)
+                    : $expanded;
             }
         }
 
@@ -1177,11 +1185,15 @@ final class TypeExpander
 
         $class_storage = null;
         if ($codebase->classExists($return_type->classlike_type->value)) {
-            $class_storage = $codebase->classlike_storage_provider->get($return_type->classlike_type->value);
+            $class_storage = $codebase->classlike_storage_provider->get(
+                $codebase->classlikes->getUnAliasedName($return_type->classlike_type->value),
+            );
         } else {
             foreach ($return_type->classlike_type->extra_types as $type) {
                 if ($type instanceof TNamedObject && $codebase->classExists($type->value)) {
-                    $class_storage = $codebase->classlike_storage_provider->get($type->value);
+                    $class_storage = $codebase->classlike_storage_provider->get(
+                        $codebase->classlikes->getUnAliasedName($type->value),
+                    );
                     break;
                 }
             }

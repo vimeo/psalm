@@ -205,6 +205,35 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'parentCallOfAStaticReturnTypeInAChildOfAGenericClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Box {
+                        public function same(): static {
+                            return $this;
+                        }
+                    }
+
+                    /** @extends Box<int> */
+                    class IntBox extends Box {
+                        public function same(): static {
+                            return parent::same();
+                        }
+                    }
+
+                    trait Chain {
+                        public function chain(): static {
+                            return parent::same();
+                        }
+                    }
+
+                    /** @extends Box<string> */
+                    class StringBox extends Box {
+                        use Chain;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+            ],
             'parentSelfAndStaticCallsReturnTheStaticTypeOfTheCallingClass' => [
                 'code' => '<?php
                     abstract class Core {
@@ -246,34 +275,61 @@ final class MethodCallTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MissingOverrideAttribute'],
             ],
-            'parentCallOfAStaticReturnTypeInAChildOfAGenericClass' => [
+            'inheritedThisDocblockKeepsNativeStaticOfSubclass' => [
                 'code' => '<?php
-                    /** @template T */
-                    abstract class Box {
-                        public function same(): static {
+                    class Form {}
+
+                    interface BuilderInterface {
+                        /**
+                         * @return $this
+                         */
+                        public function setCompound(): static;
+                    }
+
+                    class Builder implements BuilderInterface {
+                        public function setCompound(): static {
                             return $this;
                         }
                     }
 
-                    /** @extends Box<int> */
-                    class IntBox extends Box {
-                        public function same(): static {
-                            return parent::same();
+                    class FormBuilder extends Builder {
+                        public function getForm(): Form {
+                            return new Form();
                         }
                     }
 
-                    trait Chain {
-                        public function chain(): static {
-                            return parent::same();
+                    $form = (new FormBuilder())->setCompound()->getForm();',
+                'assertions' => ['$form' => 'Form'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inheritedStaticDocblockKeepsNativeStaticOfSubclass' => [
+                'code' => '<?php
+                    class Form {}
+
+                    interface BuilderInterface {
+                        /**
+                         * @return static
+                         */
+                        public function setCompound(): static;
+                    }
+
+                    class Builder implements BuilderInterface {
+                        public function setCompound(): static {
+                            return $this;
                         }
                     }
 
-                    /** @extends Box<string> */
-                    class StringBox extends Box {
-                        use Chain;
-                    }',
-                'assertions' => [],
-                'ignored_issues' => ['MissingOverrideAttribute'],
+                    class FormBuilder extends Builder {
+                        public function getForm(): Form {
+                            return new Form();
+                        }
+                    }
+
+                    $form = (new FormBuilder())->setCompound()->getForm();',
+                'assertions' => ['$form' => 'Form'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'notInCallMapTest' => [
                 'code' => '<?php
@@ -1575,6 +1631,27 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'methodMissingFromALaterTypeOfAUnionTemplateBound' => [
+                'code' => '<?php
+                    final class Invoice {
+                        public function total(): int { return 1; }
+                    }
+
+                    final class CreditNote {
+                        public function total(): int { return -1; }
+                        public function reason(): string { return ""; }
+                    }
+
+                    /**
+                     * @template T of CreditNote|Invoice
+                     * @param T $document
+                     * @return mixed
+                     */
+                    function reason($document) {
+                        return $document->reason();
+                    }',
+                'error_message' => 'PossiblyUndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:43 - Method Invoice::reason does not exist',
+            ],
             'staticInvocation' => [
                 'code' => '<?php
                     class Foo {
@@ -1768,6 +1845,18 @@ final class MethodCallTest extends TestCase
 
                     $q = new A;
                     $q->foo(bar());',
+                'error_message' => 'UndefinedFunction',
+            ],
+            'undefinedMethodPassedAsArgOnPossiblyInvalidCallee' => [
+                'code' => '<?php
+                    class A {
+                        public function __call(string $method, array $args) {}
+                    }
+
+                    /** @param A|int $q */
+                    function f($q): void {
+                        $q->foo(bar());
+                    }',
                 'error_message' => 'UndefinedFunction',
             ],
             'noIntersectionMethod' => [

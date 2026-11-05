@@ -28,6 +28,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -276,9 +277,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             );
         }
 
-        foreach ($storage->docblock_issues as $docblock_issue) {
-            IssueBuffer::maybeAdd($docblock_issue);
-        }
+        self::reportDocblockIssues($this, $storage, $storage->suppressed_issues + $this->getSuppressedIssues());
 
         $parent_fq_class_name = $this->parent_fq_class_name;
 
@@ -534,6 +533,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
                 $member_stmts[] = $stmt;
+                AttributesAnalyzer::reportPlaceholders($this, $stmt->attrGroups, $this->getSuppressedIssues());
 
                 foreach ($stmt->consts as $const) {
                     if ($const->name->toLowerString() === 'class') {
@@ -565,6 +565,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         }
                     }
                 }
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\EnumCase) {
+                AttributesAnalyzer::reportPlaceholders($this, $stmt->attrGroups, $this->getSuppressedIssues());
             }
         }
 
@@ -841,14 +843,15 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
                     $template_result = new TemplateResult([], $lower_bounds);
 
-                    $guide_property_type = TemplateInferredTypeReplacer::replace(
-                        $guide_property_type,
-                        $template_result,
+                    // `Foo<A>` and `Foo<A, Default>` are the same type
+                    $guide_property_type = TemplateDefaults::fillNested(
+                        TemplateInferredTypeReplacer::replace($guide_property_type, $template_result, $codebase),
+                        $codebase->classlike_storage_provider,
                         $codebase,
                     );
-                    $property_type = TemplateInferredTypeReplacer::replace(
-                        $property_type,
-                        $template_result,
+                    $property_type = TemplateDefaults::fillNested(
+                        TemplateInferredTypeReplacer::replace($property_type, $template_result, $codebase),
+                        $codebase->classlike_storage_provider,
                         $codebase,
                     );
 
@@ -1511,7 +1514,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             if ($trait_storage->deprecated) {
                 IssueBuffer::maybeAdd(
                     new DeprecatedTrait(
-                        'Trait ' . $fq_trait_name . ' is deprecated',
+                        'Trait ' . $fq_trait_name . ' is deprecated'
+                            . ($trait_storage->deprecated_message !== null
+                                ? ', ' . $trait_storage->deprecated_message
+                                : ''),
                         new CodeLocation($previous_trait_analyzer ?? $this, $trait_name),
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),

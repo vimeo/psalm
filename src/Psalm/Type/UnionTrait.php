@@ -123,6 +123,123 @@ trait UnionTrait
     }
 
     /**
+     * The properties that the constructor takes and that differ from their defaults, to make a union of the same
+     * atomic types with the same flags.
+     *
+     * Handing get_object_vars() to the constructor instead makes it assign every property dynamically, only to
+     * overwrite most of them again: the type maps, the cached ids and $checked are reset there.
+     *
+     * @return TProperties
+     * @psalm-mutation-free
+     */
+    private function getNonDefaultProperties(): array
+    {
+        $properties = [];
+
+        if ($this->from_docblock) {
+            $properties['from_docblock'] = true;
+        }
+
+        if ($this->from_calculation) {
+            $properties['from_calculation'] = true;
+        }
+
+        if ($this->int_mask_bits !== null) {
+            $properties['int_mask_bits'] = $this->int_mask_bits;
+        }
+
+        if ($this->from_property) {
+            $properties['from_property'] = true;
+        }
+
+        if ($this->from_static_property) {
+            $properties['from_static_property'] = true;
+        }
+
+        if ($this->from_global_state) {
+            $properties['from_global_state'] = true;
+        }
+
+        if (!$this->initialized) {
+            $properties['initialized'] = false;
+        }
+
+        if ($this->initialized_class !== null) {
+            $properties['initialized_class'] = $this->initialized_class;
+        }
+
+        if ($this->failed_reconciliation) {
+            $properties['failed_reconciliation'] = true;
+        }
+
+        if ($this->ignore_nullable_issues) {
+            $properties['ignore_nullable_issues'] = true;
+        }
+
+        if ($this->ignore_falsable_issues) {
+            $properties['ignore_falsable_issues'] = true;
+        }
+
+        if ($this->ignore_isset) {
+            $properties['ignore_isset'] = true;
+        }
+
+        if ($this->possibly_undefined) {
+            $properties['possibly_undefined'] = true;
+        }
+
+        if ($this->possibly_undefined_from_try) {
+            $properties['possibly_undefined_from_try'] = true;
+        }
+
+        if ($this->explicit_never) {
+            $properties['explicit_never'] = true;
+        }
+
+        if ($this->had_template) {
+            $properties['had_template'] = true;
+        }
+
+        if ($this->from_template_default) {
+            $properties['from_template_default'] = true;
+        }
+
+        if ($this->by_ref) {
+            $properties['by_ref'] = true;
+        }
+
+        if ($this->reference_free) {
+            $properties['reference_free'] = true;
+        }
+
+        if ($this->closure_state) {
+            $properties['closure_state'] = true;
+        }
+
+        if (!$this->allow_mutations) {
+            $properties['allow_mutations'] = false;
+        }
+
+        if (!$this->has_mutations) {
+            $properties['has_mutations'] = false;
+        }
+
+        if ($this->parent_nodes !== []) {
+            $properties['parent_nodes'] = $this->parent_nodes;
+        }
+
+        if ($this->propagate_parent_nodes) {
+            $properties['propagate_parent_nodes'] = true;
+        }
+
+        if ($this->different) {
+            $properties['different'] = true;
+        }
+
+        return $properties;
+    }
+
+    /**
      * @psalm-mutation-free
      * @return non-empty-array<string, Atomic>
      */

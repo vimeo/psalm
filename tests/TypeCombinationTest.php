@@ -194,6 +194,20 @@ final class TypeCombinationTest extends TestCase
     public static function providerTestValidTypeCombination(): iterable
     {
         return [
+            'objectWithPropertiesKeepsNamedObjects' => [
+                'Error|object{foo:string}',
+                [
+                    'Error',
+                    'object{foo: string}',
+                ],
+            ],
+            'objectWithPropertiesAfterNamedObject' => [
+                'Error|object{foo:string}',
+                [
+                    'object{foo: string}',
+                    'Error',
+                ],
+            ],
             'complexArrayFallback1' => [
                 'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: list<array<array-key, mixed>>|null, ...<string, mixed>}',
                 [
