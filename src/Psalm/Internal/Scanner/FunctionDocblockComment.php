@@ -65,6 +65,11 @@ final class FunctionDocblockComment
     public bool $deprecated = false;
 
     /**
+     * The description following the @deprecated tag, if any
+     */
+    public ?string $deprecation_message = null;
+
+    /**
      * If set, the function is internal to the given namespace.
      *
      * @var list<non-empty-string>

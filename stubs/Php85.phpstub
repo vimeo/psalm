@@ -1,0 +1,158 @@
+<?php
+
+// Symbols PHP 8.5 deprecates (the #[\Deprecated] attributes in php-src). Version gated, so they are
+// only reported when analysing >= 8.5. Each `@deprecated` text mirrors PHP's own message.
+//
+// A function declared here replaces the CallMap entry (a stubbed function is not looked up in the
+// CallMap), so every signature below repeats the CallMap one in full. A class re-declared here is
+// merged into the existing class storage, but its `implements`, templates and class-level
+// docblock tags are taken from this declaration, so those are repeated from the original stubs.
+
+namespace {
+    /**
+     * @deprecated as it has no effect since PHP 8.0
+     */
+    function curl_close(CurlHandle $handle): void {}
+
+    /**
+     * @deprecated as it has no effect since PHP 8.0
+     */
+    function curl_share_close(CurlShareHandle $share_handle): void {}
+
+    /**
+     * @deprecated as finfo objects are freed automatically
+     *
+     * @return true
+     */
+    function finfo_close(finfo $finfo): bool {}
+
+    /**
+     * @deprecated as it has no effect since PHP 8.0
+     *
+     * @return true
+     */
+    function imagedestroy(GdImage $image): bool {}
+
+    /**
+     * @deprecated as it has no effect since PHP 8.0
+     */
+    function xml_parser_free(XMLParser $parser): bool {}
+
+    /**
+     * @deprecated use stream_set_timeout() instead
+     *
+     * @param resource $stream
+     */
+    function socket_set_timeout($stream, int $seconds, int $microseconds = 0): bool {}
+
+    /**
+     * @deprecated use mysqli_stmt_execute() instead
+     *
+     * @param list<mixed>|null $params
+     */
+    function mysqli_execute(mysqli_stmt $statement, ?array $params = null): bool {}
+
+    class ReflectionProperty implements Reflector
+    {
+        /**
+         * @deprecated as it has no effect since PHP 8.1
+         */
+        public function setAccessible(bool $accessible): void {}
+    }
+
+    class ReflectionMethod extends ReflectionFunctionAbstract
+    {
+        /**
+         * @deprecated as it has no effect since PHP 8.1
+         */
+        public function setAccessible(bool $accessible): void {}
+    }
+
+    /**
+     * @template TObject as object
+     * @template TArrayValue
+     * @template-implements ArrayAccess<TObject, TArrayValue>
+     * @template-implements Iterator<int, TObject>
+     */
+    class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
+    {
+        /**
+         * @deprecated use method SplObjectStorage::offsetSet() instead
+         *
+         * @param TObject $object
+         * @param TArrayValue|null $info
+         */
+        public function attach($object, $info = null) {}
+
+        /**
+         * @deprecated use method SplObjectStorage::offsetUnset() instead
+         *
+         * @param TObject $object
+         */
+        public function detach($object) {}
+
+        /**
+         * @deprecated use method SplObjectStorage::offsetExists() instead
+         *
+         * @param TObject $object
+         */
+        public function contains($object) {}
+    }
+
+    interface DateTimeInterface
+    {
+        /**
+         * @deprecated this method is obsolete, as serialization hooks are provided by __unserialize() and __serialize()
+         */
+        public function __wakeup(): void;
+    }
+
+    class DateTime implements DateTimeInterface
+    {
+        /**
+         * @deprecated this method is obsolete, as serialization hooks are provided by __unserialize() and __serialize()
+         */
+        public function __wakeup(): void {}
+    }
+
+    class DateTimeImmutable implements DateTimeInterface
+    {
+        /**
+         * @deprecated this method is obsolete, as serialization hooks are provided by __unserialize() and __serialize()
+         */
+        public function __wakeup(): void {}
+    }
+
+    /**
+     * @psalm-immutable
+     */
+    class DateTimeZone
+    {
+        /**
+         * @deprecated this method is obsolete, as serialization hooks are provided by __unserialize() and __serialize()
+         */
+        public function __wakeup(): void {}
+    }
+
+    class DateInterval
+    {
+        /**
+         * @deprecated this method is obsolete, as serialization hooks are provided by __unserialize() and __serialize()
+         */
+        public function __wakeup(): void {}
+    }
+
+    /**
+     * @psalm-immutable
+     *
+     * @template-covariant Start of string|DateTimeInterface
+     * @implements IteratorAggregate<int, DateTimeInterface>
+     */
+    class DatePeriod implements IteratorAggregate
+    {
+        /**
+         * @deprecated this method is obsolete, as serialization hooks are provided by __unserialize() and __serialize()
+         */
+        public function __wakeup(): void {}
+    }
+}

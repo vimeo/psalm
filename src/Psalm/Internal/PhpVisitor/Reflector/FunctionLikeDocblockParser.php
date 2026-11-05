@@ -413,6 +413,15 @@ final class FunctionLikeDocblockParser
 
         if (isset($parsed_docblock->tags['deprecated'])) {
             $info->deprecated = true;
+            $message = preg_replace(
+                '/\s*\n\s*\*?\s*/',
+                ' ',
+                trim((string) reset($parsed_docblock->tags['deprecated'])),
+            );
+
+            if ($message !== null && $message !== '') {
+                $info->deprecation_message = $message;
+            }
         }
 
         if (isset($parsed_docblock->tags['internal'])) {

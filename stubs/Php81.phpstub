@@ -13,21 +13,45 @@ namespace {
 
     class ReflectionProperty implements Reflector
     {
-        /**
-         * @deprecated Starting from PHP 8.1, this method is pure, and has no effect.
-         *
-         * @psalm-pure
-         */
+        /** @psalm-pure */
         public function setAccessible(bool $accessible): void {}
     }
 
     class ReflectionMethod extends ReflectionFunctionAbstract
     {
-        /**
-         * @deprecated Starting from PHP 8.1, this method is pure, and has no effect.
-         *
-         * @psalm-pure
-         */
+        /** @psalm-pure */
         public function setAccessible(bool $accessible): void {}
     }
+
+    /**
+     * @deprecated use date_sun_info() instead
+     *
+     * @psalm-ignore-falsable-return
+     * @return false|float|int|string
+     * @psalm-pure
+     */
+    function date_sunrise(
+        int $timestamp,
+        int $returnFormat = SUNFUNCS_RET_STRING,
+        ?float $latitude = null,
+        ?float $longitude = null,
+        ?float $zenith = null,
+        ?float $utcOffset = null
+    ) {}
+
+    /**
+     * @deprecated use date_sun_info() instead
+     *
+     * @psalm-ignore-falsable-return
+     * @return false|float|int|string
+     * @psalm-pure
+     */
+    function date_sunset(
+        int $timestamp,
+        int $returnFormat = SUNFUNCS_RET_STRING,
+        ?float $latitude = null,
+        ?float $longitude = null,
+        ?float $zenith = null,
+        ?float $utcOffset = null
+    ) {}
 }
