@@ -429,14 +429,6 @@
       <code><![CDATA[$source_pos = strpos($source, '*')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Internal/Analyzer/SourceAnalyzer.php">
-    <UnsafeInstantiation>
-      <code><![CDATA[new $class(
-                    $msg,
-                    new CodeLocation($this, $node),
-                )]]></code>
-    </UnsafeInstantiation>
-  </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Block/ForAnalyzer.php">
     <ArgumentTypeCoercion>
       <code><![CDATA[$stmt->cond]]></code>

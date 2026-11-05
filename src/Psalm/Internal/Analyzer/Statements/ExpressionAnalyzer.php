@@ -8,6 +8,8 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\DocComment;
+use Psalm\Exception\DocblockParseException;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
@@ -67,6 +69,7 @@ use Psalm\Type\Atomic\TMixed;
 
 use function count;
 use function in_array;
+use function str_contains;
 use function strtolower;
 
 /**
@@ -74,6 +77,11 @@ use function strtolower;
  */
 final class ExpressionAnalyzer
 {
+    /**
+     * The attribute that carries the docblock in front of an argument to the argument's expression
+     */
+    public const ARGUMENT_DOCBLOCK_ATTRIBUTE = 'psalm-argument-docblock';
+
     /**
      * @param bool $assigned_to_reference This is set to true when the expression being analyzed
      *                                    here is being assigned to another variable by reference.
@@ -94,7 +102,9 @@ final class ExpressionAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if (self::handleExpression(
+        $suppressed_issues = $from_stmt === null ? self::addDocblockSuppressions($statements_analyzer, $stmt) : [];
+
+        $handled = self::handleExpression(
             $statements_analyzer,
             $stmt,
             $context,
@@ -103,7 +113,13 @@ final class ExpressionAnalyzer
             $from_stmt,
             $template_result,
             $assigned_to_reference,
-        ) === false) {
+        );
+
+        if ($suppressed_issues) {
+            $statements_analyzer->removeSuppressedIssues($suppressed_issues);
+        }
+
+        if ($handled === false) {
             return false;
         }
 
@@ -501,6 +517,62 @@ final class ExpressionAnalyzer
         );
 
         return false;
+    }
+
+    /**
+     * The issues the docblock in front of an argument suppresses while its expression is analysed,
+     * as in `foo(/** @psalm-suppress X *\/ bar())`
+     *
+     * @return array<int, string>
+     */
+    private static function addDocblockSuppressions(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $stmt,
+    ): array {
+        $docblock = $stmt->getAttribute(self::ARGUMENT_DOCBLOCK_ATTRIBUTE);
+
+        if (!$docblock instanceof PhpParser\Comment\Doc || !str_contains($docblock->getText(), 'psalm-suppress')) {
+            return [];
+        }
+
+        try {
+            $suppressed = DocComment::parsePreservingLength($docblock)->tags['psalm-suppress'] ?? [];
+        } catch (DocblockParseException) {
+            return [];
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $new_issues = [];
+
+        foreach ($suppressed as $offset => $suppress_entry) {
+            foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $issue_type) {
+                $new_issues[$issue_offset + $offset] = $issue_type;
+            }
+        }
+
+        if ($codebase->track_unused_suppressions
+            && (
+                count($new_issues) === 1
+                || !$codebase->config->suppressesIssueType($new_issues, 'UnusedPsalmSuppress')
+            )
+        ) {
+            foreach ($new_issues as $offset => $issue_type) {
+                if ($issue_type === 'InaccessibleMethod') {
+                    continue;
+                }
+
+                IssueBuffer::addUnusedSuppression(
+                    $statements_analyzer->getFilePath(),
+                    $offset,
+                    $issue_type,
+                    $codebase->taint_flow_graph !== null,
+                );
+            }
+        }
+
+        $statements_analyzer->addSuppressedIssues($new_issues);
+
+        return $new_issues;
     }
 
     /**
