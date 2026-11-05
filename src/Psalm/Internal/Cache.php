@@ -12,7 +12,7 @@ use RuntimeException;
 use Webmozart\Assert\Assert;
 
 use function array_keys;
-use function asort;
+use function array_map;
 use function assert;
 use function basename;
 use function bin2hex;
@@ -48,6 +48,7 @@ use function str_ends_with;
 use function stream_copy_to_stream;
 use function stream_get_contents;
 use function strlen;
+use function strval;
 use function substr;
 use function unlink;
 use function unpack;
@@ -84,7 +85,6 @@ final class Cache
     private const TEMP_SUFFIX = '.tmp';
     private const DICTIONARY_SAMPLES = 14;
     private const DICTIONARY_SAMPLE_LENGTH = 8192;
-    private const DICTIONARY_LENGTH = 114_688;
 
     /** @psalm-suppress PropertyNotSetInConstructor intentional */
     private readonly string $dir;
@@ -94,9 +94,9 @@ final class Cache
     private array $cache = [];
 
     /**
-     * Records of the consolidated data file: key => [hash, offset, length]
+     * Records of the consolidated data file in file order: key => [hash, offset, length]. A numeric key is an int.
      *
-     * @var array<string, array{string, int, int}>
+     * @var array<array-key, array{string, int, int}>
      */
     private array $consolidated = [];
     private ?string $consolidated_path = null;
@@ -158,7 +158,7 @@ final class Cache
             ? @file_get_contents($this->dir . self::CONSOLIDATED_INDEX)
             : false;
         if ($index !== false) {
-            /** @var array{string, array<string, array{string, int, int}>, string|null} $index */
+            /** @var array{string, array<array-key, array{string, int, int}>, string|null} $index */
             $index = $this->serializer->unserialize($index);
             [$data_file, $this->consolidated, $dictionary] = $index;
             $this->consolidated_path = $this->dir . $data_file;
@@ -182,25 +182,18 @@ final class Cache
         $out = fopen($this->dir . $data_file, 'wb');
         Assert::notFalse($out);
 
-        /** @var array<string, array{string, int, int}> $entries */
+        /** @var array<array-key, array{string, int, int}> $entries */
         $entries = [];
         $offset = 0;
-        /** @param array{string, string, string, string} $record see readRecord() */
-        $append = static function (array $record) use ($out, &$entries, &$offset): void {
-            [$prefix, $record_hash, $record_key, $payload] = $record;
-            $header = $prefix . $record_hash . $record_key;
-            Assert::eq(fwrite($out, $header), strlen($header));
-            Assert::eq(fwrite($out, $payload), strlen($payload));
-            $length = strlen($header) + strlen($payload);
-            $entries[$record_key] = [$record_hash, $offset, $length];
+        $add = static function (string $key, string $hash, int $length) use (&$entries, &$offset): void {
+            $entries[$key] = [$hash, $offset, $length];
             $offset += $length;
         };
-
-        $previous_order = [];
-        foreach ($this->consolidated as $key => [, $previous_offset]) {
-            $previous_order[$key] = $previous_offset;
-        }
-        asort($previous_order);
+        $append = static function (string $key, string $hash, string $header, string $payload) use ($out, $add): void {
+            Assert::eq(fwrite($out, $header), strlen($header));
+            Assert::eq(fwrite($out, $payload), strlen($payload));
+            $add($key, $hash, strlen($header) + strlen($payload));
+        };
 
         $zstd = $this->serializer instanceof ZstdSerializer ? $this->serializer : null;
         $previous_zstd = $this->consolidated_serializer instanceof ZstdSerializer
@@ -212,7 +205,8 @@ final class Cache
         if ($zstd !== null && $previous_zstd !== null) {
             // Only the dictionary needs them all at once
             $loose = iterator_to_array($loose, false);
-            $dictionary = $this->buildDictionary($zstd, $previous_zstd, $loose, array_keys($previous_order));
+            $previous_keys = array_map(strval(...), array_keys($this->consolidated));
+            $dictionary = $this->buildDictionary($zstd, $previous_zstd, $loose, $previous_keys);
             $consolidated_zstd = $zstd->withDictionary($dictionary);
         }
 
@@ -220,35 +214,40 @@ final class Cache
             $record = self::readRecord($path, 0, null, null, null);
             // An entry that is not whole, or that is not the one its name says, is dropped
             if ($record !== null && hash('xxh128', $record[2]) === basename($path)) {
-                $append(
-                    $zstd !== null && $consolidated_zstd !== null
-                        ? self::recompress($record, $zstd, $consolidated_zstd)
-                        : $record,
-                );
+                [$header, $payload] = $zstd !== null && $consolidated_zstd !== null
+                    ? self::recompress($record, $zstd, $consolidated_zstd)
+                    : [$record[0] . $record[1] . $record[2], $record[3]];
+                $append($record[2], $record[1], $header, $payload);
             }
             unlink($path);
         }
 
         // Entries of the previous data file that no newer record replaced, in file order
-        if ($this->consolidated_path !== null) {
-            $previous = fopen($this->consolidated_path, 'rb');
-            Assert::notFalse($previous);
-            foreach ($previous_order as $key => $_) {
-                if (isset($entries[$key])) {
-                    continue;
-                }
-                if ($consolidated_zstd !== null && $previous_zstd !== null) {
-                    $record = $this->readConsolidated($key, null);
-                    if ($record !== null) {
-                        $append(self::recompress($record, $previous_zstd, $consolidated_zstd));
-                    }
-                    continue;
-                }
-                [$hash, $previous_offset, $length] = $this->consolidated[$key];
-                Assert::eq(stream_copy_to_stream($previous, $out, $length, $previous_offset), $length);
-                $entries[$key] = [$hash, $offset, $length];
-                $offset += $length;
+        $previous = null;
+        foreach ($this->consolidated as $key => [$hash, $previous_offset, $length]) {
+            $key = (string) $key;
+            if (isset($entries[$key])) {
+                continue;
             }
+
+            if ($consolidated_zstd !== null && $previous_zstd !== null) {
+                $record = $this->readConsolidated($key, null);
+                if ($record !== null) {
+                    [$header, $payload] = self::recompress($record, $previous_zstd, $consolidated_zstd);
+                    $append($key, $hash, $header, $payload);
+                }
+                continue;
+            }
+
+            if ($previous === null) {
+                assert($this->consolidated_path !== null);
+                $previous = fopen($this->consolidated_path, 'rb');
+                Assert::notFalse($previous);
+            }
+            Assert::eq(stream_copy_to_stream($previous, $out, $length, $previous_offset), $length);
+            $add($key, $hash, $length);
+        }
+        if ($previous !== null) {
             fclose($previous);
         }
         fclose($out);
@@ -324,25 +323,26 @@ final class Cache
             }
         }
 
-        return $dictionary === '' ? null : substr($dictionary, -self::DICTIONARY_LENGTH);
+        return $dictionary === '' ? null : $dictionary;
     }
 
     /**
      * @param array{string, string, string, string} $record see readRecord()
-     * @return array{string, string, string, string} the record with its payload compressed by $to
+     * @return array{string, string} the header and the payload of the record, compressed by $to
      */
     private static function recompress(array $record, ZstdSerializer $from, ZstdSerializer $to): array
     {
-        [, $record_hash, $record_key, $payload] = $record;
-        $payload = $to->compress($from->uncompress($payload));
+        $payload = $to->compress($from->uncompress($record[3]));
 
-        return [
-            pack('VVV', strlen($record_hash), strlen($record_key), strlen($payload))
-                . hash('xxh128', $payload, true),
-            $record_hash,
-            $record_key,
-            $payload,
-        ];
+        return [self::buildHeader($record[1], $record[2], $payload), $payload];
+    }
+
+    private static function buildHeader(string $hash, string $key, string $payload): string
+    {
+        return pack('VVV', strlen($hash), strlen($key), strlen($payload))
+            . hash('xxh128', $payload, true)
+            . $hash
+            . $key;
     }
 
     /**
@@ -408,26 +408,26 @@ final class Cache
         }
 
         $entry = null;
-        $serializer = $this->consolidated_serializer;
+        $from_consolidated = false;
         // A loose record is newer than the consolidated one, so unless the caller knows what it wants,
         // the consolidated one is the fallback.
         if ($hash !== null && isset($this->consolidated[$key]) && $this->consolidated[$key][0] === $hash) {
             $entry = $this->readConsolidated($key, $hash);
+            $from_consolidated = $entry !== null;
         }
         if ($entry === null) {
-            $serializer = $this->serializer;
             $entry = self::readRecord($this->dir . hash('xxh128', $key), 0, null, $key, $hash);
         }
         if ($entry === null && $hash === null && isset($this->consolidated[$key])) {
-            $serializer = $this->consolidated_serializer;
             $entry = $this->readConsolidated($key, null);
+            $from_consolidated = $entry !== null;
         }
         if ($entry === null) {
             return null;
         }
 
         /** @var T $content */
-        $content = $serializer->unserialize($entry[3]);
+        $content = ($from_consolidated ? $this->consolidated_serializer : $this->serializer)->unserialize($entry[3]);
         if ($this->arrayCache) {
             $this->cache[$key] = [$entry[1], $content];
         }
@@ -459,11 +459,11 @@ final class Cache
         }
         if ($this->persistent) {
             $payload = $this->serializer->serialize($item);
-            $header = pack('VVV', strlen($hash), strlen($key), strlen($payload))
-                . hash('xxh128', $payload, true)
-                . $hash
-                . $key;
-            self::writeEntry($this->dir . hash('xxh128', $key), $header, $payload);
+            self::writeEntry(
+                $this->dir . hash('xxh128', $key),
+                self::buildHeader($hash, $key, $payload),
+                $payload,
+            );
         }
         // Without a disk cache the array is the only copy. With one, keep it only if arrayCache is on,
         // otherwise a cold run holds every parsed AST and storage object in memory for nothing.
@@ -472,14 +472,10 @@ final class Cache
         }
     }
 
-    /**
-     * @param int|string $key an int if the key of a record is numeric, as PHP makes it one in an array
-     * @return array{string, string, string, string}|null see readRecord()
-     */
-    private function readConsolidated(int|string $key, ?string $hash): ?array
+    /** @return array{string, string, string, string}|null see readRecord() */
+    private function readConsolidated(string $key, ?string $hash): ?array
     {
         assert($this->consolidated_path !== null);
-        $key = (string) $key;
         [, $offset, $length] = $this->consolidated[$key];
 
         return self::readRecord($this->consolidated_path, $offset, $length, $key, $hash);
