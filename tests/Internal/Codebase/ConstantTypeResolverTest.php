@@ -53,9 +53,9 @@ final class ConstantTypeResolverTest extends TestCase
         yield 'xor of an int and a float that is an int' => ['^', 6, 2.0, '4'];
         yield 'and of a float that is an int and an int' => ['&', 6.0, 3, '2'];
         yield 'or of the lowest int' => ['|', (float) PHP_INT_MIN, 1, '-9223372036854775807'];
-        yield 'or with a fraction on the left' => ['|', 1.5, 1, 'int'];
-        yield 'xor with a fraction on the right' => ['^', 2, 0.5, 'int'];
-        yield 'and with a fraction' => ['&', 6, 2.5, 'int'];
+        yield 'or with a fraction on the left' => ['|', 1.5, 1, '1'];
+        yield 'xor with a fraction on the right' => ['^', 2, 0.5, '2'];
+        yield 'and with a fraction' => ['&', 6, 2.5, '2'];
         yield 'or with a float beyond the ints' => ['|', -(float) PHP_INT_MIN, 1, 'int'];
         yield 'or with a negative float beyond the ints' => ['|', 1, -(float) PHP_INT_MAX * 1000.0, 'int'];
         yield 'or with NAN' => ['|', NAN, 1, 'int'];

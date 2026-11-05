@@ -222,6 +222,54 @@ final class IssueBuffer
             return true;
         }
 
+        if (self::isCoveredBySuppression($e, $issue_type, $file_path, $suppressed_issues)) {
+            return true;
+        }
+
+        $reporting_level = $config->getReportingLevelForIssue($e);
+
+        if ($reporting_level === Config::REPORT_SUPPRESS) {
+            return true;
+        }
+
+        if ($e->code_location->getLineNumber() === -1) {
+            return true;
+        }
+
+        if (self::$recording_level > 0) {
+            self::$recorded_issues[self::$recording_level][] = $e;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether one of $suppressed_issues suppresses the issue, whatever the file or the level the config reports it
+     * for: the filter for the issues that are stored to be reported later, once the file is analysed.
+     *
+     * @internal
+     * @param string[] $suppressed_issues
+     */
+    public static function isSuppressedInList(CodeIssue $e, array $suppressed_issues): bool
+    {
+        $fqcn_parts = explode('\\', $e::class);
+
+        return self::isCoveredBySuppression($e, array_pop($fqcn_parts), $e->getFilePath(), $suppressed_issues);
+    }
+
+    /**
+     * @param string[] $suppressed_issues
+     */
+    private static function isCoveredBySuppression(
+        CodeIssue $e,
+        string $issue_type,
+        string $file_path,
+        array $suppressed_issues,
+    ): bool {
+        $config = Config::getInstance();
+
         if (!$config->isSuppressible($e)) {
             // only the suppressions Psalm adds around the code it analyses itself apply (see Config::isSuppressible())
             $suppressed_issues = array_filter($suppressed_issues, is_string(...), ARRAY_FILTER_USE_KEY);
@@ -259,22 +307,6 @@ final class IssueBuffer
             if (is_int($suppress_all_position)) {
                 self::$used_suppressions[$file_path][$suppress_all_position] = true;
             }
-
-            return true;
-        }
-
-        $reporting_level = $config->getReportingLevelForIssue($e);
-
-        if ($reporting_level === Config::REPORT_SUPPRESS) {
-            return true;
-        }
-
-        if ($e->code_location->getLineNumber() === -1) {
-            return true;
-        }
-
-        if (self::$recording_level > 0) {
-            self::$recorded_issues[self::$recording_level][] = $e;
 
             return true;
         }
