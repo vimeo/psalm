@@ -327,6 +327,86 @@ final class AssignmentInConditionalTest extends TestCase
                         echo $row[0];
                     }',
             ],
+            'negatedCoalesceAssignmentInIf' => [
+                'code' => '<?php
+                    function f(): object|null {
+                        return null;
+                    }
+
+                    function a(object|null $s): object {
+                        if (!($s ??= f())) {
+                            exit;
+                        }
+                        return $s;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceAssignmentIdenticalNull' => [
+                'code' => '<?php
+                    function f(): object|null {
+                        return null;
+                    }
+
+                    function a(object|null $s): object {
+                        if (($s ??= f()) === null) {
+                            exit;
+                        }
+                        return $s;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceAssignmentNotIdenticalNull' => [
+                'code' => '<?php
+                    function f(): object|null {
+                        return null;
+                    }
+
+                    function a(object|null $s): object {
+                        if (($s ??= f()) !== null) {
+                            return $s;
+                        }
+                        exit;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceAssignmentNullIdentical' => [
+                'code' => '<?php
+                    function f(): object|null {
+                        return null;
+                    }
+
+                    function a(object|null $s): object {
+                        if (null === ($s ??= f())) {
+                            exit;
+                        }
+                        return $s;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceAssignmentNullNotIdentical' => [
+                'code' => '<?php
+                    function f(): object|null {
+                        return null;
+                    }
+
+                    function a(object|null $s): object {
+                        if (null !== ($s ??= f())) {
+                            return $s;
+                        }
+                        exit;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'ifNotEqualsFalse' => [
                 'code' => '<?php
                     if (($row = rand(0,10) ? [1] : false) !== false) {
