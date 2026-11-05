@@ -1030,6 +1030,14 @@ final class ArithmeticOpAnalyzer
                 return Type::getInt();
             }
 
+            // a shift by a negative number always throws
+            if ($int2 < 0
+                && ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+                    || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight)
+            ) {
+                return Type::getNever();
+            }
+
             $result = match (true) {
                 $operation instanceof PhpParser\Node\Expr\BinaryOp\Mod => $int1 % $int2,
                 $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr => $int1 | $int2,
@@ -1045,6 +1053,11 @@ final class ArithmeticOpAnalyzer
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
             $result = $operand1 * $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
+            // zero to a negative power is INF, with a deprecation since PHP 8.4
+            if ($operand1 == 0 && $operand2 < 0) {
+                return Type::getFloat();
+            }
+
             $result = $operand1 ** $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Div) {
             if ($operand2 === 0 || $operand2 === 0.0) {
