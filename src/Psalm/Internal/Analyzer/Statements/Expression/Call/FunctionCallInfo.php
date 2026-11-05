@@ -28,11 +28,6 @@ final class FunctionCallInfo
     public array $defined_constants = [];
 
     /**
-     * @var array<string, bool>
-     */
-    public array $global_variables = [];
-
-    /**
      * @var ?array<int, FunctionLikeParameter>
      */
     public ?array $function_params = null;

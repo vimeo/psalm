@@ -287,6 +287,24 @@ final class InternalCallMapHandlerTest extends TestCase
         $this->assertEquals('still_running', $curl_multi_exec_entry->params[1]->name);
     }
 
+    public function testGetCallablesFromCallmapFollowsTheAnalysedPhpVersion(): void
+    {
+        $project_analyzer = new ProjectAnalyzer(
+            new TestConfig(),
+            new Providers(new FakeFileProvider(), new FakeParserCacheProvider()),
+        );
+
+        $project_analyzer->setPhpVersion('8.0', 'tests');
+        $php80_entries = InternalCallMapHandler::getCallablesFromCallMap('date_format');
+        $project_analyzer->setPhpVersion('7.4', 'tests');
+        $php74_entries = InternalCallMapHandler::getCallablesFromCallMap('date_format');
+
+        $this->assertNotNull($php80_entries);
+        $this->assertNotNull($php74_entries);
+        $this->assertSame('string', $php80_entries[0]->return_type?->getId());
+        $this->assertSame('false|string', $php74_entries[0]->return_type?->getId());
+    }
+
     /**
      * @return iterable<string, array{string, array<int|string, string>}>
      */
