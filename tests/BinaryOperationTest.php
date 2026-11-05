@@ -684,6 +684,18 @@ final class BinaryOperationTest extends TestCase
                         return "{$t}" . 5 . "{$t}7";
                     }',
             ],
+            'zeroToANegativePowerIsAFloat' => [
+                'code' => '<?php
+                    $a = 0 ** -1;
+                    $b = 0.0 ** -2;
+                    $c = 0 ** -INF;
+                    echo $a, $b, $c;',
+                'assertions' => [
+                    '$a' => 'float',
+                    '$b' => 'float',
+                    '$c' => 'float',
+                ],
+            ],
             'floatOperandsOutsideTheRangeOfAnIntAreNotFolded' => [
                 'code' => '<?php
                     $notANumberModulo = NAN % 3;
@@ -1658,6 +1670,18 @@ final class BinaryOperationTest extends TestCase
                         return "{$s}{$zero}";
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'shiftLeftByANegativeNumber' => [
+                'code' => '<?php
+                    $a = 1 << -1;
+                    echo $a;',
+                'error_message' => 'NoValue',
+            ],
+            'shiftRightByANegativeNumber' => [
+                'code' => '<?php
+                    $a = 1 >> -2;
+                    echo $a;',
+                'error_message' => 'NoValue',
             ],
             'moduloOfABigFloatLiteralByZeroIsNever' => [
                 'code' => '<?php
