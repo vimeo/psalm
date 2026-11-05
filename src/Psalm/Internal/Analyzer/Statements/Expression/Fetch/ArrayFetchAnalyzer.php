@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
@@ -1086,18 +1087,27 @@ final class ArrayFetchAnalyzer
             }
 
             if ($type instanceof TNamedObject) {
-                self::handleArrayAccessOnNamedObject(
-                    $statements_analyzer,
-                    $stmt,
-                    $type,
-                    $context,
-                    $in_assignment,
-                    $assign_value,
-                    $array_access_type,
-                    $has_array_access,
-                    // nothing replaces an item an assignment writes into, which is modified in place as well
-                    $by_reference || $replacement_type === null,
-                );
+                // the virtual offset*() call analyses the keys and the receiver again, but they were analysed above
+                $operands = ArrayAssignmentAnalyzer::getOperands($stmt);
+                $node_data = $statements_analyzer->node_data;
+                $node_data->markEvaluated($operands);
+
+                try {
+                    self::handleArrayAccessOnNamedObject(
+                        $statements_analyzer,
+                        $stmt,
+                        $type,
+                        $context,
+                        $in_assignment,
+                        $assign_value,
+                        $array_access_type,
+                        $has_array_access,
+                        // nothing replaces an item an assignment writes into, which is modified in place as well
+                        $by_reference || $replacement_type === null,
+                    );
+                } finally {
+                    $node_data->unmarkEvaluated($operands);
+                }
             } elseif (!$array_type->hasMixed()) {
                 $non_array_types[] = (string)$type;
             }

@@ -2775,6 +2775,15 @@ final class UnusedVariableTest extends TestCase
                     }',
                 'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29',
             ],
+            'keyOfAnArrayAccessItemReadIsIncrementedOnce' => [
+                'code' => '<?php
+                    /** @param ArrayObject<int, list<int>> $a */
+                    function f(ArrayObject $a): int {
+                        $i = 0;
+                        return count($a[$i++]);
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:41',
+            ],
             'keyOfAnArrayItemPassedByReferenceIsIncrementedOnce' => [
                 'code' => '<?php
                     /** @param list<list<int>> $a */
