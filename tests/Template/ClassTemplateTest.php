@@ -5576,7 +5576,7 @@ final class ClassTemplateTest extends TestCase
                     $sent = (new Req())->send();
                     $sent_async = (new Req())->send(true);',
                 'assertions' => [
-                    '$picked===' => 'null',
+                    '$picked===' => 'User',
                     '$input===' => 'null|string',
                     '$input_with_default===' => '5|string',
                     '$sent===' => 'string',
