@@ -6,11 +6,14 @@ namespace Psalm\Tests;
 
 use Override;
 use PhpParser\Node\Stmt;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\IssueBuffer;
 
 use function array_column;
+use function array_map;
+use function str_replace;
 
 final class StatementsProviderTest extends TestCase
 {
@@ -20,6 +23,8 @@ final class StatementsProviderTest extends TestCase
     private const UNPARSABLE = '<?php function f( {';
 
     private const FIXED = "<?php\nfunction f() {\n    echo 1;\n}\n";
+
+    private const INVALID_PARTIAL_APPLICATIONS = "<?php\n#[A(?)]\nfunction f(int \$a, int \$b): void {}\n\$c = f(..., ?);\n";
 
     private string $file;
 
@@ -73,6 +78,55 @@ final class StatementsProviderTest extends TestCase
         }
     }
 
+    public function testPartialApplicationCompileErrorsAreReportedOnEveryRunWhateverTheTargetVersion(): void
+    {
+        $this->file_provider->registerFile($this->file, self::INVALID_PARTIAL_APPLICATIONS);
+
+        // the cache key has no PHP version, so the errors must not depend on it
+        foreach ([8_06_00, 8_05_00, 8_06_00] as $run => $php_version_id) {
+            $this->statements_provider->getStatementsForFile($this->file, $php_version_id, false);
+
+            $this->assertSame(
+                ['Cannot create Closure as attribute argument on line 2', 'Variadic placeholder must be last on line 4'],
+                $this->takeIssueMessages(),
+                "run $run",
+            );
+        }
+    }
+
+    public function testPartialReparseReportsTheCompileErrorsOfTheStatementsItKeeps(): void
+    {
+        $before = <<<'PHP'
+            <?php
+            final class A {
+                public function a(): void
+                {
+                    echo 1;
+                }
+
+                public function b(): void
+                {
+                    $c = strlen(..., ?);
+                }
+            }
+            PHP;
+        $this->file_provider->registerFile($this->file, $before);
+        $this->statements_provider->getStatementsForFile($this->file, 8_06_00, true);
+        IssueBuffer::clear();
+
+        // only a() is parsed again, and b() moves down a line
+        $this->file_provider->setContents($this->file, str_replace('echo 1;', "echo 1;\n        echo 2;", $before));
+        $this->statements_provider->getStatementsForFile($this->file, 8_06_00, true);
+
+        $this->assertSame(
+            [[11, 14, 'Variadic placeholder must be last on line 11']],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->column_from, $issue->message],
+                IssueBuffer::clear()[$this->file] ?? [],
+            ),
+        );
+    }
+
     /**
      * @return list<Stmt>
      */
@@ -88,5 +142,14 @@ final class StatementsProviderTest extends TestCase
     private function takeIssueTypes(): array
     {
         return array_column(IssueBuffer::clear()[$this->file] ?? [], 'type');
+    }
+
+    /**
+     * @return list<string>
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function takeIssueMessages(): array
+    {
+        return array_column(IssueBuffer::clear()[$this->file] ?? [], 'message');
     }
 }
