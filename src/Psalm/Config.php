@@ -2323,12 +2323,13 @@ final class Config
         }
 
         foreach ($stub_files as $file_path) {
-            $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
-            // fix mangled phar paths on Windows
-            if (str_starts_with($file_path, 'phar:\\\\')) {
-                $file_path = 'phar://'. substr($file_path, 7);
-            }
-            $codebase->scanner->addStubFileToDeepScan($file_path);
+            $codebase->scanner->addStubFileToDeepScan(self::normalizeStubFilePath($file_path));
+        }
+
+        // A preloaded stub may need a class that another stub defines, if that stub is also autoloadable. Scanned
+        // now, it would not be rescanned, so it must be scanned as a stub already.
+        foreach ($this->stub_files as $file_path) {
+            $codebase->scanner->addStubFile(self::normalizeStubFilePath($file_path));
         }
 
         $progress->debug('Registering preloaded stub files' . "\n");
@@ -2340,6 +2341,17 @@ final class Config
         $codebase->register_stub_files = false;
 
         $progress->debug('Finished registering preloaded stub files' . "\n");
+    }
+
+    private static function normalizeStubFilePath(string $file_path): string
+    {
+        $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
+        // fix mangled phar paths on Windows
+        if (str_starts_with($file_path, 'phar:\\\\')) {
+            $file_path = 'phar://' . substr($file_path, 7);
+        }
+
+        return $file_path;
     }
 
     public function visitStubFiles(Codebase $codebase, ?Progress $progress = null): void
@@ -2426,12 +2438,7 @@ final class Config
         }
 
         foreach ($stub_files as $file_path) {
-            $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
-            // fix mangled phar paths on Windows
-            if (str_starts_with($file_path, 'phar:\\\\')) {
-                $file_path = 'phar://' . substr($file_path, 7);
-            }
-            $codebase->scanner->addStubFileToDeepScan($file_path);
+            $codebase->scanner->addStubFileToDeepScan(self::normalizeStubFilePath($file_path));
         }
 
         $progress->debug('Registering stub files' . "\n");
