@@ -15,7 +15,9 @@ use Psalm\IssueBuffer;
 use Psalm\Storage\Assertion\InArray;
 use Psalm\Storage\Assertion\NotInArray;
 
+use function array_filter;
 use function array_intersect_key;
+use function array_values;
 use function count;
 use function implode;
 
@@ -43,6 +45,12 @@ final class AlgebraAnalyzer
         PhpParser\Node $stmt,
         array $new_assigned_var_ids,
     ): void {
+        // implications hold whatever the condition is
+        $formula_2 = array_values(array_filter(
+            $formula_2,
+            static fn(Clause $clause): bool => $clause->premise_var_id === null,
+        ));
+
         try {
             $negated_formula2 = Algebra::negateFormula($formula_2);
         } catch (ComplicatedExpressionException) {
