@@ -263,19 +263,14 @@ final class FunctionDocblockManipulator
                 if (!isset($chars[$i + 1]) || ($chars[$i + 1] !== '\\' && !preg_match('/[\w]/', $chars[$i + 1]))) {
                     $this->return_typehint_end = $i + $end_bracket_position + 2;
 
-                    // a union or an intersection goes on with the next type
                     $next = $i + 1;
-
                     while (isset($chars[$next]) && ctype_space($chars[$next])) {
                         ++$next;
                     }
 
-                    if (isset($chars[$next]) && ($chars[$next] === '|' || $chars[$next] === '&')) {
-                        $i = $next;
-                        continue;
+                    if (!isset($chars[$next]) || ($chars[$next] !== '|' && $chars[$next] !== '&')) {
+                        break;
                     }
-
-                    break;
                 }
             }
         }

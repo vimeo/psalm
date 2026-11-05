@@ -86,22 +86,7 @@ trait InvalidCodeAnalysisTestTrait
             || $this instanceof PureAnnotationAdditionTest
             || $this instanceof ImmutableAnnotationTest
         ) {
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingImmutableAnnotation',
-                Config::REPORT_ERROR,
-            );
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingInterfaceImmutableAnnotation',
-                Config::REPORT_ERROR,
-            );
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingPureAnnotation',
-                Config::REPORT_ERROR,
-            );
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingAbstractPureAnnotation',
-                Config::REPORT_ERROR,
-            );
+            Config::getInstance()->suggest_purity_annotations = true;
         }
 
         $this->project_analyzer->setPhpVersion($php_version, 'tests');
