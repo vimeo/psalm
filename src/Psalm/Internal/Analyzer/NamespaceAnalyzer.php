@@ -66,10 +66,8 @@ final class NamespaceAnalyzer extends SourceAnalyzer
                 $leftover_stmts[] = $stmt;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
                 $this->collectAnalyzableClassLike($stmt);
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
-                $this->visitUse($stmt);
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
-                $this->visitGroupUse($stmt);
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_ || $stmt instanceof PhpParser\Node\Stmt\GroupUse) {
+                $this->visitAnyUse($stmt, $leftover_stmts);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
                 foreach ($stmt->consts as $const) {
                     self::$public_namespace_constants[$this->namespace_name][$const->name->name] = Type::getMixed();
