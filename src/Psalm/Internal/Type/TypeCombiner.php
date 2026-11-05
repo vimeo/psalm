@@ -149,14 +149,18 @@ final class TypeCombiner
             if (isset($combination->value_types['true'])) {
                 return Type::getTrue($from_docblock);
             }
-        } elseif (isset($combination->value_types['void'])) {
-            unset($combination->value_types['void']);
+        } elseif (isset($combination->value_types['void']) && count($combination->value_types) > 1) {
+            if (count($combination->value_types) === 2 && isset($combination->value_types['never'])) {
+                // this is handled separately below, we can keep void
+            } else {
+                unset($combination->value_types['void']);
 
-            // if we're merging with another type, we cannot represent it in PHP
-            $from_docblock = true;
+                // if we're merging with another type, we cannot represent it in PHP
+                $from_docblock = true;
 
-            if (!isset($combination->value_types['null'])) {
-                $combination->value_types['null'] = new TNull($from_docblock);
+                if (!isset($combination->value_types['null'])) {
+                    $combination->value_types['null'] = new TNull($from_docblock);
+                }
             }
         }
 
