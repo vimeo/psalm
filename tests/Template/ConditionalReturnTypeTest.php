@@ -1329,6 +1329,28 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$three' => 'float',
                 ],
             ],
+            'conditionalReturnNeverOnListWithIterableArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param iterable<mixed, T> $iterable
+                     * @return ($iterable is list ? never : list<T>)
+                     */
+                    function iterableToList(iterable $iterable): array
+                    {
+                        return array_values(iterator_to_array($iterable));
+                    }
+
+                    /** @param iterable<int, string> $iterable */
+                    function f(iterable $iterable): void {
+                        $list = iterableToList($iterable);
+                        /** @psalm-check-type-exact $list = list<string> */
+                        echo count($list);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
         ];
     }
 
