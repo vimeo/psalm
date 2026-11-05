@@ -550,6 +550,14 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nestedOffsetAssignmentOnAnArrayObjectOnlyReadsTheOuterOffset' => [
+                'code' => '<?php
+                    /** @var ArrayObject<int, array<int, int>> $rows */
+                    $rows = new ArrayObject();
+
+                    $rows[1][2] = 3;
+                    $rows[1] = [2 => 3];',
+            ],
             'coalesceOnOptionalKeysWithComputedOffset' => [
                 'code' => '<?php
                     /** @return array{a?: int, b?: int} */
@@ -1523,6 +1531,14 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assigningTheWrongValueToAnArrayObjectOffsetIsStillReported' => [
+                'code' => '<?php
+                    /** @var ArrayObject<int, array<int, int>> $rows */
+                    $rows = new ArrayObject();
+
+                    $rows[1] = 3;',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32 - Argument 2 of ArrayObject::offsetSet expects array<int, int>, but 3 provided',
+            ],
             'missingOffsetPassedByReferenceToANonNullableParam' => [
                 'code' => '<?php
                     /** @param list<int> $dst */
