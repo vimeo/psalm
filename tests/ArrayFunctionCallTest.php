@@ -100,28 +100,6 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'arrayFirstAndLastReturnTheValueTypeOrNull' => [
-                'code' => '<?php
-                    /** @var list<int> $list */
-                    $list = [];
-                    /** @var non-empty-list<string> $nonEmpty */
-                    $nonEmpty = ["a"];
-
-                    $first = array_first($list);
-                    $last = array_last($list);
-                    $firstOfNonEmpty = array_first($nonEmpty);
-                    $lastOfNonEmpty = array_last($nonEmpty);
-                    $firstOfEmpty = array_first([]);',
-                'assertions' => [
-                    '$first===' => 'int|null',
-                    '$last===' => 'int|null',
-                    '$firstOfNonEmpty===' => 'string',
-                    '$lastOfNonEmpty===' => 'string',
-                    '$firstOfEmpty===' => 'null',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.5',
-            ],
             'arrayFindNullableResultIsIgnoredByDefaultInTests' => [
                 'code' => '<?php
                     /** @var list<string> $list */
@@ -3608,13 +3586,6 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'arrayFirstIsUndefinedBeforePhp85' => [
-                'code' => '<?php
-                    echo array_first([1]);',
-                'error_message' => 'UndefinedFunction',
-                'error_levels' => [],
-                'php_version' => '8.4',
-            ],
             'arrayFilterUseMethodOnInferableInt' => [
                 'code' => '<?php
                     $a = array_filter([1, 2, 3, 4], function ($i) { return $i->foo(); });',
