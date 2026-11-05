@@ -319,7 +319,7 @@ final class MethodSignatureTest extends TestCase
                         public function make(): self;
                     }
 
-                    class Maker {
+                    class Maker implements SelfInterface {
                         public function make(): static {
                             return $this;
                         }
