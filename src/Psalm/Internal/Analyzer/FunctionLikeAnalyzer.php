@@ -1570,10 +1570,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * A promoted constructor parameter is assigned to its property: what the constructor is given flows into it,
-     * as with `$this->name = $name`.
-     */
-    /**
      * Checks the classes of the `@global` types, like those of the `@param` types
      *
      * @psalm-capabilities read-props|write-this-props|write-refs
@@ -1602,6 +1598,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         return $is_valid;
     }
 
+    /**
+     * A promoted constructor parameter is assigned to its property: what the constructor is given flows into it,
+     * as with `$this->name = $name`.
+     */
     private function taintPromotedProperties(StatementsAnalyzer $statements_analyzer, Context $context): void
     {
         if (!$statements_analyzer->getCodebase()->taint_flow_graph
