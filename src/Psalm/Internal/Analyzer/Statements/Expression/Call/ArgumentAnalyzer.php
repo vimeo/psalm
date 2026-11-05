@@ -850,7 +850,6 @@ final class ArgumentAnalyzer
 
         if ($param_type->hasMixed()) {
             if ($codebase->infer_types_from_usage
-                && !$input_type->hasMixed()
                 && !$param_type->from_docblock
                 && !$param_type->had_template
                 && $method_id
