@@ -1,5 +1,46 @@
 # Taint Flow
 
+## The taint graph
+
+Psalm builds a directed graph while it analyses the code: a *node* stands for a value in a place (a variable, an
+argument, the result of a call), an *edge* says that the value of one node flows into the next. A *source* is a node
+that starts with taints (user input), a *sink* is a node that must not receive them. Psalm reports the paths from a
+source to a sink that no escape removes.
+
+```php
+<?php // --taint-analysis
+function wrap(string $s): string { return $s; }
+
+$x = wrap($_GET['a']);
+echo $x;
+```
+
+`psalm --taint-analysis --dump-taint-graph=taints.dot` writes the graph; these are its edges for the example, in the order
+of the flow:
+
+```
+"$_GET specialized in src/a.php:64" -> "$_GET['a'] from src/a.php:64-68"
+"$_GET['a'] from src/a.php:64-68" -> "string-cast from src/a.php:64-73"
+"string-cast from src/a.php:64-73" -> "call to wrap from src/a.php:64-73"
+"call to wrap from src/a.php:64-73" -> "wrap#1 specialized in src/a.php:59"
+"wrap#1" -> "$s from src/a.php:27-28"
+"$s from src/a.php:27-28" -> "wrap"
+"wrap specialized in src/a.php:59" -> "$x from src/a.php:54-55"
+"$x from src/a.php:54-55" -> "$GLOBALS['x']" -> "call to echo from src/a.php:82-83"
+"call to echo from src/a.php:82-83" -> "echo#1 specialized in src/a.php:77"
+```
+
++ `wrap#1` is the node of the first argument of `wrap()` and `wrap` the node of its result: the nodes of the function
+  itself. Unless the function is specialized, they are shared by all its calls, so what one caller passes in comes out
+  at every other caller.
++ *Specialized* nodes (`wrap#1 specialized in …`) belong to one call only. For a function that is
+  [specialized](avoiding_false_positives.md#specializing-taints-in-functions), or that Psalm infers to be pure, the
+  taints go from the arguments of a call to its result without leaving that call, which is why the flow above ends in
+  `$x` and not in the other callers of `wrap()`.
+
+To add edges that the code doesn't show, use the annotations of the next section, or the methods described in
+[Taint flows from plugins](#taint-flows-from-plugins).
+
 ## Optimized Taint Flow
 
 When dealing with frameworks, keeping track of the data flow might involve different layers
