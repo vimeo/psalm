@@ -595,10 +595,11 @@ Allows you to hard-code a serializer for Psalm to use when caching data. By defa
 #### compressor
 ```xml
 <psalm
-  compressor="['lz4'|'deflate'|'off']"
+  compressor="['zstd'|'lz4'|'deflate'|'off']"
 >
 ```
-Allows you to hard-code a compressor for Psalm's cache. By default, Psalm uses `ext-zlib` deflate, if it's enabled.
+Allows you to hard-code a compressor for Psalm's cache. By default, Psalm uses `ext-zstd` (version 0.15.0 or later) if it's enabled, otherwise `ext-zlib` deflate if it's enabled, otherwise no compression.
+If the extension of the compressor you ask for is missing, Psalm warns and uses that default.
 
 #### threads
 ```xml
