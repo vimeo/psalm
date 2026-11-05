@@ -21,6 +21,7 @@ use Psalm\Issue\InvalidGlobal;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Type;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 use WeakMap;
@@ -153,6 +154,9 @@ final class GlobalAnalyzer
                 $context->by_ref_param_out_nodes[$var_id] = self::getGlobalNode($taint_flow_graph, $var_name);
             }
 
+            $context->bound_globals[$var_id] = $comment_type
+                ?? $function_storage->global_types[$var_id]
+                ?? VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
             $context->references_to_external_scope[$var_id] = true;
 
             if (isset($context->references_in_scope[$var_id])) {
@@ -229,34 +233,43 @@ final class GlobalAnalyzer
 
     /**
      * What the globals bound in this scope hold after a call of the function-like of $storage, which may have
-     * written to them, or the function-likes it calls may have (see getGlobalsWrittenBy()): whatever the program
-     * writes to them. A variable of the scope that isn't bound to a global is left alone.
+     * written to them, or the function-likes it calls may have (see getGlobalsWrittenBy()): what they held, or
+     * the type this scope declares for the global (inline @var, @global, <globals> config), which is the contract
+     * for what is written. Only the variables bound by `global`, or those of the file scope, are read: a
+     * by-reference parameter or a local that shares the name of the global keeps its type.
      */
     public static function readGlobalsWrittenBy(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         FunctionLikeStorage $storage,
     ): void {
-        if (!$context->is_global && !$context->references_to_external_scope) {
+        if (!$context->is_global && !$context->bound_globals) {
             return;
         }
 
         $analysis_php_version_id = $statements_analyzer->getCodebase()->analysis_php_version_id;
 
         foreach (self::getGlobalsWrittenBy($statements_analyzer, $storage) as $var_id => $_) {
-            if ((!$context->is_global && !isset($context->references_to_external_scope[$var_id]))
+            if ((!$context->is_global && !isset($context->bound_globals[$var_id]))
                 || preg_match(self::VARIABLE_ID_PATTERN, $var_id) !== 1
                 || VariableFetchAnalyzer::isSuperGlobal($var_id)
             ) {
                 continue;
             }
 
-            $context->vars_in_scope[$var_id] = self::taintGlobalRead(
-                $statements_analyzer,
-                $context,
-                $var_id,
-                VariableFetchAnalyzer::getGlobalType($var_id, $analysis_php_version_id),
-            );
+            $declared_type = $context->bound_globals[$var_id]
+                ?? VariableFetchAnalyzer::getGlobalType($var_id, $analysis_php_version_id);
+
+            // the callee may not write the global, and the variable may not reference it on every path: keep what it
+            // held (vanilla mixed already contains it)
+            $type = isset($context->vars_in_scope[$var_id]) && !$declared_type->isVanillaMixed()
+                ? Type::combineUnionTypes(
+                    $context->vars_in_scope[$var_id]->setProperties(['parent_nodes' => []]),
+                    $declared_type,
+                )
+                : $declared_type;
+
+            $context->vars_in_scope[$var_id] = self::taintGlobalRead($statements_analyzer, $context, $var_id, $type);
             $context->vars_possibly_in_scope[$var_id] = true;
         }
     }

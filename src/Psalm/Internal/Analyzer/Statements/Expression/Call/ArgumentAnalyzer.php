@@ -850,7 +850,6 @@ final class ArgumentAnalyzer
 
         if ($param_type->hasMixed()) {
             if ($codebase->infer_types_from_usage
-                && !$input_type->hasMixed()
                 && !$param_type->from_docblock
                 && !$param_type->had_template
                 && $method_id
@@ -1951,11 +1950,13 @@ final class ArgumentAnalyzer
         }
 
         if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
+            // only the data-flow path is wanted: the argument check reports a bad argument itself
             $input_type = CastAnalyzer::castStringAttempt(
                 $statements_analyzer,
                 $context,
                 $input_type,
                 $expr,
+                false,
                 false,
             );
         }

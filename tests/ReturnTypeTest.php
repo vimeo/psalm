@@ -126,6 +126,22 @@ final class ReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nativeArrayReturnTypeTakesTheInheritedIterableDocblock' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @return iterable<int, stdClass> */
+                        abstract public function items(): iterable;
+                    }
+
+                    final class Child extends Base {
+                        public function items(): array {
+                            return [new stdClass()];
+                        }
+                    }
+
+                    $items = (new Child())->items();',
+                'assertions' => ['$items===' => 'array<int, stdClass>'],
+            ],
             'iterableDocblockReturnTypeOfNativeArrayOrObject' => [
                 'code' => '<?php
                     /**
@@ -1883,6 +1899,21 @@ final class ReturnTypeTest extends TestCase
                     '$b===' => "''",
                 ],
             ],
+            'objectShapePropertyNarrowedByIdenticalCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param object{n: string} $s
+                     * @return non-empty-string
+                     */
+                    function f(object $s): string {
+                        if ($s->n === "") {
+                            throw new RuntimeException("empty-string");
+                        }
+                        return $s->n;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingThrowsDocblock'],
+            ],
         ];
     }
 
@@ -1893,6 +1924,20 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nativeArrayReturnTypeMustRespectTheInheritedIterableDocblock' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @return iterable<int, stdClass> */
+                        abstract public function items(): iterable;
+                    }
+
+                    final class Child extends Base {
+                        public function items(): array {
+                            return [3, 4];
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'iterableDocblockReturnTypeOfNativeObjectRejectsANonIterableObject' => [
                 'code' => '<?php
                     interface FooInterface {

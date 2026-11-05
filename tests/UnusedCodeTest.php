@@ -15,6 +15,7 @@ use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\MethodExistenceProviderEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
@@ -416,6 +417,76 @@ final class UnusedCodeTest extends TestCase
         $this->assertSame(10, $issue->line_from);
     }
 
+    public function testCallStaticReachedWhenAMethodExistenceProviderAnswersForTheClass(): void
+    {
+        $this->project_analyzer->getCodebase()->methods->existence_provider->registerClosure(
+            'Factory',
+            static fn(): bool => true,
+        );
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-no-seal-methods */
+                final class Factory {
+                    /** @param list<mixed> $_arguments */
+                    public static function __callStatic(string $name, array $_arguments): void {
+                        echo $name;
+                    }
+                }
+
+                Factory::make("x");',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testCallStaticNotReachedWhenAMethodExistenceProviderDeniesCall(): void
+    {
+        $this->project_analyzer->getCodebase()->methods->existence_provider->registerClosure(
+            'Factory',
+            static fn(MethodExistenceProviderEvent $event): ?bool => $event->getMethodNameLowercase() === '__call'
+                ? false
+                : null,
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('Cannot find any calls to method Factory::__callStatic');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-no-seal-methods */
+                final class Factory {
+                    /** @param list<mixed> $_arguments */
+                    public static function __callStatic(string $name, array $_arguments): void {
+                        echo $name;
+                    }
+
+                    /** @param list<mixed> $_arguments */
+                    public function __call(string $name, array $_arguments): void {
+                        echo $name;
+                    }
+
+                    public function run(): void {
+                        self::make();
+                    }
+                }
+
+                (new Factory())->run();',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+    }
+
     /**
      * @return array<string, array{code:string, ignored_issues?: list<string>}>
      * @psalm-pure
@@ -423,6 +494,34 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'argumentCastToStringDoesNotReportPossiblyInvalidCast' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function a(array|string $s): string {
+                        return ucfirst($s);
+                    }',
+                'ignored_issues' => ['PossiblyInvalidArgument'],
+            ],
+            'argumentCastToStringDoesNotReportInvalidCast' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function a(array $s): string {
+                        return ucfirst($s);
+                    }',
+                'ignored_issues' => ['InvalidArgument'],
+            ],
+            'userFunctionArgumentCastToStringDoesNotReportCastIssue' => [
+                'code' => '<?php
+                    function takesString(string $s): string {
+                        return $s;
+                    }
+
+                    /** @psalm-api */
+                    function a(array|string $s, array $t): string {
+                        return takesString($s) . takesString($t);
+                    }',
+                'ignored_issues' => ['PossiblyInvalidArgument', 'InvalidArgument'],
+            ],
             'usedExceptionsAreNotReported' => [
                 'code' => '<?php
                     /** @psalm-api */
@@ -1761,6 +1860,322 @@ final class UnusedCodeTest extends TestCase
 
                     report();',
             ],
+            'propertyReadInDestructorIsUsed' => [
+                'code' => '<?php
+                    final class Greeter {
+                        public function __construct(private string $name) {
+                            echo "Hello, {$this->name}!\n";
+                        }
+
+                        public function __destruct() {
+                            echo "Goodbye, {$this->name}!\n";
+                        }
+                    }
+
+                    $greeter = new Greeter("World");
+                    unset($greeter);',
+            ],
+            'privateMethodCalledOnlyFromDestructorIsUsed' => [
+                'code' => '<?php
+                    final class A {
+                        public function __destruct() {
+                            $this->close();
+                        }
+
+                        private function close(): void {
+                            echo "closed";
+                        }
+                    }
+
+                    new A();',
+            ],
+            'destructorInheritedFromAbstractParentIsUsed' => [
+                'code' => '<?php
+                    abstract class P {
+                        public function __destruct() {
+                            $this->close();
+                        }
+
+                        abstract protected function close(): void;
+                    }
+
+                    final class Q extends P {
+                        private string $name = "q";
+
+                        protected function close(): void {
+                            echo $this->name;
+                        }
+                    }
+
+                    new Q();',
+            ],
+            'destructorFromTraitIsUsed' => [
+                'code' => '<?php
+                    trait T {
+                        public function __destruct() {
+                            $this->close();
+                        }
+                    }
+
+                    final class A {
+                        use T;
+
+                        private function close(): void {
+                            echo "closed";
+                        }
+                    }
+
+                    new A();',
+            ],
+            'propertyReadInImplicitlyCalledMagicMethodsIsUsed' => [
+                'code' => '<?php
+                    final class A {
+                        private string $a = "a";
+                        private string $b = "b";
+                        private string $c = "c";
+                        private string $d = "d";
+                        private string $e = "e";
+                        private string $f = "f";
+                        private string $g = "g";
+                        private static string $h = "h";
+
+                        /** @return list<string> */
+                        public function __sleep(): array { return [$this->a]; }
+                        public function __wakeup(): void { echo $this->b; }
+                        /** @return array<string, string> */
+                        public function __serialize(): array { return ["c" => $this->c]; }
+                        /** @param array<string, string> $data */
+                        public function __unserialize(array $data): void { echo $this->d, $data["c"]; }
+                        /** @return array<string, string> */
+                        public function __debugInfo(): array { return ["e" => $this->e]; }
+                        public function __isset(string $name): bool { return $name === $this->f; }
+                        public function __unset(string $name): void { echo $this->g, $name; }
+                        /** @param array<string, string> $_properties */
+                        public static function __set_state(array $_properties): self { echo self::$h; return new self(); }
+                    }
+
+                    echo serialize(new A());',
+            ],
+            'implicitlyCalledMagicMethodsOfUsedClassAreNotReported' => [
+                'code' => '<?php
+                    final class Single {
+                        private static ?self $instance = null;
+                        private function __construct() {}
+                        private function __clone() {}
+                        public static function get(): self { return self::$instance ??= new self(); }
+                    }
+
+                    final class AllMagic {
+                        public function __destruct() {}
+                        public function __clone() {}
+                        public function __invoke(): void {}
+                        public function __isset(string $k): bool { return $k === ""; }
+                        public function __unset(string $k): void { echo $k; }
+                        /** @return list<string> */
+                        public function __sleep(): array { return []; }
+                        public function __wakeup(): void {}
+                        /** @return array<string, mixed> */
+                        public function __serialize(): array { return []; }
+                        /** @param array<string, mixed> $data */
+                        public function __unserialize(array $data): void { echo count($data); }
+                        /** @param array<string, mixed> $a */
+                        public static function __set_state(array $a): self { echo count($a); return new self(); }
+                        /** @return array<string, mixed> */
+                        public function __debugInfo(): array { return []; }
+                        public function __toString(): string { return ""; }
+                    }
+
+                    echo get_class(Single::get());
+                    new AllMagic();',
+            ],
+            'callStaticReachedByPseudoStaticCallIsUsed' => [
+                'code' => '<?php
+                    /**
+                     * @method static string make(string $name)
+                     */
+                    final class Factory {
+                        private static string $prefix = "made: ";
+
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return self::$prefix . $name;
+                        }
+                    }
+
+                    echo Factory::make("x");',
+            ],
+            'callStaticReachedByFirstClassCallableIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return $name;
+                        }
+                    }
+
+                    $make = Factory::make(...);
+                    echo $make("x");',
+            ],
+            'callStaticReachedByPseudoStaticFirstClassCallableIsUsed' => [
+                'code' => '<?php
+                    /**
+                     * @method static string make(string $name)
+                     */
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return $name;
+                        }
+                    }
+
+                    $make = Factory::make(...);
+                    echo $make("x");',
+            ],
+            'callStaticReachedByLiteralNameFirstClassCallableIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return $name;
+                        }
+                    }
+
+                    $name = "make";
+                    $make = Factory::$name(...);
+                    $make("x");',
+            ],
+            'callStaticReachedByPrivateAndProtectedMethodCallsFromOutsideIsUsed' => [
+                'code' => '<?php
+                    final class Factory {
+                        private static function make(): string {
+                            return "private";
+                        }
+
+                        protected static function build(): string {
+                            return "protected";
+                        }
+
+                        public static function hidden(): string {
+                            return self::make() . self::build();
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return $name;
+                        }
+                    }
+
+                    echo Factory::hidden();
+                    echo Factory::make();
+                    echo Factory::build();',
+                'ignored_issues' => ['InaccessibleMethod'],
+            ],
+            'callStaticReachedByUndeclaredStaticCallOnChildIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    abstract class Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name;
+                        }
+                    }
+
+                    final class Child extends Base {}
+
+                    Child::make("x");',
+            ],
+            'callStaticReachedByParentCallWithoutCallIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    abstract class Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function run(): void {
+                            parent::make();
+                        }
+                    }
+
+                    (new Child())->run();',
+            ],
+            'callStaticReachedFromStaticMethodOfClassWithCallIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name;
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name;
+                        }
+
+                        public static function run(): void {
+                            self::make();
+                            static::other();
+                        }
+                    }
+
+                    Factory::run();
+                    (new Factory())->other();',
+            ],
+            'callStaticReachedFromClosureWithoutThisInStaticMethodIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name;
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name;
+                        }
+
+                        public static function run(): void {
+                            $create = function (): Closure {
+                                return self::make(...);
+                            };
+                            $create()();
+                        }
+                    }
+
+                    Factory::run();
+                    (new Factory())->other();',
+            ],
+            'callStaticReachedFromParentInstanceMethodWherePossiblyNotInstanceIsUsed' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name;
+                        }
+
+                        public function run(): void {
+                            Child::make();
+                        }
+                    }
+
+                    /** @psalm-no-seal-methods */
+                    final class Child extends Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name;
+                        }
+                    }
+
+                    (new Base())->run();
+                    (new Child())->other();',
+            ],
         ];
     }
 
@@ -1771,6 +2186,55 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'argumentStillReportsPossiblyInvalidArgumentWithUnusedCode' => [
+                'code' => '<?php
+                    /**
+                     * @param array|string $s
+                     * @psalm-api
+                     */
+                    function a($s): string {
+                        return ucfirst($s);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'argumentStillReportsInvalidArgumentWithUnusedCode' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function a(array $s): string {
+                        return ucfirst($s);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'explicitStringCastStillReportsPossiblyInvalidCastWithUnusedCode' => [
+                'code' => '<?php
+                    /**
+                     * @param array|string $s
+                     * @psalm-api
+                     */
+                    function a($s): string {
+                        return (string) $s;
+                    }',
+                'error_message' => 'PossiblyInvalidCast',
+            ],
+            'explicitStringCastStillReportsInvalidCastWithUnusedCode' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function a(array $s): string {
+                        return (string) $s;
+                    }',
+                'error_message' => 'InvalidCast',
+            ],
+            'interpolationStillReportsPossiblyInvalidCastWithUnusedCode' => [
+                'code' => '<?php
+                    /**
+                     * @param array|string $s
+                     * @psalm-api
+                     */
+                    function a($s): string {
+                        return "$s";
+                    }',
+                'error_message' => 'PossiblyInvalidCast',
+            ],
             'unusedClass' => [
                 'code' => '<?php
                     final class A { }',
@@ -2208,6 +2672,31 @@ final class UnusedCodeTest extends TestCase
                     }',
                 'error_message' => 'UnusedMethodCall',
             ],
+            'unusedPureFunctionCallExplainsThatItHasNoEffect' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(string $s): void {
+                        strlen($s);
+                    }',
+                'error_message' => 'UnusedFunctionCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:4:25 - The call to strlen seems to have no effect, its result is not used',
+            ],
+            'unusedMutationFreeMethodCallExplainsThatItHasNoEffect' => [
+                'code' => '<?php
+                    final class Reader {
+                        /** @psalm-pure */
+                        public function read(): string {
+                            return "x";
+                        }
+                    }
+
+                    /** @psalm-api */
+                    function f(Reader $reader): void {
+                        $reader->read();
+                    }',
+                'error_message' => 'UnusedMethodCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:11:34 - The call to Reader::read seems to have no effect, its result is not used',
+            ],
             'unusedNewException' => [
                 'code' => '<?php
                     /** @psalm-api */
@@ -2532,6 +3021,139 @@ final class UnusedCodeTest extends TestCase
                     class a {}
                     new a;',
                 'error_message' => 'ClassMustBeFinal',
+            ],
+            'unusedClassWithDestructorDoesNotMakeItsReferencesUsed' => [
+                'code' => '<?php
+                    final class Helper {
+                        public function run(): void {}
+                    }
+
+                    final class Dead {
+                        public function __destruct() {
+                            (new Helper())->run();
+                        }
+                    }',
+                'error_message' => 'Class Helper is never used',
+            ],
+            'callStaticNotReachedByCallToVisibleMethodWithPseudoTag' => [
+                'code' => '<?php
+                    /**
+                     * @method static string make(string $name)
+                     */
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return $name;
+                        }
+
+                        public static function make(string $name): string {
+                            return $name;
+                        }
+                    }
+
+                    echo Factory::make("x");',
+                'error_message' => 'Cannot find any calls to method Factory::__callStatic',
+            ],
+            'callStaticNotReachedByParentCallInInstanceMethodWithCall' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    abstract class Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function run(): void {
+                            parent::make();
+                        }
+                    }
+
+                    (new Child())->run();',
+                'error_message' => 'Cannot find any calls to method Base::__callStatic',
+            ],
+            'callStaticNotReachedByParentFirstClassCallableInInstanceMethodWithCall' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    abstract class Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function run(): Closure {
+                            return parent::make(...);
+                        }
+                    }
+
+                    $make = (new Child())->run();
+                    $make("x");',
+                'error_message' => 'Cannot find any calls to method Base::__callStatic',
+            ],
+            'callStaticNotReachedByNarrowedThisInParentInstanceMethodWithCall' => [
+                'code' => '<?php
+                    class Base {
+                        public function run(): void {
+                            if ($this instanceof Child) {
+                                Child::make();
+                            }
+                        }
+                    }
+
+                    /** @psalm-no-seal-methods */
+                    final class Child extends Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+                    }
+
+                    (new Base())->run();
+                    (new Child())->run();',
+                'error_message' => 'Cannot find any calls to method Child::__callStatic',
+            ],
+            'callStaticNotReachedByClosureWithThisInInstanceMethodWithCall' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        public function run(): void {
+                            $create = function (): Closure {
+                                return self::make(...);
+                            };
+                            $create()();
+                        }
+                    }
+
+                    (new Factory())->run();',
+                'error_message' => 'Cannot find any calls to method Factory::__callStatic',
             ],
         ];
     }

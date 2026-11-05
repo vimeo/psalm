@@ -41,6 +41,7 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
@@ -134,6 +135,11 @@ final class ConstantTypeResolver
                     }
 
                     if ($c instanceof UnresolvedDivisionOp) {
+                        // a division by zero throws, so the constant has no value
+                        if ($right->value == 0) {
+                            return new TNever();
+                        }
+
                         return self::getLiteralTypeFromScalarValue($left->value / $right->value);
                     }
 

@@ -839,7 +839,7 @@ final class TaintTest extends TestCase
     }
 
     /**
-     * @return array<string, array{code:string}>
+     * @return array<string, array{code: string, php_version?: string}>
      * @psalm-pure
      */
     public static function providerValidCodeParse(): array
@@ -2738,6 +2738,15 @@ final class TaintTest extends TestCase
                     function createAny(SiteMapper $mapper, string $id): void {
                         $mapper::create($id);
                     }',
+            ],
+            'arrayAnyKeyNotTaintedByValue' => [
+                'code' => '<?php
+                    $values = ["a" => (string) $_GET["v"]];
+                    array_any($values, function (string $value, string $key): bool {
+                        echo $key;
+                        return true;
+                    });',
+                'php_version' => '8.4',
             ],
             'firstClassCallableOfTaintPropagatingFunction' => [
                 'code' => '<?php
@@ -14329,6 +14338,27 @@ final class TaintTest extends TestCase
                     foo([$_GET["a"]]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintThroughArrayAnyKey' => [
+                'code' => '<?php
+                    $values = [(string) $_GET["k"] => 1];
+                    array_any($values, function (int $value, string $key): bool {
+                        echo $key;
+                        return true;
+                    });',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.4',
+            ],
+            'taintThroughArrayFirst' => [
+                'code' => '<?php
+                    /** @param array<string> $arr */
+                    function foo(array $arr) : void {
+                        echo array_first($arr) ?? "";
+                    }
+
+                    foo([(string) $_GET["a"]]);',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.5',
+            ],
             'shellExecBacktick' => [
                 'code' => '<?php
 
@@ -15300,6 +15330,27 @@ final class TaintTest extends TestCase
 
                     f(Cfg::$v);
                     echo html("other");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFlowsThroughParentPropertyToChildGetter' => [
+                'code' => '<?php // --taint-analysis
+                    class ParentResponse {
+                        public string $taint = "";
+
+                        public function setTaint(string $taint): void {
+                            $this->taint = $taint;
+                        }
+                    }
+
+                    class ChildResponse extends ParentResponse {
+                        public function getTaint(): string {
+                            return $this->taint;
+                        }
+                    }
+
+                    $response = new ChildResponse();
+                    $response->setTaint((string) $_GET["bar"]);
+                    echo $response->getTaint();',
                 'error_message' => 'TaintedHtml',
             ],
         ];
