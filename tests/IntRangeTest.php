@@ -45,6 +45,15 @@ final class IntRangeTest extends TestCase
                         return "";
                     }',
             ],
+            'randOfUnboundedIntsIsInt' => [
+                'code' => '<?php
+                    function getInt(): int{return 0;}
+                    $a = getInt();
+                    $b = rand($a, $a);',
+                'assertions' => [
+                    '$b===' => 'int',
+                ],
+            ],
             'intRangeContained' => [
                 'code' => '<?php
                     /**
@@ -602,7 +611,7 @@ final class IntRangeTest extends TestCase
                     ',
                 'assertions' => [
                     '$c===' => 'int<-94, 19>',
-                    '$f===' => 'int<min, max>',
+                    '$f===' => 'int',
                     '$g===' => 'int<min, 9>',
                 ],
             ],
