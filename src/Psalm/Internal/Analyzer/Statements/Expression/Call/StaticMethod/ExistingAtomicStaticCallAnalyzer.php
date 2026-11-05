@@ -180,7 +180,8 @@ final class ExistingAtomicStaticCallAnalyzer
         }
 
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
-        $static_property_mutations = $codebase->methods->getStorage($declaring_method_id)->static_property_mutations;
+        $static_property_mutations = $codebase->methods->getStorage($declaring_method_id, true)
+            ->static_property_mutations;
 
         if ($static_property_mutations !== null) {
             $context->resetMutatedStaticProperties(
