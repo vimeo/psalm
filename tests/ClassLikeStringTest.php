@@ -196,6 +196,16 @@ final class ClassLikeStringTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedClassExistsOnTheLeftOfAnOrAllowsTheClassOnTheRight' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return !class_exists(Missing::class) || Missing::foo();
+                    }
+
+                    function checkTwo(): bool {
+                        return (!class_exists(First::class) || !class_exists(Second::class)) || First::foo();
+                    }',
+            ],
             'arrayOfClassConstants' => [
                 'code' => '<?php
                     /**
@@ -1107,6 +1117,27 @@ final class ClassLikeStringTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classExistsOnTheLeftOfAnOrDoesNotAllowTheClassOnTheRight' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return class_exists(Missing::class) || Missing::foo();
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'negatedClassExistsOnTheLeftOfAnAndDoesNotAllowTheClassOnTheRight' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return !class_exists(Missing::class) && Missing::foo();
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'classExistsInAnOrOnTheLeftOfAnAndDoesNotAllowTheClassOnTheRight' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return (class_exists(Missing::class) || class_exists(Other::class)) && Missing::foo();
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
             'classExistsChecksOfOtherClassesDoNotAllowAnUncheckedOne' => [
                 'code' => '<?php
                     function test(): void {

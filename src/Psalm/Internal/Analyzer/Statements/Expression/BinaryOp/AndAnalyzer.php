@@ -155,9 +155,10 @@ final class AndAnalyzer
         }
 
         $right_context->inside_logical_operand = true;
+        // the classes the right side is only reached for when they exist
         $right_context->phantom_classes = [
-            ...$right_context->phantom_classes,
-            ...$left_context->phantom_classes,
+            ...$context->phantom_classes,
+            ...GuardedClasses::whenResult($stmt->left, true),
         ];
 
         $partitioned_clauses = Context::removeReconciledClauses(
