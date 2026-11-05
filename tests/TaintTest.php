@@ -845,6 +845,29 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'dontTaintTheOffsetSetOfAnItemPassedByReference' => [
+                'code' => '<?php // --taint-analysis
+                    /** @implements ArrayAccess<string, list<int>> */
+                    final class Store implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        /** @return list<int> */
+                        public function offsetGet(mixed $offset): array {
+                            return [];
+                        }
+
+                        /** @psalm-taint-sink html $offset */
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function sortItem(Store $s): void {
+                        sort($s[(string) $_GET["k"]]);
+                    }',
+            ],
             'dontTaintAParameterWithANamedArgumentTheVariadicTakes' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-sink html $a */
@@ -5450,6 +5473,17 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'taintAnItemOfAMixedValuePassedByReference' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $m */
+                    function f($m): void {
+                        /** @psalm-suppress MixedArrayAccess */
+                        preg_match("/(.*)/", (string) $_GET["x"], $m["k"]);
+                        /** @psalm-suppress MixedArrayAccess, MixedArgument */
+                        echo $m["k"][1];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAnItemOfAStaticPropertyPassedByReference' => [
                 'code' => '<?php // --taint-analysis
                     final class Box {

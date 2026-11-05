@@ -616,6 +616,7 @@ final class PartialApplicationAnalyzer
                     $context,
                     true,
                     false,
+                    true,
                 );
             } finally {
                 $node_data->unmarkEvaluated($operands);

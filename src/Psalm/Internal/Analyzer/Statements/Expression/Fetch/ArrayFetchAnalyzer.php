@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
@@ -801,6 +802,7 @@ final class ArrayFetchAnalyzer
     /**
      * @psalm-suppress ComplexMethod to be refactored.
      * Good type/bad type behaviour could be mutualised with ArrayAnalyzer
+     * @param bool $by_reference whether the item is written by a call it is passed to by reference
      */
     public static function getArrayAccessTypeGivenOffset(
         StatementsAnalyzer $statements_analyzer,
@@ -812,6 +814,7 @@ final class ArrayFetchAnalyzer
         Context $context,
         ?PhpParser\Node\Expr $assign_value = null,
         ?Union $replacement_type = null,
+        bool $by_reference = false,
     ): Union {
         $offset_type = $offset_type_original->getBuilder();
 
@@ -968,6 +971,7 @@ final class ArrayFetchAnalyzer
                         $stmt,
                         $array_access_type,
                         $type,
+                        $by_reference,
                     );
 
                     $has_valid_expected_offset = true;
@@ -1091,6 +1095,7 @@ final class ArrayFetchAnalyzer
                     $assign_value,
                     $array_access_type,
                     $has_array_access,
+                    $by_reference,
                 );
             } elseif (!$array_type->hasMixed()) {
                 $non_array_types[] = (string)$type;
@@ -1422,6 +1427,7 @@ final class ArrayFetchAnalyzer
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         ?Union $array_access_type,
         Atomic $type,
+        bool $by_reference = false,
     ): Union {
         if (!$context->collect_initializations
             && !$context->collect_mutations
@@ -1433,7 +1439,8 @@ final class ArrayFetchAnalyzer
             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
         }
 
-        if (!$context->inside_isset) {
+        // an item passed by reference was reported as accessed when the argument was read
+        if (!$context->inside_isset && !$by_reference) {
             if ($in_assignment) {
                 IssueBuffer::maybeAdd(
                     new MixedArrayAssignment(
@@ -2206,6 +2213,7 @@ final class ArrayFetchAnalyzer
         ?PhpParser\Node\Expr $assign_value,
         ?Union &$array_access_type,
         bool &$has_array_access,
+        bool $by_reference,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         if (strtolower($type->value) === 'simplexmlelement'
@@ -2272,6 +2280,10 @@ final class ArrayFetchAnalyzer
             }
 
             if ($in_assignment) {
+                // PHP does not call offsetSet() for an item passed by reference, it modifies the item in place: the
+                // call is analysed for what calling the method implies, but has no arguments to check
+                $arg_attributes = $by_reference ? [ArgumentAnalyzer::NOT_PASSED => true] : [];
+
                 $old_node_data = $statements_analyzer->node_data;
 
                 $statements_analyzer->node_data = clone $statements_analyzer->node_data;
@@ -2286,12 +2298,14 @@ final class ArrayFetchAnalyzer
                                     new VirtualName('null'),
                                     $stmt->var->getAttributes(),
                                 ),
+                            attributes: $arg_attributes,
                         ),
                         new VirtualArg(
                             $assign_value ?? new VirtualConstFetch(
                                 new VirtualName('null'),
                                 $stmt->var->getAttributes(),
                             ),
+                            attributes: $arg_attributes,
                         ),
                     ],
                 );

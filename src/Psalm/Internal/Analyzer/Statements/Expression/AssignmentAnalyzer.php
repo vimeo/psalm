@@ -1287,6 +1287,7 @@ final class AssignmentAnalyzer
                     $context,
                     null,
                     $by_ref_out_type,
+                    true,
                 );
             } finally {
                 $node_data->unmarkEvaluated($operands);

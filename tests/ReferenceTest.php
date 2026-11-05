@@ -261,6 +261,154 @@ final class ReferenceTest extends TestCase
                         return $a["z"] ?? 0;
                     }',
             ],
+            'itemOfArrayAccessPassedByReferenceIsNotSet' => [
+                'code' => '<?php
+                    /** @param ArrayObject<int, list<int>> $o */
+                    function sort_first(ArrayObject $o): void {
+                        sort($o[0]);
+                    }',
+            ],
+            'itemAppendedByReferenceToAnArrayObject' => [
+                'code' => '<?php
+                    /** @param ArrayObject<int, string> $o */
+                    function matchInto(ArrayObject $o): void {
+                        preg_match("/x/", "s", $o[]);
+                    }',
+            ],
+            'itemOfAnArrayAccessReadAsMixedPassedByReference' => [
+                'code' => '<?php
+                    final class Box implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        public function offsetGet(mixed $offset): mixed {
+                            return "";
+                        }
+
+                        /** @param string $value */
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function cast(Box $b): void {
+                        settype($b[0], "string");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute', 'MissingTemplateParam'],
+                'php_version' => '8.0',
+            ],
+            'itemOfAUnionOfArrayAccessesPassedByReference' => [
+                'code' => '<?php
+                    /** @param ArrayAccess<int, list<int>|null>|array<int, list<string>> $o */
+                    function sortObjectOrArray($o): void {
+                        sort($o[0]);
+                    }
+
+                    /** @param ArrayObject<int, list<int>>|ArrayIterator<int, list<string>> $o */
+                    function sortEitherObject($o): void {
+                        sort($o[0]);
+                    }',
+            ],
+            'nullItemOfAnArrayAccessPassedByReference' => [
+                'code' => '<?php
+                    /** @param ArrayAccess<int, array<array-key, string>> $o */
+                    function fillMissing(ArrayAccess $o): void {
+                        if ($o[0] !== null) {
+                            return;
+                        }
+
+                        preg_match("/x/", "x", $o[0]);
+                    }',
+            ],
+            'itemOfAMixinArrayObjectPassedByReference' => [
+                'code' => '<?php
+                    /** @mixin ArrayObject<int, list<int>> */
+                    final class Lists {
+                        public function __call(string $name, array $args): mixed {
+                            return [];
+                        }
+                    }
+
+                    function sortFirst(Lists $o): bool {
+                        return sort($o[0]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'itemOfAnArrayObjectOfNeverPassedByReference' => [
+                'code' => '<?php
+                    /** @param ArrayObject<int, never> $o */
+                    function fill(ArrayObject $o): void {
+                        preg_match("/x/", "x", $o[0]);
+                    }',
+            ],
+            'itemOfATemplatedMixinArrayObjectPassedByReference' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @mixin ArrayObject<int, T>
+                     */
+                    final class Lists {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @param Lists<list<int>> $o */
+                    function sortFirst(Lists $o): void {
+                        sort($o[0]);
+                    }
+
+                    /**
+                     * @template T
+                     * @mixin ArrayObject<int, T>
+                     */
+                    abstract class Wrapper {
+                        public function __call(string $name, array $args): mixed {
+                            return [];
+                        }
+                    }
+
+                    /** @param Wrapper<list<int>>&ArrayAccess<int, mixed> $w */
+                    function sortWrapped(Wrapper $w): void {
+                        sort($w[0]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'itemOfAnObjectWithAPseudoOffsetSetPassedByReference' => [
+                'code' => '<?php
+                    /** @method void offsetSet(int $key, list<int> $value) */
+                    final class Box {
+                        /** @return list<int> */
+                        public function offsetGet(int $key): array {
+                            return [];
+                        }
+
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    function sortFirst(Box $b): void {
+                        sort($b[0]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'itemOfMixedPassedByReferenceIsNotAssigned' => [
+                'code' => '<?php
+                    /** @param mixed $m */
+                    function sort_item($m): void {
+                        /** @psalm-suppress MixedArrayAccess, MixedArgument */
+                        sort($m["k"]);
+                    }',
+            ],
             'referenceAssignmentToNonReferenceCountsAsUse' => [
                 'code' => '<?php
                     $b = &$a;
@@ -839,6 +987,36 @@ final class ReferenceTest extends TestCase
                 'error_message' => ' - $bar: string',
             ],
         ];
+    }
+
+    public function testItemOfAnArrayOrArrayAccessPassedByReferenceIsOnlyWrittenToTheArray(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param array{x: int}|ArrayObject<string, int> $a */
+                function f($a): int {
+                    preg_match("/x/", "x", $a["x"]);
+                    $copy = $a;
+                    return $copy["x"];
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                [6, 'InvalidReturnStatement'],
+                [3, 'InvalidReturnType'],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->type],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
     }
 
     public function testIssueInTheKeyOfAnArrayItemPassedByReferenceIsReportedOnce(): void
