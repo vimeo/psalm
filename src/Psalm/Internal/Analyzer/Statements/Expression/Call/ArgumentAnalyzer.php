@@ -338,6 +338,10 @@ final class ArgumentAnalyzer
         $classlike_storage = null;
         $static_classlike_storage = null;
 
+        // a closure called through a variable has no class of its own: its `self`, which a trait leaves
+        // open, is the class of the code that calls it
+        $self_fq_class_name ??= $context->self;
+
         if ($self_fq_class_name) {
             $classlike_storage = $codebase->classlike_storage_provider->get($self_fq_class_name);
             $parent_class = $classlike_storage->parent_class;
