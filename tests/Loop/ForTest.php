@@ -23,6 +23,53 @@ final class ForTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'flagToggledByAnIfAndAnElseifKeepsBothValuesAfterTheLoop' => [
+                'code' => '<?php
+                    function toggle(): void {
+                        $flag = false;
+
+                        for ($i = 0; $i < 10; $i++) {
+                            if ($flag) {
+                                $flag = false;
+                            } elseif ($i > 8) {
+                                $flag = true;
+                            }
+                        }
+
+                        /** @psalm-check-type-exact $flag = bool */;
+
+                        if ($flag) {
+                            echo "Flag set";
+                        }
+                    }
+
+                    class Config {}
+
+                    /** @param mixed $raw */
+                    function defaulted(?Config $config, $raw): void {
+                        if ($config === null) {
+                            $config = new Config();
+                        }
+
+                        /** @psalm-check-type-exact $config = Config */;
+
+                        if (!is_array($raw)) {
+                            $raw = [];
+                        }
+
+                        /** @psalm-check-type-exact $raw = array<array-key, mixed> */;
+                    }
+
+                    function pick(bool $flag, int $i): void {
+                        if ($flag) {
+                            $flag = false;
+                        } elseif ($i > 8) {
+                            $flag = true;
+                        }
+
+                        /** @psalm-check-type-exact $flag = bool */;
+                    }',
+            ],
             'forTrue' => [
                 'code' => '<?php
                     function ret(): int {

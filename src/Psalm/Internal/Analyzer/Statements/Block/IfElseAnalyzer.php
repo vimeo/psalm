@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\Scope\IfScope;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Type;
@@ -441,8 +442,20 @@ final class IfElseAnalyzer
 
                         $context->vars_in_scope[$var_id] = $combined_type;
                     } else {
-                        $context->vars_in_scope[$var_id] =
-                            $context->vars_in_scope[$var_id]->addParentNodes($type->parent_nodes);
+                        $updated_type = $context->vars_in_scope[$var_id]->addParentNodes($type->parent_nodes);
+
+                        // what a later branch writes (`elseif`, `else`) is not in the type the first branch's
+                        // update left
+                        if (!$type->failed_reconciliation
+                            && !$type->hasMixed()
+                            && isset($if_scope->possibly_assigned_var_ids[$var_id])
+                            && !UnionTypeComparator::isContainedBy($codebase, $type, $updated_type)
+                        ) {
+                            $updated_type = Type::combineUnionTypes($updated_type, $type, $codebase);
+                            $context->removeDescendents($var_id, $updated_type);
+                        }
+
+                        $context->vars_in_scope[$var_id] = $updated_type;
                     }
                 }
             }
