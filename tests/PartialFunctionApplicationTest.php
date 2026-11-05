@@ -488,7 +488,7 @@ final class PartialFunctionApplicationTest extends TestCase
                         $exists = array_key_exists(?, ['a' => 1]);
                     PHP,
                 'assertions' => [
-                    '$sort===' => 'Closure[pure](array<array-key, mixed>):bool',
+                    '$sort===' => 'Closure[pure](array<array-key, mixed> &$_):bool',
                     '$replace===' => 'Closure[write-refs](array<array-key, float|int|string>|string)'
                         . ':(array<array-key, string>|string)',
                     '$exists===' => 'Closure[pure](array-key):bool',
