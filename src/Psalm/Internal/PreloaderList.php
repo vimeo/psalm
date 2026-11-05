@@ -1024,6 +1024,7 @@ final class PreloaderList {
         \Psalm\Internal\TypeVisitor\DeferredIntersectionCollector::class,
         \Psalm\Internal\TypeVisitor\FromDocblockSetter::class,
         \Psalm\Internal\TypeVisitor\FunctionPurityTemplateReplacer::class,
+        \Psalm\Internal\TypeVisitor\GenericParamPosition::class,
         \Psalm\Internal\TypeVisitor\PurityWildcardBinder::class,
         \Psalm\Internal\TypeVisitor\PurityWildcardFinder::class,
         \Psalm\Internal\TypeVisitor\TemplateDefaultFiller::class,
