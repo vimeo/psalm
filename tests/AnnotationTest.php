@@ -184,43 +184,6 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'paramWithNonAsciiName' => [
-                'code' => '<?php
-                    /**
-                     * @param list<string> $bär
-                     * @return list<string>
-                     */
-                    function f(array $bär): array {
-                        return $bär;
-                    }',
-            ],
-            'paramOutWithNonAsciiName' => [
-                'code' => '<?php
-                    /**
-                     * @param-out list<int> $föö
-                     */
-                    function f(array &$föö): void {
-                        $föö = [1];
-                    }
-
-                    $x = [];
-                    f($x);',
-                'assertions' => [
-                    '$x' => 'list<int>',
-                ],
-            ],
-            'globalWithNonAsciiName' => [
-                'code' => '<?php
-                    /**
-                     * @global list<string> $bär
-                     * @return list<string>
-                     */
-                    function f(): array {
-                        global $bär;
-
-                        return $bär;
-                    }',
-            ],
             'propertyWithNonAsciiName' => [
                 'code' => '<?php
                     /**
@@ -241,6 +204,65 @@ final class AnnotationTest extends TestCase
                     function f(A $a): array {
                         return $a->bär;
                     }',
+            ],
+            'globalWithNonAsciiName' => [
+                'code' => '<?php
+                    /**
+                     * @global list<string> $bär
+                     * @return list<string>
+                     */
+                    function f(): array {
+                        global $bär;
+
+                        return $bär;
+                    }',
+            ],
+            'paramOutWithNonAsciiName' => [
+                'code' => '<?php
+                    /**
+                     * @param-out list<int> $föö
+                     */
+                    function f(array &$föö): void {
+                        $föö = [1];
+                    }
+
+                    $x = [];
+                    f($x);',
+                'assertions' => [
+                    '$x' => 'list<int>',
+                ],
+            ],
+            'paramWithNonAsciiName' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string> $bär
+                     * @return list<string>
+                     */
+                    function f(array $bär): array {
+                        return $bär;
+                    }',
+            ],
+            'varWithoutNameDoesNotTakeNameOfPreviousVarLine' => [
+                'code' => '<?php
+                    /**
+                     * @var int $n
+                     * @var string missing_dollar_sign
+                     */
+                    echo $n + $n;',
+            ],
+            'namedVarLinesKeepTheirOwnNames' => [
+                'code' => '<?php
+                    /**
+                     * @var int $n
+                     * @var string $m
+                     */
+                    $x = $n;
+                    $y = $m;
+                    echo $x . $y;',
+                'assertions' => [
+                    '$x===' => 'int',
+                    '$y===' => 'string',
+                ],
             ],
             'nopType' => [
                 'code' => '<?php
@@ -1528,6 +1550,30 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'invalidTypeInPromotedPropertyDocblock' => [
+                'code' => '<?php
+                    class Foo {
+                        public function __construct(
+                            /** @var array<int, > */
+                            public array $bar,
+                        ) {}
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'misplacedVariableInPromotedPropertyDocblock' => [
+                'code' => '<?php
+                    class Foo {
+                        public function __construct(
+                            /** @var $bar string[] */
+                            public array $bar,
+                        ) {}
+                    }',
+                'error_message' => 'MissingDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29 - Misplaced variable in docblock for Foo::__construct',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'invalidClassMethodReturn' => [
                 'code' => '<?php
                     class C {
@@ -2208,6 +2254,16 @@ final class AnnotationTest extends TestCase
 
                     echo $a->licenseType;',
                 'error_message' => 'InvalidArgument',
+            ],
+            'malformedConditionalReturnTypeDoesNotCrash' => [
+                'code' => '<?php
+                    /** @return ($n is int) ? int : float */
+                    function double(int|float $n): int|float {
+                        return $n * 2;
+                    }',
+                'error_message' => 'InvalidDocblock',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
