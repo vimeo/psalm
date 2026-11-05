@@ -108,6 +108,19 @@ final class NullsafeAnalyzer
             && !$var_type->possibly_undefined_from_try
         ) {
             NullsafeChainState::None->markOn($stmt);
+
+            if ($stmt instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+                && $stmt->name instanceof PhpParser\Node\Identifier
+                && ($receiver_id = ExpressionIdentifier::getExtendedVarId(
+                    $stmt->var,
+                    $statements_analyzer->getFQCLN(),
+                    $statements_analyzer,
+                )) !== null
+            ) {
+                // the property may have been narrowed by a condition on the same receiver
+                $call_type = $context->vars_in_scope[$receiver_id . '->' . $stmt->name->name] ?? $call_type;
+            }
+
             $statements_analyzer->node_data->setType($stmt, $call_type);
 
             return true;

@@ -1406,6 +1406,73 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
                 'php_version' => '8.0',
             ],
+            'nullsafePropertyComparedToNullNarrowsTheReceiverAndTheProperty' => [
+                'code' => '<?php
+                    final class B {
+                        public ?string $value = null;
+                        public ?B $child = null;
+                    }
+                    final class A {
+                        public ?B $b = null;
+                    }
+                    function takesString(string $value): string {
+                        return $value;
+                    }
+                    function takesB(B $b): string {
+                        return "";
+                    }
+                    function strict(A $a): string {
+                        if ($a->b?->value !== null) {
+                            return takesString($a->b?->value);
+                        }
+                        return "";
+                    }
+                    function plain(A $a): string {
+                        if ($a->b?->value !== null) {
+                            return takesString($a->b->value);
+                        }
+                        return "";
+                    }
+                    function loose(A $a): string {
+                        if ($a->b?->value != null) {
+                            return takesString($a->b?->value);
+                        }
+                        return "";
+                    }
+                    function reversed(A $a): string {
+                        if (null !== $a->b?->value) {
+                            return takesString($a->b?->value);
+                        }
+                        return "";
+                    }
+                    function truthy(A $a): string {
+                        if ($a->b?->child) {
+                            return takesB($a->b?->child);
+                        }
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyNarrowedByConditionHasTheNonNullType' => [
+                'code' => '<?php
+                    final class B {
+                        public ?string $value = null;
+                    }
+                    final class A {
+                        public ?B $b = null;
+                    }
+                    function f(A $a): int|string {
+                        return $a->b?->value !== null ? $a->b?->value : 1;
+                    }
+                    $narrowed = f(new A());',
+                'assertions' => [
+                    '$narrowed' => 'int|string',
+                ],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.0',
+            ],
             'nullsafeChainStateIsRecomputedInLoop' => [
                 'code' => '<?php
                     abstract class C {
@@ -1561,6 +1628,25 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nullsafePropertyComparedToNullDoesNotNarrowTheOtherBranch' => [
+                'code' => '<?php
+                    final class B {
+                        public ?string $value = null;
+                    }
+                    final class A {
+                        public ?B $b = null;
+                    }
+                    function takesString(string $value): void {}
+                    function f(A $a): void {
+                        if ($a->b?->value !== null) {
+                            return;
+                        }
+                        takesString($a->b?->value);
+                    }',
+                'error_message' => 'PossiblyNullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:37',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'methodMissingFromALaterTypeOfAUnionTemplateBound' => [
                 'code' => '<?php
                     final class Invoice {
