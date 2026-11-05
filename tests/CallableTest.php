@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class CallableTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -20,6 +22,25 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'stringNamingAFunctionIsAStringWhereTheParameterAcceptsOne' => [
+                'code' => '<?php
+                    /** @param string|(\\Closure(string): string) $by */
+                    function order(string|\\Closure $by): void {}
+
+                    /** @param string|callable(string): string $by */
+                    function sortBy(string|callable $by): void {}
+
+                    const COLUMN = "Sort";
+
+                    order("Sort");
+                    order(fn(string $column): string => $column);
+                    sortBy("Sort");
+                    sortBy(COLUMN);
+                    sortBy("strtoupper");',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'callableKeyedArrayKeepsTheCallableFlagWhenItsValuesAreNarrowed' => [
                 'code' => '<?php
                     /**
@@ -2542,6 +2563,14 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'stringNamingAFunctionWithAnotherSignatureIsNotACallable' => [
+                'code' => '<?php
+                    /** @param callable(string): string $by */
+                    function sortBy(callable $by): void {}
+
+                    sortBy("Sort");',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:28 - Argument 1 of sortBy expects callable[impure](string):string, but callable[impure](array<array-key, mixed>, int=):bool provided',
+            ],
             'undefinedCallableClass' => [
                 'code' => '<?php
                     class A {

@@ -241,14 +241,19 @@ final class HighOrderFunctionArgHandler
                 );
             }
 
+            // a string that names a function is just a string where the parameter also accepts one
+            $accepts_string = $container_param->type?->hasString() ?? false;
+
             if ($input_arg_expr instanceof PhpParser\Node\Scalar\String_) {
-                return self::fromLiteralString(Type::getString($input_arg_expr->value), $statements_analyzer);
+                return $accepts_string
+                    ? null
+                    : self::fromLiteralString(Type::getString($input_arg_expr->value), $statements_analyzer);
             }
 
             if ($input_arg_expr instanceof PhpParser\Node\Expr\ConstFetch) {
                 $constant = $context->constants[$input_arg_expr->name->toString()] ?? null;
 
-                return null !== $constant
+                return null !== $constant && !$accepts_string
                     ? self::fromLiteralString($constant, $statements_analyzer)
                     : null;
             }
@@ -263,7 +268,7 @@ final class HighOrderFunctionArgHandler
                     ? $storage->constants[$input_arg_expr->name->toString()] ?? null
                     : null;
 
-                return null !== $constant && null !== $constant->type
+                return null !== $constant && null !== $constant->type && !$accepts_string
                     ? self::fromLiteralString($constant->type, $statements_analyzer)
                     : null;
             }
