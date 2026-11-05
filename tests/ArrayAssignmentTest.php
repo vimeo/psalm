@@ -11,6 +11,8 @@ use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ArrayAssignmentTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -126,6 +128,18 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'appendToAnArrayWithANearlyMaximumIntegerKeyOrAnOptionalOne' => [
+                'code' => '<?php
+                    $array = [9223372036854775806 => "last"];
+                    $array[] = "one more";
+
+                    /** @var array{9223372036854775807?: string} $optional */
+                    $optional = [];
+                    $optional[] = "maybe";
+
+                    $nested = ["a" => [9223372036854775807 => 1]];
+                    $nested["b"][] = 2;',
+            ],
             'mixedOrStringOffsetAssignedToAnEmptyArrayMakesAnArrayKey' => [
                 'code' => '<?php
                     /** @var list<mixed> $items */
@@ -2694,6 +2708,12 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'appendToAnArrayWithTheMaximumIntegerKey' => [
+                'code' => '<?php
+                    $array = [9223372036854775807 => "last"];
+                    $array[] = "one more";',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Cannot add an element to the array as the next element is already occupied',
+            ],
             'templateBoundedByDecimalIntStringIsNotItsKeyType' => [
                 'code' => '<?php
                     /**

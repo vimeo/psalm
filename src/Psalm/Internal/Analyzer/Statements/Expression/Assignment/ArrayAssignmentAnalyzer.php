@@ -28,6 +28,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\InvalidArrayAssignment;
+use Psalm\Issue\InvalidArrayOffset;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
@@ -68,6 +69,8 @@ use function str_starts_with;
 use function strlen;
 use function strpos;
 use function substr;
+
+use const PHP_INT_MAX;
 
 /**
  * @internal
@@ -162,6 +165,26 @@ final class ArrayAssignmentAnalyzer
                     $stmt->dim,
                     $context,
                 );
+            }
+        }
+
+        // `$array[] = ...` has no next index once PHP_INT_MAX is a key
+        if ($stmt->dim === null && !$stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            foreach ($root_type->getAtomicTypes() as $root_atomic) {
+                if ($root_atomic instanceof TKeyedArray
+                    && isset($root_atomic->properties[PHP_INT_MAX])
+                    && !$root_atomic->properties[PHP_INT_MAX]->possibly_undefined
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidArrayOffset(
+                            'Cannot add an element to the array as the next element is already occupied',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+
+                    break;
+                }
             }
         }
 
