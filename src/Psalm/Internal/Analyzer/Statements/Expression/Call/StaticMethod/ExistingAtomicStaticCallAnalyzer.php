@@ -173,6 +173,7 @@ final class ExistingAtomicStaticCallAnalyzer
             && !in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
             && $codebase->methods->getStorage(
                 $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id,
+                true,
             )->is_static;
 
         if (CallAnalyzer::checkMethodArgs(
