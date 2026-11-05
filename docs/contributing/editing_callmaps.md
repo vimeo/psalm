@@ -49,9 +49,10 @@ To add the types of an extension, add it to `EXTENSIONS` in `bin/stubs/build_doc
 don't build on a PHP version yet.
 
 Every push runs the "Build docker image for stubs" workflow: it builds the images,
-runs `composer build`, and fails when a committed file is out of date, uploading the
-difference as the `composer-build-patch` artifact. `bin/ci/apply-composer-build-patch.sh`
-applies it to your checkout (set `PSALM_REPO=<you>/psalm` for a run on your fork).
+runs `composer build`, and when a committed file is out of date, commits the difference
+to the pushed branch and uploads it as the `composer-build-patch` artifact. Pull before
+pushing again. If the commit can't be pushed, `bin/ci/apply-composer-build-patch.sh`
+applies the artifact to your checkout (set `PSALM_REPO=<you>/psalm` for a run on your fork).
 
 ## Checking a callmap against reflection
 
