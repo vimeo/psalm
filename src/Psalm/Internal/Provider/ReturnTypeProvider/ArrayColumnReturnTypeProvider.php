@@ -8,15 +8,27 @@ use Override;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 
 use function count;
@@ -218,7 +230,7 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
             }
 
             if ((null !== $key_column_name) && isset($row_shape->properties[$key_column_name])) {
-                $result_key_type = $row_shape->properties[$key_column_name];
+                $result_key_type = self::castToArrayKey($row_shape->properties[$key_column_name]);
             }
         }
 
@@ -233,6 +245,40 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
         }
 
         return new Union([$type]);
+    }
+
+    /**
+     * The type of the key array_column() sets for a value: null, bools and floats are cast to the array key they
+     * stand for, and what cannot be a key is left as an array key
+     */
+    private static function castToArrayKey(Union $key_type): Union
+    {
+        $atomic_types = [];
+
+        foreach ($key_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNull) {
+                $atomic_types[] = Type::getAtomicStringFromLiteral('');
+            } elseif ($atomic_type instanceof TFalse) {
+                $atomic_types[] = new TLiteralInt(0);
+            } elseif ($atomic_type instanceof TTrue) {
+                $atomic_types[] = new TLiteralInt(1);
+            } elseif ($atomic_type instanceof TBool) {
+                $atomic_types[] = new TLiteralInt(0);
+                $atomic_types[] = new TLiteralInt(1);
+            } elseif ($atomic_type instanceof TFloat) {
+                $atomic_types[] = new TInt();
+            } elseif ($atomic_type instanceof TInt
+                || $atomic_type instanceof TString
+                || $atomic_type instanceof TArrayKey
+                || $atomic_type instanceof TTemplateParam
+            ) {
+                $atomic_types[] = $atomic_type;
+            } else {
+                $atomic_types[] = new TArrayKey();
+            }
+        }
+
+        return ArrayAnalyzer::castArrayKeyType(TypeCombiner::combine($atomic_types));
     }
 
     /**
