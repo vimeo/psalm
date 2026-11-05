@@ -7,8 +7,8 @@
  *
  * Usage: php bin/ci/apply-queued-changes.php [--dry-run]
  *
- * Run hourly by .github/workflows/apply-queued-changes.yml. The bot has no access to this repository: it only
- * queues changes, which this script fetches from QUEUE_URL with QUEUE_TOKEN and makes with the workflow's token.
+ * Run every half hour by .github/workflows/apply-queued-changes.yml. The bot has no access to this repository: it
+ * only queues changes, which this script fetches from QUEUE_URL with QUEUE_TOKEN and makes with the workflow's token.
  * The queue is trusted no more than needed:
  *  - only the changes above can be made, to issues and pull requests of this repository, with labels it has;
  *  - a merge needs an open, ready pull request with exactly one release label, whose head is still the commit the

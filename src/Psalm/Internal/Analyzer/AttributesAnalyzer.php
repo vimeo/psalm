@@ -16,9 +16,11 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\PhpVisitor\PartialApplicationVisitor;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Issue\InvalidAttribute;
+use Psalm\Issue\ParseError;
 use Psalm\Issue\UndefinedClass;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
@@ -63,18 +65,29 @@ final class AttributesAnalyzer
     ): void {
         $codebase = $source->getCodebase();
         $appearing_non_repeatable_attributes = [];
+        $has_delayed_target_validation = false;
         foreach (self::iterateAttributeNodes($attribute_groups) as $attribute) {
-            if ($attribute->name instanceof FullyQualified) {
-                $fq_attribute_name = (string) $attribute->name;
-            } else {
-                $fq_attribute_name = ClassLikeAnalyzer::getFQCLNFromNameObject($attribute->name, $source->getAliases());
+            if (strtolower(self::getFqAttributeName($source, $attribute)) === 'delayedtargetvalidation') {
+                // PHP 8.5 defers the target check of every internal attribute (even #[\Attribute]) to runtime;
+                // older versions still check it at compile time, even with a polyfilled DelayedTargetValidation.
+                $has_delayed_target_validation = $codebase->analysis_php_version_id >= 8_05_00;
+                break;
             }
+        }
+
+        self::reportPlaceholders($source, $attribute_groups, $suppressed_issues);
+
+        foreach (self::iterateAttributeNodes($attribute_groups) as $attribute) {
+            $fq_attribute_name = self::getFqAttributeName($source, $attribute);
 
             $attribute_name = (string) $attribute->name;
             $attribute_name_location = new CodeLocation($source, $attribute->name);
 
+            // only the storage read resolves an alias: PHP checks repetition by the written name
             $attribute_class_storage = $codebase->classlikes->classExists($fq_attribute_name, null, $context)
-                ? $codebase->classlike_storage_provider->get($fq_attribute_name)
+                ? $codebase->classlike_storage_provider->get(
+                    $codebase->classlikes->getUnAliasedName($fq_attribute_name),
+                )
                 : null;
 
             $attribute_class_flags = self::getAttributeClassFlags(
@@ -86,14 +99,17 @@ final class AttributesAnalyzer
                 $suppressed_issues,
             );
 
-            self::analyzeAttributeConstruction(
-                $source,
-                $context,
-                $fq_attribute_name,
-                $attribute,
-                $suppressed_issues,
-                $storage instanceof ClassLikeStorage ? $storage : null,
-            );
+            // the placeholders are gone from the arguments, which PHP never passes
+            if ($attribute->getAttribute(PartialApplicationVisitor::PLACEHOLDER_IN_ATTRIBUTE) !== true) {
+                self::analyzeAttributeConstruction(
+                    $source,
+                    $context,
+                    $fq_attribute_name,
+                    $attribute,
+                    $suppressed_issues,
+                    $storage instanceof ClassLikeStorage ? $storage : null,
+                );
+            }
 
             if (($attribute_class_flags & GlobalAttribute::IS_REPEATABLE) === 0) {
                 // Not IS_REPEATABLE
@@ -109,7 +125,17 @@ final class AttributesAnalyzer
                 $appearing_non_repeatable_attributes[$fq_attribute_name] = true;
             }
 
-            if (($attribute_class_flags & $target) === 0) {
+            // PHP 8.5 accepts #[\Deprecated] on traits (but still not on classes, interfaces or enums)
+            // through a special-case validator rather than via the attribute's declared targets.
+            $is_deprecated_on_trait = $fq_attribute_name === 'Deprecated'
+                && $storage instanceof ClassLikeStorage
+                && $storage->is_trait
+                && $codebase->analysis_php_version_id >= 8_05_00;
+
+            if (($attribute_class_flags & $target) === 0
+                && !$is_deprecated_on_trait
+                && !($has_delayed_target_validation && $attribute_class_storage?->user_defined === false)
+            ) {
                 IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         "Attribute {$attribute_name} cannot be used on a "
@@ -138,6 +164,38 @@ final class AttributesAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * Reports the argument placeholders PHP rejects in attributes, on every target (including those with no other
+     * attribute checks)
+     *
+     * @param array<array-key, AttributeGroup> $attribute_groups
+     * @param array<array-key, string> $suppressed_issues
+     */
+    public static function reportPlaceholders(
+        SourceAnalyzer $source,
+        array $attribute_groups,
+        array $suppressed_issues,
+    ): void {
+        foreach (self::iterateAttributeNodes($attribute_groups) as $attribute) {
+            if ($attribute->getAttribute(PartialApplicationVisitor::PLACEHOLDER_IN_ATTRIBUTE) === true) {
+                IssueBuffer::maybeAdd(
+                    new ParseError(
+                        'Cannot create Closure as attribute argument',
+                        new CodeLocation($source, $attribute),
+                    ),
+                    $suppressed_issues,
+                );
+            }
+        }
+    }
+
+    private static function getFqAttributeName(SourceAnalyzer $source, Attribute $attribute): string
+    {
+        return $attribute->name instanceof FullyQualified
+            ? (string) $attribute->name
+            : ClassLikeAnalyzer::getFQCLNFromNameObject($attribute->name, $source->getAliases());
     }
 
     /**
@@ -389,7 +447,9 @@ final class AttributesAnalyzer
             return;
         }
 
-        $class_storage = $codebase->classlike_storage_provider->get($class_string->value);
+        $class_storage = $codebase->classlike_storage_provider->get(
+            $codebase->classlikes->getUnAliasedName($class_string->value),
+        );
         $arg_location = new CodeLocation($statements_analyzer, $arg);
         $class_attribute_target = self::getAttributeClassFlags(
             $statements_analyzer,

@@ -20,6 +20,23 @@ final class DeprecatedAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'deprecatedClassUsingATraitWithSelfAndStaticReturnTypes' => [
+                'code' => '<?php
+                    trait MyTrait {
+                        public function foo(): static {
+                            return $this;
+                        }
+
+                        public function bar(): self {
+                            return $this;
+                        }
+                    }
+
+                    /** @deprecated */
+                    final class MyClass {
+                        use MyTrait;
+                    }',
+            ],
             'deprecatedMethod' => [
                 'code' => '<?php
                     class Foo {
@@ -134,6 +151,22 @@ final class DeprecatedAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'deprecatedClassReturnedByAMethodOfAnotherTrait' => [
+                'code' => '<?php
+                    /** @deprecated */
+                    final class Old {}
+
+                    trait MyTrait {
+                        public function old(): Old {
+                            return new Old();
+                        }
+                    }
+
+                    final class MyClass {
+                        use MyTrait;
+                    }',
+                'error_message' => 'DeprecatedClass',
+            ],
             'deprecatedMethodWithCall' => [
                 'code' => '<?php
                     class Foo {
