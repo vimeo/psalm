@@ -51,4 +51,14 @@ final class TemplateBound
      * it are reported at the call site, not the construction site.
      */
     public bool $from_argument_requirement = false;
+
+    /**
+     * True for a placeholder lower bound filled in for a template that appears
+     * in a parameter's type but was not actually matched by the call (e.g. a
+     * `(callable(T): TResult)|null` parameter passed `null`, where `TResult`
+     * has nothing to infer from). It carries no real inferred content, so a
+     * declared `@template ... = Default` should still apply as if nothing had
+     * been inferred at all.
+     */
+    public bool $from_unbound_template_fallback = false;
 }

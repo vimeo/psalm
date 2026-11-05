@@ -46,6 +46,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_key_first;
 use function array_map;
 use function count;
 use function explode;
@@ -234,6 +235,14 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         }
         if ($method_storage && $method_storage->template_types) {
             $template_result->template_types += $method_storage->template_types;
+        }
+        if ($method_storage && $method_storage->template_type_defaults !== null) {
+            foreach ($method_storage->template_type_defaults as $template_name => $default_type) {
+                if (isset($method_storage->template_types[$template_name])) {
+                    $defining_key = array_key_first($method_storage->template_types[$template_name]);
+                    $template_result->template_type_defaults[$template_name][$defining_key] = $default_type;
+                }
+            }
         }
 
         if ($codebase->store_node_types

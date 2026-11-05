@@ -38,6 +38,14 @@ final class TemplateResult
     public array $upper_bounds = [];
 
     /**
+     * Default types for template params, keyed by param_name then defining_class.
+     * Used when a template param has no lower_bounds.
+     *
+     * @var array<string, array<string, Union>>
+     */
+    public array $template_type_defaults = [];
+
+    /**
      * If set to true then we shouldn't update the template bounds
      */
     public bool $readonly = false;
@@ -71,6 +79,7 @@ final class TemplateResult
         $lower_bounds = array_replace_recursive($instance->lower_bounds, $result->lower_bounds);
         $instance->lower_bounds = $lower_bounds;
         $instance->template_types = [...$instance->template_types, ...$result->template_types];
+        $instance->template_type_defaults = [...$instance->template_type_defaults, ...$result->template_type_defaults];
 
         return $instance;
     }
