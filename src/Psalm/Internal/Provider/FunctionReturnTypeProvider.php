@@ -26,6 +26,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\ArrayReplaceRecursiveReturnTypePr
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayReverseReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArraySliceReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArraySpliceReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\ArrayUserCompareDiffReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\BasenameReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DateReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DirnameReturnTypeProvider;
@@ -91,6 +92,7 @@ final class FunctionReturnTypeProvider
         $this->registerClass(ArrayReplaceRecursiveReturnTypeProvider::class);
         $this->registerClass(ArraySliceReturnTypeProvider::class);
         $this->registerClass(ArraySpliceReturnTypeProvider::class);
+        $this->registerClass(ArrayUserCompareDiffReturnTypeProvider::class);
         $this->registerClass(ArrayReverseReturnTypeProvider::class);
         $this->registerClass(ArrayFillReturnTypeProvider::class);
         $this->registerClass(ArrayFillKeysReturnTypeProvider::class);
