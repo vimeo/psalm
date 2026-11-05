@@ -47,7 +47,7 @@ final class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInte
             $statements_source->getCodebase(),
             $first_arg_type,
             $event->getFunctionId() === 'array_shift',
-            ArrayFunctionArgumentsAnalyzer::isHeldByArrays($statements_source, $first_arg->value),
+            ArrayFunctionArgumentsAnalyzer::isPopOfItemExact($statements_source, $first_arg->value),
         ) ?? Type::getMixed();
     }
 }

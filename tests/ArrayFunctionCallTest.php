@@ -3524,13 +3524,20 @@ final class ArrayFunctionCallTest extends TestCase
                     '$a===' => 'list{list{1}, list{4}}',
                 ],
             ],
-            'arrayPopItemOfUnionKeyKeepsBothOffsetsPossible' => [
+            'arrayPopItemOfUnionKeyWeakensEachOffset' => [
                 'code' => '<?php
                     $a = [[1, 2], [3, 4]];
                     $k = rand(0, 1) ? 0 : 1;
-                    array_pop($a[$k]);',
+                    array_pop($a[$k]);
+                    $x = array_pop($a[0]);
+
+                    $b = ["x" => [[1, 2], [3, 4]], "y" => [5, 6]];
+                    $j = rand(0, 1) ? 0 : 1;
+                    array_shift($b["x"][$j]);',
                 'assertions' => [
-                    '$a===' => 'list{list{0: 1|3, 1?: 2|4}, list{0: 1|3, 1?: 2|4}}',
+                    '$a===' => 'list{list{0?: 1}, list{0: 3, 1?: 4}}',
+                    '$x===' => '1|2',
+                    '$b===' => 'array{x: list{list{0: 1|2, 1?: 2}, list{0: 3|4, 1?: 4}}, y: list{5, 6}}',
                 ],
             ],
             'arrayPopItemOfCallResultIsNotWrittenBack' => [
@@ -4305,6 +4312,56 @@ final class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'InaccessibleProperty',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'arrayPopItemOfTemplateTypeIsNotExact' => [
+                'code' => '<?php
+                    /**
+                     * @template T of list{int, string}
+                     * @param array{T} $a
+                     */
+                    function f(array $a): string {
+                        array_pop($a[0]);
+                        return array_pop($a[0]);
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:32',
+            ],
+            'arrayShiftItemOfTemplateTypeIsNotExact' => [
+                'code' => '<?php
+                    /**
+                     * @template T of list{int, string}
+                     * @param array{T} $a
+                     */
+                    function f(array $a): int {
+                        array_shift($a[0]);
+                        return array_shift($a[0]);
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:32',
+            ],
+            'arrayPopItemOfNarrowedUnionKeyKeepsOtherOffsets' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        $a = [null, [1, 2]];
+                        $k = $b ? 0 : 1;
+                        if (!is_array($a[$k])) {
+                            return 0;
+                        }
+                        array_pop($a[$k]);
+                        return count($a[0]);
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:38',
+            ],
+            'arrayShiftItemOfNarrowedUnionKeyKeepsOtherOffsets' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        $a = [null, [1, 2]];
+                        $k = $b ? 0 : 1;
+                        if (!is_array($a[$k])) {
+                            return 0;
+                        }
+                        array_shift($a[$k]);
+                        return count($a[0]);
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:38',
             ],
         ];
     }
