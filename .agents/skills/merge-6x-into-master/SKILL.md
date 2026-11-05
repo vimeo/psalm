@@ -1,6 +1,6 @@
 ---
 name: merge-6x-into-master
-description: Use when asked to merge vimeo/psalm 6.x into master, or after any push to 6.x or master when the "Build docker image for stubs" composer-build job fails and its patch needs applying.
+description: Use when asked to merge vimeo/psalm 6.x into master, or after any push to 6.x or master when the "Build docker image for stubs" workflow's push-composer-build job fails.
 ---
 
 # Merging 6.x into master
@@ -28,7 +28,8 @@ to `origin/master`, but CI runs on it first.
 4. Push the same commit to `origin/master`. That closes the PR as merged. Delete the
    temporary branch.
 5. **Composer build patch:** after a push to 6.x or master, the "Build docker image for
-   stubs" workflow's `composer-build` job fails by design when regenerated files differ,
-   and uploads `composer-build-patch`. Once that job finishes, on a checkout at the
-   pushed commit run `bin/ci/apply-composer-build-patch.sh` (it finds the run by commit),
-   commit "Apply composer build patch", and push.
+   stubs" workflow regenerates the callmaps and other `composer build` files, and its
+   `push-composer-build` job commits any difference to the branch ("Update the files
+   composer build generates") and dispatches CI on it. Pull before pushing again. If that
+   job fails, run `bin/ci/apply-composer-build-patch.sh` on a checkout at the commit the
+   run built (it finds the run by commit), commit, and push.

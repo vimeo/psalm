@@ -542,36 +542,44 @@ final class FunctionLikeNodeScanner
                         + ($classlike_storage->template_types ?: [])
                     ;
 
-                    $var_comments = CommentAnalyzer::getTypeFromComment(
-                        $this->codebase,
-                        $doc_comment,
-                        $this->file_scanner,
-                        $this->aliases,
-                        $template_types,
-                        $this->type_aliases,
-                    );
+                    try {
+                        $var_comments = CommentAnalyzer::getTypeFromComment(
+                            $this->codebase,
+                            $doc_comment,
+                            $this->file_scanner,
+                            $this->aliases,
+                            $template_types,
+                            $this->type_aliases,
+                        );
 
-                    $var_comment = array_pop($var_comments);
+                        $var_comment = array_pop($var_comments);
 
-                    if ($var_comment !== null) {
-                        $var_comment_type = $var_comment->type;
-                        $var_comment_readonly = $var_comment->readonly;
-                        $var_comment_allow_private_mutation = $var_comment->allow_private_mutation;
-                        $promoted_var_comment = $var_comment;
+                        if ($var_comment !== null) {
+                            $var_comment_type = $var_comment->type;
+                            $var_comment_readonly = $var_comment->readonly;
+                            $var_comment_allow_private_mutation = $var_comment->allow_private_mutation;
+                            $promoted_var_comment = $var_comment;
+                        }
+                    } catch (IncorrectDocblockException $e) {
+                        $storage->docblock_issues[] = new MissingDocblockType(
+                            $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                            new CodeLocation($this->file_scanner, $param, null, true),
+                        );
+                    } catch (DocblockParseException $e) {
+                        $storage->docblock_issues[] = new InvalidDocblock(
+                            $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                            new CodeLocation($this->file_scanner, $param, null, true),
+                        );
                     }
                 }
 
                 //both way to document type were used
                 if ($param_storage->type && $param_storage->type->from_docblock && $var_comment_type) {
-                    if (IssueBuffer::accepts(
-                        new InvalidDocblock(
-                            'Param ' . $param_storage->name . ' of ' . $cased_function_id .
-                            ' should be documented as a param or a property, not both',
-                            new CodeLocation($this->file_scanner, $param, null, true),
-                        ),
-                    )) {
-                        return false;
-                    }
+                    $this->file_storage->scan_issues[] = new InvalidDocblock(
+                        'Param ' . $param_storage->name . ' of ' . $cased_function_id .
+                        ' should be documented as a param or a property, not both',
+                        new CodeLocation($this->file_scanner, $param, null, true),
+                    );
                 }
 
                 //no docblock type was provided for param but we have one for property
@@ -595,7 +603,9 @@ final class FunctionLikeNodeScanner
                 $property_storage->stmt_location = new CodeLocation($this->file_scanner, $param);
                 $property_storage->has_default = (bool)$param->default;
                 $param_type_readonly = (bool)($param->flags & Modifiers::READONLY);
-                $property_storage->readonly = $param_type_readonly ?: $var_comment_readonly;
+                $property_storage->readonly = $param_type_readonly
+                    || $classlike_storage->readonly
+                    || $var_comment_readonly;
                 $property_storage->allow_private_mutation = $var_comment_allow_private_mutation;
                 $param_storage->promoted_property = true;
                 $property_storage->is_promoted = true;
@@ -1159,11 +1169,9 @@ final class FunctionLikeNodeScanner
                     $reflection_function = new ReflectionFunction($function_id);
 
                     if ($reflection_function->getFileName() !== $this->file_path) {
-                        IssueBuffer::maybeAdd(
-                            new DuplicateFunction(
-                                'Method ' . $function_id . ' has already been defined as a core function',
-                                new CodeLocation($this->file_scanner, $stmt, null, true),
-                            ),
+                        $this->file_storage->scan_issues[] = new DuplicateFunction(
+                            'Method ' . $function_id . ' has already been defined as a core function',
+                            new CodeLocation($this->file_scanner, $stmt, null, true),
                         );
                     }
                 }
@@ -1284,12 +1292,10 @@ final class FunctionLikeNodeScanner
             $storage->abstract = $stmt->isAbstract();
 
             if ($stmt->isPrivate() && $stmt->isFinal() && $method_name_lc !== '__construct') {
-                IssueBuffer::maybeAdd(
-                    new PrivateFinalMethod(
-                        'Private methods cannot be final',
-                        new CodeLocation($this->file_scanner, $stmt, null, true),
-                        (string) $method_id,
-                    ),
+                $this->file_storage->scan_issues[] = new PrivateFinalMethod(
+                    'Private methods cannot be final',
+                    new CodeLocation($this->file_scanner, $stmt, null, true),
+                    (string) $method_id,
                 );
                 if ($this->codebase->analysis_php_version_id >= 8_00_00) {
                     // ignore `final` on the method as that's what PHP does

@@ -12,7 +12,6 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\UnpreparedAnalysisException;
 use Psalm\Internal\Codebase\Functions;
-use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\Reflection;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
@@ -123,6 +122,10 @@ class FileAnalyzer extends SourceAnalyzer
 
         if (!$file_storage->deep_scan && !$codebase->server_mode) {
             throw new UnpreparedAnalysisException('File ' . $this->file_path . ' has not been properly scanned');
+        }
+
+        foreach ($file_storage->scan_issues as $scan_issue) {
+            IssueBuffer::maybeAdd($scan_issue);
         }
 
         if ($file_storage->has_visitor_issues) {
@@ -509,7 +512,6 @@ class FileAnalyzer extends SourceAnalyzer
         ClassLikeStorageProvider::deleteAll();
         FileStorageProvider::deleteAll();
         FileReferenceProvider::clearCache();
-        InternalCallMapHandler::clearCache();
     }
 
     /** @psalm-mutation-free */
