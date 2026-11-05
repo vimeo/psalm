@@ -15,10 +15,14 @@ use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Union;
 
 use function array_diff_key;
 use function array_keys;
 use function array_map;
+use function array_merge;
+use function array_values;
+use function count;
 
 final class TypeComparatorTest extends TestCase
 {
@@ -158,6 +162,71 @@ final class TypeComparatorTest extends TestCase
         );
     }
 
+    /**
+     * Builds the container from separately parsed atomics, because parsing
+     * `array<K, V>|Traversable<K, V>` as one string combines it into iterable<K, V>.
+     *
+     * @param list<string> $container_atomic_strings
+     * @dataProvider getIterableAgainstUncombinedUnionComparisons
+     */
+    public function testIterableAgainstUncombinedUnion(
+        array $container_atomic_strings,
+        string $input_type_string,
+        bool $expected,
+    ): void {
+        $container_atomics = [];
+        foreach ($container_atomic_strings as $atomic_string) {
+            $container_atomics = array_merge(
+                $container_atomics,
+                array_values(Type::parseString($atomic_string)->getAtomicTypes()),
+            );
+        }
+
+        $container_type = new Union($container_atomics);
+        $this->assertCount(count($container_atomic_strings), $container_type->getAtomicTypes());
+
+        $this->assertSame(
+            $expected,
+            UnionTypeComparator::isContainedBy(
+                $this->project_analyzer->getCodebase(),
+                Type::parseString($input_type_string),
+                $container_type,
+            ),
+        );
+    }
+
+    /** @return iterable<string, array{list<string>, string, bool}> */
+    public function getIterableAgainstUncombinedUnionComparisons(): iterable
+    {
+        yield 'bareIterable' => [['array', 'Traversable'], 'iterable', true];
+        yield 'typedIterable' => [['array<int, string>', 'Traversable<int, string>'], 'iterable<int, string>', true];
+        yield 'nonArrayKeyIsRefinedForArrayHalf' => [
+            ['array<array-key, string>', 'Traversable<object, string>', 'int'],
+            'iterable<object, string>',
+            true,
+        ];
+        yield 'arrayHalfKeyMismatch' => [
+            ['array<string, string>', 'Traversable<int, string>'],
+            'iterable<int, string>',
+            false,
+        ];
+        yield 'traversableHalfKeyMismatch' => [
+            ['array<int, string>', 'Traversable<string, string>'],
+            'iterable<int, string>',
+            false,
+        ];
+        yield 'arrayHalfValueMismatch' => [
+            ['array<int, int>', 'Traversable<int, string>'],
+            'iterable<int, string>',
+            false,
+        ];
+        yield 'traversableHalfValueMismatch' => [
+            ['array<int, string>', 'Traversable<int, int>'],
+            'iterable<int, string>',
+            false,
+        ];
+    }
+
     /** @return iterable<string, list{string, string}> */
     public function getCoercibleComparisons(): iterable
     {
@@ -234,6 +303,18 @@ final class TypeComparatorTest extends TestCase
         yield 'nonEmptyMixedDoesNotAcceptMixed' => [
             'non-empty-mixed',
             'mixed',
+        ];
+        yield 'listOrTraversableDoesNotAcceptIterableWithOtherParams' => [
+            'list<int>|Traversable<int, int>',
+            'iterable<string, string>',
+        ];
+        yield 'listOrTraversableDoesNotAcceptIterable' => [
+            'list<mixed>|Traversable',
+            'iterable',
+        ];
+        yield 'arrayOfTraversablesDoesNotAcceptIterable' => [
+            'array<int, Traversable>|int',
+            'iterable<string, string>',
         ];
     }
 }

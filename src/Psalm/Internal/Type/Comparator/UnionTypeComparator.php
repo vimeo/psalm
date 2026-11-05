@@ -5,14 +5,18 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Type\ArrayType;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
@@ -291,14 +295,6 @@ final class UnionTypeComparator
                     $is_atomic_contained_by = true;
                 }
 
-                if ($input_type_part instanceof Atomic\TIterable
-                    && $container_type->hasArray()
-                    && $container_type->containsClassLike('traversable')
-                ) {
-                    $scalar_type_match_found = false;
-                    $is_atomic_contained_by = true;
-                }
-
                 if ($atomic_comparison_result) {
                     if ($atomic_comparison_result->type_coerced) {
                         $some_type_coerced = true;
@@ -362,6 +358,30 @@ final class UnionTypeComparator
                 }
             }
 
+            // iterable<K, V> is array<K, V>|Traversable<K, V>, so a union container can
+            // hold it without any single member doing so (e.g. iterator_to_array()'s
+            // Traversable|array param). Fall back to checking each half against the
+            // whole container.
+            if (!$type_match_found
+                && $input_type_part instanceof TIterable
+                && self::isIterableContainedByHalves(
+                    $codebase,
+                    $input_type_part,
+                    $container_type,
+                    $ignore_null,
+                    $ignore_false,
+                    $union_comparison_result,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                )
+            ) {
+                $type_match_found = true;
+                $all_to_string_cast = false;
+                $all_type_coerced = false;
+                $all_type_coerced_from_mixed = false;
+                $all_type_coerced_from_as_mixed = false;
+            }
+
             if ($union_comparison_result) {
                 // only set this flag if we're definite that the only
                 // reason the type match has been found is because there
@@ -411,6 +431,81 @@ final class UnionTypeComparator
                 }
 
                 return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks both halves of iterable<K, V>, array<K, V> and Traversable<K, V>,
+     * against the whole container.
+     *
+     * Intersected types (e.g. iterable&Countable) stay on the Traversable half only:
+     * an array cannot carry them, so the plain array half is a superset of what the
+     * input can be and checking it is still sound.
+     */
+    private static function isIterableContainedByHalves(
+        Codebase $codebase,
+        TIterable $input_type_part,
+        Union $container_type,
+        bool $ignore_null,
+        bool $ignore_false,
+        ?TypeComparisonResult $union_comparison_result,
+        bool $allow_interface_equality,
+        bool $allow_float_int_equality,
+    ): bool {
+        [$key_type, $value_type] = $input_type_part->type_params;
+
+        $halves = [
+            new TArray(
+                [ArrayType::refineKeyType($key_type), $value_type],
+                $input_type_part->from_docblock,
+            ),
+            new TGenericObject(
+                'Traversable',
+                [$key_type, $value_type],
+                false,
+                false,
+                $input_type_part->extra_types,
+                $input_type_part->from_docblock,
+            ),
+        ];
+
+        $half_results = [];
+
+        foreach ($halves as $half) {
+            $half_result = $union_comparison_result ? new TypeComparisonResult() : null;
+
+            if (!self::isContainedBy(
+                $codebase,
+                new Union([$half]),
+                $container_type,
+                $ignore_null,
+                $ignore_false,
+                $half_result,
+                $allow_interface_equality,
+                $allow_float_int_equality,
+            )) {
+                return false;
+            }
+
+            if ($half_result) {
+                $half_results[] = $half_result;
+            }
+        }
+
+        if ($union_comparison_result) {
+            foreach ($half_results as $half_result) {
+                $union_comparison_result->type_variable_lower_bounds = array_merge(
+                    $union_comparison_result->type_variable_lower_bounds,
+                    $half_result->type_variable_lower_bounds,
+                );
+
+                $union_comparison_result->type_variable_upper_bounds = array_merge(
+                    $union_comparison_result->type_variable_upper_bounds,
+                    $half_result->type_variable_upper_bounds,
+                );
             }
         }
 

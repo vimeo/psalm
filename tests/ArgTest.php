@@ -19,6 +19,18 @@ final class ArgTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'iterableIntersectionPassedToIteratorToArray' => [
+                'code' => '<?php
+                    /** @return iterable<int, string>&Countable */
+                    function src() {
+                        return new ArrayIterator(["a"]);
+                    }
+
+                    iterator_to_array(src());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'argumentUnpackingLiteral' => [
                 'code' => '<?php
                     function add(int $a, int $b, int $c) : int {
@@ -380,6 +392,28 @@ final class ArgTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'iterableWithOtherParamsPassedToArrayOrTraversable' => [
+                'code' => '<?php
+                    /** @param list<int>|Traversable<int, int> $x */
+                    function takesIntsOnly($x): void {}
+
+                    /** @param iterable<string, string> $it */
+                    function f(iterable $it): void {
+                        takesIntsOnly($it);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'iterablePassedToArrayOfTraversables' => [
+                'code' => '<?php
+                    /** @param array<int, Traversable>|int $x */
+                    function takesTraversables($x): void {}
+
+                    /** @param iterable<string, string> $it */
+                    function f(iterable $it): void {
+                        takesTraversables($it);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'arrayPushArgumentUnpackingWithBadArg' => [
                 'code' => '<?php
                     $a = [];

@@ -1129,6 +1129,23 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$three' => 'float',
                 ],
             ],
+            'iterableWithOtherParamsDoesNotMatchArrayOrTraversableConditional' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $i
+                     * @return ($i is list<int>|Traversable<int, int> ? "yes" : "no")
+                     */
+                    function check($i) {
+                        return "no";
+                    }
+
+                    /** @var iterable<string, string> */
+                    $it = [];
+                    $r = check($it);',
+                'assertions' => [
+                    '$r===' => "'no'|'yes'",
+                ],
+            ],
         ];
     }
 
