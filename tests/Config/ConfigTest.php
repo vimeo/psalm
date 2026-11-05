@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests\Config;
 
 use Composer\Autoload\ClassLoader;
+use DOMDocument;
+use DOMXPath;
 use ErrorException;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -34,6 +36,7 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use Throwable;
+use UnexpectedValueException;
 
 use function array_map;
 use function dirname;
@@ -1212,6 +1215,53 @@ final class ConfigTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testEveryExtensionOfTheSchemaCanBeEnabled(): void
+    {
+        $schema = new DOMDocument();
+        $schema->load(dirname(__DIR__, 2) . '/config.xsd');
+        $xpath = new DOMXPath($schema);
+        $xpath->registerNamespace('xs', 'http://www.w3.org/2001/XMLSchema');
+        $names = [];
+        foreach ($xpath->query('//xs:simpleType[@name="ExtensionType"]//xs:enumeration/@value') ?: [] as $name) {
+            if ($name->nodeValue !== null) {
+                $names[] = $name->nodeValue;
+            }
+        }
+
+        $this->assertContains('memcached', $names);
+
+        $default_config = TestConfig::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+            </psalm>',
+        );
+
+        $extensions = '';
+        foreach ($names as $name) {
+            $this->assertArrayHasKey($name, $default_config->php_extensions);
+            $extensions .= '<extension name="' . $name . '"/>';
+        }
+
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+                <enableExtensions>' . $extensions . '</enableExtensions>
+            </psalm>',
+        );
+
+        foreach ($names as $name) {
+            $this->assertTrue($config->php_extensions[$name], $name);
+        }
+    }
+
     public function testZstdExtensionStubDeclaresItsFunctions(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -1903,6 +1953,29 @@ final class ConfigTest extends TestCase
         $root = __DIR__ . '/../fixtures/ComposerPhp64bitVersion';
         $cfg = Config::loadFromXML($root, "<?xml version=\"1.0\"?><psalm></psalm>");
         $this->assertSame('8.1', $cfg->getPhpVersion());
+    }
+
+    public function testReadsComposerJsonForPhp86Version(): void
+    {
+        $root = __DIR__ . '/../fixtures/ComposerPhp86Version';
+        $cfg = Config::loadFromXML($root, "<?xml version=\"1.0\"?><psalm></psalm>");
+        $php_version = (string) $cfg->getPhpVersion();
+        $this->assertSame('8.6', $php_version);
+
+        $project_analyzer = $this->getProjectAnalyzerWithConfig($cfg);
+        $project_analyzer->setPhpVersion($php_version, 'composer');
+        $this->assertSame(8_06_00, $project_analyzer->getCodebase()->analysis_php_version_id);
+    }
+
+    public function testRejectsUnreleasedPhpVersion(): void
+    {
+        $project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(dirname(__DIR__, 2), '<?xml version="1.0"?><psalm></psalm>'),
+        );
+
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage('is either not supported or doesn\'t exist');
+        $project_analyzer->setPhpVersion('8.7', 'tests');
     }
 
     /**
