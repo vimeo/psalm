@@ -423,6 +423,19 @@ final class ReferenceTest extends TestCase
                 ],
                 'ignored_issues' => ['MixedArgument'],
             ],
+            'itemPassedByReferenceToSocketSelectHasItsKeyEvaluatedOnce' => [
+                'code' => '<?php
+                    $a = [[]];
+                    $write = null;
+                    $except = null;
+                    $i = 0;
+                    socket_select($a[$i++], $write, $except, 0);
+                    $j = $i;',
+                'assertions' => [
+                    '$j===' => '1',
+                ],
+                'ignored_issues' => ['InvalidArgument', 'MixedArgumentTypeCoercion'],
+            ],
             'arrayItemPassedByReferenceIsWrittenUnderTheKeyItWasPassedWith' => [
                 'code' => '<?php
                     /**
@@ -1043,6 +1056,30 @@ final class ReferenceTest extends TestCase
                         socket_select($read, $write, $except, 0);
                     }',
                 'error_message' => 'UndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:39 - Cannot find referenced variable $read',
+            ],
+            'variablePassedByReferenceToSocketSelectInALoopIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(): void {
+                        $write = [];
+                        $except = [];
+                        while (rand(0, 1)) {
+                            socket_select($read, $write, $except, 0);
+                            $read = [];
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:43 - Possibly undefined variable $read, first seen on line 7',
+            ],
+            'keyOfAnItemPassedByReferenceToASortFunctionInALoopIsPossiblyUndefined' => [
+                'code' => '<?php
+                    /** @param array<int, mixed> $a */
+                    function f(array $a): void {
+                        while (rand(0, 1)) {
+                            asort($a[$i]);
+                            $i = 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:38 - Possibly undefined variable $i, first seen on line 6',
+                'error_levels' => ['MixedArgument', 'PossiblyInvalidArrayOffset'],
             ],
             'itemOfAnEmptyArrayPassedToAParameterPhpDoesNotTakeByReference' => [
                 'code' => '<?php
