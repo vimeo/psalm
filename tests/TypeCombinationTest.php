@@ -194,11 +194,11 @@ final class TypeCombinationTest extends TestCase
     public static function providerTestValidTypeCombination(): iterable
     {
         return [
-            'unsealedArrayKeyDeclaredOptionalInBothKeepsItsType' => [
-                'array{age?: int, name: string, ...<array-key, mixed>}',
+            'unsealedArrayKeyDeclaredInOneAndMissingInTheOtherTakesTheFallback' => [
+                'array{age?: int|mixed, name?: mixed|string, ...<array-key, mixed>}',
                 [
-                    'array{age?: int, name: string, ...<array-key, mixed>}',
-                    'array{age?: int, name: \'x\', ...<array-key, mixed>}',
+                    'array{age: int, ...<array-key, mixed>}',
+                    'array{name: string, ...<array-key, mixed>}',
                 ],
             ],
             'unsealedArrayKeyDeclaredInOneAndOptionalInTheOtherKeepsItsType' => [
@@ -208,11 +208,25 @@ final class TypeCombinationTest extends TestCase
                     'array{age?: int, ...<array-key, mixed>}',
                 ],
             ],
-            'unsealedArrayKeyDeclaredInOneAndMissingInTheOtherTakesTheFallback' => [
-                'array{age?: int|mixed, name?: mixed|string, ...<array-key, mixed>}',
+            'unsealedArrayKeyDeclaredOptionalInBothKeepsItsType' => [
+                'array{age?: int, name: string, ...<array-key, mixed>}',
                 [
-                    'array{age: int, ...<array-key, mixed>}',
-                    'array{name: string, ...<array-key, mixed>}',
+                    'array{age?: int, name: string, ...<array-key, mixed>}',
+                    'array{age?: int, name: \'x\', ...<array-key, mixed>}',
+                ],
+            ],
+            'objectWithPropertiesKeepsNamedObjects' => [
+                'Error|object{foo:string}',
+                [
+                    'Error',
+                    'object{foo: string}',
+                ],
+            ],
+            'objectWithPropertiesAfterNamedObject' => [
+                'Error|object{foo:string}',
+                [
+                    'object{foo: string}',
+                    'Error',
                 ],
             ],
             'complexArrayFallback1' => [
