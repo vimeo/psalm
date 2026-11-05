@@ -266,11 +266,11 @@ final class InternalCallMapHandler
     {
         $call_map_key = strtolower($function_id);
 
+        $call_map = self::getCallMap();
+
         if (isset(self::$call_map_callables[$call_map_key])) {
             return self::$call_map_callables[$call_map_key];
         }
-
-        $call_map = self::getCallMap();
 
         if (!isset($call_map[$call_map_key])) {
             return null;
@@ -403,6 +403,8 @@ final class InternalCallMapHandler
         $call_map = require(dirname(__DIR__, 4) . "/dictionaries/CallMap_$analyzer_version_int.php");
 
         self::$call_map = $call_map;
+        // the callables of the CallMap of another version
+        self::$call_map_callables = [];
 
         assert(!empty(self::$call_map));
 
@@ -619,13 +621,5 @@ final class InternalCallMapHandler
         }
 
         return $extension !== null && $extension->getVersion() === PHP_VERSION;
-    }
-
-    /**
-     * @psalm-external-mutation-free
-     */
-    public static function clearCache(): void
-    {
-        self::$call_map_callables = [];
     }
 }

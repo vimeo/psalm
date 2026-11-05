@@ -1371,7 +1371,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
 
         if ($this->source instanceof FunctionAnalyzer) {
-            // the name of a function in a namespace includes the namespace
+            // a function's cased_name is already namespace-qualified
             $function_name = $this->source->getFunctionLikeStorage($this)->cased_name;
             assert($function_name !== null);
 

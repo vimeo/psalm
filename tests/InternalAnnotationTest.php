@@ -20,6 +20,23 @@ final class InternalAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'psalmInternalMethodCalledFromFunctionInSameNamespace' => [
+                'code' => '<?php
+                    namespace A\B {
+                        class Foo {
+                            /** @psalm-internal A\B */
+                            public function __construct() {}
+
+                            /** @psalm-internal A\B */
+                            public static function barBar(): void {}
+                        }
+
+                        function f(): void {
+                            Foo::barBar();
+                            new Foo();
+                        }
+                    }',
+            ],
             'internalMethodWithCall' => [
                 'code' => '<?php
                     namespace A {
@@ -710,6 +727,70 @@ final class InternalAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'internalConstructorCalledFromNamespacedFunction' => [
+                'code' => '<?php
+                    namespace A\B {
+                        /** @internal */
+                        final class Inner {
+                            public function __construct() {}
+                        }
+                    }
+
+                    namespace Other {
+                        function f(): void {
+                            new \A\B\Inner();
+                        }
+                    }',
+                'error_message' => 'Constructor A\B\Inner::__construct is internal to A but called from Other\f',
+            ],
+            'internalStaticMethodCalledFromNamespacedFunction' => [
+                'code' => '<?php
+                    namespace A {
+                        class Foo {
+                            /** @internal */
+                            public static function barBar(): void {}
+                        }
+                    }
+
+                    namespace B {
+                        function f(): void {
+                            \A\Foo::barBar();
+                        }
+                    }',
+                'error_message' => 'The method A\Foo::barBar is internal to A but called from B\f',
+            ],
+            'internalInstanceMethodCalledFromNamespacedFunction' => [
+                'code' => '<?php
+                    namespace A {
+                        class Foo {
+                            /** @internal */
+                            public function barBar(): void {}
+                        }
+                    }
+
+                    namespace B {
+                        function f(\A\Foo $foo): void {
+                            $foo->barBar();
+                        }
+                    }',
+                'error_message' => 'The method A\Foo::barBar is internal to A but called from B\f',
+            ],
+            'psalmInternalMethodCalledFromFunctionInParentNamespace' => [
+                'code' => '<?php
+                    namespace A\A {
+                        class Foo {
+                            /** @psalm-internal A\A */
+                            public static function barBar(): void {}
+                        }
+                    }
+
+                    namespace A {
+                        function f(): void {
+                            \A\A\Foo::barBar();
+                        }
+                    }',
+                'error_message' => 'The method A\A\Foo::barBar is internal to A\A but called from A\f',
+            ],
             'internalMethodWithCall' => [
                 'code' => '<?php
                     namespace A {
