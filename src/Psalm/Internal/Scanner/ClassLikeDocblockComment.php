@@ -55,6 +55,13 @@ final class ClassLikeDocblockComment
     public array $templates = [];
 
     /**
+     * The default of each type template that has one (`@template T of Bound = Default`), and its line.
+     *
+     * @var array<string, array{type: string, line_number: int}>
+     */
+    public array $template_defaults = [];
+
+    /**
      * The names of the templates declared with `@psalm-purity-template`, whose values are
      * capability sets.
      *
