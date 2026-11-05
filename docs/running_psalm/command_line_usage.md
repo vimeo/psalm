@@ -50,21 +50,19 @@ Running them together (e.g. `--threads=8 --diff`) will result in the fastest pos
 
 ### Consolidating the cache
 
-`--consolidate-cache` merges the cache entries of the project into one file per cache, without analysing anything.
+`--consolidate-cache` merges the cache entries of the project into an index and a data file per cache, without analysing anything.
 On a build server this means saving and restoring a handful of files instead of tens of thousands.
 
 ```bash
 # restore the cache directory with your CI's cache step
 vendor/bin/psalm                      # analyses, writes cache entries as separate files
-vendor/bin/psalm --consolidate-cache  # no analysis: merges them into one file per cache
+vendor/bin/psalm --consolidate-cache  # no analysis: merges them into an index and a data file per cache
 # save the cache directory with your CI's cache step
 ```
 
-Every Psalm process (the main one and each thread) loads the whole consolidated cache into memory,
-so a warm run may use more memory and not always be faster. Compare a warm run with and without it on your project.
+A run reads the index of a consolidated cache and then only the entries it needs.
 Entries written by later runs are stored as separate files again, so consolidate after the last run before saving the cache.
-
-It requires [`arrayCache`](./configuration.md#arraycache) to be enabled (the default).
+A consolidated cache takes more disk space than the separate files, because each entry stays compressed on its own.
 
 ## Reviewing issues in your IDE of choice
 
