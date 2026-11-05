@@ -27,7 +27,6 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
 
 use function count;
-use function get_object_vars;
 use function strpos;
 
 /**
@@ -455,8 +454,7 @@ final class MutableUnion implements TypeNode
      */
     public function freeze(): Union
     {
-        /** @psalm-suppress InvalidArgument It's actually filtered internally */
-        return new Union($this->getAtomicTypes(), get_object_vars($this));
+        return new Union($this->types, $this->getNonDefaultProperties());
     }
 
     /**
