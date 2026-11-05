@@ -969,6 +969,24 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'FirstClassCallable:InheritedPureMagicStaticMethod' => [
+                'code' => '<?php
+                    abstract class Facade {
+                        /** @psalm-pure */
+                        public static function __callStatic(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+                    final class Encrypter extends Facade {}
+
+                    $closure = Encrypter::encrypt(...);
+                ',
+                'assertions' => [
+                    '$closure' => 'Closure[pure]:mixed',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'FirstClassCallable:InheritedStaticMethod:LiteralExpr' => [
                 'code' => '<?php
                     class ParentClass {
@@ -993,6 +1011,29 @@ final class ClosureTest extends TestCase
                 ',
                 'assertions' => [
                     '$c===' => 'Closure[impure](string):int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:StaticMethodThroughMixin' => [
+                'code' => '<?php
+                    final class Builder {
+                        public function has(string $relation): self {
+                            return $this;
+                        }
+                    }
+
+                    /** @mixin Builder */
+                    final class Model {
+                        public static function __callStatic(string $name, array $args): mixed {
+                            return (new Builder())->$name(...$args);
+                        }
+                    }
+
+                    $closure = Model::has(...);
+                ',
+                'assertions' => [
+                    '$closure' => 'Closure[impure](string):Builder',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
