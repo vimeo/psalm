@@ -15,9 +15,11 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Scanner\DocblockParser;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\CapabilitiesParseException;
+use RuntimeException;
 
 use function array_keys;
 use function array_shift;
@@ -25,7 +27,6 @@ use function array_unique;
 use function count;
 use function explode;
 use function implode;
-use function in_array;
 use function pathinfo;
 use function preg_last_error_msg;
 use function preg_match;
@@ -292,55 +293,21 @@ final class FunctionLikeDocblockParser
                     }
 
                     $templates[$purity_template['name']]['psalm']
-                        = [$purity_template['name'], 'of', $purity_template['bound'], false];
+                        = [$purity_template['name'], 'of', $purity_template['bound'], false, 0];
                     $info->purity_templates[] = $purity_template['name'];
                 }
             }
         }
 
-        if (isset($parsed_docblock->combined_tags['template'])) {
-            foreach ($parsed_docblock->combined_tags['template'] as $offset => $template_line) {
-                $template_type = preg_split('/[\s]+/', CommentAnalyzer::sanitizeDocblockType($template_line));
-                if ($template_type === false) {
-                    throw new AssertionError(preg_last_error_msg());
-                }
+        [$templates, $info->template_defaults] = TemplateTagParser::parseTags(
+            $parsed_docblock,
+            $comment,
+            ['template' => false],
+            $templates,
+        );
 
-                $template_name = array_shift($template_type);
-
-                if (!$template_name) {
-                    throw new IncorrectDocblockException('Empty @template tag');
-                }
-
-                $source_prefix = 'none';
-                if (isset($parsed_docblock->tags['psalm-template'][$offset])) {
-                    $source_prefix = 'psalm';
-                } elseif (isset($parsed_docblock->tags['phpstan-template'][$offset])) {
-                    $source_prefix = 'phpstan';
-                }
-
-                if (count($template_type) > 1
-                    && in_array(strtolower($template_type[0]), ['as', 'super', 'of'], true)
-                ) {
-                    $template_modifier = strtolower(array_shift($template_type));
-                    $templates[$template_name][$source_prefix] = [
-                        $template_name,
-                        $template_modifier,
-                        implode(' ', $template_type),
-                        false,
-                    ];
-                } else {
-                    $templates[$template_name][$source_prefix] = [$template_name, null, null, false];
-                }
-            }
-        }
-
-        foreach ($templates as $template_entries) {
-            foreach (['psalm', 'phpstan', 'none'] as $source_prefix) {
-                if (isset($template_entries[$source_prefix])) {
-                    $info->templates[] = $template_entries[$source_prefix];
-                    break;
-                }
-            }
+        foreach ($templates as [$template_name, $modifier, $bound]) {
+            $info->templates[] = [$template_name, $modifier, $bound, false];
         }
 
         $info->assertions = self::parseAssertions($parsed_docblock, ['psalm-assert', 'phpstan-assert']);
@@ -409,6 +376,26 @@ final class FunctionLikeDocblockParser
         $info->public_api = isset($parsed_docblock->tags['psalm-api']) || isset($parsed_docblock->tags['api']);
 
         return $info;
+    }
+
+    /**
+     * Registers the taint a docblock names. What is wrong with it is added to the issues found while scanning.
+     *
+     * @param list<CodeIssue> $scan_issues
+     */
+    public static function registerTaint(
+        Codebase $codebase,
+        string $taint_type,
+        CodeLocation $code_location,
+        array &$scan_issues,
+    ): ?int {
+        try {
+            return $codebase->getOrRegisterTaint($taint_type);
+        } catch (RuntimeException $e) {
+            $scan_issues[] = new InvalidDocblock($e->getMessage(), $code_location);
+
+            return null;
+        }
     }
 
     /**
@@ -490,7 +477,7 @@ final class FunctionLikeDocblockParser
                 }
 
                 if (count($param_parts) >= 2) {
-                    $t = $codebase->getOrRegisterTaint($param_parts[0], $code_location);
+                    $t = self::registerTaint($codebase, $param_parts[0], $code_location, $info->scan_issues);
                     if ($t !== null) {
                         $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => $t];
                     }
@@ -516,7 +503,7 @@ final class FunctionLikeDocblockParser
 
                     if (str_starts_with($taint_type, 'exec_')) {
                         $taint_type = substr($taint_type, 5);
-                        $t = $codebase->getOrRegisterTaint($taint_type, $code_location);
+                        $t = self::registerTaint($codebase, $taint_type, $code_location, $info->scan_issues);
                         if ($t !== null) {
                             $info->taint_sink_params[] = ['name' => $param_parts[0], 'taint' => $t];
                         }
@@ -533,7 +520,7 @@ final class FunctionLikeDocblockParser
                 }
 
                 if ($param_parts[0]) {
-                    $t = $codebase->getOrRegisterTaint($param_parts[0], $code_location);
+                    $t = self::registerTaint($codebase, $param_parts[0], $code_location, $info->scan_issues);
                     $keys = isset($param_parts[1]) && str_starts_with($param_parts[1], 'return[')
                         ? self::parseReturnKeys($param_parts[1])
                         : null;
@@ -570,7 +557,7 @@ final class FunctionLikeDocblockParser
 
                 if ($param_parts[0]) {
                     if ($param_parts[0] !== 'none') {
-                        $t = $codebase->getOrRegisterTaint($param_parts[0], $code_location);
+                        $t = self::registerTaint($codebase, $param_parts[0], $code_location, $info->scan_issues);
                         if ($t !== null) {
                             $info->taint_source_types |= $t;
                         }

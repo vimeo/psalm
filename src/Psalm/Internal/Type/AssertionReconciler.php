@@ -73,6 +73,7 @@ use function array_keys;
 use function array_merge;
 use function array_search;
 use function count;
+use function is_nan;
 use function is_numeric;
 use function is_string;
 
@@ -930,13 +931,16 @@ final class AssertionReconciler extends Reconciler
                 $fallback_types = [$type_1_atomic->fallback_params[0], $type_2_param];
             }
 
-            $matching_atomic_type = TKeyedArray::make(
+            $filtered_atomic_type = TKeyedArray::make(
                 $type_1_properties,
                 $type_1_atomic->class_strings,
                 $fallback_types,
                 $type_1_atomic->is_list,
                 $type_1_atomic->from_docblock,
             );
+            $matching_atomic_type = $filtered_atomic_type instanceof TKeyedArray
+                ? $filtered_atomic_type->setIsCallable($type_1_atomic->is_callable)
+                : $filtered_atomic_type;
             $atomic_comparison_results->type_coerced = true;
         }
 
@@ -1297,7 +1301,7 @@ final class AssertionReconciler extends Reconciler
 
             if ($assertion instanceof IsLooselyEqual
                 && $existing_var_atomic_type instanceof TLiteralFloat
-                && (int)$existing_var_atomic_type->value === $value
+                && $existing_var_atomic_type->value == $value
             ) {
                 return new Union([$existing_var_atomic_type]);
             }
@@ -1449,6 +1453,7 @@ final class AssertionReconciler extends Reconciler
 
             if ($assertion instanceof IsLooselyEqual
                 && $existing_var_atomic_type instanceof TLiteralFloat
+                && !is_nan($existing_var_atomic_type->value) // NAN is not equal to anything
                 && (string)$existing_var_atomic_type->value === $value
             ) {
                 return new Union([$existing_var_atomic_type]);
