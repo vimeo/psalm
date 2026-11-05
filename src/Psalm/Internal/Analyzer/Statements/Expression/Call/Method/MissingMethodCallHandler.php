@@ -15,7 +15,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImpureMethodCall;
@@ -34,6 +33,7 @@ use Psalm\Type\Union;
 use function array_map;
 use function array_merge;
 use function array_reverse;
+use function count;
 
 /**
  * @internal
@@ -57,15 +57,27 @@ final class MissingMethodCallHandler
         $method_name_lc = $method_id->method_name;
 
         if ($stmt->isFirstClassCallable()) {
-            if (isset($class_storage->pseudo_methods[$method_name_lc])) {
+            $found_method_and_class_storage = isset($class_storage->pseudo_methods[$method_name_lc])
+                ? self::findPseudoMethodAndClassStorages($codebase, $class_storage, $method_name_lc)
+                : null;
+
+            if ($found_method_and_class_storage) {
                 $result->has_valid_method_call_type = true;
                 $result->existent_method_ids[$method_id->__toString()] = true;
                 $result->return_type = self::createFirstClassCallableReturnType(
-                    $class_storage->pseudo_methods[$method_name_lc],
+                    $statements_analyzer,
+                    $codebase,
+                    $context,
+                    $stmt,
+                    $method_id,
+                    $found_method_and_class_storage[0],
+                    $found_method_and_class_storage[1],
+                    $class_storage,
+                    $lhs_type_part,
                 );
             } else {
                 $result->non_existent_magic_method_ids[] = $method_id->__toString();
-                $result->return_type = self::createFirstClassCallableReturnType();
+                $result->return_type = Type::getClosure();
             }
 
             return null;
@@ -109,6 +121,9 @@ final class MissingMethodCallHandler
                     $result->return_type,
                     $codebase,
                 );
+
+                $result->has_valid_method_call_type = true;
+                $result->existent_method_ids[$method_id->__toString()] = true;
 
                 CallAnalyzer::checkMethodArgs(
                     $method_id,
@@ -184,12 +199,11 @@ final class MissingMethodCallHandler
             );
 
             if ($pseudo_method_storage->return_type) {
-                $return_type_candidate = $pseudo_method_storage->return_type;
-
-                // the class templates, and the ones generated from the params, bound by the arguments
-                $return_type_candidate = TemplateInferredTypeReplacer::replace(
-                    $return_type_candidate,
+                $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
+                    $pseudo_method_storage->return_type,
                     $template_result,
+                    $method_id,
+                    count($stmt->getArgs()),
                     $codebase,
                 );
 
@@ -219,21 +233,10 @@ final class MissingMethodCallHandler
 
                 return null;
             }
-        } elseif ($all_intersection_return_type === null) {
-            ArgumentsAnalyzer::analyze(
-                $statements_analyzer,
-                $stmt->getArgs(),
-                null,
-                null,
-                true,
-                $context,
-            );
+        } elseif ($all_intersection_return_type === null && $class_storage->hasSealedMethods($config)) {
+            $result->non_existent_magic_method_ids[] = $method_id->__toString();
 
-            if ($class_storage->hasSealedMethods($config)) {
-                $result->non_existent_magic_method_ids[] = $method_id->__toString();
-
-                return null;
-            }
+            return null;
         }
 
         $result->has_valid_method_call_type = true;
@@ -383,7 +386,17 @@ final class MissingMethodCallHandler
             [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
             if ($stmt->isFirstClassCallable()) {
-                $result->return_type = self::createFirstClassCallableReturnType($pseudo_method_storage);
+                $result->return_type = self::createFirstClassCallableReturnType(
+                    $statements_analyzer,
+                    $codebase,
+                    $context,
+                    $stmt,
+                    $method_id,
+                    $pseudo_method_storage,
+                    $defining_class_storage,
+                    $class_storage,
+                    $lhs_type_part,
+                );
                 return;
             }
 
@@ -415,9 +428,7 @@ final class MissingMethodCallHandler
                 (string) $method_id,
                 true,
                 $context,
-                $template_result->template_types !== [] || $template_result->lower_bounds !== []
-                    ? $template_result
-                    : null,
+                $template_result,
             ) === false) {
                 return;
             }
@@ -437,12 +448,11 @@ final class MissingMethodCallHandler
             }
 
             if ($pseudo_method_storage->return_type) {
-                $return_type_candidate = $pseudo_method_storage->return_type;
-
-                // the class templates, and the ones generated from the params, bound by the arguments
-                $return_type_candidate = TemplateInferredTypeReplacer::replace(
-                    $return_type_candidate,
+                $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
+                    $pseudo_method_storage->return_type,
                     $template_result,
+                    $method_id,
+                    count($stmt->getArgs()),
                     $codebase,
                 );
 
@@ -477,7 +487,7 @@ final class MissingMethodCallHandler
 
         if ($stmt->isFirstClassCallable()) {
             $result->non_existent_class_method_ids[] = $method_id->__toString();
-            $result->return_type = self::createFirstClassCallableReturnType();
+            $result->return_type = Type::getClosure();
             return;
         }
 
@@ -515,19 +525,44 @@ final class MissingMethodCallHandler
     }
 
     /**
-     * @psalm-mutation-free
+     * The closure of a first-class callable of a pseudo-method, typed as the call (see
+     * MethodCallReturnTypeFetcher::getFirstClassCallableType())
      */
-    private static function createFirstClassCallableReturnType(?MethodStorage $method_storage = null): Union
-    {
-        if ($method_storage) {
-            return new Union([new TClosure(
-                $method_storage->params,
-                $method_storage->return_type,
-                $method_storage->capabilities,
-            )]);
-        }
+    private static function createFirstClassCallableReturnType(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        MethodIdentifier $method_id,
+        MethodStorage $pseudo_method_storage,
+        ClassLikeStorage $defining_class_storage,
+        ClassLikeStorage $class_storage,
+        ?Atomic $lhs_type_part,
+    ): Union {
+        $found_generic_params = ClassTemplateParamCollector::collect(
+            $codebase,
+            $defining_class_storage,
+            $class_storage,
+            $method_id->method_name,
+            $lhs_type_part,
+            !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
+        );
 
-        return Type::getClosure();
+        return MethodCallReturnTypeFetcher::getFirstClassCallableType(
+            $codebase,
+            $stmt,
+            new TClosure(
+                $pseudo_method_storage->params,
+                $pseudo_method_storage->return_type,
+                $pseudo_method_storage->capabilities,
+            ),
+            new TemplateResult([], $found_generic_params ?? []),
+            $pseudo_method_storage->template_types ?? [],
+            $defining_class_storage->name,
+            $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $method_id->fq_class_name,
+            $defining_class_storage->parent_class,
+            $class_storage->final,
+        );
     }
 
     /**

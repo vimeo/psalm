@@ -864,6 +864,9 @@ every part but the name is optional:
   template may then use unconditionally: `write-this-props <= C`;
 - the default, in parentheses, applies to subclasses that don't bind the template: `C(pure)`.
 
+Type templates take their default after `=` instead (`@template T of Bound = Default`), and it also
+applies to generic types that leave the template out, see [Template defaults](templated_annotations.md#template-defaults).
+
 Several templates can be declared in one tag, separated by commas (`P <= io, Q`). In a chain with
 a single bound, the side that is a capability is the bound: `io <= C` is a lower bound and
 `C <= io` an upper bound. A type alias used as a lower bound needs the upper bound written out
@@ -1157,7 +1160,8 @@ Psalm infers the capabilities of unannotated code from its body and the callees 
 so as a fixpoint over the call graph, after the whole codebase has been analysed: a function-like
 that only calls pure function-likes, annotated or inferred, is pure itself, whatever the order in
 which they are declared, and mutual recursion, recursive closures and closures assigned to a
-variable are handled. It reports code that could be annotated:
+variable are handled. When [`suggestPurityAnnotations`](../running_psalm/configuration.md#suggestpurityannotations)
+is enabled, it reports code that could be annotated:
 
 - [MissingPureAnnotation](../running_psalm/issues/MissingPureAnnotation.md): a function or method
   that could have `@psalm-pure` or `@psalm-capabilities`;
@@ -1168,24 +1172,52 @@ variable are handled. It reports code that could be annotated:
 - [MissingInterfaceImmutableAnnotation](../running_psalm/issues/MissingInterfaceImmutableAnnotation.md):
   an interface with no annotation.
 
-The first two can be fixed automatically:
+The suggestions are off by default. Enable them in `psalm.xml`:
+
+```xml
+<psalm suggestPurityAnnotations="true">
+```
+
+The first two can be fixed automatically, with or without the flag in the config:
 
 ```bash
 vendor/bin/psalm --alter --issues=MissingPureAnnotation,MissingImmutableAnnotation
 ```
 
+The suggestions and
+[taint analysis](../security_analysis/avoiding_false_positives.md#specializing-taints-in-functions)
+(on by default) both need the inferred purity of unannotated code, so it is computed when either is
+on. Capability checks never use it: a call is checked against what the callee declares, with or
+without the suggestions.
+
+```php
+<?php
+function slug(string $title): string { // inferred pure, but not declared
+    return strtolower(trim($title));
+}
+
+/** @psalm-pure */
+function heading(string $title): string {
+    return ucfirst(slug($title)); // ImpureFunctionCall: The context is pure but function call on slug requires impure
+}
+```
+
+Taint analysis can only rely on inference for functions and for methods that cannot be overridden,
+so an annotation still adds precision to an overridable method, an abstract or interface method,
+and a constructor.
+
 Given this code:
 
 ```php
 <?php
-function slug(string $title): string { // MissingPureAnnotation: slug must be marked @psalm-pure to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this
+function slug(string $title): string { // MissingPureAnnotation: slug could be marked @psalm-pure to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this
     return strtolower(trim($title));
 }
 
-final class Cart { // MissingImmutableAnnotation: Cart must be marked @psalm-capabilities read-props|write-this-props|write-refs to aid security analysis, run with --alter --issues=MissingImmutableAnnotation to fix this
+final class Cart { // MissingImmutableAnnotation: Cart could be marked @psalm-capabilities read-props|write-this-props|write-refs to aid security analysis, run with --alter --issues=MissingImmutableAnnotation to fix this
     private int $items = 0;
 
-    public function addItem(): void { // MissingPureAnnotation: addItem must be marked @psalm-capabilities read-props|write-this-props|write-refs to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this
+    public function addItem(): void { // MissingPureAnnotation: addItem could be marked @psalm-capabilities read-props|write-this-props|write-refs to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this
         $this->items++;
     }
 
@@ -1228,7 +1260,7 @@ final class Circle extends Shape {
     }
 }
 
-class Base { // MissingImmutableAnnotation: Base must be marked @psalm-capabilities read-props|write-this-props|write-refs to aid security analysis, run with --alter --issues=MissingImmutableAnnotation to fix this
+class Base { // MissingImmutableAnnotation: Base could be marked @psalm-capabilities read-props|write-this-props|write-refs to aid security analysis, run with --alter --issues=MissingImmutableAnnotation to fix this
     /** @psalm-pure */
     public function name(): string {
         return 'base';
@@ -1251,16 +1283,16 @@ when you want a contract. It doesn't suggest one either when the function-like's
 [parameter default values](#parameter-default-values) need capabilities the annotation wouldn't
 give them. A function-like marked `@psalm-impure` is never reported.
 
-These issues are always reported as errors. To turn them off, or to adopt them gradually, use
-`issueHandlers`:
+Once enabled, these issues are reported as errors. To adopt them gradually, silence the ones you
+are not ready for with `issueHandlers`:
 
 ```xml
-<issueHandlers>
-    <MissingPureAnnotation errorLevel="suppress" />
-    <MissingImmutableAnnotation errorLevel="suppress" />
-    <MissingAbstractPureAnnotation errorLevel="suppress" />
-    <MissingInterfaceImmutableAnnotation errorLevel="suppress" />
-</issueHandlers>
+<psalm suggestPurityAnnotations="true">
+    <issueHandlers>
+        <MissingAbstractPureAnnotation errorLevel="suppress" />
+        <MissingInterfaceImmutableAnnotation errorLevel="suppress" />
+    </issueHandlers>
+</psalm>
 ```
 
 ## Migrating from Psalm 6
@@ -1289,9 +1321,10 @@ What changes for your code:
 - **`MissingImmutableAnnotation` has a new meaning.** In Psalm 6 it reported a mutable class
   inheriting from an immutable one; that is now `ImmutableDependency`. `MissingImmutableAnnotation`
   now reports a class that *could* be annotated. Review existing suppressions of it.
-- **New issues are reported by default:** `MissingPureAnnotation`, `MissingImmutableAnnotation`,
-  `MissingAbstractPureAnnotation` and `MissingInterfaceImmutableAnnotation`. Run `--alter` once,
-  or suppress them (see [Inferring annotations](#inferring-annotations)).
+- **New suggestions are opt-in:** `MissingPureAnnotation`, `MissingImmutableAnnotation`,
+  `MissingAbstractPureAnnotation` and `MissingInterfaceImmutableAnnotation` are only reported with
+  `suggestPurityAnnotations="true"`. Run `--alter` once to adopt them (see
+  [Inferring annotations](#inferring-annotations)).
 - **More is checked.** Implicit calls (`__toString`, `__clone`, `__invoke`, `ArrayAccess`,
   destructors), `throw new`, `new $className` and `call_user_func` are now checked for purity.
   Builtins with side effects need specific capabilities: `io` for I/O and random numbers,

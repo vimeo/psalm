@@ -107,7 +107,7 @@ will generate a file `psalm-baseline.xml` containing the current errors. Alterna
 vendor/bin/psalm --set-baseline=your-baseline.xml
 ```
 
-You should commit that generated file so that Psalm can use it when running in other places (e.g. CI). It won't complain about those errors either.
+You should commit that generated file so that Psalm can use it when running in other places (e.g. CI). It won't complain about those errors either. Don't serve it from a web server, it points at the problems of your code ([more](configuration.md#keep-the-configuration-private)).
 
 You have two options to use the generated baseline when running psalm:
 
@@ -173,3 +173,5 @@ class DynamicallySuppressClassIssueBasedOnInterface implements AfterClassLikeVis
     }
 }
 ```
+
+If an issue looks wrong, see the [common questions](common_issues.md) before reporting it.
