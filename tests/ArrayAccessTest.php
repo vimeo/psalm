@@ -1380,7 +1380,6 @@ final class ArrayAccessTest extends TestCase
                             return null;
                     }
 
-                    /** @psalm-suppress PossiblyNullArrayAccess */
                     [1 => $foo] = bar(0);
 
                     if ($foo !== null) {}',
