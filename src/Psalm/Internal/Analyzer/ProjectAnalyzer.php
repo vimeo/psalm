@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer;
 
 use InvalidArgumentException;
+use PhpParser\Node\Stmt;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
@@ -59,6 +60,7 @@ use function array_combine;
 use function array_diff;
 use function array_fill_keys;
 use function array_filter;
+use function array_key_first;
 use function array_keys;
 use function array_map;
 use function array_merge;
@@ -73,6 +75,8 @@ use function implode;
 use function in_array;
 use function is_dir;
 use function is_file;
+use function max;
+use function memory_get_usage;
 use function microtime;
 use function mkdir;
 use function number_format;
@@ -187,6 +191,11 @@ final class ProjectAnalyzer
         UnusedVariable::class,
         UnnecessaryVarAnnotation::class,
     ];
+
+    /** Bytes of parsed statements getMethodMutations() may keep per process (not a user setting, for now) */
+    private const MUTATION_STATEMENTS_BUDGET = 16 * 1_024 * 1_024;
+
+    private const MUTATION_STATEMENTS_MAX_SEEN = 65_536;
 
     private const PHP_VERSION_REGEX = '^(0|[1-9]\d*)\.(0|[1-9]\d*)(?:\..*)?$';
 
@@ -1157,6 +1166,77 @@ final class ProjectAnalyzer
         return $this->codebase;
     }
 
+    /**
+     * Parsed statements of files whose methods getMethodMutations() inlined, least recently used first.
+     * Inlining $this->method() and parent::method() calls made by a constructor fetched the declaring file
+     * from the parser cache every time, which is a full unserialize when arrayCache is off.
+     *
+     * @var array<string, array{list<Stmt>, int}>
+     */
+    private array $mutation_statements = [];
+
+    private int $mutation_statements_bytes = 0;
+
+    /**
+     * Files fetched once already. A file is only retained from its second fetch,
+     * so files needed once never push out the ones needed again and again.
+     *
+     * @var array<string, true>
+     */
+    private array $mutation_statements_seen = [];
+
+    /**
+     * @return list<Stmt>
+     */
+    private function getStatementsForMutations(string $file_path): array
+    {
+        if ($this->config->array_cache || $this->codebase->server_mode || $this->codebase->language_server) {
+            // either the cache already keeps every AST in memory, or files can change under us
+            return $this->codebase->getStatementsForFile($file_path);
+        }
+
+        if (isset($this->mutation_statements[$file_path])) {
+            $entry = $this->mutation_statements[$file_path];
+            unset($this->mutation_statements[$file_path]);
+            $this->mutation_statements[$file_path] = $entry;
+
+            return $entry[0];
+        }
+
+        $memory_before = memory_get_usage();
+        $stmts = $this->codebase->getStatementsForFile($file_path);
+
+        if (!isset($this->mutation_statements_seen[$file_path])) {
+            if (count($this->mutation_statements_seen) >= self::MUTATION_STATEMENTS_MAX_SEEN) {
+                $this->mutation_statements_seen = [];
+            }
+
+            $this->mutation_statements_seen[$file_path] = true;
+
+            return $stmts;
+        }
+
+        // the statements were just unserialized, so the memory growth is about what keeping them costs
+        $bytes = max(1024, memory_get_usage() - $memory_before);
+
+        if ($bytes > self::MUTATION_STATEMENTS_BUDGET) {
+            return $stmts;
+        }
+
+        while ($this->mutation_statements
+            && $this->mutation_statements_bytes + $bytes > self::MUTATION_STATEMENTS_BUDGET
+        ) {
+            $oldest = array_key_first($this->mutation_statements);
+            $this->mutation_statements_bytes -= $this->mutation_statements[$oldest][1];
+            unset($this->mutation_statements[$oldest]);
+        }
+
+        $this->mutation_statements[$file_path] = [$stmts, $bytes];
+        $this->mutation_statements_bytes += $bytes;
+
+        return $stmts;
+    }
+
     public function getFileAnalyzerForClassLike(string $fq_class_name): FileAnalyzer
     {
         $fq_class_name_lc = strtolower($fq_class_name);
@@ -1201,9 +1281,7 @@ final class ProjectAnalyzer
             $file_analyzer = $this->getFileAnalyzerForClassLike($appearing_fq_class_name);
         }
 
-        $stmts = $this->codebase->getStatementsForFile(
-            $file_analyzer->getFilePath(),
-        );
+        $stmts = $this->getStatementsForMutations($file_analyzer->getFilePath());
 
         $file_analyzer->populateCheckers($stmts);
 
