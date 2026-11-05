@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
-use Composer\InstalledVersions;
 use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
-
-use function version_compare;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -20,12 +17,8 @@ final class ReturnTypeTest extends TestCase
 
     public function testVoidParameterType(): void
     {
-        // PHP-Parser 5.8 rejects void parameters before Psalm analyzes the body.
-        $parser_version = InstalledVersions::getVersion('nikic/php-parser') ?? '5.0.0';
-        $this->testInvalidCode(
-            '<?php function f(void $p): void {}',
-            version_compare($parser_version, '5.8.0', '>=') ? 'ParseError' : 'ParadoxicalCondition',
-        );
+        // PHP-Parser rejects void parameters before Psalm analyzes the body.
+        $this->testInvalidCode('<?php function f(void $p): void {}', 'ParseError');
     }
 
     /**
@@ -35,26 +28,14 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'objectCastOfAShapedArrayIsAStdClass' => [
+            'objectCastOfAShapedArrayKeepsItsProperties' => [
                 'code' => '<?php
-                    function test(): stdClass {
-                        return (object) ["string" => "string"];
+                    /**
+                     * @return object{a: int}
+                     */
+                    function test(): object {
+                        return (object) ["a" => 1];
                     }',
-            ],
-            'objectCastOfAScalarIsAStdClass' => [
-                'code' => '<?php
-                    function fromInt(): stdClass {
-                        return (object) 1;
-                    }',
-            ],
-            'objectCastOfAShapedArrayOrNullIsAnObjectWithoutTheProperties' => [
-                'code' => '<?php
-                    /** @var array{a: int}|null $values */
-                    $values = null;
-                    $object = (object) $values;',
-                'assertions' => [
-                    '$object' => 'object',
-                ],
             ],
             'objectCastOfAShapedArrayOrAScalarIsAStdClass' => [
                 'code' => '<?php
@@ -65,13 +46,90 @@ final class ReturnTypeTest extends TestCase
                     '$object' => 'stdClass',
                 ],
             ],
-            'objectCastOfAShapedArrayKeepsItsProperties' => [
+            'objectCastOfAShapedArrayOrNullIsAnObjectWithoutTheProperties' => [
+                'code' => '<?php
+                    /** @var array{a: int}|null $values */
+                    $values = null;
+                    $object = (object) $values;',
+                'assertions' => [
+                    '$object' => 'object',
+                ],
+            ],
+            'objectCastOfAScalarIsAStdClass' => [
+                'code' => '<?php
+                    function fromInt(): stdClass {
+                        return (object) 1;
+                    }',
+            ],
+            'objectCastOfAShapedArrayIsAStdClass' => [
+                'code' => '<?php
+                    function test(): stdClass {
+                        return (object) ["string" => "string"];
+                    }',
+            ],
+            'nativeArrayReturnTypeTakesTheInheritedIterableDocblock' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @return iterable<int, stdClass> */
+                        abstract public function items(): iterable;
+                    }
+
+                    final class Child extends Base {
+                        public function items(): array {
+                            return [new stdClass()];
+                        }
+                    }
+
+                    $items = (new Child())->items();',
+                'assertions' => ['$items===' => 'array<int, stdClass>'],
+            ],
+            'iterableDocblockReturnTypeOfNativeArrayOrObject' => [
                 'code' => '<?php
                     /**
-                     * @return object{a: int}
+                     * @template T of object
                      */
-                    function test(): object {
-                        return (object) ["a" => 1];
+                    interface FooInterface {
+                        /**
+                         * @return T|iterable<T>|null
+                         */
+                        public function foo(): object|array|null;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nativeNullReturnTypeOfAnInterfaceMethodWithADocblock' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @param string[] $params
+                         */
+                        public function method(array $params): null;
+                    }
+
+                    final class C implements I {
+                        public function method(array $params): null {
+                            return null;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'docblockNullReturnTypeOfAnInterfaceMethodIsVoid' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @return null
+                         */
+                        public function method();
+                    }
+
+                    final class C implements I {
+                        public function method() {
+                            return;
+                        }
                     }',
             ],
             'wordPressHashNotationAfterReturnAndVarType' => [
@@ -1023,7 +1081,7 @@ final class ReturnTypeTest extends TestCase
                     $obj = (object)returnsInt();
                 ',
                 'assertions' => [
-                    '$obj' => 'object{scalar:int}&stdClass',
+                    '$obj' => 'object{scalar:int}',
                 ],
             ],
             'infersObjectShapeOfCastArray' => [
@@ -1038,7 +1096,7 @@ final class ReturnTypeTest extends TestCase
                     $obj = (object)returnsArray();
                 ',
                 'assertions' => [
-                    '$obj' => 'object{a:int}&stdClass',
+                    '$obj' => 'object{a:int}',
                 ],
             ],
             'mixedAssignmentWithUnderscore' => [
@@ -1782,6 +1840,21 @@ final class ReturnTypeTest extends TestCase
                     '$b===' => "''",
                 ],
             ],
+            'objectShapePropertyNarrowedByIdenticalCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param object{n: string} $s
+                     * @return non-empty-string
+                     */
+                    function f(object $s): string {
+                        if ($s->n === "") {
+                            throw new RuntimeException("empty-string");
+                        }
+                        return $s->n;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingThrowsDocblock'],
+            ],
         ];
     }
 
@@ -1792,6 +1865,49 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nativeArrayReturnTypeMustRespectTheInheritedIterableDocblock' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @return iterable<int, stdClass> */
+                        abstract public function items(): iterable;
+                    }
+
+                    final class Child extends Base {
+                        public function items(): array {
+                            return [3, 4];
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'iterableDocblockReturnTypeOfNativeObjectRejectsANonIterableObject' => [
+                'code' => '<?php
+                    interface FooInterface {
+                        /**
+                         * @return iterable
+                         */
+                        public function foo(): object|array {
+                            return new A();
+                        }
+                    }
+
+                    final class A {}',
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'objectIsNotAcceptedWhereAnIterableIsExpected' => [
+                'code' => '<?php
+                    function takesIterable(iterable $items): void {
+                        foreach ($items as $_) {
+                            echo 1;
+                        }
+                    }
+
+                    function test(object $object): void {
+                        takesIterable($object);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'unrepresentableScalarIntersection' => [
                 'code' => '<?php
                     /** @return literal-string&non-falsy-string */
