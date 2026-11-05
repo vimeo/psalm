@@ -634,6 +634,50 @@ final class PluginTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testMethodProviderAnalyzesNarrowingArgumentOnce(): void
+    {
+        require_once __DIR__ . '/Plugin/MethodPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                    phpVersion="8.0"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                class Foo {
+                    /** @psalm-mutation-free */
+                    public function __call(string $method_name, array $args) {}
+                }
+
+                function f(Foo $foo, ?string $s): void {
+                    echo $foo->magicMethod($s ?? throw new \LogicException());
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testMethodProviderSeesResolvedTypeVariables(): void
     {
         require_once __DIR__ . '/Plugin/TypeVariablePlugin.php';

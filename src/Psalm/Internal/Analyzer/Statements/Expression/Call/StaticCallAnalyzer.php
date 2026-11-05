@@ -290,6 +290,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
         $has_mock = false;
         $moved_call = false;
         $has_existing_method = false;
+        $args_analyzed = false;
 
         // `$a?->b()::c()` short-circuits the whole chain: null is not a class to call, it is the result
         $class_state = $stmt->class instanceof PhpParser\Node\Expr && $lhs_type->isNullable()
@@ -306,6 +307,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $moved_call,
                 $has_mock,
                 $has_existing_method,
+                $args_analyzed,
                 $template_result,
             );
         }
@@ -324,7 +326,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
         }
 
         if (!$stmt->isFirstClassCallable() && !$has_existing_method) {
-            return self::checkMethodArgs(
+            return $args_analyzed || self::checkMethodArgs(
                 $method_id,
                 $stmt->getArgs(),
                 new TemplateResult([], []),
