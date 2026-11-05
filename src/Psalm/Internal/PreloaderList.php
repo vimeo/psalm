@@ -966,6 +966,7 @@ final class PreloaderList {
         \Psalm\Internal\Provider\ReturnTypeProvider\PdoStatementReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\PdoStatementSetFetchMode::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\PowReturnTypeProvider::class,
+        \Psalm\Internal\Provider\ReturnTypeProvider\PropertyExistsReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\RandReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\RoundReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\SprintfReturnTypeProvider::class,
