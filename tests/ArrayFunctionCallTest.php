@@ -3818,6 +3818,32 @@ final class ArrayFunctionCallTest extends TestCase
                     '$y===' => 'string',
                 ],
             ],
+            'arrayPopItemThatMayBeUndefinedBecomesAnArray' => [
+                'code' => '<?php
+                    /** @param array{a?: list<int>} $a */
+                    function f(array $a): int {
+                        /** @psalm-suppress PossiblyNullArgument */
+                        array_pop($a["a"]);
+                        $n = 0;
+                        foreach ($a as $v) {
+                            $n += count($v);
+                        }
+                        return $n;
+                    }',
+            ],
+            'arrayPopItemThatMayBeNullBecomesAnArray' => [
+                'code' => '<?php
+                    /** @param array{a: list<int>|null} $a */
+                    function f(array $a): int {
+                        /** @psalm-suppress PossiblyNullArgument */
+                        array_shift($a["a"]);
+                        $n = 0;
+                        foreach ($a as $v) {
+                            $n += count($v);
+                        }
+                        return $n;
+                    }',
+            ],
             'arrayPopItemOfMixedIsUnchanged' => [
                 'code' => '<?php
                     /** @param array<int, mixed> $a */
@@ -4503,6 +4529,53 @@ final class ArrayFunctionCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'arrayPopNestedItemOfArrayOrArrayObjectIsNotExact' => [
+                'code' => '<?php
+                    /** @param array{a: array{b: list{int, string}}}|ArrayObject<string, array{b: list{int, string}}> $o */
+                    function f($o): int {
+                        array_pop($o["a"]["b"]);
+                        return array_pop($o["a"]["b"]);
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32',
+            ],
+            'arrayPopNestedItemOfPropertyOfArrayOrArrayObjectIsNotExact' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @var array{a: array{b: list{int, string}}}|ArrayObject<string, array{b: list{int, string}}> */
+                        public array|ArrayObject $o = ["a" => ["b" => [1, "s"]]];
+
+                        public function f(): int {
+                            array_pop($this->o["a"]["b"]);
+                            return array_pop($this->o["a"]["b"]);
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:36',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayPopItemOfShapedListByIntKeyIsNotExact' => [
+                'code' => '<?php
+                    /** @param list{list{int, string}, list{string, int}} $l */
+                    function f(array $l, int $k): int {
+                        array_pop($l[$k]);
+                        return array_pop($l[$k]);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'arrayPopItemOfReadonlyPropertyIsInaccessible' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @param list<list<int>> $items */
+                        public function __construct(public readonly array $items) {}
+
+                        public function f(): void {
+                            array_pop($this->items[0]);
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
