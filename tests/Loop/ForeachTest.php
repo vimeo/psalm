@@ -23,6 +23,70 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachByReferenceWritingEveryItemReplacesTheItemTypes' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string> $names
+                     * @return array<string, array<string, true>>
+                     */
+                    function nest(array $names): array {
+                        $outers = [];
+                        $inners = [];
+
+                        foreach ($names as $name) {
+                            $outers[$name] = true;
+                            $inners[$name] = true;
+                        }
+
+                        foreach ($outers as &$outer) {
+                            $outer = $inners;
+                        }
+
+                        return $outers;
+                    }
+
+                    function shape(): void {
+                        $letters = ["a", "b", "c"];
+
+                        foreach ($letters as &$letter) {
+                            $letter = false;
+                        }
+
+                        unset($letter);
+
+                        /** @psalm-check-type-exact $letters = list{false, false, false} */;
+                    }
+
+                    function partly(): void {
+                        $numbers = [1, 2];
+
+                        foreach ($numbers as &$number) {
+                            if (rand(0, 1)) {
+                                $number = "x";
+                            }
+                        }
+
+                        unset($number);
+
+                        /** @psalm-check-type-exact $numbers = list{\'x\'|1|2, \'x\'|1|2} */;
+                    }
+
+                    function leftEarly(): void {
+                        $numbers = [1, 2];
+
+                        foreach ($numbers as &$number) {
+                            $number = "y";
+
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        }
+
+                        unset($number);
+
+                        /** @psalm-check-type-exact $numbers = list{\'y\'|1, \'y\'|2} */;
+                    }',
+            ],
             'foreachByReferenceWritesIntoTheItemsOfTheArray' => [
                 'code' => '<?php
                     $values = ["key" => ""];
@@ -45,8 +109,8 @@ final class ForeachTest extends TestCase
                     }
                     unset($count);',
                 'assertions' => [
-                    '$values===' => "array{key: ''|'0'|'1'}",
-                    '$rows===' => "list{array{name: ''|'0'|'1'}}",
+                    '$values===' => "array{key: '0'|'1'}",
+                    '$rows===' => "list{array{name: '0'|'1'}}",
                     '$counts===' => "array<string, 'many'|int>",
                 ],
             ],

@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\PurityWildcardInference;
+use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
@@ -34,6 +35,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -83,6 +85,7 @@ use function array_search;
 use function array_values;
 use function assert;
 use function implode;
+use function in_array;
 use function is_string;
 use function reset;
 use function stripos;
@@ -538,6 +541,16 @@ final class ForeachAnalyzer
 
         $array_type = $context->vars_in_scope[$array_var_id];
 
+        // a loop that is not left early visits every item, and an iteration that leaves the variable as it was
+        // keeps the item's type in what it ends with: when an item's type isn't in the written type, every
+        // iteration wrote the variable
+        $visits_every_item = !in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);
+
+        $item_after_loop = static fn(Union $item): Union => $visits_every_item
+            && !UnionTypeComparator::isContainedBy($codebase, $item, $written_type)
+                ? $written_type
+                : Type::combineUnionTypes($item, $written_type, $codebase);
+
         $atomic_types = [];
 
         foreach ($array_type->getAtomicTypes() as $atomic_type) {
@@ -545,7 +558,7 @@ final class ForeachAnalyzer
                 $properties = [];
 
                 foreach ($atomic_type->properties as $key => $property) {
-                    $properties[$key] = Type::combineUnionTypes($property, $written_type, $codebase)
+                    $properties[$key] = $item_after_loop($property)
                         ->setPossiblyUndefined($property->possibly_undefined);
                 }
 
@@ -554,7 +567,7 @@ final class ForeachAnalyzer
                     $atomic_type->class_strings,
                     $atomic_type->fallback_params === null ? null : [
                         $atomic_type->fallback_params[0],
-                        Type::combineUnionTypes($atomic_type->fallback_params[1], $written_type, $codebase),
+                        $item_after_loop($atomic_type->fallback_params[1]),
                     ],
                     $atomic_type->is_list,
                     $atomic_type->from_docblock,
@@ -562,7 +575,7 @@ final class ForeachAnalyzer
             } elseif ($atomic_type instanceof TArray && !$atomic_type->isEmptyArray()) {
                 $atomic_type = $atomic_type->setTypeParams([
                     $atomic_type->type_params[0],
-                    Type::combineUnionTypes($atomic_type->type_params[1], $written_type, $codebase),
+                    $item_after_loop($atomic_type->type_params[1]),
                 ]);
             }
 
