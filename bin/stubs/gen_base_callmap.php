@@ -3,6 +3,11 @@
 
 declare(strict_types=1);
 
+// Reject a mistagged image before it overwrites the callmap of a different PHP version.
+if (isset($argv[1]) && $argv[1] !== PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION) {
+    throw new RuntimeException('Expected PHP ' . $argv[1] . ', running ' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION);
+}
+
 $callmap = [];
 // the extension of each entry: gen_callmap.php keeps the overrides of the extensions a version's image lacks
 $extensions = [];
@@ -68,6 +73,22 @@ function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction, string 
     return $res;
 }
 
+/**
+ * The extension of a function or class, '' if none. Extensions that embed PHP code (swoole's library) evaluate it
+ * under an "@<extension>/..." file name.
+ *
+ * @psalm-param ReflectionFunction|ReflectionClass $reflection
+ */
+function extensionOf($reflection): string
+{
+    $extension = $reflection->getExtensionName();
+    if ($extension !== false) {
+        return strtolower($extension);
+    }
+
+    return preg_match('~^@(\w+)/~', (string) $reflection->getFileName(), $matches) ? strtolower($matches[1]) : '';
+}
+
 // TEMP: not recommended, install the extension in the Dockerfile, instead
 foreach ([
     'couchbase/couchbase.php',
@@ -77,12 +98,26 @@ foreach ([
         continue;
     }
     $stub = file_get_contents("https://github.com/JetBrains/phpstorm-stubs/raw/refs/heads/master/$stub");
+    if ($stub === false) {
+        throw new RuntimeException('Cannot download the extension stub');
+    }
     if (PHP_MAJOR_VERSION === 7 && PHP_MINOR_VERSION === 0) {
         $stub = str_replace(['?', '<php'], ['', '<?php'], $stub);
         $stub = str_replace(['public const', 'protected const', 'private const'], 'const', $stub);
     }
-    file_put_contents('temp.php', $stub);
-    require 'temp.php';
+    // Parallel PHP-version runs must not overwrite a shared extension-stub file.
+    $temporaryFile = tempnam(sys_get_temp_dir(), 'psalm-callmap-');
+    if ($temporaryFile === false) {
+        throw new RuntimeException('Cannot prepare the extension stub');
+    }
+    try {
+        if (file_put_contents($temporaryFile, $stub) === false) {
+            throw new RuntimeException('Cannot write the extension stub');
+        }
+        require $temporaryFile;
+    } finally {
+        unlink($temporaryFile);
+    }
 }
 
 foreach (get_defined_functions() as $sub) {
@@ -97,13 +132,17 @@ foreach (get_defined_functions() as $sub) {
         if ($name === 'namedtypename') {
             continue;
         }
+        if ($name === 'extensionof') {
+            continue;
+        }
         $func = new ReflectionFunction($name);
 
         $args = paramsToEntries($func, 'mixed');
 
         $callmap[$name] = $args;
-        if ($func->getExtensionName() !== false) {
-            $extensions[$name] = strtolower($func->getExtensionName());
+        $extension = extensionOf($func);
+        if ($extension !== '') {
+            $extensions[$name] = $extension;
         }
     }
 }
@@ -115,8 +154,9 @@ foreach (get_declared_classes() as $class) {
         $args = paramsToEntries($method, $method->getName() === '__construct' ? 'void' : 'mixed');
     
         $callmap[strtolower($class.'::'.$method->getName())] = $args;
-        if ($refl->getExtensionName() !== false) {
-            $extensions[strtolower($class.'::'.$method->getName())] = strtolower($refl->getExtensionName());
+        $extension = extensionOf($refl);
+        if ($extension !== '') {
+            $extensions[strtolower($class.'::'.$method->getName())] = $extension;
         }
     }
 }

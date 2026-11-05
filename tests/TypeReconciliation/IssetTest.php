@@ -21,6 +21,33 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableIsSetAfterCoalesceThrowStatement' => [
+                'code' => '<?php
+                    class H {
+                        public ?string $p = null;
+
+                        public function a(?string $html): string {
+                            $html ?? throw new Exception();
+
+                            return $html;
+                        }
+
+                        public function b(?string $html): string {
+                            $x = $html ?? throw new Exception();
+
+                            return $html . $x;
+                        }
+
+                        public function c(): string {
+                            $this->p ?? throw new Exception();
+
+                            return $this->p;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'ternaryAfterIssetAndTypeCheckOfAnOffsetOfMixed' => [
                 'code' => '<?php
                     /** @var mixed $array */
@@ -1105,6 +1132,17 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableStaysNullableAfterCoalesceWithDefault' => [
+                'code' => '<?php
+                    function a(?string $html): string {
+                        $html ?? "default";
+
+                        return $html;
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'complainAboutBadCallInIsset' => [
                 'code' => '<?php
                     class A {}
