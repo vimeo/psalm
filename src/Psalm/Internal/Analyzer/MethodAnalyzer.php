@@ -419,14 +419,19 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         );
     }
 
-    public static function checkForbiddenEnumMethod(MethodStorage $method_storage, ClassLikeStorage $enum_storage): void
-    {
+    public static function checkForbiddenEnumMethod(
+        MethodStorage $method_storage,
+        ClassLikeStorage $enum_storage,
+        int $analysis_php_version_id,
+    ): void {
         if ($method_storage->cased_name === null || $method_storage->location === null) {
             return;
         }
 
         $method_name_lc = strtolower($method_storage->cased_name);
-        if (in_array($method_name_lc, self::FORBIDDEN_ENUM_METHODS, true)) {
+        if (in_array($method_name_lc, self::FORBIDDEN_ENUM_METHODS, true)
+            && !($method_name_lc === '__debuginfo' && $analysis_php_version_id >= 8_06_00)
+        ) {
             IssueBuffer::maybeAdd(new InvalidEnumMethod(
                 'Enums cannot define ' . $method_storage->cased_name,
                 $method_storage->location,
