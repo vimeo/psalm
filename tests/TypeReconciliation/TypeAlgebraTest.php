@@ -1205,6 +1205,33 @@ final class TypeAlgebraTest extends TestCase
                         if ($a) {}
                     }',
             ],
+            'literalIntAssertionsInsideAndOrOr' => [
+                'code' => '<?php
+                    final class Collection {
+                        /** @psalm-assert-if-true 0 $this->count() */
+                        public function isEmpty(): bool {
+                            return $this->count() === 0;
+                        }
+
+                        public function count(): int {
+                            return 0;
+                        }
+                    }
+
+                    function foo(Collection $a, Collection $b): void {
+                        if ($a->isEmpty() && $b->isEmpty()) {
+                            return;
+                        }
+
+                        if ($a->isEmpty() || $a->isEmpty()) {
+                            return;
+                        }
+
+                        if (!$a->isEmpty() || !$b->isEmpty()) {
+                            echo $a->count();
+                        }
+                    }',
+            ],
             'compareToIntInsideIfDNF' => [
                 'code' => '<?php
                     function foo(?int $foo): void {
