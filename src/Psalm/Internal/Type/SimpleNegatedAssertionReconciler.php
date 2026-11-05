@@ -2127,6 +2127,6 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
 
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-        return Type::getNever();
+        return $existing_var_type;
     }
 }

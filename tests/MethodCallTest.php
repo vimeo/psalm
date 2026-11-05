@@ -205,6 +205,28 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedMethodExistsOfAnObjectWithTheMethodKeepsItsType' => [
+                'code' => '<?php
+                    abstract class Platform {
+                        public function fold(): int {
+                            return 1;
+                        }
+                    }
+
+                    function getPlatform(): Platform {
+                        throw new Exception();
+                    }
+
+                    $platform = getPlatform();
+
+                    if (method_exists($platform, "fold")) {
+                        throw new Exception();
+                    }
+
+                    $after = $platform;',
+                'assertions' => ['$after' => 'Platform'],
+                'ignored_issues' => ['RedundantCondition'],
+            ],
             'negatedMethodExistsOfAnObjectWithoutTheMethodNarrowsNothing' => [
                 'code' => '<?php
                     class A {}
