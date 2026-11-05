@@ -1904,7 +1904,10 @@ final class Config
                 self::requirePath($pluginclas_class_path);
             } else {
                 if (!class_exists($pluginClassName)) {
-                    throw new UnexpectedValueException($pluginClassName . ' is not a known class');
+                    throw new UnexpectedValueException(
+                        $pluginClassName . ' is not a known class:'
+                        . ' is the Composer package that provides it installed?',
+                    );
                 }
             }
             if (!is_a($pluginClassName, PluginInterface::class, true)) {
