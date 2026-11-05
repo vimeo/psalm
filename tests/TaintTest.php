@@ -5473,6 +5473,13 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'taintRemainsInAnItemAfterPoppingIt' => [
+                'code' => '<?php // --taint-analysis
+                    $a = [[$_GET["x"], "b", "c"]];
+                    array_pop($a[0]);
+                    echo $a[0][0];',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAnItemOfAMixedValuePassedByReference' => [
                 'code' => '<?php // --taint-analysis
                     /** @param mixed $m */

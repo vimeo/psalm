@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ArrayDimFetch;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Union;
 
 /**
@@ -47,8 +50,34 @@ final class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInte
             $statements_source->getCodebase(),
             $first_arg_type,
             $event->getFunctionId() === 'array_shift',
-            // an offset may have lost elements already: the array holding it keeps its type after the call
-            !$first_arg->value instanceof ArrayDimFetch,
+            self::isHeldByArrays($statements_source, $first_arg->value),
         ) ?? Type::getMixed();
+    }
+
+    /**
+     * Whether the item lives in arrays only: an item of an ArrayAccess object is re-read through offsetGet(),
+     * which doesn't see the call, so the item may have lost elements already.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isHeldByArrays(StatementsAnalyzer $statements_source, Expr $item): bool
+    {
+        while ($item instanceof ArrayDimFetch) {
+            $holder_type = $statements_source->node_data->getType($item->var);
+
+            if (!$holder_type) {
+                return false;
+            }
+
+            foreach ($holder_type->getAtomicTypes() as $holder_atomic_type) {
+                if (!$holder_atomic_type instanceof TArray && !$holder_atomic_type instanceof TKeyedArray) {
+                    return false;
+                }
+            }
+
+            $item = $item->var;
+        }
+
+        return true;
     }
 }
