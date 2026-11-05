@@ -720,11 +720,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         if (!$this->function instanceof VirtualNode
-            && ($this->function instanceof Function_
-                || $this->function instanceof ClassMethod
-                || $this->function instanceof Closure
-                || $this->function instanceof ArrowFunction
-            )
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
@@ -873,7 +868,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         $final_actions = ScopeAnalyzer::getControlActions(
-            $this->function->getStmts() ?: [],
+            $this->function->getStmts() ?? [],
             null,
             [],
         );
@@ -2377,7 +2372,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $targets = [];
 
         foreach ($finder->find(
-            $this->function->getStmts(),
+            $this->function->getStmts() ?? [],
             static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
                 || $node instanceof PhpParser\Node\Expr\AssignRef
                 || $node instanceof PhpParser\Node\Expr\AssignOp
