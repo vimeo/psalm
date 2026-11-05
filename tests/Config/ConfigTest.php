@@ -13,6 +13,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\RequiresOperatingSystem;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\Attributes\Test;
+use PhpParser;
 use Psalm\CodeLocation\Raw;
 use Psalm\Config;
 use Psalm\Config\IssueHandler;
@@ -1361,6 +1362,27 @@ final class ConfigTest extends TestCase
         $file_path = (string) getcwd() . '/src/somefile.php';
         $this->addFile($file_path, $code);
         $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testEveryExtensionStubParses(): void
+    {
+        $paths = glob(dirname(__DIR__, 2) . '/stubs/extensions/*.phpstub');
+        $this->assertIsArray($paths);
+
+        $parser = (new PhpParser\ParserFactory())->createForNewestSupportedVersion();
+
+        foreach ($paths as $path) {
+            $code = file_get_contents($path);
+            $this->assertIsString($code);
+
+            try {
+                $parser->parse($code);
+            } catch (PhpParser\Error $e) {
+                $this->fail(basename($path) . ': ' . $e->getMessage());
+            }
+        }
+
+        $this->assertNotSame([], $paths);
     }
 
     public function testEveryExtensionStubHasAConfigurableExtension(): void
