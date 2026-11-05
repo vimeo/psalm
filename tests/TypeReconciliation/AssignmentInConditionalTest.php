@@ -21,6 +21,37 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedByBothSidesOfAnOrIsDefinedInTheBodyInALoop' => [
+                'code' => '<?php
+                    final class Files {
+                        public function exists(string $file): bool {
+                            return $file !== "";
+                        }
+                    }
+
+                    /** @param list<string> $names */
+                    function find(Files $files, array $names): void {
+                        foreach ($names as $name) {
+                            if ($files->exists($file = $name . ".php") || $files->exists($file = $name . ".inc")) {
+                                echo $file;
+                            }
+                        }
+                    }',
+            ],
+            'variableAssignedByTheLeftSideOfAnOrIsDefinedInTheBodyInALoop' => [
+                'code' => '<?php
+                    function ok(string $value): bool {
+                        return $value !== "";
+                    }
+
+                    function run(): void {
+                        foreach ([1, 2] as $_) {
+                            if (ok($path = "a") || ok("b")) {
+                                echo $path;
+                            }
+                        }
+                    }',
+            ],
             'orWithAssignment' => [
                 'code' => '<?php
                     function maybeString(): ?string {
@@ -470,6 +501,21 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableAssignedByTheRightSideOfAnOrOnlyIsNotDefinedInTheBodyInALoop' => [
+                'code' => '<?php
+                    function ok(string $value): bool {
+                        return $value !== "";
+                    }
+
+                    function run(): void {
+                        foreach ([1, 2] as $_) {
+                            if (ok("b") || ok($path = "a")) {
+                                echo $path;
+                            }
+                        }
+                    }',
+                'error_message' => 'UndefinedVariable',
+            ],
             'assignmentInBranchOfAnd' => [
                 'code' => '<?php
                     function foo(string $str): ?int {

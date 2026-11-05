@@ -372,9 +372,16 @@ final class OrAnalyzer
 
             foreach ($right_context->vars_in_scope as $var_id => $type) {
                 if (isset($if_body_context->vars_in_scope[$var_id])) {
+                    $if_body_type = $if_body_context->vars_in_scope[$var_id];
+
+                    // the left side is always evaluated, so what it assigns is defined whichever side is true
+                    if (isset($left_assigned_var_ids[$var_id])) {
+                        $if_body_type = $if_body_type->setPossiblyUndefined(false);
+                    }
+
                     $if_body_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $type,
-                        $if_body_context->vars_in_scope[$var_id],
+                        $if_body_type,
                         $codebase,
                     );
                 } elseif (isset($left_context->vars_in_scope[$var_id])) {
