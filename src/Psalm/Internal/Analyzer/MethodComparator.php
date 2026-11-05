@@ -145,6 +145,8 @@ final class MethodComparator
         if (!$guide_classlike_storage->user_defined
             && $implementer_classlike_storage->user_defined
             && $codebase->analysis_php_version_id >= 8_01_00
+            // PHP supplies string for declared __toString methods, but not trait methods aliased to it.
+            && strtolower($implementer_method_storage->cased_name ?? '') !== '__tostring'
             && (($guide_method_storage->return_type && InternalCallMapHandler::inCallMap($cased_guide_method_id))
                 || $guide_method_storage->signature_return_type
             ) && !$implementer_method_storage->signature_return_type
