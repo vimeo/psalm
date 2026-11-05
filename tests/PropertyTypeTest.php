@@ -561,6 +561,31 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOnATypedPropertyOfAClassWithoutAConstructorChecksWhetherItWasSet' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name;
+                    }
+
+                    function title(Book $book): string {
+                        return $book->name ?? throw new \\Exception("Give the book a name first");
+                    }
+
+                    function hasName(Book $book): bool {
+                        return isset($book->name);
+                    }
+
+                    function describe(Book $book): string {
+                        if (!isset($book->name)) {
+                            return "nameless";
+                        }
+
+                        return $book->name;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor'],
+                'php_version' => '8.0',
+            ],
             'newVarInIf' => [
                 'code' => '<?php
                     class A {
@@ -2903,6 +2928,27 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'issetOnATypedPropertyThatAConstructorSetsIsRedundant' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name;
+
+                        public function __construct() {
+                            $this->name = "x";
+                        }
+                    }
+
+                    function hasName(Book $book): bool {
+                        if (isset($book->name)) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:29 - Type string for $book->name is always isset',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'undefinedPropertyAssignment' => [
                 'code' => '<?php
                     class A {
