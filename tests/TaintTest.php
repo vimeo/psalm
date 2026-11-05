@@ -855,6 +855,29 @@ final class TaintTest extends TestCase
                     $names = ["a"];
                     bar(...$names);',
             ],
+            'dontTaintTheOffsetSetOfAnItemPassedByReference' => [
+                'code' => '<?php // --taint-analysis
+                    /** @implements ArrayAccess<string, list<int>> */
+                    final class Store implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        /** @return list<int> */
+                        public function offsetGet(mixed $offset): array {
+                            return [];
+                        }
+
+                        /** @psalm-taint-sink html $offset */
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function sortItem(Store $s): void {
+                        sort($s[(string) $_GET["k"]]);
+                    }',
+            ],
             'dontTaintAParameterWithANamedArgumentTheVariadicTakes' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-sink html $a */
@@ -5460,19 +5483,10 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
-            'unpackedListIntoParams' => [
+            'unpackedTypedArrayIntoVariadic' => [
                 'code' => '<?php
-                    function bar(string $a, string $b) {
-                        echo $b;
-                    }
-
-                    bar(...["a", $_GET["name"]]);',
-                'error_message' => 'TaintedHtml',
-            ],
-            'unpackedTypedArrayIntoParam' => [
-                'code' => '<?php
-                    function bar(string $name) {
-                        echo $name;
+                    function bar(...$args) {
+                        echo $args[0];
                     }
 
                     /** @var array<int, non-empty-string> $names */
@@ -5491,15 +5505,80 @@ final class TaintTest extends TestCase
                     bar(...$names);',
                 'error_message' => 'TaintedHtml',
             ],
-            'unpackedTypedArrayIntoVariadic' => [
+            'unpackedTypedArrayIntoParam' => [
                 'code' => '<?php
-                    function bar(...$args) {
-                        echo $args[0];
+                    function bar(string $name) {
+                        echo $name;
                     }
 
                     /** @var array<int, non-empty-string> $names */
                     $names = [$_GET["name"]];
                     bar(...$names);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'unpackedListIntoParams' => [
+                'code' => '<?php
+                    function bar(string $a, string $b) {
+                        echo $b;
+                    }
+
+                    bar(...["a", $_GET["name"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAnItemOfAMixedValuePassedByReference' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $m */
+                    function f($m): void {
+                        /** @psalm-suppress MixedArrayAccess */
+                        preg_match("/(.*)/", (string) $_GET["x"], $m["k"]);
+                        /** @psalm-suppress MixedArrayAccess, MixedArgument */
+                        echo $m["k"][1];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAnItemOfAStaticPropertyPassedByReference' => [
+                'code' => '<?php // --taint-analysis
+                    final class Box {
+                        /** @var array<string, array<array-key, string>> */
+                        public static array $items = [];
+                    }
+
+                    function fill(string $s): void {
+                        preg_match("/(.*)/", $s, Box::$items["x"]);
+                    }
+
+                    function output(): void {
+                        echo Box::$items["x"][1];
+                    }
+
+                    $s = $_GET["q"];
+                    if (is_string($s)) {
+                        fill($s);
+                        output();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAnItemOfAPropertyPassedByReference' => [
+                'code' => '<?php // --taint-analysis
+                    final class Box {
+                        /** @var array<string, array<array-key, string>> */
+                        public array $items = [];
+
+                        public function fill(string $s): void {
+                            preg_match("/(.*)/", $s, $this->items["x"]);
+                        }
+
+                        public function output(): void {
+                            echo $this->items["x"][1];
+                        }
+                    }
+
+                    $s = $_GET["q"];
+                    if (is_string($s)) {
+                        $b = new Box();
+                        $b->fill($s);
+                        $b->output();
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'taintAParameterWithItsNamedArgument' => [
