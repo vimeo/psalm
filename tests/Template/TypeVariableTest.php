@@ -1147,6 +1147,33 @@ final class TypeVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'constructorWithSiblingImplementationsSatisfiesInvariantProperty' => [
+                'code' => '<?php
+                    /** @template V */
+                    final class Collection {
+                        /** @param list<V> $items */
+                        public function __construct(public array $items) {}
+                    }
+
+                    interface Foo {}
+                    interface Bar extends Foo {}
+                    interface Baz extends Foo {}
+
+                    function createBar(): Bar { return new class implements Bar {}; }
+                    function createBaz(): Baz { return new class implements Baz {}; }
+
+                    final class Ctx {
+                        /** @var Collection<Foo> */
+                        public Collection $items;
+
+                        public function __construct() {
+                            $this->items = new Collection([createBar(), createBaz()]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
