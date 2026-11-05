@@ -864,6 +864,29 @@ final class TaintTest extends TestCase
                     echo $u->foo($_GET["foo"], true);
                     echo $u->foo($_GET["foo"]);',
             ],
+            'dontTaintTheOffsetSetOfAnItemPassedByReference' => [
+                'code' => '<?php // --taint-analysis
+                    /** @implements ArrayAccess<string, list<int>> */
+                    final class Store implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        /** @return list<int> */
+                        public function offsetGet(mixed $offset): array {
+                            return [];
+                        }
+
+                        /** @psalm-taint-sink html $offset */
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function sortItem(Store $s): void {
+                        sort($s[(string) $_GET["k"]]);
+                    }',
+            ],
             'dontTaintAParameterWithANamedArgumentTheVariadicTakes' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-sink html $a */
@@ -5469,18 +5492,30 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
-            'conditionallyEscapedTaintOfAnUndecidedConditionToAnInstanceMethod' => [
+            'conditionallyEscapedTaintPassedFalseInstanceMethod' => [
                 'code' => '<?php
                     class U {
-                        /** @psalm-taint-escape ($type is "expression" ? null : "shell") */
-                        public function escape(string $s, string $type): string {
+                        /**
+                         * @psalm-taint-escape ($escape is true ? "html" : null)
+                         */
+                        public function foo(string $string, bool $escape = true): string {
+                            return $string;
+                        }
+                    }
+
+                    echo (new U())->foo($_GET["foo"], false);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionallyEscapedTaintPassedTrueToAnInstanceMethodKeepsTheOtherTaints' => [
+                'code' => '<?php
+                    class U {
+                        /** @psalm-taint-escape ($escape is true ? "html" : null) */
+                        public function escape(string $s, bool $escape = true): string {
                             return $s;
                         }
                     }
 
-                    function run(U $u, string $type): void {
-                        shell_exec($u->escape((string) $_GET["x"], $type));
-                    }',
+                    shell_exec((new U())->escape((string) $_GET["x"], true));',
                 'error_message' => 'TaintedShell',
             ],
             'conditionallyEscapedTaintOfAnUndecidedConditionToAStaticCall' => [
@@ -5497,30 +5532,74 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedShell',
             ],
-            'conditionallyEscapedTaintPassedTrueToAnInstanceMethodKeepsTheOtherTaints' => [
+            'conditionallyEscapedTaintOfAnUndecidedConditionToAnInstanceMethod' => [
                 'code' => '<?php
                     class U {
-                        /** @psalm-taint-escape ($escape is true ? "html" : null) */
-                        public function escape(string $s, bool $escape = true): string {
+                        /** @psalm-taint-escape ($type is "expression" ? null : "shell") */
+                        public function escape(string $s, string $type): string {
                             return $s;
                         }
                     }
 
-                    shell_exec((new U())->escape((string) $_GET["x"], true));',
+                    function run(U $u, string $type): void {
+                        shell_exec($u->escape((string) $_GET["x"], $type));
+                    }',
                 'error_message' => 'TaintedShell',
             ],
-            'conditionallyEscapedTaintPassedFalseInstanceMethod' => [
-                'code' => '<?php
-                    class U {
-                        /**
-                         * @psalm-taint-escape ($escape is true ? "html" : null)
-                         */
-                        public function foo(string $string, bool $escape = true): string {
-                            return $string;
+            'taintAnItemOfAMixedValuePassedByReference' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $m */
+                    function f($m): void {
+                        /** @psalm-suppress MixedArrayAccess */
+                        preg_match("/(.*)/", (string) $_GET["x"], $m["k"]);
+                        /** @psalm-suppress MixedArrayAccess, MixedArgument */
+                        echo $m["k"][1];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAnItemOfAStaticPropertyPassedByReference' => [
+                'code' => '<?php // --taint-analysis
+                    final class Box {
+                        /** @var array<string, array<array-key, string>> */
+                        public static array $items = [];
+                    }
+
+                    function fill(string $s): void {
+                        preg_match("/(.*)/", $s, Box::$items["x"]);
+                    }
+
+                    function output(): void {
+                        echo Box::$items["x"][1];
+                    }
+
+                    $s = $_GET["q"];
+                    if (is_string($s)) {
+                        fill($s);
+                        output();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAnItemOfAPropertyPassedByReference' => [
+                'code' => '<?php // --taint-analysis
+                    final class Box {
+                        /** @var array<string, array<array-key, string>> */
+                        public array $items = [];
+
+                        public function fill(string $s): void {
+                            preg_match("/(.*)/", $s, $this->items["x"]);
+                        }
+
+                        public function output(): void {
+                            echo $this->items["x"][1];
                         }
                     }
 
-                    echo (new U())->foo($_GET["foo"], false);',
+                    $s = $_GET["q"];
+                    if (is_string($s)) {
+                        $b = new Box();
+                        $b->fill($s);
+                        $b->output();
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'taintAParameterWithItsNamedArgument' => [
@@ -16220,124 +16299,5 @@ final class TaintTest extends TestCase
                 ],
             ],
         ];
-    }
-
-    /**
-     * @param list<string> $expected_issues
-     */
-    #[DataProvider('providerConditionallyEscapedTaintsDependOnTheArguments')]
-    public function testConditionallyEscapedTaintsDependOnTheArguments(
-        string $code,
-        array $expected_issues,
-        bool $track_unused_variables,
-    ): void {
-        if ($track_unused_variables) {
-            $this->trackUnusedVariables();
-        }
-
-        $this->testConfig->throw_exception = false;
-        $file_path = self::$src_dir_path . 'somefile.php';
-        $this->addFile($file_path, $code);
-        $this->project_analyzer->trackTaintedInputs();
-
-        $this->analyzeFile($file_path, new Context(), false);
-
-        $taint_issues = array_values(array_filter(
-            array_map(
-                static fn(IssueData $issue): string => $issue->type . ' on line ' . $issue->line_from,
-                IssueBuffer::getIssuesDataForFile($file_path),
-            ),
-            static fn(string $issue): bool => str_starts_with($issue, 'Tainted'),
-        ));
-        sort($taint_issues);
-
-        self::assertSame($expected_issues, $taint_issues);
-    }
-
-    /**
-     * @return array<string, array{string, list<string>, bool}>
-     * @psalm-pure
-     */
-    public static function providerConditionallyEscapedTaintsDependOnTheArguments(): array
-    {
-        $cases = [
-            // what a call escapes depends on the arguments of this call, whether it is of a function, a static
-            // method or an instance method, and a condition the arguments can't decide escapes nothing
-            'functionStaticAndInstanceMethods' => [
-                '<?php
-                /** @psalm-taint-escape ($type is "expression" ? null : "shell") */
-                function quoteFunction(string $val, string $type): string {
-                    return $val;
-                }
-
-                class DB {
-                    /**
-                     * @psalm-taint-specialize
-                     * @psalm-taint-escape ($type is "expression" ? null : "shell") $val
-                     */
-                    public function quote(string $val, string $type): string {
-                        return $val;
-                    }
-
-                    /** @psalm-taint-escape ($type is "expression" ? null : "shell") */
-                    public function quoteUnspecialized(string $val, string $type): string {
-                        return $val;
-                    }
-
-                    /**
-                     * @psalm-taint-specialize
-                     * @psalm-taint-escape ($type is "expression" ? null : "shell") $val
-                     */
-                    public static function quoteStatic(string $val, string $type): string {
-                        return $val;
-                    }
-                }
-
-                class SubDB extends DB {}
-
-                function run(DB $db, SubDB $sub, string $unknown): void {
-                    $a = (string) $_GET["a"];
-
-                    shell_exec(quoteFunction($a, ""));
-                    shell_exec(quoteFunction($a, "expression"));
-                    shell_exec(quoteFunction($a, $unknown));
-
-                    shell_exec(DB::quoteStatic($a, ""));
-                    shell_exec(DB::quoteStatic($a, "expression"));
-                    shell_exec(DB::quoteStatic($a, $unknown));
-
-                    shell_exec($db->quote($a, ""));
-                    shell_exec($db->quote($a, "expression"));
-                    shell_exec($db->quote($a, $unknown));
-
-                    shell_exec($db->quoteUnspecialized($a, ""));
-                    shell_exec($db->quoteUnspecialized($a, "expression"));
-                    shell_exec($db->quoteUnspecialized($a, $unknown));
-
-                    shell_exec($sub->quote($a, ""));
-                    shell_exec($sub->quote($a, "expression"));
-                }',
-                [
-                    'TaintedShell on line 36',
-                    'TaintedShell on line 37',
-                    'TaintedShell on line 40',
-                    'TaintedShell on line 41',
-                    'TaintedShell on line 44',
-                    'TaintedShell on line 45',
-                    'TaintedShell on line 48',
-                    'TaintedShell on line 49',
-                    'TaintedShell on line 52',
-                ],
-            ],
-        ];
-
-        $data = [];
-
-        foreach ($cases as $name => [$code, $expected_issues]) {
-            $data[$name] = [$code, $expected_issues, false];
-            $data[$name . ' tracking unused variables'] = [$code, $expected_issues, true];
-        }
-
-        return $data;
     }
 }
