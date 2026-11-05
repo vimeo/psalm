@@ -95,6 +95,9 @@ use const PREG_SPLIT_NO_EMPTY;
  */
 final class ArgumentAnalyzer
 {
+    /** Set on an argument PHP never passes, whose type isn't checked against its parameter */
+    public const NOT_PASSED = 'not_passed';
+
     // callable $this
     // some PHP-internal functions (e.g. array_filter) will call the callback within the current context
     // unlike user-defined functions which call the callback in their context
@@ -167,6 +170,10 @@ final class ArgumentAnalyzer
         bool $specialize_taint,
         bool $in_call_map,
     ): ?bool {
+        if ($arg->getAttribute(self::NOT_PASSED) === true) {
+            return null;
+        }
+
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$arg_value_type) {
@@ -851,7 +858,6 @@ final class ArgumentAnalyzer
 
         if ($param_type->hasMixed()) {
             if ($codebase->infer_types_from_usage
-                && !$input_type->hasMixed()
                 && !$param_type->from_docblock
                 && !$param_type->had_template
                 && $method_id
