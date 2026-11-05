@@ -55,6 +55,66 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'propertyWritesOfArgumentsAreNotPure' => [
+                'input' => '<?php
+                    final class C {
+                        public int $n = 0;
+                        public ?C $o = null;
+                    }
+
+                    function assign(C $c): void {
+                        $c->n = 1;
+                    }
+
+                    function remove(C $c): void {
+                        unset($c->o);
+                    }
+
+                    function assignNested(C $c): void {
+                        if ($c->o) {
+                            $c->o->n = 1;
+                        }
+                    }
+
+                    function assignFresh(): C {
+                        $c = new C();
+                        $c->n = 1;
+                        unset($c->o);
+                        return $c;
+                    }',
+                'output' => '<?php
+                    final class C {
+                        public int $n = 0;
+                        public ?C $o = null;
+                    }
+
+                    function assign(C $c): void {
+                        $c->n = 1;
+                    }
+
+                    function remove(C $c): void {
+                        unset($c->o);
+                    }
+
+                    function assignNested(C $c): void {
+                        if ($c->o) {
+                            $c->o->n = 1;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     */
+                    function assignFresh(): C {
+                        $c = new C();
+                        $c->n = 1;
+                        unset($c->o);
+                        return $c;
+                    }',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'keepExplicitImpureAnnotation' => [
                 'input' => '<?php
                     class Hook {

@@ -87,6 +87,27 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         if ($lhs_type_part instanceof TTemplateParam
             && !$lhs_type_part->as->isMixed()
         ) {
+            // every type of a union bound has to have the method
+            if (!$lhs_type_part->as->isSingle()) {
+                foreach ($lhs_type_part->as->getAtomicTypes() as $bound_atomic_type) {
+                    self::analyze(
+                        $statements_analyzer,
+                        $stmt,
+                        $codebase,
+                        $context,
+                        $lhs_type,
+                        $lhs_type_part->replaceAs(new Union([$bound_atomic_type])),
+                        $static_type,
+                        $is_intersection,
+                        $lhs_var_id,
+                        $result,
+                        $inferred_template_result,
+                    );
+                }
+
+                return;
+            }
+
             $extra_types = $lhs_type_part->extra_types;
 
             $lhs_type_part = array_values(
@@ -94,7 +115,9 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             )[0];
 
             if ($lhs_type_part instanceof TNamedObject) {
-                $lhs_type_part = $lhs_type_part->setIntersectionTypes($extra_types)->setFromDocblock(true);
+                $lhs_type_part = $lhs_type_part
+                    ->setIntersectionTypes([...$lhs_type_part->getIntersectionTypes(), ...$extra_types])
+                    ->setFromDocblock(true);
             } elseif ($lhs_type_part instanceof TObject && $extra_types) {
                 $lhs_type_part = array_shift($extra_types)->setFromDocblock(true);
                 if ($extra_types) {
@@ -226,15 +249,37 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         true,
                         $context->insideUse(),
                     )) {
-                        $method_storage = $codebase->methods->getStorage(
-                            $codebase->methods->getDeclaringMethodId($method_identifier) ?? $method_identifier,
+                        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_identifier)
+                            ?? $method_identifier;
+                        $declaring_class_storage = $codebase->classlike_storage_provider->get(
+                            $declaring_method_id->fq_class_name,
                         );
+                        $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
-                        $return_type_candidate = new Union([new TClosure(
-                            $method_storage->params,
-                            $method_storage->return_type,
-                            $method_storage->capabilities,
-                        )]);
+                        $return_type_candidate = MethodCallReturnTypeFetcher::getFirstClassCallableType(
+                            $codebase,
+                            $stmt,
+                            new TClosure(
+                                $method_storage->params,
+                                $method_storage->return_type,
+                                $method_storage->capabilities,
+                            ),
+                            new TemplateResult([], ClassTemplateParamCollector::collect(
+                                $codebase,
+                                $declaring_class_storage,
+                                $class_storage,
+                                $method_identifier->method_name,
+                                $lhs_type_part,
+                                $lhs_var_id === '$this',
+                            ) ?? []),
+                            $method_storage->template_types ?? [],
+                            $fq_class_name,
+                            $static_type,
+                            $declaring_class_storage->parent_class,
+                            $static_type instanceof TNamedObject
+                            && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                            true,
+                        );
                     }
                 }
 

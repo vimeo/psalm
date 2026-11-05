@@ -15,6 +15,7 @@ use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\NosqlEqualityOperand;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\DuplicateArrayKey;
 use Psalm\Issue\InvalidArrayOffset;
@@ -189,7 +190,8 @@ final class ArrayAnalyzer
                         $good_types[] = new TLiteralInt(0);
                         $good_types[] = new TLiteralInt(1);
                     } elseif ($atomic_key_type instanceof TLiteralFloat) {
-                        $good_types[] = new TLiteralInt((int) $atomic_key_type->value);
+                        $int = LiteralCast::toInt($atomic_key_type->value);
+                        $good_types[] = $int === null ? new TInt : new TLiteralInt($int);
                     } elseif ($atomic_key_type instanceof TFloat) {
                         $good_types[] = new TInt;
                     } else {

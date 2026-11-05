@@ -39,7 +39,7 @@ These come first, before every other rule here:
   showing that a new test fails on the base and passes on the branch. Run just that one
   case, never the whole file:
   - provider case: `vendor/bin/phpunit tests/CapabilitiesTest.php --filter 'testValidCode@caseName'`;
-  - TaintTest provider case (sharded over `tests/Taint/TaintCases{1..4}Test.php`):
+  - TaintTest provider case (sharded over `tests/Taint/TaintCases{1..8}Test.php`):
     `vendor/bin/phpunit tests/Taint --filter '@caseName'`. This runs the case in both modes
     (plain and `TrackingUnusedVariables`);
   - test method: `vendor/bin/phpunit tests/TaintTest.php --filter 'testMethodName$'`.
@@ -144,7 +144,8 @@ workaround explicitly in the report.
   A data-flow change can flip them on methods the PR never touched, making an existing
   `@psalm-suppress ComplexMethod` unused. Print the method's `getEdgeStats()` under base
   and branch to confirm no flow was lost before touching the suppression.
-- Master enforces purity annotations on its own code (`MissingPureAnnotation`).
+- Master enforces purity annotations on its own code (`MissingPureAnnotation`, enabled by
+  `suggestPurityAnnotations` in `psalm.xml.dist`; off by default for users).
   `./psalm --alter --issues=MissingPureAnnotation <files>` adds them.
 - `--set-baseline` still printing new issues and exiting 2 is deliberate (#5838, a "fix"
   was reverted in #6051); the written baseline is complete. `--update-baseline` only
