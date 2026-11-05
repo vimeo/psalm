@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\RedundantFlag;
@@ -520,6 +521,7 @@ final class FilterUtils
         $min_range = null;
         $max_range = null;
         $has_range = false;
+        $has_unrepresentable_bound = false;
         $regexp = null;
 
         if (!$options) {
@@ -581,7 +583,8 @@ final class FilterUtils
             // must be numeric, otherwise we would have continued above already
             if ($option === 'min_range' && $option_value->isSingleLiteral()) {
                 if ($filter_int_used === FILTER_VALIDATE_INT) {
-                    $min_range = (int) $option_value->getSingleLiteral()->value;
+                    $min_range = LiteralCast::toInt($option_value->getSingleLiteral()->value);
+                    $has_unrepresentable_bound = $has_unrepresentable_bound || $min_range === null;
                 } elseif ($filter_int_used === FILTER_VALIDATE_FLOAT) {
                     $min_range = (float) $option_value->getSingleLiteral()->value;
                 }
@@ -589,7 +592,8 @@ final class FilterUtils
 
             if ($option === 'max_range' && $option_value->isSingleLiteral()) {
                 if ($filter_int_used === FILTER_VALIDATE_INT) {
-                    $max_range = (int) $option_value->getSingleLiteral()->value;
+                    $max_range = LiteralCast::toInt($option_value->getSingleLiteral()->value);
+                    $has_unrepresentable_bound = $has_unrepresentable_bound || $max_range === null;
                 } elseif ($filter_int_used === FILTER_VALIDATE_FLOAT) {
                     $max_range = (float) $option_value->getSingleLiteral()->value;
                 }
@@ -614,6 +618,12 @@ final class FilterUtils
                     $regexp = true;
                 }
             }
+        }
+
+        if ($has_unrepresentable_bound) {
+            // what PHP makes of a bound that is not an int's value is undefined,
+            // so any value might be out of the range
+            return [$default, null, null, true, $regexp];
         }
 
         return [$default, $min_range, $max_range, $has_range, $regexp];
@@ -1035,7 +1045,9 @@ final class FilterUtils
                     }
 
                     if ($atomic_type instanceof TLiteralFloat) {
-                        if ((float) (int) $atomic_type->value !== $atomic_type->value) {
+                        $int_value = LiteralCast::toInt($atomic_type->value);
+
+                        if ($int_value === null || (float) $int_value !== $atomic_type->value) {
                             $can_fail = true;
                             continue;
                         }
@@ -1051,7 +1063,7 @@ final class FilterUtils
                         }
 
                         if ($min_range !== null || $max_range !== null || $has_range === false) {
-                            $filter_types[] = new TLiteralInt((int) $atomic_type->value);
+                            $filter_types[] = new TLiteralInt($int_value);
                             continue;
                         }
 
@@ -1362,7 +1374,7 @@ final class FilterUtils
                         || $atomic_type instanceof TLiteralFloat
                     ) {
                         /** @var string|false $literal */
-                        $literal = filter_var($atomic_type->value, $filter_int_used);
+                        $literal = filter_var(LiteralCast::toString($atomic_type->value), $filter_int_used);
                         if ($literal === false) {
                             $can_fail = true;
                         } else {
