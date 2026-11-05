@@ -217,7 +217,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 if ($context->isPhantomClass($fq_class_name)) {
                     ArgumentsAnalyzer::analyze(
                         $statements_analyzer,
-                        $stmt->getArgs(),
+                        $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
                         null,
                         null,
                         true,
@@ -258,7 +258,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 if (!$does_class_exist) {
                     ArgumentsAnalyzer::analyze(
                         $statements_analyzer,
-                        $stmt->getArgs(),
+                        $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
                         null,
                         null,
                         true,

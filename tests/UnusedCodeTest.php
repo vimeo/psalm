@@ -494,6 +494,14 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'classExistsGuardedStaticFirstClassCallable' => [
+                'code' => '<?php
+                    if (class_exists("Nope")) {
+                        $callable = Nope::stat(...);
+                        echo $callable !== null ? "set" : "unset";
+                    }',
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'classExistsGuardedStaticCallUsesItsArguments' => [
                 'code' => '<?php
                     if (class_exists("Nope")) {
@@ -2200,6 +2208,11 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'undefinedClassStaticFirstClassCallable' => [
+                'code' => '<?php
+                    $callable = Nope::stat(...);',
+                'error_message' => 'UndefinedClass',
+            ],
             'classExistsGuardedStaticCallAnalysesItsArguments' => [
                 'code' => '<?php
                     if (class_exists("Nope")) {
