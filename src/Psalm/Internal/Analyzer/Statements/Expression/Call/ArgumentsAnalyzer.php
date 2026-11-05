@@ -1390,25 +1390,25 @@ final class ArgumentsAnalyzer
         CodeLocation $call_location,
         array $args,
     ): ?bool {
-        if (($arg->value instanceof VirtualPipeValue
-                && self::phpTakesArgumentByReference($method_id, $argument_offset))
-            || $arg->value instanceof PhpParser\Node\Scalar
-            || $arg->value instanceof PhpParser\Node\Expr\Cast
-            || $arg->value instanceof PhpParser\Node\Expr\Array_
-            || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
-            || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
-            || $arg->value instanceof PhpParser\Node\Expr\Ternary
-            || (
-                (
-                $arg->value instanceof PhpParser\Node\Expr\ConstFetch
-                    || $arg->value instanceof PhpParser\Node\Expr\FuncCall
-                    || $arg->value instanceof PhpParser\Node\Expr\MethodCall
-                    || $arg->value instanceof PhpParser\Node\Expr\StaticCall
-                ) && (
-                    !($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
-                    || !$arg_value_type->by_ref
-                )
-            )
+        if (self::phpTakesArgumentByReference($method_id, $argument_offset)
+            && ($arg->value instanceof VirtualPipeValue
+                || $arg->value instanceof PhpParser\Node\Scalar
+                || $arg->value instanceof PhpParser\Node\Expr\Cast
+                || $arg->value instanceof PhpParser\Node\Expr\Array_
+                || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
+                || $arg->value instanceof PhpParser\Node\Expr\Ternary
+                || (
+                    (
+                    $arg->value instanceof PhpParser\Node\Expr\ConstFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\FuncCall
+                        || $arg->value instanceof PhpParser\Node\Expr\MethodCall
+                        || $arg->value instanceof PhpParser\Node\Expr\StaticCall
+                    ) && (
+                        !($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
+                        || !$arg_value_type->by_ref
+                    )
+                ))
         ) {
             IssueBuffer::maybeAdd(
                 new InvalidPassByReference(
