@@ -163,6 +163,47 @@ final class ReferenceTest extends TestCase
                     '$l===' => '3',
                 ],
             ],
+            'arrayAccessItemRootsAreEvaluatedOnce' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var ArrayObject<int, list<int>> */
+                        public ArrayObject $p;
+
+                        /** @var ArrayObject<int, list<int>> */
+                        public static ArrayObject $s;
+
+                        public function __construct() {
+                            $this->p = new ArrayObject();
+                        }
+
+                        public function me(int $n): self {
+                            return $this;
+                        }
+                    }
+
+                    $h = new Holder();
+                    $i = 0;
+                    $n = count($h->p[$i++]);
+                    $a = $i;
+                    $i = 0;
+                    $n = count(Holder::$s[$i++]);
+                    $b = $i;
+                    $i = 0;
+                    $n = count($h->me($i++)->p[$i++]);
+                    $c = $i;
+                    $i = 0;
+                    $nullable = rand(0, 1) ? $h : null;
+                    $n = count($nullable?->p[$i++]);
+                    $d = $i;',
+                'assertions' => [
+                    '$a===' => '1',
+                    '$b===' => '1',
+                    '$c===' => '2',
+                    '$d===' => '1',
+                ],
+                'ignored_issues' => ['PossiblyNullReference', 'PossiblyNullArgument', 'PossiblyNullArrayAccess'],
+                'php_version' => '8.1',
+            ],
             'arrayItemPassedByReferenceHoldsWhatTheCallLeavesInIt' => [
                 'code' => '<?php
                     function read_value(string &$value): void {
