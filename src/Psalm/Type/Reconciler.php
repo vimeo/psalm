@@ -83,6 +83,7 @@ use function preg_quote;
 use function str_contains;
 use function str_ends_with;
 use function str_split;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strtolower;
@@ -174,9 +175,11 @@ class Reconciler
         $codebase = $statements_analyzer->getCodebase();
 
         foreach ($new_types as $key => $new_type_parts) {
+            // a class constant is what it is, but the one of `static` depends on the called class
             if (strpos($key, '::')
                 && !strpos($key, '$')
                 && !strpos($key, '[')
+                && !str_starts_with($key, 'static::')
             ) {
                 continue;
             }

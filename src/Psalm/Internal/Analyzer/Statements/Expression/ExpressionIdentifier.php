@@ -206,7 +206,12 @@ final class ExpressionIdentifier
             $resolved_name = $stmt->class->getAttribute('resolvedName');
 
             if ($resolved_name) {
-                if (($resolved_name === 'self' || $resolved_name === 'static') && $this_class_name) {
+                if ($resolved_name === 'static') {
+                    // the constant of the called class, which may differ from the one of `self`
+                    return 'static::' . $stmt->name->name;
+                }
+
+                if ($resolved_name === 'self' && $this_class_name) {
                     $resolved_name = $this_class_name;
                 }
 

@@ -250,6 +250,33 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticClassConstantComparedWithNullIsNarrowedInTheBranch' => [
+                'code' => '<?php
+                    function greet(string $name = "default"): void {
+                        echo $name;
+                    }
+
+                    abstract class Base {
+                        /** @var string|null */
+                        const NAME = null;
+
+                        public static function ternary(): void {
+                            static::NAME !== null ? greet(static::NAME) : greet();
+                        }
+
+                        public static function branch(): void {
+                            if (static::NAME !== null) {
+                                greet(static::NAME);
+                            }
+                        }
+                    }
+
+                    final class Child extends Base {
+                        const NAME = "child";
+                    }
+
+                    Child::ternary();',
+            ],
             'bitwiseOperationsOnFloatConstantsOutsideTheRangeOfAnIntAreNotFolded' => [
                 'code' => '<?php
                     class A {
@@ -2401,6 +2428,40 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'narrowingAStaticClassConstantDoesNotNarrowSelf' => [
+                'code' => '<?php
+                    function greet(string $name): void {
+                        echo $name;
+                    }
+
+                    abstract class Base {
+                        /** @var string|null */
+                        const NAME = null;
+
+                        public static function run(): void {
+                            if (static::NAME !== null) {
+                                greet(self::NAME);
+                            }
+                        }
+                    }',
+                'error_message' => 'NullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:39',
+            ],
+            'staticClassConstantIsNullableOutsideTheCheck' => [
+                'code' => '<?php
+                    function greet(string $name): void {
+                        echo $name;
+                    }
+
+                    abstract class Base {
+                        /** @var string|null */
+                        const NAME = null;
+
+                        public static function run(): void {
+                            greet(static::NAME);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:35',
+            ],
             'classConstantDividingByAZeroIntConstantOfAnotherClass' => [
                 'code' => '<?php
                     final class A {
