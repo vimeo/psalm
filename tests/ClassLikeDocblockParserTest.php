@@ -58,20 +58,20 @@ final class ClassLikeDocblockParserTest extends TestCase
 
         $this->assertSame(
             [
-                ['TD', 'of', 'array{x?: int}', false, 183],
-                ['TE', 'of', 'string', false, 251],
                 ['TA', 'of', 'int', false, 23],
                 ['TB', null, null, false, 86],
                 ['TC', 'of', 'callable(int=): void', true, 120],
+                ['TD', 'of', 'array{x?: int}', false, 183],
+                ['TE', 'of', 'string', false, 251],
             ],
             $class_docblock->templates,
         );
         $this->assertSame(
             [
-                'TD' => ['type' => 'array{x?: int}', 'line_number' => 15],
                 'TA' => ['type' => '5', 'line_number' => 11],
                 'TB' => ['type' => '\'a=b\'', 'line_number' => 13],
                 'TC' => ['type' => 'callable(int=): void', 'line_number' => 14],
+                'TD' => ['type' => 'array{x?: int}', 'line_number' => 15],
             ],
             $class_docblock->template_defaults,
         );
