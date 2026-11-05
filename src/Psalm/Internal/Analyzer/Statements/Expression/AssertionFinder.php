@@ -1169,7 +1169,6 @@ final class AssertionFinder
                         }
 
                         $arg_value = $args[$var_id_int]->value;
-                        assert($arg_value instanceof PhpParser\Node\Expr\Variable);
 
                         $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $source);
 
@@ -1189,7 +1188,7 @@ final class AssertionFinder
                                 $property,
                                 $source->getNodeTypeProvider()->getType($arg_value),
                                 $source->getCodebase()->classlike_storage_provider,
-                                $arg_value,
+                                $arg_var_id,
                             );
 
                             if (null !== $failedMessage) {
@@ -1296,7 +1295,6 @@ final class AssertionFinder
                             );
                             continue;
                         }
-                        /** @var PhpParser\Node\Expr\Variable $arg_value */
                         $arg_value = $args[$var_id_int]->value;
 
                         $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $source);
@@ -1317,7 +1315,7 @@ final class AssertionFinder
                                 $property,
                                 $source->getNodeTypeProvider()->getType($arg_value),
                                 $source->getCodebase()->classlike_storage_provider,
-                                $arg_value,
+                                $arg_var_id,
                             );
 
                             if (null !== $failedMessage) {
@@ -4508,10 +4506,9 @@ final class AssertionFinder
         string                       $property,
         ?Union                       $type,
         ClassLikeStorageProvider     $class_provider,
-        PhpParser\Node\Expr\Variable $arg_expr,
+        string                       $arg_var_id,
     ): ?string {
-        /** @var string $name */
-        $name = $arg_expr->name;
+        $name = ltrim($arg_var_id, '$');
 
         if (null === $type) {
             return 'Cannot resolve a type of variable ' . $name;
