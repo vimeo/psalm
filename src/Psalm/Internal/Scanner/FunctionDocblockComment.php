@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Scanner;
 
+use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Storage\Capabilities;
 
@@ -150,6 +151,13 @@ final class FunctionDocblockComment
     public array $docblock_issues = [];
 
     /**
+     * Issues found while scanning the docblock, for FunctionLikeDocblockScanner to add to those of the file
+     *
+     * @var list<CodeIssue>
+     */
+    public array $scan_issues = [];
+
+    /**
      * Whether or not to ignore the nullability of this function's return type
      */
     public bool $ignore_nullable_return = false;
@@ -173,6 +181,13 @@ final class FunctionDocblockComment
      * @var array<int, array{string, ?string, ?string, bool}>
      */
     public array $templates = [];
+
+    /**
+     * The default of each template that has one (`@template T of Bound = Default`), and its line.
+     *
+     * @var array<string, array{type: string, line_number: int}>
+     */
+    public array $template_defaults = [];
 
     /**
      * @var array<int, array{type: string, param_name: string}>
