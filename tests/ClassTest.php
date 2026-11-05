@@ -709,6 +709,28 @@ final class ClassTest extends TestCase
                         }
                     }',
             ],
+            'classDeclaredByTheFirstStatementOfANegatedClassExistsBlock' => [
+                'code' => '<?php
+                    class Real {
+                        public static function run(): void {}
+                    }
+
+                    if (!class_exists("Polyfill")) {
+                        class_alias(Real::class, "Polyfill");
+                        Polyfill::run();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedClass'],
+            ],
+            'classUsedAfterTheFirstStatementOfANegatedClassExistsBlock' => [
+                'code' => '<?php
+                    if (!class_exists("Polyfill")) {
+                        $loaded = false;
+                        Polyfill::run();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedVariable'],
+            ],
             'noErrorsAfterClassExists' => [
                 'code' => '<?php
                     if (class_exists(A::class)) {
@@ -1100,6 +1122,20 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticCallOnTheClassOfANegatedClassExists' => [
+                'code' => '<?php
+                    if (!class_exists(Really::class)) {
+                        Really::something();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25',
+            ],
+            'staticCallOnTheInterfaceOfANegatedInterfaceExists' => [
+                'code' => '<?php
+                    if (!interface_exists("Really")) {
+                        Really::something();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25',
+            ],
             'undefinedClass' => [
                 'code' => '<?php
                     (new Foo());',

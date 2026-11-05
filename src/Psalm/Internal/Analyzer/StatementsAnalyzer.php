@@ -272,6 +272,11 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 if (self::analyzeStatement($this, $stmt, $context, $global_context) === false) {
                     return false;
                 }
+
+                if ($context->suspended_phantom_classes) {
+                    $context->phantom_classes += $context->suspended_phantom_classes;
+                    $context->suspended_phantom_classes = [];
+                }
             }
 
             if ($this->root_scope
