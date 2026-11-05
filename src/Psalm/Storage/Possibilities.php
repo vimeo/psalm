@@ -7,6 +7,7 @@ namespace Psalm\Storage;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
@@ -43,7 +44,7 @@ final class Possibilities
         TemplateResult $template_result,
         ?string $this_var_id,
         ?Codebase $codebase,
-        ?string $static_class = null,
+        ?Atomic $static_type = null,
     ): self {
         $assertion_rules = [];
 
@@ -60,11 +61,11 @@ final class Possibilities
 
                 foreach ($union->getAtomicTypes() as $atomic_type) {
                     // `static` is the class the method is called on
-                    if ($static_class !== null
+                    if ($static_type !== null
                         && $atomic_type instanceof TNamedObject
                         && ($atomic_type->is_static || strtolower($atomic_type->value) === 'static')
                     ) {
-                        $atomic_type = new TNamedObject($static_class);
+                        $atomic_type = $static_type;
                     }
 
                     $assertion = $assertion->setAtomicType($atomic_type);

@@ -159,6 +159,29 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticInAnAssertionKeepsTheTemplateArgumentsOfTheReceiver' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+
+                        /** @psalm-assert-if-true static $other */
+                        public function same(object $other): bool {
+                            return $other::class === static::class;
+                        }
+                    }
+
+                    /** @param Box<int> $box */
+                    function check(Box $box, object $other): void {
+                        if ($box->same($other)) {
+                            /** @psalm-check-type-exact $other = Box<int> */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'staticInAnAssertionOfAnInheritedMethodIsTheCalledClass' => [
                 'code' => '<?php
                     interface Comparable {
