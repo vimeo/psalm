@@ -1146,6 +1146,25 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$r===' => "'no'|'yes'",
                 ],
             ],
+            'straddlingCandidateKeepsBothBranches' => [
+                'code' => '<?php
+                    /**
+                     * @param iterable<mixed, mixed> $i
+                     * @return ($i is list ? "list" : "iter")
+                     */
+                    function describe(iterable $i) {
+                        return is_array($i) && array_is_list($i) ? "list" : "iter";
+                    }
+
+                    /** @var list<int>|iterable<mixed, mixed> */
+                    $it = [];
+                    $r = describe($it);',
+                'assertions' => [
+                    '$r===' => "'iter'|'list'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 

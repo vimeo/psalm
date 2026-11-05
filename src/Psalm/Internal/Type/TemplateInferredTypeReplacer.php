@@ -461,6 +461,8 @@ final class TemplateInferredTypeReplacer
 
             $matching_if_types = [];
             $matching_else_types = [];
+            $has_straddling_candidate = false;
+            $has_unresolved_straddling_candidate = false;
 
             $l = $template_type->getAtomicTypes();
             foreach (isset($l['mixed']) ? [$l['mixed']] : $l as $candidate_atomic_type) {
@@ -479,14 +481,41 @@ final class TemplateInferredTypeReplacer
                         || $conditional_type->getId() !== 'float')
                 ) {
                     $matching_if_types[] = $candidate_atomic_type;
-                } elseif (null === Type::intersectUnionTypes(
+                    continue;
+                }
+
+                $intersection = Type::intersectUnionTypes(
                     $candidate,
                     $conditional_type,
                     $codebase,
                     false,
                     false,
-                )) {
+                );
+
+                if ($intersection === null) {
                     $matching_else_types[] = $candidate_atomic_type;
+                    continue;
+                }
+
+                // The candidate straddles the conditional type (e.g. iterable for `is list`):
+                // its overlap with the conditional type takes the if-branch and the whole
+                // candidate takes the else-branch, so both branches end up in the result.
+                $has_straddling_candidate = true;
+                $matching_else_types[] = $candidate_atomic_type;
+
+                if (UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $intersection,
+                    $conditional_type,
+                    false,
+                    false,
+                    null,
+                    false,
+                    false,
+                )) {
+                    $matching_if_types = array_merge($matching_if_types, array_values($intersection->getAtomicTypes()));
+                } else {
+                    $has_unresolved_straddling_candidate = true;
                 }
             }
 
@@ -551,6 +580,15 @@ final class TemplateInferredTypeReplacer
                     $refined_template_result,
                     $codebase,
                 );
+            }
+
+            // A straddling candidate needs both branches. When either of them could not
+            // be refined, fall back to both branches with the unrefined template type.
+            if ($has_straddling_candidate
+                && ($has_unresolved_straddling_candidate || !$if_template_type || !$else_template_type)
+            ) {
+                $if_template_type = null;
+                $else_template_type = null;
             }
         }
 
