@@ -3629,6 +3629,21 @@ return array (
         'timestamp' => 'int',
       ),
     ),
+    'datetimeinterface::diff' => 
+    array (
+      'old' => 
+      array (
+        0 => 'DateInterval',
+        'datetime2' => 'DateTimeInterface',
+        'absolute=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'DateInterval',
+        'targetObject' => 'DateTimeInterface',
+        'absolute=' => 'bool',
+      ),
+    ),
     'datetimeinterface::gettimestamp' => 
     array (
       'old' => 
