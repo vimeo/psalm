@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
 use Psalm\Codebase;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -479,31 +480,43 @@ final class TemplateInferredTypeReplacer
                         || $conditional_type->getId() !== 'float')
                 ) {
                     $matching_if_types[] = $candidate_atomic_type;
-                } elseif (null === Type::intersectUnionTypes(
-                    $candidate,
-                    $conditional_type,
-                    $codebase,
-                    false,
-                    false,
-                )) {
-                    $matching_else_types[] = $candidate_atomic_type;
+                } else {
+                    $intersection = Type::intersectUnionTypes(
+                        $candidate,
+                        $conditional_type,
+                        $codebase,
+                        false,
+                        false,
+                    );
+                    if ($intersection !== null) {
+                        foreach ($intersection->getAtomicTypes() as $intersection_type) {
+                            $matching_if_types[] = $intersection_type;
+                        }
+                    }
+                    $else_candidate = Type::intersectUnionTypes($candidate, $as_type, $codebase);
+                    foreach (($else_candidate ?? $candidate)->getAtomicTypes() as $else_candidate_atomic) {
+                        $matching_else_types[] = $else_candidate_atomic;
+                    }
                 }
             }
 
             $if_candidate_type = $matching_if_types ? new Union($matching_if_types) : null;
             $else_candidate_type = $matching_else_types ? new Union($matching_else_types) : null;
 
+            $if_comparison_result = new TypeComparisonResult();
             if ($if_candidate_type
-                && UnionTypeComparator::isContainedBy(
+                && (UnionTypeComparator::isContainedBy(
                     $codebase,
                     $if_candidate_type,
                     $conditional_type,
                     false,
                     false,
-                    null,
+                    $if_comparison_result,
                     false,
                     false,
                 )
+                    // Unknown generic parameters cannot rule out the true branch.
+                    || $if_comparison_result->type_coerced_from_mixed)
             ) {
                 $if_template_type = $if_type;
 

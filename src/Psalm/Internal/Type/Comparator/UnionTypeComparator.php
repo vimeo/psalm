@@ -19,6 +19,7 @@ use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TTypeVariable;
+use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -113,6 +114,10 @@ final class UnionTypeComparator
                 continue;
             }
 
+
+            $iterable_comparison_result = $input_type_part instanceof Atomic\TIterable && $union_comparison_result
+                ? clone $union_comparison_result
+                : null;
 
             $type_match_found = false;
             $scalar_type_match_found = false;
@@ -291,14 +296,6 @@ final class UnionTypeComparator
                     $is_atomic_contained_by = true;
                 }
 
-                if ($input_type_part instanceof Atomic\TIterable
-                    && $container_type->hasArray()
-                    && $container_type->containsClassLike('traversable')
-                ) {
-                    $scalar_type_match_found = false;
-                    $is_atomic_contained_by = true;
-                }
-
                 if ($atomic_comparison_result) {
                     if ($atomic_comparison_result->type_coerced) {
                         $some_type_coerced = true;
@@ -360,6 +357,43 @@ final class UnionTypeComparator
                     $all_type_coerced_from_as_mixed = false;
                     $all_type_coerced = false;
                 }
+            }
+
+            if (!$type_match_found
+                && $input_type_part instanceof Atomic\TIterable
+            ) {
+                // An iterable can straddle multiple container atoms. Both halves must fit
+                // the whole union, with diagnostics coming from those comparisons alone.
+                if ($union_comparison_result && $iterable_comparison_result) {
+                    $union_comparison_result->type_coerced_from_scalar
+                        = $iterable_comparison_result->type_coerced_from_scalar;
+                    $union_comparison_result->replacement_union_type
+                        = $iterable_comparison_result->replacement_union_type;
+                    $union_comparison_result->type_variable_lower_bounds
+                        = $iterable_comparison_result->type_variable_lower_bounds;
+                    $union_comparison_result->type_variable_upper_bounds
+                        = $iterable_comparison_result->type_variable_upper_bounds;
+                }
+                $params = $input_type_part->type_params;
+                $array_params = $params;
+                $array_params[0] = Reconciler::refineArrayKey($array_params[0]);
+                $input_atomic_types[] = new Atomic\TGenericObject(
+                    'Traversable',
+                    $params,
+                    extra_types: $input_type_part->extra_types,
+                );
+                $has_array_part = true;
+                foreach ($input_type_part->extra_types as $extra_type) {
+                    if ($extra_type->isObjectType()) {
+                        // Arrays cannot satisfy an object intersection such as Countable.
+                        $has_array_part = false;
+                        break;
+                    }
+                }
+                if ($has_array_part) {
+                    $input_atomic_types[] = new Atomic\TArray($array_params);
+                }
+                continue;
             }
 
             if ($union_comparison_result) {
