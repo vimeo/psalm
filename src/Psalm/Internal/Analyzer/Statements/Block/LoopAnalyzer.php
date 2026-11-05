@@ -817,6 +817,19 @@ final class LoopAnalyzer
 
         $always_assigned_before_loop_body_vars = Context::getNewOrUpdatedVarIds($outer_context, $loop_context);
 
+        // the condition has been analysed: what it compares to (count($a)) has a type now
+        $pre_condition_id = spl_object_id($pre_condition);
+        $pre_condition_clauses = FormulaGenerator::getFormula(
+            $pre_condition_id,
+            $pre_condition_id,
+            $pre_condition,
+            $loop_context->self,
+            $statements_analyzer,
+            $statements_analyzer->getCodebase(),
+            false,
+            false,
+        );
+
         $loop_context->clauses = Algebra::simplifyCNF(
             [...$outer_context->clauses, ...$pre_condition_clauses],
         );
