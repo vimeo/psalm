@@ -49,9 +49,25 @@ To add the types of an extension, add it to `EXTENSIONS` in `bin/stubs/build_doc
 don't build on a PHP version yet.
 
 Every push runs the "Build docker image for stubs" workflow: it builds the images,
-runs `composer build`, and fails when a committed file is out of date, uploading the
-difference as the `composer-build-patch` artifact. `bin/ci/apply-composer-build-patch.sh`
-applies it to your checkout (set `PSALM_REPO=<you>/psalm` for a run on your fork).
+runs `composer build`, and when a committed file is out of date, commits the difference
+to the pushed branch and uploads it as the `composer-build-patch` artifact. Pull before
+pushing again. If the commit can't be pushed, `bin/ci/apply-composer-build-patch.sh`
+applies the artifact to your checkout (set `PSALM_REPO=<you>/psalm` for a run on your fork).
+
+## Checking a callmap against reflection
+
+`composer verify-callmap` runs `tests/Internal/Codebase/InternalCallMapHandlerTest.php`, which compares the
+callmap with what reflection of the installed PHP and its extensions says.
+
+Functions that don't pass yet are listed in that test (`$ignoredFunctions`, and for return types only
+`$ignoredReturnTypeOnlyFunctions`). To fix one:
+
+1. Remove its entry from the ignore list and run `composer verify-callmap`.
+2. Fix the errors it reports in the callmap (and in the deltas, if the signature changed in an older version).
+3. Run `composer verify-callmap` again, then open the PR.
+
+An entry that is already right must not be on the list: the test fails with `Remove 'name' from
+InternalCallMapHandlerTest::$ignoredFunctions`.
 
 ## Full callmap format
 
