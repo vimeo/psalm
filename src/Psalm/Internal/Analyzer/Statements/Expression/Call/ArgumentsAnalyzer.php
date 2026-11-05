@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\AttributesAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
@@ -63,6 +64,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_filter;
 use function array_reduce;
 use function array_reverse;
 use function array_slice;
@@ -2071,7 +2073,8 @@ final class ArgumentsAnalyzer
         $context->inside_by_ref_offset = $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
             && self::phpTakesArgumentByReference($method_id, $argument_offset);
 
-        $analyzed = false;
+        $analyzed_for_assignment = false;
+        $analyzed_for_read = false;
 
         try {
             if (($var_id && isset($context->vars_in_scope[$var_id]))
@@ -2098,7 +2101,7 @@ final class ArgumentsAnalyzer
                 }
 
                 $context->inside_assignment = $was_inside_assignment;
-                $analyzed = true;
+                $analyzed_for_assignment = true;
             }
 
             // special handling for array sort
@@ -2153,7 +2156,7 @@ final class ArgumentsAnalyzer
                 }
             }
 
-            if ($method_id === 'socket_select' && !$analyzed) {
+            if ($method_id === 'socket_select') {
                 if (ExpressionAnalyzer::analyze(
                     $statements_analyzer,
                     $arg->value,
@@ -2162,20 +2165,58 @@ final class ArgumentsAnalyzer
                     return false;
                 }
 
-                $analyzed = true;
+                $analyzed_for_read = true;
             }
 
-            if (!$analyzed
-                && !$arg->value instanceof PhpParser\Node\Expr\Variable
-                && ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false
-            ) {
-                return false;
+            if (!$analyzed_for_read && !$arg->value instanceof PhpParser\Node\Expr\Variable) {
+                // analysing the argument for assignment did not report what reading it does (a variable a loop
+                // defines is possibly undefined), but it did evaluate the keys that change something: not again
+                $node_data = $statements_analyzer->node_data;
+                $evaluated = $analyzed_for_assignment && $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
+                    ? self::getOperandsWithEffects($arg->value)
+                    : [];
+                $node_data->markEvaluated($evaluated);
+
+                try {
+                    if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
+                        return false;
+                    }
+                } finally {
+                    $node_data->unmarkEvaluated($evaluated);
+                }
             }
 
             return null;
         } finally {
             $context->inside_by_ref_offset = $was_inside_by_ref_offset;
         }
+    }
+
+    /**
+     * The operands of an array item that analysing them again could change something in, as the increment of
+     * a key does: all but plain reads
+     *
+     * @return list<PhpParser\Node\Expr>
+     */
+    private static function getOperandsWithEffects(PhpParser\Node\Expr\ArrayDimFetch $stmt): array
+    {
+        $node_finder = new PhpParser\NodeFinder();
+
+        return array_values(array_filter(
+            ArrayAssignmentAnalyzer::getOperands($stmt),
+            static fn(PhpParser\Node\Expr $operand): bool => $node_finder->findFirst(
+                $operand,
+                static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr
+                    && !$node instanceof PhpParser\Node\Expr\Variable
+                    && !$node instanceof PhpParser\Node\Scalar
+                    && !$node instanceof PhpParser\Node\Expr\ConstFetch
+                    && !$node instanceof PhpParser\Node\Expr\ClassConstFetch
+                    && !$node instanceof PhpParser\Node\Expr\PropertyFetch
+                    && !$node instanceof PhpParser\Node\Expr\StaticPropertyFetch
+                    && !$node instanceof PhpParser\Node\Expr\ArrayDimFetch
+                    && !$node instanceof PhpParser\Node\Expr\BinaryOp,
+            ) !== null,
+        ));
     }
 
     /**
