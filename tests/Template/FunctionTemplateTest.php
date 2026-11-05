@@ -38,6 +38,23 @@ final class FunctionTemplateTest extends TestCase
                         return $a;
                     }',
             ],
+            'literalReturnedForTheTemplateOfTheReturnTypeWhenAnotherOneIsIdenticalToItToo' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @template U of int
+                     * @param U $a
+                     * @param T $b
+                     * @return T
+                     */
+                    function run($a, $b): int {
+                        if ($a === 15 && $b === 15) {
+                            return 15;
+                        }
+
+                        return $b;
+                    }',
+            ],
             'extractTypeParameterValue' => [
                 'code' => '<?php
                     /**

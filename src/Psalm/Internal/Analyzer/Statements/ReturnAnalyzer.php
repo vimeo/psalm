@@ -63,15 +63,26 @@ final class ReturnAnalyzer
      * Inside `if ($a === 15)` the variable `$a` of type `T` is `T as 15`: returning the literal `15`
      * returns the value of `$a`, which is a `T`. The bound of `T` must be `int`: `==` narrows the same way as `===`,
      * and a string or a float can be loosely equal to the literal without being identical to it.
-     *
-     * @param array<string, array<string, Union>> $template_type_map
-     * @psalm-capabilities read-props
      */
     private static function getTemplateParamEqualToLiteral(
         Union $literal_type,
         Context $context,
-        array $template_type_map,
+        StatementsAnalyzer $statements_analyzer,
     ): ?Union {
+        $source = $statements_analyzer->getSource();
+
+        if (!$source instanceof FunctionLikeAnalyzer) {
+            return null;
+        }
+
+        $declared_return_type = $source->getFunctionLikeStorage($statements_analyzer)->return_type;
+
+        if ($declared_return_type === null) {
+            return null;
+        }
+
+        $template_type_map = $statements_analyzer->getTemplateTypeMap() ?? [];
+
         if (!$literal_type->isSingle()) {
             return null;
         }
@@ -90,11 +101,35 @@ final class ReturnAnalyzer
                 && ($bound = $template_type_map[$template_param->param_name][$template_param->defining_class] ?? null)
                 && $bound->isInt()
             ) {
-                return $var_type;
+                foreach ($declared_return_type->getAtomicTypes() as $declared_atomic) {
+                    if ($declared_atomic instanceof TTemplateParam
+                        && $declared_atomic->param_name === $template_param->param_name
+                        && $declared_atomic->defining_class === $template_param->defining_class
+                    ) {
+                        return $var_type;
+                    }
+                }
             }
         }
 
         return null;
+    }
+
+    private static function substituteIdenticalTemplateParam(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $expr,
+        Union $expr_type,
+        Context $context,
+    ): Union {
+        $template_type = self::getTemplateParamEqualToLiteral($expr_type, $context, $statements_analyzer);
+
+        if ($template_type === null) {
+            return $expr_type;
+        }
+
+        $statements_analyzer->node_data->setType($expr, $template_type);
+
+        return $template_type;
     }
 
     public static function analyze(
@@ -209,16 +244,12 @@ final class ReturnAnalyzer
             $stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr);
 
             if ($stmt_expr_type && !$var_comment_type) {
-                $template_type = self::getTemplateParamEqualToLiteral(
+                $stmt_expr_type = self::substituteIdenticalTemplateParam(
+                    $statements_analyzer,
+                    $stmt->expr,
                     $stmt_expr_type,
                     $context,
-                    $statements_analyzer->getTemplateTypeMap() ?? [],
                 );
-
-                if ($template_type) {
-                    $stmt_expr_type = $template_type;
-                    $statements_analyzer->node_data->setType($stmt->expr, $template_type);
-                }
             }
 
             if ($var_comment_type) {
