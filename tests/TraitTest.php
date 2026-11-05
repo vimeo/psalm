@@ -301,6 +301,26 @@ final class TraitTest extends TestCase
 
                     class Child extends Implementor {}',
             ],
+            'constructorCallsAPrivateAliasOfATraitMethodThatSetsAProperty' => [
+                'code' => '<?php
+                    trait TraitA {
+                        private string $foo;
+
+                        public function init(string $foo): void {
+                            $this->foo = $foo;
+                        }
+                    }
+
+                    class A {
+                        use TraitA {
+                            TraitA::init as private initTraitA;
+                        }
+
+                        public function __construct(string $foo) {
+                            $this->initTraitA($foo);
+                        }
+                    }',
+            ],
             'accessiblePrivateMethodFromTrait' => [
                 'code' => '<?php
                     trait T {
@@ -1522,6 +1542,27 @@ final class TraitTest extends TestCase
 
                         public function setContent(string $text): void {
                             echo $text;
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'constructorCallsAPublicAliasOfATraitMethodThatSetsAPrivateProperty' => [
+                'code' => '<?php
+                    trait TraitA {
+                        private string $foo;
+
+                        public function init(string $foo): void {
+                            $this->foo = $foo;
+                        }
+                    }
+
+                    class A {
+                        use TraitA {
+                            TraitA::init as public initTraitA;
+                        }
+
+                        public function __construct(string $foo) {
+                            $this->initTraitA($foo);
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',

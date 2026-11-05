@@ -203,6 +203,10 @@ abstract class CallAnalyzer
 
             $is_final = $method_storage->final;
 
+            // a trait method can be made private by the alias that is called
+            $visibility = $codebase->classlike_storage_provider->get($fq_class_name)
+                ->trait_visibility_map[$method_name_lc] ?? $method_storage->visibility;
+
             if ($method_name !== $declaring_method_id->method_name) {
                 $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
 
@@ -220,7 +224,7 @@ abstract class CallAnalyzer
             if ($class_analyzer instanceof ClassLikeAnalyzer
                 && !$method_storage->is_static
                 && ($context->collect_nonprivate_initializations
-                    || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                    || $visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
                     || $is_final)
             ) {
                 $local_vars_in_scope = [];
