@@ -28,6 +28,21 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'overridableMethodThatThrowsAfterAnotherStatementKeepsItsDeclaredReturnType' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    abstract class Base {
+                        /** @return string */
+                        public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }',
+            ],
             'nativeArrayReturnTypeTakesTheInheritedIterableDocblock' => [
                 'code' => '<?php
                     abstract class Base {
@@ -1826,6 +1841,22 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'finalMethodThatAlwaysThrowsAfterAnotherStatementIsNever' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    class Base {
+                        /** @return string */
+                        final public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
             'nativeArrayReturnTypeMustRespectTheInheritedIterableDocblock' => [
                 'code' => '<?php
                     abstract class Base {

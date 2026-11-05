@@ -11,10 +11,12 @@ use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\UnresolvableConstantException;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\InterfaceAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
@@ -68,6 +70,22 @@ use function strtolower;
  */
 final class ReturnTypeAnalyzer
 {
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function isOverridable(
+        Codebase $codebase,
+        ?FunctionLikeStorage $storage,
+        ?string $fq_class_name,
+    ): bool {
+        return $storage instanceof MethodStorage
+            && $fq_class_name !== null
+            && !$storage->final
+            && !$storage->is_static
+            && $storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+            && !$codebase->classlike_storage_provider->get($fq_class_name)->final;
+    }
+
     /**
      * @param Closure|Function_|ClassMethod|ArrowFunction $function
      * @param PhpParser\Node\Stmt[] $function_stmts
@@ -534,6 +552,8 @@ final class ReturnTypeAnalyzer
                 // no error for single throw, as extending a class might not work without errors
                 // https://3v4l.org/vCSF4#v8.1.12
                 && !ScopeAnalyzer::onlyThrows($function_stmts)
+                // a method a child class may override must not be given the type of its stub implementation
+                && !self::isOverridable($codebase, $function_like_storage, $fq_class_name)
             ) {
                 if ($codebase->alter_code
                     && isset($project_analyzer->getIssuesToFix()['InvalidReturnType'])
