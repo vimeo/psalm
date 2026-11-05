@@ -198,6 +198,27 @@ final class ClassLikeStringTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticInAListParameterOfAStaticCallNamingAClass' => [
+                'code' => '<?php
+                    class Example {
+                        private int $v = 1;
+
+                        /** @param list<static> $xs */
+                        public static function contains(array $xs, int $v): bool {
+                            foreach ($xs as $x) {
+                                if ($x->v === $v) {
+                                    return true;
+                                }
+                            }
+
+                            return false;
+                        }
+                    }
+
+                    Example::contains([new Example(), new Example()], 1);',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'staticInAStaticCallNamingAClassIsThatClass' => [
                 'code' => '<?php
                     class Foo {
