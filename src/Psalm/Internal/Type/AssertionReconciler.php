@@ -73,6 +73,7 @@ use function array_keys;
 use function array_merge;
 use function array_search;
 use function count;
+use function is_nan;
 use function is_numeric;
 use function is_string;
 
@@ -691,6 +692,27 @@ final class AssertionReconciler extends Reconciler
         );
     }
 
+    /**
+     * The object half of an iterable is a Traversable, which can be narrowed to any of its subclasses
+     *
+     * @return array{Atomic, Atomic}
+     */
+    private static function narrowIterableToItsTraversableHalf(
+        Codebase $codebase,
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+    ): array {
+        if ($type_1_atomic instanceof TIterable && $type_2_atomic instanceof TNamedObject) {
+            $type_1_atomic = AtomicTypeComparator::getTraversableHalf($codebase, $type_1_atomic, $type_2_atomic)
+                ?? $type_1_atomic;
+        } elseif ($type_2_atomic instanceof TIterable && $type_1_atomic instanceof TNamedObject) {
+            $type_2_atomic = AtomicTypeComparator::getTraversableHalf($codebase, $type_2_atomic, $type_1_atomic)
+                ?? $type_2_atomic;
+        }
+
+        return [$type_1_atomic, $type_2_atomic];
+    }
+
     private static function filterAtomicWithAnother(
         Atomic &$type_1_atomic,
         Atomic $type_2_atomic,
@@ -704,14 +726,11 @@ final class AssertionReconciler extends Reconciler
             return $type_2_atomic;
         }
 
-        // the object half of an iterable is a Traversable, which can be narrowed to any of its subclasses
-        if ($type_1_atomic instanceof TIterable && $type_2_atomic instanceof TNamedObject) {
-            $type_1_atomic = AtomicTypeComparator::getTraversableHalf($codebase, $type_1_atomic, $type_2_atomic)
-                ?? $type_1_atomic;
-        } elseif ($type_2_atomic instanceof TIterable && $type_1_atomic instanceof TNamedObject) {
-            $type_2_atomic = AtomicTypeComparator::getTraversableHalf($codebase, $type_2_atomic, $type_1_atomic)
-                ?? $type_2_atomic;
-        }
+        [$type_1_atomic, $type_2_atomic] = self::narrowIterableToItsTraversableHalf(
+            $codebase,
+            $type_1_atomic,
+            $type_2_atomic,
+        );
 
         if ($type_1_atomic instanceof TNamedObject) {
             $type_1_atomic = $type_1_atomic->setIsStatic(false);
@@ -939,13 +958,16 @@ final class AssertionReconciler extends Reconciler
                 $fallback_types = [$type_1_atomic->fallback_params[0], $type_2_param];
             }
 
-            $matching_atomic_type = TKeyedArray::make(
+            $filtered_atomic_type = TKeyedArray::make(
                 $type_1_properties,
                 $type_1_atomic->class_strings,
                 $fallback_types,
                 $type_1_atomic->is_list,
                 $type_1_atomic->from_docblock,
             );
+            $matching_atomic_type = $filtered_atomic_type instanceof TKeyedArray
+                ? $filtered_atomic_type->setIsCallable($type_1_atomic->is_callable)
+                : $filtered_atomic_type;
             $atomic_comparison_results->type_coerced = true;
         }
 
@@ -1306,7 +1328,7 @@ final class AssertionReconciler extends Reconciler
 
             if ($assertion instanceof IsLooselyEqual
                 && $existing_var_atomic_type instanceof TLiteralFloat
-                && (int)$existing_var_atomic_type->value === $value
+                && $existing_var_atomic_type->value == $value
             ) {
                 return new Union([$existing_var_atomic_type]);
             }
@@ -1458,6 +1480,7 @@ final class AssertionReconciler extends Reconciler
 
             if ($assertion instanceof IsLooselyEqual
                 && $existing_var_atomic_type instanceof TLiteralFloat
+                && !is_nan($existing_var_atomic_type->value) // NAN is not equal to anything
                 && (string)$existing_var_atomic_type->value === $value
             ) {
                 return new Union([$existing_var_atomic_type]);

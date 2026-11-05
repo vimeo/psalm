@@ -21,6 +21,11 @@ foreach ($issue_types as $issue_type) {
     /** @var int */
     $issue_level = $issue_class::ERROR_LEVEL;
 
+    // 8 is the highest error level, so an issue of that level is never downgraded to info
+    if ($issue_level === 8) {
+        $issue_level = -1;
+    }
+
     $grouped_issues[$issue_level][] = $issue_type;
 }
 

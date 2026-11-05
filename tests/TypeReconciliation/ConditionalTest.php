@@ -21,44 +21,13 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'iterableInstanceOfGeneratorKeepsItsParams' => [
+            'nonFinalClassCanBeIdenticalToIterable' => [
                 'code' => <<<'PHP'
                     <?php
-                    /** @return iterable<int, string> */
-                    function getIterable(): iterable {
-                        return [];
-                    }
+                    class Foo {}
 
-                    function narrow(): void {
-                        $positive = getIterable();
-                        $negative = getIterable();
-
-                        if (!$positive instanceof Generator) {
-                            return;
-                        }
-
-                        if ($negative instanceof Generator) {
-                            return;
-                        }
-
-                        /** @psalm-check-type-exact $positive = Generator&Traversable<int, string> */
-                        /** @psalm-check-type-exact $negative = array<int, string>|Traversable<int, string> */
-                    }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
-            'pureIterableInstanceOfGeneratorKeepsItsPurity' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @param iterable[pure]<int, string> $t */
-                    function f(iterable $t): void {
-                        if (!$t instanceof Generator) {
-                            return;
-                        }
-
-                        /** @psalm-check-type-exact $t = Generator&Traversable[pure]<int, string> */
+                    function f(Foo $x, iterable $i): bool {
+                        return $x === $i;
                     }
                     PHP,
                 'assertions' => [],
@@ -92,18 +61,75 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
-            'nonFinalClassCanBeIdenticalToIterable' => [
+            'pureIterableInstanceOfGeneratorKeepsItsPurity' => [
                 'code' => <<<'PHP'
                     <?php
-                    class Foo {}
+                    /** @param iterable[pure]<int, string> $t */
+                    function f(iterable $t): void {
+                        if (!$t instanceof Generator) {
+                            return;
+                        }
 
-                    function f(Foo $x, iterable $i): bool {
-                        return $x === $i;
+                        /** @psalm-check-type-exact $t = Generator&Traversable[pure]<int, string> */
                     }
                     PHP,
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'iterableInstanceOfGeneratorKeepsItsParams' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return iterable<int, string> */
+                    function getIterable(): iterable {
+                        return [];
+                    }
+
+                    function narrow(): void {
+                        $positive = getIterable();
+                        $negative = getIterable();
+
+                        if (!$positive instanceof Generator) {
+                            return;
+                        }
+
+                        if ($negative instanceof Generator) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $positive = Generator&Traversable<int, string> */
+                        /** @psalm-check-type-exact $negative = array<int, string>|Traversable<int, string> */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'orredClausesOfOneVariableAreAllKept' => [
+                'code' => '<?php
+                    interface I1 {}
+                    interface I2 {}
+
+                    /** @param mixed $d */
+                    function f($d): string {
+                        if (!is_array($d) && (!$d instanceof I1 || !$d instanceof I2)) {
+                            throw new Exception("array or I1&I2");
+                        }
+
+                        return is_array($d) ? "array" : get_class($d);
+                    }
+
+                    /** @var mixed $x */
+                    $x = null;
+
+                    if (is_string($x) || ($x instanceof I1 && $x instanceof I2)) {
+                        $result = $x;
+                    } else {
+                        $result = "";
+                    }',
+                'assertions' => [
+                    '$result' => 'I1&I2|string',
+                ],
             ],
             'nonStrictConditionOnMixedOrNull' => [
                 'code' => '<?php
@@ -3549,6 +3575,30 @@ final class ConditionalTest extends TestCase
                     '$after' => 'Countable|string',
                 ],
             ],
+            'isArrayOrNegatedIssetGuardNarrowsAfterReturn' => [
+                'code' => '<?php
+                    function f(string|int|array $t, array $map): string {
+                        if (is_array($t) || !isset($map[(string) $t])) {
+                            return "";
+                        }
+
+                        return (string) $t;
+                    }
+
+                    /** @var string|int|array $t */
+                    $t = $_GET["t"];
+                    /** @var array $map */
+                    $map = [];
+                    if (is_array($t) || !isset($map[(string) $t])) {
+                        return;
+                    }
+                    $s = $t;',
+                'assertions' => [
+                    '$s' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -3559,19 +3609,6 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'finalClassCannotBeIdenticalToIterable' => [
-                'code' => <<<'PHP'
-                    <?php
-                    final class Fin {}
-
-                    function f(Fin $x, iterable $i): bool {
-                        return $x === $i;
-                    }
-                    PHP,
-                'error_message' => 'TypeDoesNotContainType',
-                'error_levels' => [],
-                'php_version' => '8.1',
-            ],
             'iterableIsNotInstanceOfFinalClassThatIsNotTraversable' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3582,6 +3619,19 @@ final class ConditionalTest extends TestCase
                         if ($i instanceof Fin) {
                             echo "never";
                         }
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'finalClassCannotBeIdenticalToIterable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Fin {}
+
+                    function f(Fin $x, iterable $i): bool {
+                        return $x === $i;
                     }
                     PHP,
                 'error_message' => 'TypeDoesNotContainType',
