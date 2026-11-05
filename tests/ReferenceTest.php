@@ -401,6 +401,20 @@ final class ReferenceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'itemOfAnArrayObjectPushedTo' => [
+                'code' => '<?php
+                    /** @param ArrayObject<int, list<int>> $o */
+                    function push(ArrayObject $o): void {
+                        array_push($o[0], 3);
+                    }',
+            ],
+            'itemOfAnArrayObjectAssignedInto' => [
+                'code' => '<?php
+                    /** @param ArrayObject<int, list<int>> $o */
+                    function append(ArrayObject $o): void {
+                        $o[0][] = 3;
+                    }',
+            ],
             'itemOfMixedPassedByReferenceIsNotAssigned' => [
                 'code' => '<?php
                     /** @param mixed $m */
@@ -817,6 +831,22 @@ final class ReferenceTest extends TestCase
                         return $out["m"][1] ?? "";
                     }',
                 'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7',
+            ],
+            'itemOfAnArrayObjectAssignedIsChecked' => [
+                'code' => '<?php
+                    /** @param ArrayObject<int, list<int>> $o */
+                    function set(ArrayObject $o): void {
+                        $o[0] = "x";
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33 - Argument 2 of ArrayObject::offsetSet expects list<int>, but \'x\' provided',
+            ],
+            'itemOfAnArrayObjectInAnArrayObjectAssignedIsChecked' => [
+                'code' => '<?php
+                    /** @param ArrayObject<string, ArrayObject<int, string>> $o */
+                    function set(ArrayObject $o): void {
+                        $o["a"][0] = 5;
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:38 - Argument 2 of ArrayObject::offsetSet expects string, but 5 provided',
             ],
             'referenceReuseForeachValue' => [
                 'code' => '<?php

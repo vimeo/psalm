@@ -1095,7 +1095,8 @@ final class ArrayFetchAnalyzer
                     $assign_value,
                     $array_access_type,
                     $has_array_access,
-                    $by_reference,
+                    // nothing replaces an item an assignment writes into, which is modified in place as well
+                    $by_reference || $replacement_type === null,
                 );
             } elseif (!$array_type->hasMixed()) {
                 $non_array_types[] = (string)$type;
@@ -2213,7 +2214,7 @@ final class ArrayFetchAnalyzer
         ?PhpParser\Node\Expr $assign_value,
         ?Union &$array_access_type,
         bool &$has_array_access,
-        bool $by_reference,
+        bool $in_place,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         if (strtolower($type->value) === 'simplexmlelement'
@@ -2280,9 +2281,9 @@ final class ArrayFetchAnalyzer
             }
 
             if ($in_assignment) {
-                // PHP does not call offsetSet() for an item passed by reference, it modifies the item in place: the
-                // call is analysed for what calling the method implies, but has no arguments to check
-                $arg_attributes = $by_reference ? [ArgumentAnalyzer::NOT_PASSED => true] : [];
+                // PHP does not call offsetSet() for an item modified in place, passed by reference or written into:
+                // the call is analysed for what calling the method implies, but has no arguments to check
+                $arg_attributes = $in_place ? [ArgumentAnalyzer::NOT_PASSED => true] : [];
 
                 $old_node_data = $statements_analyzer->node_data;
 
