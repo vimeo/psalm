@@ -6,6 +6,7 @@ namespace Psalm\Internal;
 
 use Amp\Serialization\Serializer;
 use DirectoryIterator;
+use Generator;
 use Psalm\Config;
 use RuntimeException;
 use Webmozart\Assert\Assert;
@@ -35,6 +36,7 @@ use function hash_init;
 use function hash_update;
 use function intdiv;
 use function is_dir;
+use function iterator_to_array;
 use function min;
 use function mkdir;
 use function pack;
@@ -194,24 +196,6 @@ final class Cache
             $offset += $length;
         };
 
-        $loose = [];
-        foreach (new DirectoryIterator($this->dir) as $f) {
-            $name = $f->getFilename();
-            if (!$f->isFile()) {
-                continue;
-            }
-
-            // Left by a writer that died before renaming it. No writer is alive: they hold the shared lock.
-            if (str_ends_with($name, self::TEMP_SUFFIX)) {
-                unlink($f->getPathname());
-                continue;
-            }
-
-            if (strlen($name) === 32 && ctype_xdigit($name)) {
-                $loose[] = $f->getPathname();
-            }
-        }
-
         $previous_order = [];
         foreach ($this->consolidated as $key => [, $previous_offset]) {
             $previous_order[$key] = $previous_offset;
@@ -222,9 +206,12 @@ final class Cache
         $previous_zstd = $this->consolidated_serializer instanceof ZstdSerializer
             ? $this->consolidated_serializer
             : null;
+        $loose = $this->looseRecordFiles();
         $dictionary = null;
         $consolidated_zstd = null;
         if ($zstd !== null && $previous_zstd !== null) {
+            // Only the dictionary needs them all at once
+            $loose = iterator_to_array($loose, false);
             $dictionary = $this->buildDictionary($zstd, $previous_zstd, $loose, array_keys($previous_order));
             $consolidated_zstd = $zstd->withDictionary($dictionary);
         }
@@ -282,6 +269,29 @@ final class Cache
 
         flock($this->lock, LOCK_UN);
         flock($this->lock, LOCK_SH);
+    }
+
+    /**
+     * @return Generator<int, string> the paths of the loose records, and removes the temporary files on the way
+     */
+    private function looseRecordFiles(): Generator
+    {
+        foreach (new DirectoryIterator($this->dir) as $f) {
+            $name = $f->getFilename();
+            if (!$f->isFile()) {
+                continue;
+            }
+
+            // Left by a writer that died before renaming it. No writer is alive: they hold the shared lock.
+            if (str_ends_with($name, self::TEMP_SUFFIX)) {
+                unlink($f->getPathname());
+                continue;
+            }
+
+            if (strlen($name) === 32 && ctype_xdigit($name)) {
+                yield $f->getPathname();
+            }
+        }
     }
 
     /**
