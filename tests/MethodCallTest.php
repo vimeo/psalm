@@ -205,6 +205,48 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullsafeChainWithPlainLinkNotIdenticalToNullNarrowsReceiver' => [
+                'code' => '<?php
+                    final class P {
+                        public int $v = 0;
+                    }
+
+                    final class Q {
+                        public P $p;
+
+                        public function __construct() {
+                            $this->p = new P();
+                        }
+                    }
+
+                    function a(?Q $q): void {
+                        if ($q?->p->v !== null) {
+                            echo $q->p->v;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyFetchNotIdenticalToNullNarrowsReceiver' => [
+                'code' => '<?php
+                    final class P {
+                        public int $v = 0;
+                        public ?P $next = null;
+                    }
+
+                    function a(?P $p): int {
+                        if ($p?->v !== null) {
+                            return $p->v;
+                        }
+
+                        return 0;
+                    }
+',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nullsafeMethodCallNotIdenticalToNullNarrowsReceiver' => [
                 'code' => '<?php
                     final class B {
@@ -236,45 +278,59 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'nullsafePropertyFetchNotIdenticalToNullNarrowsReceiver' => [
+            'inheritedThisDocblockKeepsNativeStaticOfSubclass' => [
                 'code' => '<?php
-                    final class P {
-                        public int $v = 0;
-                        public ?P $next = null;
+                    class Form {}
+
+                    interface BuilderInterface {
+                        /**
+                         * @return $this
+                         */
+                        public function setCompound(): static;
                     }
 
-                    function a(?P $p): int {
-                        if ($p?->v !== null) {
-                            return $p->v;
+                    class Builder implements BuilderInterface {
+                        public function setCompound(): static {
+                            return $this;
                         }
-
-                        return 0;
                     }
-',
-                'assertions' => [],
+
+                    class FormBuilder extends Builder {
+                        public function getForm(): Form {
+                            return new Form();
+                        }
+                    }
+
+                    $form = (new FormBuilder())->setCompound()->getForm();',
+                'assertions' => ['$form' => 'Form'],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'nullsafeChainWithPlainLinkNotIdenticalToNullNarrowsReceiver' => [
+            'inheritedStaticDocblockKeepsNativeStaticOfSubclass' => [
                 'code' => '<?php
-                    final class P {
-                        public int $v = 0;
+                    class Form {}
+
+                    interface BuilderInterface {
+                        /**
+                         * @return static
+                         */
+                        public function setCompound(): static;
                     }
 
-                    final class Q {
-                        public P $p;
-
-                        public function __construct() {
-                            $this->p = new P();
+                    class Builder implements BuilderInterface {
+                        public function setCompound(): static {
+                            return $this;
                         }
                     }
 
-                    function a(?Q $q): void {
-                        if ($q?->p->v !== null) {
-                            echo $q->p->v;
+                    class FormBuilder extends Builder {
+                        public function getForm(): Form {
+                            return new Form();
                         }
-                    }',
-                'assertions' => [],
+                    }
+
+                    $form = (new FormBuilder())->setCompound()->getForm();',
+                'assertions' => ['$form' => 'Form'],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
@@ -1578,21 +1634,24 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'nullsafeChainWithSeveralLinksNotIdenticalToNullDoesNotNarrowElseBranch' => [
+            'nullsafeNullableMethodCallNotIdenticalToNullElseBranchKeepsPossiblyNullReceiver' => [
                 'code' => '<?php
-                    final class P {
-                        public int $v = 0;
-                        public ?P $next = null;
+                    final class B {
+                        public function maybe(): ?bool {
+                            return null;
+                        }
+
+                        public function exec(): void {}
                     }
 
-                    function a(?P $p): void {
-                        if ($p?->next?->v !== null) {
+                    function a(?B $b): void {
+                        if ($b?->maybe() !== null) {
                             return;
                         }
 
-                        echo $p->v;
+                        $b->exec();
                     }',
-                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_message' => 'PossiblyNullReference',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
@@ -1617,26 +1676,44 @@ final class MethodCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
-            'nullsafeNullableMethodCallNotIdenticalToNullElseBranchKeepsPossiblyNullReceiver' => [
+            'nullsafeChainWithSeveralLinksNotIdenticalToNullDoesNotNarrowElseBranch' => [
                 'code' => '<?php
-                    final class B {
-                        public function maybe(): ?bool {
-                            return null;
-                        }
-
-                        public function exec(): void {}
+                    final class P {
+                        public int $v = 0;
+                        public ?P $next = null;
                     }
 
-                    function a(?B $b): void {
-                        if ($b?->maybe() !== null) {
+                    function a(?P $p): void {
+                        if ($p?->next?->v !== null) {
                             return;
                         }
 
-                        $b->exec();
+                        echo $p->v;
                     }',
-                'error_message' => 'PossiblyNullReference',
+                'error_message' => 'PossiblyNullPropertyFetch',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'methodMissingFromALaterTypeOfAUnionTemplateBound' => [
+                'code' => '<?php
+                    final class Invoice {
+                        public function total(): int { return 1; }
+                    }
+
+                    final class CreditNote {
+                        public function total(): int { return -1; }
+                        public function reason(): string { return ""; }
+                    }
+
+                    /**
+                     * @template T of CreditNote|Invoice
+                     * @param T $document
+                     * @return mixed
+                     */
+                    function reason($document) {
+                        return $document->reason();
+                    }',
+                'error_message' => 'PossiblyUndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:43 - Method Invoice::reason does not exist',
             ],
             'staticInvocation' => [
                 'code' => '<?php
@@ -1831,6 +1908,18 @@ final class MethodCallTest extends TestCase
 
                     $q = new A;
                     $q->foo(bar());',
+                'error_message' => 'UndefinedFunction',
+            ],
+            'undefinedMethodPassedAsArgOnPossiblyInvalidCallee' => [
+                'code' => '<?php
+                    class A {
+                        public function __call(string $method, array $args) {}
+                    }
+
+                    /** @param A|int $q */
+                    function f($q): void {
+                        $q->foo(bar());
+                    }',
                 'error_message' => 'UndefinedFunction',
             ],
             'noIntersectionMethod' => [
