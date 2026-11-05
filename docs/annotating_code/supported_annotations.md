@@ -285,6 +285,23 @@ $a = new A();
 $b = $a->bar(); // this call fails
 ```
 
+### `@psalm-stub-override`
+
+Used in a [stub file](../running_psalm/configuration.md#stubs) on a class, interface, trait or method that is meant to replace an existing declaration. Psalm stops with an error if there is nothing to replace, so a stub cannot silently go stale (a renamed class, a wrong namespace, a removed method).
+
+```php
+<?php
+// stub file
+/** @psalm-stub-override */
+class ArrayObject {
+    /** @psalm-stub-override */
+    public function count(): int {} // fine: ArrayObject::count() exists
+
+    /** @psalm-stub-override */
+    public function nope(): int {} // error: ArrayObject::nope is marked as stub override, but no original counterpart found
+}
+```
+
 ### `@psalm-internal`
 
 Used to mark a class, property or function as internal to a given namespace or class or even method. 
@@ -727,13 +744,15 @@ function fetch(): Promise {
     return new Success('{"data":[]}');
 }
 
-function (): Generator {
+function decode(): Generator {
     $data = yield fetch();
-    
+
     // this is fine, Psalm knows that $data is a string
     return json_decode($data);
-};
+}
 ```
+Psalm only reads the types: at runtime a coroutine runner (for instance the one of amphp or Revolt) has to resume the generator with the value of the yielded object.
+
 This annotation supports only generic types, meaning that e.g. `@psalm-yield string` would be ignored.
 
 ### `@api`, `@psalm-api`

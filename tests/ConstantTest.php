@@ -250,6 +250,81 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'classConstantFromAShiftOfANonLiteral' => [
+                'code' => '<?php
+                    class Card
+                    {
+                        public const int DYNAMIC = 1 << PHP_INT_SIZE;
+                    }
+
+                    $dynamic = Card::DYNAMIC;',
+                'assertions' => [
+                    '$dynamic' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'classConstantFromBitShifts' => [
+                'code' => '<?php
+                    enum Color: int
+                    {
+                        case Blue = 2;
+                    }
+
+                    class Card
+                    {
+                        public const int LEFT = 1 << Color::Blue->value;
+                        public const int RIGHT = 256 >> 4;
+                        public const int BOTH = (1 << 4) | (64 >> 2);
+                    }
+
+                    $left = Card::LEFT;
+                    $right = Card::RIGHT;
+                    $both = Card::BOTH;',
+                'assertions' => [
+                    '$left===' => '4',
+                    '$right===' => '16',
+                    '$both===' => '16',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'bitwiseOperationsOnFloatConstantsOutsideTheRangeOfAnIntAreNotFolded' => [
+                'code' => '<?php
+                    class A {
+                        public const BIG = 1e30;
+                        public const NOT_A_NUMBER = NAN;
+                        public const WHOLE = 5.0;
+                    }
+
+                    class B {
+                        public const OR = A::BIG | 1;
+                        public const AND = A::NOT_A_NUMBER & 1;
+                        public const XOR = A::WHOLE ^ 1;
+                        public const NESTED = (A::BIG | 1) | 2;
+                    }
+
+                    class C {
+                        public const FROM_INTERMEDIATE = B::OR ^ 2;
+                        public const FROM_NOT_A_NUMBER = B::AND & A::WHOLE;
+                    }
+
+                    $or = B::OR;
+                    $and = B::AND;
+                    $xor = B::XOR;
+                    $nested = B::NESTED;
+                    $fromIntermediate = C::FROM_INTERMEDIATE;
+                    $fromNotANumber = C::FROM_NOT_A_NUMBER;',
+                'assertions' => [
+                    '$or===' => 'int',
+                    '$and===' => 'int',
+                    '$xor===' => '4',
+                    '$nested===' => 'int',
+                    '$fromIntermediate===' => 'int',
+                    '$fromNotANumber===' => 'int',
+                ],
+            ],
+
             'constantInFunction' => [
                 'code' => '<?php
                     useTest();
@@ -280,45 +355,6 @@ final class ConstantTest extends TestCase
                     defineConstant();
 
                     echo CONSTANT;',
-            ],
-            'classConstantFromBitShifts' => [
-                'code' => '<?php
-                    enum Color: int
-                    {
-                        case Blue = 2;
-                    }
-
-                    class Card
-                    {
-                        public const int LEFT = 1 << Color::Blue->value;
-                        public const int RIGHT = 256 >> 4;
-                        public const int BOTH = (1 << 4) | (64 >> 2);
-                    }
-
-                    $left = Card::LEFT;
-                    $right = Card::RIGHT;
-                    $both = Card::BOTH;',
-                'assertions' => [
-                    '$left===' => '4',
-                    '$right===' => '16',
-                    '$both===' => '16',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.3',
-            ],
-            'classConstantFromAShiftOfANonLiteral' => [
-                'code' => '<?php
-                    class Card
-                    {
-                        public const int DYNAMIC = 1 << PHP_INT_SIZE;
-                    }
-
-                    $dynamic = Card::DYNAMIC;',
-                'assertions' => [
-                    '$dynamic' => 'int',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.3',
             ],
             'magicConstant' => [
                 'code' => '<?php
@@ -2420,6 +2456,34 @@ final class ConstantTest extends TestCase
                 'error_message' => 'NoValue',
                 'error_levels' => [],
                 'php_version' => '8.3',
+            ],
+            'classConstantDividingByAZeroIntConstantOfAnotherClass' => [
+                'code' => '<?php
+                    final class A {
+                        const ZERO = 0;
+                    }
+
+                    final class B {
+                        const X = 1 / A::ZERO;
+                    }
+
+                    $x = B::X;
+                    echo $x;',
+                'error_message' => 'NoValue',
+            ],
+            'classConstantDividingByAZeroFloatConstantOfAnotherClass' => [
+                'code' => '<?php
+                    final class A {
+                        const ZERO = 0.0;
+                    }
+
+                    final class B {
+                        const X = 1 / A::ZERO;
+                    }
+
+                    $x = B::X;
+                    echo $x;',
+                'error_message' => 'NoValue',
             ],
             'constantDefinedInFunctionButNotCalled' => [
                 'code' => '<?php
