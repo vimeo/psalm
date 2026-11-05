@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Common questions
+    url: https://psalm.dev/docs/running_psalm/common_issues/
+    about: Psalm and psalm.dev report different things, UndefinedClass, Mixed issues, ...
