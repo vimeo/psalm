@@ -682,7 +682,9 @@ final class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * An item of a temporary, e.g. g()[0], has nothing to be written back to
+     * The item stays what it was in the keys the call may not have reached: weak update when a key is one of
+     * several literals or an array on the way to it may be an ArrayAccess object, which re-reads the item.
+     * An item of a temporary, e.g. g()[0], has nothing to be written back to.
      */
     private static function writeBackItemWithoutEnd(
         StatementsAnalyzer $statements_analyzer,
@@ -706,12 +708,22 @@ final class ArrayFunctionArgumentsAnalyzer
             return;
         }
 
-        $codebase = $statements_analyzer->getCodebase();
-        $new_type = self::getArrayWithoutEnd($codebase, $context, $item_type, $is_array_shift);
+        // the call throws on anything but an array: afterwards the item is one
+        $array_item_type = $item_type->setPossiblyUndefined(false);
 
-        // an item reached by several keys loses its end in only one of them, whichever it is
-        if (self::hasKeyOfSeveralLiterals($statements_analyzer, $item)) {
-            $new_type = Type::combineUnionTypes($item_type, $new_type, $codebase);
+        if ($array_item_type->isNullable()) {
+            $builder = $array_item_type->getBuilder();
+            $builder->removeType('null');
+            $array_item_type = $builder->freeze();
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $new_type = self::getArrayWithoutEnd($codebase, $context, $array_item_type, $is_array_shift);
+
+        if (self::hasKeyOfSeveralLiterals($statements_analyzer, $item)
+            || !self::isHeldByArrays($statements_analyzer, $item)
+        ) {
+            $new_type = Type::combineUnionTypes($array_item_type, $new_type, $codebase);
         }
 
         // what the item held may still be in it
@@ -725,6 +737,33 @@ final class ArrayFunctionArgumentsAnalyzer
             $context,
             false,
         );
+    }
+
+    /**
+     * Whether the item lives in arrays only. An item of an ArrayAccess object is re-read through offsetGet(),
+     * which doesn't see changes of the returned value.
+     *
+     * @psalm-capabilities read-props
+     */
+    public static function isHeldByArrays(StatementsAnalyzer $statements_analyzer, PhpParser\Node\Expr $item): bool
+    {
+        while ($item instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            $holder_type = $statements_analyzer->node_data->getType($item->var);
+
+            if (!$holder_type) {
+                return false;
+            }
+
+            foreach ($holder_type->getAtomicTypes() as $holder_atomic_type) {
+                if (!$holder_atomic_type instanceof TArray && !$holder_atomic_type instanceof TKeyedArray) {
+                    return false;
+                }
+            }
+
+            $item = $item->var;
+        }
+
+        return true;
     }
 
     /**
