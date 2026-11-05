@@ -31,6 +31,7 @@ use function set_error_handler;
 use function sort;
 use function strlen;
 use function substr;
+use function substr_replace;
 use function sys_get_temp_dir;
 use function uniqid;
 use function unlink;
@@ -389,6 +390,9 @@ final class CacheConsolidationTest extends TestCase
                 'cut to the middle of the header' => substr($data, 0, 10),
                 'empty' => '',
                 'a byte changed' => $flipped,
+                // the record of 'a' is <28 bytes of lengths and checksum><hash a><a><payload>
+                'payload length overstated' => substr_replace($data, pack('V', 0xFFFFFFFF), 8, 4),
+                'key changed' => substr_replace($data, 'b', 28 + strlen('hash a'), 1),
             ] as $damage => $contents) {
                 file_put_contents($path, $contents);
                 $reader = $this->newCache();
@@ -405,5 +409,24 @@ final class CacheConsolidationTest extends TestCase
         }
 
         $this->assertSame([], $errors);
+    }
+
+    /** The index says which hash the record has, but the record is what counts */
+    public function testConsolidatedRecordWithAnotherHashThanTheIndexIsAMiss(): void
+    {
+        $cache = $this->newCache();
+        $cache->saveItem('a', ['item a'], 'hash a');
+        $cache->consolidate();
+
+        $path = $this->dataFile();
+        $data = file_get_contents($path);
+        $this->assertNotFalse($data);
+        file_put_contents($path, substr_replace($data, 'x', 28, 1));
+
+        $reader = $this->newCache();
+        $this->assertNull($reader->getItem('a', 'hash a'));
+
+        file_put_contents($path, $data);
+        $this->assertSame(['item a'], $this->newCache()->getItem('a', 'hash a'));
     }
 }

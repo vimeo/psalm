@@ -38,10 +38,10 @@ use function rename;
 use function restore_error_handler;
 use function set_error_handler;
 use function str_ends_with;
+use function stream_copy_to_stream;
 use function stream_get_contents;
 use function strlen;
 use function substr;
-use function substr_compare;
 use function unlink;
 use function unpack;
 
@@ -184,17 +184,15 @@ final class Cache
                 continue;
             }
 
-            $record = file_get_contents($f->getPathname());
-            Assert::notFalse($record);
-            $header = self::parseRecordHeader($record);
+            $record = self::readRecord($f->getPathname(), 0, null, null, null);
             // An entry that is not whole, or that is not the one its name says, is dropped
-            if ($header !== null
-                && hash('xxh128', $header[1]) === $name
-                && self::parseRecord($record, $header[1], null) !== null
-            ) {
-                $length = strlen($record);
-                Assert::eq(fwrite($out, $record), $length);
-                $entries[$header[1]] = [$header[0], $offset, $length];
+            if ($record !== null && hash('xxh128', $record[2]) === $name) {
+                [$prefix, $record_hash, $record_key, $payload] = $record;
+                $header = $prefix . $record_hash . $record_key;
+                Assert::eq(fwrite($out, $header), strlen($header));
+                Assert::eq(fwrite($out, $payload), strlen($payload));
+                $length = strlen($header) + strlen($payload);
+                $entries[$record_key] = [$record_hash, $offset, $length];
                 $offset += $length;
             }
             unlink($f->getPathname());
@@ -216,11 +214,7 @@ final class Cache
             Assert::notFalse($previous);
             foreach ($order as $key => $_) {
                 [$hash, $previous_offset, $length] = $carried[$key];
-                fseek($previous, $previous_offset);
-                $record = fread($previous, $length);
-                Assert::string($record);
-                Assert::eq(strlen($record), $length);
-                Assert::eq(fwrite($out, $record), $length);
+                Assert::eq(stream_copy_to_stream($previous, $out, $length, $previous_offset), $length);
                 $entries[$key] = [$hash, $offset, $length];
                 $offset += $length;
             }
@@ -314,11 +308,7 @@ final class Cache
             $entry = $this->readConsolidated($key, $hash);
         }
         if ($entry === null) {
-            $path = $this->dir . hash('xxh128', $key);
-            $record = self::quietly(static fn(): string|false => file_get_contents($path));
-            if ($record !== false) {
-                $entry = self::parseRecord($record, $key, $hash);
-            }
+            $entry = self::readRecord($this->dir . hash('xxh128', $key), 0, null, $key, $hash);
         }
         if ($entry === null && $hash === null && isset($this->consolidated[$key])) {
             $entry = $this->readConsolidated($key, null);
@@ -328,9 +318,9 @@ final class Cache
         }
 
         /** @var T $content */
-        $content = $this->serializer->unserialize($entry[1]);
+        $content = $this->serializer->unserialize($entry[3]);
         if ($this->arrayCache) {
-            $this->cache[$key] = [$entry[0], $content];
+            $this->cache[$key] = [$entry[1], $content];
         }
 
         return $content;
@@ -360,12 +350,11 @@ final class Cache
         }
         if ($this->persistent) {
             $payload = $this->serializer->serialize($item);
-            $record = pack('VVV', strlen($hash), strlen($key), strlen($payload))
+            $header = pack('VVV', strlen($hash), strlen($key), strlen($payload))
                 . hash('xxh128', $payload, true)
                 . $hash
-                . $key
-                . $payload;
-            self::writeEntry($this->dir . hash('xxh128', $key), $record);
+                . $key;
+            self::writeEntry($this->dir . hash('xxh128', $key), $header, $payload);
         }
         // Without a disk cache the array is the only copy. With one, keep it only if arrayCache is on,
         // otherwise a cold run holds every parsed AST and storage object in memory for nothing.
@@ -374,86 +363,79 @@ final class Cache
         }
     }
 
-    /** @return array{string, string}|null [stored hash, serialized item] */
+    /** @return array{string, string, string, string}|null see readRecord() */
     private function readConsolidated(string $key, ?string $hash): ?array
     {
         assert($this->consolidated_path !== null);
         [, $offset, $length] = $this->consolidated[$key];
-        $path = $this->consolidated_path;
-        $record = self::quietly(static fn(): string|false => file_get_contents($path, false, null, $offset, $length));
 
-        return $record === false ? null : self::parseRecord($record, $key, $hash);
+        return self::readRecord($this->consolidated_path, $offset, $length, $key, $hash);
     }
 
     /**
+     * Reads the record of $length bytes at $offset, or the whole file if $length is null. The payload is read
+     * once and only after the rest of the record has been checked, because the reader allocates what it is
+     * asked for: nothing the record declares is read before it is known to fit in the $length bytes.
+     *
+     * @param string|null $key the key the record must carry, or null for any
      * @param string|null $hash the hash the record must carry, or null for any
-     * @return array{string, string}|null [stored hash, serialized item], null if the record is not
-     *     the whole, intact record of that key and hash
-     * @psalm-pure
+     * @return array{string, string, string, string}|null [prefix, stored hash, stored key, serialized item],
+     *     null if the record is not the whole, intact record of that key and hash
      */
-    private static function parseRecord(string $record, string $key, ?string $hash): ?array
+    private static function readRecord(string $path, int $offset, ?int $length, ?string $key, ?string $hash): ?array
     {
-        if (strlen($record) < self::RECORD_PREFIX_LENGTH) {
-            return null;
-        }
+        return self::quietly(static function () use ($path, $offset, $length, $key, $hash): ?array {
+            $f = fopen($path, 'rb');
+            if ($f === false) {
+                return null;
+            }
 
-        /** @var array{1: int, 2: int, 3: int} $lengths */
-        $lengths = unpack('V3', $record);
-        [1 => $hash_length, 2 => $key_length, 3 => $payload_length] = $lengths;
-        $key_offset = self::RECORD_PREFIX_LENGTH + $hash_length;
-        $payload_offset = $key_offset + $key_length;
+            try {
+                $stat = fstat($f);
+                assert($stat !== false);
+                fseek($f, $offset);
 
-        if (strlen($record) !== $payload_offset + $payload_length
-            || $key_length !== strlen($key)
-            || substr_compare($record, $key, $key_offset, $key_length) !== 0
-        ) {
-            return null;
-        }
+                $prefix = fread($f, self::RECORD_PREFIX_LENGTH);
+                if ($prefix === false || strlen($prefix) !== self::RECORD_PREFIX_LENGTH) {
+                    return null;
+                }
 
-        if ($hash === null) {
-            $hash = substr($record, self::RECORD_PREFIX_LENGTH, $hash_length);
-        } elseif ($hash_length !== strlen($hash)
-            || substr_compare($record, $hash, self::RECORD_PREFIX_LENGTH, $hash_length) !== 0
-        ) {
-            return null;
-        }
+                /** @var array{1: int, 2: int, 3: int} $lengths */
+                $lengths = unpack('V3', $prefix);
+                [1 => $hash_length, 2 => $key_length, 3 => $payload_length] = $lengths;
+                if (self::RECORD_PREFIX_LENGTH + $hash_length + $key_length + $payload_length
+                    !== ($length ?? $stat['size'])
+                ) {
+                    return null;
+                }
 
-        $payload = substr($record, $payload_offset);
-        if (substr_compare($record, hash('xxh128', $payload, true), 12, 16) !== 0) {
-            return null;
-        }
+                // A failed read is an empty string, which matches no record
+                $names = (string) stream_get_contents($f, $hash_length + $key_length);
+                $stored_hash = substr($names, 0, $hash_length);
+                $stored_key = substr($names, $hash_length);
+                if (($hash !== null && $stored_hash !== $hash) || ($key !== null && $stored_key !== $key)) {
+                    return null;
+                }
 
-        return [$hash, $payload];
-    }
+                $payload = stream_get_contents($f, $payload_length);
+                if ($payload === false || hash('xxh128', $payload, true) !== substr($prefix, 12, 16)) {
+                    return null;
+                }
 
-    /**
-     * @return array{string, string}|null [hash, key]
-     * @psalm-pure
-     */
-    private static function parseRecordHeader(string $record): ?array
-    {
-        if (strlen($record) < self::RECORD_PREFIX_LENGTH) {
-            return null;
-        }
-
-        /** @var array{1: int, 2: int} $lengths */
-        $lengths = unpack('V2', $record);
-        if (strlen($record) < self::RECORD_PREFIX_LENGTH + $lengths[1] + $lengths[2]) {
-            return null;
-        }
-
-        return [
-            substr($record, self::RECORD_PREFIX_LENGTH, $lengths[1]),
-            substr($record, self::RECORD_PREFIX_LENGTH + $lengths[1], $lengths[2]),
-        ];
+                return [$prefix, $stored_hash, $stored_key, $payload];
+            } finally {
+                fclose($f);
+            }
+        });
     }
 
     /**
      * Replaces the entry with the record in one step, so that no reader or other writer sees a part of it.
+     * The payload is written as it is: putting it in a string together with the header copies it.
      *
      * @throws RuntimeException if the record could not be written
      */
-    private static function writeEntry(string $path, string $record): void
+    private static function writeEntry(string $path, string $header, string $payload): void
     {
         // 'x' never reuses the file of another writer
         $temp = $path . '.' . bin2hex(random_bytes(8)) . self::TEMP_SUFFIX;
@@ -462,9 +444,9 @@ final class Cache
             throw new RuntimeException("Could not create cache entry $temp");
         }
 
-        $written = fwrite($f, $record);
+        $complete = fwrite($f, $header) === strlen($header) && fwrite($f, $payload) === strlen($payload);
         fclose($f);
-        if ($written !== strlen($record)) {
+        if (!$complete) {
             self::quietly(static fn(): bool => unlink($temp));
 
             throw new RuntimeException("Could not write cache entry $path");

@@ -364,8 +364,12 @@ final class CacheTest extends TestCase
         self::assertSame('old payload', $this->newCache()->getItem(self::KEY, 'old hash'));
     }
 
-    /** A full disk or a file size limit: the writer must report it and not leave the half-written file */
-    public function testShortWriteIsReportedAndLeavesNoTemporaryFile(): void
+    /**
+     * A full disk or a file size limit: the writer must report it and not leave the half-written file,
+     * whether the header or the payload is the part that does not fit.
+     */
+    #[DataProvider('provideFileSizeLimits')]
+    public function testShortWriteIsReportedAndLeavesNoTemporaryFile(int $limit): void
     {
         if (!function_exists('posix_setrlimit') || !function_exists('pcntl_signal')) {
             self::markTestSkipped('pcntl and posix are required to limit the size of a file');
@@ -383,7 +387,7 @@ final class CacheTest extends TestCase
         try {
             // writing beyond the limit fails with an error instead of killing the process
             pcntl_signal(SIGXFSZ, SIG_IGN);
-            self::assertTrue(posix_setrlimit(POSIX_RLIMIT_FSIZE, 1024, $hard));
+            self::assertTrue(posix_setrlimit(POSIX_RLIMIT_FSIZE, $limit, $hard));
 
             // PHP also reports the failed write as a notice
             set_error_handler(static fn(): bool => true);
@@ -402,6 +406,16 @@ final class CacheTest extends TestCase
 
         self::assertSame($names, self::namesIn($this->entryDirectory()));
         self::assertSame('old payload', $this->newCache()->getItem(self::KEY, 'old hash'));
+    }
+
+    /**
+     * @return iterable<string, list{int}>
+     * @psalm-pure
+     */
+    public static function provideFileSizeLimits(): iterable
+    {
+        yield 'the header fits, the payload does not' => [1024];
+        yield 'the header does not fit' => [10];
     }
 
     /**
