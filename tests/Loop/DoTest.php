@@ -133,7 +133,6 @@ final class DoTest extends TestCase
                             break;
                         }
 
-                        /** @psalm-suppress MixedArgument */
                         foo($a);
                     }
                     while (rand(0,100) === 10);',
