@@ -5473,6 +5473,52 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'taintTheKeyOfAnArrayAccessItemRead' => [
+                'code' => '<?php // --taint-analysis
+                    /** @implements ArrayAccess<string, string> */
+                    final class Store implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        /** @psalm-taint-sink sql $offset */
+                        public function offsetGet(mixed $offset): string {
+                            return "";
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function read(Store $s): string {
+                        return $s[(string) $_GET["k"]];
+                    }',
+                'error_message' => 'TaintedSql',
+            ],
+            'taintTheKeyOfAnArrayAccessItemWritten' => [
+                'code' => '<?php // --taint-analysis
+                    /** @implements ArrayAccess<string, string> */
+                    final class Store implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        public function offsetGet(mixed $offset): string {
+                            return "";
+                        }
+
+                        /** @psalm-taint-sink html $offset */
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function write(Store $s): void {
+                        $s[(string) $_GET["k"]] = "x";
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAnItemOfAMixedValuePassedByReference' => [
                 'code' => '<?php // --taint-analysis
                     /** @param mixed $m */

@@ -2880,6 +2880,22 @@ final class CapabilitiesTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'impureKeyOfAnArrayAccessItemMakesThePureContextImpure' => [
+                'code' => '<?php
+                    function impureKey(): int {
+                        echo "x";
+                        return 1;
+                    }
+
+                    /**
+                     * @param ArrayObject<int, int> $object
+                     * @psalm-pure
+                     */
+                    function first(ArrayObject $object): int {
+                        return $object[impureKey()];
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:40',
+            ],
             'itemOfAnArrayObjectPassedByReferenceWritesIt' => [
                 'code' => '<?php
                     /**
