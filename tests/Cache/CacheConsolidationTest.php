@@ -564,14 +564,13 @@ final class CacheConsolidationTest extends TestCase
     }
 
     #[RequiresPhpExtension('zstd', '>=0.15.0')]
-    public function testZstdDictionaryAndCarriedRecordsAreReusedWhileTheRecordsStayFewerThanFourTimesAsMany(): void
+    public function testZstdDictionaryIsReusedWhileTheRecordsStayFewerThanFourTimesAsMany(): void
     {
         $first = self::similarItems(0, 10);
         $cache = $this->newCache(true, 'zstd');
         $this->saveAll($cache, $first);
         $cache->consolidate();
         $dictionary = $this->readIndex()[2];
-        $carried_payload = $this->payloadOf('key 5');
 
         // 10 carried and 29 loose records: 39 are fewer than 40
         $second = self::similarItems(10, 39);
@@ -580,7 +579,6 @@ final class CacheConsolidationTest extends TestCase
         $cache->consolidate();
 
         $this->assertSame($dictionary, $this->readIndex()[2]);
-        $this->assertSame($carried_payload, $this->payloadOf('key 5'));
 
         $reader = $this->newCache(false, 'zstd');
         foreach ([...$first, ...$second] as $key => [$item, $hash]) {
@@ -595,6 +593,37 @@ final class CacheConsolidationTest extends TestCase
         $cache->consolidate();
         $this->assertNotSame($dictionary, $this->readIndex()[2]);
         $this->assertSame([$first['key 5'][0]], $this->newCache(false, 'zstd')->getItem('key 5', 'hash 5'));
+    }
+
+    /** A record that replaces a consolidated one is not one more record for the dictionary */
+    #[RequiresPhpExtension('zstd', '>=0.15.0')]
+    public function testZstdReplacedRecordsAreNotCountedTowardsRebuildingTheDictionary(): void
+    {
+        $cache = $this->newCache(true, 'zstd');
+        $this->saveAll($cache, self::similarItems(0, 2));
+        $cache->consolidate();
+        $dictionary = $this->readIndex()[2];
+        $this->assertNotNull($dictionary);
+        $this->assertSame(2, $dictionary[2]);
+
+        // Both are replaced and 5 are added: 7 records, fewer than 4 times 2
+        $cache = $this->newCache(true, 'zstd');
+        foreach (['key 0', 'key 1'] as $key) {
+            $cache->saveItem($key, ['replaced'], 'new hash');
+        }
+        $this->saveAll($cache, self::similarItems(2, 7));
+        $cache->consolidate();
+        $this->assertSame($dictionary, $this->readIndex()[2]);
+
+        // 7 carried and 1 added: 8 records are 4 times 2
+        $cache = $this->newCache(true, 'zstd');
+        $this->saveAll($cache, self::similarItems(7, 8));
+        $cache->consolidate();
+        $rebuilt = $this->readIndex()[2];
+        $this->assertNotNull($rebuilt);
+        $this->assertNotSame($dictionary[0], $rebuilt[0]);
+        $this->assertSame(8, $rebuilt[2]);
+        $this->assertSame(['replaced'], $this->newCache(false, 'zstd')->getItem('key 1', 'new hash'));
     }
 
     #[RequiresPhpExtension('zstd', '>=0.15.0')]

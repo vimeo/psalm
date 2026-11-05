@@ -11,8 +11,11 @@ use Psalm\Config;
 use RuntimeException;
 use Webmozart\Assert\Assert;
 
+use function array_filter;
+use function array_flip;
 use function array_keys;
 use function array_map;
+use function array_values;
 use function assert;
 use function basename;
 use function bin2hex;
@@ -225,11 +228,16 @@ final class Cache
         if ($zstd !== null && $previous_zstd !== null) {
             // Only the dictionary needs them all at once
             $loose = iterator_to_array($loose, false);
+            // A loose record replaces the consolidated one of its key, which is not a record of the result
+            $replaced = array_flip(array_map(basename(...), $loose));
+            $kept = array_values(array_filter(
+                array_map(strval(...), array_keys($this->consolidated)),
+                static fn(string $key): bool => !isset($replaced[hash('xxh128', $key)]),
+            ));
             if ($dictionary === null
-                || count($loose) + count($this->consolidated) >= self::DICTIONARY_REBUILD_FACTOR * $dictionary[2]
+                || count($loose) + count($kept) >= self::DICTIONARY_REBUILD_FACTOR * $dictionary[2]
             ) {
-                $previous_keys = array_map(strval(...), array_keys($this->consolidated));
-                $dictionary = $this->buildDictionary($zstd, $previous_zstd, $loose, $previous_keys);
+                $dictionary = $this->buildDictionary($zstd, $previous_zstd, $loose, $kept);
                 $recompress_previous = true;
             }
             $consolidated_zstd = $zstd->withDictionary($dictionary[0] ?? null);
@@ -324,7 +332,7 @@ final class Cache
      * spaced among them, let zstd find in the dictionary what each record repeats from the others.
      *
      * @param list<string> $loose paths of the loose records
-     * @param list<string> $previous keys of the records of the consolidated data file
+     * @param list<string> $previous keys of the records of the consolidated data file that no loose record replaces
      * @return array{string, string, int}|null the dictionary, its xxh128 and the number of records it is made for
      */
     private function buildDictionary(
