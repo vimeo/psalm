@@ -13,8 +13,6 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 
-use function get_object_vars;
-
 /**
  * @psalm-immutable
  * @psalm-type TProperties=array{
@@ -42,7 +40,8 @@ use function get_object_vars;
  *      allow_mutations?: bool,
  *      has_mutations?: bool,
  *      different?: bool,
- *      parent_nodes?: array<string, DataFlowNode>
+ *      parent_nodes?: array<string, DataFlowNode>,
+ *      propagate_parent_nodes?: bool
  * }
  * @api
  */
@@ -390,8 +389,7 @@ final class Union implements TypeNode
      */
     public function getBuilder(): MutableUnion
     {
-        /** @psalm-suppress InvalidArgument It's actually filtered internally */
-        return new MutableUnion($this->getAtomicTypes(), get_object_vars($this));
+        return new MutableUnion($this->types, $this->getNonDefaultProperties());
     }
 
     /**
