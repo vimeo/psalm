@@ -36,22 +36,22 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'string',
+        0 => 'null|string',
       ),
       'new' => 
       array (
-        0 => 'null|string',
+        0 => 'string',
       ),
     ),
     'eventhttprequest::geturi' => 
     array (
       'old' => 
       array (
-        0 => 'string',
+        0 => 'null|string',
       ),
       'new' => 
       array (
-        0 => 'null|string',
+        0 => 'string',
       ),
     ),
     'finfo_close' => 
