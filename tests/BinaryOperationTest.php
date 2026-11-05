@@ -741,6 +741,7 @@ final class BinaryOperationTest extends TestCase
                     '$infiniteNot===' => 'int',
                     '$not===' => '-6',
                 ],
+                'ignored_issues' => ['ImplicitFloatToIntCast'],
             ],
 
             'integerOperatorsGiveIntsWhateverTheOperandsAre' => [
@@ -774,6 +775,7 @@ final class BinaryOperationTest extends TestCase
                     '$shiftedBig===' => 'int',
                     '$orOfBig===' => 'int',
                 ],
+                'ignored_issues' => ['ImplicitFloatToIntCast'],
             ],
 
             'regularAddition' => [
