@@ -223,6 +223,7 @@ class Redis {
 
     public function hIncrByFloat(string $key, string $member, float $value): Redis|float|false {}
 
+    /** @return Redis|list<string>|false */
     public function hKeys(string $key): Redis|array|false {}
 
     public function hLen(string $key): Redis|int|false {}
@@ -250,6 +251,7 @@ class Redis {
     public function hStrLen(string $key, string $member): int {}
 
     /**
+     * @return Redis|list<mixed>|false
      * @psalm-flow Redis::$data[$key] -> return
      */
     public function hVals(string $key): Redis|array|false {}
@@ -272,7 +274,7 @@ class Redis {
 
     public function isConnected(): bool {}
 
-	/** @return false|array|Redis */
+    /** @return Redis|list<string>|false */
     public function keys(string $pattern) {}
 
     /**
@@ -1344,3 +1346,7 @@ class RedisCluster {
 
     public function zunionstore(string $dst, array $keys, ?array $weights = null, ?string $aggregate = null): RedisCluster|int|false {}
 }
+
+class RedisException extends RuntimeException {}
+
+class RedisClusterException extends RuntimeException {}
