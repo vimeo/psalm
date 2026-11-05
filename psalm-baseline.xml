@@ -610,7 +610,6 @@
       <code><![CDATA[$expr->getArgs()[1]]]></code>
       <code><![CDATA[$get_debug_type_expr->getArgs()[0]]]></code>
       <code><![CDATA[$get_debug_type_expr->getArgs()[0]]]></code>
-      <code><![CDATA[$getclass_expr->getArgs()[0]]]></code>
       <code><![CDATA[$gettype_expr->getArgs()[0]]]></code>
       <code><![CDATA[$gettype_expr->getArgs()[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
