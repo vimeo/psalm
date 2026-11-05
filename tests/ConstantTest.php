@@ -284,6 +284,7 @@ final class ConstantTest extends TestCase
                     '$fromIntermediate===' => 'int',
                     '$fromNotANumber===' => 'int',
                 ],
+                'ignored_issues' => ['ImplicitFloatToIntCast'],
             ],
 
             'constantInFunction' => [
