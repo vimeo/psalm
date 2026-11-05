@@ -301,6 +301,65 @@ final class MethodSignatureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'overrideDocumentingSomeParamsKeepsItsOwnType' => [
+                'code' => '<?php
+                    class Repository {
+                        /**
+                         * @param string|null $key
+                         * @param bool $strict
+                         */
+                        public function flag($key = null, $strict = false): bool {
+                            return $strict || $key !== null;
+                        }
+                    }
+
+                    final class CachedRepository extends Repository {
+                        /**
+                         * @param bool|int $strict
+                         */
+                        #[\Override]
+                        public function flag($key = null, $strict = false): bool {
+                            /** @psalm-check-type-exact $key = string|null */;
+                            /** @psalm-check-type-exact $strict = bool|int */;
+
+                            return false;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'overrideDocumentingSomeParamsInheritsTheOthersFromTheParent' => [
+                'code' => '<?php
+                    class Repository {
+                        /**
+                         * @param string|null $key
+                         * @param bool $default
+                         * @param bool $strict
+                         */
+                        public function flag($key = null, $default = false, $strict = false): bool {
+                            return $default || $strict || $key !== null;
+                        }
+                    }
+
+                    final class CachedRepository extends Repository {
+                        /**
+                         * @inheritDoc
+                         * @param bool $strict
+                         */
+                        #[\Override]
+                        public function flag($key = null, $default = false, $strict = false): bool {
+                            /** @psalm-check-type-exact $key = string|null */;
+                            /** @psalm-check-type-exact $default = bool */;
+                            /** @psalm-check-type-exact $strict = bool */;
+
+                            return false;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'overrideDateTimeDiffWithTheNativeParameterName' => [
                 'code' => '<?php
                     class Date extends DateTime {
