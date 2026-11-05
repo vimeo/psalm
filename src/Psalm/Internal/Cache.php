@@ -85,6 +85,8 @@ final class Cache
     private const TEMP_SUFFIX = '.tmp';
     private const DICTIONARY_SAMPLES = 14;
     private const DICTIONARY_SAMPLE_LENGTH = 8192;
+    /** The dictionary is built again when the records are this many times what it was built for */
+    private const DICTIONARY_REBUILD_FACTOR = 4;
 
     /** @psalm-suppress PropertyNotSetInConstructor intentional */
     private readonly string $dir;
@@ -103,6 +105,9 @@ final class Cache
 
     /** Reads the records of the consolidated data file, which a dictionary may compress */
     private Serializer $consolidated_serializer;
+
+    /** @var array{string, string, int}|null the dictionary, its xxh128 and the number of records it was made for */
+    private ?array $dictionary = null;
 
     /** @var resource */
     private mixed $lock;
@@ -158,12 +163,24 @@ final class Cache
             ? @file_get_contents($this->dir . self::CONSOLIDATED_INDEX)
             : false;
         if ($index !== false) {
-            /** @var array{string, array<array-key, array{string, int, int}>, string|null} $index */
+            /**
+             * @var array{
+             *     string,
+             *     array<array-key, array{string, int, int}>,
+             *     array{string, string, int}|null,
+             * } $index
+             */
             $index = $this->serializer->unserialize($index);
-            [$data_file, $this->consolidated, $dictionary] = $index;
+            [$data_file, $entries, $dictionary] = $index;
             $this->consolidated_path = $this->dir . $data_file;
-            if ($dictionary !== null && $this->serializer instanceof ZstdSerializer) {
-                $this->consolidated_serializer = $this->serializer->withDictionary($dictionary);
+            // Records compressed with a dictionary that is not the one they were made with are not readable:
+            // they are absent, until consolidate() replaces the data file
+            if ($dictionary === null || hash('xxh128', $dictionary[0]) === $dictionary[1]) {
+                $this->consolidated = $entries;
+                $this->dictionary = $dictionary;
+                if ($dictionary !== null && $this->serializer instanceof ZstdSerializer) {
+                    $this->consolidated_serializer = $this->serializer->withDictionary($dictionary[0]);
+                }
             }
         }
     }
@@ -200,14 +217,21 @@ final class Cache
             ? $this->consolidated_serializer
             : null;
         $loose = $this->looseRecordFiles();
-        $dictionary = null;
+        $dictionary = $this->dictionary;
         $consolidated_zstd = null;
+        // Whether the records of the previous data file are compressed again: they are, unless the dictionary stays
+        $recompress_previous = false;
         if ($zstd !== null && $previous_zstd !== null) {
             // Only the dictionary needs them all at once
             $loose = iterator_to_array($loose, false);
-            $previous_keys = array_map(strval(...), array_keys($this->consolidated));
-            $dictionary = $this->buildDictionary($zstd, $previous_zstd, $loose, $previous_keys);
-            $consolidated_zstd = $zstd->withDictionary($dictionary);
+            if ($dictionary === null
+                || count($loose) + count($this->consolidated) >= self::DICTIONARY_REBUILD_FACTOR * $dictionary[2]
+            ) {
+                $previous_keys = array_map(strval(...), array_keys($this->consolidated));
+                $dictionary = $this->buildDictionary($zstd, $previous_zstd, $loose, $previous_keys);
+                $recompress_previous = true;
+            }
+            $consolidated_zstd = $zstd->withDictionary($dictionary[0] ?? null);
         }
 
         foreach ($loose as $path) {
@@ -230,7 +254,7 @@ final class Cache
                 continue;
             }
 
-            if ($consolidated_zstd !== null && $previous_zstd !== null) {
+            if ($recompress_previous && $consolidated_zstd !== null && $previous_zstd !== null) {
                 $record = $this->readConsolidated($key, null);
                 if ($record !== null) {
                     [$header, $payload] = self::recompress($record, $previous_zstd, $consolidated_zstd);
@@ -263,6 +287,7 @@ final class Cache
             unlink($this->consolidated_path);
         }
         $this->consolidated = $entries;
+        $this->dictionary = $dictionary;
         $this->consolidated_path = $this->dir . $data_file;
         $this->consolidated_serializer = $consolidated_zstd ?? $this->serializer;
 
@@ -299,13 +324,14 @@ final class Cache
      *
      * @param list<string> $loose paths of the loose records
      * @param list<string> $previous keys of the records of the consolidated data file
+     * @return array{string, string, int}|null the dictionary, its xxh128 and the number of records it is made for
      */
     private function buildDictionary(
         ZstdSerializer $loose_serializer,
         ZstdSerializer $previous_serializer,
         array $loose,
         array $previous,
-    ): ?string {
+    ): ?array {
         $count = count($loose) + count($previous);
         $samples = min($count, self::DICTIONARY_SAMPLES);
         $dictionary = '';
@@ -323,7 +349,7 @@ final class Cache
             }
         }
 
-        return $dictionary === '' ? null : $dictionary;
+        return $dictionary === '' ? null : [$dictionary, hash('xxh128', $dictionary), $count];
     }
 
     /**
