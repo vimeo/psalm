@@ -51,7 +51,8 @@ final class GlobalAnalyzer
         Context $context,
         ?Context $global_context,
     ): void {
-        if (!$context->collect_initializations && !$global_context) {
+        // a file documenting its `$this` (`@var Foo $this`) is a template included from a method
+        if (!$context->collect_initializations && !$global_context && !isset($context->vars_in_scope['$this'])) {
             IssueBuffer::maybeAdd(
                 new InvalidGlobal(
                     'Cannot use global scope here (unless this file is included from a non-global scope)',
