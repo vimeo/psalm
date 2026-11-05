@@ -2716,6 +2716,45 @@ final class UnusedVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.6',
             ],
+            'assignmentInTheSkippableOperandOfAConditionIsUsedAfterTheIf' => [
+                'code' => '<?php
+                    function remember(bool $c): int {
+                        $max = 0;
+                        if ($c && ($max = rand())) {
+                            echo "positive";
+                        }
+
+                        return $max;
+                    }
+
+                    function inElseBranch(bool $c): int {
+                        $max = 0;
+                        if ($c && ($max = rand())) {
+                            echo "positive";
+                        } elseif (rand() > 5) {
+                            echo "very negative";
+                        } else {
+                            echo "negative";
+                        }
+
+                        return $max;
+                    }
+
+                    /** @param array<string, int> $tokens */
+                    function inALoopStatement(array $tokens): ?array {
+                        $match = $max = 0;
+                        foreach ($tokens as $key => $token) {
+                            $len = rand(0, $token);
+                            ($len > $max)
+                            && ($max = $len)
+                            && ($match = $key);
+                        }
+
+                        return $match !== 0 ? [$match, $max] : null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+            ],
         ];
     }
 
@@ -2726,6 +2765,28 @@ final class UnusedVariableTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'assignmentInTheSkippableOperandOfAConditionIsUnusedWithoutLaterRead' => [
+                'code' => '<?php
+                    function f(bool $c): void {
+                        if ($c && ($max = rand())) {
+                            echo "positive";
+                        }
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:36',
+            ],
+            'assignmentInTheSkippableOperandOfAConditionIsOverwrittenAfterTheIf' => [
+                'code' => '<?php
+                    function f(bool $c): int {
+                        if ($c && ($max = rand())) {
+                            echo "positive";
+                        }
+
+                        $max = 5;
+
+                        return $max;
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:36',
+            ],
             'simpleUnusedVariable' => [
                 'code' => '<?php
                     $a = 5;
