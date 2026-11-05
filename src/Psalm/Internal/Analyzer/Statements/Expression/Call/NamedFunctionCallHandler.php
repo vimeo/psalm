@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\PossibleRawObjectIteration;
@@ -589,13 +590,18 @@ final class NamedFunctionCallHandler
         }
         if ($first_arg && $function_id === 'strtolower') {
             $first_arg_type = $statements_analyzer->node_data->getType($first_arg->value);
+            $comparison_result = new TypeComparisonResult();
 
             if ($first_arg_type
                 && UnionTypeComparator::isContainedBy(
                     $codebase,
                     $first_arg_type,
                     new Union([new TLowercaseString()]),
+                    false,
+                    false,
+                    $comparison_result,
                 )
+                && !$comparison_result->to_string_cast
             ) {
                 if ($first_arg_type->from_docblock) {
                     IssueBuffer::maybeAdd(
