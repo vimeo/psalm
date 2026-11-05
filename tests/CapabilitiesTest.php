@@ -8,9 +8,16 @@ use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_filter;
+use function array_map;
+use function array_values;
+use function sort;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -355,7 +362,7 @@ final class CapabilitiesTest extends TestCase
                         return $sum;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingPureAnnotation'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'splWrappingIteratorsRequireWhatTheirInnerIteratorsDo' => [
@@ -2773,6 +2780,79 @@ final class CapabilitiesTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'reflectionClassSubclassReadsItsOwnProperties' => [
+                'code' => '<?php
+                    /** @extends ReflectionClass<object> */
+                    final class MyClassReflection extends ReflectionClass {
+                        /** @var class-string */
+                        private string $cachedName = stdClass::class;
+
+                        /**
+                         * @return class-string
+                         * @psalm-capabilities read-props
+                         */
+                        #[Override]
+                        public function getName(): string {
+                            return $this->cachedName;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'reflectionSubclassesOfFunctionLikesAndPropertiesReadTheirOwnProperties' => [
+                'code' => '<?php
+                    final class MyMethodReflection extends ReflectionMethod {
+                        private bool $cachedIsStatic = false;
+
+                        /** @psalm-capabilities read-props */
+                        #[Override]
+                        public function isStatic(): bool {
+                            return $this->cachedIsStatic;
+                        }
+                    }
+
+                    final class MyFunctionReflection extends ReflectionFunction {
+                        private bool $cachedIsGenerator = false;
+
+                        /** @psalm-capabilities read-props */
+                        #[Override]
+                        public function isGenerator(): bool {
+                            return $this->cachedIsGenerator;
+                        }
+                    }
+
+                    final class MyPropertyReflection extends ReflectionProperty {
+                        private bool $cachedIsPublic = false;
+
+                        /** @psalm-capabilities read-props */
+                        #[Override]
+                        public function isPublic(): bool {
+                            return $this->cachedIsPublic;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'pureFunctionsMayCallReflectionGetters' => [
+                'code' => '<?php
+                    /**
+                     * @param ReflectionClass<object> $class
+                     * @psalm-pure
+                     */
+                    function className(ReflectionClass $class): string {
+                        return $class->getName();
+                    }
+
+                    /** @psalm-pure */
+                    function isStaticMethod(ReflectionMethod $method): bool {
+                        return $method->isStatic();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
         ];
     }
 
@@ -3012,6 +3092,26 @@ final class CapabilitiesTest extends TestCase
                         return $storage->serialize();
                     }',
                 'error_message' => 'ImpureMethodCall',
+            ],
+            'reflectionSubclassesMayNotWriteWhenOverridingGetters' => [
+                'code' => '<?php
+                    /** @extends ReflectionClass<object> */
+                    final class CountingReflection extends ReflectionClass {
+                        private int $calls = 0;
+
+                        /**
+                         * @return class-string
+                         * @psalm-capabilities read-props|write-this-props
+                         */
+                        #[Override]
+                        public function getName(): string {
+                            ++$this->calls;
+                            return parent::getName();
+                        }
+                    }',
+                'error_message' => 'ReflectionClass::getName is read-props, but CountingReflection::getName additionally requires write-this-props',
+                'error_levels' => [],
+                'php_version' => '8.3',
             ],
             'splObjectStorageSubclassesKeepItsContract' => [
                 'code' => '<?php
@@ -5952,6 +6052,90 @@ final class CapabilitiesTest extends TestCase
         ];
     }
 
+    public function testEachPropertyWriteIsReportedOnce(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            final class C {
+                public int $n = 0;
+                public ?C $o = null;
+                public static ?C $g = null;
+
+                /** @psalm-capabilities read-props */
+                public function own(): void { $this->n = 1; }
+
+                /** @psalm-capabilities read-props */
+                public function unsetOwn(): void { unset($this->o); }
+            }
+
+            /** @psalm-capabilities read-props */
+            function assign(C $c): void { $c->n = 1; }
+            /** @psalm-capabilities read-props */
+            function increment(C $c): void { $c->n++; }
+            /** @psalm-capabilities read-props */
+            function compound(C $c): void { $c->n += 1; }
+            /** @psalm-capabilities read-props */
+            function coalesce(C $c): void { $c->n ??= 1; }
+            /** @psalm-capabilities read-props */
+            function destructure(C $c): void { [$c->n] = [1]; }
+            /** @psalm-capabilities read-props */
+            function nested(C $c): void { if ($c->o) { $c->o->n = 1; } }
+            /** @psalm-capabilities read-props */
+            function union(C|stdClass $c): void { $c->n = 1; }
+            /** @psalm-capabilities read-props */
+            function remove(C $c): void { unset($c->o); }
+            /** @psalm-capabilities read-props|read-globals */
+            function globalState(): void { if (C::$g) { C::$g->n = 1; } }
+            /** @psalm-capabilities read-props|read-globals */
+            function removeGlobal(): void { if (C::$g) { unset(C::$g->o); } }
+            /** @psalm-capabilities read-props */
+            function dynamic(C $c, string $p): void { $c->$p = 1; }
+            /** @psalm-capabilities read-props */
+            function untyped(mixed $c): void { $c->n = 1; }
+            /** @psalm-capabilities read-props */
+            function make(): C { return new C(); }
+            /** @psalm-capabilities read-props */
+            function onCallResult(): void { make()->n = 1; }
+            /** @psalm-capabilities read-props */
+            function fresh(): void { $c = new C(); $c->n = 1; unset($c->o); }
+        ');
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = array_map(
+            static fn(IssueData $issue): array => [$issue->line_from, $issue->message],
+            array_values(array_filter(
+                IssueBuffer::getIssuesDataForFile($file_path),
+                static fn(IssueData $issue): bool => $issue->type === 'ImpurePropertyAssignment',
+            )),
+        );
+        sort($issues);
+
+        self::assertSame(
+            [
+                [8, 'The context is read-props but property assignment to C::$n requires write-this-props'],
+                [11, 'The context is read-props but unsetting a property on a mutable object requires write-this-props'],
+                [15, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [17, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [19, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [21, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [23, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [25, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [27, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [29, 'The context is read-props but property assignment to C::$o requires write-props'],
+                [31, 'The context is read-props|read-globals but property assignment to C::$n'
+                    . ' on an object reached from global state requires write-props|write-globals'],
+                [33, 'The context is read-props|read-globals but property assignment to C::$o'
+                    . ' on an object reached from global state requires write-props|write-globals'],
+                [35, 'The context is read-props but property assignment requires write-props'],
+                [37, 'The context is read-props but property assignment requires write-props'],
+                [41, 'The context is read-props but property assignment requires write-props'],
+            ],
+            $issues,
+        );
+    }
+
     public function testPureNewAndStaticCallsKeepPropertyRefinements(): void
     {
         Config::getInstance()->remember_property_assignments_after_call = false;
@@ -5992,6 +6176,33 @@ final class CapabilitiesTest extends TestCase
                         return 0;
                     }
                     touchGlobals();
+                    return $a->x;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPureMagicStaticCallKeepsPropertyRefinements(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class A { public ?int $x = null; }
+
+                /** @psalm-no-seal-methods */
+                final class Magic {
+                    /** @psalm-pure */
+                    public static function __callStatic(string $name, array $args): int { return 1; }
+                }
+
+                function keep(A $a): int {
+                    if ($a->x === null) {
+                        return 0;
+                    }
+                    Magic::noop();
                     return $a->x;
                 }',
         );
