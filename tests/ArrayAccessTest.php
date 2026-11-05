@@ -550,6 +550,26 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'destructureNullableShapeByKey' => [
+                'code' => '<?php
+                    /** @return array{x: int}|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    ["x" => $a] = f();',
+                'assertions' => ['$a' => 'int|null'],
+            ],
+            'destructureNullableShapeByKeyKeepsTheTypesOfTheOtherShapes' => [
+                'code' => '<?php
+                    /** @return array{x: int}|array{x: string}|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    ["x" => $a] = f();',
+                'assertions' => ['$a' => 'int|null|string'],
+            ],
             'coalesceOnOptionalKeysWithComputedOffset' => [
                 'code' => '<?php
                     /** @return array{a?: int, b?: int} */
@@ -1523,6 +1543,26 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'destructureNullableShapeAndGenericArrayByKey' => [
+                'code' => '<?php
+                    /** @return array{x: int}|array<string, string>|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    ["x" => $a] = f();',
+                'error_message' => 'PossiblyNullArrayAccess',
+            ],
+            'destructureNullableShapeByAMissingKey' => [
+                'code' => '<?php
+                    /** @return array{x: int}|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    ["y" => $a] = f();',
+                'error_message' => 'PossiblyNullArrayAccess',
+            ],
             'missingOffsetPassedByReferenceToANonNullableParam' => [
                 'code' => '<?php
                     /** @param list<int> $dst */

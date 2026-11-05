@@ -1641,8 +1641,18 @@ final class AssignmentAnalyzer
             $new_assign_type = null;
             $assigned = false;
             $has_null = false;
+            $has_shape_with_key = false;
 
             foreach ($assign_value_type->getAtomicTypes() as $assign_value_atomic_type) {
+                // like for the items of a list, a null value is no issue when a shape has the key
+                if ($assign_value_atomic_type instanceof TKeyedArray
+                    && $assign_var_item->key
+                    && $offset_value !== null
+                    && isset($assign_value_atomic_type->properties[$offset_value])
+                ) {
+                    $has_shape_with_key = true;
+                }
+
                 if ($assign_value_atomic_type instanceof TKeyedArray
                     && !$assign_var_item->key
                 ) {
@@ -1849,7 +1859,7 @@ final class AssignmentAnalyzer
 
 
             if (!$assigned) {
-                if ($has_null) {
+                if ($has_null && !$has_shape_with_key) {
                     IssueBuffer::maybeAdd(
                         new PossiblyNullArrayAccess(
                             'Cannot access array value on null variable ' . $extended_var_id,
