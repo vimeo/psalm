@@ -1520,6 +1520,18 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'intMaskOfAQualifiedConstantDoesNotFallBackToTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<\\Foo\\E_ERROR> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
             'intMaskOfAnUndefinedConstantFromANamespace' => [
                 'code' => '<?php
                     namespace Foo;

@@ -1166,7 +1166,7 @@ final class TypeParser
         if ($generic_type_value === 'int-mask') {
             $atomic_types = [];
 
-            foreach ($generic_params as $generic_param) {
+            foreach ($generic_params as $generic_param_offset => $generic_param) {
                 if (!$generic_param->isSingle()) {
                     throw new TypeParseTreeException(
                         'int-mask types must all be non-union',
@@ -1180,8 +1180,13 @@ final class TypeParser
                 if ($atomic_type instanceof TNamedObject) {
                     $constant_name = $atomic_type->value;
 
-                    // an unqualified constant of a namespace falls back to the global one
-                    if (!defined($constant_name) && ($separator_position = strrpos($constant_name, '\\')) !== false) {
+                    $constant_tree = $parse_tree->children[$generic_param_offset] ?? null;
+
+                    // an unqualified constant of a namespace falls back to the global one, a qualified one doesn't
+                    if (!defined($constant_name)
+                        && !($constant_tree instanceof Value && str_starts_with($constant_tree->text ?? '', '\\'))
+                        && ($separator_position = strrpos($constant_name, '\\')) !== false
+                    ) {
                         $constant_name = substr($constant_name, $separator_position + 1);
                     }
 
