@@ -527,7 +527,7 @@ final class MethodCallPurityAnalyzer
         if ($method_storage->static_property_mutations !== null) {
             $context->resetMutatedStaticProperties(
                 $method_storage->static_property_mutations,
-                [$method_id->fq_class_name, $codebase->methods->getDeclaringMethodId($method_id)->fq_class_name ?? ''],
+                [$method_id->fq_class_name, $codebase->methods->getDeclaringMethodId($method_id)?->fq_class_name ?? ''],
                 $codebase,
             );
         }
