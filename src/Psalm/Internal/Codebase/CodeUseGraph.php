@@ -72,6 +72,13 @@ final class CodeUseGraph
     public const EDGE_OVERRIDE = 'override';
 
     /**
+     * From a class to a magic method PHP calls implicitly, without a call
+     * Psalm can see (`__destruct`, `__serialize`, ...): the method is used
+     * once its class is.
+     */
+    public const EDGE_IMPLICIT_CALL = 'implicit-call';
+
+    /**
      * Edge types derived from the class storages rather than from the analysed
      * code: recomputed on every run instead of being cached.
      */
@@ -79,6 +86,7 @@ final class CodeUseGraph
         self::EDGE_PUBLIC_API => true,
         self::EDGE_OVERRIDE => true,
         self::EDGE_METHOD => true,
+        self::EDGE_IMPLICIT_CALL => true,
     ];
 
     private const KIND_CLASS = 'class';
@@ -471,7 +479,10 @@ final class CodeUseGraph
 
         if ($file_path !== null && !isset($this->node_files[$source_node])) {
             $this->node_files[$source_node] = $file_path;
-            $this->file_nodes = null;
+
+            if ($this->file_nodes !== null) {
+                $this->file_nodes[$file_path][$source_node] = true;
+            }
         }
 
         if ($location !== null && $this->collect_locations) {
@@ -506,7 +517,10 @@ final class CodeUseGraph
         foreach ($other->node_files as $node_id => $file_path) {
             if (!isset($this->node_files[$node_id])) {
                 $this->node_files[$node_id] = $file_path;
-                $this->file_nodes = null;
+
+                if ($this->file_nodes !== null) {
+                    $this->file_nodes[$file_path][$node_id] = true;
+                }
             }
         }
 
@@ -891,6 +905,16 @@ final class CodeUseGraph
             }
         }
 
+        if ($this->file_nodes !== null && isset($this->node_files[$node_id])) {
+            $node_file = $this->node_files[$node_id];
+
+            unset($this->file_nodes[$node_file][$node_id]);
+
+            if (!($this->file_nodes[$node_file] ?? [])) {
+                unset($this->file_nodes[$node_file]);
+            }
+        }
+
         unset(
             $this->forward_edges[$node_id],
             $this->node_files[$node_id],
@@ -898,7 +922,6 @@ final class CodeUseGraph
         );
         $this->mutation_levels = null;
         $this->used = null;
-        $this->file_nodes = null;
         $this->class_referencing_nodes = null;
     }
 
@@ -1008,21 +1031,37 @@ final class CodeUseGraph
      */
     public function loadCacheData(array $data): void
     {
-        foreach ($data['edges'] as $source_node => $targets) {
-            foreach ($targets as $target_node => $type) {
-                $this->addEdge($source_node, $target_node, $type);
+        if ($this->forward_edges === []) {
+            // cached edges are already deduplicated and never self-referencing
+            $this->forward_edges = $data['edges'];
+
+            foreach ($data['edges'] as $source_node => $targets) {
+                foreach ($targets as $target_node => $type) {
+                    $this->backward_edges[$target_node][$source_node] = $type;
+                }
+            }
+
+            $this->used = null;
+            $this->class_referencing_nodes = null;
+        } else {
+            foreach ($data['edges'] as $source_node => $targets) {
+                foreach ($targets as $target_node => $type) {
+                    $this->addEdge($source_node, $target_node, $type);
+                }
             }
         }
 
         foreach ($data['node_files'] as $node_id => $file_path) {
             if (!isset($this->node_files[$node_id])) {
                 $this->node_files[$node_id] = $file_path;
+
+                if ($this->file_nodes !== null) {
+                    $this->file_nodes[$file_path][$node_id] = true;
+                }
             }
         }
 
         $this->mutation_info += $data['mutation_info'] ?? [];
         $this->mutation_levels = null;
-
-        $this->file_nodes = null;
     }
 }
