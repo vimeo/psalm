@@ -1008,6 +1008,37 @@ final class IssetTest extends TestCase
                         }
                     }',
             ],
+            'issetOnVariableAssignedInOneBranchKeepsItsType' => [
+                'code' => '<?php
+                    function foo(): ?DateTime {
+                        if (rand(0, 1)) {
+                            $d = new DateTime();
+                        }
+
+                        return isset($d) ? $d : null;
+                    }',
+            ],
+            'nullCoalesceOnVariableAssignedInOneBranchKeepsItsType' => [
+                'code' => '<?php
+                    function foo(): DateTime {
+                        if (rand(0, 1)) {
+                            $d = new DateTime();
+                        }
+
+                        return $d ?? new DateTime();
+                    }',
+            ],
+            'nullCoalesceAssignOnVariableAssignedInOneBranchKeepsItsType' => [
+                'code' => '<?php
+                    function foo(): DateTime {
+                        if (rand(0, 1)) {
+                            $d = new DateTime();
+                        }
+                        $d ??= new DateTime();
+
+                        return $d;
+                    }',
+            ],
             'assertOnPossiblyDefined' => [
                 'code' => '<?php
                     function crashes(): void {
@@ -1016,7 +1047,7 @@ final class IssetTest extends TestCase
                         }
                         /**
                          * @psalm-suppress PossiblyUndefinedVariable
-                         * @psalm-suppress MixedArgument
+                         * @psalm-suppress InvalidScalarArgument
                          */
                         assert($dt);
                     }',
