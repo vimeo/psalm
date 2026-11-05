@@ -217,6 +217,8 @@ When `true`, disables wildcard suppression of all issues with `@psalm-suppress a
 
 #### memoizeMethodCallResults
 
+Note: "memoize" is not a typo of "memo*r*ize", see [Wikipedia](https://en.wikipedia.org/wiki/Memoization)
+
 ```xml
 <psalm
   memoizeMethodCallResults="[bool]"
