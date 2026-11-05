@@ -108,9 +108,23 @@ final class FormulaGenerator
                     self::getAssignedVarIds($conditional->left, $this_class_name),
                 );
 
+                $right_possibilities = [];
+
+                foreach ($right_clauses as $right_clause) {
+                    foreach ($right_clause->possibilities as $var => $assertions) {
+                        foreach ($assertions as $assertion_key => $_) {
+                            $right_possibilities[$var][$assertion_key] = true;
+                        }
+                    }
+                }
+
                 $left_clauses = array_values(array_filter(
                     $left_clauses,
-                    static fn(Clause $clause): bool => !self::mentionsAnyVar($clause, $left_tested_var_ids),
+                    static fn(Clause $clause): bool => !self::testsAnyVarTheRightSideDoesNot(
+                        $clause,
+                        $left_tested_var_ids,
+                        $right_possibilities,
+                    ),
                 ));
 
                 if (!$left_clauses) {
@@ -505,13 +519,26 @@ final class FormulaGenerator
     }
 
     /**
+     * Whether the clause tests a variable (or an item of it) in a way the right side, which assigns it, doesn't
+     * say again: only what both sides say holds of the value the right side assigns
+     *
      * @param array<string, true> $var_ids
+     * @param array<string, array<string, true>> $right_possibilities
      * @psalm-pure
      */
-    private static function mentionsAnyVar(Clause $clause, array $var_ids): bool
-    {
-        foreach ($clause->possibilities as $var => $_) {
-            if (isset($var_ids[$var]) || isset($var_ids[substr($var, 0, strcspn($var, '[-'))])) {
+    private static function testsAnyVarTheRightSideDoesNot(
+        Clause $clause,
+        array $var_ids,
+        array $right_possibilities,
+    ): bool {
+        foreach ($clause->possibilities as $var => $assertions) {
+            if (!isset($var_ids[$var]) && !isset($var_ids[substr($var, 0, strcspn($var, '[-'))])) {
+                continue;
+            }
+
+            if (!isset($var_ids[$var])
+                || array_diff_key($assertions, $right_possibilities[$var] ?? []) !== []
+            ) {
                 return true;
             }
         }
