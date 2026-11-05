@@ -27,7 +27,7 @@ description: Use when changing or debugging Psalm's taint analysis (TaintFlowGra
   node whose edge carries `removed_taints`.
 - Providers: `tests/TaintTest.php` (`providerValidCodeParse`/`providerInvalidCodeParse`,
   `IGNORE`, dedicated test methods); they run sharded through
-  `tests/Taint/TaintCases{1..4}Test.php` + `TaintCasesTestCase.php`, each case in both
+  `tests/Taint/TaintCases{1..8}Test.php` + `TaintCasesTestCase.php`, each case in both
   taint-only mode and tracking unused variables.
 
 ## Invariants: don't break these
@@ -156,6 +156,13 @@ description: Use when changing or debugging Psalm's taint analysis (TaintFlowGra
   shared state (17M states / 41 GB), and gating `leaveCalls()` behind caller counts.
   Widening must also forget open assignments, or the first widened flow's assignments
   take the merged state (false negative).
+- A blowup in `reportFlow()` / `reported_pointers` with few states is sink replay, not
+  the walk: count `addSinkThroughCaller()` calls per entry. An entry's sinks go through
+  one caller per source and taint (`getSinkCallerTaints()`). Changes there must keep
+  traces too: diff full `--monochrome` output against master on a fuzz corpus. Ruled out
+  for #12469: reporting sinks past a non-specialized helper's exit like a convergence
+  (filter budget, caller rootedness and trace provenance each broke), and leaving the
+  calls by lexical scope (new false positives).
 - Instrumentation patches kept in `/tmp` don't survive reboots; rebuild them.
 - After fixing a hang, expect self-analysis errors that accumulated unseen while Shepherd
   was red.

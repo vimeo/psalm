@@ -21,54 +21,54 @@ class ReflectionClass implements Reflector {
 
     /**
      * @return class-string<T>
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getName(): string {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isInternal(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isUserDefined(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isInstantiable(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isCloneable(): bool {}
 
     /**
      * @return non-empty-string|false
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getFileName() {}
 
     /**
      * @return positive-int|false
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getStartLine() {}
 
     /**
      * @return positive-int|false
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getEndLine() {}
 
     /**
      * @return non-empty-string|false
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getDocComment() {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function getConstructor(): ?ReflectionMethod {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function hasMethod(string $name): bool {}
 
     /**
-     * @psalm-pure
+     * @psalm-capabilities read-props
      * @throws ReflectionException
      */
     public function getMethod(string $name): ReflectionMethod {}
@@ -76,18 +76,18 @@ class ReflectionClass implements Reflector {
     /**
      * @param int-mask-of<ReflectionMethod::IS_*>|null $filter
      * @return list<ReflectionMethod>
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getMethods(?int $filter = null): array {}
 
     /**
-     * @psalm-pure
+     * @psalm-capabilities read-props
      * @throws ReflectionException
      */
     public function hasProperty(string $name): bool {}
 
     /**
-     * @psalm-pure
+     * @psalm-capabilities read-props
      * @throws ReflectionException
      */
     public function getProperty(string $name): ReflectionProperty {}
@@ -96,19 +96,19 @@ class ReflectionClass implements Reflector {
      * @param int-mask-of<ReflectionProperty::IS_*>|null $filter
      * @return list<ReflectionProperty>
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getProperties(?int $filter = null): array {}
 
     /**
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function hasConstant(string $name): bool {}
 
     /**
      * @return mixed
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      * @throws ReflectionException
      */
     public function getConstant(string $name) {}
@@ -116,7 +116,7 @@ class ReflectionClass implements Reflector {
     /**
      * @return ReflectionClassConstant|false
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      * @throws ReflectionException
      */
     public function getReflectionConstant(string $name) {}
@@ -125,7 +125,7 @@ class ReflectionClass implements Reflector {
      * @param int-mask-of<ReflectionClassConstant::IS_*>|null $filter
      * @return array<non-empty-string, mixed>
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getConstants(?int $filter = null): array {}
 
@@ -133,51 +133,51 @@ class ReflectionClass implements Reflector {
      * @param int-mask-of<ReflectionClassConstant::IS_*>|null $filter
      * @return list<ReflectionClassConstant>
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getReflectionConstants(?int $filter = null): array {}
 
     /**
      * @return array<interface-string, self>
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getInterfaces(): array {}
 
     /**
      * @return list<interface-string>
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getInterfaceNames(): array {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isInterface(): bool {}
 
     /**
      * @return array<trait-string, self>
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getTraits(): array {}
 
     /**
      * @return array<non-empty-string, non-empty-string>
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getTraitAliases(): array {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isTrait(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isAbstract(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isFinal(): bool {}
 
     /**
      * @return int-mask-of<ReflectionClass::IS_*>
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getModifiers(): int {}
 
@@ -185,7 +185,7 @@ class ReflectionClass implements Reflector {
      * @template J as object
      * @param J $object
      * @psalm-assert-if-true T&J $object
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function isInstance(object $object): bool {}
 
@@ -209,7 +209,7 @@ class ReflectionClass implements Reflector {
     public function newInstanceWithoutConstructor(): object {}
 
     /**
-     * @psalm-pure
+     * @psalm-capabilities read-props
      *
      * @return ReflectionClass|false
      */
@@ -219,7 +219,7 @@ class ReflectionClass implements Reflector {
      * @template J as object
      * @param self<J>|class-string<J> $class
      * @psalm-assert-if-true self<T&J> $this
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function isSubclassOf($class): bool {}
 
@@ -229,50 +229,50 @@ class ReflectionClass implements Reflector {
     /**
      * @return array<non-empty-string, mixed>
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getDefaultProperties(): array {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isIterateable(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isIterable(): bool {}
 
     /**
      * @template J as object
      * @param self<J>|interface-string<J> $interface
      * @psalm-assert-if-true self<T&J> $this
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function implementsInterface($interface): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function getExtension(): ?ReflectionExtension {}
 
     /**
      * @return non-empty-string|false
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getExtensionName() {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function inNamespace(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function getNamespaceName(): string {}
 
     /**
      * @return non-empty-string
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getShortName(): string {}
 
     /**
      * @return list<trait-string>
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getTraitNames(): array {}
 
@@ -281,135 +281,135 @@ class ReflectionClass implements Reflector {
      * @template TClass as object
      * @param class-string<TClass>|null $name
      * @return ($name is null ? list<ReflectionAttribute<object>> : list<ReflectionAttribute<TClass>>)
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getAttributes(?string $name = null, int $flags = 0): array {}
 }
 
 abstract class ReflectionFunctionAbstract implements Reflector
 {
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function inNamespace(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isClosure(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isDeprecated(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isInternal(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isUserDefined(): bool {}
 
     public function getClosureThis(): ?object {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function getClosureScopeClass(): ?ReflectionClass {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function getClosureCalledClass(): ?ReflectionClass {}
 
     /**
      * @return non-empty-string|false
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getDocComment() {}
 
     /**
      * @return positive-int|false
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getStartLine() {}
 
     /**
      * @return positive-int|false
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getEndLine() {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function getExtension(): ?ReflectionExtension {}
 
     /**
      * @return non-empty-string|false
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getExtensionName() {}
 
     /**
      * @return non-empty-string|false
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getFileName() {}
 
     /**
      * @return non-empty-string
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getName(): string {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function getNamespaceName(): string {}
 
     /**
      * @return positive-int|0
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getNumberOfParameters(): int {}
 
     /**
      * @return positive-int|0
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getNumberOfRequiredParameters(): int {}
 
     /**
      * @return list<ReflectionParameter>
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getParameters(): array {}
 
     /**
      * @psalm-assert-if-true ReflectionType $this->getReturnType()
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function hasReturnType(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function getReturnType(): ?ReflectionType {}
 
     /**
      * @return non-empty-string
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getShortName(): string {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function returnsReference(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isGenerator(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isVariadic(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isDisabled(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function getClosure(): Closure {}
 
     /**
@@ -433,7 +433,7 @@ class ReflectionFunction extends ReflectionFunctionAbstract
     /**
      * @return non-empty-string
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function __toString(): string {}
 }
@@ -455,7 +455,7 @@ class ReflectionProperty implements Reflector
     /**
      * @return non-empty-string
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getName(): string {}
 
@@ -470,69 +470,69 @@ class ReflectionProperty implements Reflector
     /**
      * @since 7.4
      * @psalm-assert-if-true ReflectionType $this->getType()
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function hasType() : bool {}
 
     /**
      * @since 7.4
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getType() : ?ReflectionType {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isPublic(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isPrivate(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isProtected(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isStatic(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isDefault(): bool {}
 
     /**
      * @return int-mask-of<self::IS_*>
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getModifiers(): int {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function getDeclaringClass(): ReflectionClass {}
 
     /**
      * @return non-empty-string|false
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getDocComment() {}
 
     /**
      * @since 8.0
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function hasDefaultValue(): bool {}
 
     /**
      * @return mixed
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getDefaultValue() {}
 
     /**
      * @since 8.0
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function isPromoted(): bool {}
 
     /**
      * @since 8.1
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function isReadOnly(): bool {}
 }
@@ -551,25 +551,25 @@ class ReflectionMethod extends ReflectionFunctionAbstract
      */
     public $class;
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isStatic(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isConstructor(): bool {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function isDestructor(): bool {}
 
     /**
      * @return int-mask-of<ReflectionMethod::IS_*>
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getModifiers(): int {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function getDeclaringClass(): ReflectionClass {}
 
-    /** @psalm-pure */
+    /** @psalm-capabilities read-props */
     public function getPrototype(): ReflectionMethod {}
 }
 

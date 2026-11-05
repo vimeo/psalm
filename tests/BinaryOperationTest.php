@@ -8,8 +8,12 @@ use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -357,6 +361,269 @@ final class BinaryOperationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testConcatenationWithIgnoredNullOrFalseInStrictMode(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @return int|string|null
+                 * @psalm-ignore-nullable-return
+                 */
+                function nullableUnion() {
+                    return rand(0, 1) ? 80 : (rand(0, 1) ? "http" : null);
+                }
+
+                /**
+                 * @return int|string|false
+                 * @psalm-ignore-falsable-return
+                 */
+                function falsableUnion() {
+                    return rand(0, 1) ? 80 : (rand(0, 1) ? "http" : false);
+                }
+
+                /**
+                 * @return int|null
+                 * @psalm-ignore-nullable-return
+                 */
+                function nullableInt() {
+                    return rand(0, 1) ? 80 : null;
+                }
+
+                echo "a: " . nullableUnion();
+                echo nullableUnion() . " is a";
+                echo "b: " . falsableUnion();
+                echo falsableUnion() . " is b";
+                echo "c: " . nullableInt();',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+        $this->addToAssertionCount(1);
+    }
+
+    public function testConcatenationWithNullOrFalseOnlyReportsNullAndFalseOperand(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->testConfig->strict_binary_operands = true;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @param int|string|null $b
+                 * @param int|false $c
+                 * @param int|string|false $d
+                 */
+                function test(?int $a, $b, $c, $d): void {
+                    echo "a: " . $a;
+                    echo "b: " . $b;
+                    echo "c: " . $c;
+                    echo "d: " . $d;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                [8, 'PossiblyNullOperand'],
+                [9, 'PossiblyNullOperand'],
+                [10, 'PossiblyFalseOperand'],
+                [11, 'PossiblyFalseOperand'],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->type],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    public function testConcatenationWithIgnoredNullableFloatInStrictMode(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @return float|null
+                 * @psalm-ignore-nullable-return
+                 */
+                function ratio() {
+                    return rand(0, 1) ? 0.5 : null;
+                }
+
+                echo "ratio: " . ratio();',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage(
+            'InvalidOperand - somefile.php:10:34 - Cannot concatenate with a float|null',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testNullableLeftOperandOfSmallerThan(): void
+    {
+        Config::getInstance()->strict_nullable_comparison = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(?int $i): bool {
+                    return $i < 10;
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyNullOperand - somefile.php:3:28 - Left operand cannot be nullable, got int|null');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testNullableRightOperandOfGreaterThan(): void
+    {
+        Config::getInstance()->strict_nullable_comparison = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(?int $i): bool {
+                    return 10 > $i;
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyNullOperand - somefile.php:3:33 - Right operand cannot be nullable, got int|null');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testNullableOperandOfSmallerOrEqual(): void
+    {
+        Config::getInstance()->strict_nullable_comparison = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(?int $i): bool {
+                    return $i <= 10;
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyNullOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testNullableOperandOfGreaterOrEqual(): void
+    {
+        Config::getInstance()->strict_nullable_comparison = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(?int $i): bool {
+                    return $i >= 10;
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyNullOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testNullOperandOfComparison(): void
+    {
+        Config::getInstance()->strict_nullable_comparison = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(): bool {
+                    return null < 10;
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullOperand - somefile.php:3:28 - Left operand cannot be null');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testNullRightOperandOfComparison(): void
+    {
+        Config::getInstance()->strict_nullable_comparison = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(): bool {
+                    return 10 < null;
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullOperand - somefile.php:3:33 - Right operand cannot be null');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testNullableComparisonIsAllowedByDefault(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(?int $i): bool {
+                    return $i < 10 || 20 <= $i;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+        $this->addToAssertionCount(1);
+    }
+
+    public function testNarrowedComparisonInStrictNullableMode(): void
+    {
+        Config::getInstance()->strict_nullable_comparison = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(?int $i, int $j): bool {
+                    if ($i === null) {
+                        return false;
+                    }
+                    return $i < 10 && $j >= 5 && $i == null;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+        $this->addToAssertionCount(1);
+    }
+
+    public function testNullEqualityIsAllowedInStrictNullableMode(): void
+    {
+        Config::getInstance()->strict_nullable_comparison = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(?int $i, ?int $j): bool {
+                    return $i == $j || $i === null || $i != null || $i !== $j;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+        $this->addToAssertionCount(1);
+    }
+
     public function testImplicitStringConcatenation(): void
     {
         $config = Config::getInstance();
@@ -388,55 +655,6 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'floatModuloWithFractionalOperand' => [
-                'code' => '<?php
-                    $a = 25.5 % 2.5;',
-                'assertions' => [
-                    '$a===' => 'int',
-                ],
-            ],
-            'floatBitwiseWithFractionalOperand' => [
-                'code' => '<?php
-                    $a = 1.5 | 1;
-                    $b = 6 & 3.5;
-                    $c = 5 ^ 0.5;
-                    $d = 3.5 << 1;
-                    $e = 3 >> 1.5;',
-                'assertions' => [
-                    '$a===' => 'int',
-                    '$b===' => 'int',
-                    '$c===' => 'int',
-                    '$d===' => 'int',
-                    '$e===' => 'int',
-                ],
-            ],
-            'floatOperandsOfIntOnlyOperationsGiveInt' => [
-                'code' => '<?php
-                    /**
-                     * @return list{int, int, int, int, int, int}
-                     */
-                    function f(float $f, int $i): array {
-                        return [$f | $i, $i & $f, $f ^ $f, $f << $i, $i >> $f, $f % $i];
-                    }',
-            ],
-            'floatModuloByFractionalZero' => [
-                'code' => '<?php
-                    $a = 5 % 0.5;',
-                'assertions' => [
-                    '$a===' => 'int',
-                ],
-            ],
-            'floatOperandOutsideIntRange' => [
-                'code' => '<?php
-                    $a = 1e30 & 1;
-                    $b = -1e30 | 1;
-                    $c = 9.3e18 % 7;',
-                'assertions' => [
-                    '$a===' => 'int',
-                    '$b===' => 'int',
-                    '$c===' => 'int',
-                ],
-            ],
             'floatWithExactIntValueInIntOperations' => [
                 'code' => '<?php
                     $a = 7.0 % 2.0;
@@ -458,6 +676,103 @@ final class BinaryOperationTest extends TestCase
                     '$h===' => '2',
                 ],
             ],
+            'floatOperandOutsideIntRange' => [
+                'code' => '<?php
+                    $a = 1e30 & 1;
+                    $b = -1e30 | 1;
+                    $c = 9.3e18 % 7;',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                    '$c===' => 'int',
+                ],
+            ],
+            'floatOperandsOfIntOnlyOperationsGiveInt' => [
+                'code' => '<?php
+                    /**
+                     * @return list{int, int, int, int, int, int}
+                     */
+                    function f(float $f, int $i): array {
+                        return [$f | $i, $i & $f, $f ^ $f, $f << $i, $i >> $f, $f % $i];
+                    }',
+            ],
+            'zeroToANegativePowerIsAFloat' => [
+                'code' => '<?php
+                    $a = 0 ** -1;
+                    $b = 0.0 ** -2;
+                    $c = 0 ** -INF;
+                    echo $a, $b, $c;',
+                'assertions' => [
+                    '$a' => 'float',
+                    '$b' => 'float',
+                    '$c' => 'float',
+                ],
+            ],
+            'floatOperandsOutsideTheRangeOfAnIntAreNotFolded' => [
+                'code' => '<?php
+                    $notANumberModulo = NAN % 3;
+                    $infiniteModulo = 3 % INF;
+                    $modulo = 7.0 % 4;
+                    $bigOr = 1e30 | 1;
+                    $infiniteAnd = INF & 1;
+                    $notANumberXor = 1 ^ NAN;
+                    $bigShiftLeft = 1 << 1e30;
+                    $bigShiftRight = -1e30 >> 1;
+                    $or = 6.0 | 1;
+                    $notANumberNot = ~NAN;
+                    $bigNot = ~1e30;
+                    $infiniteNot = ~-INF;
+                    $not = ~5.0;',
+                'assertions' => [
+                    '$notANumberModulo===' => 'int',
+                    '$infiniteModulo===' => 'int',
+                    '$modulo===' => '3',
+                    '$bigOr===' => 'int',
+                    '$infiniteAnd===' => 'int',
+                    '$notANumberXor===' => 'int',
+                    '$bigShiftLeft===' => 'int',
+                    '$bigShiftRight===' => 'int',
+                    '$or===' => '7',
+                    '$notANumberNot===' => 'int',
+                    '$bigNot===' => 'int',
+                    '$infiniteNot===' => 'int',
+                    '$not===' => '-6',
+                ],
+            ],
+
+            'integerOperatorsGiveIntsWhateverTheOperandsAre' => [
+                'code' => '<?php
+                    /** @var int $int */
+                    $int = 1;
+                    /** @var float $float */
+                    $float = 1.5;
+                    /** @var int|float $number */
+                    $number = 1;
+
+                    $shiftedByFloat = $int << 1.0;
+                    $orWithFloat = $int | 1.0;
+                    $andOfFloatAndInt = $float & $int;
+                    $xorOfFloats = $float ^ $float;
+                    $shiftedFloat = $float >> $float;
+                    $orWithNumber = $number | 1;
+                    $shiftedNumber = $number << $int;
+                    $moduloOfFloat = $int % 1.0;
+                    $shiftedBig = (int) 1e30 << 1.0;
+                    $orOfBig = (1e30 | 1) | 1.0;',
+                'assertions' => [
+                    '$shiftedByFloat===' => 'int',
+                    '$orWithFloat===' => 'int',
+                    '$andOfFloatAndInt===' => 'int',
+                    '$xorOfFloats===' => 'int',
+                    '$shiftedFloat===' => 'int',
+                    '$orWithNumber===' => 'int',
+                    '$shiftedNumber===' => 'int',
+                    '$moduloOfFloat===' => 'int',
+                    '$shiftedBig===' => 'int',
+                    '$orOfBig===' => 'int',
+                ],
+            ],
+
             'regularAddition' => [
                 'code' => '<?php
                     $a = 5 + 4;',
@@ -1336,16 +1651,40 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'shiftByNegativeLiteral' => [
-                'code' => '<?php
-                    $a = 1 << -1;',
-                'error_message' => 'NoValue',
-            ],
             'shiftRightByNegativeFloatLiteral' => [
                 'code' => '<?php
                     $a = 8 >> -2.0;',
                 'error_message' => 'NoValue',
             ],
+            'shiftByNegativeLiteral' => [
+                'code' => '<?php
+                    $a = 1 << -1;',
+                'error_message' => 'NoValue',
+            ],
+            'shiftLeftByANegativeNumber' => [
+                'code' => '<?php
+                    $a = 1 << -1;
+                    echo $a;',
+                'error_message' => 'NoValue',
+            ],
+            'shiftRightByANegativeNumber' => [
+                'code' => '<?php
+                    $a = 1 >> -2;
+                    echo $a;',
+                'error_message' => 'NoValue',
+            ],
+            'moduloOfABigFloatLiteralByZeroIsNever' => [
+                'code' => '<?php
+                    $a = 1e30 % 0;',
+                'error_message' => 'NoValue',
+            ],
+
+            'moduloOfNotANumberByAFractionIsNever' => [
+                'code' => '<?php
+                    $a = NAN % 0.5;',
+                'error_message' => 'NoValue',
+            ],
+
             'badAddition' => [
                 'code' => '<?php
                     $a = "b" + 5;',

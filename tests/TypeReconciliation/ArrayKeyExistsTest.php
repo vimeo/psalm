@@ -578,6 +578,19 @@ final class ArrayKeyExistsTest extends TestCase
                     }
                 PHP,
             ],
+            'arrayKeyExistsNegatedAssignInForeachOverLiterals' => [
+                'code' => '<?php
+                    /** @return array<string, int> */
+                    function a(): array {
+                        $greetings = [];
+                        foreach (["a", "b"] as $text) {
+                            if (!\array_key_exists($text, $greetings)) {
+                                $greetings[$text] = 123;
+                            }
+                        }
+                        return $greetings;
+                    }',
+            ],
         ];
     }
 
