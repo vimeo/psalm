@@ -3222,6 +3222,109 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'nullsafePropertyComparedToNullKeepsTheReceiverAndPropertyNotNull' => [
+                'code' => '<?php
+                    final class RangeInfo {
+                        public function __construct(public ?string $titleIdentifier) {}
+                    }
+
+                    final class Isbn {
+                        public function __construct(private ?RangeInfo $rangeInfo) {}
+
+                        public function getTitleIdentifier(): string {
+                            if ($this->rangeInfo?->titleIdentifier === null) {
+                                throw new Exception();
+                            }
+
+                            return $this->rangeInfo->titleIdentifier;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyNotIdenticalToNull' => [
+                'code' => '<?php
+                    final class Box {
+                        public function __construct(public ?string $value) {}
+                    }
+
+                    function f(?Box $box): string {
+                        if ($box?->value !== null) {
+                            /** @psalm-check-type-exact $box = Box */
+                            return $box->value;
+                        }
+
+                        /** @psalm-check-type-exact $box = Box|null */
+                        return "";
+                    }
+
+                    function reversed(?Box $box): string {
+                        if (null !== $box?->value) {
+                            return $box->value;
+                        }
+
+                        return "";
+                    }
+
+                    function loose(?Box $box): string {
+                        if ($box?->value != null) {
+                            return $box->value;
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyIdenticalToNull' => [
+                'code' => '<?php
+                    final class Box {
+                        public function __construct(public ?string $value) {}
+                    }
+
+                    function reversed(?Box $box): string {
+                        if (null === $box?->value) {
+                            return "";
+                        }
+
+                        return $box->value;
+                    }
+
+                    function loose(?Box $box): string {
+                        if ($box?->value == null) {
+                            return "";
+                        }
+
+                        return $box->value;
+                    }
+
+                    function elseBranch(?Box $box): string {
+                        if ($box?->value === null) {
+                            /** @psalm-check-type-exact $box = Box|null */
+                            return "";
+                        } else {
+                            /** @psalm-check-type-exact $box = Box */
+                            return $box->value;
+                        }
+                    }
+
+                    function ternary(?Box $box): string {
+                        return $box?->value === null ? "" : $box->value;
+                    }
+
+                    function andCondition(?Box $box, bool $flag): string {
+                        if ($flag && $box?->value !== null) {
+                            return $box->value;
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'onlySingleErrorForEarlyExit' => [
                 'code' => '<?php
                     class App {
@@ -4307,6 +4410,23 @@ final class ConditionalTest extends TestCase
                         return strtoupper($value);
                     }',
                 'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'nullsafePropertyIdenticalToNullKeepsTheReceiverNullable' => [
+                'code' => '<?php
+                    final class Box {
+                        public function __construct(public ?string $value) {}
+                    }
+
+                    function f(?Box $box): string {
+                        if ($box?->value === null) {
+                            return (string) $box->value;
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'makeNonNullableNull' => [
                 'code' => '<?php
