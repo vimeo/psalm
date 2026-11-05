@@ -32,6 +32,28 @@ return array (
         0 => 'array{file: string, line: int, message: string, trace?: list<array{args?: list<mixed>, class?: class-string, file?: string, function: string, line?: int, object?: object, type?: string}>, type: int}|null',
       ),
     ),
+    'eventhttprequest::gethost' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+      ),
+    ),
+    'eventhttprequest::geturi' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+      ),
+    ),
     'finfo_close' => 
     array (
       'old' => 
