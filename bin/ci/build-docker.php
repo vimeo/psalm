@@ -8,10 +8,13 @@ $platform = match (getenv('PLATFORM')) {
     'ubuntu-latest' => 'amd64',
 };
 
-$commit = getenv('GITHUB_SHA');
-$user = getenv('ACTOR');
+$image = getenv('IMAGE');
 $is_tag = str_starts_with(getenv('REF'), 'refs/tags/');
 $ref = str_replace(['refs/heads/', 'refs/tags/'], '', getenv('REF'));
+// a tag rebuilt from a branch's workflow isn't at GITHUB_SHA
+$commit = $is_tag
+    ? trim((string) shell_exec('git rev-parse ' . escapeshellarg("refs/tags/$ref^{commit}")))
+    : getenv('GITHUB_SHA');
 
 echo "Waiting for commit $commit on $ref...".PHP_EOL;
 
@@ -33,8 +36,9 @@ $dev = $is_tag ? '' : '~dev';
 if ($is_tag) {
     $cur = 0;
     while (true) {
-        $json = json_decode(file_get_contents("https://repo.packagist.org/p2/vimeo/psalm$dev.json?v=$cur"), true)["packages"]["vimeo/psalm"];
-        foreach ($json as $v) {
+        // a failed request (e.g. a timeout) is retried like a missing version
+        $body = file_get_contents("https://repo.packagist.org/p2/vimeo/psalm$dev.json?v=$cur");
+        foreach ($body === false ? [] : json_decode($body, true)["packages"]["vimeo/psalm"] as $v) {
             if ($v['version'] === $composer_branch) {
                 if ($v['source']['reference'] === $commit) {
                     break 2;
@@ -54,6 +58,6 @@ $platform = escapeshellarg($platform);
 // Per-platform, branch-independent layer cache on the registry. The expensive
 // layers (compiling PHP from source) only depend on the Dockerfile, so they are
 // reused across builds; only the Psalm install layers at the end are rebuilt.
-$cache = "ghcr.io/$user/psalm:buildcache-$platform";
+$cache = "$image:buildcache-$platform";
 
-r("docker buildx build --push . -t ghcr.io/$user/psalm:$ref-$platform --build-arg PSALM_REV=$composer_branch -f bin/docker/Dockerfile --cache-from type=registry,ref=$cache --cache-to type=registry,ref=$cache,mode=max,image-manifest=true,oci-mediatypes=true,ignore-error=true");
+r("docker buildx build --push . -t $image:$ref-$platform --build-arg PSALM_REV=$composer_branch -f bin/docker/Dockerfile --cache-from type=registry,ref=$cache --cache-to type=registry,ref=$cache,mode=max,image-manifest=true,oci-mediatypes=true,ignore-error=true");
