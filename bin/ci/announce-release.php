@@ -3,7 +3,7 @@
 /**
  * Announces a release of Psalm on Mastodon, X, Telegram and Discord.
  *
- * Usage: php bin/ci/announce-release.php [--dry-run] [--force] <tag>
+ * Usage: php bin/ci/announce-release.php [--dry-run] [--force] [--only=<platform>,...] <tag>
  *
  * Run by .github/workflows/announce-release.yml when a release is published, or dispatched on its tag by
  * bin/ci/auto-release.php. For each platform:
@@ -18,6 +18,13 @@
  *    channel's URL), an announcement channel where the bot may send messages and mention everyone; the post pings
  *    everyone and is published to the servers following the channel.
  *
+ * X and Mastodon only get the latest major's minor and major releases, and its patch releases with user-facing
+ * changes (a Features, Fixes or other section besides Internal changes and Docs), but no pre-releases; Telegram and
+ * Discord get every release.
+ *
+ * --only announces on the given platforms alone (e.g. --only=x,telegram), to retry those that failed without posting
+ * twice on the others, or to announce on X or Mastodon a release they skip.
+ *
  * Drafts aren't announced, nor releases published more than a day ago unless --force is given, so that
  * auto-release.php dispatching the announcement on the last tag of each branch doesn't announce old releases.
  *
@@ -29,10 +36,17 @@ declare(strict_types=1);
 $args = array_slice($argv, 1);
 $dry_run = in_array('--dry-run', $args, true);
 $force = in_array('--force', $args, true);
-$options = ['--dry-run', '--force'];
-$tags = array_values(array_filter($args, static fn(string $arg): bool => !in_array($arg, $options, true)));
+$only = null;
+$tags = [];
+foreach ($args as $arg) {
+    if (str_starts_with($arg, '--only=')) {
+        $only = explode(',', strtolower(substr($arg, strlen('--only='))));
+    } elseif ($arg !== '--dry-run' && $arg !== '--force') {
+        $tags[] = $arg;
+    }
+}
 if (count($tags) !== 1) {
-    fwrite(STDERR, 'Usage: ' . $argv[0] . ' [--dry-run] [--force] <tag>' . PHP_EOL);
+    fwrite(STDERR, 'Usage: ' . $argv[0] . ' [--dry-run] [--force] [--only=<platform>,...] <tag>' . PHP_EOL);
     exit(1);
 }
 $tag = $tags[0];
@@ -64,11 +78,11 @@ $run = static function (array $command): string {
  */
 $request = static function (string $url, array $headers, array|object|null $body = null): array {
     $curl = curl_init($url);
-    curl_setopt_array($curl, [
-        ...($body === null ? [] : [
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($body, JSON_THROW_ON_ERROR),
-        ]),
+    // + rather than a spread, which would renumber the CURLOPT_* keys
+    curl_setopt_array($curl, ($body === null ? [] : [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode($body, JSON_THROW_ON_ERROR),
+    ]) + [
         CURLOPT_HTTPHEADER => [...$headers, 'Content-Type: application/json', 'User-Agent: psalm-release-bot'],
         CURLOPT_RETURNTRANSFER => true,
         // psalm-post.daniil.it loads x.com before posting
@@ -89,7 +103,10 @@ $request = static function (string $url, array $headers, array|object|null $body
 };
 
 $release = json_decode(
-    $run(['gh', 'release', 'view', $tag, '--repo', $repository, '--json', 'tagName,url,isDraft,publishedAt']),
+    $run([
+        'gh', 'release', 'view', $tag, '--repo', $repository,
+        '--json', 'tagName,url,isDraft,isPrerelease,publishedAt,body',
+    ]),
     true,
     512,
     JSON_THROW_ON_ERROR,
@@ -104,6 +121,37 @@ if (!$force && strtotime($release['publishedAt']) < time() - 86_400) {
     echo "$tag was published on {$release['publishedAt']}, more than a day ago, not announcing it" . PHP_EOL;
     exit(0);
 }
+
+// public feeds only get releases worth a post: one a day for every branch buries the ones that matter, and posts
+// nobody engages with make X show the account's other posts less
+$feed_skip_reason = (static function () use ($release, $run, $repository): ?string {
+    if ($release['isPrerelease']) {
+        return 'it is a pre-release';
+    }
+
+    // without a tag, gh views the release marked as latest
+    $latest = json_decode(
+        $run(['gh', 'release', 'view', '--repo', $repository, '--json', 'tagName']),
+        true,
+        512,
+        JSON_THROW_ON_ERROR,
+    )['tagName'];
+    if ((int) $release['tagName'] < (int) $latest) {
+        return "it is older than the latest major ($latest)";
+    }
+
+    // a minor or major release always has news, and its notes may be written by hand without these sections
+    if (str_ends_with($release['tagName'], '.0')) {
+        return null;
+    }
+
+    preg_match_all('/^### (.+?)\s*$/m', $release['body'], $sections);
+    if (array_diff($sections[1], ['Internal changes', 'Docs']) === []) {
+        return 'it is a patch release whose notes have no Features, Fixes or other user-facing section';
+    }
+
+    return null;
+})();
 
 $text = "Psalm {$release['tagName']} has been released: {$release['url']} #psalm";
 echo $text . PHP_EOL;
@@ -166,8 +214,24 @@ $platforms = [
     ],
 ];
 
+$unknown = array_diff($only ?? [], array_map(strtolower(...), array_keys($platforms)));
+if ($unknown !== []) {
+    fwrite(STDERR, 'Unknown platforms: ' . implode(', ', $unknown) . PHP_EOL);
+    exit(1);
+}
+
 $failed = false;
 foreach ($platforms as $platform => [$secrets, $announce]) {
+    if ($only !== null && !in_array(strtolower($platform), $only, true)) {
+        continue;
+    }
+
+    // naming the platform in --only announces there anyway
+    if (in_array($platform, ['X', 'Mastodon'], true) && $feed_skip_reason !== null && $only === null) {
+        echo "Not announcing $tag on $platform: $feed_skip_reason" . PHP_EOL;
+        continue;
+    }
+
     $values = array_map(static fn(string $secret): string => (string) getenv($secret), $secrets);
     if (in_array('', $values, true)) {
         echo "::notice::Not announcing $tag on $platform: " . implode(', ', $secrets) . ' must be set' . PHP_EOL;

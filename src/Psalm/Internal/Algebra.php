@@ -368,10 +368,16 @@ final class Algebra
                         unset($cond_referenced_var_ids[$var]);
                     }
 
-                    $truths[$var] = [$things_that_can_be_said];
+                    // every clause of the variable is true: `(X || A) && (X || B)` doesn't forget the first one
+                    if (isset($truths[$var]) && !isset($clause->redefined_vars[$var])) {
+                        $truths[$var][] = $things_that_can_be_said;
+                    } else {
+                        $truths[$var] = [$things_that_can_be_said];
+                    }
 
                     if ($creating_conditional_id && $creating_conditional_id === $clause->creating_conditional_id) {
-                        $active_truths[$var] = [$things_that_can_be_said];
+                        $active_truths[$var] ??= [];
+                        $active_truths[$var][count($truths[$var]) - 1] = $things_that_can_be_said;
                     }
                 }
             }

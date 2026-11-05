@@ -1409,19 +1409,6 @@
     <MixedAssignment>
       <code><![CDATA[$dep]]></code>
     </MixedAssignment>
-    <PossiblyFalseArgument>
-      <code><![CDATA[$fileHash]]></code>
-      <code><![CDATA[$fileHash]]></code>
-      <code><![CDATA[$fileHash]]></code>
-    </PossiblyFalseArgument>
-    <PossiblyInvalidArrayAccess>
-      <code><![CDATA[unpack('V', $fileHash)[1]]]></code>
-      <code><![CDATA[unpack('V', $key)[1]]]></code>
-    </PossiblyInvalidArrayAccess>
-    <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[unpack('V', $fileHash)[1]]]></code>
-      <code><![CDATA[unpack('V', $key)[1]]]></code>
-    </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Cli/LanguageServer.php">
     <InvalidArgument>
@@ -1728,11 +1715,6 @@
       <code><![CDATA[$a->stmts]]></code>
       <code><![CDATA[$b->stmts]]></code>
     </RiskyTruthyFalsyComparison>
-  </file>
-  <file src="src/Psalm/Internal/Diff/FileDiffer.php">
-    <InvalidArrayOffset>
-      <code><![CDATA[$b[$y]]]></code>
-    </InvalidArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Diff/FileStatementsDiffer.php">
     <RedundantCondition>
@@ -3899,6 +3881,7 @@
       <code><![CDATA[ParserCacheProvider]]></code>
     </InvalidExtendClass>
     <MethodSignatureMismatch>
+      <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[#[Override]]]></code>
