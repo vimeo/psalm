@@ -158,7 +158,7 @@ final class AndAnalyzer
         // the classes the right side is only reached for when they exist
         $right_context->phantom_classes = [
             ...$context->phantom_classes,
-            ...GuardedClasses::whenResult($stmt->left, true),
+            ...GuardedClasses::unknownWhenResult($stmt->left, true, $codebase),
         ];
 
         $partitioned_clauses = Context::removeReconciledClauses(

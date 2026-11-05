@@ -215,7 +215,7 @@ final class OrAnalyzer
         // the classes the right side is only reached for when they exist
         $right_context->phantom_classes = [
             ...$pre_phantom_classes,
-            ...GuardedClasses::whenResult($stmt->left, false),
+            ...GuardedClasses::unknownWhenResult($stmt->left, false, $codebase),
         ];
 
         // the classes checked with class_exists() on the left are checked after the condition too

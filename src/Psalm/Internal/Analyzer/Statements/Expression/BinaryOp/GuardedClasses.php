@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
+use Psalm\Codebase;
 
+use function array_filter;
 use function array_intersect_key;
 use function in_array;
 use function strtolower;
+
+use const ARRAY_FILTER_USE_BOTH;
 
 /**
  * @internal
@@ -16,6 +20,21 @@ use function strtolower;
 final class GuardedClasses
 {
     private const FUNCTIONS = ['class_exists', 'interface_exists', 'enum_exists'];
+
+    /**
+     * Those of the classes that exist when the expression evaluates to the given result that Psalm doesn't know,
+     * which are the ones that are not to be reported where they are used
+     *
+     * @return array<lowercase-string, true>
+     */
+    public static function unknownWhenResult(PhpParser\Node\Expr $expr, bool $result, Codebase $codebase): array
+    {
+        return array_filter(
+            self::whenResult($expr, $result),
+            static fn(bool $_, string $class_name): bool => !$codebase->classOrInterfaceOrEnumExists($class_name),
+            ARRAY_FILTER_USE_BOTH,
+        );
+    }
 
     /**
      * The classes that exist when the expression evaluates to the given result, because of the
