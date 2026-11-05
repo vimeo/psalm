@@ -548,6 +548,40 @@ final class ImmutableAnnotationTest extends TestCase
                         return getData()[$key] ?? null;
                     }',
             ],
+            'allowMutationFreeCallableArrayInPureContext' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    final class PriceScopeCriteria {
+                        private array $priceCriteria;
+
+                        public function __construct(
+                            array $priceCriteria,
+                        ) {
+                            $this->priceCriteria = $priceCriteria;
+                        }
+
+                        /** @return self[] */
+                        public function splitToBatches(int $batchSize): array {
+                            return array_map(
+                                [ $this, "withPriceCriteria" ],
+                                array_chunk($this->priceCriteria, $batchSize),
+                            );
+                        }
+
+                        public function withPriceCriteria(array $priceCriteria): self {
+                            $self = clone $this;
+                            $self->priceCriteria = $priceCriteria;
+
+                            return $self;
+                        }
+                    }
+
+                    $x = new PriceScopeCriteria([]);
+                    $y = $x->splitToBatches(3);
+                    array_pop($y);',
+            ],
         ];
     }
 
