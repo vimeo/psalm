@@ -28,7 +28,7 @@ use function count;
 abstract class AstDiffer
 {
     /**
-     * @param Closure[_](Stmt, Stmt, string, string, bool=): bool $is_equal
+     * @param Closure[_](Stmt, Stmt, string, string, bool &$body_change=): bool $is_equal
      * @param array<int, Stmt> $a
      * @param array<int, Stmt> $b
      * @return array{0:non-empty-list<array<int, int>>, 1: int, 2: int, 3: array<int, bool>}

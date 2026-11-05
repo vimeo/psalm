@@ -20,6 +20,31 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'byReferenceCallableParamAcceptsByReferenceCallee' => [
+                'code' => '<?php
+                    /** @param callable(int &$i): void $closure */
+                    function takesRefCallable(callable $closure): void {
+                        $v = 1;
+                        $closure($v);
+                    }
+                    function incr(int &$i): void {
+                        ++$i;
+                    }
+                    takesRefCallable("incr");
+                    takesRefCallable(function (int &$i): void {
+                        ++$i;
+                    });',
+                'assertions' => [],
+            ],
+            'namedOptionalCallableParam' => [
+                'code' => '<?php
+                    /** @param callable(int $i=): void $closure */
+                    function takesOptional(callable $closure): void {
+                        $closure();
+                    }
+                    takesOptional(function (int $i = 0): void {});',
+                'assertions' => [],
+            ],
             'callableKeyedArrayKeepsTheCallableFlagWhenItsValuesAreNarrowed' => [
                 'code' => '<?php
                     /**
@@ -2588,6 +2613,37 @@ final class CallableTest extends TestCase
 
                     foo(A::class . "::barr");',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'byReferenceFunctionNameIsNotCallableWithValue' => [
+                'code' => '<?php
+                    /** @param callable(int): int $closure */
+                    function takesClosure($closure): int {
+                        return $closure(123);
+                    }
+                    function takesIntByRef(int &$i): int {
+                        return $i ** 2;
+                    }
+                    takesClosure("takesIntByRef");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'byReferenceCallableParamRejectsValueCallee' => [
+                'code' => '<?php
+                    /** @param callable(int &$i): void $closure */
+                    function takesRefCallable(callable $closure): void {}
+                    /** @param callable(int): void $closure */
+                    function takesValueCallable(callable $closure): void {}
+                    /** @param callable(int &$i): void $closure */
+                    function forward(callable $closure): void {
+                        takesValueCallable($closure);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'byReferenceClosureIsNotCallableWithValue' => [
+                'code' => '<?php
+                    /** @param callable(int): void $closure */
+                    function takesClosure(callable $closure): void {}
+                    takesClosure(function (int &$i): void {});',
+                'error_message' => 'InvalidArgument',
             ],
             'undefinedCallableMethodArray' => [
                 'code' => '<?php
