@@ -655,24 +655,15 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'interpolatedStringKeepsTheLiteralsOfAUnion' => [
+            'interpolatedStringWithAnIntIsNotALiteralUnion' => [
                 'code' => '<?php
                     /** @var "a"|"b" $lit */
                     $lit = "a";
-                    $g = "x$lit";
-                    $h = "x" . $lit;',
+                    /** @var int $n */
+                    $n = 5;
+                    $g = "x$lit$n";',
                 'assertions' => [
-                    '$g===' => "'xa'|'xb'",
-                    '$h===' => "'xa'|'xb'",
-                ],
-            ],
-            'interpolatedStringWithSeveralUnions' => [
-                'code' => '<?php
-                    /** @var "a"|"b" $lit */
-                    $lit = "a";
-                    $g = "x{$lit}y$lit";',
-                'assertions' => [
-                    '$g===' => "'xaya'|'xayb'|'xbya'|'xbyb'",
+                    '$g===' => "non-empty-string",
                 ],
             ],
             'interpolatedStringWithALiteralInt' => [
@@ -684,15 +675,36 @@ final class BinaryOperationTest extends TestCase
                     '$g===' => "'xa5'|'xb5'",
                 ],
             ],
-            'interpolatedStringWithAnIntIsNotALiteralUnion' => [
+            'interpolatedStringWithSeveralUnions' => [
                 'code' => '<?php
                     /** @var "a"|"b" $lit */
                     $lit = "a";
-                    /** @var int $n */
-                    $n = 5;
-                    $g = "x$lit$n";',
+                    $g = "x{$lit}y$lit";',
                 'assertions' => [
-                    '$g===' => "non-empty-string",
+                    '$g===' => "'xaya'|'xayb'|'xbya'|'xbyb'",
+                ],
+            ],
+            'interpolatedStringKeepsTheLiteralsOfAUnion' => [
+                'code' => '<?php
+                    /** @var "a"|"b" $lit */
+                    $lit = "a";
+                    $g = "x$lit";
+                    $h = "x" . $lit;',
+                'assertions' => [
+                    '$g===' => "'xa'|'xb'",
+                    '$h===' => "'xa'|'xb'",
+                ],
+            ],
+            'zeroToANegativePowerIsAFloat' => [
+                'code' => '<?php
+                    $a = 0 ** -1;
+                    $b = 0.0 ** -2;
+                    $c = 0 ** -INF;
+                    echo $a, $b, $c;',
+                'assertions' => [
+                    '$a' => 'float',
+                    '$b' => 'float',
+                    '$c' => 'float',
                 ],
             ],
             'floatOperandsOutsideTheRangeOfAnIntAreNotFolded' => [
@@ -1381,7 +1393,7 @@ final class BinaryOperationTest extends TestCase
                     $bar = "";
                     $interpolated = "{$foo}{$bar}";
                 ',
-                'assertions' => ['$interpolated===' => "''|'bar'|'foo'|'foobar'"],
+                'assertions' => ['$interpolated===' => 'literal-string'],
             ],
             'literalIntConcatCreatesLiteral' => [
                 'code' => '<?php
@@ -1638,6 +1650,18 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'shiftLeftByANegativeNumber' => [
+                'code' => '<?php
+                    $a = 1 << -1;
+                    echo $a;',
+                'error_message' => 'NoValue',
+            ],
+            'shiftRightByANegativeNumber' => [
+                'code' => '<?php
+                    $a = 1 >> -2;
+                    echo $a;',
+                'error_message' => 'NoValue',
+            ],
             'moduloOfABigFloatLiteralByZeroIsNever' => [
                 'code' => '<?php
                     $a = 1e30 % 0;',
