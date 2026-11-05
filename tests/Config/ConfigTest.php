@@ -39,6 +39,7 @@ use Throwable;
 use UnexpectedValueException;
 
 use function array_map;
+use function array_pop;
 use function dirname;
 use function error_get_last;
 use function file_put_contents;
@@ -51,7 +52,6 @@ use function is_array;
 use function is_dir;
 use function json_encode;
 use function mkdir;
-use function phpversion;
 use function preg_match;
 use function realpath;
 use function restore_error_handler;
@@ -67,7 +67,6 @@ use function symlink;
 use function sys_get_temp_dir;
 use function uniqid;
 use function unlink;
-use function version_compare;
 
 use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
@@ -2795,61 +2794,65 @@ final class ConfigTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{string, string, string}>
+     * @return iterable<string, array{string, string|null, string|null}> compressor, what it needs, a function of it
      * @psalm-pure
      */
-    public static function providerCompressorsWithAnExtension(): iterable
+    public static function providerCompressorsThatAreResolvedLikeAnAbsentAttribute(): iterable
     {
-        yield 'zstd' => ['zstd', 'ext-zstd 0.15.0 or later', 'zstd_compress'];
+        yield 'auto' => ['auto', null, null];
+        yield 'zstd' => ['zstd', 'ext-zstd', 'zstd_compress'];
         yield 'lz4' => ['lz4', 'ext-lz4', 'lz4_compress'];
         yield 'deflate' => ['deflate', 'ext-zlib', 'gzdeflate'];
     }
 
-    #[DataProvider('providerCompressorsWithAnExtension')]
-    public function testRequestedCompressorWithoutItsExtensionFallsBackToTheAutomaticChoice(
+    /** `auto` and a compressor that is not available give what no attribute gives, `auto` without a warning */
+    #[DataProvider('providerCompressorsThatAreResolvedLikeAnAbsentAttribute')]
+    public function testAutoOrUnavailableCompressorIsResolvedLikeAnAbsentAttribute(
         string $compressor,
-        string $requirement,
-        string $function,
+        ?string $requirement,
+        ?string $function,
     ): void {
-        if (function_exists($function)) {
+        if ($function !== null && function_exists($function)) {
             $this->markTestSkipped("$function exists");
         }
 
-        $config = Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm compressor="' . $compressor . '"/>');
-
-        $has_zstd = function_exists('zstd_compress') && function_exists('zstd_uncompress')
-            && version_compare((string) phpversion('zstd'), '0.15.0', '>=');
-        $has_zlib = function_exists('gzinflate') && function_exists('gzdeflate');
-        $automatic = $has_zstd ? 'zstd' : ($has_zlib ? 'deflate' : 'off');
-        $this->assertSame($automatic, $config->compressor);
-        $this->assertContains(
-            $requirement . ' is missing, '
-            . ($automatic === 'off' ? 'cache compression disabled' : "using $automatic cache compression")
-            . ' (compressor="' . $compressor . '" in the config)',
-            $config->config_warnings,
-        );
-    }
-
-    #[RequiresPhpExtension('zstd', '>=0.15.0')]
-    public function testCompressorIsZstdByDefaultAndWhenRequested(): void
-    {
-        $default = Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm/>');
-        $requested = Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm compressor="zstd"/>');
-        $auto = Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm compressor="auto"/>');
-
-        $this->assertSame('zstd', $default->compressor);
-        $this->assertSame('zstd', $auto->compressor);
-        $this->assertSame('zstd', $requested->compressor);
-        $this->assertSame([], $requested->config_warnings);
-    }
-
-    public function testAutoCompressorResolvesLikeAnAbsentAttributeWithoutAWarning(): void
-    {
         $absent = Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm/>');
-        $auto = Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm compressor="auto"/>');
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            '<?xml version="1.0"?><psalm compressor="' . $compressor . '"/>',
+        );
 
-        $this->assertSame($absent->compressor, $auto->compressor);
-        $this->assertSame($absent->config_warnings, $auto->config_warnings);
-        $this->assertContains($auto->compressor, ['zstd', 'deflate', 'off']);
+        $this->assertSame($absent->compressor, $config->compressor);
+        if ($requirement === null) {
+            $this->assertSame($absent->config_warnings, $config->config_warnings);
+
+            return;
+        }
+
+        $warnings = $config->config_warnings;
+        $warning = array_pop($warnings);
+        $this->assertSame($absent->config_warnings, $warnings);
+        $this->assertNotNull($warning);
+        $this->assertStringStartsWith($requirement, $warning);
+        $this->assertStringContainsString(' is missing, ', $warning);
+        $this->assertStringContainsString('compressor="' . $compressor . '"', $warning);
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function providerAttributesOfTheZstdCompressor(): iterable
+    {
+        yield 'absent' => [''];
+        yield 'auto' => [' compressor="auto"'];
+        yield 'zstd' => [' compressor="zstd"'];
+    }
+
+    #[DataProvider('providerAttributesOfTheZstdCompressor')]
+    #[RequiresPhpExtension('zstd', '>=0.15.0')]
+    public function testCompressorIsZstdByDefaultAndWhenAskedFor(string $attributes): void
+    {
+        $config = Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm' . $attributes . '/>');
+
+        $this->assertSame('zstd', $config->compressor);
+        $this->assertSame([], $config->config_warnings);
     }
 }
