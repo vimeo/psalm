@@ -193,13 +193,18 @@ final class MutationLevelResolver
     }
 
     /**
-     * Resolves the mutation levels of the code analysed in this run, reports
-     * function-likes that could be marked with a stricter purity annotation and
-     * queues the annotation fixes when running with `--alter`.
+     * When suggesting purity annotations is enabled, resolves the mutation levels of the code
+     * analysed in this run, reports function-likes that could be marked with a stricter purity
+     * annotation and queues the annotation fixes when running with `--alter`.
      */
     public static function resolve(ProjectAnalyzer $project_analyzer): void
     {
         $codebase = $project_analyzer->getCodebase();
+
+        if (!$project_analyzer->suggestsPurityAnnotations()) {
+            return;
+        }
+
         $graph = $codebase->code_use_graph;
 
         $infos = $graph->getMutationInfo();
@@ -243,14 +248,14 @@ final class MutationLevelResolver
 
             IssueBuffer::maybeAdd(
                 new MissingPureAnnotation(
-                    $info['cased_name'] . ' must be marked @' . Capabilities::toFunctionAnnotation($level)
+                    $info['cased_name'] . ' could be marked @' . Capabilities::toFunctionAnnotation($level)
                     . ($wildcards
                         ? ', with the _ purity for ' . implode(', ', array_map(
                             static fn(string $param): string => '$' . $param,
                             array_keys($wildcards),
                         )) . ' (Closure[_], Traversable[_], ...),'
                         : '')
-                    . ' to aid security analysis'
+                    . ' ' . $project_analyzer->getPuritySuggestionReason()
                     . ', run with --alter --issues=MissingPureAnnotation to fix this',
                     $info['location'],
                 ),

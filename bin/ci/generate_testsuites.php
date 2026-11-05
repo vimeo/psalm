@@ -7,7 +7,8 @@
  * Each test file is weighted by how long its tests took (bin/ci/test_times.json, refreshed with
  * bin/ci/update_test_times.php); a file not timed yet counts as a median one. Files go to chunks
  * longest first, each to the chunk with the least work so far. A runner then runs its chunk's
- * files in parallel with paratest, so no file should take much longer than a chunk's share per core.
+ * files in parallel with paratest, in that order (longest first), so no file should take much
+ * longer than a chunk's share per core.
  */
 
 declare(strict_types=1);

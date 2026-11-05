@@ -25,6 +25,7 @@ use function json_decode;
 use function ob_end_clean;
 use function ob_start;
 use function preg_replace;
+use function str_repeat;
 use function unlink;
 
 use const JSON_THROW_ON_ERROR;
@@ -545,6 +546,66 @@ final class ReportOutputTest extends TestCase
 
             EOF,
             $this->toUnixLineEndings(IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $table_report_options)),
+        );
+    }
+
+    public function testTableReportPrintsStyleTagsVerbatim(): void
+    {
+        $messages = [
+            // the 70 byte cut lands inside the tag, between "red" and ";options"
+            str_repeat('a', 63) . '<fg=red;options=bold>x</>',
+            '<comment> unused </comment> and <info> used </info>',
+            // a cut right after a backslash, followed by a tag
+            str_repeat('b', 66) . 'Foo\\<info>x</info>',
+            // adjacent brackets
+            'a<<fg=red>>',
+            // literal backslash before a bracket
+            '/\\<x\\>/',
+        ];
+
+        $issues_data = ['somefile.php' => []];
+        foreach ($messages as $line => $message) {
+            $issues_data['somefile.php'][] = new IssueData(
+                IssueData::SEVERITY_ERROR,
+                $line + 1,
+                1,
+                'InvalidDocblock',
+                $message,
+                'somefile.php',
+                'somefile.php',
+                '',
+                '',
+                0,
+                20,
+                0,
+                20,
+                1,
+                21,
+            );
+        }
+
+        $table_report_options = new ReportOptions();
+        $table_report_options->format = Report::TYPE_TABLE;
+        $table_report_options->use_color = false;
+
+        $this->assertSame(
+            <<<'EOF'
+            FILE: somefile.php
+
+            +----------+------+-----------------+------------------------------------------------------------------------+
+            | SEVERITY | LINE | ISSUE           | DESCRIPTION                                                            |
+            +----------+------+-----------------+------------------------------------------------------------------------+
+            | ERROR    | 1    | InvalidDocblock | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa<fg=red |
+            |          |      |                 | ;options=bold>x</>                                                     |
+            | ERROR    | 2    | InvalidDocblock | <comment> unused </comment> and <info> used </info>                    |
+            | ERROR    | 3    | InvalidDocblock | bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbFoo\ |
+            |          |      |                 | <info>x</info>                                                         |
+            | ERROR    | 4    | InvalidDocblock | a<<fg=red>>                                                            |
+            | ERROR    | 5    | InvalidDocblock | /\<x\>/                                                                |
+            +----------+------+-----------------+------------------------------------------------------------------------+
+
+            EOF,
+            $this->toUnixLineEndings(IssueBuffer::getOutput($issues_data, $table_report_options)),
         );
     }
 

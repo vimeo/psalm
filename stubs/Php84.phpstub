@@ -58,16 +58,16 @@ namespace {
 
     class ReflectionProperty implements Reflector
     {
-        /** @psalm-pure */
+        /** @psalm-capabilities read-props */
         public function isPublicSet(): bool {}
 
-        /** @psalm-pure */
+        /** @psalm-capabilities read-props */
         public function isProtectedSet(): bool {}
 
-        /** @psalm-pure */
+        /** @psalm-capabilities read-props */
         public function isPrivateSet(): bool {}
 
-        /** @psalm-pure */
+        /** @psalm-capabilities read-props */
         public function isFinal(): bool {}
     }
 }
