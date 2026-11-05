@@ -18,6 +18,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\Scalar;
 use PhpParser;
@@ -314,7 +315,7 @@ final class StubsGenerator
         $nullable = $type->isNullable();
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TNull) {
+            if ($atomic_type instanceof TNull || $atomic_type instanceof TScalar) {
                 continue;
             }
 
@@ -345,7 +346,6 @@ final class StubsGenerator
                 if ($nullable) {
                     return new VirtualNullableType($name_node);
                 }
-
                 return $name_node;
             }
         }
