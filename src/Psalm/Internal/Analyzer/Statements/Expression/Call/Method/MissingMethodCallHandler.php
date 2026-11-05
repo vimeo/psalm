@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\CallSiteVarianceProjector;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImpureMethodCall;
@@ -153,6 +154,10 @@ final class MissingMethodCallHandler
                 !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
             );
 
+            $variance_projector = CallSiteVarianceProjector::create($codebase, $lhs_type_part);
+            $pseudo_method_params = $variance_projector?->projectParams($pseudo_method_storage->params)
+                ?? $pseudo_method_storage->params;
+
             // the pseudo-method's own templates are the purity templates of its `_` params
             $template_result = new TemplateResult(
                 $pseudo_method_storage->template_types ?? [],
@@ -162,7 +167,7 @@ final class MissingMethodCallHandler
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->getArgs(),
-                $pseudo_method_storage->params,
+                $pseudo_method_params,
                 (string) $method_id,
                 true,
                 $context,
@@ -175,7 +180,7 @@ final class MissingMethodCallHandler
                 $statements_analyzer,
                 $stmt->getArgs(),
                 null,
-                $pseudo_method_storage->params,
+                $pseudo_method_params,
                 $pseudo_method_storage,
                 null,
                 $template_result,
@@ -200,7 +205,8 @@ final class MissingMethodCallHandler
 
             if ($pseudo_method_storage->return_type) {
                 $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
-                    $pseudo_method_storage->return_type,
+                    $variance_projector?->project($pseudo_method_storage->return_type, false)
+                        ?? $pseudo_method_storage->return_type,
                     $template_result,
                     $method_id,
                     count($stmt->getArgs()),
@@ -419,10 +425,14 @@ final class MissingMethodCallHandler
                 $found_generic_params ?? [],
             );
 
+            $variance_projector = CallSiteVarianceProjector::create($codebase, $lhs_type_part);
+            $pseudo_method_params = $variance_projector?->projectParams($pseudo_method_storage->params)
+                ?? $pseudo_method_storage->params;
+
             if (ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->getArgs(),
-                $pseudo_method_storage->params,
+                $pseudo_method_params,
                 (string) $method_id,
                 true,
                 $context,
@@ -435,7 +445,7 @@ final class MissingMethodCallHandler
                 $statements_analyzer,
                 $stmt->getArgs(),
                 null,
-                $pseudo_method_storage->params,
+                $pseudo_method_params,
                 $pseudo_method_storage,
                 null,
                 $template_result,
@@ -447,7 +457,8 @@ final class MissingMethodCallHandler
 
             if ($pseudo_method_storage->return_type) {
                 $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
-                    $pseudo_method_storage->return_type,
+                    $variance_projector?->project($pseudo_method_storage->return_type, false)
+                        ?? $pseudo_method_storage->return_type,
                     $template_result,
                     $method_id,
                     count($stmt->getArgs()),

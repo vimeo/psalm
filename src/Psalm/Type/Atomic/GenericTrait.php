@@ -15,6 +15,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
+use Psalm\Type\Variance;
 
 use function array_map;
 use function array_values;
@@ -60,9 +61,14 @@ trait GenericTrait
      * @param list<Union> $type_params
      * @param list<Union> $purity_args
      * @param Closure[read-props](Union): string $to_string
+     * @param array<int, Variance> $variances call-site variances, by type parameter offset
      */
-    private static function formatTypeParams(array $type_params, array $purity_args, Closure $to_string): string
-    {
+    private static function formatTypeParams(
+        array $type_params,
+        array $purity_args,
+        Closure $to_string,
+        array $variances = [],
+    ): string {
         $s = '';
 
         if ($purity_args) {
@@ -78,8 +84,16 @@ trait GenericTrait
         if ($type_params) {
             $params = [];
 
-            foreach ($type_params as $type_param) {
-                $params[] = $to_string($type_param);
+            foreach ($type_params as $i => $type_param) {
+                $variance = $variances[$i] ?? null;
+
+                $params[] = match ($variance) {
+                    null => $to_string($type_param),
+                    Variance::Bivariant => '*',
+                    default => $variance->value . ' ' . (count($type_param->getAtomicTypes()) > 1
+                        ? '(' . $to_string($type_param) . ')'
+                        : $to_string($type_param)),
+                };
             }
 
             $s .= '<' . implode(', ', $params) . '>';
@@ -97,6 +111,7 @@ trait GenericTrait
             $type_params,
             $purity_args,
             static fn(Union $type_param): string => $type_param->getId($exact),
+            $this instanceof TGenericObject ? $this->type_param_variances : [],
         );
 
         $extra_types = '';
@@ -203,6 +218,7 @@ trait GenericTrait
                 $purity_args,
                 static fn(Union $type_param): string =>
                     $type_param->toNamespacedString($namespace, $aliased_classes, $this_class, false),
+                $this instanceof TGenericObject ? $this->type_param_variances : [],
             )
             . $extra_types;
     }
