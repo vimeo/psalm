@@ -1340,6 +1340,19 @@ final class ForeachTest extends TestCase
                     '$a===' => "''|int",
                 ],
             ],
+            'weakMapKeyTypeKeptOnPhp80' => [
+                'code' => '<?php
+                    interface Action {}
+
+                    /** @var WeakMap<Action, null> $map */
+                    $map = new WeakMap();
+                    foreach ($map as $action => $_) {
+                        /** @psalm-check-type-exact $action = Action */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
