@@ -80,6 +80,31 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayKeyExistsWithKeysThatTheArrayMayHave' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $list
+                     * @param array<int, string> $ints
+                     * @param array<string, int> $strings
+                     * @param array<array-key, int> $keys
+                     * @param list<int>|array<string, int> $either
+                     * @param array{a: int} $shape
+                     */
+                    function f(array $list, array $ints, array $strings, array $keys, array $either, array $shape, array $any, string $s): bool {
+                        return array_key_exists("5", $list)
+                            || array_key_exists("5", $ints)
+                            || array_key_exists("a", $strings)
+                            || array_key_exists("a", $keys)
+                            || array_key_exists("a", $either)
+                            || array_key_exists("b", $shape)
+                            || array_key_exists("a", $any)
+                            || array_key_exists($s, $list)
+                            || array_key_exists(1, $list);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'arraySpliceWithALengthOutsideTheRangeOfAnInt' => [
                 'code' => '<?php
                     $big = [1, 2, 3];
@@ -3481,6 +3506,38 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayKeyExistsWithStringKeyOnList' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): bool {
+                        return array_key_exists("a", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:49 - Cannot check offset',
+            ],
+            'arrayKeyExistsWithStringKeyOnIntKeyedArray' => [
+                'code' => '<?php
+                    /** @param array<int, string> $a */
+                    function f(array $a): bool {
+                        return array_key_exists("x", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:49 - Cannot check offset',
+            ],
+            'keyExistsWithStringKeyOnList' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): bool {
+                        return key_exists("a", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:43 - Cannot check offset',
+            ],
+            'negatedArrayKeyExistsWithStringKeyOnList' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): bool {
+                        return !array_key_exists("a", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:50 - Cannot check offset',
+            ],
             'arrayFilterUseMethodOnInferableInt' => [
                 'code' => '<?php
                     $a = array_filter([1, 2, 3, 4], function ($i) { return $i->foo(); });',
