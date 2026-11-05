@@ -412,6 +412,29 @@ final class NewAnalyzer extends CallAnalyzer
         );
     }
 
+    /**
+     * Whether the child classes keep the constructor's signature: it is a marked one, or PHP checks it against the
+     * one an implemented interface declares
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function hasPreservedConstructorSignature(Codebase $codebase, ClassLikeStorage $storage): bool
+    {
+        if ($storage->preserve_constructor_signature) {
+            return true;
+        }
+
+        foreach ($storage->class_implements as $interface_lc => $_) {
+            if ($codebase->classlike_storage_provider->has($interface_lc)
+                && isset($codebase->classlike_storage_provider->get($interface_lc)->methods['__construct'])
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static function analyzeNamedConstructor(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -425,7 +448,7 @@ final class NewAnalyzer extends CallAnalyzer
         $storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
         if ($from_static) {
-            if (!$storage->preserve_constructor_signature) {
+            if (!self::hasPreservedConstructorSignature($codebase, $storage)) {
                 IssueBuffer::maybeAdd(
                     new UnsafeInstantiation(
                         'Cannot safely instantiate class ' . $fq_class_name . ' with "new static" as'
@@ -1334,7 +1357,7 @@ final class NewAnalyzer extends CallAnalyzer
                             $lhs_type_part->as_type->value,
                         );
 
-                        if (!$as_storage->preserve_constructor_signature) {
+                        if (!self::hasPreservedConstructorSignature($codebase, $as_storage)) {
                             IssueBuffer::maybeAdd(
                                 new UnsafeInstantiation(
                                     'Cannot safely instantiate class ' . $lhs_type_part->as_type->value
@@ -1391,7 +1414,7 @@ final class NewAnalyzer extends CallAnalyzer
                                 $lhs_type_part->as_type->value,
                             );
 
-                            if (!$as_storage->preserve_constructor_signature) {
+                            if (!self::hasPreservedConstructorSignature($codebase, $as_storage)) {
                                 IssueBuffer::maybeAdd(
                                     new UnsafeInstantiation(
                                         'Cannot safely instantiate class ' . $lhs_type_part->as_type->value
