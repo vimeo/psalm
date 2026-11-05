@@ -1964,6 +1964,8 @@ final class ArgumentsAnalyzer
         $context->inside_by_ref_offset = $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
             && self::phpTakesArgumentByReference($method_id, $argument_offset);
 
+        $analyzed = false;
+
         try {
             if (($var_id && isset($context->vars_in_scope[$var_id]))
                 || ($method_id
@@ -1989,6 +1991,7 @@ final class ArgumentsAnalyzer
                 }
 
                 $context->inside_assignment = $was_inside_assignment;
+                $analyzed = true;
             }
 
             // special handling for array sort
@@ -2043,7 +2046,7 @@ final class ArgumentsAnalyzer
                 }
             }
 
-            if ($method_id === 'socket_select') {
+            if ($method_id === 'socket_select' && !$analyzed) {
                 if (ExpressionAnalyzer::analyze(
                     $statements_analyzer,
                     $arg->value,
@@ -2051,9 +2054,12 @@ final class ArgumentsAnalyzer
                 ) === false) {
                     return false;
                 }
+
+                $analyzed = true;
             }
 
-            if (!$arg->value instanceof PhpParser\Node\Expr\Variable
+            if (!$analyzed
+                && !$arg->value instanceof PhpParser\Node\Expr\Variable
                 && ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false
             ) {
                 return false;
