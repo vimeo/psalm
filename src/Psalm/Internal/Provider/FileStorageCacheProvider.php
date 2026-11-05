@@ -65,6 +65,14 @@ final class FileStorageCacheProvider
         $this->cache->saveItem(strtolower($storage->file_path), $storage, hash('xxh128', $file_contents));
     }
 
+    /**
+     * Makes the next writeToCache() of the file store its storage, even if the contents are the same.
+     */
+    public function forget(string $file_path): void
+    {
+        $this->cache->forgetItem(strtolower($file_path));
+    }
+
     public function getLatestFromCache(string $file_path, string $file_contents): ?FileStorage
     {
         return $this->cache->getItem(strtolower($file_path), hash('xxh128', $file_contents));
