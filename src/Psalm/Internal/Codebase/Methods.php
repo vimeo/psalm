@@ -668,7 +668,10 @@ final class Methods
             $overridden_storage = $this->getStorage($overridden_method_id);
 
             if ($overridden_storage->return_type) {
-                if ($overridden_storage->return_type->isNull()) {
+                // a docblock `@return null` stands for void, a native `null` return type is a type of its own
+                if ($overridden_storage->return_type->isNull()
+                    && !$overridden_storage->signature_return_type?->isNull()
+                ) {
                     return Type::getVoid();
                 }
 
@@ -739,6 +742,12 @@ final class Methods
                         );
                     }
 
+                    if ($candidate_type->getId() === $overridden_storage_return_type->getId()) {
+                        $self_class = $appearing_fq_class_storage->name;
+
+                        return $candidate_type;
+                    }
+
                     $attempted_intersection = null;
                     if ($old_contained_by_new) { //implicitly $new_contained_by_old as well
                         try {
@@ -795,7 +804,9 @@ final class Methods
             $overridden_storage = $this->getStorage($overridden_method_id);
 
             if ($overridden_storage->return_type) {
-                if ($overridden_storage->return_type->isNull()) {
+                if ($overridden_storage->return_type->isNull()
+                    && !$overridden_storage->signature_return_type?->isNull()
+                ) {
                     if ($candidate_type && !$candidate_type->isVoid()) {
                         return null;
                     }
