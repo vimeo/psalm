@@ -44,6 +44,8 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function count;
@@ -57,6 +59,44 @@ use function strtolower;
  */
 final class ReturnAnalyzer
 {
+    /**
+     * Inside `if ($a === 15)` the variable `$a` of type `T` is `T as 15`: returning the literal `15`
+     * returns the value of `$a`, which is a `T`. The bound of `T` must be `int`: `==` narrows the same way as `===`,
+     * and a string or a float can be loosely equal to the literal without being identical to it.
+     *
+     * @param array<string, array<string, Union>> $template_type_map
+     * @psalm-capabilities read-props
+     */
+    private static function getTemplateParamEqualToLiteral(
+        Union $literal_type,
+        Context $context,
+        array $template_type_map,
+    ): ?Union {
+        if (!$literal_type->isSingle()) {
+            return null;
+        }
+
+        $literal = $literal_type->getSingleAtomic();
+
+        if (!$literal instanceof TLiteralInt) {
+            return null;
+        }
+
+        foreach ($context->vars_in_scope as $var_type) {
+            if ($var_type->isSingle()
+                && !$var_type->possibly_undefined
+                && ($template_param = $var_type->getSingleAtomic()) instanceof TTemplateParam
+                && $template_param->as->getId() === $literal_type->getId()
+                && ($bound = $template_type_map[$template_param->param_name][$template_param->defining_class] ?? null)
+                && $bound->isInt()
+            ) {
+                return $var_type;
+            }
+        }
+
+        return null;
+    }
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Return_ $stmt,
@@ -167,6 +207,19 @@ final class ReturnAnalyzer
             }
 
             $stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr);
+
+            if ($stmt_expr_type && !$var_comment_type) {
+                $template_type = self::getTemplateParamEqualToLiteral(
+                    $stmt_expr_type,
+                    $context,
+                    $statements_analyzer->getTemplateTypeMap() ?? [],
+                );
+
+                if ($template_type) {
+                    $stmt_expr_type = $template_type;
+                    $statements_analyzer->node_data->setType($stmt->expr, $template_type);
+                }
+            }
 
             if ($var_comment_type) {
                 $stmt_type = $var_comment_type;
