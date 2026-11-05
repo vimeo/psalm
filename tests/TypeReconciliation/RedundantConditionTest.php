@@ -1092,6 +1092,26 @@ final class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - list{3} cannot be identical to list{1, 2',
             ],
+            'negatedTypeCheckOfAKnownTypeExplainsThatItCanNeverBeTrue' => [
+                'code' => '<?php
+                    $a = "some";
+
+                    if (!is_string($a)) {
+                        throw new Exception();
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:26 - '
+                    . 'Type \'some\' for $a is always string, so its negation can never be true',
+            ],
+            'isCallableOnDeclaredCallableArray' => [
+                'code' => '<?php
+                    /** @param callable-array{0: string, 1: non-empty-string} $c */
+                    function f(array $c): void {
+                        if (is_callable($c)) {
+                            echo "always";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
             'instanceofOfATemplateParamAlreadyNarrowedToTheClass' => [
                 'code' => '<?php
                     interface Node {}
