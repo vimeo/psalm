@@ -21,6 +21,23 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedInTheConditionOfAnIfThatBreaksIsDefinedWhereTheLoopContinues' => [
+                'code' => '<?php
+                    function fetch(int $i): ?string {
+                        return $i === 0 ? null : "a";
+                    }
+
+                    /** @param list<int> $items */
+                    function f(array $items): void {
+                        foreach ($items as $item) {
+                            if (null === ($value = fetch($item))) {
+                                break;
+                            }
+
+                            /** @psalm-check-type-exact $value = string */;
+                        }
+                    }',
+            ],
             'variableAssignedLaterInTheBodyHoldsWhatThePreviousIterationLeft' => [
                 'code' => '<?php
                     function f(): void {
