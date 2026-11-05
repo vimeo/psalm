@@ -1267,7 +1267,9 @@ class Reconciler
                     $issue = new TypeDoesNotContainType(
                         'Type ' . $old_var_type_string
                             . ' for ' . $key
-                            . ' is ' . ($not ? 'always ' : 'never ') . $assertion,
+                            . ' is ' . ($not
+                                ? 'always ' . $assertion_string . ', so its negation can never be true'
+                                : 'never ' . $assertion),
                         $code_location,
                         $old_var_type_string . ' ' . $assertion,
                     );
