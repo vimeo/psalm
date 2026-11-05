@@ -136,6 +136,88 @@ final class ArrayAssignmentTest extends TestCase
                         return $arr;
                     }',
             ],
+            'mixedOrStringOffsetAssignedToAnEmptyArrayMakesAnArrayKey' => [
+                'code' => '<?php
+                    /** @var list<mixed> $items */
+                    $items = [];
+                    $final = [];
+                    foreach ($items as $value) {
+                        if (!isset($value["bar"]) || !is_string($value["bar"])) {
+                            continue;
+                        }
+
+                        $negative = $value["bar"];
+                        $final[$negative] = "abc";
+                    }',
+                'assertions' => [
+                    '$final' => 'array<array-key, string>',
+                ],
+                'ignored_issues' => [
+                    'MixedArgument', 'MixedArrayAccess', 'MixedArrayOffset', 'MixedAssignment', 'MixedOperand',
+                ],
+            ],
+            'mixedOrStringOffsetAssignedToAShapeMakesAnArrayKey' => [
+                'code' => '<?php
+                    /** @var list<mixed> $items */
+                    $items = [];
+                    $keyed = ["x" => 1];
+                    foreach ($items as $value) {
+                        if (!isset($value["bar"]) || !is_string($value["bar"])) {
+                            continue;
+                        }
+
+                        $negative = $value["bar"];
+                        $keyed[$negative] = 2;
+                    }',
+                'assertions' => [
+                    '$keyed' => 'non-empty-array<array-key, int>',
+                ],
+                'ignored_issues' => [
+                    'MixedArgument', 'MixedArrayAccess', 'MixedArrayOffset', 'MixedAssignment', 'MixedOperand',
+                ],
+            ],
+            'templateKeyInferredFromAMixedOrStringArgumentMakesAnArrayKey' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @param K $k
+                     * @return array<K, int>
+                     */
+                    function mk($k): array {
+                        return [$k => 1];
+                    }
+
+                    /** @var list<mixed> $items */
+                    $items = [];
+                    $made = [];
+                    foreach ($items as $value) {
+                        if (!isset($value["bar"]) || !is_string($value["bar"])) {
+                            continue;
+                        }
+
+                        $negative = $value["bar"];
+                        $made = mk($negative);
+                    }',
+                'assertions' => [
+                    '$made' => 'array<array-key, int>',
+                ],
+                'ignored_issues' => [
+                    'MixedArgument', 'MixedArrayAccess', 'MixedArrayOffset', 'MixedAssignment', 'MixedOperand',
+                ],
+            ],
+            'floatLiteralKeysOutsideTheRangeOfAnIntAreInts' => [
+                'code' => '<?php
+                    $big = [1.0e30 => 1];
+                    $notANumber = [NAN => 2];
+                    $infinite = [INF => 3, -INF => 4];',
+                'assertions' => [
+                    '$big===' => 'non-empty-array<int, 1>',
+                    '$notANumber===' => 'non-empty-array<int, 2>',
+                    '$infinite===' => 'non-empty-array<int, 3|4>',
+                ],
+                'ignored_issues' => ['InvalidArrayOffset'],
+            ],
+
             'decimalIntStringKeysAreInts' => [
                 'code' => '<?php
                     /** @return decimal-int-string */
@@ -2622,13 +2704,13 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'assignWithFloatOrStringKey' => [
+            'pushWithFloatOrStringKey' => [
                 'code' => '<?php
                     /**
                      * @param string|float $key
                      */
                     function f(array $arr, $key): array {
-                        $arr[$key] = 1;
+                        $arr[$key][] = 1;
                         return $arr;
                     }',
                 'error_message' => 'PossiblyInvalidArrayOffset',
@@ -2644,13 +2726,13 @@ final class ArrayAssignmentTest extends TestCase
                     }',
                 'error_message' => 'PossiblyInvalidArrayOffset',
             ],
-            'pushWithFloatOrStringKey' => [
+            'assignWithFloatOrStringKey' => [
                 'code' => '<?php
                     /**
                      * @param string|float $key
                      */
                     function f(array $arr, $key): array {
-                        $arr[$key][] = 1;
+                        $arr[$key] = 1;
                         return $arr;
                     }',
                 'error_message' => 'PossiblyInvalidArrayOffset',
