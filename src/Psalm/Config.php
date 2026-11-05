@@ -163,6 +163,8 @@ final class Config
     public const INIT_PROJECT_FILES_NOW = false;
 
     final public const DEFAULT_BASELINE_NAME = 'psalm-baseline.xml';
+    private const ZSTD_MINIMUM_VERSION = '0.15.0';
+
     private const DEFAULT_FILE_NAMES = [
         'psalm.xml',
         'psalm.xml.dist',
@@ -905,6 +907,38 @@ final class Config
     }
 
     /**
+     * @param list<string> $warnings
+     * @return 'zstd'|'lz4'|'deflate'|'off'
+     */
+    private static function resolveCompressor(string $requested, array &$warnings): string
+    {
+        $has_zstd = function_exists('zstd_compress') && function_exists('zstd_uncompress')
+            && version_compare((string) phpversion('zstd'), self::ZSTD_MINIMUM_VERSION, '>=');
+        $has_zlib = function_exists('gzinflate') && function_exists('gzdeflate');
+        $automatic = $has_zstd ? 'zstd' : ($has_zlib ? 'deflate' : 'off');
+
+        [$compressor, $missing] = match ($requested) {
+            'zstd' => ['zstd', $has_zstd ? null : 'ext-zstd ' . self::ZSTD_MINIMUM_VERSION . ' or later'],
+            'lz4' => [
+                'lz4',
+                function_exists('lz4_compress') && function_exists('lz4_uncompress') ? null : 'ext-lz4',
+            ],
+            'deflate' => ['deflate', $has_zlib ? null : 'ext-zlib'],
+            'off' => ['off', null],
+            default => [$automatic, null],
+        };
+        if ($missing === null) {
+            return $compressor;
+        }
+
+        $warnings[] = $missing . ' is missing, '
+            . ($automatic === 'off' ? 'cache compression disabled' : "using $automatic cache compression")
+            . ' (compressor="' . $requested . '" in the config)';
+
+        return $automatic;
+    }
+
+    /**
      * @param positive-int $line_number 1-based line number
      * @return int 0-based byte offset
      * @throws OutOfBoundsException
@@ -1222,28 +1256,10 @@ final class Config
             $config->use_igbinary = version_compare($igbinary_version, '2.0.5') >= 0;
         }
 
-        $has_zstd = function_exists('zstd_compress') && function_exists('zstd_uncompress')
-            && version_compare((string) phpversion('zstd'), '0.15.0', '>=');
-        $has_zlib = function_exists('gzinflate') && function_exists('gzdeflate');
-        $automatic = $has_zstd ? 'zstd' : ($has_zlib ? 'deflate' : 'off');
-        $requested = (string) ($config_xml['compressor'] ?? 'auto');
-        if ($requested === 'auto') {
-            $requested = $automatic;
-        }
-        $missing = match ($requested) {
-            'zstd' => $has_zstd ? null : 'ext-zstd 0.15.0 or later',
-            'lz4' => function_exists('lz4_compress') && function_exists('lz4_uncompress') ? null : 'ext-lz4',
-            'deflate' => $has_zlib ? null : 'ext-zlib',
-            default => null,
-        };
-        if ($missing !== null) {
-            $config->config_warnings[] = $missing . ' is missing, '
-                . ($automatic === 'off' ? 'cache compression disabled' : "using $automatic cache compression")
-                . ' (compressor="' . $requested . '" in the config)';
-            $requested = $automatic;
-        }
-        /** @var 'zstd'|'lz4'|'deflate'|'off' $requested */
-        $config->compressor = $requested;
+        $config->compressor = self::resolveCompressor(
+            (string) ($config_xml['compressor'] ?? 'auto'),
+            $config->config_warnings,
+        );
 
         if (isset($config_xml['findUnusedCode'])) {
             $attribute_text = (string) $config_xml['findUnusedCode'];
