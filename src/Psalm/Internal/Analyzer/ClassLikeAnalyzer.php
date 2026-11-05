@@ -746,7 +746,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     $property_name,
                 );
 
-                if ($codebase->classExtends($protected_root_class, $context->self)) {
+                if ($codebase->classExtends($appearing_property_class, $context->self)) {
                     return $emit_issues ? null : true;
                 }
 

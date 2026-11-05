@@ -54,6 +54,20 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'protectedPropertyRedeclaredInASubclassIsAccessibleFromTheParent' => [
+                'code' => '<?php
+                    class P {
+                        protected int $x = 1;
+
+                        public function read(C $c): int {
+                            return $c->x;
+                        }
+                    }
+
+                    class C extends P {
+                        protected int $x = 2;
+                    }',
+            ],
             'protectedPropertyRedeclaredInASiblingIsAccessibleFromAnotherSubclass' => [
                 'code' => '<?php
                     class A {
