@@ -68,6 +68,7 @@ use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function array_diff_key;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
@@ -703,7 +704,8 @@ final class AssertionReconciler extends Reconciler
     ): ?Atomic {
         if ($array_1->fallback_params !== null
             || $array_2->fallback_params !== null
-            || array_keys($array_1->properties) !== array_keys($array_2->properties)
+            || count($array_1->properties) !== count($array_2->properties)
+            || array_diff_key($array_1->properties, $array_2->properties) !== []
         ) {
             return null;
         }

@@ -21,6 +21,18 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'identicalKeyedArraysWithTheSameKeysInAnotherOrder' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a: int|string, b: string} $x
+                     * @param array{b: string|int, a: int} $y
+                     */
+                    function f(array $x, array $y): void {
+                        if ($x === $y) {
+                            echo "same";
+                        }
+                    }',
+            ],
             'identicalKeyedArraysOfOverlappingTypesNarrowTheArray' => [
                 'code' => '<?php
                     function f(int $x, bool $b): void {
