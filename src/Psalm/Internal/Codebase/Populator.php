@@ -16,6 +16,7 @@ use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
+use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\UndefinedTrait;
 use Psalm\IssueBuffer;
@@ -676,6 +677,8 @@ final class Populator
             }
         }
 
+        $this->populateWriteFreeTemplates($storage);
+
         $this->populateOverriddenMethods($storage, $storage_provider);
 
         $this->progress->debug('Have populated ' . $storage->name . "\n");
@@ -711,6 +714,83 @@ final class Populator
             }
 
             unset($this->invalid_class_storages[$fq_classlike_name_lc]);
+        }
+    }
+
+    /**
+     * Finds the templates of the class that no code can write a value of into an instance: those in no parameter of a
+     * method but the constructor, in no property but a readonly one (the class's own code reaches the private members
+     * of any instance of it), and in no argument that a class it extends gets for a template of that class not itself
+     * write free.
+     */
+    private function populateWriteFreeTemplates(ClassLikeStorage $storage): void
+    {
+        if ($storage->template_types === null) {
+            return;
+        }
+
+        $written = [];
+
+        foreach ($storage->properties as $property) {
+            if (!$property->readonly && !$property->is_static) {
+                self::collectTemplates($property->type, $storage->name, $written);
+            }
+        }
+
+        foreach ($storage->pseudo_property_set_types as $type) {
+            self::collectTemplates($type, $storage->name, $written);
+        }
+
+        foreach ([...$storage->methods, ...$storage->pseudo_methods] as $method_name => $method) {
+            if ($method_name === '__construct') {
+                continue;
+            }
+
+            foreach ($method->params as $param) {
+                self::collectTemplates($param->type, $storage->name, $written);
+            }
+
+            self::collectTemplates($method->self_out_type, $storage->name, $written);
+        }
+
+        foreach ($storage->template_extended_params ?? [] as $ancestor_name => $type_map) {
+            $write_free = $this->classlike_storage_provider->has($ancestor_name)
+                ? $this->classlike_storage_provider->get($ancestor_name)->write_free_templates
+                : [];
+
+            foreach ($type_map as $template_name => $type) {
+                if (!isset($write_free[$template_name])) {
+                    self::collectTemplates($type, $storage->name, $written);
+                }
+            }
+        }
+
+        $storage->write_free_templates = [];
+
+        foreach ($storage->template_types as $template_name => $_) {
+            if (!isset($written[$template_name])) {
+                $storage->write_free_templates[$template_name] = true;
+            }
+        }
+    }
+
+    /**
+     * @param array<string, true> $templates the names of the templates of the class found in the type, added to
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function collectTemplates(?Union $type, string $class_name, array &$templates): void
+    {
+        if ($type === null) {
+            return;
+        }
+
+        $collector = new TemplateTypeCollector(true);
+        $collector->traverse($type);
+
+        foreach ($collector->getTemplateTypes() as $template) {
+            if ($template->defining_class === $class_name) {
+                $templates[$template->param_name] = true;
+            }
         }
     }
 
