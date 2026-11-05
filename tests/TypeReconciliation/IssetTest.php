@@ -21,21 +21,6 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'issetOnPropertyOfNoMemberOfUnionIsStillUnknown' => [
-                'code' => '<?php
-                    class A {}
-
-                    class B {}
-
-                    function f(A|B $obj): void {
-                        if (isset($obj->nope)) {
-                            echo 1;
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
             'issetOnPropertyOfOnlyOneMemberOfUnion' => [
                 'code' => '<?php
                     class A {
@@ -62,6 +47,48 @@ final class IssetTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'issetOnPropertyOfNoMemberOfUnionIsStillUnknown' => [
+                'code' => '<?php
+                    class A {}
+
+                    class B {}
+
+                    function f(A|B $obj): void {
+                        if (isset($obj->nope)) {
+                            echo 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'variableIsSetAfterCoalesceThrowStatement' => [
+                'code' => '<?php
+                    class H {
+                        public ?string $p = null;
+
+                        public function a(?string $html): string {
+                            $html ?? throw new Exception();
+
+                            return $html;
+                        }
+
+                        public function b(?string $html): string {
+                            $x = $html ?? throw new Exception();
+
+                            return $html . $x;
+                        }
+
+                        public function c(): string {
+                            $this->p ?? throw new Exception();
+
+                            return $this->p;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'ternaryAfterIssetAndTypeCheckOfAnOffsetOfMixed' => [
                 'code' => '<?php
@@ -1147,6 +1174,25 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'issetOnPropertyOfEveryMemberOfUnionStaysRedundant' => [
+                'code' => '<?php
+                    class A {
+                        public function __construct(public readonly string $a) {}
+                    }
+
+                    class B {
+                        public function __construct(public readonly string $a) {}
+                    }
+
+                    function f(A|B $obj): void {
+                        if (isset($obj->a)) {
+                            echo $obj->a;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'issetOnPropertyOfMemberWithMagicGetterOfUnion' => [
                 'code' => '<?php
                     class A {
@@ -1168,24 +1214,16 @@ final class IssetTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
-            'issetOnPropertyOfEveryMemberOfUnionStaysRedundant' => [
+            'variableStaysNullableAfterCoalesceWithDefault' => [
                 'code' => '<?php
-                    class A {
-                        public function __construct(public readonly string $a) {}
-                    }
+                    function a(?string $html): string {
+                        $html ?? "default";
 
-                    class B {
-                        public function __construct(public readonly string $a) {}
-                    }
-
-                    function f(A|B $obj): void {
-                        if (isset($obj->a)) {
-                            echo $obj->a;
-                        }
+                        return $html;
                     }',
-                'error_message' => 'RedundantCondition',
+                'error_message' => 'NullableReturnStatement',
                 'error_levels' => [],
-                'php_version' => '8.1',
+                'php_version' => '8.0',
             ],
             'complainAboutBadCallInIsset' => [
                 'code' => '<?php
