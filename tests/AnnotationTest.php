@@ -184,6 +184,27 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'varDocblockBeforeAUseStatementDefinesTheVariable' => [
+                'code' => '<?php
+                    /**
+                     * @var string $foo
+                     */
+
+                    use StdClass;
+
+                    echo strlen($foo);',
+            ],
+            'varDocblockBeforeAUseStatementInANamespaceDefinesTheVariable' => [
+                'code' => '<?php
+                    namespace App;
+
+                    /**
+                     * @var string $foo
+                     */
+                    use StdClass;
+
+                    echo strlen($foo);',
+            ],
             'varWithoutNameDoesNotTakeNameOfPreviousVarLine' => [
                 'code' => '<?php
                     /**
