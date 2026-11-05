@@ -35,6 +35,7 @@ use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\PurityWildcardPaths;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
@@ -1305,10 +1306,11 @@ final class ForeachAnalyzer
                     && strtolower($iterator_atomic_type->value) === 'generator'
                 ) {
                     $type_params = $iterator_atomic_type->type_params;
-                    if (isset($type_params[2])
-                        && !$type_params[2]->isNullable()
-                        && !$type_params[2]->isVoid()
-                        && !$type_params[2]->isMixed()
+                    $send_type = isset($type_params[2]) ? StarProjection::readAs($type_params[2]) : null;
+                    if ($send_type !== null
+                        && !$send_type->isNullable()
+                        && !$send_type->isVoid()
+                        && !$send_type->isMixed()
                     ) {
                         $invalid_iterator_types[] = $iterator_atomic_type->getKey();
                     } else {
@@ -1418,8 +1420,15 @@ final class ForeachAnalyzer
                 && strtolower($iterator_atomic_type->value) === 'traversable')
         ) {
             assert(isset($iterator_atomic_type->type_params[1]));
-            $value_type = Type::combineUnionTypes($value_type, $iterator_atomic_type->type_params[1]);
-            $key_type = Type::combineUnionTypes($key_type, $iterator_atomic_type->type_params[0]);
+            // `Traversable<*, *>`: iterating yields the bounds of the templates
+            $value_type = Type::combineUnionTypes(
+                $value_type,
+                StarProjection::readAs($iterator_atomic_type->type_params[1], Type::getMixed()),
+            );
+            $key_type = Type::combineUnionTypes(
+                $key_type,
+                StarProjection::readAs($iterator_atomic_type->type_params[0], Type::getMixed()),
+            );
 
             return;
         }
@@ -1835,7 +1844,10 @@ final class ForeachAnalyzer
                 $offset = array_search($template_name, array_keys($class_template_types), true);
 
                 if ($offset !== false && isset($calling_type_params[$offset])) {
-                    return $calling_type_params[$offset];
+                    return StarProjection::readAs(
+                        $calling_type_params[$offset],
+                        reset($class_template_types[$template_name]) ?: Type::getMixed(),
+                    );
                 }
             }
 

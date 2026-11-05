@@ -793,6 +793,13 @@ final class TypeParser
         $generic_params = [];
 
         foreach ($parse_tree->children as $i => $child_tree) {
+            // `Pair<int, *>`: the argument stands for an unknown type
+            if ($child_tree instanceof Value && $child_tree->value === StarProjection::NAME) {
+                $generic_params[] = StarProjection::create($from_docblock);
+
+                continue;
+            }
+
             $tree_type = self::getTypeFromTree(
                 $child_tree,
                 $codebase,
@@ -828,6 +835,19 @@ final class TypeParser
         }
 
         $generic_type_value = TypeTokenizer::fixScalarTerms($generic_type);
+
+        // a builtin generic has no template to project: `array<*>` is `array<mixed>`, as in PHPStan
+        if (in_array(
+            $generic_type_value,
+            ['array', 'non-empty-array', 'associative-array', 'list', 'non-empty-list', 'iterable'],
+            true,
+        )) {
+            foreach ($generic_params as $i => $generic_param) {
+                if (StarProjection::isStar($generic_param)) {
+                    $generic_params[$i] = new Union([new TMixed(false, $from_docblock)]);
+                }
+            }
+        }
 
         if ($purity_params !== []) {
             return self::getTypeWithPurityArguments(
@@ -991,6 +1011,18 @@ final class TypeParser
             || $generic_type_value === 'interface-string'
             || $generic_type_value === 'enum-string'
         ) {
+            // `class-string<*>`: any class-string (interface-string, enum-string), as in PHPStan
+            if (StarProjection::isStar($generic_params[0])) {
+                return new TClassString(
+                    'object',
+                    null,
+                    false,
+                    $generic_type_value === 'interface-string',
+                    $generic_type_value === 'enum-string',
+                    $from_docblock,
+                );
+            }
+
             $class_name = $generic_params[0]->getId(false);
 
             if (isset($template_type_map[$class_name])) {

@@ -26,6 +26,7 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Atomic\TStarProjection;
 use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -61,6 +62,7 @@ final class TemplateInferredTypeReplacer
         $new_types = [];
 
         $is_mixed = false;
+        $is_unknown_mixed = false;
 
         $inferred_lower_bounds = $template_result->lower_bounds ?: [];
 
@@ -80,6 +82,9 @@ final class TemplateInferredTypeReplacer
 
                 if ($template_type) {
                     $should_set = false;
+                    $is_unknown_mixed = $is_unknown_mixed
+                        || ($template_type->isMixed()
+                            && StarProjection::isTemplateBoundToStar($atomic_type, $template_result));
 
                     foreach ($template_type->getAtomicTypes() as $template_type_part) {
                         if ($template_type_part instanceof TMixed) {
@@ -101,7 +106,10 @@ final class TemplateInferredTypeReplacer
 
                 if ($template_type) {
                     foreach ($template_type->getAtomicTypes() as $template_type_part) {
-                        if ($template_type_part instanceof TMixed
+                        if ($template_type_part instanceof TStarProjection) {
+                            // `class-string<TModel>` on a `Builder<*>`: a class-string of the bound
+                            $class_template_type = new TClassString($atomic_type->as, $atomic_type->as_type);
+                        } elseif ($template_type_part instanceof TMixed
                             || $template_type_part instanceof TObject
                         ) {
                             $class_template_type = new TClassString();
@@ -135,17 +143,20 @@ final class TemplateInferredTypeReplacer
                 if (isset($inferred_lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class])
                     && !empty($inferred_lower_bounds[$atomic_type->offset_param_name])
                 ) {
-                    $array_template_type
-                        = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                    // `TArray[TKey]` on a `Lookup<*, 'a'>`: the offset of what is known of the array
+                    $array_template_type = StarProjection::readAs(
+                        TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                             $inferred_lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class],
                             $codebase,
-                        );
+                        ),
+                    );
 
-                    $offset_template_type
-                        = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                    $offset_template_type = StarProjection::readAs(
+                        TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                             array_values($inferred_lower_bounds[$atomic_type->offset_param_name])[0],
                             $codebase,
-                        );
+                        ),
+                    );
 
                     if ($array_template_type->isSingle()
                         && $offset_template_type->isSingle()
@@ -208,6 +219,12 @@ final class TemplateInferredTypeReplacer
                 }
 
                 $atomic_type = $atomic_type->setTypes($intersected_types);
+            } elseif ($atomic_type instanceof TStarProjection && $atomic_type->as !== null) {
+                // what is known of a `*` may mention templates (`Dep<T, *>` with `B of A` knows `B` is a `T`)
+                $atomic_type = new TStarProjection(
+                    self::replace($atomic_type->as, $template_result, $codebase),
+                    $atomic_type->from_docblock,
+                );
             } elseif ($atomic_type instanceof TConditional
                 && $codebase
             ) {
@@ -228,6 +245,11 @@ final class TemplateInferredTypeReplacer
             if ($should_set) {
                 $types []= $atomic_type;
             }
+        }
+
+        // a `*` known to be nothing more than mixed is any value: `TValue|null` on a `Collection<int, *>` is mixed
+        if ($is_unknown_mixed) {
+            return $union->getBuilder()->setTypes([new TMixed()])->freeze();
         }
 
         if ($is_mixed) {
@@ -277,7 +299,8 @@ final class TemplateInferredTypeReplacer
         );
 
         if ($traversed_type) {
-            $template_type = $traversed_type;
+            // reading a template bound to `*` yields its bound
+            $template_type = StarProjection::readAs($traversed_type, $atomic_type->as);
 
             if ($template_type->isMixed() && !$atomic_type->as->isMixed()) {
                 $template_type = $atomic_type->as;
@@ -391,9 +414,13 @@ final class TemplateInferredTypeReplacer
             return null;
         }
 
-        $template_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-            $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
-            $codebase,
+        // `key-of<TArr>` on a `Holder<*>`: the keys of what is known of the array
+        $template_type = StarProjection::readAs(
+            TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
+                $codebase,
+            ),
+            $atomic_type->as,
         );
 
         if ($atomic_type instanceof TTemplateKeyOf
@@ -424,9 +451,13 @@ final class TemplateInferredTypeReplacer
             return null;
         }
 
-        $template_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-            $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
-            $codebase,
+        // `properties-of<TModel>` on a `Builder<*>`: the properties of what is known of the model
+        $template_type = StarProjection::readAs(
+            TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
+                $codebase,
+            ),
+            $atomic_type->as->as,
         );
 
         $classlike_type = $template_type->getSingleAtomic();

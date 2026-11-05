@@ -124,6 +124,7 @@ final class TypeExpander
         $fleshed_out_type->from_global_state = $return_type->from_global_state;
         $fleshed_out_type->explicit_never = $return_type->explicit_never;
         $fleshed_out_type->had_template = $return_type->had_template;
+        $fleshed_out_type->from_template_default = $return_type->from_template_default;
         $fleshed_out_type->parent_nodes = $return_type->parent_nodes;
         $fleshed_out_type->int_mask_bits = $int_mask_bits !== null && IntMask::fits($fleshed_out_type, $int_mask_bits)
             ? $int_mask_bits
@@ -561,14 +562,18 @@ final class TypeExpander
             ) {
                 $class_storage = $codebase->classlike_storage_provider->get($return_type->value);
 
-                $type_params = PurityArguments::align(
-                    TemplateDefaults::fillAndExpandTypeArguments(
-                        $type_params,
+                $type_params = StarProjection::boundStars(
+                    PurityArguments::align(
+                        TemplateDefaults::fillAndExpandTypeArguments(
+                            $type_params,
+                            $class_storage,
+                            $codebase,
+                            $return_type->from_docblock,
+                        ),
                         $class_storage,
-                        $codebase,
-                        $return_type->from_docblock,
                     ),
                     $class_storage,
+                    $codebase,
                 );
             }
 

@@ -9,6 +9,7 @@ use Override;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeAlias;
@@ -575,8 +576,9 @@ abstract class Atomic implements TypeNode, Stringable
                 throw new InvalidArgumentException('Wrong number of templates!');
             }
 
+            // iterating a `Traversable<int, *>` gives what is known of the unknown type
             return new TIterable(
-                [$traversable_params[0], $traversable_params[1]],
+                [StarProjection::readAs($traversable_params[0]), StarProjection::readAs($traversable_params[1])],
                 [],
                 false,
                 $traversable_params[2] ?? null,

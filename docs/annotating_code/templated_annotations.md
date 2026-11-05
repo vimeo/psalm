@@ -538,6 +538,47 @@ class Collection {
 
 This is perfectly valid, and Psalm won't complain.
 
+## Star projection
+
+A `*` type argument (`Pair<int, *>`, as in PHPStan) stands for some unknown type within the template's bound. Any argument fits it, reading the template gives its bound, and writing to it accepts nothing:
+
+```php
+<?php
+/**
+ * @template TFirst
+ * @template TSecond of object
+ */
+final class Pair {
+    /** @return TSecond */
+    public function second(): object { throw new Exception(); }
+
+    /** @param TSecond $second */
+    public function setSecond(object $second): void {}
+}
+
+/** @param Pair<int, *> $pair */
+function takesAnyPair(Pair $pair): void {
+    $second = $pair->second(); // object
+    $pair->setSecond(new stdClass()); // InvalidArgument: expects never
+}
+
+/** @param Pair<int, stdClass> $pair */
+function takesPairOfStdClass(Pair $pair): void {}
+
+/**
+ * @param Pair<int, stdClass> $concrete
+ * @param Pair<string, stdClass> $other
+ * @param Pair<int, *> $any
+ */
+function f(Pair $concrete, Pair $other, Pair $any): void {
+    takesAnyPair($concrete); // no issue
+    takesAnyPair($other); // InvalidArgument
+    takesPairOfStdClass($any); // InvalidArgument
+}
+```
+
+`class-string<*>` is any class-string, and `array<*>`, `list<*>` and `iterable<*>` read `*` as `mixed`. A `*` argument is not allowed in `@extends`, `@implements` or `@use` (`InvalidDocblock`).
+
 ## Builtin templated classes and interfaces
 
 Psalm has support for a number of builtin classes and interfaces that you can extend/implement in your own code.

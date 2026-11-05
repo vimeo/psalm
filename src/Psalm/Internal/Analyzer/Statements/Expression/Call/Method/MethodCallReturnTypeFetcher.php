@@ -29,6 +29,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Internal\TypeVisitor\StarProjectionVisitor;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -903,8 +904,14 @@ final class MethodCallReturnTypeFetcher
         $closure_type = new Union([$closure]);
 
         if ($bounds_result->lower_bounds) {
+            // the closure's parameters are written to like the method's: `*` templates accept nothing there
             $closure_type = TemplateInferredTypeReplacer::replace(
-                TypeExpander::expandUnion($codebase, $closure_type, null, null, null),
+                StarProjectionVisitor::project(
+                    TypeExpander::expandUnion($codebase, $closure_type, null, null, null),
+                    $bounds_result,
+                    $codebase,
+                    false,
+                ),
                 $bounds_result,
                 $codebase,
             );
@@ -1000,7 +1007,7 @@ final class MethodCallReturnTypeFetcher
             );
 
             $return_type_candidate = TemplateInferredTypeReplacer::replace(
-                $return_type_candidate,
+                StarProjectionVisitor::project($return_type_candidate, $template_result, $codebase, false),
                 $template_result,
                 $codebase,
             );

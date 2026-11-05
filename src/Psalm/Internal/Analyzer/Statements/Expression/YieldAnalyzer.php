@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\UnnecessaryVarAnnotation;
@@ -260,7 +261,7 @@ final class YieldAnalyzer
                             if (!$atomic_return_type->type_params[2]->isVoid()) {
                                 $statements_analyzer->node_data->setType(
                                     $stmt,
-                                    $atomic_return_type->type_params[2],
+                                    StarProjection::readAs($atomic_return_type->type_params[2]),
                                 );
                             }
                         } else {
