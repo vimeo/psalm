@@ -3417,6 +3417,33 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'assertOfAMethodCalledInTheArgumentOfASelfCall' => [
+                'code' => '<?php
+                    class Entity {
+                        public ?int $id = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->id
+                         */
+                        public function getIdAssert(): int {
+                            return 1;
+                        }
+
+                        public function viaSelf(): void {
+                            self::consume($this->getIdAssert());
+                        }
+
+                        public function viaStatic(): void {
+                            static::consume($this->getIdAssert());
+                        }
+
+                        public function consume(int $id): void {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -3427,6 +3454,27 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertOfAMethodCalledTwiceInTheArgumentsOfASelfCall' => [
+                'code' => '<?php
+                    class Entity {
+                        public ?int $id = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->id
+                         */
+                        public function getIdAssert(): int {
+                            return 1;
+                        }
+
+                        public function viaSelf(): void {
+                            self::consume($this->getIdAssert(), $this->getIdAssert());
+                        }
+
+                        public function consume(int $id, int $other): void {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
             'assertInstanceOfMultipleInterfaces' => [
                 'code' => '<?php
                     class A {
