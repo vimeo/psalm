@@ -7,6 +7,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 use AssertionError;
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
@@ -650,6 +651,14 @@ final class ArrayFunctionArgumentsAnalyzer
         Context $context,
         bool $is_array_shift,
     ): void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        if ($arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            self::writeBackItemWithoutEnd($statements_analyzer, $arg->value, $context, $is_array_shift);
+
+            return;
+        }
+
         $var_id = ExpressionIdentifier::getVarId(
             $arg->value,
             $statements_analyzer->getFQCLN(),
@@ -660,121 +669,205 @@ final class ArrayFunctionArgumentsAnalyzer
             $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
 
             if (isset($context->vars_in_scope[$var_id])) {
-                $array_atomic_types = [];
-                $var_atomic_types = array_values($context->vars_in_scope[$var_id]->getAtomicTypes());
-
-                while ($array_atomic_type = array_shift($var_atomic_types)) {
-                    // once an element is removed, the array is no longer of the template type, only of its bound
-                    if ($array_atomic_type instanceof TTemplateParam
-                        && !$array_atomic_type->as->isMixed()
-                        && !$array_atomic_type->as->isEmptyArray()
-                    ) {
-                        $var_atomic_types = [
-                            ...$var_atomic_types,
-                            ...array_values($array_atomic_type->as->getAtomicTypes()),
-                        ];
-                        continue;
-                    }
-
-                    if ($array_atomic_type instanceof TKeyedArray) {
-                        if ($is_array_shift && $array_atomic_type->is_list
-                            && !$context->inside_loop
-                        ) {
-                            $array_properties = $array_atomic_type->properties;
-
-                            array_shift($array_properties);
-
-                            if (!$array_properties) {
-                                $array_atomic_types []= $array_atomic_type->fallback_params
-                                    ? Type::getListAtomic($array_atomic_type->fallback_params[1])
-                                    : Type::getEmptyArrayAtomic();
-                            } else {
-                                $array_atomic_types []= $array_atomic_type->setProperties($array_properties);
-                            }
-                            continue;
-                        } elseif (!$is_array_shift && $array_atomic_type->is_list
-                            && !$array_atomic_type->fallback_params
-                            && !$context->inside_loop
-                        ) {
-                            $array_properties = $array_atomic_type->properties;
-
-                            array_pop($array_properties);
-
-                            if (!$array_properties) {
-                                $array_atomic_types []= Type::getEmptyArrayAtomic();
-                            } else {
-                                // if the popped element was optional, an earlier one may have been removed instead
-                                $min_count = $array_atomic_type->getMinCount() - 1;
-                                foreach ($array_properties as $offset => $property) {
-                                    if ($offset >= $min_count) {
-                                        $array_properties[$offset] = $property->setPossiblyUndefined(true);
-                                    }
-                                }
-
-                                $array_atomic_types []= $array_atomic_type->setProperties($array_properties);
-                            }
-                            continue;
-                        }
-
-                        $array_atomic_type = $array_atomic_type->is_list
-                            ? Type::getListAtomic($array_atomic_type->getGenericValueType())
-                            : $array_atomic_type->getGenericArrayType();
-                    }
-
-                    if ($array_atomic_type instanceof TNonEmptyArray) {
-                        if (!$context->inside_loop && $array_atomic_type->count !== null) {
-                            if ($array_atomic_type->count === 1) {
-                                $array_atomic_type = new TArray(
-                                    [
-                                        Type::getNever(),
-                                        Type::getNever(),
-                                    ],
-                                );
-                            } else {
-                                $array_atomic_type = $array_atomic_type->setCount($array_atomic_type->count-1);
-                            }
-                        } else {
-                            $array_atomic_type = new TArray($array_atomic_type->type_params);
-                        }
-
-                        $array_atomic_types[] = $array_atomic_type;
-                    } elseif ($array_atomic_type instanceof TKeyedArray && $array_atomic_type->is_list) {
-                        if (!$context->inside_loop
-                            && ($prop_count = $array_atomic_type->getMaxCount())
-                            && $prop_count === $array_atomic_type->getMinCount()
-                        ) {
-                            if ($prop_count === 1) {
-                                $array_atomic_type = new TArray(
-                                    [
-                                        Type::getNever(),
-                                        Type::getNever(),
-                                    ],
-                                );
-                            } else {
-                                $properties = $array_atomic_type->properties;
-                                unset($properties[$prop_count-1]);
-                                assert($properties !== []);
-                                $array_atomic_type = $array_atomic_type->setProperties($properties);
-                            }
-                        } else {
-                            $array_atomic_type = Type::getListAtomic($array_atomic_type->getGenericValueType());
-                        }
-
-                        $array_atomic_types[] = $array_atomic_type;
-                    } else {
-                        $array_atomic_types[] = $array_atomic_type;
-                    }
-                }
-
-                if (!$array_atomic_types) {
-                    throw new AssertionError("We must have some types here!");
-                }
-                // several atomics may be arrays, which a Union would index by the same key
-                $array_type = TypeCombiner::combine($array_atomic_types, $statements_analyzer->getCodebase());
+                $array_type = self::getArrayWithoutEnd(
+                    $codebase,
+                    $context,
+                    $context->vars_in_scope[$var_id],
+                    $is_array_shift,
+                );
                 $context->removeDescendents($var_id, $array_type);
                 $context->vars_in_scope[$var_id] = $array_type;
             }
         }
+    }
+
+    /**
+     * An item of a temporary, e.g. g()[0], has nothing to be written back to
+     */
+    private static function writeBackItemWithoutEnd(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\ArrayDimFetch $item,
+        Context $context,
+        bool $is_array_shift,
+    ): void {
+        $item_type = $statements_analyzer->node_data->getType($item);
+
+        $root = $item;
+        while ($root instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            $root = $root->var;
+        }
+
+        if ($item_type === null
+            || !$item_type->hasArray()
+            || !($root instanceof PhpParser\Node\Expr\Variable
+                || $root instanceof PhpParser\Node\Expr\PropertyFetch
+                || $root instanceof PhpParser\Node\Expr\StaticPropertyFetch)
+        ) {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $new_type = self::getArrayWithoutEnd($codebase, $context, $item_type, $is_array_shift);
+
+        // an item reached by several keys loses its end in only one of them, whichever it is
+        if (self::hasKeyOfSeveralLiterals($statements_analyzer, $item)) {
+            $new_type = Type::combineUnionTypes($item_type, $new_type, $codebase);
+        }
+
+        // what the item held may still be in it
+        $new_type = $new_type->addParentNodes($item_type->parent_nodes);
+
+        AssignmentAnalyzer::assignByRefParam(
+            $statements_analyzer,
+            $item,
+            $new_type,
+            $new_type,
+            $context,
+            false,
+        );
+    }
+
+    /**
+     * Whether a key the item is reached through is one of several literals
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function hasKeyOfSeveralLiterals(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\ArrayDimFetch $item,
+    ): bool {
+        for ($stmt = $item; $stmt instanceof PhpParser\Node\Expr\ArrayDimFetch; $stmt = $stmt->var) {
+            $dim_type = $stmt->dim ? $statements_analyzer->node_data->getType($stmt->dim) : null;
+
+            if ($dim_type !== null && $dim_type->allLiterals() && count($dim_type->getAtomicTypes()) > 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The array a list or a map is after array_pop() or array_shift()
+     */
+    private static function getArrayWithoutEnd(
+        Codebase $codebase,
+        Context $context,
+        Union $type,
+        bool $is_array_shift,
+    ): Union {
+        $array_atomic_types = [];
+        $var_atomic_types = array_values($type->getAtomicTypes());
+
+        while ($array_atomic_type = array_shift($var_atomic_types)) {
+            // once an element is removed, the array is no longer of the template type, only of its bound
+            if ($array_atomic_type instanceof TTemplateParam
+                && !$array_atomic_type->as->isMixed()
+                && !$array_atomic_type->as->isEmptyArray()
+            ) {
+                $var_atomic_types = [
+                    ...$var_atomic_types,
+                    ...array_values($array_atomic_type->as->getAtomicTypes()),
+                ];
+                continue;
+            }
+
+            if ($array_atomic_type instanceof TKeyedArray) {
+                if ($is_array_shift && $array_atomic_type->is_list
+                    && !$context->inside_loop
+                ) {
+                    $array_properties = $array_atomic_type->properties;
+
+                    array_shift($array_properties);
+
+                    if (!$array_properties) {
+                        $array_atomic_types []= $array_atomic_type->fallback_params
+                            ? Type::getListAtomic($array_atomic_type->fallback_params[1])
+                            : Type::getEmptyArrayAtomic();
+                    } else {
+                        $array_atomic_types []= $array_atomic_type->setProperties($array_properties);
+                    }
+                    continue;
+                } elseif (!$is_array_shift && $array_atomic_type->is_list
+                    && !$array_atomic_type->fallback_params
+                    && !$context->inside_loop
+                ) {
+                    $array_properties = $array_atomic_type->properties;
+
+                    array_pop($array_properties);
+
+                    if (!$array_properties) {
+                        $array_atomic_types []= Type::getEmptyArrayAtomic();
+                    } else {
+                        // if the popped element was optional, an earlier one may have been removed instead
+                        $min_count = $array_atomic_type->getMinCount() - 1;
+                        foreach ($array_properties as $offset => $property) {
+                            if ($offset >= $min_count) {
+                                $array_properties[$offset] = $property->setPossiblyUndefined(true);
+                            }
+                        }
+
+                        $array_atomic_types []= $array_atomic_type->setProperties($array_properties);
+                    }
+                    continue;
+                }
+
+                $array_atomic_type = $array_atomic_type->is_list
+                    ? Type::getListAtomic($array_atomic_type->getGenericValueType())
+                    : $array_atomic_type->getGenericArrayType();
+            }
+
+            if ($array_atomic_type instanceof TNonEmptyArray) {
+                if (!$context->inside_loop && $array_atomic_type->count !== null) {
+                    if ($array_atomic_type->count === 1) {
+                        $array_atomic_type = new TArray(
+                            [
+                                Type::getNever(),
+                                Type::getNever(),
+                            ],
+                        );
+                    } else {
+                        $array_atomic_type = $array_atomic_type->setCount($array_atomic_type->count-1);
+                    }
+                } else {
+                    $array_atomic_type = new TArray($array_atomic_type->type_params);
+                }
+
+                $array_atomic_types[] = $array_atomic_type;
+            } elseif ($array_atomic_type instanceof TKeyedArray && $array_atomic_type->is_list) {
+                if (!$context->inside_loop
+                    && ($prop_count = $array_atomic_type->getMaxCount())
+                    && $prop_count === $array_atomic_type->getMinCount()
+                ) {
+                    if ($prop_count === 1) {
+                        $array_atomic_type = new TArray(
+                            [
+                                Type::getNever(),
+                                Type::getNever(),
+                            ],
+                        );
+                    } else {
+                        $properties = $array_atomic_type->properties;
+                        unset($properties[$prop_count-1]);
+                        assert($properties !== []);
+                        $array_atomic_type = $array_atomic_type->setProperties($properties);
+                    }
+                } else {
+                    $array_atomic_type = Type::getListAtomic($array_atomic_type->getGenericValueType());
+                }
+
+                $array_atomic_types[] = $array_atomic_type;
+            } else {
+                $array_atomic_types[] = $array_atomic_type;
+            }
+        }
+
+        if (!$array_atomic_types) {
+            throw new AssertionError("We must have some types here!");
+        }
+
+        // several atomics may be arrays, which a Union would index by the same key
+        return TypeCombiner::combine($array_atomic_types, $codebase);
     }
 
     /**

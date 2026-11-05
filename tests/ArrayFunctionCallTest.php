@@ -3702,7 +3702,7 @@ final class ArrayFunctionCallTest extends TestCase
                     function f(array $m, string $k): void {
                         array_shift($m[$k]);
                         $shifted = array_shift($m[$k]);
-                        /** @psalm-check-type-exact $shifted = int|string */
+                        /** @psalm-check-type-exact $shifted = string */
                     }
 
                     function g(): int {
@@ -3713,8 +3713,146 @@ final class ArrayFunctionCallTest extends TestCase
                         return $i;
                     }',
                 'assertions' => [
-                    '$popped===' => "'s'|1",
+                    '$popped===' => '1',
                 ],
+            ],
+            'arrayPopItemIsWrittenBack' => [
+                'code' => '<?php
+                    $a = [[1, 2, 3]];
+                    $x = array_pop($a[0]);
+                    $y = array_pop($a[0]);',
+                'assertions' => [
+                    '$x===' => '3',
+                    '$y===' => '2',
+                    '$a===' => 'list{list{1}}',
+                ],
+            ],
+            'arrayShiftItemIsWrittenBack' => [
+                'code' => '<?php
+                    $a = [[1, 2, 3]];
+                    $x = array_shift($a[0]);
+                    $y = array_shift($a[0]);',
+                'assertions' => [
+                    '$x===' => '1',
+                    '$y===' => '2',
+                    '$a===' => 'list{list{3}}',
+                ],
+            ],
+            'arrayPopItemCanBecomeEmpty' => [
+                'code' => '<?php
+                    function f(): bool {
+                        $a = [[1]];
+                        array_pop($a[0]);
+                        return $a[0] === [];
+                    }',
+            ],
+            'arrayPopNestedItemIsWrittenBack' => [
+                'code' => '<?php
+                    $a = ["x" => ["y" => [1, 2, 3]]];
+                    array_pop($a["x"]["y"]);
+                    $v = array_pop($a["x"]["y"]);',
+                'assertions' => [
+                    '$v===' => '2',
+                    '$a===' => 'array{x: array{y: list{1}}}',
+                ],
+            ],
+            'arrayPopItemOfPropertiesIsWrittenBack' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @var array<int, list<int>> */
+                        public array $items = [];
+                        /** @var array<int, list<int>> */
+                        public static array $shared = [];
+                    }
+
+                    $b = new Box();
+                    $b->items = [[1, 2, 3]];
+                    array_pop($b->items[0]);
+                    $x = array_pop($b->items[0]);
+
+                    Box::$shared = [[1, 2, 3]];
+                    array_shift(Box::$shared[0]);
+                    $y = array_shift(Box::$shared[0]);',
+                'assertions' => [
+                    '$x===' => '2',
+                    '$y===' => '2',
+                    '$b->items===' => 'list{list{1}}',
+                    'Box::$shared===' => 'list{list{3}}',
+                ],
+            ],
+            'arrayPopItemKeyIsEvaluatedOnce' => [
+                'code' => '<?php
+                    $a = [[1, 2], [3, 4]];
+                    $i = 0;
+                    $x = array_pop($a[$i++]);
+                    $j = 1;
+                    $y = array_shift($a[$j++]);',
+                'assertions' => [
+                    '$i===' => '1',
+                    '$j===' => '2',
+                    '$x===' => '2',
+                    '$y===' => '3',
+                    '$a===' => 'list{list{1}, list{4}}',
+                ],
+            ],
+            'arrayPopItemOfUnionKeyKeepsBothOffsetsPossible' => [
+                'code' => '<?php
+                    $a = [[1, 2], [3, 4]];
+                    $k = rand(0, 1) ? 0 : 1;
+                    array_pop($a[$k]);',
+                'assertions' => [
+                    '$a===' => 'list{list{0: 1|3, 1?: 2|4}, list{0: 1|3, 1?: 2|4}}',
+                ],
+            ],
+            'arrayPopItemOfCallResultIsNotWrittenBack' => [
+                'code' => '<?php
+                    /** @return list{list{int, string}} */
+                    function g(): array {
+                        return [[1, "s"]];
+                    }
+
+                    $x = array_pop(g()[0]);
+                    $y = array_pop(g()[0]);',
+                'assertions' => [
+                    '$x===' => 'string',
+                    '$y===' => 'string',
+                ],
+            ],
+            'arrayPopItemOfMixedIsUnchanged' => [
+                'code' => '<?php
+                    /** @param array<int, mixed> $a */
+                    function f(array $a): void {
+                        $x = array_pop($a[0]);
+                        /** @psalm-check-type-exact $x = mixed */
+                        /** @psalm-check-type-exact $a = array<int, mixed> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument', 'MixedAssignment'],
+            ],
+            'arrayPopItemOfArrayAccessIsNotExact' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, list{int, string}> */
+                    final class Box implements ArrayAccess {
+                        public function offsetExists(int $offset): bool {
+                            return true;
+                        }
+
+                        /** @return list{int, string} */
+                        public function offsetGet(int $offset): array {
+                            return [1, "s"];
+                        }
+
+                        /** @param list{int, string} $value */
+                        public function offsetSet(int $offset, array $value): void {}
+
+                        public function offsetUnset(int $offset): void {}
+                    }
+
+                    function f(Box $b): void {
+                        array_pop($b[0]);
+                        $x = array_pop($b[0]);
+                        /** @psalm-check-type-exact $x = int|string */
+                    }',
             ],
             'arrayPopShiftEmptyTemplateArray' => [
                 'code' => '<?php
@@ -4296,6 +4434,75 @@ final class ArrayFunctionCallTest extends TestCase
                         return array_pop($a[0]);
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'arrayShiftOffsetOfUnionIndex' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        $a = [[1, "s"], [2, 3.5]];
+                        $k = $b ? 0 : 1;
+                        array_shift($a[$k]);
+                        return array_shift($a[0]);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'arrayPopOffsetOfArrayAccessIsNotExact' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, list{int, string}> */
+                    final class Box implements ArrayAccess {
+                        public function offsetExists(int $offset): bool {
+                            return true;
+                        }
+
+                        /** @return list{int, string} */
+                        public function offsetGet(int $offset): array {
+                            return [1, "s"];
+                        }
+
+                        /** @param list{int, string} $value */
+                        public function offsetSet(?int $offset, array $value): void {}
+
+                        public function offsetUnset(int $offset): void {}
+                    }
+
+                    function f(Box $b): string {
+                        array_pop($b[0]);
+                        return array_pop($b[0]);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'arrayPopItemRemovesTheLastOffset' => [
+                'code' => '<?php
+                    function f(): int {
+                        $a = [[1, 2]];
+                        array_pop($a[0]);
+                        return $a[0][1];
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+            ],
+            'arrayPopItemOfPropertyChangesTheProperty' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @var list{list{int, int}} */
+                        public array $items = [[1, 2]];
+
+                        public function f(): void {
+                            array_pop($this->items[0]);
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'arrayPopItemOfPropertyIsNotMutationFree' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @var list<list<int>> */
+                        public array $items = [[1, 2]];
+
+                        /** @psalm-mutation-free */
+                        public function f(): void {
+                            array_pop($this->items[0]);
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
             ],
         ];
     }

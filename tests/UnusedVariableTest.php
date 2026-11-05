@@ -74,6 +74,16 @@ final class UnusedVariableTest extends TestCase
                         abstract protected static function qux(): array;
                     }',
             ],
+            'keyOfAnArrayItemPoppedIsUsed' => [
+                'code' => '<?php
+                    /** @param array<string, list<int>> $a */
+                    function by_name(array $a): array {
+                        $k = "x";
+                        array_pop($a[$k]);
+                        array_shift($a[$k]);
+                        return $a;
+                    }',
+            ],
             'keyOfAnArrayItemPassedByReferenceIsUsed' => [
                 'code' => '<?php
                     /** @param array<string, list<int>> $a */
