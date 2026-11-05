@@ -1674,6 +1674,22 @@ final class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'MissingDocblockType',
             ],
+            'accidentallyNotADocblock' => [
+                'code' => '<?php
+                    /*
+                     * @return numeric-string
+                     */
+                    function myValue(): string {
+                        return "15";
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'accidentallyNotADocblockSingleLine' => [
+                'code' => '<?php
+                    /* @var non-falsy-string $x */
+                    $x = "";',
+                'error_message' => 'InvalidDocblock',
+            ],
             'dontOverrideSameType' => [
                 'code' => '<?php
                     class A {
