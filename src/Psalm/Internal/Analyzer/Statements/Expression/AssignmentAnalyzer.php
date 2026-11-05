@@ -27,6 +27,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAss
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\StaticPropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -108,6 +109,7 @@ use function str_contains;
 use function str_starts_with;
 use function strpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -1120,6 +1122,13 @@ final class AssignmentAnalyzer
 
         FunctionLikeAnalyzer::unbindByRefParam($statements_analyzer->getCodebase(), $context, $lhs_var_id);
 
+        if ($rhs_var_id === '$GLOBALS[\'' . substr($lhs_var_id, 1) . '\']') {
+            $context->bound_globals[$lhs_var_id] = VariableFetchAnalyzer::getGlobalType(
+                $lhs_var_id,
+                $statements_analyzer->getCodebase()->analysis_php_version_id,
+            );
+        }
+
         if (isset($context->references_in_scope[$lhs_var_id])) {
             // Decrement old referenced variable's reference count
             $context->decrementReferenceCount($lhs_var_id);
@@ -1201,9 +1210,9 @@ final class AssignmentAnalyzer
         bool $prevent_null = false,
         bool $out_type_holds_value = false,
     ): void {
-        if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $stmt->name instanceof PhpParser\Node\Identifier) {
-            $prop_name = $stmt->name->name;
-
+        if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch
+            && ($prop_name = InstancePropertyFetchAnalyzer::getPropertyName($statements_analyzer, $stmt)) !== null
+        ) {
             InstancePropertyAssignmentAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
@@ -1767,7 +1776,10 @@ final class AssignmentAnalyzer
 
                     $already_in_scope = isset($context->vars_in_scope[$list_var_id]);
 
-                    if (!str_contains($list_var_id, '-') && !str_contains($list_var_id, '[')) {
+                    if (!str_contains($list_var_id, '-')
+                        && !str_contains($list_var_id, '[')
+                        && !str_contains($list_var_id, '::')
+                    ) {
                         $location = new CodeLocation($statements_analyzer, $var);
 
                         if (!$statements_analyzer->hasVariable($list_var_id)) {
@@ -1963,15 +1975,9 @@ final class AssignmentAnalyzer
             $context->inside_general_use = $was_inside_general_use;
         }
 
-        if ($assign_var->name instanceof PhpParser\Node\Identifier) {
-            $prop_name = $assign_var->name->name;
-        } elseif (($assign_var_name_type = $statements_analyzer->node_data->getType($assign_var->name))
-            && $assign_var_name_type->isSingleStringLiteral()
-        ) {
-            $prop_name = $assign_var_name_type->getSingleStringLiteral()->value;
-        } else {
-            $prop_name = null;
-        }
+        $prop_name = InstancePropertyFetchAnalyzer::getPropertyName($statements_analyzer, $assign_var);
+
+        $assign_var->setAttribute(InstancePropertyAssignmentAnalyzer::WRITE_CHARGED, false);
 
         if ($prop_name) {
             InstancePropertyAssignmentAnalyzer::analyze(
@@ -2007,6 +2013,10 @@ final class AssignmentAnalyzer
 
         if ($var_id) {
             $context->vars_possibly_in_scope[$var_id] = true;
+        }
+
+        if ($assign_var->getAttribute(InstancePropertyAssignmentAnalyzer::WRITE_CHARGED) === true) {
+            return;
         }
 
         $pureCompat = $statements_analyzer->node_data->isPureCompatible($assign_var->var);
