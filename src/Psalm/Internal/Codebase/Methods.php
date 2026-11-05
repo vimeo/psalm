@@ -742,6 +742,12 @@ final class Methods
                         );
                     }
 
+                    if ($candidate_type->getId() === $overridden_storage_return_type->getId()) {
+                        $self_class = $appearing_fq_class_storage->name;
+
+                        return $candidate_type;
+                    }
+
                     $attempted_intersection = null;
                     if ($old_contained_by_new) { //implicitly $new_contained_by_old as well
                         try {

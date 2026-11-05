@@ -236,6 +236,34 @@ final class NegatedAssertionReconciler extends Reconciler
             if ($assertion_type && !$existing_var_type->removeType($assertion_type->getKey())) {
                 if ($assertion_type instanceof TNamedObject) {
                     foreach ($existing_var_type->getAtomicTypes() as $part_name => $existing_var_type_part) {
+                        if ($existing_var_type_part instanceof TTemplateParam
+                            && !$existing_var_type_part->as->isMixed()
+                        ) {
+                            $bound_failed_reconciliation = 0;
+
+                            $narrowed_as = self::reconcile(
+                                $statements_analyzer,
+                                $assertion,
+                                $existing_var_type_part->as,
+                                $existing_var_type_part->as->getId(),
+                                null,
+                                false,
+                                null,
+                                $suppressed_issues,
+                                $bound_failed_reconciliation,
+                                $inside_loop,
+                            );
+
+                            if (!$bound_failed_reconciliation
+                                && $narrowed_as->getId() !== $existing_var_type_part->as->getId()
+                            ) {
+                                $existing_var_type->removeType($part_name);
+                                $existing_var_type->addType($existing_var_type_part->replaceAs($narrowed_as));
+
+                                continue;
+                            }
+                        }
+
                         if (!$existing_var_type_part->isObjectType()) {
                             continue;
                         }
