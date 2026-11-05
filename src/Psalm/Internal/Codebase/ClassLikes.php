@@ -2054,7 +2054,7 @@ final class ClassLikes
                 $constant_name,
             );
 
-            if ($in_value_of_context) {
+            if ($in_value_of_context && $enum_types !== null) {
                 return $enum_types;
             }
         }
