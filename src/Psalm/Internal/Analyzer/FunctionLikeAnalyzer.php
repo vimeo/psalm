@@ -1936,12 +1936,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $context->self,
                         $template_params,
                         false,
-                        !$storage->final,
+                        !$appearing_class_storage->final,
                     );
                 } else {
                     $this_object_type = new TNamedObject(
                         $context->self,
-                        !$storage->final,
+                        !$appearing_class_storage->final,
                     );
                 }
 
