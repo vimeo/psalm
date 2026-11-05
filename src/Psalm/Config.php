@@ -909,6 +909,7 @@ final class Config
     /**
      * @param list<string> $warnings
      * @return 'zstd'|'lz4'|'deflate'|'off'
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function resolveCompressor(string $requested, array &$warnings): string
     {

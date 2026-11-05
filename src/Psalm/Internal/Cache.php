@@ -202,6 +202,7 @@ final class Cache
         /** @var array<array-key, array{string, int, int}> $entries */
         $entries = [];
         $offset = 0;
+        /** @psalm-capabilities read-props|write-this-props|write-refs */
         $add = static function (string $key, string $hash, int $length) use (&$entries, &$offset): void {
             $entries[$key] = [$hash, $offset, $length];
             $offset += $length;
@@ -363,6 +364,7 @@ final class Cache
         return [self::buildHeader($record[1], $record[2], $payload), $payload];
     }
 
+    /** @psalm-pure */
     private static function buildHeader(string $hash, string $key, string $payload): string
     {
         return pack('VVV', strlen($hash), strlen($key), strlen($payload))

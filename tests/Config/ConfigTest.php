@@ -2794,7 +2794,7 @@ final class ConfigTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{string, string|null, string|null}> compressor, what it needs, a function of it
+     * @return iterable<string, array{string, non-empty-string|null, string|null}> compressor, what it needs, a function of it
      * @psalm-pure
      */
     public static function providerCompressorsThatAreResolvedLikeAnAbsentAttribute(): iterable
@@ -2805,7 +2805,11 @@ final class ConfigTest extends TestCase
         yield 'deflate' => ['deflate', 'ext-zlib', 'gzdeflate'];
     }
 
-    /** `auto` and a compressor that is not available give what no attribute gives, `auto` without a warning */
+    /**
+     * `auto` and a compressor that is not available give what no attribute gives, `auto` without a warning
+     *
+     * @param non-empty-string|null $requirement
+     */
     #[DataProvider('providerCompressorsThatAreResolvedLikeAnAbsentAttribute')]
     public function testAutoOrUnavailableCompressorIsResolvedLikeAnAbsentAttribute(
         string $compressor,
@@ -2838,7 +2842,10 @@ final class ConfigTest extends TestCase
         $this->assertStringContainsString('compressor="' . $compressor . '"', $warning);
     }
 
-    /** @return iterable<string, array{string}> */
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
     public static function providerAttributesOfTheZstdCompressor(): iterable
     {
         yield 'absent' => [''];
