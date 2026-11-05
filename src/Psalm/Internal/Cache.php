@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Internal;
 
 use Amp\Serialization\Serializer;
-use AssertionError;
 use DirectoryIterator;
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
@@ -13,6 +12,8 @@ use RuntimeException;
 use Webmozart\Assert\Assert;
 
 use function assert;
+use function error_clear_last;
+use function error_get_last;
 use function fclose;
 use function fflush;
 use function file_exists;
@@ -33,7 +34,6 @@ use function pack;
 use function stream_get_contents;
 use function strlen;
 use function substr;
-use function substr_compare;
 use function unlink;
 use function unpack;
 use function usleep;
@@ -86,19 +86,14 @@ final class Cache
         $dir .= DIRECTORY_SEPARATOR . hash_final($hash);
 
         $this->dir = $dir.DIRECTORY_SEPARATOR;
-        try {
-            if (mkdir($this->dir, 0777, true) === false) {
-                // any other error than directory already exists/permissions issue
+        if (!is_dir($this->dir)) {
+            error_clear_last();
+            // Another process may create the directory between the check and mkdir() (#4483)
+            if (!@mkdir($this->dir, 0777, true) && !is_dir($this->dir)) {
+                $reason = error_get_last()['message'] ?? null;
                 throw new RuntimeException(
-                    'Failed to create ' . $this->dir . ' cache directory for unknown reasons',
+                    'Failed to create ' . $this->dir . ' cache directory' . ($reason !== null ? ": $reason" : ''),
                 );
-            }
-        } catch (RuntimeException $e) {
-            // Race condition (#4483)
-            if (!is_dir($this->dir)) {
-                // rethrow the error with default message
-                // it contains the reason why creation failed
-                throw $e;
             }
         }
 
@@ -122,12 +117,16 @@ final class Cache
             if ($f->isFile() && !$f->isDot()
                 && $f->getExtension() === 'hash'
             ) {
-                $key = file_get_contents($f->getPathname());
-                Assert::notFalse($key);
-                /** @var int */
-                $hashLen = unpack('V', $key)[1];
-                $hash = substr($key, 4, $hashLen);
-                $key = substr($key, 4+$hashLen);
+                $header = Providers::safeFileGetContents($f->getPathname());
+                $hash = self::parseHeader($header);
+                if ($hash === null) {
+                    continue;
+                }
+                $key = substr($header, 4 + strlen($hash));
+                // A cut-short key hashes to another file name
+                if (hash('xxh128', $key) !== $f->getBasename('.hash')) {
+                    continue;
+                }
                 Assert::notNull($this->getItem($key, $hash));
                 unlink($f->getPathname());
                 unlink(substr($f->getPathname(), 0, -5));
@@ -138,6 +137,27 @@ final class Cache
         file_put_contents($this->dir . 'consolidated', $consolidated, LOCK_EX);
         flock($this->lock, LOCK_UN);
         flock($this->lock, LOCK_SH);
+    }
+
+    /**
+     * Header layout: "<hash length: 4 bytes><hash><key>", see saveItem().
+     *
+     * @return string|null the stored hash, or null for an empty or truncated header
+     * @psalm-pure
+     */
+    private static function parseHeader(string $header): ?string
+    {
+        if (strlen($header) < 4) {
+            return null;
+        }
+
+        $unpacked = unpack('V', $header);
+        $hashLen = $unpacked === false ? null : ($unpacked[1] ?? null);
+        if (!is_int($hashLen) || 4 + $hashLen > strlen($header)) {
+            return null;
+        }
+
+        return substr($header, 4, $hashLen);
     }
 
     public function getHash(string $key): ?string
@@ -152,11 +172,21 @@ final class Cache
 
         $path = $this->dir . hash('xxh128', $key);
 
-        if (!file_exists($path)) {
+        if (!file_exists("$path.hash") || !file_exists($path)) {
             return null;
         }
 
-        return Providers::safeFileGetContents($path);
+        $header = Providers::safeFileGetContents("$path.hash");
+        $stored = self::parseHeader($header);
+
+        return $stored !== null && substr($header, 4 + strlen($stored)) === $key ? $stored : null;
+    }
+
+    /** Whether contents are stored for the key, even if their header is unusable */
+    public function hasItem(string $key): bool
+    {
+        return isset($this->cache[$key])
+            || ($this->persistent && file_exists($this->dir . hash('xxh128', $key)));
     }
 
     /** @return T */
@@ -201,26 +231,17 @@ final class Cache
             throw new RuntimeException("Could not acquire lock for $path.hash");
         }
 
-        $fileHash = stream_get_contents($fp);
-        if ($hash === null) {
-            if ($fileHash === '') {
-                fclose($fp);
-                return null;
-            }
-            assert($fileHash !== false);
-            $hashLen = unpack('V', $fileHash)[1];
-            assert(is_int($hashLen));
-            $hash = substr($fileHash, 4, $hashLen);
-            if (substr_compare($fileHash, $key, 4+$hashLen) !== 0) {
-                throw new AssertionError("Hash collision on key $key");
-            }
-        } elseif (substr_compare($fileHash, $hash, 4, strlen($hash)) !== 0
-            || substr_compare($fileHash, $key, strlen($hash)+4) !== 0
-            || strlen($fileHash) !== strlen($key)+strlen($hash)+4
+        $header = stream_get_contents($fp);
+        assert($header !== false);
+        $stored = self::parseHeader($header);
+        if ($stored === null
+            || substr($header, 4 + strlen($stored)) !== $key
+            || ($hash !== null && $stored !== $hash)
         ) {
             fclose($fp);
             return null;
         }
+        $hash = $stored;
 
         $content = file_get_contents($path);
         Assert::notFalse($content);
@@ -235,6 +256,16 @@ final class Cache
         return $content;
     }
 
+    /**
+     * Drops the item from memory, so that the next saveItem() with the same hash isn't skipped as a duplicate.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function forgetItem(string $key): void
+    {
+        unset($this->cache[$key]);
+    }
+
     /** @param T $item */
     public function saveItem(string $key, array|object|string $item, ?string $hash = null): void
     {
@@ -247,14 +278,18 @@ final class Cache
         }
         if ($this->persistent) {
             $path = $this->dir . hash('xxh128', $key);
-            $f = fopen("$path.hash", 'w');
+            $header = pack('V', strlen($hash)) . $hash . $key;
+            // Serialized before locking to keep the exclusive lock short
+            $contents = $this->serializer->serialize($item);
+            // 'c' does not truncate: that must wait until the lock is held, or readers see an empty header
+            $f = fopen("$path.hash", 'c');
             Assert::notFalse($f);
             flock($f, LOCK_EX);
+            // The header goes last: a writer killed anywhere in between leaves an empty or short header,
+            // which readers treat as a miss, instead of a valid header in front of the previous payload
             ftruncate($f, 0);
-            Assert::eq(fwrite($f, pack('V', strlen($hash))), 4);
-            Assert::eq(fwrite($f, $hash), strlen($hash));
-            Assert::eq(fwrite($f, $key), strlen($key));
-            file_put_contents($path, $this->serializer->serialize($item));
+            Assert::eq(file_put_contents($path, $contents), strlen($contents));
+            Assert::eq(fwrite($f, $header), strlen($header));
             fflush($f);
             flock($f, LOCK_UN);
             fclose($f);

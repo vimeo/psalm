@@ -13,25 +13,25 @@
 class ReflectionClass implements Reflector {
     /**
      * @return non-empty-string|false
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getFileName(): string|false {}
 
     /**
      * @return positive-int|false
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getStartLine(): int|false {}
 
     /**
      * @return positive-int|false
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getEndLine(): int|false {}
 
     /**
      * @return non-empty-string|false
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getDocComment(): string|false {}
 
@@ -39,7 +39,7 @@ class ReflectionClass implements Reflector {
      * @template J as object
      * @param self<J>|class-string<J> $class
      * @psalm-assert-if-true self<T&J> $this
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function isSubclassOf(self|string $class): bool {}
 
@@ -47,14 +47,14 @@ class ReflectionClass implements Reflector {
      * @template J as object
      * @param self<J>|interface-string<J> $interface
      * @psalm-assert-if-true self<T&J> $this
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function implementsInterface(self|string $interface): bool {}
 
     /**
      * @return non-empty-string|false
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getExtensionName(): string|false {}
 
@@ -82,35 +82,35 @@ abstract class ReflectionFunctionAbstract implements Reflector
     /**
      * @return non-empty-string|false
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getDocComment(): string|false {}
 
     /**
      * @return positive-int|false
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getStartLine(): int|false {}
 
     /**
      * @return positive-int|false
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getEndLine(): int|false {}
 
     /**
      * @return non-empty-string|false
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getFileName(): string|false {}
 
     /**
      * @return non-empty-string|false
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getExtensionName(): string|false {}
 }
@@ -120,7 +120,7 @@ class ReflectionProperty implements Reflector
     /**
      * @return non-empty-string|false
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function getDocComment(): string|false {}
 }
