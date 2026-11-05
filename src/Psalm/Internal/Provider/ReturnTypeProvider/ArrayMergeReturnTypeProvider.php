@@ -71,10 +71,15 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
 
         $max_keyed_array_size = 0;
 
+        // after an array of unknown length, the elements of the next lists land at unknown positions
+        $offsets_unknown = false;
+
         foreach ($call_args as $call_arg) {
             if (!($call_arg_type = $statements_source->node_data->getType($call_arg->value))) {
                 return Type::getArray();
             }
+
+            $arg_has_unknown_length = false;
 
             foreach ($call_arg_type->getAtomicTypes() as $type_part) {
                 $unpacking_indefinite_number_of_args = false;
@@ -135,7 +140,10 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
                             if (is_string($key)) {
                                 $all_int_offsets = false;
                             } elseif (!$is_replace) {
-                                if ($unpacking_indefinite_number_of_args || $type->possibly_undefined) {
+                                if ($unpacking_indefinite_number_of_args
+                                    || $type->possibly_undefined
+                                    || $offsets_unknown
+                                ) {
                                     $added_inner_values = true;
                                     $inner_value_types = array_merge(
                                         $inner_value_types,
@@ -180,11 +188,13 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
                         }
 
                         if ($added_inner_values) {
+                            $arg_has_unknown_length = true;
                             $all_keyed_arrays = false;
                             $inner_key_types []= new TInt;
                         }
 
                         if ($unpacked_type_part->fallback_params !== null) {
+                            $arg_has_unknown_length = true;
                             $all_keyed_arrays = false;
                             $inner_value_types = array_merge(
                                 $inner_value_types,
@@ -246,6 +256,10 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
                         array_values($unpacked_type_part->type_params[1]->getAtomicTypes()),
                     );
                 }
+            }
+
+            if ($arg_has_unknown_length) {
+                $offsets_unknown = true;
             }
         }
 

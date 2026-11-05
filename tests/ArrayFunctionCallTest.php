@@ -80,6 +80,39 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayMergeAccumulatesInALoop' => [
+                'code' => '<?php
+                    $array = [];
+
+                    for ($i = 0; $i <= 5; ++$i) {
+                        $array = array_merge($array, [$i]);
+                    }',
+                'assertions' => [
+                    '$array===' => 'non-empty-list<int<0, 5>>',
+                ],
+            ],
+            'arrayMergeAfterAnArrayOfUnknownLengthPutsTheNextElementsInTheRest' => [
+                'code' => '<?php
+                    /** @param list{int, ...<string>} $list */
+                    function f(array $list): array {
+                        return array_merge($list, [true]);
+                    }
+
+                    /** @param list{int, ...<string>} $list */
+                    function g(array $list): void {
+                        $merged = array_merge($list, [true]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedVariable', 'MixedReturnTypeCoercion'],
+            ],
+            'arrayMergeAfterAnOptionalElementPutsTheNextElementsInTheRest' => [
+                'code' => '<?php
+                    /** @param list{0?: string} $optional */
+                    function f(array $optional): void {
+                        $merged = array_merge($optional, [1]);
+                        /** @psalm-check-type-exact $merged = non-empty-list<1|string> */
+                    }',
+            ],
             'arraySpliceWithALengthOutsideTheRangeOfAnInt' => [
                 'code' => '<?php
                     $big = [1, 2, 3];
@@ -437,9 +470,7 @@ final class ArrayFunctionCallTest extends TestCase
                     $c = array_merge($a, $b);
                     $d = array_merge($b, $a);',
                 'assertions' => [
-                    // todo: this first type is not entirely correct
-                    //'$c===' => "list{int|string, ...<int<0, max>, int|string>}",
-                    '$c===' => "list{string, ...<int|string>}",
+                    '$c===' => "non-empty-list<int|string>",
                     '$d===' => "list{string, ...<int|string>}",
                 ],
             ],
