@@ -35,6 +35,7 @@ use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\MutableUnion;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
@@ -84,7 +85,7 @@ final class NegatedAssertionReconciler extends Reconciler
                 return $existing_var_type;
             }
 
-            return self::handleLiteralNegatedEquality(
+            $narrowed_type = self::handleLiteralNegatedEquality(
                 $statements_analyzer,
                 $assertion,
                 $assertion_type,
@@ -95,6 +96,30 @@ final class NegatedAssertionReconciler extends Reconciler
                 $code_location,
                 $suppressed_issues,
             );
+
+            if ($narrowed_type->isUnionEmpty() || !$narrowed_type->hasTemplate()) {
+                return $narrowed_type;
+            }
+
+            // narrowed after the literal comparison, whose impossibility checks need the unnarrowed bounds
+            $narrowed_type = $narrowed_type->getBuilder();
+
+            // a template that is the whole type is checked for impossibility as its bound would be
+            $is_single_template = $existing_var_type->isSingle();
+
+            self::reconcileTemplateBounds(
+                $statements_analyzer,
+                $assertion,
+                $narrowed_type,
+                $negated,
+                $suppressed_issues,
+                $inside_loop,
+                $is_single_template ? $key : null,
+                $is_single_template ? $code_location : null,
+                $old_var_type_string,
+            );
+
+            return $narrowed_type->freeze();
         }
 
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
@@ -115,6 +140,17 @@ final class NegatedAssertionReconciler extends Reconciler
 
         if ($simple_negated_type) {
             return $simple_negated_type;
+        }
+
+        if (!$is_equality) {
+            self::reconcileTemplateBounds(
+                $statements_analyzer,
+                $assertion,
+                $existing_var_type,
+                $negated,
+                $suppressed_issues,
+                $inside_loop,
+            );
         }
 
         $assertion_type = $assertion->getAtomicType();
@@ -361,6 +397,80 @@ final class NegatedAssertionReconciler extends Reconciler
         }
 
         return $existing_var_type;
+    }
+
+    /**
+     * A value of a template type is within the template's bound, so the assertion narrows the bound, and a
+     * template whose bound it empties is removed. A bound is never widened: some reconciliations of a plain type
+     * rewrite it to a type that is not contained by it.
+     *
+     * @param string[] $suppressed_issues
+     */
+    private static function reconcileTemplateBounds(
+        StatementsAnalyzer $statements_analyzer,
+        Assertion $assertion,
+        MutableUnion $existing_var_type,
+        bool $negated,
+        array $suppressed_issues,
+        bool $inside_loop,
+        ?string $key = null,
+        ?CodeLocation $code_location = null,
+        string $old_var_type_string = '',
+    ): void {
+        foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $existing_var_atomic_type) {
+            if (!$existing_var_atomic_type instanceof TTemplateParam
+                || $existing_var_atomic_type->as->isMixed()
+            ) {
+                continue;
+            }
+
+            $failed_reconciliation = Reconciler::RECONCILIATION_OK;
+
+            $bound = $existing_var_atomic_type->as;
+
+            $narrowed_as = self::reconcile(
+                $statements_analyzer,
+                $assertion,
+                $key !== null ? $bound->setProperties(['from_docblock' => $existing_var_type->from_docblock]) : $bound,
+                $key !== null ? $old_var_type_string : $bound->getId(),
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $inside_loop,
+            );
+
+            if ($failed_reconciliation === Reconciler::RECONCILIATION_EMPTY || $narrowed_as->isUnionEmpty()) {
+                $existing_var_type->removeType($atomic_key);
+
+                continue;
+            }
+
+            $is_different = $narrowed_as->different;
+            $narrowed_as = $narrowed_as->setDifferent(false);
+
+            $bound_atomic_types = $bound->getAtomicTypes();
+
+            // atomics are immutable, so one the reconciliation kept is the bound's own instance
+            foreach ($narrowed_as->getAtomicTypes() as $narrowed_key => $narrowed_atomic_type) {
+                if (($bound_atomic_types[$narrowed_key] ?? null) !== $narrowed_atomic_type
+                    && !UnionTypeComparator::isContainedBy(
+                        $statements_analyzer->getCodebase(),
+                        new Union([$narrowed_atomic_type]),
+                        $bound,
+                    )
+                ) {
+                    continue 2;
+                }
+            }
+
+            if ($is_different) {
+                $existing_var_type->different = true;
+            }
+
+            $existing_var_type->addType($existing_var_atomic_type->replaceAs($narrowed_as));
+        }
     }
 
     /**
