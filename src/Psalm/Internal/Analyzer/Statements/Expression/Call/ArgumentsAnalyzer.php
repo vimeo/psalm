@@ -407,6 +407,19 @@ final class ArgumentsAnalyzer
 
         $template_types = ['ArrayValue' . $argument_offset => [$method_id => Type::getMixed()]];
 
+        // array_find(), array_find_key(), array_any() and array_all() also pass the key to the callback
+        $key_type = Type::getArrayKey();
+        if ($method_id !== 'array_map' && $method_id !== 'array_filter') {
+            $template_types['ArrayKey' . $argument_offset] = [$method_id => Type::getArrayKey()];
+            $key_type = new Union([
+                new TTemplateParam(
+                    'ArrayKey' . $argument_offset,
+                    Type::getArrayKey(),
+                    $method_id,
+                ),
+            ]);
+        }
+
         $replace_template_result = new TemplateResult(
             $template_types,
             [],
@@ -417,7 +430,7 @@ final class ArgumentsAnalyzer
         TemplateStandinTypeReplacer::fillTemplateResult(
             new Union([
                 new TArray([
-                    Type::getArrayKey(),
+                    $key_type,
                     new Union([
                         new TTemplateParam(
                             'ArrayValue' . $argument_offset,
@@ -446,6 +459,22 @@ final class ArgumentsAnalyzer
     }
 
     /**
+     * @psalm-pure
+     */
+    private static function getTemplatedCallableParam(string $template_name, string $method_id): FunctionLikeParameter
+    {
+        $type = new Union([
+            new TTemplateParam(
+                $template_name,
+                Type::getMixed(),
+                $method_id,
+            ),
+        ]);
+
+        return new FunctionLikeParameter('function', false, $type, $type);
+    }
+
+    /**
      * @param   array<int, PhpParser\Node\Arg>  $args
      */
     private static function handleClosureArg(
@@ -469,25 +498,26 @@ final class ArgumentsAnalyzer
         ) {
             $function_like_params = [];
 
-            foreach ($template_result->lower_bounds as $template_name => $_) {
-                $t = new Union([
-                    new TTemplateParam(
-                        $template_name,
-                        Type::getMixed(),
-                        $method_id,
-                    ),
-                ]);
-                $function_like_params[] = new FunctionLikeParameter(
-                    'function',
-                    false,
-                    $t,
-                    $t,
-                );
+            if ($method_id === 'array_map') {
+                foreach ($template_result->lower_bounds as $template_name => $_) {
+                    $function_like_params[] = self::getTemplatedCallableParam($template_name, $method_id);
+                }
+
+                $function_like_params = array_reverse($function_like_params);
+            } else {
+                // the callback receives the value, then the key (except for array_filter without a mode)
+                foreach (['ArrayValue0', 'ArrayKey0'] as $template_name) {
+                    if (!isset($template_result->lower_bounds[$template_name])) {
+                        break;
+                    }
+
+                    $function_like_params[] = self::getTemplatedCallableParam($template_name, $method_id);
+                }
             }
 
             $replaced_type = new Union([
                 new TCallable(
-                    array_reverse($function_like_params),
+                    $function_like_params,
                 ),
             ]);
         } else {
@@ -646,6 +676,8 @@ final class ArgumentsAnalyzer
                     $method_id === 'array_map'
                         ? ArrayMapReturnTypeProvider::getElementMarker($statements_analyzer, $context, $args)
                         : null,
+                    // array_find(), array_find_key(), array_any() and array_all() pass the key second
+                    $closure_param_offset === 1 && $method_id !== 'array_map' && $method_id !== 'array_filter',
                 );
             }
         }
@@ -654,25 +686,36 @@ final class ArgumentsAnalyzer
     /**
      * The parameter of the closure array_map() or a function like array_filter() is given takes the elements of the
      * array: through its type, or, if it has none to hold them, through the node the closure assigns it from. With
-     * $element_marker, each with its own key (see ArrayMapReturnTypeProvider::getElementMarker()).
+     * $element_marker, each with its own key (see ArrayMapReturnTypeProvider::getElementMarker()). With $is_key,
+     * it takes their keys instead.
      */
     private static function taintClosureParamWithArrayElements(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $array,
         FunctionLikeParameter $param_storage,
         ?string $element_marker,
+        bool $is_key = false,
     ): void {
-        $temp = Type::getMixed();
+        $value_type = Type::getMixed();
+        $key_type = Type::getMixed();
 
         if ($param_storage->type) {
+            if ($is_key) {
+                $key_type = $param_storage->type;
+            } else {
+                $value_type = $param_storage->type;
+            }
+
             ArrayFetchAnalyzer::taintArrayFetch(
                 $statements_analyzer,
                 $array,
                 null,
-                $param_storage->type,
-                $temp,
+                $value_type,
+                $key_type,
                 foreach_marker: $element_marker,
             );
+
+            $param_storage->type = $is_key ? $key_type : $value_type;
 
             return;
         }
@@ -681,15 +724,16 @@ final class ArgumentsAnalyzer
             return;
         }
 
-        $element_type = Type::getMixed();
         ArrayFetchAnalyzer::taintArrayFetch(
             $statements_analyzer,
             $array,
             null,
-            $element_type,
-            $temp,
+            $value_type,
+            $key_type,
             foreach_marker: $element_marker,
         );
+
+        $element_type = $is_key ? $key_type : $value_type;
 
         // see FunctionLikeAnalyzer::processParams()
         $param_node = DataFlowNode::getForAssignment('$' . $param_storage->name, $param_storage->location);

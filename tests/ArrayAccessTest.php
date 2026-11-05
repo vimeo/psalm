@@ -1502,6 +1502,17 @@ final class ArrayAccessTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'coalesceOnArrayFetchWithFunctionCallKeyDropsNullFromValue' => [
+                'code' => '<?php
+                    function bar(string $key): string {
+                        return "aa" . $key;
+                    }
+
+                    /** @param array<string, ?string> $foo */
+                    function foo(array $foo, string $key, string $default): string {
+                        return $foo[bar($key)] ?? $default;
+                    }',
+            ],
         ];
     }
 

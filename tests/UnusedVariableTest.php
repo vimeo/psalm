@@ -29,6 +29,24 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'staticPropertiesInDestructuringAreNotVariables' => [
+                'code' => '<?php
+                    abstract class Foo {
+                        protected static string $foo;
+                        protected static string $bar;
+
+                        public static function bar(): void {
+                            [self::$foo] = self::baz();
+                            ["k" => self::$bar] = self::qux();
+                        }
+
+                        /** @return array{string} */
+                        abstract protected static function baz(): array;
+
+                        /** @return array{k: string} */
+                        abstract protected static function qux(): array;
+                    }',
+            ],
             'callOfCallableNarrowedFromClassStringOrCallable' => [
                 'code' => '<?php
                     /**

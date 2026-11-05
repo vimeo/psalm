@@ -1409,19 +1409,6 @@
     <MixedAssignment>
       <code><![CDATA[$dep]]></code>
     </MixedAssignment>
-    <PossiblyFalseArgument>
-      <code><![CDATA[$fileHash]]></code>
-      <code><![CDATA[$fileHash]]></code>
-      <code><![CDATA[$fileHash]]></code>
-    </PossiblyFalseArgument>
-    <PossiblyInvalidArrayAccess>
-      <code><![CDATA[unpack('V', $fileHash)[1]]]></code>
-      <code><![CDATA[unpack('V', $key)[1]]]></code>
-    </PossiblyInvalidArrayAccess>
-    <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[unpack('V', $fileHash)[1]]]></code>
-      <code><![CDATA[unpack('V', $key)[1]]]></code>
-    </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Cli/LanguageServer.php">
     <InvalidArgument>
@@ -1728,11 +1715,6 @@
       <code><![CDATA[$a->stmts]]></code>
       <code><![CDATA[$b->stmts]]></code>
     </RiskyTruthyFalsyComparison>
-  </file>
-  <file src="src/Psalm/Internal/Diff/FileDiffer.php">
-    <InvalidArrayOffset>
-      <code><![CDATA[$b[$y]]]></code>
-    </InvalidArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Diff/FileStatementsDiffer.php">
     <RedundantCondition>
@@ -3006,9 +2988,6 @@
     <PossiblyInvalidArgument>
       <code><![CDATA[$this->link_format]]></code>
     </PossiblyInvalidArgument>
-    <PossiblyInvalidCast>
-      <code><![CDATA[$this->link_format]]></code>
-    </PossiblyInvalidCast>
     <PossiblyInvalidPropertyAssignmentValue>
       <code><![CDATA[(
                 ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')
@@ -3025,9 +3004,6 @@
     <PossiblyInvalidArgument>
       <code><![CDATA[$this->link_format]]></code>
     </PossiblyInvalidArgument>
-    <PossiblyInvalidCast>
-      <code><![CDATA[$this->link_format]]></code>
-    </PossiblyInvalidCast>
     <PossiblyInvalidPropertyAssignmentValue>
       <code><![CDATA[(
                 ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')
@@ -3196,12 +3172,8 @@
     <ImpurePropertyAssignment>
       <code><![CDATA[$node->{$key}]]></code>
       <code><![CDATA[$result->from_docblock]]></code>
-      <code><![CDATA[$result->from_docblock]]></code>
-      <code><![CDATA[$result->offset_end]]></code>
       <code><![CDATA[$result->offset_end]]></code>
       <code><![CDATA[$result->offset_start]]></code>
-      <code><![CDATA[$result->offset_start]]></code>
-      <code><![CDATA[$result->text]]></code>
       <code><![CDATA[$result->text]]></code>
     </ImpurePropertyAssignment>
     <PossiblyUndefinedIntArrayOffset>
@@ -3396,7 +3368,6 @@
       <code><![CDATA[Type::getString()]]></code>
     </ImpureMethodCall>
     <ImpurePropertyAssignment>
-      <code><![CDATA[$cloned->value_param]]></code>
       <code><![CDATA[$cloned->value_param]]></code>
     </ImpurePropertyAssignment>
   </file>
@@ -3910,6 +3881,7 @@
       <code><![CDATA[ParserCacheProvider]]></code>
     </InvalidExtendClass>
     <MethodSignatureMismatch>
+      <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[#[Override]]]></code>
