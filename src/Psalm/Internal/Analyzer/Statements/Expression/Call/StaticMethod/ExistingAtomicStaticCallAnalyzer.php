@@ -179,6 +179,17 @@ final class ExistingAtomicStaticCallAnalyzer
             return;
         }
 
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
+        $static_property_mutations = $codebase->methods->getStorage($declaring_method_id)->static_property_mutations;
+
+        if ($static_property_mutations !== null) {
+            $context->resetMutatedStaticProperties(
+                $static_property_mutations,
+                [$method_id->fq_class_name, $declaring_method_id->fq_class_name],
+                $codebase,
+            );
+        }
+
         $fq_class_name = $stmt->class instanceof PhpParser\Node\Name && $stmt->class->getParts() === ['parent']
             ? (string) $statements_analyzer->getFQCLN()
             : $fq_class_name;

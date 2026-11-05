@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm;
 
 use InvalidArgumentException;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -22,6 +23,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 use RuntimeException;
 
+use function array_keys;
 use function array_search;
 use function array_shift;
 use function assert;
@@ -813,6 +815,64 @@ final class Context
             }
             if ($builder) {
                 $type = $builder->freeze();
+            }
+        }
+    }
+
+    /**
+     * Resets the static properties a callee assigns directly to their declared types
+     *
+     * @param array<string, bool> $mutations MethodStorage::$static_property_mutations
+     * @param list<string> $self_class_names the classes the callee's `self` and `static` may stand for
+     */
+    public function resetMutatedStaticProperties(array $mutations, array $self_class_names, Codebase $codebase): void
+    {
+        $mutated_ids = [];
+
+        foreach ($mutations as $mutation => $_) {
+            if ($mutation[0] !== ':') {
+                $mutated_ids[$mutation] = true;
+
+                continue;
+            }
+
+            foreach ($self_class_names as $class_name) {
+                $mutated_ids[strtolower($class_name) . $mutation] = true;
+            }
+        }
+
+        $var_ids = array_keys($this->vars_in_scope);
+
+        foreach ($this->clauses as $clause) {
+            $var_ids = [...$var_ids, ...array_keys($clause->possibilities)];
+        }
+
+        foreach ($var_ids as $var_id) {
+            $root_id = substr($var_id, 0, strcspn($var_id, '[-'));
+            $class_length = (int) strpos($root_id, '::');
+            $class_name = substr($root_id, 0, $class_length);
+
+            if (!isset($mutated_ids[strtolower($class_name) . substr($root_id, $class_length)])) {
+                continue;
+            }
+
+            $declared_type = null;
+
+            if ($root_id === $var_id && $codebase->classlike_storage_provider->has($class_name)) {
+                $declared_type = InstancePropertyAssignmentAnalyzer::getExpandedPropertyType(
+                    $codebase,
+                    $class_name,
+                    substr($root_id, $class_length + 3),
+                    $codebase->classlike_storage_provider->get($class_name),
+                );
+            }
+
+            $this->remove($var_id);
+            $this->removeVarFromConflictingClauses($var_id);
+            $this->possibly_assigned_var_ids[$var_id] = true;
+
+            if ($declared_type !== null && isset($this->vars_in_scope[$var_id]) === false) {
+                $this->vars_in_scope[$var_id] = $declared_type;
             }
         }
     }
