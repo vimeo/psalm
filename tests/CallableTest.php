@@ -1236,6 +1236,154 @@ final class CallableTest extends TestCase
                     '$result' => 'list{int, int, int}',
                 ],
             ],
+            'polymorphicArrayCallableWithParamOnlyTemplate' => [
+                'code' => '<?php
+                    class Sink {
+                        /**
+                         * @template B
+                         * @param B $b
+                         */
+                        public static function consume($b): void {}
+                    }
+
+                    /**
+                     * @param callable(int): void $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Sink::class, "consume"]);',
+            ],
+            'polymorphicArrayCallableWithNestedCallableParam' => [
+                'code' => '<?php
+                    class Runner {
+                        /**
+                         * @template B
+                         * @param callable(): B $f
+                         * @return B
+                         */
+                        public static function run(callable $f) {
+                            return $f();
+                        }
+                    }
+
+                    /**
+                     * @param callable(callable(): int): int $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Runner::class, "run"]);',
+            ],
+            'polymorphicArrayCallableWithIgnoredVoidReturn' => [
+                'code' => '<?php
+                    class Id {
+                        /**
+                         * @template B
+                         * @param B $b
+                         * @return B
+                         */
+                        public static function id($b) {
+                            return $b;
+                        }
+                    }
+
+                    /**
+                     * @param callable(int): void $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Id::class, "id"]);',
+            ],
+            'polymorphicArrayCallableWithVariadicTemplate' => [
+                'code' => '<?php
+                    class Collector {
+                        /**
+                         * @template T
+                         * @param T ...$xs
+                         * @return list<T>
+                         */
+                        public static function collect(...$xs): array {
+                            return array_values($xs);
+                        }
+                    }
+
+                    /**
+                     * @param callable(int, int): list<int> $f
+                     */
+                    function pair(callable $f): void {}
+
+                    /**
+                     * @param callable(int...): list<int> $f
+                     */
+                    function many(callable $f): void {}
+
+                    pair([Collector::class, "collect"]);
+                    many([Collector::class, "collect"]);',
+            ],
+            'polymorphicArrayCallableWithOmittedDefault' => [
+                'code' => '<?php
+                    class Id {
+                        /**
+                         * @template B
+                         * @param B $b
+                         * @return B
+                         */
+                        public static function id($b = 0) {
+                            return $b;
+                        }
+                    }
+
+                    /**
+                     * @param callable(): int $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Id::class, "id"]);',
+            ],
+            'polymorphicArrayCallableWithDefaultForOptionalArgument' => [
+                'code' => '<?php
+                    class Id {
+                        /**
+                         * @template B
+                         * @param B $b
+                         * @return B
+                         */
+                        public static function id($b = false) {
+                            return $b;
+                        }
+                    }
+
+                    /**
+                     * @param callable(int=): void $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Id::class, "id"]);',
+            ],
+            'polymorphicArrayCallableWithBoundedClassStringTemplate' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class Base {}
+                    final class Sub extends Base {}
+                    final class Unrelated {}
+
+                    class Factory {
+                        /**
+                         * @template T of Base
+                         * @param class-string<T> $class
+                         * @return T
+                         */
+                        public static function make(string $class): Base {
+                            return new $class();
+                        }
+                    }
+
+                    /**
+                     * @param callable(class-string<Sub>): Sub $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Factory::class, "make"]);',
+            ],
             'callableMethodArrayCallableMissingTypes' => [
                 'code' => '<?php
                     function foo(callable $c): void {}
@@ -2588,6 +2736,262 @@ final class CallableTest extends TestCase
 
                     bar([Id::class, "id"]);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'polymorphicArrayCallableViolatingTemplateBound' => [
+                'code' => '<?php
+                    class Str {
+                        /**
+                         * @template B of string
+                         * @param B $b
+                         * @return B
+                         */
+                        public static function id(string $b): string {
+                            return $b;
+                        }
+                    }
+
+                    /**
+                     * @param callable(int): int $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Str::class, "id"]);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'polymorphicArrayCallableVariadicWithMismatchedArgument' => [
+                'code' => '<?php
+                    class Collector {
+                        /**
+                         * @template T
+                         * @param T ...$xs
+                         * @return list<T>
+                         */
+                        public static function collect(...$xs): array {
+                            return array_values($xs);
+                        }
+                    }
+
+                    /**
+                     * @param callable(int, string): list<int> $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Collector::class, "collect"]);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'polymorphicArrayCallableWithMismatchedOmittedDefault' => [
+                'code' => '<?php
+                    class Id {
+                        /**
+                         * @template B
+                         * @param B $b
+                         * @return B
+                         */
+                        public static function id($b = false) {
+                            return $b;
+                        }
+                    }
+
+                    /**
+                     * @param callable(): int $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Id::class, "id"]);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'polymorphicArrayCallableWithMismatchedDefaultForOptionalArgument' => [
+                'code' => '<?php
+                    class Id {
+                        /**
+                         * @template B
+                         * @param B $b
+                         * @return B
+                         */
+                        public static function id($b = false) {
+                            return $b;
+                        }
+                    }
+
+                    /**
+                     * @param callable(int=): int $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Id::class, "id"]);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'polymorphicArrayCallableWithMismatchedDefaultInInvariantReturn' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public $value) {}
+                    }
+
+                    class Boxer {
+                        /**
+                         * @template B
+                         * @param B $b
+                         * @return Box<B>
+                         */
+                        public static function box($b = false): Box {
+                            return new Box($b);
+                        }
+                    }
+
+                    /**
+                     * @param callable(): Box<int> $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Boxer::class, "box"]);',
+                'error_message' => 'MixedArgumentTypeCoercion',
+            ],
+            'polymorphicArrayCallableBoundedVariadicWithMismatchedArgument' => [
+                'code' => '<?php
+                    class Collector {
+                        /**
+                         * @template T of int|string
+                         * @param T ...$xs
+                         * @return list<T>
+                         */
+                        public static function collect(...$xs): array {
+                            return array_values($xs);
+                        }
+                    }
+
+                    /**
+                     * @param callable(int, bool): list<int> $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Collector::class, "collect"]);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'polymorphicArrayCallableWithUninferredDefault' => [
+                'code' => '<?php
+                    class Base {
+                        const D = false;
+                    }
+
+                    class Id extends Base {
+                        /**
+                         * @template B
+                         * @param B $b
+                         * @return B
+                         */
+                        public static function id($b = parent::D) {
+                            return $b;
+                        }
+                    }
+
+                    /**
+                     * @param callable(): int $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Id::class, "id"]);',
+                'error_message' => 'MixedArgumentTypeCoercion',
+            ],
+            'polymorphicArrayCallableWithCircularDefault' => [
+                'code' => '<?php
+                    class Id {
+                        const D = self::D;
+
+                        /**
+                         * @template B
+                         * @param B $b
+                         * @return B
+                         */
+                        public static function id($b = self::D) {
+                            return $b;
+                        }
+                    }
+
+                    /**
+                     * @param callable(): int $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Id::class, "id"]);',
+                'error_message' => 'MixedArgumentTypeCoercion',
+                'error_levels' => ['CircularReference'],
+            ],
+            'polymorphicArrayCallableInferringClassStringOutsideTemplateBound' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class Base {}
+                    final class Sub extends Base {}
+                    final class Unrelated {}
+
+                    class Factory {
+                        /**
+                         * @template T of Base
+                         * @param class-string<T> $class
+                         * @return T
+                         */
+                        public static function make(string $class): Base {
+                            return new $class();
+                        }
+                    }
+
+                    /**
+                     * @param callable(class-string<Unrelated>): Unrelated $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Factory::class, "make"]);',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'polymorphicArrayCallableWithMixedArgumentAndInvariantReturn' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public $value) {}
+                    }
+
+                    class Boxer {
+                        /**
+                         * @template B
+                         * @param B $b
+                         * @return Box<B>
+                         */
+                        public static function box($b): Box {
+                            return new Box($b);
+                        }
+                    }
+
+                    /**
+                     * @param callable(mixed): Box<int> $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Boxer::class, "box"]);',
+                'error_message' => 'MixedArgumentTypeCoercion',
+            ],
+            'polymorphicArrayCallableVariadicAfterExpectedVariadic' => [
+                'code' => '<?php
+                    class Collector {
+                        /**
+                         * @template T
+                         * @param mixed $head
+                         * @param T ...$xs
+                         * @return list<T>
+                         */
+                        public static function collect($head = null, ...$xs): array {
+                            return array_values($xs);
+                        }
+                    }
+
+                    /**
+                     * @param (callable(mixed...): list<int>)|null $f
+                     */
+                    function bar(?callable $f): void {}
+
+                    bar([Collector::class, "collect"]);',
+                'error_message' => 'MixedArgumentTypeCoercion',
             ],
             'undefinedCallableMethodArrayWithoutClass' => [
                 'code' => '<?php
