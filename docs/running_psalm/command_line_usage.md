@@ -62,7 +62,8 @@ vendor/bin/psalm --consolidate-cache  # no analysis: merges them into an index a
 
 A run reads the index of a consolidated cache and then only the entries it needs.
 Entries written by later runs are stored as separate files again, so consolidate after the last run before saving the cache.
-A consolidated cache takes more disk space than the separate files, because each entry stays compressed on its own.
+With `ext-zstd` the consolidated cache is compressed with a dictionary made from its entries, which makes it about a third smaller than the separate entries.
+With another compressor it takes more disk space than the separate files, because each entry stays compressed on its own.
 
 ## Reviewing issues in your IDE of choice
 

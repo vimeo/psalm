@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Cache;
 
+use Amp\Serialization\SerializationException;
 use Override;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use Psalm\Config;
 use Psalm\Internal\Cache;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Internal\ZstdSerializer;
 use Psalm\Tests\TestCase;
 use ReflectionProperty;
 
@@ -25,6 +28,7 @@ use function hash_update;
 use function implode;
 use function mkdir;
 use function pack;
+use function random_bytes;
 use function rename;
 use function restore_error_handler;
 use function set_error_handler;
@@ -89,7 +93,8 @@ final class CacheConsolidationTest extends TestCase
         parent::tearDown();
     }
 
-    private function newConfig(bool $array_cache = true): Config
+    /** @param 'zstd'|'lz4'|'deflate'|'off'|null $compressor null for the one the config picks */
+    private function newConfig(bool $array_cache = true, ?string $compressor = null): Config
     {
         $config = Config::loadFromXML(
             __DIR__ . DIRECTORY_SEPARATOR . 'test_base_dir',
@@ -103,13 +108,17 @@ final class CacheConsolidationTest extends TestCase
                 XML,
         );
         $config->array_cache = $array_cache;
+        if ($compressor !== null) {
+            $config->compressor = $compressor;
+        }
 
         return $config;
     }
 
-    private function newCache(bool $array_cache = true): Cache
+    /** @param 'zstd'|'lz4'|'deflate'|'off'|null $compressor null for the one the config picks */
+    private function newCache(bool $array_cache = true, ?string $compressor = null): Cache
     {
-        return new Cache($this->newConfig($array_cache), 'test_subdir');
+        return new Cache($this->newConfig($array_cache, $compressor), 'test_subdir');
     }
 
     /** The directory the cache of newCache() uses, with a trailing separator */
@@ -428,5 +437,135 @@ final class CacheConsolidationTest extends TestCase
 
         file_put_contents($path, $data);
         $this->assertSame(['item a'], $this->newCache()->getItem('a', 'hash a'));
+    }
+
+    /**
+     * Every record carries the same bytes, which is what a dictionary is made of, and the bytes do not
+     * compress on their own.
+     *
+     * @return array<string, array{string, string}> key => [item, hash]
+     */
+    private static function similarItems(int $from, int $to): array
+    {
+        $shared = random_bytes(3000);
+        $items = [];
+        for ($i = $from; $i < $to; $i++) {
+            $items["key $i"] = [$shared . "item $i", "hash $i"];
+        }
+
+        return $items;
+    }
+
+    /** @return array{string, array<string, array{string, int, int}>, string|null} data file, entries, dictionary */
+    private function readIndex(): array
+    {
+        $serializer = $this->newConfig(true, 'zstd')->getCacheSerializer();
+        $index = file_get_contents($this->directory() . 'consolidated');
+        $this->assertNotFalse($index);
+
+        /** @var array{string, array<string, array{string, int, int}>, string|null} */
+        return $serializer->unserialize($index);
+    }
+
+    #[RequiresPhpExtension('zstd', '>=0.15.0')]
+    public function testZstdConsolidatedEntriesAreReadBackOneByOne(): void
+    {
+        $items = self::similarItems(0, 20);
+        $cache = $this->newCache(true, 'zstd');
+        foreach ($items as $key => [$item, $hash]) {
+            $cache->saveItem($key, [$item], $hash);
+        }
+        $cache->consolidate();
+        $this->assertCount(3, $this->fileNames());
+
+        foreach ([true, false] as $array_cache) {
+            $reader = $this->newCache($array_cache, 'zstd');
+            foreach ($items as $key => [$item, $hash]) {
+                $this->assertSame([$item], $reader->getItem($key, $hash));
+                $this->assertSame([$item], $reader->getItem($key, null));
+            }
+        }
+    }
+
+    #[RequiresPhpExtension('zstd', '>=0.15.0')]
+    public function testZstdConsolidatedRecordCannotBeDecompressedWithoutTheDictionary(): void
+    {
+        $cache = $this->newCache(true, 'zstd');
+        foreach (self::similarItems(0, 20) as $key => [$item, $hash]) {
+            $cache->saveItem($key, [$item], $hash);
+        }
+        $cache->consolidate();
+
+        [$data_file, $entries, $dictionary] = $this->readIndex();
+        $this->assertNotNull($dictionary);
+        [$hash, $offset, $length] = $entries['key 5'];
+        $data = file_get_contents($this->directory() . $data_file);
+        $this->assertNotFalse($data);
+        $header_length = 28 + strlen($hash) + strlen('key 5');
+        $payload = substr($data, $offset + $header_length, $length - $header_length);
+
+        $serializer = $this->newConfig(true, 'zstd')->getCacheSerializer();
+        $this->assertInstanceOf(ZstdSerializer::class, $serializer);
+        $this->assertNotSame('', $serializer->withDictionary($dictionary)->uncompress($payload));
+
+        set_error_handler(static fn(): bool => true);
+        try {
+            $this->expectException(SerializationException::class);
+            $serializer->uncompress($payload);
+        } finally {
+            restore_error_handler();
+        }
+    }
+
+    #[RequiresPhpExtension('zstd', '>=0.15.0')]
+    public function testZstdConsolidatingAgainReencodesCarriedEntriesAndLooseEntriesWin(): void
+    {
+        $first = self::similarItems(0, 10);
+        $cache = $this->newCache(true, 'zstd');
+        foreach ($first as $key => [$item, $hash]) {
+            $cache->saveItem($key, [$item], $hash);
+        }
+        $cache->consolidate();
+        $first_dictionary = $this->readIndex()[2];
+
+        $second = self::similarItems(10, 20);
+        $cache = $this->newCache(true, 'zstd');
+        foreach ($second as $key => [$item, $hash]) {
+            $cache->saveItem($key, [$item], $hash);
+        }
+        $cache->saveItem('key 3', ['replaced'], 'new hash');
+        $cache->consolidate();
+
+        $this->assertNotSame($first_dictionary, $this->readIndex()[2]);
+        $this->assertCount(3, $this->fileNames());
+
+        $cache = $this->newCache(true, 'zstd');
+        $cache->saveItem('key 4', ['newer'], 'newest hash');
+
+        unset($first['key 3']);
+        foreach ([true, false] as $array_cache) {
+            $reader = $this->newCache($array_cache, 'zstd');
+            foreach ([...$first, ...$second] as $key => [$item, $hash]) {
+                $this->assertSame([$item], $reader->getItem($key, $hash));
+            }
+            $this->assertSame(['replaced'], $reader->getItem('key 3', 'new hash'));
+            $this->assertSame(['newer'], $reader->getItem('key 4', 'newest hash'));
+            $this->assertSame(['newer'], $reader->getItem('key 4', null));
+        }
+    }
+
+    /** PHP turns the key "123" into an int in the arrays that hold the keys of the records */
+    #[RequiresPhpExtension('zstd', '>=0.15.0')]
+    public function testZstdConsolidatingTwiceKeepsAnEntryWithANumericKey(): void
+    {
+        foreach (['123', 'other'] as $key) {
+            $cache = $this->newCache(true, 'zstd');
+            $cache->saveItem($key, ["item $key"], "hash $key");
+            $cache->consolidate();
+        }
+
+        $reader = $this->newCache(true, 'zstd');
+        $this->assertSame(['item 123'], $reader->getItem('123', 'hash 123'));
+        $this->assertSame(['item other'], $reader->getItem('other', 'hash other'));
     }
 }
