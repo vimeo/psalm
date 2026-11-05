@@ -9,6 +9,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class AssignmentInConditionalTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -21,6 +23,39 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedAssignmentInTheRightOperandOfOrIsDefinedWhereTheConditionIsFalse' => [
+                'code' => '<?php
+                    class Source {
+                        /** @return string[] */
+                        public function getData(): array {
+                            return [];
+                        }
+                    }
+
+                    function inElse(?Source $source): string {
+                        if ($source === null || !($data = $source->getData())) {
+                            return "none";
+                        } else {
+                            /** @psalm-check-type-exact $data = non-empty-array<array-key, string> */;
+
+                            return implode(",", $data);
+                        }
+                    }
+
+                    function inTernary(?Source $source): string {
+                        return ($source === null || !($data = $source->getData()))
+                            ? "none"
+                            : implode(",", $data);
+                    }
+
+                    function afterReturn(?Source $source): string {
+                        if ($source === null || !($data = $source->getData())) {
+                            return "none";
+                        }
+
+                        return implode(",", $data);
+                    }',
+            ],
             'orWithAssignment' => [
                 'code' => '<?php
                     function maybeString(): ?string {
@@ -470,6 +505,17 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'negatedAssignmentInTheRightOperandOfOrIsUndefinedWhereTheConditionIsTrue' => [
+                'code' => '<?php
+                    function foo(bool $flag): int {
+                        if ($flag || !($count = rand(0, 3))) {
+                            return $count;
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'UndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:36',
+            ],
             'assignmentInBranchOfAnd' => [
                 'code' => '<?php
                     function foo(string $str): ?int {
