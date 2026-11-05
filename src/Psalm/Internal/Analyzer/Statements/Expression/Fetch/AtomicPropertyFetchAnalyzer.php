@@ -523,6 +523,8 @@ final class AtomicPropertyFetchAnalyzer
             $declaring_property_class,
         );
 
+        $unset_charged = false;
+
         if (isset($declaring_class_storage->properties[$prop_name])) {
             self::checkPropertyDeprecation($prop_name, $declaring_property_class, $stmt, $statements_analyzer);
 
@@ -564,7 +566,7 @@ final class AtomicPropertyFetchAnalyzer
             }
 
             if (UnsetAnalyzer::writesFetchedProperty($context, $stmt, $property_storage->type)) {
-                InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
+                $unset_charged = InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
                     $statements_analyzer,
                     $stmt,
                     $property_id,
@@ -599,15 +601,17 @@ final class AtomicPropertyFetchAnalyzer
 
         if (!self::isFreeToAccess($statements_analyzer, $stmt, $class_storage)) {
             if (UnsetAnalyzer::writesFetchedProperty($context, $stmt, $class_property_type)) {
-                $statements_analyzer->signalMutation(
-                    $stmt_var_id === '$this'
-                        ? Capabilities::WRITE_THIS_PROPS
-                        : Capabilities::WRITE_PROPS,
-                    $context,
-                    'unsetting a property on a mutable object',
-                    ImpurePropertyAssignment::class,
-                    $stmt,
-                );
+                if (!$unset_charged) {
+                    $statements_analyzer->signalMutation(
+                        $stmt_var_id === '$this'
+                            ? Capabilities::WRITE_THIS_PROPS
+                            : Capabilities::WRITE_PROPS,
+                        $context,
+                        'unsetting a property on a mutable object',
+                        ImpurePropertyAssignment::class,
+                        $stmt,
+                    );
+                }
             } else {
                 $statements_analyzer->signalMutation(
                     Capabilities::READ_PROPS,
