@@ -1552,6 +1552,17 @@ final class ArrayAccessTest extends TestCase
                     ["x" => $a] = f();',
                 'error_message' => 'PossiblyNullArrayAccess',
             ],
+            'destructureNullableUnionOfShapesWhereOneLacksTheKey' => [
+                'code' => '<?php
+                    /** @return array{x: int}|array{y: int}|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    ["x" => $a] = f();',
+                'error_message' => 'PossiblyNullArrayAccess',
+                'error_levels' => ['PossiblyUndefinedArrayOffset'],
+            ],
             'destructureNullableShapeByAMissingKey' => [
                 'code' => '<?php
                     /** @return array{x: int}|null */
