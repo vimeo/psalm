@@ -1185,6 +1185,12 @@ final class ClassLikeNodeScanner
                     if ($new_name !== $old_name) {
                         $storage->trait_alias_map[$new_name] = $old_name;
                         $storage->trait_alias_map_cased[$adaptation->newName->name] = $adaptation->method->name;
+
+                        if ($adaptation->trait) {
+                            $storage->trait_alias_traits[$new_name] = strtolower(
+                                ClassLikeAnalyzer::getFQCLNFromNameObject($adaptation->trait, $this->aliases),
+                            );
+                        }
                     }
                 }
 

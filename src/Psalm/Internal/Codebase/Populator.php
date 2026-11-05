@@ -1549,7 +1549,11 @@ final class Populator
             ) {
                 $aliased_method_names = [
                     ...$aliased_method_names,
-                    ...array_keys($storage->trait_alias_map, $method_name_lc, true),
+                    ...array_filter(
+                        array_keys($storage->trait_alias_map, $method_name_lc, true),
+                        static fn(string $alias): bool => !isset($storage->trait_alias_traits[$alias])
+                            || $storage->trait_alias_traits[$alias] === strtolower($parent_storage->name),
+                    ),
                 ];
             }
 
@@ -1644,7 +1648,11 @@ final class Populator
             ) {
                 $aliased_method_names = [
                     ...$aliased_method_names,
-                    ...array_keys($storage->trait_alias_map, $method_name_lc, true),
+                    ...array_filter(
+                        array_keys($storage->trait_alias_map, $method_name_lc, true),
+                        static fn(string $alias): bool => !isset($storage->trait_alias_traits[$alias])
+                            || $storage->trait_alias_traits[$alias] === strtolower($parent_storage->name),
+                    ),
                 ];
             }
 
