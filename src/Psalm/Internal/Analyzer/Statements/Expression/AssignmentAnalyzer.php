@@ -1859,6 +1859,8 @@ final class AssignmentAnalyzer
                     );
                 }
 
+                $has_comment_type = false;
+
                 foreach ($var_comments as $var_comment) {
                     if (!$var_comment->type) {
                         continue;
@@ -1877,6 +1879,7 @@ final class AssignmentAnalyzer
                             $var_comment_type = $var_comment_type->setFromDocblock();
 
                             $new_assign_type = $var_comment_type;
+                            $has_comment_type = true;
                             break;
                         }
                     } catch (UnexpectedValueException $e) {
@@ -1890,6 +1893,23 @@ final class AssignmentAnalyzer
                 }
 
                 if ($list_var_id) {
+                    if ($new_assign_type !== null
+                        && $new_assign_type->hasMixed()
+                        && !$has_comment_type
+                        && !str_contains($list_var_id, '->')
+                        && !str_starts_with($list_var_id, '$_')
+                        && !$context->collect_initializations
+                        && !$context->collect_mutations
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new MixedAssignment(
+                                'Unable to determine the type that ' . $list_var_id . ' is being assigned to',
+                                new CodeLocation($statements_analyzer->getSource(), $var),
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
+
                     $context->vars_in_scope[$list_var_id] = $new_assign_type ?: Type::getMixed();
 
                     if ($statements_analyzer->data_flow_graph) {
