@@ -20,6 +20,68 @@ final class IntersectionTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodOfTheSecondInterfaceOfAnIntersectionBoundOfATemplate' => [
+                'code' => '<?php
+                    interface HasName {}
+
+                    class Base {
+                        public function custom(): int {
+                            return 0;
+                        }
+                    }
+
+                    /**
+                     * @template T of HasName&Base
+                     * @param T $param
+                     */
+                    function test($param): int {
+                        return $param->custom();
+                    }
+
+                    /** @template T of HasName&Base */
+                    class Holder {
+                        /** @param T $param */
+                        public function call($param): int {
+                            return $param->custom();
+                        }
+                    }',
+            ],
+            'staticMethodOfTheSecondTypeOfAnIntersectionBoundOfATemplate' => [
+                'code' => '<?php
+                    interface HasName {}
+
+                    class Base {
+                        public static function custom(): int {
+                            return 0;
+                        }
+                    }
+
+                    /**
+                     * @template T of HasName&Base
+                     * @param T $param
+                     */
+                    function test($param): int {
+                        return $param::custom();
+                    }',
+            ],
+            'methodOfAnIntersectionBoundOfATemplateIntersectedWithAnotherType' => [
+                'code' => '<?php
+                    interface HasName {}
+
+                    class Base {
+                        public function custom(): int {
+                            return 0;
+                        }
+                    }
+
+                    /**
+                     * @template T of HasName&Base
+                     * @param T&Countable $param
+                     */
+                    function test($param): int {
+                        return $param->custom() + $param->count();
+                    }',
+            ],
             'callableObject' => [
                 'code' => '<?php
                     /**

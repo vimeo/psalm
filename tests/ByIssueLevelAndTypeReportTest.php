@@ -42,7 +42,7 @@ final class ByIssueLevelAndTypeReportTest extends TestCase
         |    as an error when Psalm's level is set to 2 or below.                                |
         |                                                                                        |
         |    Issues are shown or hidden in this report according to current settings. For        |
-        |    the most complete report set Psalm's error level to 0 or use --show-info=true       |
+        |    the most complete report set Psalm's error level to 1 or use --show-info=true       |
         |    See https://psalm.dev/docs/running_psalm/error_levels/                              |
         |----------------------------------------------------------------------------------------|
 
