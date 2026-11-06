@@ -820,7 +820,12 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     // instead of the template extended type.
                     $parent_class = $storage->parent_class;
                     while ($parent_class !== null) {
-                        $parent_storage = $codebase->classlike_storage_provider->get($parent_class);
+                        $parent_storage = $codebase->classlikes->getStorageFor($parent_class);
+
+                        if ($parent_storage === null) {
+                            break;
+                        }
+
                         foreach ($parent_storage->template_covariants ?? [] as $pt_offset => $covariant) {
                             if ($covariant) {
                                 // If template_covariants is set template_types should also be set
