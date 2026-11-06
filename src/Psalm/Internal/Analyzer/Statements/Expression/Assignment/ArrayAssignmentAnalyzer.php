@@ -60,6 +60,7 @@ use function assert;
 use function count;
 use function end;
 use function implode;
+use function is_array;
 use function is_string;
 use function preg_match;
 use function sort;
@@ -376,6 +377,60 @@ final class ArrayAssignmentAnalyzer
         }
 
         return $operands;
+    }
+
+    /**
+     * The operands of an item that analysing again could change something in, as `$i++` does: all but plain reads
+     *
+     * @return list<PhpParser\Node\Expr>
+     */
+    public static function getOperandsWithEffects(PhpParser\Node\Expr\ArrayDimFetch $stmt): array
+    {
+        $operands_with_effects = [];
+
+        foreach (self::getOperands($stmt) as $operand) {
+            if (self::hasEffects($operand)) {
+                $operands_with_effects[] = $operand;
+            }
+        }
+
+        return $operands_with_effects;
+    }
+
+    /**
+     * A closure is not descended into: creating it has no effect, and its body is analysed where it is used
+     */
+    private static function hasEffects(PhpParser\Node $node): bool
+    {
+        if ($node instanceof PhpParser\Node\Expr\Closure || $node instanceof PhpParser\Node\Expr\ArrowFunction) {
+            return false;
+        }
+
+        if ($node instanceof PhpParser\Node\Expr
+            && !$node instanceof Variable
+            && !$node instanceof PhpParser\Node\Scalar
+            && !$node instanceof PhpParser\Node\Expr\ConstFetch
+            && !$node instanceof PhpParser\Node\Expr\ClassConstFetch
+            && !$node instanceof PhpParser\Node\Expr\PropertyFetch
+            && !$node instanceof PhpParser\Node\Expr\StaticPropertyFetch
+            && !$node instanceof PhpParser\Node\Expr\ArrayDimFetch
+            && !$node instanceof PhpParser\Node\Expr\BinaryOp
+        ) {
+            return true;
+        }
+
+        foreach ($node->getSubNodeNames() as $name) {
+            /** @var PhpParser\Node|list<PhpParser\Node|null>|scalar|null $sub_node */
+            $sub_node = $node->{$name};
+
+            foreach (is_array($sub_node) ? $sub_node : [$sub_node] as $child) {
+                if ($child instanceof PhpParser\Node && self::hasEffects($child)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -338,6 +338,40 @@ final class ParamClosureThisTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'closureKeyOfAnArrayAccessItemIsAnalysedWithTheBoundThis' => [
+                'code' => '<?php
+                    final class Bound {
+                        public string $value = "a";
+                    }
+
+                    /** @implements ArrayAccess<Closure():int, int> */
+                    final class Lookup implements ArrayAccess {
+                        public function offsetExists(Closure $offset): bool {
+                            return true;
+                        }
+
+                        /** @param-closure-this Bound $offset */
+                        public function offsetGet(Closure $offset): int {
+                            return $offset->call(new Bound());
+                        }
+
+                        public function offsetSet(?Closure $offset, int $value): void {}
+
+                        public function offsetUnset(Closure $offset): void {}
+                    }
+
+                    final class Caller {
+                        public int $value = 1;
+
+                        public function read(Lookup $store): int {
+                            return $store[function (): int {
+                                return intdiv($this->value, 2);
+                            }];
+                        }
+                    }',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:27:47',
+                'error_levels' => ['MissingOverrideAttribute'],
+            ],
             'sameClosureNodeIsClearedForUnboundUnionReceiver' => [
                 'code' => '<?php
                     class Bound {
