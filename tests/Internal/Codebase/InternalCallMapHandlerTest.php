@@ -260,9 +260,17 @@ final class InternalCallMapHandlerTest extends TestCase
         self::assertArrayKeysAreStrings($callMap, "Returned CallMap has non-string keys");
         self::assertArrayValuesAreArrays($callMap, "Returned CallMap has non-array values");
         foreach ($callMap as $function => $signature) {
-            self::assertArrayKeysAreZeroOrString(array_diff_key($signature, [-1 => true]), "Function " . $function . " in returned CallMap has invalid keys");
+            self::assertArrayKeysAreZeroOrString(array_diff_key($signature, [-1 => true, -2 => true]), "Function " . $function . " in returned CallMap has invalid keys");
             self::assertArrayValuesAreStrings($signature, "Function " . $function . " in returned CallMap has non-string values");
-            foreach ($signature as $type) {
+            if (isset($signature[-2])) {
+                self::assertContains($signature[-2], ['tentative', 'none'], $function);
+                if ($signature[-2] === 'tentative') {
+                    self::assertArrayHasKey(-1, $signature, $function);
+                } else {
+                    self::assertArrayNotHasKey(-1, $signature, $function);
+                }
+            }
+            foreach (array_diff_key($signature, [-2 => true]) as $type) {
                 self::assertStringIsParsableType($type, "Function " . $function . " in returned CallMap contains invalid type declaration " . $type);
             }
         }
