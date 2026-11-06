@@ -196,6 +196,31 @@ final class ClassLikeStringTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'classStringComparedToLiteralClassName' => [
+                'code' => '<?php
+                    class Invokable {
+                        public function __invoke(): void {}
+                    }
+
+                    /** @param class-string<callable-object> $callable */
+                    function isClosure(string $callable): bool {
+                        return $callable === "Closure";
+                    }
+
+                    /** @param class-string<Invokable> $class */
+                    function isInvokable(string $class): bool {
+                        return $class === "Invokable" || $class === "\\Invokable";
+                    }
+
+                    /** @param class-string $class */
+                    function isAny(string $class): bool {
+                        return $class === "Invokable";
+                    }
+
+                    function isWhatever(callable $callable): bool {
+                        return is_object($callable) && get_class($callable) === "Closure";
+                    }',
+            ],
             'arrayOfClassConstants' => [
                 'code' => '<?php
                     /**
@@ -1071,6 +1096,25 @@ final class ClassLikeStringTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classStringComparedToUnrelatedLiteralClassName' => [
+                'code' => '<?php
+                    class Invokable {}
+                    class Other {}
+
+                    /** @param class-string<Invokable> $class */
+                    function f(string $class): bool {
+                        return $class === "Other";
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'classStringComparedToUnknownLiteralClassName' => [
+                'code' => '<?php
+                    /** @param class-string $class */
+                    function f(string $class): bool {
+                        return $class === "Missing";
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'arrayOfStringClasses' => [
                 'code' => '<?php
                     /**
