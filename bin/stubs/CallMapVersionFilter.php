@@ -6,7 +6,11 @@ namespace Psalm\Internal\Stubs;
 
 use function explode;
 
-/** Removes extension polyfills of APIs whose availability is controlled by PHP itself. */
+/**
+ * Removes extension polyfills of APIs whose availability is controlled by PHP itself.
+ *
+ * @internal
+ */
 final class CallMapVersionFilter
 {
     /** @param array<string, array<string, true>> $bundledOwners */
@@ -18,6 +22,7 @@ final class CallMapVersionFilter
      * @param array<string, array<int|string, string>> $map
      * @param array<string, string> $extensions
      * @return array<string, array<int|string, string>>
+     * @psalm-capabilities read-props
      */
     public function filter(array $map, array $extensions): array
     {
