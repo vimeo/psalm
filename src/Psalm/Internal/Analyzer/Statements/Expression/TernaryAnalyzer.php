@@ -253,6 +253,9 @@ final class TernaryAnalyzer
                 $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                     $if_context->vars_in_scope[$var_id],
                     $t_else_context->vars_in_scope[$var_id],
+                    null,
+                    false,
+                    false,
                 );
             }
         }
@@ -266,6 +269,9 @@ final class TernaryAnalyzer
             $context->vars_in_scope[$redef_var_id] = Type::combineUnionTypes(
                 $if_context->vars_in_scope[$redef_var_id],
                 $t_else_context->vars_in_scope[$redef_var_id],
+                null,
+                false,
+                false,
             );
         }
 
@@ -275,6 +281,9 @@ final class TernaryAnalyzer
                 $context->vars_in_scope[$redef_var_ifs_id] = Type::combineUnionTypes(
                     $context->vars_in_scope[$redef_var_ifs_id],
                     $if_context->vars_in_scope[$redef_var_ifs_id],
+                    null,
+                    false,
+                    false,
                 );
             }
         }
@@ -285,6 +294,9 @@ final class TernaryAnalyzer
                 $context->vars_in_scope[$redef_var_else_id] = Type::combineUnionTypes(
                     $context->vars_in_scope[$redef_var_else_id],
                     $t_else_context->vars_in_scope[$redef_var_else_id],
+                    null,
+                    false,
+                    false,
                 );
             }
         }
