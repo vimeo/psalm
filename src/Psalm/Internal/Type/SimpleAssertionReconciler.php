@@ -577,6 +577,19 @@ final class SimpleAssertionReconciler extends Reconciler
             $redundant = false;
         }
 
+        foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam && $atomic_type->as->isNullable()) {
+                $as = $atomic_type->as->getBuilder();
+                $as->removeType('null');
+
+                if (!$as->isUnionEmpty()) {
+                    $existing_var_type->addType($atomic_type->replaceAs($as->freeze()));
+
+                    $redundant = false;
+                }
+            }
+        }
+
         if (!$existing_var_type->hasMixed()
             && !$is_equality
             && ($redundant || $existing_var_type->isUnionEmpty())
