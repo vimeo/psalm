@@ -1819,6 +1819,46 @@ function get_defined_constants(bool $categorize = false): array {}
 function is_a($object_or_class, string $class, $allow_string = false): bool{}
 
 /**
+ * @psalm-assert-if-true =non-empty-string $filename
+ */
+function file_exists(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true =non-empty-string $filename
+ */
+function is_dir(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true =non-empty-string $filename
+ */
+function is_executable(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true =non-empty-string $filename
+ */
+function is_file(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true =non-empty-string $filename
+ */
+function is_link(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true =non-empty-string $filename
+ */
+function is_readable(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true =non-empty-string $filename
+ */
+function is_writable(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true =non-empty-string $filename
+ */
+function is_writeable(string $filename): bool {}
+
+/**
  * @template T of array|string
  * @param T $string
  * @return (T is array<int, string> ? array<int, string> : T is array ? array : string|false)
