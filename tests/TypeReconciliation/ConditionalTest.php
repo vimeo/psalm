@@ -21,6 +21,94 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'orWhoseRightSideReassignsWhatTheLeftOneTestedTheSameWayKeepsTruthiness' => [
+                'code' => '<?php
+                    class A {}
+
+                    function getA(): ?A {
+                        return rand(0, 1) ? new A() : null;
+                    }
+
+                    /** @var A|null $handler */
+                    $handler = rand(0, 1) ? new A() : null;
+
+                    if ($handler || $handler = getA()) {
+                        $result = $handler;
+                    } else {
+                        $result = new A();
+                    }',
+                'assertions' => [
+                    '$result' => 'A',
+                ],
+            ],
+            'orWhoseRightSideAssignsAnotherVariableKeepsWhatTheLeftOneTested' => [
+                'code' => '<?php
+                    /** @var string|null $s */
+                    $s = null;
+
+                    if ($s === null || ($n = strlen($s)) > 5) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$s' => 'string',
+                    '$n' => 'int<0, 5>',
+                ],
+            ],
+            'orWhoseRightSideReassignsAnArrayTheLeftOneTestedAKeyOfKeepsTheAssignedType' => [
+                'code' => '<?php
+                    /** @var array{k?: int} $arr */
+                    $arr = [];
+
+                    if (!isset($arr["k"]) || count($arr = ["z" => "q"]) > 1) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$arr' => 'array{z: string}',
+                ],
+            ],
+            'logicalOrWhoseRightSideReassignsWhatTheLeftOneTestedKeepsTheAssignedType' => [
+                'code' => '<?php
+                    /** @var string $value */
+                    $value = "5";
+
+                    if (!ctype_digit($value) or ($value = intval($value)) < 1) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$value' => 'int<1, max>',
+                ],
+            ],
+            'orWhoseRightSideReassignsWhatTheLeftOneTestedKeepsTheAssignedType' => [
+                'code' => '<?php
+                    /** @var string $value */
+                    $value = "5";
+
+                    if (!ctype_digit($value) || ($value = intval($value)) < 1) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$value' => 'int<1, max>',
+                ],
+            ],
+            'orWhoseBothSidesAssignTheSameVariableKeepsWhatTheLeftOneTested' => [
+                'code' => '<?php
+                    class A {}
+
+                    function getA(): ?A {
+                        return rand(0, 1) ? new A() : null;
+                    }
+
+                    $a = null;
+
+                    if (($a = getA()) || ($a = getA())) {
+                        $b = $a;
+                    } else {
+                        $b = new A();
+                    }',
+                'assertions' => [
+                    '$b' => 'A',
+                ],
+            ],
             'orredClausesOfOneVariableAreAllKept' => [
                 'code' => '<?php
                     interface I1 {}

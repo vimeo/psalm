@@ -17,9 +17,13 @@ use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Storage\Assertion\Truthy;
 
+use function array_diff_key;
+use function array_filter;
 use function array_map;
+use function array_values;
 use function count;
 use function spl_object_id;
+use function strcspn;
 use function substr;
 
 /**
@@ -98,6 +102,35 @@ final class FormulaGenerator
             $right_assigned_var_ids = self::getAssignedVarIds($conditional->right, $this_class_name);
 
             if ($right_assigned_var_ids) {
+                // what the left one tested of the previous value says nothing about the value the right one assigns
+                $left_tested_var_ids = array_diff_key(
+                    $right_assigned_var_ids,
+                    self::getAssignedVarIds($conditional->left, $this_class_name),
+                );
+
+                $right_possibilities = [];
+
+                foreach ($right_clauses as $right_clause) {
+                    foreach ($right_clause->possibilities as $var => $assertions) {
+                        foreach ($assertions as $assertion_key => $_) {
+                            $right_possibilities[$var][$assertion_key] = true;
+                        }
+                    }
+                }
+
+                $left_clauses = array_values(array_filter(
+                    $left_clauses,
+                    static fn(Clause $clause): bool => !self::testsAnyVarTheRightSideDoesNot(
+                        $clause,
+                        $left_tested_var_ids,
+                        $right_possibilities,
+                    ),
+                ));
+
+                if (!$left_clauses) {
+                    $left_clauses = [new Clause([], $conditional_object_id, $conditional_object_id, true)];
+                }
+
                 $right_clauses = array_map(
                     static fn(Clause $clause): Clause => $clause->wedge || !$clause->reconcilable
                         ? new Clause(
@@ -483,6 +516,34 @@ final class FormulaGenerator
                 $creating_object_id,
             ),
         ];
+    }
+
+    /**
+     * Whether the clause tests a variable (or an item of it) in a way the right side, which assigns it, doesn't
+     * say again: only what both sides say holds of the value the right side assigns
+     *
+     * @param array<string, true> $var_ids
+     * @param array<string, array<string, true>> $right_possibilities
+     * @psalm-pure
+     */
+    private static function testsAnyVarTheRightSideDoesNot(
+        Clause $clause,
+        array $var_ids,
+        array $right_possibilities,
+    ): bool {
+        foreach ($clause->possibilities as $var => $assertions) {
+            if (!isset($var_ids[$var]) && !isset($var_ids[substr($var, 0, strcspn($var, '[-'))])) {
+                continue;
+            }
+
+            if (!isset($var_ids[$var])
+                || array_diff_key($assertions, $right_possibilities[$var] ?? []) !== []
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
