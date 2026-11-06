@@ -1492,6 +1492,21 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'varDocblockClassWithWrongCasingIsReportedInTheDocblock' => [
+                'code' => '<?php
+                    class FooBar {}
+
+                    /** @var Foobar $obj */
+
+                    echo "x";',
+                'error_message' => 'InvalidClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:30',
+            ],
+            'varDocblockUndefinedClassIsReportedInTheDocblock' => [
+                'code' => '<?php
+                    /** @var Foobar $obj */
+                    $obj = getenv("x");',
+                'error_message' => 'UndefinedDocblockClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:30',
+            ],
             'invalidTypeInPromotedPropertyDocblock' => [
                 'code' => '<?php
                     class Foo {
