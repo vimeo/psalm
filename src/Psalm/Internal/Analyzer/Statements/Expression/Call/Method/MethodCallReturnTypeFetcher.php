@@ -34,6 +34,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -79,6 +80,20 @@ final class MethodCallReturnTypeFetcher
 
         if ($stmt->isFirstClassCallable()) {
             if ($method_storage) {
+                // a trait method's self is the class using the trait, an inherited one's the declaring class
+                $self_fq_class_name = $fq_class_name;
+                $codebase->getMethodReturnType($method_id, $self_fq_class_name);
+
+                // `static` is the enum, whichever case the callable is called on
+                if ($static_type instanceof TEnumCase) {
+                    $closure_static_type = $static_type->value;
+                    $static_type_final = true;
+                } else {
+                    $closure_static_type = $static_type;
+                    $static_type_final = $static_type instanceof TNamedObject
+                        && $codebase->classlike_storage_provider->get($static_type->value)->final;
+                }
+
                 return self::getFirstClassCallableType(
                     $codebase,
                     $stmt,
@@ -89,11 +104,10 @@ final class MethodCallReturnTypeFetcher
                     ),
                     $template_result,
                     $method_storage->template_types ?? [],
-                    $fq_class_name,
-                    $static_type,
+                    $self_fq_class_name,
+                    $closure_static_type,
                     $class_storage->parent_class,
-                    $static_type instanceof TNamedObject
-                    && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                    $static_type_final,
                     true,
                 );
             }
