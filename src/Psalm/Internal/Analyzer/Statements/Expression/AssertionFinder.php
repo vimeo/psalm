@@ -160,6 +160,25 @@ final class AssertionFinder
             );
         }
 
+        // `$a?->b() ?? false` is truthy exactly when `$a?->b()` is, and falsy exactly when it is falsy or null
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
+            && $conditional->left instanceof PhpParser\Node\Expr\NullsafeMethodCall
+            && (($conditional->right instanceof PhpParser\Node\Expr\ConstFetch
+                    && in_array(strtolower($conditional->right->name->getFirst()), ['false', 'null'], true))
+                || ($conditional->right instanceof PhpParser\Node\Scalar\Int_
+                    && $conditional->right->value === 0))
+        ) {
+            return self::scrapeAssertions(
+                $conditional->left,
+                $this_class_name,
+                $source,
+                $codebase,
+                $inside_negation,
+                $cache,
+                $inside_conditional,
+            );
+        }
+
         if ($conditional instanceof PhpParser\Node\Expr\Assign) {
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $conditional->var,
