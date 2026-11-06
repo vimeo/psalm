@@ -2361,6 +2361,50 @@ final class SimpleAssertionReconciler extends Reconciler
     }
 
     /**
+     * The values of a sealed array shape that are lists: those with only the keys of a list, the optional ones last
+     * (`array{0?: string, a?: int}` is `[]` or a list of one string), or null if none is
+     *
+     * @return TKeyedArray|TArray|null the empty array when `[]` is the only one
+     * @psalm-pure
+     */
+    private static function getListOfSealedShape(TKeyedArray $shape, bool $non_empty): TKeyedArray|TArray|null
+    {
+        if ($shape->fallback_params !== null || $shape->is_list) {
+            return null;
+        }
+
+        $properties = [];
+        $has_optional = false;
+
+        foreach ($shape->properties as $key => $property) {
+            if (!is_int($key)) {
+                if (!$property->possibly_undefined) {
+                    return null;
+                }
+
+                continue;
+            }
+
+            if ($key !== count($properties) || ($has_optional && !$property->possibly_undefined)) {
+                return null;
+            }
+
+            if ($non_empty && $key === 0) {
+                $property = $property->setPossiblyUndefined(false);
+            }
+
+            $has_optional = $has_optional || $property->possibly_undefined;
+            $properties[$key] = $property;
+        }
+
+        if ($properties === []) {
+            return $non_empty ? null : Type::getEmptyArrayAtomic();
+        }
+
+        return TKeyedArray::make($properties, null, null, true);
+    }
+
+    /**
      * @psalm-pure
      */
     private static function getKeyedArrayAsList(TKeyedArray $keyed_array): TKeyedArray|TArray
@@ -2424,6 +2468,11 @@ final class SimpleAssertionReconciler extends Reconciler
                 } else {
                     $array_types[] = $type;
                 }
+            } elseif ($type instanceof TKeyedArray
+                && ($list_of_shape = self::getListOfSealedShape($type, $is_non_empty)) !== null
+            ) {
+                $array_types[] = $list_of_shape;
+                $redundant = false;
             } elseif ($type instanceof TArray
                 || ($type instanceof TKeyedArray && $type->fallback_params !== null)
             ) {
