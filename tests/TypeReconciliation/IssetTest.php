@@ -1064,7 +1064,6 @@ final class IssetTest extends TestCase
                         }
                         /**
                          * @psalm-suppress PossiblyUndefinedVariable
-                         * @psalm-suppress MixedArgument
                          */
                         assert($dt);
                     }',
