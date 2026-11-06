@@ -64,7 +64,10 @@ final class ClassLikeStorageProvider
         return isset(self::$storage[$fq_classlike_name_lc]);
     }
 
-    public function exhume(string $fq_classlike_name, string $file_path, string $file_contents): ClassLikeStorage
+    /**
+     * @return ClassLikeStorage|null null if the cache has no storage for the class-like in the file
+     */
+    public function exhume(string $fq_classlike_name, string $file_path, string $file_contents): ?ClassLikeStorage
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
@@ -77,6 +80,10 @@ final class ClassLikeStorageProvider
         }
 
         $cached_value = $this->cache->getLatestFromCache($fq_classlike_name_lc, $file_path, $file_contents);
+
+        if ($cached_value === null) {
+            return null;
+        }
 
         self::$storage[$fq_classlike_name_lc] = $cached_value;
         self::$new_storage[$fq_classlike_name_lc] = $cached_value;
