@@ -13,6 +13,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIntRange;
@@ -20,6 +21,7 @@ use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -772,7 +774,9 @@ final class UnionTypeComparator
         bool $allow_interface_equality = true,
     ): bool {
         if ($type1->hasMixed() || $type2->hasMixed()) {
-            return true;
+            // a non-empty mixed is never a falsy value, nor an empty mixed a truthy one
+            return !self::isMixedOfOppositeTruthiness($type1, $type2)
+                && !self::isMixedOfOppositeTruthiness($type2, $type1);
         }
 
         if ($type1->isNullable() && $type2->isNullable()) {
@@ -805,6 +809,21 @@ final class UnionTypeComparator
         }
 
         return false;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isMixedOfOppositeTruthiness(Union $mixed, Union $other): bool
+    {
+        if (!$mixed->isSingle()) {
+            return false;
+        }
+
+        $mixed_atomic = $mixed->getSingleAtomic();
+
+        return ($mixed_atomic instanceof TNonEmptyMixed && $other->isAlwaysFalsy())
+            || ($mixed_atomic instanceof TEmptyMixed && $other->isAlwaysTruthy());
     }
 
     /**

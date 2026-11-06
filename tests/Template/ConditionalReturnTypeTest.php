@@ -21,6 +21,49 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalReturnTypeOnNonEmptyMixedTakesTheElseBranchOfAFalsyCondition' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $arg
+                     * @return ($arg is false ? string|false : int)
+                     */
+                    function bar($arg) {
+                        /** @var string|false|int $result */
+                        $result = $arg;
+
+                        return $result;
+                    }
+
+                    /** @var mixed $foo */
+                    if (empty($foo)) {
+                        exit;
+                    }
+
+                    $result = bar($foo);',
+                'assertions' => [
+                    '$result===' => 'int',
+                ],
+                'ignored_issues' => [],
+            ],
+            'conditionalReturnTypeOnNonEmptyMixedKeepsBothBranchesOfATruthyCondition' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $arg
+                     * @return ($arg is string ? string : int)
+                     */
+                    function bar($arg) { throw new Exception(); }
+
+                    /** @var mixed $foo */
+                    if (empty($foo)) {
+                        exit;
+                    }
+
+                    $result = bar($foo);',
+                'assertions' => [
+                    '$result===' => 'int|string',
+                ],
+                'ignored_issues' => [],
+            ],
             'conditionalReturnTypeSimple' => [
                 'code' => '<?php
 

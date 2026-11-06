@@ -21,6 +21,33 @@ final class EmptyTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nonEmptyMixedMayStillBeAnyTruthyValue' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (!empty($foo)) {
+                        if ($foo === "a") {
+                            echo 1;
+                        }
+                        if ($foo === true) {
+                            echo 2;
+                        }
+                    }',
+            ],
+            'emptyMixedMayStillBeAnyFalsyValue' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (empty($foo)) {
+                        if ($foo === 0) {
+                            echo 1;
+                        }
+                        if ($foo === null) {
+                            echo 2;
+                        }
+                        if ($foo === false) {
+                            echo 3;
+                        }
+                    }',
+            ],
             'ifNotUndefinedAndEmpty' => [
                 'code' => '<?php
                     $a = !empty($b) ? $b : null;',
@@ -656,6 +683,36 @@ final class EmptyTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nonEmptyMixedIsNeverFalse' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (!empty($foo)) {
+                        if ($foo === false) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'nonEmptyMixedIsNeverAnEmptyString' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (!empty($foo)) {
+                        if ($foo === "") {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'emptyMixedIsNeverTrue' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (empty($foo)) {
+                        if ($foo === true) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'preventImpossibleEmpty' => [
                 'code' => '<?php
                     function foo(array $arr) : void {
