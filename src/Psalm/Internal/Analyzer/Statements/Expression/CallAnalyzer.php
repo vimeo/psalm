@@ -714,6 +714,13 @@ abstract class CallAnalyzer
             } elseif (str_contains($var_possibilities->var_id, '::$')) {
                 // allow assertions to bring external static props into scope
                 $assertion_var_id = $var_possibilities->var_id;
+            } elseif (AssertionFinder::isArrayOffsetAssertionId($var_possibilities->var_id)) {
+                $assertion_var_id = AssertionFinder::getArrayOffsetVarId(
+                    $var_possibilities->var_id,
+                    $args,
+                    null,
+                    $statements_analyzer,
+                );
             } elseif (isset($context->vars_in_scope[$var_possibilities->var_id])) {
                 $assertion_var_id = $var_possibilities->var_id;
             } elseif (str_contains($var_possibilities->var_id, '->')) {
