@@ -33,6 +33,7 @@ use function array_merge;
 use function array_values;
 use function count;
 use function in_array;
+use function is_string;
 use function spl_object_id;
 
 /**
@@ -328,6 +329,13 @@ final class OrAnalyzer
         }
 
         if (!($stmt->right instanceof PhpParser\Node\Expr\Exit_)) {
+            $negated_assignment_var_id = $stmt->right instanceof PhpParser\Node\Expr\BooleanNot
+                && $stmt->right->expr instanceof PhpParser\Node\Expr\Assign
+                && $stmt->right->expr->var instanceof PhpParser\Node\Expr\Variable
+                && is_string($stmt->right->expr->var->name)
+                    ? '$' . $stmt->right->expr->var->name
+                    : null;
+
             foreach ($right_context->vars_in_scope as $var_id => $type) {
                 if (isset($context->vars_in_scope[$var_id])) {
                     $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
@@ -335,6 +343,10 @@ final class OrAnalyzer
                         $type,
                         $codebase,
                     );
+                } elseif ($var_id === $negated_assignment_var_id) {
+                    // the right operand runs only when the left one is false, but where the whole condition is false
+                    // the variable it assigns holds a truthy value, which also defines it
+                    $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true);
                 }
             }
         } elseif ($stmt->left instanceof PhpParser\Node\Expr\Assign) {
