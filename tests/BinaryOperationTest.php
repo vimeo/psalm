@@ -655,6 +655,47 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'floatWithExactIntValueInIntOperations' => [
+                'code' => '<?php
+                    $a = 7.0 % 2.0;
+                    $b = 6.0 | 1;
+                    $c = 6 & 3.0;
+                    $d = 5.0 ^ 1;
+                    $e = 1.0 << 3;
+                    $f = 8.0 >> 1;
+                    $g = -7.0 % 3;
+                    $h = 2.0 << 0;',
+                'assertions' => [
+                    '$a===' => '1',
+                    '$b===' => '7',
+                    '$c===' => '2',
+                    '$d===' => '4',
+                    '$e===' => '8',
+                    '$f===' => '4',
+                    '$g===' => '-1',
+                    '$h===' => '2',
+                ],
+            ],
+            'floatOperandOutsideIntRange' => [
+                'code' => '<?php
+                    $a = 1e30 & 1;
+                    $b = -1e30 | 1;
+                    $c = 9.3e18 % 7;',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                    '$c===' => 'int',
+                ],
+            ],
+            'floatOperandsOfIntOnlyOperationsGiveInt' => [
+                'code' => '<?php
+                    /**
+                     * @return list{int, int, int, int, int, int}
+                     */
+                    function f(float $f, int $i): array {
+                        return [$f | $i, $i & $f, $f ^ $f, $f << $i, $i >> $f, $f % $i];
+                    }',
+            ],
             'zeroToANegativePowerIsAFloat' => [
                 'code' => '<?php
                     $a = 0 ** -1;
@@ -1610,6 +1651,16 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'shiftRightByNegativeFloatLiteral' => [
+                'code' => '<?php
+                    $a = 8 >> -2.0;',
+                'error_message' => 'NoValue',
+            ],
+            'shiftByNegativeLiteral' => [
+                'code' => '<?php
+                    $a = 1 << -1;',
+                'error_message' => 'NoValue',
+            ],
             'shiftLeftByANegativeNumber' => [
                 'code' => '<?php
                     $a = 1 << -1;
