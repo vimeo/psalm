@@ -77,4 +77,13 @@ final class FileStorageCacheProvider
     {
         return $this->cache->getItem(strtolower($file_path), hash('xxh128', $file_contents));
     }
+
+    /**
+     * Whether the storage cached for the file is for the contents with this hash. The entry of a writer that was
+     * killed midway is none.
+     */
+    public function hasEntry(string $file_path, string $file_contents_hash): bool
+    {
+        return $this->cache->getHash(strtolower($file_path)) === $file_contents_hash;
+    }
 }

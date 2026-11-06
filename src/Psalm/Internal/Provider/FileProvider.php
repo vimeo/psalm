@@ -14,6 +14,8 @@ use UnexpectedValueException;
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
+use function hash;
+use function hash_file;
 use function in_array;
 use function is_dir;
 
@@ -68,6 +70,36 @@ class FileProvider
         self::$open_files[$file_path] = $file_contents;
 
         return $file_contents;
+    }
+
+    /**
+     * The xxh128 hash of what getContents() returns, which a file read from disk is not kept for.
+     */
+    public function getContentsHash(string $file_path): string
+    {
+        if (isset($this->temp_files[$file_path])) {
+            return hash('xxh128', $this->temp_files[$file_path]['content']);
+        }
+
+        if (isset(self::$open_files[$file_path])) {
+            return hash('xxh128', self::$open_files[$file_path]);
+        }
+
+        if (!file_exists($file_path)) {
+            throw new UnexpectedValueException('File ' . $file_path . ' should exist to get contents');
+        }
+
+        if (is_dir($file_path)) {
+            throw new UnexpectedValueException('File ' . $file_path . ' is a directory');
+        }
+
+        $hash = hash_file('xxh128', $file_path);
+
+        if ($hash === false) {
+            throw new UnexpectedValueException('File ' . $file_path . ' could not be read');
+        }
+
+        return $hash;
     }
 
     public function setContents(string $file_path, string $file_contents): void
@@ -145,7 +177,6 @@ class FileProvider
     }
 
     /**
-     * @psalm-suppress PossiblyUnusedMethod called from the reflection-invoked LSP didClose handler
      * @psalm-external-mutation-free
      */
     public function closeFile(string $file_path): void
