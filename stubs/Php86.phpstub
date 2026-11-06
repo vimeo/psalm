@@ -1,0 +1,237 @@
+<?php
+
+// The PHP 8.6 enums. They live apart from PhpVersionedClasses.phpstub, which is parsed with the grammar of every
+// analysis version and so cannot contain `enum` declarations without failing to parse below PHP 8.1.
+
+namespace {
+    /** @since 8.6 */
+    enum SortDirection
+    {
+        case Ascending;
+        case Descending;
+    }
+}
+
+namespace Io\Poll {
+    /** @since 8.6 */
+    enum Backend
+    {
+        case Auto;
+        case Poll;
+        case Epoll;
+        case Kqueue;
+        case EventPorts;
+        case WSAPoll;
+
+        /** @return list<Backend> */
+        public static function getAvailableBackends(): array {}
+
+        public function isAvailable(): bool {}
+
+        public function supportsEdgeTriggering(): bool {}
+    }
+
+    /** @since 8.6 */
+    enum Event
+    {
+        case Read;
+        case Write;
+        case Error;
+        case HangUp;
+        case ReadHangUp;
+        case OneShot;
+        case EdgeTriggered;
+    }
+}
+
+namespace {
+    /** @since 8.6 */
+    enum StreamErrorCode
+    {
+        case None;
+        case Generic;
+        case ReadFailed;
+        case WriteFailed;
+        case SeekFailed;
+        case SeekNotSupported;
+        case FlushFailed;
+        case TruncateFailed;
+        case ConnectFailed;
+        case BindFailed;
+        case ListenFailed;
+        case AcceptFailed;
+        case NotWritable;
+        case NotReadable;
+        case Disabled;
+        case NotFound;
+        case PermissionDenied;
+        case AlreadyExists;
+        case InvalidPath;
+        case PathTooLong;
+        case OpenFailed;
+        case CreateFailed;
+        case DupFailed;
+        case UnlinkFailed;
+        case RenameFailed;
+        case MkdirFailed;
+        case RmdirFailed;
+        case StatFailed;
+        case MetaFailed;
+        case ChmodFailed;
+        case ChownFailed;
+        case CopyFailed;
+        case TouchFailed;
+        case InvalidMode;
+        case InvalidMeta;
+        case ModeNotSupported;
+        case Readonly;
+        case RecursionDetected;
+        case NotImplemented;
+        case NoOpener;
+        case PersistentNotSupported;
+        case WrapperNotFound;
+        case WrapperDisabled;
+        case ProtocolUnsupported;
+        case WrapperRegistrationFailed;
+        case WrapperUnregistrationFailed;
+        case WrapperRestorationFailed;
+        case FilterNotFound;
+        case FilterFailed;
+        case CastFailed;
+        case CastNotSupported;
+        case MakeSeekableFailed;
+        case BufferedDataLost;
+        case NetworkSendFailed;
+        case NetworkRecvFailed;
+        case SslNotSupported;
+        case ResumptionFailed;
+        case SocketPathTooLong;
+        case OobNotSupported;
+        case ProtocolError;
+        case InvalidUrl;
+        case InvalidResponse;
+        case InvalidHeader;
+        case InvalidParam;
+        case RedirectLimit;
+        case AuthFailed;
+        case TimeOut;
+        case ArchivingFailed;
+        case EncodingFailed;
+        case DecodingFailed;
+        case InvalidFormat;
+        case AllocationFailed;
+        case TemporaryFileFailed;
+        case LockFailed;
+        case LockNotSupported;
+        case UserspaceNotImplemented;
+        case UserspaceInvalidReturn;
+        case UserspaceCallFailed;
+    }
+
+    /** @since 8.6 */
+    enum StreamErrorMode
+    {
+        case Error;
+        case Exception;
+        case Silent;
+    }
+
+    /** @since 8.6 */
+    enum StreamErrorStore
+    {
+        case Auto;
+        case None;
+        case NonTerminating;
+        case Terminating;
+        case All;
+    }
+}
+
+namespace Uri\Rfc3986 {
+    /** @since 8.6 */
+    enum UriHostType
+    {
+        case IpV4;
+        case IpV6;
+        case IpVFuture;
+        case RegisteredName;
+    }
+
+    /** @since 8.6 */
+    enum UriType
+    {
+        case AbsolutePathReference;
+        case RelativePathReference;
+        case NetworkPathReference;
+        case Uri;
+    }
+}
+
+namespace Uri\WhatWg {
+    /** @since 8.6 */
+    enum UrlHostType
+    {
+        case IpV4;
+        case IpV6;
+        case Domain;
+        case Opaque;
+        case Empty;
+    }
+
+    /** @since 8.6 */
+    enum UrlPercentEncodingMode
+    {
+        case Username;
+        case Password;
+        case OpaqueHost;
+        case Path;
+        case OpaquePath;
+        case PathSegment;
+        case Query;
+        case SpecialQuery;
+        case FormQuery;
+        case Fragment;
+    }
+}
+
+namespace Snmp {
+    /** @since 8.6 */
+    enum Mib
+    {
+        case AllowUnderscores;
+        case CommentTerm;
+        case Replace;
+    }
+
+    /** @since 8.6 */
+    enum OidOutput
+    {
+        case Suffix;
+        case Module;
+        case Full;
+        case Numeric;
+        case Ucd;
+        case None;
+    }
+
+    /** @since 8.6 */
+    enum Output
+    {
+        case NumericIndex;
+        case EnumPrint;
+        case EscapeQuotes;
+        case QuickPrint;
+        case NumericTimeticks;
+        case HexText;
+        case DontPrintUnits;
+        case ExtendedIndex;
+    }
+
+    /** @since 8.6 */
+    enum StringOutput
+    {
+        case Guess;
+        case Ascii;
+        case Hex;
+    }
+}
