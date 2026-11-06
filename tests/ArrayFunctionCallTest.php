@@ -1383,6 +1383,8 @@ final class ArrayFunctionCallTest extends TestCase
                     array_filter([1, 2, 3], "A::barBar");
                     array_filter([1, 2, 3], "A::BARBAR");
                     array_filter([1, 2, 3], "A::barbar");',
+                'assertions' => [],
+                'ignored_issues' => ['WrongCaseFunction'],
             ],
             'arrayFilterIgnoreMissingClass' => [
                 'code' => '<?php

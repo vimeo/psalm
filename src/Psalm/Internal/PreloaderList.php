@@ -1434,6 +1434,7 @@ final class PreloaderList {
         \Psalm\Issue\UnusedReturnValue::class,
         \Psalm\Issue\UnusedVariable::class,
         \Psalm\Issue\VariableIssue::class,
+        \Psalm\Issue\WrongCaseFunction::class,
         \Psalm\NodeTypeProvider::class,
         \Psalm\Node\Expr\AssignOp\VirtualBitwiseAnd::class,
         \Psalm\Node\Expr\AssignOp\VirtualBitwiseOr::class,

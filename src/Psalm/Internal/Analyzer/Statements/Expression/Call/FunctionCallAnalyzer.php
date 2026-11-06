@@ -40,6 +40,7 @@ use Psalm\Issue\NullFunctionCall;
 use Psalm\Issue\PossiblyInvalidFunctionCall;
 use Psalm\Issue\PossiblyNullFunctionCall;
 use Psalm\Issue\UnusedFunctionCall;
+use Psalm\Issue\WrongCaseFunction;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Expr\VirtualMethodCall;
@@ -816,6 +817,32 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     );
 
                     $function_call_info->function_params = $function_call_info->function_storage->params;
+
+                    if ($function_call_info->in_call_map && $function_storage->cased_name !== null) {
+                        $declared_name = CallAnalyzer::getUnqualifiedFunctionName($function_storage->cased_name);
+
+                        // a function imported with an alias is called by the alias: its name is the imported one
+                        $imported_name = count($function_name->getParts()) === 1
+                            ? $statements_analyzer->getAliases()->functions[strtolower($function_name->getFirst())]
+                                ?? null
+                            : null;
+
+                        $written_name = $imported_name !== null
+                            ? CallAnalyzer::getUnqualifiedFunctionName($imported_name)
+                            : $function_name->getLast();
+
+                        if ($declared_name !== $written_name) {
+                            IssueBuffer::maybeAdd(
+                                new WrongCaseFunction(
+                                    'Function ' . $written_name . ' is declared as ' . $declared_name
+                                        . ' and has wrong casing',
+                                    $code_location,
+                                    $function_call_info->function_id,
+                                ),
+                                $statements_analyzer->getSuppressedIssues(),
+                            );
+                        }
+                    }
 
                     if (!$function_storage->allow_named_arg_calls) {
                         $function_call_info->allow_named_args = false;
