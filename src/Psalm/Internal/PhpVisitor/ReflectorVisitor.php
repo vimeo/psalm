@@ -31,7 +31,9 @@ use Psalm\Internal\Scanner\PhpStormMetaScanner;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Issue\InvalidDocblock;
+use Psalm\Issue\ParseError;
 use Psalm\Issue\TaintedInput;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionStorage;
@@ -476,6 +478,32 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
         }
     }
 
+    /**
+     * PHP stops with a fatal error when a name is imported twice
+     */
+    private function checkAliasIsNotInUse(PhpParser\Node\UseItem $use, int $use_type, string $use_alias): void
+    {
+        $already_imported = match ($use_type) {
+            PhpParser\Node\Stmt\Use_::TYPE_FUNCTION => isset($this->aliases->functions[strtolower($use_alias)]),
+            PhpParser\Node\Stmt\Use_::TYPE_CONSTANT => isset($this->aliases->constants[$use_alias]),
+            default => isset($this->aliases->uses[strtolower($use_alias)]),
+        };
+
+        if (!$already_imported) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new ParseError(
+                'Cannot use ' . $use->name->toString() . ' as ' . $use_alias
+                    . ' because the name is already in use',
+                new CodeLocation($this->file_scanner, $use),
+            ),
+        );
+
+        $this->file_storage->has_visitor_issues = true;
+    }
+
     private function handleUse(PhpParser\Node\Stmt\Use_ $node): void
     {
         foreach ($node->uses as $use) {
@@ -483,7 +511,11 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
             $use_alias = $use->alias->name ?? $use->name->getLast();
 
-            switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type) {
+            $use_type = $use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type;
+
+            $this->checkAliasIsNotInUse($use, $use_type, $use_alias);
+
+            switch ($use_type) {
                 case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
                     $this->aliases->functions[strtolower($use_alias)] = $use_path;
                     $this->aliases->functions_flipped[strtolower($use_path)] = $use_alias;
@@ -516,7 +548,11 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             $use_path = $use_prefix . '\\' . $use->name->toString();
             $use_alias = $use->alias->name ?? $use->name->getLast();
 
-            switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type) {
+            $use_type = $use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type;
+
+            $this->checkAliasIsNotInUse($use, $use_type, $use_alias);
+
+            switch ($use_type) {
                 case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
                     $this->aliases->functions[strtolower($use_alias)] = $use_path;
                     $this->aliases->functions_flipped[strtolower($use_path)] = $use_alias;
