@@ -18,6 +18,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidClone;
@@ -70,6 +71,10 @@ final class CloneAnalyzer
         $stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr);
 
         if ($stmt_expr_type) {
+            $stmt_expr_type = TypeVariableResolver::resolveTopLevel(
+                $stmt_expr_type,
+                $statements_analyzer->getCodebase(),
+            );
             $result_type = self::analyzeClonedType(
                 $statements_analyzer,
                 $context,
