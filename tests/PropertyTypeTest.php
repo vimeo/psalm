@@ -4086,6 +4086,22 @@ final class PropertyTypeTest extends TestCase
                     echo (new A)->foo;',
                 'error_message' => 'InaccessibleProperty',
             ],
+            'undefinedClassInDocblockOfTypedPropertyIsReportedAtTheDocblock' => [
+                'code' => '<?php
+                    class A {
+                        /** @var class-string<Foobar> */
+                        public string $s = "";
+                    }',
+                'error_message' => 'UndefinedDocblockClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34 - Docblock-defined class, interface or enum named Foobar does not exist',
+            ],
+            'mismatchingDocblockOfTypedPropertyIsReportedAtTheDocblock' => [
+                'code' => '<?php
+                    class A {
+                        /** @var array */
+                        public string $s = [];
+                    }',
+                'error_message' => 'MismatchingDocblockPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34 - Parameter A::$s has wrong type',
+            ],
             'overwritePropertyType' => [
                 'code' => '<?php
                     class A {
