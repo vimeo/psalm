@@ -15897,7 +15897,7 @@ return array (
   array (
     -1 => 'bool',
     'constant_name' => 'string',
-    'value' => 'array<array-key, mixed>|null|scalar',
+    'value' => 'mixed',
     'case_insensitive=' => 'false',
   ),
   'define_syslog_variables' => 
