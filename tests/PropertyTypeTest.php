@@ -561,6 +561,28 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'constructorCallsASetterOfAParentClass' => [
+                'code' => '<?php
+                    abstract class ParentClass {
+                        protected string $locale;
+
+                        public function setLocale(string $locale): void {
+                            $this->locale = $locale;
+                        }
+                    }
+
+                    class ChildClass extends ParentClass {
+                        public function __construct(string $locale) {
+                            $this->setLocale($locale);
+                        }
+                    }
+
+                    class GrandChild extends ChildClass {
+                        public function __construct(string $locale) {
+                            $this->setLocale($locale);
+                        }
+                    }',
+            ],
             'newVarInIf' => [
                 'code' => '<?php
                     class A {
@@ -2903,6 +2925,24 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constructorCallsASetterOfAParentClassThatLeavesAPropertyUnset' => [
+                'code' => '<?php
+                    abstract class ParentClass {
+                        protected string $locale;
+                        protected string $other;
+
+                        public function setLocale(string $locale): void {
+                            $this->locale = $locale;
+                        }
+                    }
+
+                    class ChildClass extends ParentClass {
+                        public function __construct(string $locale) {
+                            $this->setLocale($locale);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
             'undefinedPropertyAssignment' => [
                 'code' => '<?php
                     class A {

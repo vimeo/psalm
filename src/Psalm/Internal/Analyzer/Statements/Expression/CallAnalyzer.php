@@ -239,7 +239,10 @@ abstract class CallAnalyzer
 
                 $old_calling_method_id = $context->calling_method_id;
 
-                if ($fq_class_name === $source->getFQCLN()) {
+                // the class analyzer only knows the methods of its own class and its traits
+                if ($fq_class_name === $source->getFQCLN()
+                    && !$codebase->classExtends($fq_class_name, $declaring_method_id->fq_class_name)
+                ) {
                     $class_analyzer->getMethodMutations($declaring_method_id->method_name, $context);
                 } else {
                     $declaring_fq_class_name = $declaring_method_id->fq_class_name;
