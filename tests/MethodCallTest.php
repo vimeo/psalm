@@ -205,6 +205,72 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'inheritedThisDocblockKeepsNativeStaticOfSubclass' => [
+                'code' => '<?php
+                    class Form {}
+
+                    interface BuilderInterface {
+                        /**
+                         * @return $this
+                         */
+                        public function setCompound(): static;
+                    }
+
+                    class Builder implements BuilderInterface {
+                        public function setCompound(): static {
+                            return $this;
+                        }
+                    }
+
+                    class FormBuilder extends Builder {
+                        public function getForm(): Form {
+                            return new Form();
+                        }
+                    }
+
+                    $form = (new FormBuilder())->setCompound()->getForm();',
+                'assertions' => ['$form' => 'Form'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inheritedStaticDocblockKeepsNativeStaticOfSubclass' => [
+                'code' => '<?php
+                    class Form {}
+
+                    interface BuilderInterface {
+                        /**
+                         * @return static
+                         */
+                        public function setCompound(): static;
+                    }
+
+                    class Builder implements BuilderInterface {
+                        public function setCompound(): static {
+                            return $this;
+                        }
+                    }
+
+                    class FormBuilder extends Builder {
+                        public function getForm(): Form {
+                            return new Form();
+                        }
+                    }
+
+                    $form = (new FormBuilder())->setCompound()->getForm();',
+                'assertions' => ['$form' => 'Form'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'dateTimeInterfaceMicrosecond' => [
+                'code' => '<?php
+                    function asInterface(DateTimeInterface $date): DateTimeInterface {
+                        return $date;
+                    }
+                    $result = asInterface(new DateTimeImmutable())->getMicrosecond();',
+                'assertions' => ['$result' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'notInCallMapTest' => [
                 'code' => '<?php
                     new DOMImplementation();',
@@ -1495,6 +1561,15 @@ final class MethodCallTest extends TestCase
                         }
                     }',
             ],
+            'pdoSqliteCreateFunctionTakesFlags' => [
+                'code' => '<?php
+                    function register(PDO $pdo): void {
+                        $pdo->sqliteCreateFunction("double", static fn(int $i): int => $i * 2, 1, 2048);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
         ];
     }
 
@@ -1505,6 +1580,46 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'methodMissingFromALaterTypeOfAUnionTemplateBound' => [
+                'code' => '<?php
+                    final class Invoice {
+                        public function total(): int { return 1; }
+                    }
+
+                    final class CreditNote {
+                        public function total(): int { return -1; }
+                        public function reason(): string { return ""; }
+                    }
+
+                    /**
+                     * @template T of CreditNote|Invoice
+                     * @param T $document
+                     * @return mixed
+                     */
+                    function reason($document) {
+                        return $document->reason();
+                    }',
+                'error_message' => 'PossiblyUndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:43 - Method Invoice::reason does not exist',
+            ],
+            'mysqliBindResultRequiresOutputVariable' => [
+                'code' => '<?php
+                    function bind(mysqli_stmt $statement): void {
+                        $statement->bind_result();
+                    }',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'dateTimeInterfaceMicrosecondBeforeEightFour' => [
+                'code' => '<?php
+                    function microseconds(DateTimeInterface $date): void {
+                        $date->getMicrosecond();
+                    }',
+                // The runtime determines whether this is an absent interface method or a version-gated method.
+                'error_message' => 'src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - Method DateTimeInterface::getMicrosecond',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'staticInvocation' => [
                 'code' => '<?php
                     class Foo {
@@ -1698,6 +1813,18 @@ final class MethodCallTest extends TestCase
 
                     $q = new A;
                     $q->foo(bar());',
+                'error_message' => 'UndefinedFunction',
+            ],
+            'undefinedMethodPassedAsArgOnPossiblyInvalidCallee' => [
+                'code' => '<?php
+                    class A {
+                        public function __call(string $method, array $args) {}
+                    }
+
+                    /** @param A|int $q */
+                    function f($q): void {
+                        $q->foo(bar());
+                    }',
                 'error_message' => 'UndefinedFunction',
             ],
             'noIntersectionMethod' => [
