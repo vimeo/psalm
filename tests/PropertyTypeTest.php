@@ -561,6 +561,34 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'pushShapeWithAnOptionalKeyAndAFallbackToAnArrayProperty' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type MyRow array{0: string, 1?: int, 2?: "bar", 3: "baz", ...<int, string>}
+                     */
+                    final class TestClass {
+                        /** @psalm-var MyRow[] */
+                        public array $data = [];
+
+                        /** @psalm-param MyRow $row */
+                        public function add(array $row): void {
+                            $this->data[] = $row;
+                        }
+                    }
+
+                    /**
+                     * @psalm-type OtherRow array{0: string, 1?: int, ...<array-key, mixed>}&array
+                     */
+                    final class OtherClass {
+                        /** @psalm-var OtherRow[] */
+                        public array $data = [];
+
+                        /** @psalm-param OtherRow $row */
+                        public function add(array $row): void {
+                            $this->data[] = $row;
+                        }
+                    }',
+            ],
             'newVarInIf' => [
                 'code' => '<?php
                     class A {
