@@ -23,6 +23,29 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachOverIteratorIteratorHasNoNullFromPastTheEnd' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param IteratorIterator<int, string, Iterator<int, string>> $iterator */
+                    function iterate(IteratorIterator $iterator): void {
+                        foreach ($iterator as $key => $value) {
+                            /** @psalm-check-type-exact $key = int */
+                            /** @psalm-check-type-exact $value = string */
+                        }
+                    }
+
+                    /** @param IteratorIterator<int|null, string|null, Iterator<int|null, string|null>> $iterator */
+                    function nullable(IteratorIterator $iterator): void {
+                        foreach ($iterator as $key => $value) {
+                            /** @psalm-check-type-exact $key = int|null */
+                            /** @psalm-check-type-exact $value = string|null */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'foreachByReferenceWritesIntoTheItemsOfTheArray' => [
                 'code' => '<?php
                     $values = ["key" => ""];
