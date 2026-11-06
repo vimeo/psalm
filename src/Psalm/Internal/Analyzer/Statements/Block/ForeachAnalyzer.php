@@ -208,6 +208,7 @@ final class ForeachAnalyzer
                 if ($codebase->find_unused_variables
                     && $doc_comment
                     && $type_location
+                    && !$var_comment->from_phpstan
                     && isset($context->vars_in_scope[$var_comment->var_id])
                     && $context->vars_in_scope[$var_comment->var_id]->getId() === $comment_type->getId()
                     && !$comment_type->isMixed(true)
