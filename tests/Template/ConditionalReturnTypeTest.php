@@ -21,6 +21,37 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalReturnTypeMakesATemplateArrayNonEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @param A $a
+                     * @return (A is array ? non-empty-array<key-of<A>, value-of<A>> : (A is string ? non-empty-string : A))
+                     */
+                    function notEmpty($a) {
+                        return $a;
+                    }
+
+                    /** @var array<string, bool> $map */
+                    $map = [];
+                    /** @var array{a: int, b?: string} $shape */
+                    $shape = ["a" => 1];
+                    /** @var string $string */
+                    $string = "";
+                    /** @var int $int */
+                    $int = 0;
+
+                    $fromMap = notEmpty($map);
+                    $fromShape = notEmpty($shape);
+                    $fromString = notEmpty($string);
+                    $fromInt = notEmpty($int);',
+                'assertions' => [
+                    '$fromMap===' => 'non-empty-array<string, bool>',
+                    '$fromShape===' => "non-empty-array<'a'|'b', int|string>",
+                    '$fromString===' => 'non-empty-string',
+                    '$fromInt===' => 'int',
+                ],
+            ],
             'conditionalReturnTypeSimple' => [
                 'code' => '<?php
 
