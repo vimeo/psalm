@@ -814,6 +814,8 @@ final class ClassLikeNodeScanner
                 }
             }
 
+            $psalm_tagged_pseudo_methods = ['static' => [], 'instance' => []];
+
             foreach ($docblock_info->methods as $method) {
                 $functionlike_node_scanner = new FunctionLikeNodeScanner(
                     $this->codebase,
@@ -835,13 +837,35 @@ final class ClassLikeNodeScanner
                     ...$pseudo_method_storage->docblock_issues,
                 ];
 
+                $is_psalm_tag = (bool) $method->getAttribute('psalm_tag');
+
                 if ($pseudo_method_storage->is_static) {
+                    [$overloads, $psalm_tagged_pseudo_methods['static']] = self::addPseudoMethodOverload(
+                        $storage->pseudo_static_method_overloads,
+                        $storage->pseudo_static_methods,
+                        $psalm_tagged_pseudo_methods['static'],
+                        $lc_method_name,
+                        $pseudo_method_storage,
+                        $is_psalm_tag,
+                    );
+                    $storage->pseudo_static_method_overloads = $overloads;
+
                     $storage->pseudo_static_methods[$lc_method_name] = $pseudo_method_storage;
                     $storage->declaring_pseudo_static_method_ids[$lc_method_name] = new MethodIdentifier(
                         $fq_classlike_name,
                         $lc_method_name,
                     );
                 } else {
+                    [$overloads, $psalm_tagged_pseudo_methods['instance']] = self::addPseudoMethodOverload(
+                        $storage->pseudo_method_overloads,
+                        $storage->pseudo_methods,
+                        $psalm_tagged_pseudo_methods['instance'],
+                        $lc_method_name,
+                        $pseudo_method_storage,
+                        $is_psalm_tag,
+                    );
+                    $storage->pseudo_method_overloads = $overloads;
+
                     $storage->pseudo_methods[$lc_method_name] = $pseudo_method_storage;
                     $storage->declaring_pseudo_method_ids[$lc_method_name] = new MethodIdentifier(
                         $fq_classlike_name,
@@ -2593,5 +2617,37 @@ final class ClassLikeNodeScanner
         }
 
         return $referenced_names;
+    }
+
+    /**
+     * `@psalm-method` replaces the `@method`s of its name; the `@method`s (or `@psalm-method`s) of one name are the
+     * overloads of the method
+     *
+     * @param array<lowercase-string, non-empty-list<MethodStorage>> $overloads
+     * @param array<lowercase-string, MethodStorage> $declared
+     * @param array<lowercase-string, true> $psalm_tagged the names a `@psalm-method` was seen for
+     * @param lowercase-string $name
+     * @return array{array<lowercase-string, non-empty-list<MethodStorage>>, array<lowercase-string, true>}
+     * @psalm-pure
+     */
+    private static function addPseudoMethodOverload(
+        array $overloads,
+        array $declared,
+        array $psalm_tagged,
+        string $name,
+        MethodStorage $method,
+        bool $is_psalm_tag,
+    ): array {
+        if (!isset($declared[$name]) || ($is_psalm_tag && !isset($psalm_tagged[$name]))) {
+            unset($overloads[$name]);
+        } else {
+            $overloads[$name] = [...($overloads[$name] ?? [$declared[$name]]), $method];
+        }
+
+        if ($is_psalm_tag) {
+            $psalm_tagged[$name] = true;
+        }
+
+        return [$overloads, $psalm_tagged];
     }
 }

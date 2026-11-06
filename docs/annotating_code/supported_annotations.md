@@ -262,6 +262,50 @@ $a = new A();
 $a->bar = 5; // this call fails
 ```
 
+### `@method` overloads
+
+A magic method can have several `@method` (or `@psalm-method`) lines of the same name: Psalm uses the first one whose parameters accept the arguments of the call, or reports the issues against the last one when none does. A `@psalm-method` of a name replaces the `@method`s of that name.
+
+```php
+<?php
+/**
+ * @method PagedResult search(LimitedQuery $query)
+ * @method PlainResult search(UnlimitedQuery $query)
+ * @method int count(string $table)
+ * @method string count(int $table, int $limit)
+ */
+class Searcher {
+    public function __call(string $name, array $args): object {}
+}
+
+$searcher = new Searcher();
+$searcher->search(new LimitedQuery())->getPageCount();   // no issue
+$searcher->search(new LimitedQuery())->getAllRecords();  // UndefinedMethod
+$searcher->search(new UnlimitedQuery())->getAllRecords(); // no issue
+$searcher->count("users");                                // int
+$searcher->count(1, 2);                                   // string
+$searcher->count(1.5);                                    // InvalidArgument, TooFewArguments
+```
+
+### `@psalm-overload`
+
+Declares one signature a function can be called with, for a function whose behaviour depends on the arguments. A call is checked against the first `@psalm-overload` whose parameters accept its arguments, or against the last one when none does. The function's own signature is not used for calls that have overloads.
+
+```php
+<?php
+/**
+ * @psalm-overload (LimitedQuery $query): PagedResult
+ * @psalm-overload (UnlimitedQuery $query): PlainResult
+ */
+function search(Query $query): Result {
+    // ...
+}
+
+search(new LimitedQuery())->getPageCount();    // no issue
+search(new LimitedQuery())->getAllRecords();   // UndefinedMethod
+search(new UnlimitedQuery())->getAllRecords(); // no issue
+```
+
 ### `@psalm-seal-methods`, `@psalm-no-seal-methods`, `@seal-methods`, `@no-seal-methods`
 
 If you have a magic method caller, you can use `@psalm-seal-methods` to instruct Psalm to disallow calling any methods not contained in a list of `@method` annotations.

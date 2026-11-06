@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTy
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\OverloadSelector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
@@ -1020,14 +1021,24 @@ final class AtomicStaticCallAnalyzer
         Context $context,
         ?int $magic_method_capabilities,
     ): ?bool {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $overloads = $class_storage->pseudo_static_method_overloads[$method_id->method_name] ?? null;
+
+        if ($overloads !== null) {
+            // none accepting the arguments, the last declared reports the issues
+            $pseudo_method_storage = $overloads[
+                OverloadSelector::findOffset($statements_analyzer, $codebase, $args, $context, $overloads)
+                    ?? count($overloads) - 1
+            ];
+        }
+
         if (!$context->isSuppressingExceptions($statements_analyzer)) {
             $context->mergeFunctionExceptions(
                 $pseudo_method_storage,
                 new CodeLocation($statements_analyzer, $stmt),
             );
         }
-
-        $codebase = $statements_analyzer->getCodebase();
 
         $declaring_method_id = $class_storage->declaring_pseudo_static_method_ids[$method_id->method_name] ?? null;
         $declaring_class_storage = $declaring_method_id
