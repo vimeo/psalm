@@ -297,6 +297,23 @@ final class AtomicPropertyFetchAnalyzer
                         $is_static_access,
                     );
 
+                    // the shape only narrows the type: taint flows through the class's own property
+                    $shape_type = $statements_analyzer->node_data->getType($stmt);
+
+                    if ($shape_type) {
+                        self::processTaints(
+                            $statements_analyzer,
+                            $stmt,
+                            $shape_type,
+                            $property_id,
+                            $class_storage,
+                            $in_assignment,
+                            $context,
+                        );
+
+                        $statements_analyzer->node_data->setType($stmt, $shape_type);
+                    }
+
                     return;
                 }
             }
