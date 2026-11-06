@@ -49,6 +49,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
@@ -787,6 +788,13 @@ final class CastAnalyzer
                || $atomic_type instanceof TResource
             ) {
                 $castable_types[] = new TNonEmptyString();
+
+                continue;
+            }
+
+            // a value of an unreachable branch is never converted
+            if ($atomic_type instanceof TNever) {
+                $castable_types[] = new TString();
 
                 continue;
             }
