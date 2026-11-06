@@ -9,6 +9,7 @@ use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\IncludeCollector;
@@ -77,6 +78,34 @@ final class PluginTest extends TestCase
         $p->initExtraFiles();
         $p->initProjectFiles();
         return $p;
+    }
+
+    public function testUnknownPluginClassSuggestsInstallingItsPackage(): void
+    {
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+                <plugins>
+                    <pluginClass class="Vendor\\NotInstalled\\Plugin" />
+                </plugins>
+            </psalm>',
+        );
+
+        try {
+            $this->getProjectAnalyzerWithConfig($config);
+            $this->fail('Expected a ConfigException');
+        } catch (ConfigException $e) {
+            $this->assertSame('Failed to load plugin Vendor\NotInstalled\Plugin', $e->getMessage());
+            $this->assertSame(
+                'Vendor\NotInstalled\Plugin is not a known class:'
+                . ' is the Composer package that provides it installed?',
+                $e->getPrevious()?->getMessage(),
+            );
+        }
     }
 
     public function testStringAnalyzerPlugin(): void
