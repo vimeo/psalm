@@ -6,6 +6,9 @@ namespace Psalm\Tests\Config;
 
 use InvalidArgumentException;
 use Override;
+use PhpParser\Node\Name;
+use PhpParser\Node\Stmt\ClassMethod;
+use PhpParser\Node\Stmt\Class_;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -14,6 +17,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
@@ -37,6 +41,7 @@ use function ob_start;
 use function restore_error_handler;
 use function set_error_handler;
 use function sprintf;
+use function str_replace;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -64,14 +69,16 @@ final class PluginTest extends TestCase
         $this->file_provider = new FakeFileProvider();
     }
 
-    private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
-    {
+    private function getProjectAnalyzerWithConfig(
+        Config $config,
+        ?ParserCacheProvider $parser_cache_provider = null,
+    ): ProjectAnalyzer {
         $config->setIncludeCollector(new IncludeCollector());
         $p = new ProjectAnalyzer(
             $config,
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider(),
+                $parser_cache_provider ?? new FakeParserCacheProvider(),
             ),
             new ReportOptions(),
         );
@@ -1732,5 +1739,204 @@ final class PluginTest extends TestCase
         );
 
         $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testAfterFileParsedHookChangesProjectFile(): void
+    {
+        $config = $this->getAfterFileParsedPluginConfig();
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig($config);
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                #[Attribute]
+                final class ReturnsDoc {
+                    public function __construct(public string $type) {}
+                }
+
+                #[ReturnsDoc("list<int>")]
+                function ints(): array {
+                    return [1, 2];
+                }
+
+                /** @psalm-check-type-exact $ints = list<int> */
+                $ints = ints();',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testAfterFileParsedHookChangesScanOnlyFile(): void
+    {
+        $config = $this->getAfterFileParsedPluginConfig();
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig($config);
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $config->initializePlugins($this->project_analyzer);
+
+        $this->addFile(
+            (string) getcwd() . '/vendor/acme/ints/src/Ints.php',
+            '<?php
+                namespace Acme;
+
+                final class Ints {
+                    #[\ReturnsDoc("list<int>")]
+                    public static function all(): array {
+                        return [1, 2];
+                    }
+                }',
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-check-type-exact $ints = list<int> */
+                $ints = Acme\Ints::all();',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testAfterFileParsedHookChangesStubFile(): void
+    {
+        $config = $this->getAfterFileParsedPluginConfig();
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig($config);
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $config->initializePlugins($this->project_analyzer);
+
+        $this->addStubFile(
+            'after_file_parsed.phpstub',
+            '<?php
+                namespace Acme;
+
+                final class StubbedInts {
+                    #[\ReturnsDoc("list<int>")]
+                    public static function all(): array {}
+                }',
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-check-type-exact $ints = list<int> */
+                $ints = Acme\StubbedInts::all();',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testAfterFileParsedHookLeavesParserCacheUnchanged(): void
+    {
+        $config = $this->getAfterFileParsedPluginConfig();
+        $parser_cache_provider = new ParserCacheProvider($config, '', false);
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig($config, $parser_cache_provider);
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $file_contents = '<?php
+            #[Attribute]
+            final class ReturnsDoc {
+                public function __construct(public string $type) {}
+            }
+
+            final class Ints {
+                #[ReturnsDoc("list<int>")]
+                public static function all(): array {
+                    return [1, 2];
+                }
+            }
+
+            /** @psalm-check-type-exact $ints = list<int> */
+            $ints = Ints::all();';
+
+        $this->addFile($file_path, $file_contents);
+
+        // the scanner parses the file, the analyzer gets it from the parser cache
+        $this->analyzeFile($file_path, new Context());
+
+        $cached = $parser_cache_provider->loadStatementsFromCache($file_path, $file_contents);
+        $this->assertNotNull($cached);
+        $this->assertInstanceOf(Class_::class, $cached[0][1]);
+        $this->assertInstanceOf(ClassMethod::class, $cached[0][1]->stmts[0]);
+        $this->assertNull($cached[0][1]->stmts[0]->getDocComment());
+
+        $namespaced_name = $cached[0][0]->getAttribute('namespacedName');
+        $this->assertInstanceOf(Name::class, $namespaced_name);
+        $this->assertNull($namespaced_name->getAttribute('afterFileParsed'));
+    }
+
+    public function testAfterFileParsedHookChangesPartiallyReparsedFile(): void
+    {
+        $config = $this->getAfterFileParsedPluginConfig();
+        $parser_cache_provider = new ParserCacheProvider($config, '', false);
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig($config, $parser_cache_provider);
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $config->initializePlugins($this->project_analyzer);
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->diff_methods = true;
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $file_contents = '<?php
+            #[Attribute]
+            final class ReturnsDoc {
+                public function __construct(public string $type) {}
+            }
+
+            final class Ints {
+                #[ReturnsDoc("list<int>")]
+                public static function all(): array {
+                    return [1, 2];
+                }
+            }
+
+            /** @psalm-check-type-exact $ints = list<int> */
+            $ints = Ints::all();';
+
+        $this->addFile($file_path, $file_contents);
+        $this->analyzeFile($file_path, new Context());
+
+        $changed_file_contents = str_replace('return [1, 2];', 'return [3, 4, 5];', $file_contents);
+        $this->file_provider->registerFile($file_path, $changed_file_contents);
+        $codebase->reloadFiles($this->project_analyzer, [$file_path]);
+        $this->analyzeFile($file_path, new Context());
+
+        $cached = $parser_cache_provider->loadStatementsFromCache($file_path, $changed_file_contents);
+        $this->assertNotNull($cached);
+        $this->assertInstanceOf(Class_::class, $cached[0][1]);
+        $this->assertInstanceOf(ClassMethod::class, $cached[0][1]->stmts[0]);
+        $this->assertNull($cached[0][1]->stmts[0]->getDocComment());
+
+        $namespaced_name = $cached[0][0]->getAttribute('namespacedName');
+        $this->assertInstanceOf(Name::class, $namespaced_name);
+        $this->assertNull($namespaced_name->getAttribute('afterFileParsed'));
+    }
+
+    private function getAfterFileParsedPluginConfig(): Config
+    {
+        require_once __DIR__ . '/Plugin/AfterFileParsedPlugin.php';
+
+        return TestConfig::loadFromXML(
+            dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+            '<?xml version="1.0"?>
+            <psalm
+                errorLevel="1"
+            >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+                <plugins>
+                    <pluginClass class="Psalm\\Test\\Config\\Plugin\\AfterFileParsedPlugin" />
+                </plugins>
+            </psalm>',
+        );
     }
 }
