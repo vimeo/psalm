@@ -28,6 +28,72 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'finalClassOverridesAGenericStaticReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T of object */
+                    final class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly object $value) {}
+                    }
+
+                    class Base
+                    {
+                        /** @return Box<static> */
+                        public function box(): Box
+                        {
+                            return new Box($this);
+                        }
+                    }
+
+                    final class Leaf extends Base
+                    {
+                        /** @return Box<static> */
+                        #[\Override]
+                        public function box(): Box
+                        {
+                            return parent::box();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'finalClassOverridesAGenericThisReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T of object */
+                    final class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly object $value) {}
+                    }
+
+                    class Base
+                    {
+                        /** @return Box<static> */
+                        public function box(): Box
+                        {
+                            return new Box($this);
+                        }
+                    }
+
+                    final class Leaf extends Base
+                    {
+                        /** @return Box<$this> */
+                        #[\Override]
+                        public function box(): Box
+                        {
+                            return parent::box();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'nativeArrayReturnTypeTakesTheInheritedIterableDocblock' => [
                 'code' => '<?php
                     abstract class Base {
@@ -1826,6 +1892,41 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'finalClassOverridesAGenericStaticReturnTypeWithAnotherType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T of object */
+                    final class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly object $value) {}
+                    }
+
+                    class Base
+                    {
+                        /** @return Box<static> */
+                        public function box(): Box
+                        {
+                            return new Box($this);
+                        }
+                    }
+
+                    final class Other {}
+
+                    final class Leaf extends Base
+                    {
+                        /** @return Box<Other> */
+                        #[\Override]
+                        public function box(): Box
+                        {
+                            return new Box(new Other());
+                        }
+                    }
+                    PHP,
+                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'nativeArrayReturnTypeMustRespectTheInheritedIterableDocblock' => [
                 'code' => '<?php
                     abstract class Base {
