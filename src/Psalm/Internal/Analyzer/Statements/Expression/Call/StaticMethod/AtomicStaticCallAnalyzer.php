@@ -652,7 +652,16 @@ final class AtomicStaticCallAnalyzer
         $with_pseudo = $callstatic_method_exists
             || $codebase->config->use_phpdoc_method_without_magic_or_parent;
 
-        if ($codebase->methods->getDeclaringMethodId($method_id, $with_pseudo)) {
+        // PHP doesn't call a method the caller can't access, but __callStatic()
+        $forwarded_to_callstatic = $naive_method_exists
+            && $callstatic_method_exists
+            && !MethodAnalyzer::isMethodVisible(
+                $method_id,
+                $context,
+                $statements_analyzer->getSource(),
+            );
+
+        if (!$forwarded_to_callstatic && $codebase->methods->getDeclaringMethodId($method_id, $with_pseudo)) {
             if ((!$stmt->class instanceof PhpParser\Node\Name
                     || $stmt->class->getFirst() !== 'parent'
                     || $statements_analyzer->isStatic())
@@ -693,9 +702,11 @@ final class AtomicStaticCallAnalyzer
                 $callstatic_declaring_id = $codebase->methods->getDeclaringMethodId($callstatic_id);
                 assert($callstatic_declaring_id !== null);
                 $callstatic_mutations = Capabilities::ALL;
+                $callstatic_return_type = null;
                 if ($codebase->methods->hasStorage($callstatic_declaring_id)) {
                     $callstatic_storage = $codebase->methods->getStorage($callstatic_declaring_id);
                     $callstatic_mutations = $callstatic_storage->capabilities;
+                    $callstatic_return_type = $callstatic_storage->return_type;
                 }
                 if ($codebase->methods->return_type_provider->has($fq_class_name)) {
                     $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
@@ -766,6 +777,22 @@ final class AtomicStaticCallAnalyzer
                     ) === false) {
                         return false;
                     }
+                }
+
+                // the call of a method the caller can't access is the call of __callStatic()
+                if ($forwarded_to_callstatic && $callstatic_return_type !== null) {
+                    $statements_analyzer->node_data->setType(
+                        $stmt,
+                        TypeExpander::expandUnion(
+                            $codebase,
+                            $callstatic_return_type,
+                            $fq_class_name,
+                            $fq_class_name,
+                            $class_storage->parent_class,
+                        ),
+                    );
+
+                    return true;
                 }
             } elseif ($found_method_and_class_storage && ($naive_method_exists || $with_pseudo)) {
                 [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
@@ -856,7 +883,9 @@ final class AtomicStaticCallAnalyzer
             }
         }
 
-        if ($naive_method_exists || !$callstatic_method_exists || $class_storage->hasSealedMethods($config)) {
+        if (!$forwarded_to_callstatic
+            && ($naive_method_exists || !$callstatic_method_exists || $class_storage->hasSealedMethods($config))
+        ) {
             $does_method_exist = MethodAnalyzer::checkMethodExists(
                 $codebase,
                 $method_id,

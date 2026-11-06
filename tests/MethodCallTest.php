@@ -205,6 +205,52 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'inaccessibleStaticMethodForwardedToCallStaticHasItsReturnType' => [
+                'code' => '<?php
+                    final class Factory {
+                        private static function make(): int {
+                            return 1;
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return $name;
+                        }
+                    }
+
+                    $made = Factory::make();',
+                'assertions' => ['$made' => 'string'],
+                'ignored_issues' => ['InaccessibleMethod'],
+            ],
+            'staticCallOfInaccessibleMethodGoesToCallStatic' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Repository
+                    {
+                        /** @param array<mixed> $args */
+                        public static function __callStatic(string $name, array $args): string
+                        {
+                            return $name;
+                        }
+
+                        protected function find(int $id): int
+                        {
+                            return $id;
+                        }
+
+                        private static function secret(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    Repository::find(1);
+                    Repository::secret();
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'inheritedThisDocblockKeepsNativeStaticOfSubclass' => [
                 'code' => '<?php
                     class Form {}
@@ -1571,6 +1617,23 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticCallOfInaccessibleMethodWithoutCallStatic' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Repository
+                    {
+                        protected function find(int $id): int
+                        {
+                            return $id;
+                        }
+                    }
+
+                    Repository::find(1);
+                    PHP,
+                'error_message' => 'InvalidStaticInvocation',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'methodMissingFromALaterTypeOfAUnionTemplateBound' => [
                 'code' => '<?php
                     final class Invoice {
