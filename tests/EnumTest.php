@@ -31,6 +31,60 @@ final class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'enumInterfaceMethodRetainsDocumentaryReturn' => [
+                'code' => '<?php
+                    enum Status: string implements JsonSerializable {
+                        case Open = "o";
+                        /** @return array{status: string} */
+                        public function jsonSerialize(): array {
+                            return ["status" => $this->value];
+                        }
+                    }
+                    $serialized = Status::Open->jsonSerialize();',
+                'assertions' => ['$serialized===' => 'array{status: string}'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'instanceEnumCallsRetainCaseTypes' => [
+                'code' => '<?php
+                    enum Status: string {
+                        case Open = "o";
+                        case Closed = "c";
+                    }
+                    enum Flag {
+                        case On;
+                        case Off;
+                    }
+                    enum IntStatus: int {
+                        case Open = 1;
+                        case Closed = 2;
+                    }
+
+                    $from = Status::Open->from("c");
+                    $tryFrom = Status::Open->tryFrom("c");
+                    $missing = Status::Open->tryFrom("missing");
+                    $backedCases = Status::Open->cases();
+                    $unitCases = Flag::On->cases();
+                    $intFrom = IntStatus::Open->from(2);
+                    $intTryFrom = IntStatus::Open->tryFrom(2);
+                    /** @var Status */
+                    $receiver = Status::Open;
+                    $broadFrom = $receiver->from("c");
+                    $broadCases = $receiver->cases();',
+                'assertions' => [
+                    '$from===' => 'enum(Status::Closed)',
+                    '$tryFrom===' => 'enum(Status::Closed)|null',
+                    '$missing===' => 'null',
+                    '$backedCases===' => 'list{enum(Status::Open), enum(Status::Closed)}',
+                    '$unitCases===' => 'list{enum(Flag::On), enum(Flag::Off)}',
+                    '$intFrom===' => 'enum(IntStatus::Closed)',
+                    '$intTryFrom===' => 'enum(IntStatus::Closed)|null',
+                    '$broadFrom===' => 'enum(Status::Closed)',
+                    '$broadCases===' => 'list{enum(Status::Open), enum(Status::Closed)}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'example' => [
                 'code' => '<?php
                     interface Colourful {
@@ -767,6 +821,17 @@ final class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'debugInfoAllowedOnPhp86' => [
+                'code' => '<?php
+                    enum Foo {
+                        case A;
+                        public function __debugInfo(): array { return []; }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
         ];
     }
 
@@ -1029,6 +1094,28 @@ final class EnumTest extends TestCase
                 'error_message' => 'InvalidEnumMethod',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'debugInfoForbiddenOnPhp85' => [
+                'code' => '<?php
+                    enum Foo {
+                        case A;
+                        public function __debugInfo(): array { return []; }
+                    }
+                ',
+                'error_message' => 'InvalidEnumMethod',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'forbiddenMethodOnPhp86' => [
+                'code' => '<?php
+                    enum Foo {
+                        case A;
+                        public function __get() {}
+                    }
+                ',
+                'error_message' => 'InvalidEnumMethod',
+                'error_levels' => [],
+                'php_version' => '8.6',
             ],
             'forbiddenUnitEnumImplementation' => [
                 'code' => '<?php

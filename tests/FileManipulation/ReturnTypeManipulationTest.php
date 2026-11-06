@@ -282,6 +282,55 @@ final class ReturnTypeManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['LessSpecificReturnType'],
                 'safe_types' => false,
             ],
+            'fixLessSpecificUnionReturnType' => [
+                'input' => '<?php
+                    function foo(bool $c): int|string|float {
+                        return $c ? 1 : "a";
+                    }',
+                'output' => '<?php
+                    function foo(bool $c): string|int {
+                        return $c ? 1 : "a";
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['LessSpecificReturnType'],
+                'safe_types' => true,
+            ],
+            'fixLessSpecificSpacedUnionReturnType' => [
+                'input' => '<?php
+                    function foo(bool $c): int | string | float {
+                        return $c ? 1 : "a";
+                    }',
+                'output' => '<?php
+                    function foo(bool $c): string|int {
+                        return $c ? 1 : "a";
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['LessSpecificReturnType'],
+                'safe_types' => true,
+            ],
+            'fixLessSpecificIntersectionReturnType' => [
+                'input' => '<?php
+                    interface A {}
+                    interface B {}
+                    interface C {}
+                    class D implements A, B, C {}
+
+                    function foo(): A&B&C {
+                        return new D();
+                    }',
+                'output' => '<?php
+                    interface A {}
+                    interface B {}
+                    interface C {}
+                    class D implements A, B, C {}
+
+                    function foo(): D {
+                        return new D();
+                    }',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['LessSpecificReturnType'],
+                'safe_types' => true,
+            ],
             'fixLessSpecificReturnTypePreserveNotes' => [
                 'input' => '<?php
                     namespace Foo;
