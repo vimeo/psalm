@@ -194,6 +194,20 @@ final class TypeCombinationTest extends TestCase
     public static function providerTestValidTypeCombination(): iterable
     {
         return [
+            'sameShapeWithAnOptionalKeyAndAFallback' => [
+                'array{0: string, 1?: int, ...<array-key, mixed>}',
+                [
+                    'array{0: string, 1?: int, ...<array-key, mixed>}',
+                    'array{0: string, 1?: int, ...<array-key, mixed>}',
+                ],
+            ],
+            'shapeWithoutTheKeyOfAShapeWithAFallbackGetsItsValue' => [
+                'array{0: string, 1?: int|mixed, ...<array-key, mixed>}',
+                [
+                    'array{0: string, 1: int}',
+                    'array{0: string, ...<array-key, mixed>}',
+                ],
+            ],
             'objectWithPropertiesKeepsNamedObjects' => [
                 'Error|object{foo:string}',
                 [
