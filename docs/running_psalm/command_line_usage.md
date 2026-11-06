@@ -48,6 +48,22 @@ is preserved between runs.
 
 Running them together (e.g. `--threads=8 --diff`) will result in the fastest possible Psalm run.
 
+### Consolidating the cache
+
+`--consolidate-cache` merges the cache entries of the project into an index and a data file per cache, without analysing anything.
+On a build server this means saving and restoring a handful of files instead of tens of thousands.
+
+```bash
+# restore the cache directory with your CI's cache step
+vendor/bin/psalm                      # analyses, writes cache entries as separate files
+vendor/bin/psalm --consolidate-cache  # no analysis: merges them into an index and a data file per cache
+# save the cache directory with your CI's cache step
+```
+
+A run reads the index of a consolidated cache and then only the entries it needs.
+Entries written by later runs are stored as separate files again, so consolidate after the last run before saving the cache.
+A consolidated cache takes more disk space than the separate files, because each entry stays compressed on its own.
+
 ## Reviewing issues in your IDE of choice
 
 Psalm now offers a `psalm-review` tool which allows you to manually review issues one by one in your favorite IDE.  

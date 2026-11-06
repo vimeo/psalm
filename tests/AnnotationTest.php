@@ -184,6 +184,28 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'varWithoutNameDoesNotTakeNameOfPreviousVarLine' => [
+                'code' => '<?php
+                    /**
+                     * @var int $n
+                     * @var string missing_dollar_sign
+                     */
+                    echo $n + $n;',
+            ],
+            'namedVarLinesKeepTheirOwnNames' => [
+                'code' => '<?php
+                    /**
+                     * @var int $n
+                     * @var string $m
+                     */
+                    $x = $n;
+                    $y = $m;
+                    echo $x . $y;',
+                'assertions' => [
+                    '$x===' => 'int',
+                    '$y===' => 'string',
+                ],
+            ],
             'nopType' => [
                 'code' => '<?php
                     $_a = "hello";
