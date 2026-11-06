@@ -6,11 +6,13 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\TypeVisitor\ContainsLiteralVisitor;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTypeVariable;
+use Psalm\Type\Union;
 
 use function array_merge;
 use function count;
@@ -151,7 +153,7 @@ final class GenericTypeComparator
                 && !$container_param->hasTemplate()
                 && !$input_param->hasTemplate()
             ) {
-                if ($input_param->containsAnyLiteral()) {
+                if (self::containsLiteralOrClosedIntRange($input_param)) {
                     if ($atomic_comparison_result_type_params !== null) {
                         $atomic_comparison_result_type_params[$i] = $container_param;
                     }
@@ -249,5 +251,19 @@ final class GenericTypeComparator
         }
 
         return false;
+    }
+
+    /**
+     * An inferred closed int range, like the one for the keys of a list literal, is as precise as a literal
+     *
+     * @psalm-pure
+     */
+    private static function containsLiteralOrClosedIntRange(Union $type): bool
+    {
+        $literal_visitor = new ContainsLiteralVisitor(true);
+
+        $literal_visitor->traverseArray($type->getAtomicTypes());
+
+        return $literal_visitor->matches();
     }
 }
