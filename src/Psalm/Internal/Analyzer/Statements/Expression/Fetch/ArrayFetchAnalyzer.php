@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
@@ -102,10 +103,12 @@ use UnexpectedValueException;
 use function array_keys;
 use function array_map;
 use function array_pop;
+use function array_push;
 use function array_values;
 use function count;
 use function implode;
 use function in_array;
+use function is_array;
 use function is_int;
 use function spl_object_id;
 use function str_starts_with;
@@ -1086,18 +1089,27 @@ final class ArrayFetchAnalyzer
             }
 
             if ($type instanceof TNamedObject) {
-                self::handleArrayAccessOnNamedObject(
-                    $statements_analyzer,
-                    $stmt,
-                    $type,
-                    $context,
-                    $in_assignment,
-                    $assign_value,
-                    $array_access_type,
-                    $has_array_access,
-                    // nothing replaces an item an assignment writes into, which is modified in place as well
-                    $by_reference || $replacement_type === null,
-                );
+                // the virtual offset*() call analyses the operands again, which must not repeat a side effect
+                $operands = self::getOperandSideEffects($stmt);
+                $node_data = $statements_analyzer->node_data;
+                $node_data->markEvaluated($operands);
+
+                try {
+                    self::handleArrayAccessOnNamedObject(
+                        $statements_analyzer,
+                        $stmt,
+                        $type,
+                        $context,
+                        $in_assignment,
+                        $assign_value,
+                        $array_access_type,
+                        $has_array_access,
+                        // nothing replaces an item an assignment writes into, which is modified in place as well
+                        $by_reference || $replacement_type === null,
+                    );
+                } finally {
+                    $node_data->unmarkEvaluated($operands);
+                }
             } elseif (!$array_type->hasMixed()) {
                 $non_array_types[] = (string)$type;
             }
@@ -2203,6 +2215,64 @@ final class ArrayFetchAnalyzer
         )) {
             // fall through
         }
+    }
+
+    /**
+     * The side effects not to repeat when the virtual offset*() call analyses the operands again. The keys are
+     * analysed before the receiver and again after it, as on a plain array. When the receiver has side effects,
+     * those are the ones: it may change what the keys read. A receiver with calls but no side effects, as a
+     * method called without arguments, may change it too: then none are, and the keys are analysed again.
+     *
+     * @return list<PhpParser\Node\Expr>
+     */
+    private static function getOperandSideEffects(PhpParser\Node\Expr\ArrayDimFetch $stmt): array
+    {
+        $dims = [];
+
+        for ($root = $stmt; $root instanceof PhpParser\Node\Expr\ArrayDimFetch; $root = $root->var) {
+            if ($root->dim) {
+                $dims[] = $root->dim;
+            }
+        }
+
+        $receiver_side_effects = [];
+        $receiver_has_call = false;
+        $dim_side_effects = [];
+
+        foreach (ArrayAssignmentAnalyzer::getOperands($stmt) as $operand) {
+            if (in_array($operand, $dims, true)) {
+                array_push($dim_side_effects, ...ArrayAssignmentAnalyzer::getSideEffects($operand));
+            } else {
+                array_push($receiver_side_effects, ...ArrayAssignmentAnalyzer::getSideEffects($operand));
+                $receiver_has_call = $receiver_has_call || self::containsCall($operand);
+            }
+        }
+
+        return $receiver_has_call || $receiver_side_effects ? $receiver_side_effects : $dim_side_effects;
+    }
+
+    private static function containsCall(PhpParser\Node $node): bool
+    {
+        if ($node instanceof PhpParser\Node\Expr\Closure || $node instanceof PhpParser\Node\Expr\ArrowFunction) {
+            return false;
+        }
+
+        if ($node instanceof PhpParser\Node\Expr\CallLike) {
+            return true;
+        }
+
+        foreach ($node->getSubNodeNames() as $name) {
+            /** @var PhpParser\Node|list<PhpParser\Node|null>|scalar|null $sub_node */
+            $sub_node = $node->{$name};
+
+            foreach (is_array($sub_node) ? $sub_node : [$sub_node] as $child) {
+                if ($child instanceof PhpParser\Node && self::containsCall($child)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private static function handleArrayAccessOnNamedObject(

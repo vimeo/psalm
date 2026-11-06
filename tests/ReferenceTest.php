@@ -29,6 +29,241 @@ final class ReferenceTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayAccessReadHasItsKeyEvaluatedOnce' => [
+                'code' => '<?php
+                    /** @var ArrayObject<int, list<int>> $o */
+                    $o = new ArrayObject();
+                    $i = 0;
+                    $n = count($o[$i++]);
+                    $j = $i;',
+                'assertions' => [
+                    '$j===' => '1',
+                ],
+            ],
+            'arrayAccessWriteHasItsKeyEvaluatedOnce' => [
+                'code' => '<?php
+                    /** @var ArrayObject<int, list<int>> $o */
+                    $o = new ArrayObject();
+                    $i = 0;
+                    $o[$i++] = [1];
+                    $j = $i;
+                    $o[$i++][] = 2;
+                    $k = $i;',
+                'assertions' => [
+                    '$j===' => '1',
+                    '$k===' => '2',
+                ],
+            ],
+            'arrayAccessIssetUnsetCoalesceHaveTheirKeyEvaluatedOnce' => [
+                'code' => '<?php
+                    /** @var ArrayObject<int, list<int>> $o */
+                    $o = new ArrayObject();
+                    $i = 0;
+                    isset($o[$i++]);
+                    $j = $i;
+                    unset($o[$i++]);
+                    $k = $i;
+                    $x = $o[$i++] ?? [];
+                    $l = $i;',
+                'assertions' => [
+                    '$j===' => '1',
+                    '$k===' => '2',
+                    '$l===' => '3',
+                ],
+            ],
+            'arrayAccessItemPassedByReferenceHasItsKeyEvaluatedOnce' => [
+                'code' => '<?php
+                    function fill(array &$x): void {
+                        $x[] = 1;
+                    }
+
+                    /** @var ArrayObject<int, list<int>> $o */
+                    $o = new ArrayObject();
+                    $i = 0;
+                    sort($o[$i++]);
+                    $a = $i;
+                    array_push($o[$i++], 5, 6);
+                    $b = $i;
+                    fill($o[$i++]);
+                    $c = $i;
+                    /** @var ArrayObject<int, array<array-key, string>> $m */
+                    $m = new ArrayObject();
+                    preg_match("/x/", "x", $m[$i++]);
+                    $d = $i;
+                    $r = &$o[$i++];
+                    $e = $i;',
+                'assertions' => [
+                    '$a===' => '1',
+                    '$b===' => '2',
+                    '$c===' => '3',
+                    '$d===' => '4',
+                    '$e===' => '5',
+                ],
+            ],
+            'arrayAccessItemNestedKeysEvaluatedOnce' => [
+                'code' => '<?php
+                    /** @var ArrayObject<int, ArrayObject<int, list<int>>> $o */
+                    $o = new ArrayObject();
+                    $i = 0;
+                    $j = 0;
+                    sort($o[$i++][$j++]);
+                    $k = $i;
+                    $l = $j;
+                    $n = count($o[$i++][$j++]);
+                    $m = $i;
+                    $p = $j;',
+                'assertions' => [
+                    '$k===' => '1',
+                    '$l===' => '1',
+                    '$m===' => '2',
+                    '$p===' => '2',
+                ],
+            ],
+            'arrayAccessReceiverIsEvaluatedOnce' => [
+                'code' => '<?php
+                    /** @return ArrayObject<int, list<int>> */
+                    function g(int $n): ArrayObject {
+                        return new ArrayObject([[$n]]);
+                    }
+
+                    /** @var list<ArrayObject<int, list<int>>> $a */
+                    $a = [];
+                    $i = 0;
+                    $n = count(g($i++)[0]);
+                    $j = $i;
+                    sort(g($i++)[0]);
+                    $k = $i;
+                    g($i++)[0] = [1];
+                    $l = $i;
+                    $m = count($a[$i++][0]);
+                    $p = $i;',
+                'assertions' => [
+                    '$j===' => '1',
+                    '$k===' => '2',
+                    '$l===' => '3',
+                    '$p===' => '4',
+                ],
+            ],
+            'arrayAccessItemOfAnIntersectionHasItsKeyEvaluatedOnce' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    /** @var Marker&ArrayAccess<int, list<int>> $o */
+                    $o = new ArrayObject();
+                    $i = 0;
+                    $n = count($o[$i++]);
+                    $j = $i;
+                    sort($o[$i++]);
+                    $k = $i;
+                    $o[$i++] = [1];
+                    $l = $i;',
+                'assertions' => [
+                    '$j===' => '1',
+                    '$k===' => '2',
+                    '$l===' => '3',
+                ],
+            ],
+            'arrayAccessItemRootsAreEvaluatedOnce' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var ArrayObject<int, list<int>> */
+                        public ArrayObject $p;
+
+                        /** @var ArrayObject<int, list<int>> */
+                        public static ArrayObject $s;
+
+                        public function __construct() {
+                            $this->p = new ArrayObject();
+                        }
+
+                        public function me(int $n): self {
+                            return $this;
+                        }
+                    }
+
+                    $h = new Holder();
+                    $i = 0;
+                    $n = count($h->p[$i++]);
+                    $a = $i;
+                    $i = 0;
+                    $n = count(Holder::$s[$i++]);
+                    $b = $i;
+                    $i = 0;
+                    $n = count($h->me($i++)->p[0]);
+                    $c = $i;
+                    $i = 0;
+                    $nullable = rand(0, 1) ? $h : null;
+                    $n = count($nullable?->p[$i++]);
+                    $d = $i;',
+                'assertions' => [
+                    '$a===' => '1',
+                    '$b===' => '1',
+                    '$c===' => '1',
+                    '$d===' => '1',
+                ],
+                'ignored_issues' => ['PossiblyNullReference', 'PossiblyNullArgument', 'PossiblyNullArrayAccess'],
+                'php_version' => '8.1',
+            ],
+            'arrayAccessKeyIsAnalysedAfterTheReceiverAssignsIt' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<positive-int, string> */
+                    final class Names implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        public function offsetGet(mixed $offset): string {
+                            return "";
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function names(int $n): Names {
+                        return new Names();
+                    }
+
+                    $i = 0;
+                    $name = names($i = 1)[$i++];',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayAccessKeyCallKeepsItsContextualTemplateResult' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<Closure(int):int, int> */
+                    final class Lookup implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        /** @param Closure(int):int $offset */
+                        public function offsetGet(mixed $offset): int {
+                            return $offset(5);
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /**
+                     * @template T
+                     * @return Closure(T):T
+                     */
+                    function factory(): Closure {
+                        return /** @param T $x @return T */ static fn($x) => $x;
+                    }
+
+                    function read(Lookup $lookup): int {
+                        return $lookup[factory()];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'arrayItemPassedByReferenceHoldsWhatTheCallLeavesInIt' => [
                 'code' => '<?php
                     function read_value(string &$value): void {

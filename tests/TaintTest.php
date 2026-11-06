@@ -5473,6 +5473,186 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'taintTheKeyAssignedByTheReceiverOfAnArrayAccessItem' => [
+                'code' => '<?php // --taint-analysis
+                    /** @implements ArrayAccess<string, string> */
+                    final class Store implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        /** @psalm-taint-sink sql $offset */
+                        public function offsetGet(mixed $offset): string {
+                            return "";
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function store(string $key): Store {
+                        return new Store();
+                    }
+
+                    function read(): string {
+                        $input = $_GET["k"];
+                        if (!is_string($input)) {
+                            return "";
+                        }
+
+                        $key = "";
+                        return store($key = $input)[$key];
+                    }',
+                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:51 - Detected tainted SQL in path: $_GET',
+            ],
+            'taintTheKeyOfAnArrayAccessItemAssignedByTheReceiverAndAppendedTo' => [
+                'code' => '<?php // --taint-analysis
+                    /** @implements ArrayAccess<string, string> */
+                    final class Store implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        /** @psalm-taint-sink sql $offset */
+                        public function offsetGet(mixed $offset): string {
+                            return "";
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function store(string $key): Store {
+                        return new Store();
+                    }
+
+                    function read(): string {
+                        $input = $_GET["k"];
+                        if (!is_string($input)) {
+                            return "";
+                        }
+
+                        $key = "";
+                        return store($key = $input)[$key .= ""];
+                    }',
+                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:51 - Detected tainted SQL in path: $_GET',
+            ],
+            'taintTheCastKeyOfAnArrayAccessItemAssignedByTheReceiver' => [
+                'code' => '<?php // --taint-analysis
+                    /** @implements ArrayAccess<string, string> */
+                    final class Store implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        /** @psalm-taint-sink sql $offset */
+                        public function offsetGet(mixed $offset): string {
+                            return "";
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function store(string $key): Store {
+                        return new Store();
+                    }
+
+                    function read(): string {
+                        $input = $_GET["k"];
+                        if (!is_string($input)) {
+                            return "";
+                        }
+
+                        $key = "";
+                        return store($key = $input)[(string) $key];
+                    }',
+                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:51 - Detected tainted SQL in path: $_GET',
+            ],
+            'taintTheKeyOfAnArrayAccessItemChangedByAReceiverCallWithoutArguments' => [
+                'code' => '<?php // --taint-analysis
+                    /** @implements ArrayAccess<string, string> */
+                    final class Store implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        /** @psalm-taint-sink sql $offset */
+                        public function offsetGet(mixed $offset): string {
+                            return "";
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    final class Factory {
+                        public string $key = "";
+
+                        public function store(): Store {
+                            $input = $_GET["k"];
+                            $this->key = is_string($input) ? $input : "";
+
+                            return new Store();
+                        }
+                    }
+
+                    function read(Factory $f): string {
+                        $f->key = "";
+                        return $f->store()[$f->key .= ""];
+                    }',
+                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:51 - Detected tainted SQL in path: $_GET',
+            ],
+            'taintTheKeyOfAnArrayAccessItemRead' => [
+                'code' => '<?php // --taint-analysis
+                    /** @implements ArrayAccess<string, string> */
+                    final class Store implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        /** @psalm-taint-sink sql $offset */
+                        public function offsetGet(mixed $offset): string {
+                            return "";
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function read(Store $s): string {
+                        return $s[(string) $_GET["k"]];
+                    }',
+                'error_message' => 'TaintedSql',
+            ],
+            'taintTheKeyOfAnArrayAccessItemWritten' => [
+                'code' => '<?php // --taint-analysis
+                    /** @implements ArrayAccess<string, string> */
+                    final class Store implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        public function offsetGet(mixed $offset): string {
+                            return "";
+                        }
+
+                        /** @psalm-taint-sink html $offset */
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function write(Store $s): void {
+                        $s[(string) $_GET["k"]] = "x";
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAnItemOfAMixedValuePassedByReference' => [
                 'code' => '<?php // --taint-analysis
                     /** @param mixed $m */
