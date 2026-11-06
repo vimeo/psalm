@@ -675,6 +675,9 @@ final class AtomicStaticCallAnalyzer
                 );
 
                 if ($is_dynamic_this_method) {
+                    // the forwarded instance call analyses the arguments
+                    $args_analyzed = true;
+
                     return self::forwardCallToInstanceMethod(
                         $statements_analyzer,
                         $stmt,
