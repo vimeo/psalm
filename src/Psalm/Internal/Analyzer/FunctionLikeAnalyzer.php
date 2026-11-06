@@ -1712,7 +1712,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $context->self,
                         $this->getParentFQCLN(),
                         true,
-                        false,
+                        $param_type->hasConditional(),
                         false,
                         true,
                         false,
