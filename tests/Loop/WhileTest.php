@@ -39,6 +39,92 @@ final class WhileTest extends TestCase
                         /** @psalm-check-type-exact $forValues = non-empty-list<\'y\'|null> */;
                     }',
             ],
+            'variableAssignedInTheBodyOfALoopThatPreIncrementsAnInitialLiteral' => [
+                'code' => '<?php
+                    $try = 0;
+                    while (++$try < 10) {
+                        $fname = "thing";
+                    }
+                    echo $fname;',
+                'assertions' => [
+                    '$fname===' => '\'thing\'',
+                ],
+            ],
+            'variableAssignedInTheBodyOfALoopWhoseConditionHoldsForTheInitialLiteral' => [
+                'code' => '<?php
+                    $a = 0;
+                    while ($a < 3) {
+                        $x1 = 1;
+                        $a++;
+                    }
+
+                    $b = 3;
+                    while ($b <= 3) {
+                        $x2 = 2;
+                        $b++;
+                    }
+
+                    $c = 5;
+                    while ($c > 4) {
+                        $x3 = 3;
+                        $c--;
+                    }
+
+                    $d = 5;
+                    while ($d >= 5) {
+                        $x4 = 4;
+                        $d--;
+                    }
+
+                    $e = 5;
+                    while (--$e > 3) {
+                        $x5 = 5;
+                    }
+
+                    $f = 0;
+                    while (++$f <= 1) {
+                        $x6 = 6;
+                    }
+
+                    $g = 1;
+                    while (--$g >= 0) {
+                        $x7 = 7;
+                    }
+
+                    $h = 0;
+                    while (++$h < 1 + 1) {
+                        $x8 = 8;
+                    }
+
+                    $all = [$x1, $x2, $x3, $x4, $x5, $x6, $x7, $x8];',
+            ],
+            'variableAssignedInTheBodyOfALoopComparedWithANumericStringLiteral' => [
+                'code' => '<?php
+                    $try = 0;
+                    while (++$try < "10") {
+                        $name = "thing";
+                    }
+                    echo $name;',
+            ],
+            'variableAssignedInTheBodyOfAFunctionLocalLoopOverAnInitialLiteral' => [
+                'code' => '<?php
+                    function f(): string {
+                        $try = 0;
+                        while (++$try < 10) {
+                            $name = "thing";
+                        }
+
+                        return $name;
+                    }',
+            ],
+            'variableAssignedInTheBodyOfAForLoopThatPreIncrementsAnInitialLiteral' => [
+                'code' => '<?php
+                    for ($i = 0; ++$i < 10;) {
+                        $name = "thing";
+                    }
+
+                    echo $name;',
+            ],
             'whileTrue' => [
                 'code' => '<?php
                     function ret(): int {
@@ -731,6 +817,140 @@ final class WhileTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableAssignedInALoopThatPostIncrementsAnInitialLiteralIsPossiblyUndefined' => [
+                'code' => '<?php
+                    $try = 0;
+                    while ($try++ < 10) {
+                        $name = "thing";
+                    }
+                    echo $name;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'variableAssignedInALoopWhoseFirstPreIncrementedValueFailsTheConditionIsPossiblyUndefined' => [
+                'code' => '<?php
+                    $try = 9;
+                    while (++$try < 10) {
+                        $name = "thing";
+                    }
+                    echo $name;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'variableAssignedInALoopWhoseConditionFailsForTheInitialLiteralIsPossiblyUndefined' => [
+                'code' => '<?php
+                    $try = 10;
+                    while ($try < 10) {
+                        $name = "thing";
+                        $try++;
+                    }
+                    echo $name;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'variableAssignedInALoopWhoseConditionFailsForTheInitialLiteralWithPreDecrementIsPossiblyUndefined' => [
+                'code' => '<?php
+                    $try = 1;
+                    while (--$try > 0) {
+                        $name = "thing";
+                    }
+                    echo $name;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'variableAssignedInALoopOverAnUnknownStartIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(int $try): void {
+                        while (++$try < 10) {
+                            $name = "thing";
+                        }
+                        echo $name;
+                    }
+                    f(0);',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedInALoopOverARangeStartIsPossiblyUndefined' => [
+                'code' => '<?php
+                    $try = rand(0, 5);
+                    while (++$try < 10) {
+                        $name = "thing";
+                    }
+                    echo $name;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'variableAssignedInALoopOverAFloatStartIsPossiblyUndefined' => [
+                'code' => '<?php
+                    $try = 0.0;
+                    while (++$try < 10) {
+                        $name = "thing";
+                    }
+                    echo $name;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'variableAssignedAfterABreakInALoopOverAnInitialLiteralIsPossiblyUndefined' => [
+                'code' => '<?php
+                    $try = 0;
+                    while (++$try < 10) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+
+                        $name = "thing";
+                    }
+                    echo $name;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'variableAssignedAfterAContinueInALoopOverAnInitialLiteralIsPossiblyUndefined' => [
+                'code' => '<?php
+                    $try = 0;
+                    while (++$try < 10) {
+                        if (rand(0, 1)) {
+                            continue;
+                        }
+
+                        $name = "thing";
+                    }
+                    echo $name;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'variableAssignedInALoopComparedWithANonNumericStringLiteralIsPossiblyUndefined' => [
+                'code' => '<?php
+                    $try = 0;
+                    while ($try < "abc") {
+                        $name = "thing";
+                        $try++;
+                    }
+                    echo $name;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'variableAssignedInALoopWithACompoundConditionIsPossiblyUndefined' => [
+                'code' => '<?php
+                    $try = 0;
+                    while (++$try < 10 && rand(0, 1)) {
+                        $name = "thing";
+                    }
+                    echo $name;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'variableAssignedInALoopComparedWithAnUnknownValueIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(int $limit): void {
+                        $try = 0;
+                        while (++$try < $limit) {
+                            $name = "thing";
+                        }
+                        echo $name;
+                    }
+                    f(10);',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedInALoopThatChangesTheCounterBeforeTheNextCheckIsStillOnlyAssignedInTheBody' => [
+                'code' => '<?php
+                    $try = 0;
+                    while (++$try < 10) {
+                        if ($try > 3) {
+                            $name = "thing";
+                        }
+                    }
+                    echo $name;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
             'whileTrueNoBreak' => [
                 'code' => '<?php
                     while (true) {
