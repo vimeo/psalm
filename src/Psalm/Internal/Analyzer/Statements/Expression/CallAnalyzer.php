@@ -683,6 +683,7 @@ abstract class CallAnalyzer
         TemplateResult $template_result,
         Context $context,
         StatementsAnalyzer $statements_analyzer,
+        ?string $static_class = null,
     ): void {
         $type_assertions = [];
 
@@ -794,7 +795,7 @@ abstract class CallAnalyzer
                                 $codebase,
                             ),
                             null,
-                            null,
+                            $static_class !== null ? new TNamedObject($static_class) : null,
                             null,
                         );
 
