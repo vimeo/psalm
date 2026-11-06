@@ -10,6 +10,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod\AtomicStaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
@@ -52,6 +53,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
         ?TemplateResult $template_result = null,
     ): bool {
         NullsafeChainState::reset($stmt);
+        MethodCallPurityAnalyzer::clearReturnsThis($stmt);
 
         $method_id = null;
 
