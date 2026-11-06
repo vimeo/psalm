@@ -1305,6 +1305,38 @@ final class ConditionalReturnTypeTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'iterableParentChildCoercion' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface Item {}
+                    final class ConcreteItem implements Item {}
+                    /** @param iterable<array-key, ConcreteItem> $values */
+                    function accept(iterable $values): void {}
+                    /** @param iterable<array-key, Item> $values */
+                    function test(iterable $values): void { accept($values); }
+                    PHP,
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'mixedIterableArgumentCoercion' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param iterable<array-key, string> $values */
+                    function accept(iterable $values): void {}
+                    /** @param iterable<mixed, mixed> $values */
+                    function test(iterable $values): void { accept($values); }
+                    PHP,
+                'error_message' => 'MixedArgumentTypeCoercion',
+            ],
+            'mixedIterableCannotBeArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string> $values */
+                    function accept(array $values): void {}
+                    /** @param iterable<mixed, mixed> $values */
+                    function test(iterable $values): void { accept($values); }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+            ],
             'incompatibleIterableArgument' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1313,7 +1345,7 @@ final class ConditionalReturnTypeTest extends TestCase
                     /** @param iterable<string, string> $i */
                     function test(iterable $i): void { accept($i); }
                     PHP,
-                'error_message' => 'ArgumentTypeCoercion',
+                'error_message' => 'InvalidArgument',
             ],
             'nestedTraversableArgument' => [
                 'code' => <<<'PHP'
