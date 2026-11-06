@@ -92,8 +92,6 @@ final class CommentAnalyzer
         ?array $template_type_map = null,
         ?array $type_aliases = null,
     ): array {
-        $var_id = null;
-
         $var_type_tokens = null;
         $original_type = null;
 
@@ -111,6 +109,7 @@ final class CommentAnalyzer
                     continue;
                 }
 
+                $var_id = null;
                 $type_start = null;
                 $type_end = null;
 
