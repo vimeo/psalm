@@ -166,6 +166,33 @@ final class TypeParseTest extends TestCase
         $this->assertSame('array<int, int>', (string) Type::parseString('array<int, int>'));
     }
 
+    public function testGenericWithTrailingComma(): void
+    {
+        $this->assertSame('array<int, string>', (string) Type::parseString('array<int, string,>'));
+    }
+
+    public function testNestedGenericsWithTrailingCommas(): void
+    {
+        $this->assertSame(
+            'array<int, array<string, bool>>',
+            (string) Type::parseString('array<int, array<string, bool,>,>'),
+        );
+    }
+
+    public function testGenericWithTrailingCommaBeforeALaterGeneric(): void
+    {
+        $this->assertSame(
+            'array<int|string, int|string>',
+            (string) Type::parseString('array<int, string,>|array<string, int,>'),
+        );
+    }
+
+    public function testGenericWithOnlyAComma(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array<,>');
+    }
+
     public function testArrayWithoutClosingBracket(): void
     {
         $this->expectException(TypeParseTreeException::class);
