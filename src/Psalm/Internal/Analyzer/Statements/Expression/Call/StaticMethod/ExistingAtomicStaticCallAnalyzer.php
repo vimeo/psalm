@@ -646,7 +646,7 @@ final class ExistingAtomicStaticCallAnalyzer
      * What `static` stands for in the signature of the method $stmt calls on $fq_class_name, and whether it is that
      * class exactly
      *
-     * @return array{string|TTemplateParam|null, bool}
+     * @return array{string|TNamedObject|TTemplateParam|null, bool}
      */
     public static function getStaticClassType(
         Codebase $codebase,
@@ -675,7 +675,7 @@ final class ExistingAtomicStaticCallAnalyzer
             && $lhs_type_part instanceof TNamedObject
             && $context->self
         ) {
-            $static_type = $context->self;
+            $static_type = new TNamedObject($context->self);
             $context_final = $codebase->classlike_storage_provider->get($context->self)->final;
         } elseif ($context->calling_method_id !== null) {
             // differentiate between these cases:
@@ -691,10 +691,12 @@ final class ExistingAtomicStaticCallAnalyzer
 
         return [
             $static_type,
-            is_string($static_type)
-            && ($static_type !== $context->self
-                || $class_storage->final
-                || $context_final),
+            $static_type instanceof TNamedObject
+                ? $class_storage->final || $context_final
+                : is_string($static_type)
+                    && ($static_type !== $context->self
+                        || $class_storage->final
+                        || $context_final),
         ];
     }
 
