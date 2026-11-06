@@ -45,6 +45,46 @@ final class ValueTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'looseEqualityWithAStringKeepsAStringableObject' => [
+                'code' => '<?php
+                    final class A {
+                        public function __toString(): string {
+                            return "a";
+                        }
+                    }
+
+                    /** @var A|"a" $foo */
+                    $foo = new A();
+
+                    if ($foo == "a") {
+                        $result = $foo;
+                    } else {
+                        $result = null;
+                    }',
+                'assertions' => [
+                    '$result' => 'A|null|string',
+                ],
+            ],
+            'strictEqualityWithAStringDropsAStringableObject' => [
+                'code' => '<?php
+                    final class A {
+                        public function __toString(): string {
+                            return "a";
+                        }
+                    }
+
+                    /** @var A|"a" $foo */
+                    $foo = new A();
+
+                    if ($foo === "a") {
+                        $result = $foo;
+                    } else {
+                        $result = null;
+                    }',
+                'assertions' => [
+                    '$result' => 'null|string',
+                ],
+            ],
             'whileCountUpdate' => [
                 'code' => '<?php
                     $array = [1, 2, 3];
