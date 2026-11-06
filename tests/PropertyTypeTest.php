@@ -561,6 +561,94 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticPropertyAssignedByAStaticMethodIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Counter {
+                        public static bool $ready = false;
+
+                        public static function prepare(): void {
+                            self::$ready = true;
+                        }
+
+                        public static function run(): void {
+                            self::$ready = false;
+                            self::prepare();
+
+                            if (self::$ready) {
+                                echo "ready";
+                            }
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedByAnInstanceMethodIsForgottenInALoop' => [
+                'code' => '<?php
+                    final class Widget {
+                        private static bool $isSomething = false;
+
+                        /** @param list<string> $values */
+                        public function run(array $values): void {
+                            self::$isSomething = false;
+
+                            foreach ($values as $value) {
+                                if (self::$isSomething) {
+                                    echo $value;
+                                    continue;
+                                }
+
+                                $this->helper();
+                            }
+                        }
+
+                        private function helper(): void {
+                            static::$isSomething = true;
+                        }
+                    }',
+            ],
+            'staticArrayPropertyChangedByAMethodIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Queue {
+                        /** @var list<int> */
+                        private static array $items = [];
+
+                        public static function add(int $item): void {
+                            self::$items[] = $item;
+                        }
+
+                        public static function hasItems(): bool {
+                            self::$items = [];
+                            self::add(1);
+
+                            if (self::$items) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedByNamedClassIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Flag {
+                        public static bool $raised = false;
+
+                        public function raise(): void {
+                            Flag::$raised = true;
+                        }
+                    }
+
+                    final class Runner {
+                        public static function run(): bool {
+                            Flag::$raised = false;
+                            (new Flag())->raise();
+
+                            if (Flag::$raised) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+            ],
             'newVarInIf' => [
                 'code' => '<?php
                     class A {
@@ -2903,6 +2991,26 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticPropertyIsKeptAfterACallThatDoesNotAssignIt' => [
+                'code' => '<?php
+                    final class Widget {
+                        private static bool $isSomething = false;
+
+                        public function run(): void {
+                            self::$isSomething = false;
+                            $this->helper();
+
+                            if (self::$isSomething) {
+                                echo "never";
+                            }
+                        }
+
+                        private function helper(): void {
+                            echo "nothing";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:33 - Operand of type false is always falsy',
+            ],
             'undefinedPropertyAssignment' => [
                 'code' => '<?php
                     class A {

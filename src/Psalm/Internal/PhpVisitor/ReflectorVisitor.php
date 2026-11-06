@@ -447,6 +447,31 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                         $functionlike_storage->this_property_mutations[$node->var->name->name] = true;
                     }
                 }
+            } elseif ($this->functionlike_node_scanners) {
+                $mutated_var = $node->var;
+
+                while ($mutated_var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                    $mutated_var = $mutated_var->var;
+                }
+
+                $functionlike_storage = end($this->functionlike_node_scanners)->storage;
+
+                if ($mutated_var instanceof PhpParser\Node\Expr\StaticPropertyFetch
+                    && $mutated_var->class instanceof PhpParser\Node\Name
+                    && $mutated_var->name instanceof PhpParser\Node\Identifier
+                    && $functionlike_storage instanceof MethodStorage
+                ) {
+                    $class_name = $mutated_var->class->getFirst();
+
+                    $mutated_class = $mutated_var->class->isUnqualified()
+                        && in_array(strtolower($class_name), ['self', 'static'], true)
+                        ? ''
+                        : strtolower((string) ($mutated_var->class->getAttribute('resolvedName') ?? $class_name));
+
+                    $functionlike_storage->static_property_mutations[
+                        $mutated_class . '::$' . $mutated_var->name->name
+                    ] = true;
+                }
             }
         }
 
