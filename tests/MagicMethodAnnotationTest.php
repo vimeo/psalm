@@ -1595,6 +1595,7 @@ final class MagicMethodAnnotationTest extends TestCase
                     /**
                      * @method int pick(string $a)
                      * @method string pick(int $a)
+                     * @method float pick(bool $a)
                      */
                     final class Many {
                         public function __call(string $name, array $args): mixed {
@@ -1603,7 +1604,29 @@ final class MagicMethodAnnotationTest extends TestCase
                     }
 
                     (new Many())->pick(1.5);',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:40',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:40 - '
+                    . 'Argument 1 of pick expects bool, but float(1.5) provided',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'staticMagicMethodOverloadWithoutAMatchingOneReportsTheLastDeclared' => [
+                'code' => '<?php
+                    /**
+                     * @method static int load(string $id)
+                     * @method static string load(int $id)
+                     * @method static float load(bool $id)
+                     */
+                    final class Repository {
+                        public static function __callStatic(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    Repository::load(1.5);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:38 - '
+                    . 'Argument 1 of Repository::load expects bool, but float(1.5) provided',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'wildcardPurityPropagatesImpureClosure' => [
                 'code' => '<?php
