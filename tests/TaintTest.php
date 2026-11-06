@@ -5652,6 +5652,18 @@ final class TaintTest extends TestCase
                     v(a: (string) $_GET["x"]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintFlowsThroughAnAssignmentInTheKeyOfAnItemPassedByReference' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param array<int, mixed> $a */
+                    function f(array $a): void {
+                        /** @var string $payload */
+                        $payload = $_GET["x"];
+                        /** @psalm-suppress MixedArgument */
+                        asort($a[extract(["x" => "safe"]) + (int) ($x = $payload)]);
+                        echo $x;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintTheVariadicWithAPositionalArgument' => [
                 'code' => '<?php // --taint-analysis
                     function v(string $a = "", string ...$rest): void {
