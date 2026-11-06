@@ -1794,7 +1794,7 @@ final class TypeParseTest extends TestCase
         $callmap_types = InternalCallMapHandler::getCallMap();
 
         foreach ($callmap_types as $signature) {
-            $return_type = $signature[0] ?? null;
+            $return_type = $signature[0] ?? $signature[-1] ?? null;
             $param_type_1 = $signature[1] ?? null;
             $param_type_2 = $signature[2] ?? null;
             $param_type_3 = $signature[3] ?? null;
