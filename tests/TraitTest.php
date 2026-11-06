@@ -22,6 +22,34 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'overrideOfATraitMethodReturningSelfInAParentClass' => [
+                'code' => '<?php
+                    interface SomeInterface
+                    {
+                        public function duplicate(): self;
+                    }
+
+                    trait SomeTrait
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self;
+                        }
+                    }
+
+                    class Concrete implements SomeInterface
+                    {
+                        use SomeTrait;
+                    }
+
+                    class ConcreteChild extends Concrete
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self;
+                        }
+                    }',
+            ],
             'accessiblePrivateMethodFromTrait' => [
                 'code' => '<?php
                     trait T {
@@ -1224,6 +1252,32 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'overrideOfATraitMethodReturningSelfWithAnUnrelatedType' => [
+                'code' => '<?php
+                    trait SomeTrait
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self;
+                        }
+                    }
+
+                    class Concrete
+                    {
+                        use SomeTrait;
+                    }
+
+                    class Other {}
+
+                    class ConcreteChild extends Concrete
+                    {
+                        public function duplicate(): Other
+                        {
+                            return new Other;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
             'inaccessiblePrivateMethodFromInheritedTrait' => [
                 'code' => '<?php
                     trait T {
