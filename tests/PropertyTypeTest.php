@@ -561,6 +561,22 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assignPrivatePropertyOfCurrentClassOnChildInstance' => [
+                'code' => '<?php
+                    class A {
+                        private int $value = 0;
+
+                        public function handle(A $v): void {
+                            if ($v instanceof B) {
+                                $v->value = 123;
+                            } else {
+                                $v->value = 321;
+                            }
+                        }
+                    }
+
+                    class B extends A {}',
+            ],
             'newVarInIf' => [
                 'code' => '<?php
                     class A {
@@ -2903,6 +2919,36 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assignPrivatePropertyOfCurrentClassOnChildInstanceChecksItsType' => [
+                'code' => '<?php
+                    class A {
+                        private int $value = 0;
+
+                        public function handle(A $v): void {
+                            if ($v instanceof B) {
+                                $v->value = "x";
+                            }
+                        }
+                    }
+
+                    class B extends A {}',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'assignPrivatePropertyOfParentOnChildInstanceFromChildContext' => [
+                'code' => '<?php
+                    class A {
+                        private int $value = 0;
+                    }
+
+                    class B extends A {}
+
+                    class C extends A {
+                        public function handle(B $v): void {
+                            $v->value = 1;
+                        }
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment',
+            ],
             'undefinedPropertyAssignment' => [
                 'code' => '<?php
                     class A {
