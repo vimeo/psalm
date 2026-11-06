@@ -2669,6 +2669,26 @@ final class UnusedVariableTest extends TestCase
                     }
                 );',
             ],
+            'variableUsedInArgumentOfStaticCallOnUndefinedClass' => [
+                'code' => '<?php
+                    $foo = "foo";
+
+                    return Missing::config(["foo" => $foo]);',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedClass'],
+            ],
+            'variableUsedInArgumentOfStaticCallOnUndefinedClassInFunction' => [
+                'code' => '<?php
+                    function f(string $a): string {
+                        $b = strtoupper($a);
+
+                        return Missing::config($b);
+                    }
+
+                    echo f("x");',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedClass', 'MixedReturnStatement', 'MixedInferredReturnType'],
+            ],
             'pipeUsesItsLeftHandSide' => [
                 'code' => '<?php
                     function f(string $s, string $u): int {
