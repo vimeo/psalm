@@ -189,7 +189,7 @@ final class ReferenceTest extends TestCase
                     $n = count(Holder::$s[$i++]);
                     $b = $i;
                     $i = 0;
-                    $n = count($h->me($i++)->p[$i++]);
+                    $n = count($h->me($i++)->p[0]);
                     $c = $i;
                     $i = 0;
                     $nullable = rand(0, 1) ? $h : null;
@@ -198,10 +198,70 @@ final class ReferenceTest extends TestCase
                 'assertions' => [
                     '$a===' => '1',
                     '$b===' => '1',
-                    '$c===' => '2',
+                    '$c===' => '1',
                     '$d===' => '1',
                 ],
                 'ignored_issues' => ['PossiblyNullReference', 'PossiblyNullArgument', 'PossiblyNullArrayAccess'],
+                'php_version' => '8.1',
+            ],
+            'arrayAccessKeyIsAnalysedAfterTheReceiverAssignsIt' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<positive-int, string> */
+                    final class Names implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        public function offsetGet(mixed $offset): string {
+                            return "";
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function names(int $n): Names {
+                        return new Names();
+                    }
+
+                    $i = 0;
+                    $name = names($i = 1)[$i++];',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayAccessKeyCallKeepsItsContextualTemplateResult' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<Closure(int):int, int> */
+                    final class Lookup implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        /** @param Closure(int):int $offset */
+                        public function offsetGet(mixed $offset): int {
+                            return $offset(5);
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /**
+                     * @template T
+                     * @return Closure(T):T
+                     */
+                    function factory(): Closure {
+                        return /** @param T $x @return T */ static fn($x) => $x;
+                    }
+
+                    function read(Lookup $lookup): int {
+                        return $lookup[factory()];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'arrayItemPassedByReferenceHoldsWhatTheCallLeavesInIt' => [

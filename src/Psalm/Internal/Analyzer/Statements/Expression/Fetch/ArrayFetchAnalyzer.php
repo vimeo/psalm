@@ -103,6 +103,7 @@ use UnexpectedValueException;
 use function array_keys;
 use function array_map;
 use function array_pop;
+use function array_push;
 use function array_values;
 use function count;
 use function implode;
@@ -1087,8 +1088,8 @@ final class ArrayFetchAnalyzer
             }
 
             if ($type instanceof TNamedObject) {
-                // the virtual offset*() call analyses the operands again, which must not repeat an effect of theirs
-                $operands = ArrayAssignmentAnalyzer::getOperandsWithEffects($stmt);
+                // the virtual offset*() call analyses the operands again, which must not repeat a side effect
+                $operands = self::getOperandSideEffects($stmt);
                 $node_data = $statements_analyzer->node_data;
                 $node_data->markEvaluated($operands);
 
@@ -2213,6 +2214,38 @@ final class ArrayFetchAnalyzer
         )) {
             // fall through
         }
+    }
+
+    /**
+     * The side effects not to repeat when the virtual offset*() call analyses the operands again. The keys are
+     * analysed before the receiver and again after it, as on a plain array, so the receiver's side effects take
+     * precedence: when it has none, those of the keys
+     *
+     * @return list<PhpParser\Node\Expr>
+     * @psalm-capabilities read-props
+     */
+    private static function getOperandSideEffects(PhpParser\Node\Expr\ArrayDimFetch $stmt): array
+    {
+        $dims = [];
+
+        for ($root = $stmt; $root instanceof PhpParser\Node\Expr\ArrayDimFetch; $root = $root->var) {
+            if ($root->dim) {
+                $dims[] = $root->dim;
+            }
+        }
+
+        $receiver_side_effects = [];
+        $dim_side_effects = [];
+
+        foreach (ArrayAssignmentAnalyzer::getOperands($stmt) as $operand) {
+            if (in_array($operand, $dims, true)) {
+                array_push($dim_side_effects, ...ArrayAssignmentAnalyzer::getSideEffects($operand));
+            } else {
+                array_push($receiver_side_effects, ...ArrayAssignmentAnalyzer::getSideEffects($operand));
+            }
+        }
+
+        return $receiver_side_effects ?: $dim_side_effects;
     }
 
     private static function handleArrayAccessOnNamedObject(
