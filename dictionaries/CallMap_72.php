@@ -2207,16 +2207,6 @@ return array (
     'search' => 'array<array-key, mixed>|object',
     -2 => 'none',
   ),
-  'array_key_first' => 
-  array (
-    0 => 'mixed',
-    'array' => 'array<array-key, mixed>',
-  ),
-  'array_key_last' => 
-  array (
-    0 => 'mixed',
-    'array' => 'array<array-key, mixed>',
-  ),
   'array_keys' => 
   array (
     0 => 'list<int|string>',
