@@ -54,6 +54,50 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'classesOfBothBranchesOfAnUnknownAnd' => [
+                'code' => '<?php
+                    if (rand(0, 1) && rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();
+                    new Second();',
+            ],
+            'classesOfBothBranchesOfAnUnknownLogicalAnd' => [
+                'code' => '<?php
+                    if (rand(0, 1) and rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();
+                    new Second();',
+            ],
+            'classesOfBothBranchesOfAnUnknownOr' => [
+                'code' => '<?php
+                    if (rand(0, 1) || rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();
+                    new Second();',
+            ],
+            'classesOfBothBranchesOfAnUnknownLogicalOr' => [
+                'code' => '<?php
+                    if (rand(0, 1) or rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();
+                    new Second();',
+            ],
             'overrideProtectedAccessLevelToPublic' => [
                 'code' => '<?php
                     class A {
@@ -1117,6 +1161,94 @@ final class ClassTest extends TestCase
                         return $a instanceof iterable;
                     }',
                 'error_message' => 'ReservedWord - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:46 - iterable is a reserved word',
+            ],
+            'elseOfAKnownTrueAndIsNotDeclared' => [
+                'code' => '<?php
+                    if (function_exists("strlen") && function_exists("strpos")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new Second();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'elseOfAKnownTrueLogicalAndIsNotDeclared' => [
+                'code' => '<?php
+                    if (function_exists("strlen") and function_exists("strpos")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new Second();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'elseOfAKnownTrueOrIsNotDeclared' => [
+                'code' => '<?php
+                    if (function_exists("strlen") || rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new Second();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'elseOfAKnownTrueLogicalOrIsNotDeclared' => [
+                'code' => '<?php
+                    if (rand(0, 1) or function_exists("strlen")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new Second();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'ifOfAKnownFalseAndIsNotDeclared' => [
+                'code' => '<?php
+                    if (!function_exists("strlen") && rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'ifOfAKnownFalseLogicalAndIsNotDeclared' => [
+                'code' => '<?php
+                    if (rand(0, 1) and !function_exists("strlen")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'ifOfAKnownFalseOrIsNotDeclared' => [
+                'code' => '<?php
+                    if (!function_exists("strlen") || !function_exists("strpos")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'ifOfAKnownFalseLogicalOrIsNotDeclared' => [
+                'code' => '<?php
+                    if (!function_exists("strlen") or !function_exists("strpos")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();',
+                'error_message' => 'UndefinedClass',
             ],
             'undefinedClass' => [
                 'code' => '<?php
