@@ -9,6 +9,7 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\Variable;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
@@ -25,6 +26,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
@@ -307,6 +309,7 @@ final class CallableTypeComparator
         Codebase $codebase,
         MethodIdentifier $method_id,
         ?TCallable $container_type_part,
+        ?Atomic $callable_object = null,
     ): ?TCallable {
         try {
             $method_storage = $codebase->methods->getStorage($method_id);
@@ -336,6 +339,31 @@ final class CallableTypeComparator
                 ($method_storage->template_types ?? []) + $class_template_types,
                 $codebase,
             );
+
+            // the templates of the class are what the generic object has for them
+            if ($callable_object instanceof TGenericObject
+                && $codebase->classOrInterfaceExists($callable_object->value)
+            ) {
+                $class_template_params = ClassTemplateParamCollector::collect(
+                    $codebase,
+                    $codebase->methods->getClassLikeStorageForMethod($method_id),
+                    $codebase->classlike_storage_provider->get($callable_object->value),
+                    $method_id->method_name,
+                    $callable_object,
+                );
+
+                if ($class_template_params !== null) {
+                    $replaced = TemplateInferredTypeReplacer::replace(
+                        new Union([$callable]),
+                        new TemplateResult([], $class_template_params),
+                        $codebase,
+                    )->getSingleAtomic();
+
+                    if ($replaced instanceof TCallable) {
+                        $callable = $replaced;
+                    }
+                }
+            }
 
             // Resolve method-level templates against the expected callable shape, so
             // `[Id::class, 'id']` with `@template B` matches `callable(int): int` etc.
@@ -521,7 +549,17 @@ final class CallableTypeComparator
         } elseif ($input_type_part instanceof TKeyedArray) {
             $method_id = self::getCallableMethodIdFromTKeyedArray($input_type_part, $codebase);
             if ($method_id && $method_id !== 'not-callable') {
-                $callable = self::getCallableFromMethodId($codebase, $method_id, $container_type_part);
+                $callable_object = isset($input_type_part->properties[0])
+                    && $input_type_part->properties[0]->isSingle()
+                    ? $input_type_part->properties[0]->getSingleAtomic()
+                    : null;
+
+                $callable = self::getCallableFromMethodId(
+                    $codebase,
+                    $method_id,
+                    $container_type_part,
+                    $callable_object,
+                );
 
                 if ($callable) {
                     return $callable;
