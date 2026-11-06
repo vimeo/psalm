@@ -29,6 +29,28 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'postDecrementInTheConditionOfAnIfThatBreaksIsReadByTheNextIteration' => [
+                'code' => '<?php
+                    /** @param iterable<int> $input */
+                    function skip(iterable $input, int $skip): void {
+                        foreach ($input as $_) {
+                            if (0 === $skip--) {
+                                break;
+                            }
+                        }
+                    }
+
+                    /** @param list<int> $numbers */
+                    function countDown(array $numbers, int $remaining): int {
+                        foreach ($numbers as $number) {
+                            if ($remaining-- < $number) {
+                                break;
+                            }
+                        }
+
+                        return 1;
+                    }',
+            ],
             'staticPropertiesInDestructuringAreNotVariables' => [
                 'code' => '<?php
                     abstract class Foo {
