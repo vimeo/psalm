@@ -786,7 +786,7 @@ final class VariableFetchAnalyzer
         if ($var_id === '$_COOKIE') {
             $type = new TArray(
                 [
-                    Type::getNonEmptyString(),
+                    new Union([new TNonEmptyString(), new TInt()]),
                     Type::getString(),
                 ],
             );
