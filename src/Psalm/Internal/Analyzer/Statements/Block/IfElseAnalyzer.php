@@ -26,12 +26,14 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
+use Psalm\Type\Union;
 
 use function array_diff;
 use function array_filter;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
+use function array_slice;
 use function array_unique;
 use function array_values;
 use function count;
@@ -318,40 +320,21 @@ final class IfElseAnalyzer
                 $context->vars_in_scope[$var_id] = $type;
             }
 
-            foreach ($pre_assignment_else_redefined_vars as $var_id => $reconciled_type) {
-                $first_appearance = $statements_analyzer->getFirstAppearance($var_id);
-
-                if ($first_appearance
-                    && isset($post_if_context->vars_in_scope[$var_id])
-                    && $post_if_context->vars_in_scope[$var_id]->hasMixed()
-                    && !$reconciled_type->hasMixed()
-                ) {
-                    if (!$post_if_context->collect_initializations
-                        && !$post_if_context->collect_mutations
-                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    ) {
-                        $parent_source = $statements_analyzer->getSource();
-
-                        $functionlike_storage = $parent_source instanceof FunctionLikeAnalyzer
-                            ? $parent_source->getFunctionLikeStorage($statements_analyzer)
-                            : null;
-
-                        if (!$functionlike_storage
-                                || (!$parent_source->getSource() instanceof TraitAnalyzer
-                                    && !isset($functionlike_storage->param_lookup[substr($var_id, 1)]))
-                        ) {
-                            $codebase = $statements_analyzer->getCodebase();
-                            $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
-                        }
-                    }
-
-                    IssueBuffer::remove(
-                        $statements_analyzer->getFilePath(),
-                        'MixedAssignment',
-                        $first_appearance->raw_file_start,
-                    );
-                }
-            }
+            self::removeMixedAssignmentsOfNarrowedVars(
+                $statements_analyzer,
+                $post_if_context,
+                $pre_assignment_else_redefined_vars,
+            );
+        } elseif ($stmt->elseifs
+            && !$stmt->else
+            && self::everyBranchLeaves($if_scope)
+        ) {
+            // what follows only runs once every condition is false
+            self::removeMixedAssignmentsOfNarrowedVars(
+                $statements_analyzer,
+                $post_if_context,
+                $else_context->getRedefinedVars($context->vars_in_scope, true),
+            );
         }
 
         if ($context->loop_scope) {
@@ -453,5 +436,65 @@ final class IfElseAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * A mixed variable that is narrowed by the conditions it is checked against is not reported where it is
+     * assigned: the first use of the variable is the check.
+     *
+     * @param array<string, Union> $narrowed_vars
+     */
+    private static function removeMixedAssignmentsOfNarrowedVars(
+        StatementsAnalyzer $statements_analyzer,
+        Context $post_if_context,
+        array $narrowed_vars,
+    ): void {
+        foreach ($narrowed_vars as $var_id => $reconciled_type) {
+            $first_appearance = $statements_analyzer->getFirstAppearance($var_id);
+
+            if ($first_appearance
+                && isset($post_if_context->vars_in_scope[$var_id])
+                && $post_if_context->vars_in_scope[$var_id]->hasMixed()
+                && !$reconciled_type->hasMixed()
+            ) {
+                if (!$post_if_context->collect_initializations
+                    && !$post_if_context->collect_mutations
+                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+                ) {
+                    $parent_source = $statements_analyzer->getSource();
+
+                    $functionlike_storage = $parent_source instanceof FunctionLikeAnalyzer
+                        ? $parent_source->getFunctionLikeStorage($statements_analyzer)
+                        : null;
+
+                    if (!$functionlike_storage
+                            || (!$parent_source->getSource() instanceof TraitAnalyzer
+                                && !isset($functionlike_storage->param_lookup[substr($var_id, 1)]))
+                    ) {
+                        $codebase = $statements_analyzer->getCodebase();
+                        $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
+                    }
+                }
+
+                IssueBuffer::remove(
+                    $statements_analyzer->getFilePath(),
+                    'MixedAssignment',
+                    $first_appearance->raw_file_start,
+                );
+            }
+        }
+    }
+
+    /**
+     * Whether the if and every elseif leave, whatever the implicit else does
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function everyBranchLeaves(IfScope $if_scope): bool
+    {
+        // the first of the actions is that of the implicit else
+        $branch_actions = array_slice($if_scope->final_actions, 1);
+
+        return $branch_actions && !in_array(ScopeAnalyzer::ACTION_NONE, $branch_actions, true);
     }
 }
