@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
+use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\LoopScope;
@@ -19,6 +20,7 @@ use function array_diff;
 use function array_filter;
 use function array_keys;
 use function array_values;
+use function in_array;
 use function preg_match;
 use function preg_quote;
 use function spl_object_id;
@@ -137,6 +139,16 @@ final class DoAnalyzer
         }
 
         LoopAnalyzer::setLoopVars($inner_loop_context, $context, $loop_scope);
+
+        // the body of a do-while runs once, unless it leaves the loop
+        if (!in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)
+            && !in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true)
+        ) {
+            $context->assigned_var_ids = [
+                ...$context->assigned_var_ids,
+                ...$inner_loop_context->assigned_var_ids,
+            ];
+        }
 
         $do_context->loop_scope = null;
 
