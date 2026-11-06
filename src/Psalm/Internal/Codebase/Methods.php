@@ -21,6 +21,7 @@ use Psalm\Internal\Provider\MethodExistenceProvider;
 use Psalm\Internal\Provider\MethodParamsProvider;
 use Psalm\Internal\Provider\MethodReturnTypeProvider;
 use Psalm\Internal\Provider\MethodVisibilityProvider;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -707,11 +708,15 @@ final class Methods
                     $overridden_storage_return_type,
                 );
 
+                $overridden_to_candidate_result = new TypeComparisonResult();
                 $new_contained_by_old = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $overridden_storage_return_type,
                     $candidate_type,
-                );
+                    false,
+                    false,
+                    $overridden_to_candidate_result,
+                ) && !$overridden_to_candidate_result->to_string_cast;
 
                 if ((!$old_contained_by_new && !$new_contained_by_old)
                     || ($old_contained_by_new && $new_contained_by_old)
