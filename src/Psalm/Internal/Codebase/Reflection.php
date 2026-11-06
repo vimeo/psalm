@@ -19,7 +19,6 @@ use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Union;
 use ReflectionClass;
-use ReflectionException;
 use ReflectionFunction;
 use ReflectionMethod;
 use ReflectionNamedType;
@@ -30,6 +29,7 @@ use UnexpectedValueException;
 
 use function array_map;
 use function array_merge;
+use function function_exists;
 use function implode;
 use function strtolower;
 
@@ -358,65 +358,79 @@ final class Reflection
      */
     public function registerFunction(string $function_id): ?bool
     {
-        try {
-            $reflection_function = new ReflectionFunction($function_id);
+        if (isset(self::$builtin_functions[$function_id])) {
+            return null;
+        }
 
-            $callmap_callable = null;
+        $storage = $this->createFunctionStorage($function_id);
 
-            if (isset(self::$builtin_functions[$function_id])) {
-                return null;
-            }
-
-            $storage = self::$builtin_functions[$function_id] = new FunctionStorage();
-
-            if (InternalCallMapHandler::inCallMap($function_id)) {
-                $callmap_callable = InternalCallMapHandler::getCallableFromCallMapById(
-                    $this->codebase,
-                    $function_id,
-                    [],
-                    null,
-                );
-            }
-
-            if ($callmap_callable !== null
-                && $callmap_callable->params !== null
-                && $callmap_callable->return_type !== null
-            ) {
-                $storage->setParams($callmap_callable->params);
-                $storage->return_type = $callmap_callable->return_type;
-            } else {
-                $reflection_params = $reflection_function->getParameters();
-
-                foreach ($reflection_params as $param) {
-                    $param_obj = $this->getReflectionParamData($param);
-                    $storage->addParam($param_obj);
-                }
-
-                if ($reflection_return_type = (PHP_VERSION_ID >= 8_01_00 ? (
-                    ($reflection_function->getTentativeReturnType()
-                        ?? $reflection_function->getReturnType()
-                    )
-                ) : $reflection_function->getReturnType())) {
-                    $storage->return_type = self::getPsalmTypeFromReflectionType($reflection_return_type);
-                }
-            }
-
-            $storage->pure = true;
-
-            $storage->required_param_count = 0;
-
-            foreach ($storage->params as $i => $param) {
-                if (!$param->is_optional && !$param->is_variadic) {
-                    $storage->required_param_count = $i + 1;
-                }
-            }
-
-            $storage->cased_name = $reflection_function->getName();
-        } catch (ReflectionException) {
+        if ($storage === null) {
             return false;
         }
 
+        self::$builtin_functions[$function_id] = $storage;
+
         return null;
+    }
+
+    /**
+     * Creates storage for a builtin function from the callmap, falling back to reflection, without registering it.
+     * Functions that are in the callmap, but not defined in this process (e.g. their extension isn't loaded) work too.
+     */
+    public function createFunctionStorage(string $function_id): ?FunctionStorage
+    {
+        $reflection_function = function_exists($function_id) ? new ReflectionFunction($function_id) : null;
+        $callmap_callable = null;
+
+        if (InternalCallMapHandler::inCallMap($function_id)) {
+            $callmap_callable = InternalCallMapHandler::getCallableFromCallMapById(
+                $this->codebase,
+                $function_id,
+                [],
+                null,
+            );
+        }
+
+        $storage = new FunctionStorage();
+
+        if ($callmap_callable !== null
+            && $callmap_callable->params !== null
+            && $callmap_callable->return_type !== null
+        ) {
+            $storage->setParams($callmap_callable->params);
+            $storage->return_type = $callmap_callable->return_type;
+        } elseif ($reflection_function !== null) {
+            $reflection_params = $reflection_function->getParameters();
+
+            foreach ($reflection_params as $param) {
+                $param_obj = $this->getReflectionParamData($param);
+                $storage->addParam($param_obj);
+            }
+
+            if ($reflection_return_type = (PHP_VERSION_ID >= 8_01_00 ? (
+                ($reflection_function->getTentativeReturnType()
+                    ?? $reflection_function->getReturnType()
+                )
+            ) : $reflection_function->getReturnType())) {
+                $storage->return_type = self::getPsalmTypeFromReflectionType($reflection_return_type);
+            }
+        } else {
+            return null;
+        }
+
+        $storage->pure = true;
+
+        $storage->required_param_count = 0;
+
+        foreach ($storage->params as $i => $param) {
+            if (!$param->is_optional && !$param->is_variadic) {
+                $storage->required_param_count = $i + 1;
+            }
+        }
+
+        $storage->cased_name = $reflection_function?->getName() ?? $function_id;
+
+        return $storage;
     }
 
     /** @psalm-suppress UnusedPsalmSuppress,UndefinedClass,TypeDoesNotContainType 7.4 has no ReflectionUnionType */
