@@ -445,6 +445,8 @@ final class Config
 
     public bool $suggest_purity_annotations = false;
 
+    public bool $assume_getters_mutation_free = true;
+
     /**
      * @var array<lowercase-string, bool>
      */
@@ -1118,6 +1120,7 @@ final class Config
             'ensureArrayIntOffsetsExist' => 'ensure_array_int_offsets_exist',
             'ensureOverrideAttribute' => 'ensure_override_attribute',
             'suggestPurityAnnotations' => 'suggest_purity_annotations',
+            'assumeGettersMutationFree' => 'assume_getters_mutation_free',
             'reportMixedIssues' => 'show_mixed_issues',
             'skipChecksOnUnresolvableIncludes' => 'skip_checks_on_unresolvable_includes',
             'sealAllMethods' => 'seal_all_methods',

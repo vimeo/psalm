@@ -185,8 +185,10 @@ final class FunctionLikeNodeScanner
                     && $classlike_storage->properties[$property_name]->type
                     && !$classlike_storage->properties[$property_name]->hook_get
                 ) {
-                    $storage->capabilities = Capabilities::MUTATION_FREE & $storage->capabilities;
-                    $storage->mutation_free_assumed = !$stmt->isFinal() && !$classlike_storage->final;
+                    if ($this->config->assume_getters_mutation_free) {
+                        $storage->capabilities = Capabilities::MUTATION_FREE & $storage->capabilities;
+                        $storage->mutation_free_assumed = !$stmt->isFinal() && !$classlike_storage->final;
+                    }
 
                     $classlike_storage->properties[$property_name]->getter_method = strtolower($stmt->name->name);
                 }
