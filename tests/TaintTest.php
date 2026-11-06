@@ -885,6 +885,16 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'unpackedArrayWithoutTaintIntoVariadic' => [
+                'code' => '<?php
+                    function bar(...$args) {
+                        echo $args[0];
+                    }
+
+                    /** @var array<int, non-empty-string> $names */
+                    $names = ["a"];
+                    bar(...$names);',
+            ],
             'dontTaintTheOffsetSetOfAnItemPassedByReference' => [
                 'code' => '<?php // --taint-analysis
                     /** @implements ArrayAccess<string, list<int>> */
@@ -5513,6 +5523,48 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'unpackedTypedArrayIntoVariadic' => [
+                'code' => '<?php
+                    function bar(...$args) {
+                        echo $args[0];
+                    }
+
+                    /** @var array<int, non-empty-string> $names */
+                    $names = [$_GET["name"]];
+                    bar(...$names);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'unpackedTypedArrayIntoTypedVariadic' => [
+                'code' => '<?php
+                    function bar(string ...$args) {
+                        echo $args[0];
+                    }
+
+                    /** @var array<int, non-empty-string> $names */
+                    $names = [$_GET["name"]];
+                    bar(...$names);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'unpackedTypedArrayIntoParam' => [
+                'code' => '<?php
+                    function bar(string $name) {
+                        echo $name;
+                    }
+
+                    /** @var array<int, non-empty-string> $names */
+                    $names = [$_GET["name"]];
+                    bar(...$names);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'unpackedListIntoParams' => [
+                'code' => '<?php
+                    function bar(string $a, string $b) {
+                        echo $b;
+                    }
+
+                    bar(...["a", $_GET["name"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAnItemOfAMixedValuePassedByReference' => [
                 'code' => '<?php // --taint-analysis
                     /** @param mixed $m */
