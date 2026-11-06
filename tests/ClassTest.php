@@ -1144,6 +1144,24 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'instanceofIterableInANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /** @param mixed $a */
+                    function f($a): bool {
+                        return $a instanceof Iterable;
+                    }',
+                'error_message' => 'ReservedWord - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:46 - iterable is a reserved word',
+            ],
+            'instanceofIterable' => [
+                'code' => '<?php
+                    /** @param mixed $a */
+                    function f($a): bool {
+                        return $a instanceof iterable;
+                    }',
+                'error_message' => 'ReservedWord - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:46 - iterable is a reserved word',
+            ],
             'elseOfAKnownTrueAndIsNotDeclared' => [
                 'code' => '<?php
                     if (function_exists("strlen") && function_exists("strpos")) {
