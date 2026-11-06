@@ -10,6 +10,7 @@ use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
+use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
@@ -333,7 +334,11 @@ final class ReturnAnalyzer
                         return;
                     }
                 } else {
-                    $declared_return_type = $storage->return_type;
+                    $declared_return_type = ClassAnalyzer::localizeClosureReturnType(
+                        $codebase,
+                        $storage->return_type,
+                        $context,
+                    );
                 }
 
                 if ($declared_return_type && !$declared_return_type->hasMixed()) {
