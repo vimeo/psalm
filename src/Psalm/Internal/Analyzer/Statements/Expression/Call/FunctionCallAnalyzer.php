@@ -1351,27 +1351,26 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             );
 
             foreach ($changed_var_ids as $var_id => $_) {
-                $first_appearance = $statements_analyzer->getFirstAppearance($var_id);
-
-                if ($first_appearance
-                    && isset($context->vars_in_scope[$var_id])
+                if (isset($context->vars_in_scope[$var_id])
                     && $context->vars_in_scope[$var_id]->hasMixed()
                 ) {
-                    if (!$context->collect_initializations
-                        && !$context->collect_mutations
-                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                        && (!(($parent_source = $statements_analyzer->getSource())
-                                    instanceof FunctionLikeAnalyzer)
-                                || !$parent_source->getSource() instanceof TraitAnalyzer)
-                    ) {
-                        $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
-                    }
+                    foreach ($statements_analyzer->getFirstAndLastAssignments($var_id) as $assignment) {
+                        if (!$context->collect_initializations
+                            && !$context->collect_mutations
+                            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+                            && (!(($parent_source = $statements_analyzer->getSource())
+                                        instanceof FunctionLikeAnalyzer)
+                                    || !$parent_source->getSource() instanceof TraitAnalyzer)
+                        ) {
+                            $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
+                        }
 
-                    IssueBuffer::remove(
-                        $statements_analyzer->getFilePath(),
-                        'MixedAssignment',
-                        $first_appearance->raw_file_start,
-                    );
+                        IssueBuffer::remove(
+                            $statements_analyzer->getFilePath(),
+                            'MixedAssignment',
+                            $assignment->raw_file_start,
+                        );
+                    }
                 }
 
                 if (isset($op_vars_in_scope[$var_id])) {
