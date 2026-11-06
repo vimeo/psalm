@@ -79,12 +79,21 @@ final class MethodCallReturnTypeFetcher
 
         if ($stmt->isFirstClassCallable()) {
             if ($method_storage) {
+                // the return type the method inherits, as a call gets it
+                $inherited_return_type = $codebase->methods->getMethodReturnType(
+                    $codebase,
+                    $method_id,
+                    $fq_class_name,
+                    $statements_analyzer,
+                    [],
+                ) ?? $method_storage->return_type;
+
                 return self::getFirstClassCallableType(
                     $codebase,
                     $stmt,
                     new TClosure(
                         $method_storage->params,
-                        $method_storage->return_type,
+                        $inherited_return_type,
                         $method_storage->capabilities,
                     ),
                     $template_result,
