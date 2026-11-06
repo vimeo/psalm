@@ -1316,6 +1316,29 @@ final class ConfigTest extends TestCase
      */
     public static function providerExtensionStubs(): iterable
     {
+        yield 'curl' => [
+            'curl',
+            '<?php
+                $curl = curl_init();
+                curl_setopt_array($curl, [
+                    CURLOPT_URL => "https://example.com",
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                ]);',
+        ];
+
+        yield 'ldap' => [
+            'ldap',
+            '<?php
+                echo LDAP_OPT_PROTOCOL_VERSION, LDAP_OPT_REFERRALS, LDAP_DEREF_NEVER;',
+        ];
+
+        yield 'openssl' => [
+            'openssl',
+            '<?php
+                echo OPENSSL_ALGO_SHA256, OPENSSL_KEYTYPE_RSA, OPENSSL_VERSION_NUMBER;',
+        ];
+
         yield 'intl' => [
             'intl',
             '<?php
