@@ -870,6 +870,18 @@ final class ReferenceTest extends TestCase
                 'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:39 - Possibly undefined variable $i, first seen on line 6',
                 'error_levels' => ['MixedArgument'],
             ],
+            'yieldedKeyOfAnItemPassedByReferenceToASortFunctionInALoopIsPossiblyUndefined' => [
+                'code' => '<?php
+                    /** @param array<array-key, mixed> $a */
+                    function f(array $a): Generator {
+                        while (rand(0, 1)) {
+                            asort($a[yield $i]);
+                            $i = 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:44 - Possibly undefined variable $i, first seen on line 6',
+                'error_levels' => ['MixedArgument', 'MixedArrayOffset'],
+            ],
             'itemOfAnEmptyArrayPassedToAParameterPhpDoesNotTakeByReference' => [
                 'code' => '<?php
                     $pipes = [];
