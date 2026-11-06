@@ -28,6 +28,45 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'objectCastOfAShapedArrayKeepsItsProperties' => [
+                'code' => '<?php
+                    /**
+                     * @return object{a: int}
+                     */
+                    function test(): object {
+                        return (object) ["a" => 1];
+                    }',
+            ],
+            'objectCastOfAShapedArrayOrAScalarIsAStdClass' => [
+                'code' => '<?php
+                    /** @var array{a: int}|int $values */
+                    $values = 1;
+                    $object = (object) $values;',
+                'assertions' => [
+                    '$object' => 'stdClass',
+                ],
+            ],
+            'objectCastOfAShapedArrayOrNullIsAnObjectWithoutTheProperties' => [
+                'code' => '<?php
+                    /** @var array{a: int}|null $values */
+                    $values = null;
+                    $object = (object) $values;',
+                'assertions' => [
+                    '$object' => 'object',
+                ],
+            ],
+            'objectCastOfAScalarIsAStdClass' => [
+                'code' => '<?php
+                    function fromInt(): stdClass {
+                        return (object) 1;
+                    }',
+            ],
+            'objectCastOfAShapedArrayIsAStdClass' => [
+                'code' => '<?php
+                    function test(): stdClass {
+                        return (object) ["string" => "string"];
+                    }',
+            ],
             'nativeArrayReturnTypeTakesTheInheritedIterableDocblock' => [
                 'code' => '<?php
                     abstract class Base {
@@ -1042,7 +1081,7 @@ final class ReturnTypeTest extends TestCase
                     $obj = (object)returnsInt();
                 ',
                 'assertions' => [
-                    '$obj' => 'object{scalar:int}',
+                    '$obj' => 'object{scalar:int}&stdClass',
                 ],
             ],
             'infersObjectShapeOfCastArray' => [
@@ -1057,7 +1096,7 @@ final class ReturnTypeTest extends TestCase
                     $obj = (object)returnsArray();
                 ',
                 'assertions' => [
-                    '$obj' => 'object{a:int}',
+                    '$obj' => 'object{a:int}&stdClass',
                 ],
             ],
             'mixedAssignmentWithUnderscore' => [

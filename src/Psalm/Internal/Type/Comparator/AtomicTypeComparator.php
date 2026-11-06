@@ -419,6 +419,27 @@ final class AtomicTypeComparator
             return true;
         }
 
+        // an object with properties that is also an instance of a class is contained by that class
+        if ($input_type_part instanceof TObjectWithProperties
+            && $input_type_part->extra_types
+            && $container_type_part instanceof TNamedObject
+        ) {
+            foreach ($input_type_part->extra_types as $extra_type) {
+                if ($extra_type instanceof TNamedObject
+                    && self::isContainedBy(
+                        $codebase,
+                        $extra_type,
+                        $container_type_part,
+                        $allow_interface_equality,
+                        $allow_float_int_equality,
+                        $atomic_comparison_result,
+                    )
+                ) {
+                    return true;
+                }
+            }
+        }
+
         if ($container_type_part instanceof TEnumCase
             && $input_type_part instanceof TEnumCase
         ) {
