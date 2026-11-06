@@ -233,6 +233,42 @@ final class MatchTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'matchTrueArmWithSeveralConditionsHasNoRedundantCast' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(string|\Stringable $level): string {
+                        return match (true) {
+                            \is_string($level),
+                            $level instanceof \Stringable => (string) $level,
+                        };
+                    }
+                    PHP,
+                'assertions' => [
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'matchTrueArmWithSeveralConditionsUnionType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var string|\Stringable|int $level */
+                    $level = $_GET['a'];
+                    $a = match (true) {
+                        \is_string($level),
+                        $level instanceof \Stringable => $level,
+                        default => null,
+                    };
+                    $b = match (true) {
+                        $level instanceof \Stringable, \is_int($level), \is_string($level) => $level,
+                    };
+                    PHP,
+                'assertions' => [
+                    '$a' => 'Stringable|null|string',
+                    '$b' => 'Stringable|int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\UnhandledMatchCondition;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualArray;
 use Psalm\Node\Expr\VirtualConstFetch;
@@ -38,6 +39,7 @@ use function array_map;
 use function array_merge;
 use function array_reverse;
 use function array_shift;
+use function array_slice;
 use function count;
 use function in_array;
 use function spl_object_id;
@@ -136,6 +138,9 @@ final class MatchAnalyzer
             }
         }
 
+        $is_match_true = $stmt->cond instanceof PhpParser\Node\Expr\ConstFetch
+            && $stmt->cond->name->toString() === 'true';
+
         $arms = $stmt->arms;
         $flattened_arms = [];
         $last_arm = null;
@@ -143,6 +148,12 @@ final class MatchAnalyzer
         foreach ($arms as $arm) {
             if ($arm->conds === null) {
                 $last_arm = $arm;
+                continue;
+            }
+
+            // the body of a `match (true)` arm sees the union of what its conditions assert
+            if ($is_match_true) {
+                $flattened_arms[] = $arm;
                 continue;
             }
 
@@ -374,6 +385,23 @@ final class MatchAnalyzer
                 $conds[0],
                 $attributes,
             );
+        }
+
+        // `match (true)` arms are plain conditions, which the assertion finder only understands in an `||` chain
+        if ($match_condition instanceof PhpParser\Node\Expr\ConstFetch
+            && $match_condition->name->toString() === 'true'
+        ) {
+            $or = new VirtualIdentical($match_condition, $conds[0], $attributes);
+
+            foreach (array_slice($conds, 1) as $cond) {
+                $or = new VirtualBooleanOr(
+                    $or,
+                    new VirtualIdentical($match_condition, $cond, $attributes),
+                    $attributes,
+                );
+            }
+
+            return $or;
         }
 
         $array_items = array_map(
