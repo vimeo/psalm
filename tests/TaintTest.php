@@ -15432,6 +15432,13 @@ final class TaintTest extends TestCase
                     echo $response->getTaint();',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintRemainsInAnItemAfterPoppingIt' => [
+                'code' => '<?php // --taint-analysis
+                    $a = [[$_GET["x"], "b", "c"]];
+                    array_pop($a[0]);
+                    echo $a[0][0];',
+                'error_message' => 'TaintedHtml',
+            ],
         ];
     }
 

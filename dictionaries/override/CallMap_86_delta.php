@@ -43,6 +43,28 @@ return array (
         0 => 'int|string',
       ),
     ),
+    'eventhttprequest::gethost' => 
+    array (
+      'old' => 
+      array (
+        0 => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+      ),
+    ),
+    'eventhttprequest::geturi' => 
+    array (
+      'old' => 
+      array (
+        0 => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+      ),
+    ),
     'filter_var_array' => 
     array (
       'old' => 
