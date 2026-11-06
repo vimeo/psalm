@@ -6,6 +6,8 @@ namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
 use Psalm\Codebase;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\TypeVisitor\ConditionalSubjectReplacer;
 use Psalm\Type;
@@ -516,16 +518,19 @@ final class TemplateInferredTypeReplacer
             $l = $template_type->getAtomicTypes();
             foreach (isset($l['mixed']) ? [$l['mixed']] : $l as $candidate_atomic_type) {
                 $candidate = new Union([$candidate_atomic_type]);
+                $candidate_comparison_result = new TypeComparisonResult();
                 if (UnionTypeComparator::isContainedBy(
                     $codebase,
                     $candidate,
                     $conditional_type,
                     false,
                     false,
-                    null,
+                    $candidate_comparison_result,
                     false,
                     false,
                 )
+                    // an object with __toString() is accepted where a string is expected, but it is not one
+                    && $candidate_comparison_result->to_string_cast !== true
                     && (!$candidate_atomic_type instanceof TInt
                         || $conditional_type->getId() !== 'float')
                 ) {
@@ -535,6 +540,11 @@ final class TemplateInferredTypeReplacer
                 }
 
                 $matching_else_types[] = $candidate_atomic_type;
+
+                // a string and an object with __toString() are never of each other's type
+                if (self::isOnlyStringCastRelated($codebase, $candidate_atomic_type, $conditional_type)) {
+                    continue;
+                }
 
                 $if_part = Type::intersectUnionTypes(
                     $candidate,
@@ -555,16 +565,17 @@ final class TemplateInferredTypeReplacer
                 }
 
                 // the candidate may or may not be of the condition, e.g. a string being a non-empty-string
+                $if_part_comparison_result = new TypeComparisonResult();
                 if (UnionTypeComparator::isContainedBy(
                     $codebase,
                     $if_part,
                     $conditional_type,
                     false,
                     false,
-                    null,
+                    $if_part_comparison_result,
                     false,
                     false,
-                )) {
+                ) && $if_part_comparison_result->to_string_cast !== true) {
                     $matching_if_types = [...$matching_if_types, ...array_values($if_part->getAtomicTypes())];
                 } else {
                     $is_decidable = false;
@@ -665,6 +676,57 @@ final class TemplateInferredTypeReplacer
         }
 
         return self::replace($branch_type, $refined_template_result, $codebase);
+    }
+
+    /**
+     * Whether $candidate and the types of $conditional_type are related only through the conversion of an object with
+     * __toString() to a string, which doesn't make a value of one a value of the other
+     */
+    private static function isOnlyStringCastRelated(
+        Codebase $codebase,
+        Atomic $candidate,
+        Union $conditional_type,
+    ): bool {
+        $related = false;
+
+        foreach ($conditional_type->getAtomicTypes() as $conditional_atomic_type) {
+            $comparison_result = new TypeComparisonResult();
+
+            $is_cast = AtomicTypeComparator::isContainedBy(
+                $codebase,
+                $candidate,
+                $conditional_atomic_type,
+                false,
+                false,
+                $comparison_result,
+            ) && $comparison_result->to_string_cast === true;
+
+            if (!$is_cast) {
+                $comparison_result = new TypeComparisonResult();
+
+                $is_cast = AtomicTypeComparator::isContainedBy(
+                    $codebase,
+                    $conditional_atomic_type,
+                    $candidate,
+                    false,
+                    false,
+                    $comparison_result,
+                ) && $comparison_result->to_string_cast === true;
+            }
+
+            if ($is_cast) {
+                $related = true;
+            } elseif (UnionTypeComparator::canExpressionTypesBeIdentical(
+                $codebase,
+                new Union([$candidate]),
+                new Union([$conditional_atomic_type]),
+                false,
+            )) {
+                return false;
+            }
+        }
+
+        return $related;
     }
 
     /**

@@ -228,6 +228,63 @@ final class ConditionalReturnTypeTest extends TestCase
                         /** @psalm-check-type-exact $d = "ne" */
                     }',
             ],
+            'conditionalReturnTypeKeepsStringsAndObjectsWithToStringApart' => [
+                'code' => '<?php
+                    final class Strable {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param callable(): T $cb
+                     * @return (T is Strable ? list<T> : array<T>)
+                     */
+                    function mapped(callable $cb) {
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @param string|Strable $str
+                     * @return ($str is string ? string : Strable)
+                     */
+                    function strip($str) {
+                        return $str;
+                    }
+
+                    /**
+                     * @param string|Strable $either
+                     * @return ($either is scalar ? "scalar" : "object")
+                     */
+                    function kind($either): string {
+                        return "scalar";
+                    }
+
+                    function str(): string {
+                        return "";
+                    }
+
+                    function f(string|Strable $either): void {
+                        $strings = mapped(static fn(): string => str());
+                        /** @psalm-check-type-exact $strings = array<array-key, string> */
+                        $objects = mapped(static fn(): Strable => new Strable());
+                        /** @psalm-check-type-exact $objects = list<Strable> */
+                        $stripped = strip($either);
+                        /** @psalm-check-type-exact $stripped = Strable|string */
+                        $string = strip("a");
+                        /** @psalm-check-type-exact $string = string */
+                        $object = strip(new Strable());
+                        /** @psalm-check-type-exact $object = Strable */
+                        $scalar = kind("a");
+                        /** @psalm-check-type-exact $scalar = "scalar" */
+                        $other = kind(new Strable());
+                        /** @psalm-check-type-exact $other = "object" */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'conditionalReturnTypeOnIterableThatMayBeAnArray' => [
                 'code' => '<?php
                     /**
