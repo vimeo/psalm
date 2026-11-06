@@ -126,6 +126,81 @@ final class ReferenceTest extends TestCase
                     '$x===' => '1',
                 ],
             ],
+            'arrayItemPassedByReferenceToASortFunctionHasItsKeyEvaluatedOnce' => [
+                'code' => '<?php
+                    /** @var array<int, mixed> $a */
+                    $a = [];
+                    $i = 0;
+                    asort($a[$i++]);
+                    $j = 0;
+                    krsort($a[$j++]);
+                    $k = 0;
+                    natcasesort($a[$k++]);
+                    $l = 0;
+                    arsort($a[$l++]);
+                    $m = 0;
+                    natsort($a[$m++]);',
+                'assertions' => [
+                    '$i===' => '1',
+                    '$j===' => '1',
+                    '$k===' => '1',
+                    '$l===' => '1',
+                    '$m===' => '1',
+                ],
+                'ignored_issues' => ['MixedArgument'],
+            ],
+            'nestedArrayItemPassedByReferenceToASortFunctionHasItsKeysEvaluatedOnce' => [
+                'code' => '<?php
+                    /** @var array<int, array<int, mixed>> $a */
+                    $a = [];
+                    $i = 0;
+                    $j = 0;
+                    asort($a[$i++][$j++]);
+                    $k = $i;
+                    $l = $j;',
+                'assertions' => [
+                    '$k===' => '1',
+                    '$l===' => '1',
+                ],
+                'ignored_issues' => ['MixedArgument'],
+            ],
+            'propertyItemPassedByReferenceToASortFunctionHasItsKeyEvaluatedOnce' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @var array<int, mixed> */
+                        public array $items = [];
+
+                        /** @var array<int, mixed> */
+                        public static array $all = [];
+                    }
+
+                    $b = new Box();
+                    $i = 0;
+                    asort($b->items[$i++]);
+                    $j = $i;
+
+                    $k = 0;
+                    arsort(Box::$all[$k++]);
+                    $l = $k;',
+                'assertions' => [
+                    '$j===' => '1',
+                    '$l===' => '1',
+                ],
+                'ignored_issues' => ['MixedArgument'],
+            ],
+            'itemPassedByReferenceToSocketSelectHasItsKeyEvaluatedOnce' => [
+                'code' => '<?php
+                    $a = [[]];
+                    $write = null;
+                    $except = null;
+                    $i = 0;
+                    socket_select($a[$i++], $write, $except, 0);
+                    $j = $i;',
+                'assertions' => [
+                    '$j===' => '1',
+                ],
+                'ignored_issues' => ['InvalidArgument', 'MixedArgumentTypeCoercion'],
+            ],
             'arrayItemPassedByReferenceIsWrittenUnderTheKeyItWasPassedWith' => [
                 'code' => '<?php
                     /**
@@ -732,6 +807,80 @@ final class ReferenceTest extends TestCase
                         sort($a[$e[0]]);
                     }',
                 'error_message' => 'EmptyArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
+            ],
+            'itemOfAListPassedByReferenceToASortFunctionIsReadOnce' => [
+                'code' => '<?php
+                    $a = [1];
+                    $i = 0;
+                    arsort($a[$i++]);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:28 - Argument 1 of arsort expects array<array-key, mixed>, but 1 provided',
+            ],
+            'undefinedVariablePassedByReferenceToSocketSelectIsReported' => [
+                'code' => '<?php
+                    function f(): void {
+                        socket_select($read, $write, $except, 0);
+                    }',
+                'error_message' => 'UndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:39 - Cannot find referenced variable $read',
+            ],
+            'variablePassedByReferenceToSocketSelectInALoopIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(): void {
+                        $write = [];
+                        $except = [];
+                        while (rand(0, 1)) {
+                            socket_select($read, $write, $except, 0);
+                            $read = [];
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:43 - Possibly undefined variable $read, first seen on line 7',
+            ],
+            'keyOfAnItemPassedByReferenceToASortFunctionInALoopIsPossiblyUndefined' => [
+                'code' => '<?php
+                    /** @param array<int, mixed> $a */
+                    function f(array $a): void {
+                        while (rand(0, 1)) {
+                            asort($a[$i]);
+                            $i = 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:38 - Possibly undefined variable $i, first seen on line 6',
+                'error_levels' => ['MixedArgument', 'PossiblyInvalidArrayOffset'],
+            ],
+            'castKeyOfAnItemPassedByReferenceToASortFunctionInALoopIsPossiblyUndefined' => [
+                'code' => '<?php
+                    /** @param array<int, mixed> $a */
+                    function f(array $a): void {
+                        while (rand(0, 1)) {
+                            asort($a[(int) $i]);
+                            $i = 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:44 - Possibly undefined variable $i, first seen on line 6',
+                'error_levels' => ['MixedArgument', 'RedundantCast'],
+            ],
+            'negatedKeyOfAnItemPassedByReferenceToASortFunctionInALoopIsPossiblyUndefined' => [
+                'code' => '<?php
+                    /** @param array<int, mixed> $a */
+                    function f(array $a): void {
+                        while (rand(0, 1)) {
+                            asort($a[-$i]);
+                            $i = 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:39 - Possibly undefined variable $i, first seen on line 6',
+                'error_levels' => ['MixedArgument'],
+            ],
+            'yieldedKeyOfAnItemPassedByReferenceToASortFunctionInALoopIsPossiblyUndefined' => [
+                'code' => '<?php
+                    /** @param array<array-key, mixed> $a */
+                    function f(array $a): Generator {
+                        while (rand(0, 1)) {
+                            asort($a[yield $i]);
+                            $i = 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:44 - Possibly undefined variable $i, first seen on line 6',
+                'error_levels' => ['MixedArgument', 'MixedArrayOffset'],
             ],
             'itemOfAnEmptyArrayPassedToAParameterPhpDoesNotTakeByReference' => [
                 'code' => '<?php
