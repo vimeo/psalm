@@ -767,3 +767,12 @@ class DateInterval
     public static function createFromDateString(string $datetime = ''): DateInterval|false {}
 }
 
+class DateTime implements DateTimeInterface
+{
+    /**
+     * @psalm-mutation-free
+     * @psalm-ignore-falsable-return
+     * @return static|false
+     */
+    public static function createFromFormat(string $format, string $datetime, ?DateTimeZone $timezone = null) {}
+}
