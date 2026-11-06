@@ -44,7 +44,15 @@ final class NullsafeAnalyzer
             $condition_type = $statements_analyzer->node_data->getType($stmt->var);
             $var_type = $condition_type;
 
-            if ($condition_type) {
+            // a property, static property or array item is the one the call acts on: what the call does to the
+            // object (what it stores in it, for the taint analysis) would be lost on a temporary variable
+            if ($condition_type
+                && ExpressionIdentifier::getExtendedVarId(
+                    $stmt->var,
+                    $statements_analyzer->getFQCLN(),
+                    $statements_analyzer,
+                ) === null
+            ) {
                 $context->vars_in_scope['$' . $tmp_name] = $condition_type;
 
                 $tmp_var = new VirtualVariable($tmp_name, $stmt->var->getAttributes());
