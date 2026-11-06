@@ -228,6 +228,40 @@ final class ConditionalReturnTypeTest extends TestCase
                         /** @psalm-check-type-exact $d = "ne" */
                     }',
             ],
+            'conditionalReturnTypeOnUnionSubjectWithNonEmptyArray' => [
+                'code' => '<?php
+                    /**
+                     * @return ($value is (bool|non-empty-array) ? false : ($value is array<never, never> ? true : bool))
+                     */
+                    function isBlank(mixed $value): bool {
+                        return $value === [];
+                    }
+
+                    /**
+                     * @return ($value is (non-empty-array|non-empty-string) ? "full" : "other")
+                     */
+                    function kind(mixed $value): string {
+                        return $value ? "full" : "other";
+                    }
+
+                    function f(bool $flag, string $string): void {
+                        $empty = isBlank([]);
+                        /** @psalm-check-type-exact $empty = true */
+                        $full = isBlank([1]);
+                        /** @psalm-check-type-exact $full = false */
+                        $bool = isBlank($flag);
+                        /** @psalm-check-type-exact $bool = false */
+                        $emptyKind = kind([]);
+                        /** @psalm-check-type-exact $emptyKind = "other" */
+                        $fullKind = kind(["a"]);
+                        /** @psalm-check-type-exact $fullKind = "full" */
+                        $stringKind = kind($string);
+                        /** @psalm-check-type-exact $stringKind = "full"|"other" */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'conditionalReturnTypeOnIterableThatMayBeAnArray' => [
                 'code' => '<?php
                     /**
