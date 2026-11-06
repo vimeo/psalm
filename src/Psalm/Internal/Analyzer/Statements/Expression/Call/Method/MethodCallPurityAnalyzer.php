@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
+use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
@@ -34,6 +35,7 @@ use Psalm\Type\Union;
 
 use function array_pop;
 use function array_values;
+use function strtolower;
 
 /**
  * @internal
@@ -284,7 +286,35 @@ final class MethodCallPurityAnalyzer
     public static function isReceiverThis(Expr $var): bool
     {
         return self::isThis($var)
-            || ($var instanceof Expr\MethodCall && $var->getAttribute(self::RETURNS_THIS, false) === true);
+            || (($var instanceof Expr\MethodCall || $var instanceof Expr\StaticCall)
+                && $var->getAttribute(self::RETURNS_THIS, false) === true);
+    }
+
+    /**
+     * A static call forwarded to a call of the method on `$this` returns what that call does
+     */
+    public static function forwardReturnsThis(Expr\MethodCall $forwarded_call, Expr\StaticCall $stmt): void
+    {
+        $stmt->setAttribute(self::RETURNS_THIS, $forwarded_call->getAttribute(self::RETURNS_THIS, false) === true);
+    }
+
+    /**
+     * A `parent::` call of a method returning its receiver gives back the caller's own `$this`
+     */
+    public static function markStaticCallReturningThis(
+        StatementsAnalyzer $statements_analyzer,
+        Expr\StaticCall $stmt,
+        MethodIdentifier $method_id,
+        MethodStorage $method_storage,
+    ): void {
+        $stmt->setAttribute(
+            self::RETURNS_THIS,
+            ReturnAnalyzer::mustReturnThis($statements_analyzer->getCodebase(), $method_storage, $method_id)
+                && !$method_storage->is_static
+                && !$stmt->isFirstClassCallable()
+                && $stmt->class instanceof PhpParser\Node\Name
+                && strtolower($stmt->class->getFirst()) === 'parent',
+        );
     }
 
     /**
@@ -328,7 +358,7 @@ final class MethodCallPurityAnalyzer
         $stmt->setAttribute(
             self::RETURNS_THIS,
             $stmt->getAttribute(self::RETURNS_THIS, true) === true
-                && $method_storage->returns_this
+                && ReturnAnalyzer::mustReturnThis($codebase, $method_storage, $method_id)
                 && !$stmt->isFirstClassCallable()
                 && self::isReceiverThis($stmt->var),
         );
