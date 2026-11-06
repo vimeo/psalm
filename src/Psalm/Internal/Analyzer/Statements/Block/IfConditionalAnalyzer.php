@@ -199,6 +199,23 @@ final class IfConditionalAnalyzer
                 $first_cond_assigned_var_ids,
                 $more_cond_assigned_var_ids,
             );
+
+            // a variable assigned only in the part of the condition that may be skipped (`$a && ($b = f())`)
+            // can still hold that value after the if, so a later read uses the assignment
+            foreach (array_diff_key($more_cond_assigned_var_ids, $first_cond_assigned_var_ids) as $var_id => $_) {
+                $assigned_parent_nodes = $if_conditional_context->vars_in_scope[$var_id]->parent_nodes ?? null;
+
+                if ($assigned_parent_nodes === null) {
+                    continue;
+                }
+
+                foreach ([$outer_context, $post_if_context] as $after_if_context) {
+                    if (isset($after_if_context->vars_in_scope[$var_id])) {
+                        $after_if_context->vars_in_scope[$var_id] = $after_if_context->vars_in_scope[$var_id]
+                            ->addParentNodes($assigned_parent_nodes);
+                    }
+                }
+            }
         } else {
             $cond_referenced_var_ids = $first_cond_referenced_var_ids;
 
