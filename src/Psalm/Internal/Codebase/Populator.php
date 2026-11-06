@@ -1194,8 +1194,6 @@ final class Populator
                     );
                 }
 
-                $written_type_param_count = count(PurityArguments::split($written_params)[0]);
-
                 // `@extends Foo<A>` leaving out trailing templates with a default, `@extends Foo[pure]` for a
                 // class with type templates
                 $storage->template_extended_offsets[$parent_storage->name] = PurityArguments::align(
@@ -1211,13 +1209,6 @@ final class Populator
                     if ($mapped_name) {
                         $storage->template_extended_params[$parent_storage->name][$mapped_name]
                             = $type;
-
-                        if ($i >= $written_type_param_count
-                            && isset($parent_storage->template_defaults[$mapped_name])
-                            && !isset($parent_storage->purity_templates[$mapped_name])
-                        ) {
-                            $storage->template_extended_defaults[$parent_storage->name][$mapped_name] = true;
-                        }
                     }
                 }
 
@@ -1230,7 +1221,6 @@ final class Populator
                     if (!isset($storage->template_extended_params[$parent_storage->name][$template_name])) {
                         $storage->template_extended_params[$parent_storage->name][$template_name]
                             = $type->setProperties(['from_docblock' => true]);
-                        $storage->template_extended_defaults[$parent_storage->name][$template_name] = true;
                     }
                 }
 
@@ -1249,10 +1239,6 @@ final class Populator
                 foreach (TemplateDefaults::bindOmitted($parent_storage, [], true) as $template_name => $type) {
                     $storage->template_extended_params[$parent_storage->name][$template_name]
                         = $type->setProperties(['from_docblock' => false]);
-
-                    if (isset($parent_storage->template_defaults[$template_name])) {
-                        $storage->template_extended_defaults[$parent_storage->name][$template_name] = true;
-                    }
                 }
 
                 if ($from_direct_parent) {

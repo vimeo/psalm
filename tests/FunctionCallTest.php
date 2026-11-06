@@ -24,6 +24,26 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'domXPathEvaluateReturnsATypedResult' => [
+                'code' => '<?php
+                    $xpath = new DOMXPath(new DOMDocument());
+                    $value = $xpath->evaluate("count(//a)");
+
+                    if (is_numeric($value)) {
+                        echo "number";
+                    }
+
+                    if (is_string($value)) {
+                        echo "string";
+                    }
+
+                    if ($value instanceof DOMNodeList) {
+                        echo "nodes";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'filterVarIntWithFloatLiteralsOutsideTheRangeOfAnInt' => [
                 'code' => '<?php
                     $big = filter_var(1e30, FILTER_VALIDATE_INT);
@@ -2292,6 +2312,21 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'strtolowerOfAStringableObjectIsNotRedundant' => [
+                'code' => '<?php
+                    class Test {
+                        public function __toString(): string {
+                            return "AAA";
+                        }
+                    }
+
+                    function lower(Test $test, Stringable $stringable): string {
+                        return strtolower($test) . strtolower($stringable);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
+            ],
             'array_is_list_on_empty_array' => [
                 'code' => '<?php
                     $a = [];
@@ -2672,6 +2707,15 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'mysqliBindResultRequiresOutputVariable' => [
+                'code' => '<?php
+                    function bind(mysqli_stmt $statement): void {
+                        mysqli_stmt_bind_result($statement);
+                    }',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'invalidScalarArgument' => [
                 'code' => '<?php
                     function fooFoo(int $a): void {}
@@ -3396,6 +3440,11 @@ final class FunctionCallTest extends TestCase
                     takesArrayShapeWithZeroOrPositiveInt(["bar" => $mayBeInt]);
                 ',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'strtolowerOfALowercaseString' => [
+                'code' => '<?php
+                    echo strtolower("abc");',
+                'error_message' => 'The call to strtolower is unnecessary',
             ],
             'is_a_withAStringAndNoThirdArg' => [
                 'code' => '<?php

@@ -888,6 +888,8 @@ final class TemplateStandinTypeReplacer
 
                 if (isset(
                     $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class],
+                ) && !self::isConstraintFallbackOnly(
+                    $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class],
                 )) {
                     $existing_lower_bounds = $template_result->lower_bounds
                         [$param_name_key]
@@ -1156,7 +1158,11 @@ final class TemplateStandinTypeReplacer
             }
 
             if ($generic_param) {
-                if (isset($template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])) {
+                if (isset($template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
+                    && !self::isConstraintFallbackOnly(
+                        $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
+                    )
+                ) {
                     $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class] = [
                         new TemplateBound(
                             Type::combineUnionTypes(
@@ -1246,6 +1252,24 @@ final class TemplateStandinTypeReplacer
         }
 
         return null;
+    }
+
+    /**
+     * A placeholder written after an argument that bound nothing must be
+     * replaced, not merged, by a real bound.
+     *
+     * @param non-empty-list<TemplateBound> $lower_bounds
+     * @psalm-capabilities read-props
+     */
+    private static function isConstraintFallbackOnly(array $lower_bounds): bool
+    {
+        foreach ($lower_bounds as $lower_bound) {
+            if (!$lower_bound->from_constraint_fallback) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
