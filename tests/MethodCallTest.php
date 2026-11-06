@@ -205,6 +205,63 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedMethodExistsOfAnObjectWithTheMethodKeepsItsType' => [
+                'code' => '<?php
+                    abstract class Platform {
+                        public function fold(): int {
+                            return 1;
+                        }
+                    }
+
+                    function getPlatform(): Platform {
+                        throw new Exception();
+                    }
+
+                    $platform = getPlatform();
+
+                    if (method_exists($platform, "fold")) {
+                        throw new Exception();
+                    }
+
+                    $after = $platform;',
+                'assertions' => ['$after' => 'Platform'],
+                'ignored_issues' => ['RedundantCondition'],
+            ],
+            'negatedMethodExistsOfAnObjectWithoutTheMethodNarrowsNothing' => [
+                'code' => '<?php
+                    class A {}
+
+                    function f(A $a): void {
+                        if (!method_exists($a, "bar")) {
+                            echo "no bar";
+                        }
+                    }',
+            ],
+            'negatedMethodExistsOfAnObjectOrAnotherType' => [
+                'code' => '<?php
+                    class A {
+                        public function bar(): void {}
+                    }
+
+                    class B {}
+
+                    function f(A|B $a): void {
+                        if (!method_exists($a, "bar")) {
+                            /** @psalm-check-type-exact $a = B */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'negatedMethodExistsOfAnObjectType' => [
+                'code' => '<?php
+                    function f(object $a): void {
+                        if (!method_exists($a, "bar")) {
+                            echo "no bar";
+                        }
+                    }',
+            ],
             'inheritedThisDocblockKeepsNativeStaticOfSubclass' => [
                 'code' => '<?php
                     class Form {}
@@ -1571,6 +1628,19 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'negatedMethodExistsOfAnObjectWithTheMethod' => [
+                'code' => '<?php
+                    class A {
+                        public function bar(): void {}
+                    }
+
+                    function f(A $a): void {
+                        if (!method_exists($a, "bar")) {
+                            echo "no bar";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'methodMissingFromALaterTypeOfAUnionTemplateBound' => [
                 'code' => '<?php
                     final class Invoice {
