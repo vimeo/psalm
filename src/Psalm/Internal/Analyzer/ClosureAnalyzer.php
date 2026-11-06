@@ -22,7 +22,16 @@ use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 
 use function in_array;
@@ -164,6 +173,33 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
+     * The enclosing scope can change a captured reference after the closure is created, so the value it held
+     * at that point says nothing about the value the closure sees.
+     *
+     * @psalm-pure
+     */
+    private static function widenLiteralsOfByRefCapture(Union $type): Union
+    {
+        $widened = [];
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TLiteralInt) {
+                $atomic = new TInt();
+            } elseif ($atomic instanceof TLiteralFloat) {
+                $atomic = new TFloat();
+            } elseif ($atomic instanceof TLiteralString) {
+                $atomic = new TString();
+            } elseif ($atomic instanceof TTrue || $atomic instanceof TFalse) {
+                $atomic = new TBool();
+            }
+
+            $widened[$atomic->getKey()] = $atomic;
+        }
+
+        return $type->setTypes($widened);
+    }
+
+    /**
      * The type of a variable captured by a closure, as seen in its body. The value is shared with
      * the enclosing scope, so an object the enclosing scope created is not fresh in the closure:
      * the closure may be called more than once, and writing that object writes state that outlives
@@ -285,8 +321,9 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                     $was_by_ref[$use_var_id] = $context->hasVariable($use_var_id)
                         && $context->vars_in_scope[$use_var_id]->by_ref;
 
-                    $use_context->vars_in_scope[$use_var_id] =
-                        $use_context->vars_in_scope[$use_var_id]->setProperties(['by_ref' => true]);
+                    $use_context->vars_in_scope[$use_var_id] = self::widenLiteralsOfByRefCapture(
+                        $use_context->vars_in_scope[$use_var_id],
+                    )->setProperties(['by_ref' => true]);
                     $use_context->references_to_external_scope[$use_var_id] = true;
 
                     if (isset($context->bound_globals[$use_var_id])) {
