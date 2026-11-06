@@ -20,6 +20,58 @@ final class TypeAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'typeAliasUsingTheTemplateOfItsClassInANamespace' => [
+                'code' => '<?php
+                    namespace Some\\Ns;
+
+                    /**
+                     * @template DT of object
+                     */
+                    interface DataInner {
+                        /**
+                         * @param DT $inner
+                         */
+                        public function setInner($inner): void;
+                    }
+
+                    /**
+                     * @template T of object
+                     *
+                     * @psalm-type DataType=array<class-string<T>, DataInner<T>>
+                     */
+                    final class Data {
+                        /**
+                         * @var DataType
+                         */
+                        private array $inner = [];
+
+                        public function count(): int {
+                            return count($this->inner);
+                        }
+                    }',
+            ],
+            'typeAliasUsingTheTemplateOfItsClassKeepsTheTemplate' => [
+                'code' => '<?php
+                    namespace Some\\Ns;
+
+                    /**
+                     * @template T of object
+                     * @psalm-type Items=list<T>
+                     */
+                    final class Box {
+                        /**
+                         * @var Items
+                         */
+                        public array $items = [];
+
+                        /**
+                         * @return T|null
+                         */
+                        public function first(): ?object {
+                            return $this->items[0] ?? null;
+                        }
+                    }',
+            ],
             'atInArrayKey' => [
                 'code' => '<?php
 
