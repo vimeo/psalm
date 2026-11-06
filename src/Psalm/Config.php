@@ -1904,7 +1904,10 @@ final class Config
                 self::requirePath($pluginclas_class_path);
             } else {
                 if (!class_exists($pluginClassName)) {
-                    throw new UnexpectedValueException($pluginClassName . ' is not a known class');
+                    throw new UnexpectedValueException(
+                        $pluginClassName . ' is not a known class:'
+                        . ' is the Composer package that provides it installed?',
+                    );
                 }
             }
             if (!is_a($pluginClassName, PluginInterface::class, true)) {
@@ -2450,9 +2453,6 @@ final class Config
         return null;
     }
 
-    /**
-     * @psalm-mutation-free
-     */
     public function getReportingLevelForFunction(string $issue_type, string $function_id): ?string
     {
         $level = null;
