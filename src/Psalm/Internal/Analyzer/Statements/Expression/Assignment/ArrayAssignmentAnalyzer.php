@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -78,12 +79,17 @@ final class ArrayAssignmentAnalyzer
      */
     private const MAX_KEY_VALUES = 8;
 
+    /**
+     * @param bool $by_reference whether the item is passed by reference, and $assignment_value_type is what the call
+     *     leaves in it
+     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
         ?PhpParser\Node\Expr $assign_value,
         Union $assignment_value_type,
+        bool $by_reference = false,
     ): void {
         $nesting = 0;
         $var_id = ExpressionIdentifier::getVarId(
@@ -100,6 +106,7 @@ final class ArrayAssignmentAnalyzer
             $assignment_value_type,
             $context,
             true,
+            by_reference: $by_reference,
         );
 
         PropertyBagTaints::taintAssignment($statements_analyzer, $stmt, $assignment_value_type, $context);
@@ -111,6 +118,9 @@ final class ArrayAssignmentAnalyzer
 
     /**
      * @param bool $is_assignment whether $assign_value is the value assigned, not an operand of it
+     * @param bool $assigns_root_property false when a reference to the item is only taken: a property holding the
+     *     array then only has its type updated, it isn't assigned
+     * @param bool $by_reference whether the item is passed by reference (or a reference to it is taken)
      * @return false|null
      */
     public static function updateArrayType(
@@ -120,6 +130,8 @@ final class ArrayAssignmentAnalyzer
         Union $assignment_type,
         Context $context,
         bool $is_assignment = false,
+        bool $assigns_root_property = true,
+        bool $by_reference = false,
     ): ?bool {
         $root_array_expr = $stmt;
 
@@ -190,6 +202,7 @@ final class ArrayAssignmentAnalyzer
             $current_dim,
             $offset_already_existed,
             $is_assignment ? $context : null,
+            $by_reference,
         );
 
         $root_is_string = $root_type->isString();
@@ -256,12 +269,17 @@ final class ArrayAssignmentAnalyzer
 
         // an element of an object (an ArrayAccess) is written by its offsetSet(), charged as that call: the
         // property keeps holding the same object, so it isn't assigned
-        if ($root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch && !$root_type->isObjectType()) {
-            if ($root_array_expr->name instanceof PhpParser\Node\Identifier) {
+        if ($assigns_root_property
+            && $root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch
+            && !$root_type->isObjectType()
+        ) {
+            $prop_name = InstancePropertyFetchAnalyzer::getPropertyName($statements_analyzer, $root_array_expr);
+
+            if ($prop_name !== null) {
                 InstancePropertyAssignmentAnalyzer::analyze(
                     $statements_analyzer,
                     $root_array_expr,
-                    $root_array_expr->name->name,
+                    $prop_name,
                     null,
                     $root_type,
                     $context,
@@ -270,6 +288,8 @@ final class ArrayAssignmentAnalyzer
 
                 self::trackPropertyElementImpurity($statements_analyzer, $root_array_expr, $context);
             } else {
+                assert(!$root_array_expr->name instanceof PhpParser\Node\Identifier);
+
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $root_array_expr->name, $context) === false) {
                     return false;
                 }
@@ -278,7 +298,8 @@ final class ArrayAssignmentAnalyzer
                     return false;
                 }
             }
-        } elseif ($root_array_expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        } elseif ($assigns_root_property
+            && $root_array_expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
             && $root_array_expr->name instanceof PhpParser\Node\Identifier
         ) {
             if (StaticPropertyAssignmentAnalyzer::analyze(
@@ -314,6 +335,47 @@ final class ArrayAssignmentAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * The expressions an item is reached through besides the arrays holding it: the keys, what the root array is
+     * fetched from, or the root itself when it is not a variable or a property
+     *
+     * @return list<PhpParser\Node\Expr>
+     * @psalm-capabilities read-props
+     */
+    public static function getOperands(PhpParser\Node\Expr\ArrayDimFetch $stmt): array
+    {
+        $operands = [];
+        $root = $stmt;
+
+        while ($root instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            if ($root->dim) {
+                $operands[] = $root->dim;
+            }
+
+            $root = $root->var;
+        }
+
+        if ($root instanceof PhpParser\Node\Expr\PropertyFetch) {
+            $operands[] = $root->var;
+            $root_children = [$root->name];
+        } elseif ($root instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
+            $root_children = [$root->class, $root->name];
+        } elseif ($root instanceof Variable) {
+            $root_children = [$root->name];
+        } else {
+            $operands[] = $root;
+            $root_children = [];
+        }
+
+        foreach ($root_children as $root_child) {
+            if ($root_child instanceof PhpParser\Node\Expr) {
+                $operands[] = $root_child;
+            }
+        }
+
+        return $operands;
     }
 
     /**
@@ -1184,6 +1246,7 @@ final class ArrayAssignmentAnalyzer
         ?PhpParser\Node\Expr &$current_dim,
         bool &$offset_already_existed,
         ?Context $assignment_context,
+        bool $by_reference,
     ): void {
         $var_id_additions = [];
         $written_offsets = [];
@@ -1260,6 +1323,7 @@ final class ArrayAssignmentAnalyzer
                 $context,
                 $assign_value,
                 !$is_last ? null : $assignment_type,
+                $by_reference,
             );
             if ($child_stmt->dim) {
                 $statements_analyzer->node_data->setType(
