@@ -671,6 +671,19 @@ final class LoopAnalyzer
                 $context->vars_in_scope[$var_id] = $type;
             }
         }
+
+        // a variable that is defined wherever the loop can be left is defined after it, even if it was possibly
+        // undefined before it (where the previous iteration of an outer loop left it)
+        foreach ($loop_scope->possibly_redefined_loop_parent_vars as $var_id => $break_type) {
+            if (!$break_type->possibly_undefined
+                && isset($inner_context->vars_in_scope[$var_id])
+                && !$inner_context->vars_in_scope[$var_id]->possibly_undefined
+                && isset($context->vars_in_scope[$var_id])
+                && $context->vars_in_scope[$var_id]->possibly_undefined
+            ) {
+                $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]->setPossiblyUndefined(false);
+            }
+        }
     }
 
     /**
