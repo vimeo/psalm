@@ -380,43 +380,45 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
-     * The operands of an item that analysing again could change something in, as `$i++` does: all but plain reads
+     * The outermost sub-expressions of $expr (itself included) that change something when analysed: assignments,
+     * increments, yields, and calls given a variable they may take by reference. Closures are not entered.
      *
      * @return list<PhpParser\Node\Expr>
      */
-    public static function getOperandsWithEffects(PhpParser\Node\Expr\ArrayDimFetch $stmt): array
+    public static function getSideEffects(PhpParser\Node\Expr $expr): array
     {
-        $operands_with_effects = [];
+        $side_effects = [];
+        self::collectSideEffects($expr, $side_effects);
 
-        foreach (self::getOperands($stmt) as $operand) {
-            if (self::hasEffects($operand)) {
-                $operands_with_effects[] = $operand;
-            }
-        }
-
-        return $operands_with_effects;
+        return $side_effects;
     }
 
     /**
-     * A closure is not descended into: creating it has no effect, and its body is analysed where it is used
+     * @param list<PhpParser\Node\Expr> $side_effects
      */
-    private static function hasEffects(PhpParser\Node $node): bool
+    private static function collectSideEffects(PhpParser\Node $node, array &$side_effects): void
     {
-        if ($node instanceof PhpParser\Node\Expr\Closure || $node instanceof PhpParser\Node\Expr\ArrowFunction) {
-            return false;
+        if ($node instanceof PhpParser\Node\Expr\Closure
+            || $node instanceof PhpParser\Node\Expr\ArrowFunction
+            || $node instanceof PhpParser\Node\Stmt
+        ) {
+            return;
         }
 
-        if ($node instanceof PhpParser\Node\Expr
-            && !$node instanceof Variable
-            && !$node instanceof PhpParser\Node\Scalar
-            && !$node instanceof PhpParser\Node\Expr\ConstFetch
-            && !$node instanceof PhpParser\Node\Expr\ClassConstFetch
-            && !$node instanceof PhpParser\Node\Expr\PropertyFetch
-            && !$node instanceof PhpParser\Node\Expr\StaticPropertyFetch
-            && !$node instanceof PhpParser\Node\Expr\ArrayDimFetch
-            && !$node instanceof PhpParser\Node\Expr\BinaryOp
+        if ($node instanceof PhpParser\Node\Expr\Assign
+            || $node instanceof PhpParser\Node\Expr\AssignOp
+            || $node instanceof PhpParser\Node\Expr\AssignRef
+            || $node instanceof PhpParser\Node\Expr\PreInc
+            || $node instanceof PhpParser\Node\Expr\PreDec
+            || $node instanceof PhpParser\Node\Expr\PostInc
+            || $node instanceof PhpParser\Node\Expr\PostDec
+            || $node instanceof PhpParser\Node\Expr\Yield_
+            || $node instanceof PhpParser\Node\Expr\YieldFrom
+            || ($node instanceof PhpParser\Node\Expr\CallLike && self::hasVariableArgument($node))
         ) {
-            return true;
+            $side_effects[] = $node;
+
+            return;
         }
 
         foreach ($node->getSubNodeNames() as $name) {
@@ -424,9 +426,30 @@ final class ArrayAssignmentAnalyzer
             $sub_node = $node->{$name};
 
             foreach (is_array($sub_node) ? $sub_node : [$sub_node] as $child) {
-                if ($child instanceof PhpParser\Node && self::hasEffects($child)) {
-                    return true;
+                if ($child instanceof PhpParser\Node) {
+                    self::collectSideEffects($child, $side_effects);
                 }
+            }
+        }
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function hasVariableArgument(PhpParser\Node\Expr\CallLike $call): bool
+    {
+        if ($call->isFirstClassCallable()) {
+            return false;
+        }
+
+        foreach ($call->getArgs() as $arg) {
+            if ($arg->value instanceof Variable
+                || $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
+                || $arg->value instanceof PhpParser\Node\Expr\PropertyFetch
+                || $arg->value instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+                || $arg->value instanceof PhpParser\Node\Expr\StaticPropertyFetch
+            ) {
+                return true;
             }
         }
 
