@@ -397,6 +397,68 @@ final class IssetTest extends TestCase
                         return $arr;
                     }',
             ],
+            'unsetOfTheOffsetAnIssetCheckedMakesANonEmptyArrayPossiblyEmpty' => [
+                'code' => '<?php
+                    /** @param non-empty-array<string, int> $data */
+                    function remove(array $data, string $key): array {
+                        if (isset($data[$key])) {
+                            unset($data[$key]);
+                        }
+
+                        return $data;
+                    }
+
+                    /** @param non-empty-array<string, int> $data */
+                    function removeWithAnElse(array $data, string $key): array {
+                        if (isset($data[$key])) {
+                            unset($data[$key]);
+                        } else {
+                            echo "none";
+                        }
+
+                        return $data;
+                    }
+
+                    /** @param non-empty-array<string, int> $first */
+                    function removeInALoop(array $first): void {
+                        foreach (["bad", "worse"] as $key) {
+                            if (isset($first[$key])) {
+                                unset($first[$key]);
+                            }
+                        }
+
+                        if (empty($first)) {
+                            echo "empty";
+                        }
+                    }
+
+                    /** @param non-empty-array<string, int> $data */
+                    function remains(array $data, string $key): void {
+                        if (isset($data[$key])) {
+                            unset($data[$key]);
+                        }
+
+                        $after = $data;
+                    }',
+                'assertions' => [],
+            ],
+            'typeOfAnArrayAfterAnUnsetOfTheOffsetAnIssetChecked' => [
+                'code' => '<?php
+                    /** @var non-empty-array<string, int> $data */
+                    $data = ["a" => 1];
+
+                    /** @var string $key */
+                    $key = "a";
+
+                    if (isset($data[$key])) {
+                        unset($data[$key]);
+                    }
+
+                    $after = $data;',
+                'assertions' => [
+                    '$after===' => 'array<string, int>',
+                ],
+            ],
             'arrayAccessAfterOneIsset' => [
                 'code' => '<?php
                     $arr = [];

@@ -228,6 +228,9 @@ final class UnsetAnalyzer
                         $context->vars_in_scope[$root_var_id],
                         $statements_analyzer,
                     );
+
+                    // what the array holds changed: an if that narrowed it must not take that for its own narrowing
+                    $context->possibly_assigned_var_ids[$root_var_id] = true;
                 }
             }
         }
