@@ -610,6 +610,7 @@ final class AtomicTypeComparator
                             && !$array_comparison_result->type_coerced_from_scalar
                         ) {
                             if ($atomic_comparison_result && $array_comparison_result->type_coerced_from_mixed) {
+                                $atomic_comparison_result->type_coerced = true;
                                 $atomic_comparison_result->type_coerced_from_mixed = true;
                             }
                             $all_types_contain = false;
