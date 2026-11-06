@@ -247,6 +247,14 @@ final class Context
     public array $phantom_classes = [];
 
     /**
+     * Phantom classes that don't count until the first statement of the block has been analysed,
+     * because the statement that declares the class may be that statement
+     *
+     * @var array<lowercase-string,true>
+     */
+    public array $suspended_phantom_classes = [];
+
+    /**
      * A list of files checked with file_exists
      *
      * @var array<string,bool>
