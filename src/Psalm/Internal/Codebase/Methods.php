@@ -40,6 +40,8 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -564,6 +566,21 @@ final class Methods
                 && isset($args[0])
                 && ($first_arg_type = $source_analyzer->getNodeTypeProvider()->getType($args[0]->value))
             ) {
+                $arg_atomic_types = [];
+                foreach ($first_arg_type->getAtomicTypes() as $arg_atomic_type) {
+                    if ($arg_atomic_type instanceof TTemplateValueOf) {
+                        $arg_atomic_type = new TValueOf($arg_atomic_type->as);
+                    }
+
+                    $arg_atomic_types[] = $arg_atomic_type;
+                }
+                $first_arg_type = TypeExpander::expandUnion(
+                    $codebase,
+                    new Union($arg_atomic_types),
+                    null,
+                    null,
+                    null,
+                );
                 $types = [];
                 foreach ($original_class_storage->enum_cases as $case_name => $case_storage) {
                     $case_value = $case_storage->getValue($this->classlikes);
