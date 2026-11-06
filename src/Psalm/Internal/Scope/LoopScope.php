@@ -42,6 +42,11 @@ final class LoopScope
     public array $possibly_defined_loop_parent_vars = [];
 
     /**
+     * The number of break statements seen in the first iteration
+     */
+    public int $break_count = 0;
+
+    /**
      * @var array<string, bool>
      */
     public array $vars_possibly_in_scope = [];

@@ -203,6 +203,23 @@ final class ForTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'forBreakBeforeDefinitionAndBreakAfter' => [
+                'code' => '<?php
+                    for ($i = 0; $i < 4; $i++) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+
+                        $car = "Volvo";
+
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    echo $car;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:26',
+            ],
             'possiblyUndefinedArrayInWhileAndForeach' => [
                 'code' => '<?php
                     for ($i = 0; $i < 4; $i++) {
