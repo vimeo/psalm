@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm;
 
 use InvalidArgumentException;
+use Psalm\Internal\Analyzer\ConstructorExits;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -281,6 +282,11 @@ final class Context
      * Whether or not to do a deep analysis and collect initializations from public non-final methods
      */
     public bool $collect_nonprivate_initializations = false;
+
+    /**
+     * @internal
+     */
+    public ?ConstructorExits $constructor_exits = null;
 
     /**
      * Stored to prevent re-analysing methods when checking for initialised properties

@@ -561,6 +561,72 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyInitialisedBeforeEveryReturnOfConstructor' => [
+                'code' => '<?php
+                    final class A {
+                        private string $value;
+
+                        public function __construct(string $v) {
+                            if ($v !== "") {
+                                $this->value = "foo";
+                                return;
+                            }
+
+                            throw new InvalidArgumentException("empty");
+                        }
+                    }
+
+                    final class B {
+                        private string $value;
+
+                        public function __construct(string $v) {
+                            if ($v === "a") {
+                                $this->value = "a";
+                                return;
+                            }
+
+                            if ($v === "b") {
+                                $this->value = "b";
+                                return;
+                            }
+
+                            $this->value = "c";
+                        }
+                    }
+
+                    final class C {
+                        private string $value;
+
+                        public function __construct(string $v) {
+                            $this->value = "x";
+
+                            if ($v === "") {
+                                return;
+                            }
+
+                            $this->value = $v;
+                        }
+                    }',
+            ],
+            'propertyInitialisedByMethodBeforeReturnOfConstructor' => [
+                'code' => '<?php
+                    final class A {
+                        private string $value;
+
+                        public function __construct(string $v) {
+                            if ($v !== "") {
+                                $this->init($v);
+                                return;
+                            }
+
+                            throw new InvalidArgumentException("empty");
+                        }
+
+                        private function init(string $v): void {
+                            $this->value = $v;
+                        }
+                    }',
+            ],
             'newVarInIf' => [
                 'code' => '<?php
                     class A {
@@ -3431,6 +3497,39 @@ final class PropertyTypeTest extends TestCase
                         public function __construct() {}
                     }',
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:11',
+            ],
+            'notSetBeforeReturnOfConstructor' => [
+                'code' => '<?php
+                    final class A {
+                        public string $value;
+
+                        public function __construct(string $v) {
+                            if ($v === "") {
+                                return;
+                            }
+
+                            $this->value = $v;
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:3',
+            ],
+            'returnOfClosureInConstructorDoesNotInitialise' => [
+                'code' => '<?php
+                    final class A {
+                        public string $value;
+
+                        public function __construct(string $v) {
+                            $f = function (): void {
+                                return;
+                            };
+                            $f();
+
+                            if ($v !== "") {
+                                $this->value = $v;
+                            }
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:3',
             ],
             'notSetInAllBranchesOfIf' => [
                 'code' => '<?php

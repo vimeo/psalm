@@ -1350,6 +1350,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $method_context->vars_possibly_in_scope['$this'] = true;
             $method_context->calling_method_id = strtolower($fq_class_name) . '::__construct';
 
+            $method_context->constructor_exits = new ConstructorExits(
+                $constructor_analyzer->getFunctionLikeStorage(),
+            );
+
             $constructor_analyzer->analyze(
                 $method_context,
                 new NodeDataProvider(),
@@ -1364,6 +1368,28 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $end_type = new Union([new TVoid()], ['initialized' => false]);
                 } else {
                     $end_type = $method_context->vars_in_scope['$this->' . $property_name];
+                }
+
+                // the property has to be initialised wherever the constructor returns, and at its end if reachable
+                $exit_types = [];
+
+                foreach ($method_context->constructor_exits->states as $exit_state) {
+                    $exit_types[] = $exit_state['$this->' . $property_name]
+                        ?? new Union([new TVoid()], ['initialized' => false]);
+                }
+
+                if ($exit_types !== []) {
+                    if (!$method_context->has_returned) {
+                        $exit_types[] = $end_type;
+                    }
+
+                    foreach ($exit_types as $exit_type) {
+                        $end_type = $exit_type;
+
+                        if (!$exit_type->initialized) {
+                            break;
+                        }
+                    }
                 }
 
                 $constructor_class_property_storage = $property_storage;
