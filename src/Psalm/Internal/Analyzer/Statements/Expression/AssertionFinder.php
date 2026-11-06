@@ -1806,6 +1806,7 @@ final class AssertionFinder
         $right_assignment = false;
         $value_right = null;
         if ($source instanceof StatementsAnalyzer
+            && !self::isIncrementOrDecrement($conditional->right)
             && ($type = $source->node_data->getType($conditional->right))
             && $type->isSingleIntLiteral()
         ) {
@@ -1830,6 +1831,7 @@ final class AssertionFinder
         $left_assignment = false;
         $value_left = null;
         if ($source instanceof StatementsAnalyzer
+            && !self::isIncrementOrDecrement($conditional->left)
             && ($type = $source->node_data->getType($conditional->left))
             && $type->isSingleIntLiteral()
         ) {
@@ -1855,6 +1857,20 @@ final class AssertionFinder
     }
 
     /**
+     * The value of an increment or a decrement is that of the variable at this point of the evaluation, which
+     * is not what the type of the expression was when the assertion was found
+     *
+     * @psalm-pure
+     */
+    private static function isIncrementOrDecrement(PhpParser\Node\Expr $expr): bool
+    {
+        return $expr instanceof PhpParser\Node\Expr\PostInc
+            || $expr instanceof PhpParser\Node\Expr\PostDec
+            || $expr instanceof PhpParser\Node\Expr\PreInc
+            || $expr instanceof PhpParser\Node\Expr\PreDec;
+    }
+
+    /**
      * @param PhpParser\Node\Expr\BinaryOp\Smaller|PhpParser\Node\Expr\BinaryOp\SmallerOrEqual $conditional
      * @return false|int
      * @psalm-capabilities read-props|write-this-props|write-refs
@@ -1867,6 +1883,7 @@ final class AssertionFinder
         $right_assignment = false;
         $value_right = null;
         if ($source instanceof StatementsAnalyzer
+            && !self::isIncrementOrDecrement($conditional->right)
             && ($type = $source->node_data->getType($conditional->right))
             && $type->isSingleIntLiteral()
         ) {
@@ -1891,6 +1908,7 @@ final class AssertionFinder
         $left_assignment = false;
         $value_left = null;
         if ($source instanceof StatementsAnalyzer
+            && !self::isIncrementOrDecrement($conditional->left)
             && ($type = $source->node_data->getType($conditional->left))
             && $type->isSingleIntLiteral()
         ) {
