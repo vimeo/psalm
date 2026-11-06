@@ -494,6 +494,22 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * The index at which $param is declared in $storage, null if it isn't
+     *
+     * @psalm-mutation-free
+     */
+    public static function getDeclaredParameterOffset(FunctionLikeStorage $storage, FunctionLikeParameter $param): ?int
+    {
+        foreach ($storage->params as $i => $candidate) {
+            if ($candidate->name === $param->name) {
+                return $i;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * The declared parameter index that identifies $param within $storage. Argument nodes are keyed
      * by this rather than by the parameter's position in a given call, so a named argument resolves
      * to the same node as the equivalent positional one -- and as the method body's own parameter
