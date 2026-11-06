@@ -1091,7 +1091,8 @@ final class ArrayFetchAnalyzer
                     $stmt,
                     $type,
                     $context,
-                    $in_assignment,
+                    // an offset the assignment only goes through (`$object[1][2] = 3`) is read, not set
+                    $in_assignment && $replacement_type !== null,
                     $assign_value,
                     $array_access_type,
                     $has_array_access,
