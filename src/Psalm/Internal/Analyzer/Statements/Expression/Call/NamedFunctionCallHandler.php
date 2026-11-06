@@ -184,7 +184,8 @@ final class NamedFunctionCallHandler
         }
 
         if (in_array($function_id, ['is_file', 'file_exists']) && $first_arg) {
-            $var_id = ExpressionIdentifier::getExtendedVarId($first_arg->value, null);
+            $var_id = ExpressionIdentifier::getExtendedVarId($first_arg->value, null)
+                ?? IncludeAnalyzer::getConstantPhantomFileId($first_arg->value);
 
             if ($var_id) {
                 $context->phantom_files[$var_id] = true;
