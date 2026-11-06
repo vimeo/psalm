@@ -159,6 +159,38 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedArrayAssertionKeepsTheExistingArrayType' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert-if-true array<string, string> $value
+                     */
+                    function isStringMap($value): bool {
+                        return true;
+                    }
+
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert-if-true array{name: string} $value
+                     */
+                    function isNamed($value): bool {
+                        return true;
+                    }
+
+                    /** @param list<int> $numbers */
+                    function withMap(array $numbers): void {
+                        if (!isStringMap($numbers)) {
+                            /** @psalm-check-type-exact $numbers = list<int> */;
+                        }
+                    }
+
+                    /** @param list<int> $numbers */
+                    function withShape(array $numbers): void {
+                        if (!isNamed($numbers)) {
+                            /** @psalm-check-type-exact $numbers = list<int> */;
+                        }
+                    }',
+            ],
             'assertKeyOfAClassConstantNarrowsToItsKeys' => [
                 'code' => '<?php
                     final class OwnerTypes {

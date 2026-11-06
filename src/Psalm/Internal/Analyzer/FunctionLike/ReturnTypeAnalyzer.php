@@ -264,12 +264,6 @@ final class ReturnTypeAnalyzer
         if (count($inferred_return_type_parts_with_never) > 1
             && !$function_always_exits
             && $inferred_return_type_parts_with_never !== $inferred_return_type_parts) {
-
-            /**
-             * see https://github.com/vimeo/psalm/issues/9045
-             *
-             * @psalm-suppress InvalidArgument
-             */
             $inferred_return_type_with_never = Type::combineUnionTypeArray(
                 $inferred_return_type_parts_with_never,
                 $codebase,
