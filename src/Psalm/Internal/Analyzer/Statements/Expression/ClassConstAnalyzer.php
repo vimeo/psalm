@@ -430,6 +430,16 @@ final class ClassConstAnalyzer
 
         $context->inside_general_use = $was_inside_general_use;
 
+        if ($stmt->name instanceof PhpParser\Node\Expr) {
+            $context->inside_general_use = true;
+            $name_analyzed = ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
+            $context->inside_general_use = $was_inside_general_use;
+
+            if ($name_analyzed === false) {
+                return false;
+            }
+        }
+
         $lhs_type = $statements_analyzer->node_data->getType($stmt->class);
 
         if ($lhs_type === null) {
