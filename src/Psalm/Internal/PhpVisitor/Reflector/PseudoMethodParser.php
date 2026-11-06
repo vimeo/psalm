@@ -273,9 +273,6 @@ final class PseudoMethodParser
             throw new DocblockParseException('Badly-formatted @method string ' . $method_entry);
         }
 
-        /** @var Doc */
-        $node_doc_comment = $node->getDocComment();
-
         $method_offset = self::getMethodOffset($comment, $method_entry);
 
         $statements[0]->stmts[0]->setAttribute('startLine', $node_doc_comment->getStartLine() + $method_offset);

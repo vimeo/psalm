@@ -19,9 +19,9 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MissingMethodCallHandler;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\OverloadSelector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
@@ -1023,14 +1023,15 @@ final class AtomicStaticCallAnalyzer
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
-        $pseudo_method_storage = MissingMethodCallHandler::selectOverload(
-            $statements_analyzer,
-            $codebase,
-            $args,
-            $context,
-            $class_storage->pseudo_static_method_overloads[$method_id->method_name] ?? null,
-            $pseudo_method_storage,
-        );
+        $overloads = $class_storage->pseudo_static_method_overloads[$method_id->method_name] ?? null;
+
+        $overload_offset = $overloads !== null
+            ? OverloadSelector::findOffset($statements_analyzer, $codebase, $args, $context, $overloads)
+            : null;
+
+        if ($overloads !== null && $overload_offset !== null) {
+            $pseudo_method_storage = $overloads[$overload_offset];
+        }
 
         if (!$context->isSuppressingExceptions($statements_analyzer)) {
             $context->mergeFunctionExceptions(

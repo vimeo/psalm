@@ -60,6 +60,13 @@ final class FunctionDocblockComment
     public ?array $if_this_is = null;
 
     /**
+     * The signatures of the `@psalm-overload` tags: the text after the tag, and its offset in the docblock
+     *
+     * @var list<array{entry: string, offset: int}>
+     */
+    public array $overloads = [];
+
+    /**
      * @var array<int, array{name:string, type:string, line_number: int}>
      */
     public array $globals = [];
