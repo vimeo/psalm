@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Type\ArrayType;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Type\Atomic;
@@ -19,7 +20,6 @@ use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TTypeVariable;
-use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -376,7 +376,7 @@ final class UnionTypeComparator
                 }
                 $params = $input_type_part->type_params;
                 $array_params = $params;
-                $array_params[0] = Reconciler::refineArrayKey($array_params[0]);
+                $array_params[0] = ArrayType::refineKeyType($array_params[0]);
                 $input_atomic_types[] = new Atomic\TGenericObject(
                     'Traversable',
                     $params,
