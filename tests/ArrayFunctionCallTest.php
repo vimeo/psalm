@@ -3702,7 +3702,7 @@ final class ArrayFunctionCallTest extends TestCase
                     function f(array $m, string $k): void {
                         array_shift($m[$k]);
                         $shifted = array_shift($m[$k]);
-                        /** @psalm-check-type-exact $shifted = string */
+                        /** @psalm-check-type-exact $shifted = int|string */
                     }
 
                     function g(): int {
@@ -3833,6 +3833,21 @@ final class ArrayFunctionCallTest extends TestCase
                             $n += count($v);
                         }
                         return $n;
+                    }',
+            ],
+            'arrayPopItemByNonLiteralKeyKeepsTheOuterOffsets' => [
+                'code' => '<?php
+                    /** @param int<0, 1> $i */
+                    function popByRange(int $i): int {
+                        $a = [[1, 2], [3, 4]];
+                        array_pop($a[$i]);
+                        return count($a[1]);
+                    }
+
+                    function shiftByInt(int $i): int {
+                        $a = [[1, 2], [3, 4]];
+                        array_shift($a[$i]);
+                        return count($a[1]);
                     }',
             ],
             'arrayPopItemOfMixedIsUnchanged' => [
@@ -4576,6 +4591,27 @@ final class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'InaccessibleProperty',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'arrayPopItemOfMagicPropertyIsNotWrittenBack' => [
+                'code' => '<?php
+                    /**
+                     * @property-read array{list{int, string}} $items
+                     * @property-write array<int, list<int|string>> $items
+                     */
+                    final class Box {
+                        /** @return array{list{int, string}} */
+                        public function __get(string $name): array {
+                            return [[1, "s"]];
+                        }
+
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    function f(Box $b): int {
+                        array_pop($b->items[0]);
+                        return array_pop($b->items[0]);
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:32',
             ],
             'arrayPopItemOfTemplateTypeIsNotExact' => [
                 'code' => '<?php
