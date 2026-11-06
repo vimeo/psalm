@@ -22,6 +22,70 @@ final class SwitchTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'switchWithoutDefaultNarrowsTheSubjectWhenEveryCaseReturns' => [
+                'code' => '<?php
+                    /** @param "a"|"b"|"c" $letter */
+                    function f(string $letter): string {
+                        switch ($letter) {
+                            case "a":
+                                return "A";
+                            case "b":
+                                return "B";
+                        }
+
+                        return $letter;
+                    }
+
+                    /** @return "a"|"b"|"c" */
+                    function letter(): string {
+                        return "a";
+                    }
+
+                    $letter = letter();
+                    switch ($letter) {
+                        case "a":
+                            throw new Exception();
+                        case "b":
+                            throw new Exception();
+                    }
+
+                    $rest = $letter;',
+                'assertions' => ['$rest===' => "'c'"],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'switchWithoutDefaultNarrowsNullWhenEveryCaseReturns' => [
+                'code' => '<?php
+                    function f(?string $type): int {
+                        switch ($type) {
+                            case null:
+                                return 0;
+                            case "a":
+                                return 1;
+                        }
+
+                        throw new InvalidArgumentException(sprintf("Unknown %s", $type));
+                    }',
+            ],
+            'switchWithoutDefaultKeepsTheSubjectWhenACaseBreaks' => [
+                'code' => '<?php
+                    /** @return "a"|"b"|"c" */
+                    function letter(): string {
+                        return "a";
+                    }
+
+                    $letter = letter();
+                    switch ($letter) {
+                        case "a":
+                            break;
+                        case "b":
+                            throw new Exception();
+                    }
+                    $rest = $letter;',
+                'assertions' => ['$rest===' => "'a'|'b'|'c'"],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'switchNarrowsAnArrayKeyToTheNonNumericStringsOfItsCases' => [
                 'code' => '<?php
                     /** @return array-key */
