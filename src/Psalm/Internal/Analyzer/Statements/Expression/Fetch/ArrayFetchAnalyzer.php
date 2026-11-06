@@ -2222,7 +2222,6 @@ final class ArrayFetchAnalyzer
      * precedence: when it has none, those of the keys
      *
      * @return list<PhpParser\Node\Expr>
-     * @psalm-capabilities read-props
      */
     private static function getOperandSideEffects(PhpParser\Node\Expr\ArrayDimFetch $stmt): array
     {
