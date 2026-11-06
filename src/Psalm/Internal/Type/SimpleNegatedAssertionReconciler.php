@@ -1664,7 +1664,8 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         if ($non_string_types) {
-            return new Union($non_string_types, [
+            // `array` and the callable array that stands for a callable share a key
+            return TypeCombiner::combine($non_string_types)->setProperties([
                 'ignore_falsable_issues' => $existing_var_type->ignore_falsable_issues,
                 'ignore_nullable_issues' => $existing_var_type->ignore_nullable_issues,
                 'from_docblock' => $existing_var_type->from_docblock,
