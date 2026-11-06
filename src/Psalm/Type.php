@@ -965,6 +965,27 @@ abstract class Type
                     && !self::hasIntersection($type_1_atomic)
                     && !self::hasIntersection($type_2_atomic)
                 ) {
+                    if ($intersection_atomic instanceof TArray && $wider_type instanceof TArray) {
+                        // Keep the narrower array's structure, intersecting its generic parameters too.
+                        $key_type = self::intersectUnionTypes(
+                            $intersection_atomic->type_params[0],
+                            $wider_type->type_params[0],
+                            $codebase,
+                            $allow_interface_equality,
+                            $allow_float_int_equality,
+                        );
+                        $value_type = self::intersectUnionTypes(
+                            $intersection_atomic->type_params[1],
+                            $wider_type->type_params[1],
+                            $codebase,
+                            $allow_interface_equality,
+                            $allow_float_int_equality,
+                        );
+                        if ($key_type === null || $value_type === null) {
+                            return null;
+                        }
+                        return $intersection_atomic->setTypeParams([$key_type, $value_type]);
+                    }
                     return $intersection_atomic;
                 }
             } catch (InvalidArgumentException) {
