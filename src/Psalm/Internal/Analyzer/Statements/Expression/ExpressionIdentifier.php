@@ -11,17 +11,39 @@ use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 
+use function addcslashes;
 use function count;
 use function implode;
 use function in_array;
 use function is_string;
+use function stripslashes;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
  */
 final class ExpressionIdentifier
 {
+    /**
+     * The string offset of an array variable id, escaped so that a key containing quotes can't be
+     * mistaken for the end of the offset
+     *
+     * @psalm-pure
+     */
+    public static function quoteOffset(string $value): string
+    {
+        return '\'' . addcslashes($value, '\'\\') . '\'';
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function unquoteOffset(string $offset): string
+    {
+        return stripslashes(substr($offset, 1, -1));
+    }
+
     public static function getVarId(
         PhpParser\Node\Expr $stmt,
         ?string $this_class_name,
@@ -125,7 +147,7 @@ final class ExpressionIdentifier
                 ) {
                     $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($stmt->dim->value);
                     $offset = $string_to_int === false
-                        ? '\'' . $stmt->dim->value . '\''
+                        ? self::quoteOffset((string) $stmt->dim->value)
                         : (int) $stmt->dim->value;
                 } elseif ($stmt->dim instanceof PhpParser\Node\Expr\Variable
                     && is_string($stmt->dim->name)
@@ -159,7 +181,7 @@ final class ExpressionIdentifier
                         );
 
                         $offset = $string_to_int === false
-                            ? '\'' . $stmt_dim_type->getSingleStringLiteral()->value . '\''
+                            ? self::quoteOffset($stmt_dim_type->getSingleStringLiteral()->value)
                             : (int) $stmt_dim_type->getSingleStringLiteral()->value;
                     } elseif ($stmt_dim_type->isSingleIntLiteral()) {
                         $offset = $stmt_dim_type->getSingleIntLiteral()->value;
