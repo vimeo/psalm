@@ -443,6 +443,8 @@ final class TemplateInferredTypeReplacer
 
         $if_template_type = null;
         $else_template_type = null;
+        $has_overlapping_candidate = false;
+        $has_unresolved_branch = false;
 
         $as_type = $atomic_type->as_type;
         $conditional_type = $atomic_type->conditional_type;
@@ -489,6 +491,7 @@ final class TemplateInferredTypeReplacer
                         false,
                     );
                     if ($intersection !== null) {
+                        $has_overlapping_candidate = true;
                         foreach ($intersection->getAtomicTypes() as $intersection_type) {
                             $matching_if_types[] = $intersection_type;
                         }
@@ -537,8 +540,11 @@ final class TemplateInferredTypeReplacer
                     $refined_template_result,
                     $codebase,
                 );
+            } elseif ($if_candidate_type && $if_candidate_type->hasTemplateOrStatic()) {
+                $has_unresolved_branch = true;
             }
 
+            $else_comparison_result = new TypeComparisonResult();
             if ($else_candidate_type
                 && UnionTypeComparator::isContainedBy(
                     $codebase,
@@ -546,7 +552,7 @@ final class TemplateInferredTypeReplacer
                     $as_type,
                     false,
                     false,
-                    null,
+                    $else_comparison_result,
                     false,
                     false,
                 )
@@ -567,10 +573,17 @@ final class TemplateInferredTypeReplacer
                     $refined_template_result,
                     $codebase,
                 );
+            } elseif ($else_candidate_type
+                && ($else_candidate_type->hasTemplateOrStatic() || $else_comparison_result->type_coerced_from_mixed)
+            ) {
+                $has_unresolved_branch = true;
             }
         }
 
-        if (!$if_template_type && !$else_template_type) {
+        if ((!$if_template_type && !$else_template_type)
+            // Failure to refine an unresolved generic is not proof that its branch is impossible.
+            || ($has_overlapping_candidate && $has_unresolved_branch)
+        ) {
             $if_type = self::replace(
                 $if_type,
                 $template_result,

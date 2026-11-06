@@ -18,6 +18,60 @@ final class ConditionalReturnTypeTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'wrapPreservesUnknownArrayValues' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is null ? array{} : (T is array ? T : array{T}))
+                     */
+                    function wrap($value): array {
+                        if ($value === null) {
+                            return [];
+                        }
+                        return is_array($value) ? $value : [$value];
+                    }
+                    /** @param array|callable|null $value */
+                    function test($value): void {
+                        $result = wrap($value);
+                        /** @psalm-check-type-exact $result = array<array-key, mixed> */
+                    }
+                    PHP,
+            ],
+            'partiallyMatchingTemplateKeepsBothBranches' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param string|array<string> $value
+                     * @return ($value is array ? array<string> : string)
+                     */
+                    function conditional($value) { return $value; }
+                    /**
+                     * @template T of string|array<string>
+                     * @param T $value
+                     */
+                    function test($value): void {
+                        $result = conditional($value);
+                        /** @psalm-check-type-exact $result = array<array-key, string>|string */
+                    }
+                    PHP,
+            ],
+            'possiblyEmptyArrayConditionKeepsBool' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<mixed> $needles
+                     * @return ($needles is array{} ? false : bool)
+                     */
+                    function contains(array $needles): bool { return (bool) $needles; }
+                    /** @param array<mixed> $needles */
+                    function test(array $needles): void {
+                        $result = contains($needles);
+                        /** @psalm-check-type-exact $result = bool */
+                    }
+                    PHP,
+            ],
             'overlappingIterableConditional' => [
                 'code' => <<<'PHP'
                     <?php
