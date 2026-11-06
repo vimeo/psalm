@@ -2250,6 +2250,38 @@ final class CapabilitiesTest extends TestCase
                         return $flag ? $a : $c;
                     }',
             ],
+            'staticCallOfAMethodReturningThisReturnsThis' => [
+                'code' => '<?php
+                    class A {
+                        /** @return $this */
+                        public function test(): static {
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function other(): static {
+                            return $this;
+                        }
+                    }
+
+                    class B extends A {
+                        /** @return $this */
+                        #[Override]
+                        public function test(): static {
+                            return parent::test();
+                        }
+
+                        /** @return $this */
+                        public function viaSelf(): static {
+                            return self::other();
+                        }
+
+                        /** @return $this */
+                        public function viaStatic(): static {
+                            return static::other();
+                        }
+                    }',
+            ],
             'fluentChainOnThisOnlyMutatesThis' => [
                 'code' => '<?php
                     abstract class Query {
@@ -5350,6 +5382,26 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:36 - The context is read-props|write-this-props|write-refs but method Counter::inc requires write-props',
+            ],
+            'staticCallOfAnotherObjectDoesNotReturnThis' => [
+                'code' => '<?php
+                    class A {
+                        /** @return $this */
+                        public function test(): static {
+                            return $this;
+                        }
+                    }
+
+                    class B extends A {
+                        /** @return $this */
+                        #[Override]
+                        public function test(): static {
+                            parent::test();
+
+                            return clone $this;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:36 - The declared return type \'$this\' for B::test requires returning $this, but this may return another object',
             ],
             'methodDeclaringThisMustReturnThis' => [
                 'code' => '<?php

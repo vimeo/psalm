@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
@@ -242,6 +243,15 @@ final class ExistingAtomicStaticCallAnalyzer
         $method_storage = $codebase->methods->getUserMethodStorage($method_id);
 
         if ($method_storage) {
+            if ($method_storage->returns_this
+                && !$method_storage->is_static
+                && $stmt->class instanceof PhpParser\Node\Name
+                && in_array(strtolower($stmt->class->getFirst()), ['parent', 'self', 'static'], true)
+                && isset($context->vars_in_scope['$this'])
+            ) {
+                MethodCallPurityAnalyzer::markStaticCallReturningThis($stmt);
+            }
+
             if ($method_storage->abstract
                 && $stmt->class instanceof PhpParser\Node\Name
                 && (!$context->self

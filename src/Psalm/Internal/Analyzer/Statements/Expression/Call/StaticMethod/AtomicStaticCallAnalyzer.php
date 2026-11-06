@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
@@ -1376,6 +1377,10 @@ final class AtomicStaticCallAnalyzer
             $context,
         ) === false) {
             return false;
+        }
+
+        if ($virtual_var_name === 'this' && MethodCallPurityAnalyzer::isReceiverThis($fake_method_call_expr)) {
+            MethodCallPurityAnalyzer::markStaticCallReturningThis($stmt);
         }
 
         $fake_method_call_type = $statements_analyzer->node_data->getType($fake_method_call_expr);
