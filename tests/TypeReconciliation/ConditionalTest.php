@@ -21,6 +21,39 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedInstanceofRemovesTemplateBoundByThatClass' => [
+                'code' => '<?php
+                    interface MyInterface {}
+
+                    /**
+                     * @template T of MyInterface
+                     * @param T|string $value
+                     */
+                    function f($value): string {
+                        if ($value instanceof MyInterface) {
+                            return "object";
+                        }
+
+                        return $value;
+                    }',
+            ],
+            'negatedInstanceofRemovesTemplateBoundByAParentOfThatClass' => [
+                'code' => '<?php
+                    interface MyInterface {}
+                    final class Impl implements MyInterface {}
+
+                    /**
+                     * @template T of Impl
+                     * @param T|string $value
+                     */
+                    function f($value): string {
+                        if (!$value instanceof MyInterface) {
+                            return $value;
+                        }
+
+                        return "object";
+                    }',
+            ],
             'orredClausesOfOneVariableAreAllKept' => [
                 'code' => '<?php
                     interface I1 {}
@@ -3525,6 +3558,24 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'negatedInstanceofKeepsTemplateWithAWiderBound' => [
+                'code' => '<?php
+                    interface MyInterface {}
+                    final class Impl implements MyInterface {}
+
+                    /**
+                     * @template T of MyInterface
+                     * @param T|string $value
+                     */
+                    function f($value): string {
+                        if ($value instanceof Impl) {
+                            return "object";
+                        }
+
+                        return $value;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'makeNonNullableNull' => [
                 'code' => '<?php
                     class A { }
