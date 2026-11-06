@@ -23,6 +23,36 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachOverAClassStringMap' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+
+                    /**
+                     * @param class-string-map<T of Foo, T> $map
+                     * @param class-string-map<U, U> $unbounded
+                     * @param class-string-map<V of Foo, list<V>> $lists
+                     */
+                    function iterate(array $map, array $unbounded, array $lists): void {
+                        foreach ($map as $class => $instance) {
+                            /** @psalm-check-type-exact $class = class-string<Foo> */
+                            /** @psalm-check-type-exact $instance = Foo */
+                        }
+
+                        foreach ($unbounded as $class => $instance) {
+                            /** @psalm-check-type-exact $class = class-string */
+                            /** @psalm-check-type-exact $instance = object */
+                        }
+
+                        foreach ($lists as $list) {
+                            /** @psalm-check-type-exact $list = list<Foo> */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'foreachByReferenceWritesIntoTheItemsOfTheArray' => [
                 'code' => '<?php
                     $values = ["key" => ""];
