@@ -54,6 +54,38 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'newStaticOfAClassImplementingAnInterfaceWithAConstructor' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct();
+                    }
+
+                    interface Product extends Buildable {}
+
+                    abstract class Base implements Buildable {
+                        public function __construct() {}
+
+                        public static function build(): static {
+                            return new static();
+                        }
+                    }
+
+                    class Item implements Product {
+                        public function __construct() {}
+
+                        public static function create(): static {
+                            return new static();
+                        }
+                    }
+
+                    /** @param class-string<Item> $class */
+                    function instantiate(string $class): Item {
+                        return new $class();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'classesOfBothBranchesOfAnUnknownAnd' => [
                 'code' => '<?php
                     if (rand(0, 1) && rand(0, 1)) {
@@ -1144,6 +1176,19 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'newStaticOfAClassImplementingAnInterfaceWithoutAConstructor' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    class Item implements Marker {
+                        public function __construct() {}
+
+                        public static function create(): static {
+                            return new static();
+                        }
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:36',
+            ],
             'elseOfAKnownTrueAndIsNotDeclared' => [
                 'code' => '<?php
                     if (function_exists("strlen") && function_exists("strpos")) {
