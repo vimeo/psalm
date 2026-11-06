@@ -1087,8 +1087,8 @@ final class ArrayFetchAnalyzer
             }
 
             if ($type instanceof TNamedObject) {
-                // the virtual offset*() call analyses the keys and the receiver again, but they were analysed above
-                $operands = ArrayAssignmentAnalyzer::getOperands($stmt);
+                // the virtual offset*() call analyses the operands again, which must not repeat an effect of theirs
+                $operands = ArrayAssignmentAnalyzer::getOperandsWithEffects($stmt);
                 $node_data = $statements_analyzer->node_data;
                 $node_data->markEvaluated($operands);
 
