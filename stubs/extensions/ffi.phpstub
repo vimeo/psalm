@@ -86,7 +86,7 @@ namespace {
          * @param string|\FFI\CData $ptr2
          * @param int<0,max> $size
          */
-        public static function memcmp(&$ptr1, &$ptr2, int $size): int
+        public static function memcmp($ptr1, $ptr2, int $size): int
         {
         }
 
