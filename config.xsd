@@ -820,6 +820,7 @@
             <xs:enumeration value="gmp"/>
             <xs:enumeration value="ibm_db2"/>
             <xs:enumeration value="imagick"/>
+            <xs:enumeration value="intl"/>
             <xs:enumeration value="memcached"/>
             <xs:enumeration value="mongodb"/>
             <xs:enumeration value="mysqli"/>
@@ -830,6 +831,7 @@
             <xs:enumeration value="simplexml"/>
             <xs:enumeration value="soap"/>
             <xs:enumeration value="xdebug"/>
+            <xs:enumeration value="zip"/>
             <xs:enumeration value="zstd"/>
         </xs:restriction>
     </xs:simpleType>

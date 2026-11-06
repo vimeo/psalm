@@ -613,6 +613,7 @@ final class Config
         "gmp" => null,
         "ibm_db2" => null,
         "imagick" => null,
+        "intl" => null,
         "memcached" => null,
         "mongodb" => null,
         "mysqli" => null,
@@ -623,6 +624,7 @@ final class Config
         "simplexml" => null,
         "soap" => null,
         "xdebug" => null,
+        "zip" => null,
         "zstd" => null,
     ];
 
