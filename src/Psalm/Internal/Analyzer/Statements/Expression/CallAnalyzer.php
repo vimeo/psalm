@@ -138,6 +138,7 @@ abstract class CallAnalyzer
             $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
 
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+            $source_appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
 
             if (isset($context->vars_in_scope['$this'])) {
                 foreach ($context->vars_in_scope['$this']->getAtomicTypes() as $atomic_type) {
@@ -239,15 +240,21 @@ abstract class CallAnalyzer
 
                 $old_calling_method_id = $context->calling_method_id;
 
-                if ($fq_class_name === $source->getFQCLN()) {
+                // the class whose code has the method: the class using the trait that declares it, or the ancestor
+                // the method appears in, as the class analyzer of the source only knows its own methods and traits
+                $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id)
+                    ?? $source_appearing_method_id;
+                $method_class_name = $appearing_method_id !== null
+                    ? $appearing_method_id->fq_class_name
+                    : $declaring_method_id->fq_class_name;
+
+                if ($method_class_name === $source->getFQCLN()) {
                     $class_analyzer->getMethodMutations($declaring_method_id->method_name, $context);
                 } else {
-                    $declaring_fq_class_name = $declaring_method_id->fq_class_name;
-
                     $old_self = $context->self;
-                    $context->self = $declaring_fq_class_name;
+                    $context->self = $method_class_name;
                     $project_analyzer->getMethodMutations(
-                        $declaring_method_id,
+                        new MethodIdentifier($method_class_name, $declaring_method_id->method_name),
                         $context,
                         $source->getRootFilePath(),
                         $source->getRootFileName(),
