@@ -88,6 +88,10 @@ final class ExpressionAnalyzer
         ?TemplateResult $template_result = null,
         bool $assigned_to_reference = false,
     ): bool {
+        if ($statements_analyzer->node_data->isEvaluated($stmt)) {
+            return true;
+        }
+
         if (self::dispatchBeforeExpressionAnalysis($stmt, $context, $statements_analyzer) === false) {
             return false;
         }
