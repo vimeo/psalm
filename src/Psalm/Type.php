@@ -967,21 +967,24 @@ abstract class Type
                 ) {
                     if ($intersection_atomic instanceof TArray && $wider_type instanceof TArray) {
                         // Keep the narrower array's structure, intersecting its generic parameters too.
-                        $params = $intersection_atomic->type_params;
-                        foreach ($params as $offset => $param) {
-                            $param = self::intersectUnionTypes(
-                                $param,
-                                $wider_type->type_params[$offset],
-                                $codebase,
-                                $allow_interface_equality,
-                                $allow_float_int_equality,
-                            );
-                            if ($param === null) {
-                                return null;
-                            }
-                            $params[$offset] = $param;
+                        $key_type = self::intersectUnionTypes(
+                            $intersection_atomic->type_params[0],
+                            $wider_type->type_params[0],
+                            $codebase,
+                            $allow_interface_equality,
+                            $allow_float_int_equality,
+                        );
+                        $value_type = self::intersectUnionTypes(
+                            $intersection_atomic->type_params[1],
+                            $wider_type->type_params[1],
+                            $codebase,
+                            $allow_interface_equality,
+                            $allow_float_int_equality,
+                        );
+                        if ($key_type === null || $value_type === null) {
+                            return null;
                         }
-                        return $intersection_atomic->setTypeParams($params);
+                        return $intersection_atomic->setTypeParams([$key_type, $value_type]);
                     }
                     return $intersection_atomic;
                 }
