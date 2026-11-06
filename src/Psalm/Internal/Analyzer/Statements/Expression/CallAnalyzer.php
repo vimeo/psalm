@@ -43,6 +43,7 @@ use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallableObject;
@@ -278,6 +279,7 @@ abstract class CallAnalyzer
         Context $context,
         CodeLocation $code_location,
         StatementsAnalyzer $statements_analyzer,
+        ?FunctionLikeStorage $overload = null,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -293,7 +295,8 @@ abstract class CallAnalyzer
             ) !== false;
         }
 
-        $method_params = $codebase->methods->getMethodParams($method_id, $statements_analyzer, $args, $context);
+        $method_params = $overload->params
+            ?? $codebase->methods->getMethodParams($method_id, $statements_analyzer, $args, $context);
 
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;

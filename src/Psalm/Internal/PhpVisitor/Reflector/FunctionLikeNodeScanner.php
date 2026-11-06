@@ -494,7 +494,9 @@ final class FunctionLikeNodeScanner
                     $cased_function_id,
                 );
 
-                if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
+                if ($stmt instanceof PhpParser\Node\Stmt\Function_
+                    || ($stmt instanceof PhpParser\Node\Stmt\ClassMethod && !$fake_method)
+                ) {
                     $this->addOverloads($storage, $stmt, $doc_comment, $docblock_info->overloads, $cased_function_id);
                 }
             }

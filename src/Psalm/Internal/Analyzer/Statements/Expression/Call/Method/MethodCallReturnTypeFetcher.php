@@ -30,6 +30,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -68,6 +69,7 @@ final class MethodCallReturnTypeFetcher
         array $args,
         AtomicMethodCallAnalysisResult $result,
         TemplateResult $template_result,
+        ?FunctionLikeStorage $overload = null,
     ): Union {
         $call_map_id = $declaring_method_id ?? $method_id;
 
@@ -208,6 +210,8 @@ final class MethodCallReturnTypeFetcher
                 $args,
                 $template_result,
             );
+
+            $return_type_candidate = $overload->return_type ?? $return_type_candidate;
 
             if ($return_type_candidate) {
                 if ($template_result->lower_bounds) {
