@@ -99,6 +99,47 @@ final class ConditionalReturnTypeTest extends TestCase
                     PHP,
                 'assertions' => ['$value===' => "'no'|'yes'"],
             ],
+            'arrayValuesPreservesGenericElement' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param array<array-key, T> $elements
+                     * @return T|null
+                     */
+                    function firstValue(array $elements) {
+                        $values = array_values($elements);
+                        /** @psalm-check-type-exact $values = list<T> */
+                        $first = $values[0] ?? null;
+                        /** @psalm-check-type-exact $first = T|null */
+                        return $first;
+                    }
+                    PHP,
+            ],
+            'arrayValuesPreservesGenericElementInLoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param array<array-key, T> $elements
+                     * @param list<int> $items
+                     * @return list<T>
+                     */
+                    function zip(array $elements, array $items): array {
+                        $elements = array_values($elements);
+                        $result = [];
+                        foreach ($items as $_) {
+                            $u = $elements[0] ?? null;
+                            if (null === $u) {
+                                break;
+                            }
+                            $elements = array_slice($elements, 1);
+                            $result[] = $u;
+                        }
+                        return $result;
+                    }
+                    PHP,
+            ],
             'iterableIntersectionFitsUnion' => [
                 'code' => <<<'PHP'
                     <?php
