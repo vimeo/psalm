@@ -213,6 +213,7 @@ final class LoopAnalyzer
 
             // the types the variables the loop defines start an iteration with
             $loop_var_types_at_start = [];
+            $unset_in_loop_vars = [];
 
             for ($i = 0; $i < $assignment_depth; ++$i) {
                 $vars_to_remove = [];
@@ -281,6 +282,25 @@ final class LoopAnalyzer
                         if (!$is_do) {
                             $vars_to_remove[] = $var_id;
                         }
+                    }
+                }
+
+                // a variable the body unset is gone where the next iteration starts only if the body ran:
+                // it's possibly undefined there
+                foreach ($original_parent_context->vars_in_scope as $var_id => $_) {
+                    if (!isset($continue_context->vars_in_scope[$var_id])
+                        && !isset($unset_in_loop_vars[$var_id])
+                        && self::isLoopVar($var_id)
+                    ) {
+                        $unset_in_loop_vars[$var_id] = true;
+                        $has_changes = true;
+                    }
+                }
+
+                foreach ($unset_in_loop_vars as $var_id => $_) {
+                    if (!isset($continue_context->vars_in_scope[$var_id])) {
+                        $continue_context->vars_in_scope[$var_id]
+                            = $original_parent_context->vars_in_scope[$var_id]->setPossiblyUndefined(true);
                     }
                 }
 
