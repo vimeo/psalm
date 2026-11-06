@@ -22,6 +22,41 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'sameMethodAliasedFromTwoTraitsKeepsEachTrait' => [
+                'code' => '<?php
+                    trait Greeting {
+                        public function say(string $text): string {
+                            return "hello " . $text;
+                        }
+                    }
+
+                    trait Counting {
+                        public function say(int $number): int {
+                            return $number + 1;
+                        }
+                    }
+
+                    final class Speaker {
+                        use Greeting {
+                            Greeting::say as sayText;
+                        }
+
+                        use Counting {
+                            Counting::say as sayNumber;
+                        }
+
+                        public function say(): void {
+                            $text = $this->sayText("world");
+                            $number = $this->sayNumber(1);
+
+                            /** @psalm-check-type-exact $text = string */;
+                            /** @psalm-check-type-exact $number = int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'accessiblePrivateMethodFromTrait' => [
                 'code' => '<?php
                     trait T {
@@ -1224,6 +1259,37 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'aliasOfTheOtherTraitIsNotAMethodOfTheFirst' => [
+                'code' => '<?php
+                    trait Greeting {
+                        public function say(string $text): string {
+                            return "hello " . $text;
+                        }
+                    }
+
+                    trait Counting {
+                        public function say(int $number): int {
+                            return $number + 1;
+                        }
+                    }
+
+                    final class Speaker {
+                        use Greeting {
+                            Greeting::say as sayText;
+                        }
+
+                        use Counting {
+                            Counting::say as sayNumber;
+                        }
+
+                        public function run(): void {
+                            $this->sayText(1);
+                        }
+                    }',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:24:44',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'inaccessiblePrivateMethodFromInheritedTrait' => [
                 'code' => '<?php
                     trait T {
