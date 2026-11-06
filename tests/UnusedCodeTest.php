@@ -494,6 +494,39 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'paramReferencedByProperty' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    final class A {
+                        public \stdClass $config;
+
+                        public function __construct(\stdClass $config) {
+                            $this->config = &$config;
+                        }
+                    }',
+            ],
+            'paramReferencedByStaticProperty' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    final class A {
+                        public static int $value = 0;
+
+                        public static function set(int $value): void {
+                            self::$value = &$value;
+                            echo self::$value;
+                        }
+                    }',
+            ],
+            'paramReferencedByArrayItem' => [
+                'code' => '<?php
+                    /**
+                     * @param array<int, int> $arr
+                     * @psalm-api
+                     */
+                    function f(array &$arr, int $value): void {
+                        $arr[0] = &$value;
+                    }',
+            ],
             'argumentCastToStringDoesNotReportPossiblyInvalidCast' => [
                 'code' => '<?php
                     /** @psalm-api */
@@ -2186,6 +2219,16 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'paramReferencedByUnusedVariable' => [
+                'code' => '<?php
+                    function f(int $value): void {
+                        $ref = &$value;
+                    }
+
+                    f(1);',
+                'error_message' => 'UnusedParam',
+                'error_levels' => ['UnusedVariable'],
+            ],
             'argumentStillReportsPossiblyInvalidArgumentWithUnusedCode' => [
                 'code' => '<?php
                     /**
