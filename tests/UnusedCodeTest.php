@@ -494,6 +494,49 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'usedPureStaticMethodCallIsNotReported' => [
+                'code' => '<?php
+                    final class Math {
+                        /** @psalm-pure */
+                        public static function addOne(int $i): int {
+                            return $i + 1;
+                        }
+
+                        /**
+                         * @psalm-pure
+                         * @return no-return
+                         */
+                        public static function never() {
+                            throw new Exception("x");
+                        }
+
+                        public static function impure(int $i): int {
+                            echo $i;
+                            return $i;
+                        }
+
+                        /** @param array<int> $a */
+                        public static function byRef(array &$a): int {
+                            $a[] = 1;
+                            return 1;
+                        }
+                    }
+
+                    /** @psalm-api */
+                    function f(): int {
+                        $a = [];
+                        Math::impure(1);
+                        Math::byRef($a);
+                        $x = Math::addOne(1);
+                        echo Math::addOne(2);
+                        return $x + count($a);
+                    }
+
+                    /** @psalm-api */
+                    function g(): void {
+                        Math::never();
+                    }',
+            ],
             'argumentCastToStringDoesNotReportPossiblyInvalidCast' => [
                 'code' => '<?php
                     /** @psalm-api */
@@ -2186,6 +2229,37 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'unusedPureStaticMethodCallViaVariable' => [
+                'code' => '<?php
+                    final class Math {
+                        /** @psalm-pure */
+                        public static function addOne(int $i): int {
+                            return $i + 1;
+                        }
+                    }
+
+                    /** @psalm-api */
+                    function f(Math $m): void {
+                        $m::addOne(3);
+                    }',
+                'error_message' => 'UnusedMethodCall',
+            ],
+            'unusedPureStaticMethodCall' => [
+                'code' => '<?php
+                    final class Math {
+                        /** @psalm-pure */
+                        public static function addOne(int $i): int {
+                            return $i + 1;
+                        }
+                    }
+
+                    /** @psalm-api */
+                    function f(): void {
+                        Math::addOne(5);
+                    }',
+                'error_message' => 'UnusedMethodCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:11:31 - The call to Math::addOne is not used',
+            ],
             'argumentStillReportsPossiblyInvalidArgumentWithUnusedCode' => [
                 'code' => '<?php
                     /**
