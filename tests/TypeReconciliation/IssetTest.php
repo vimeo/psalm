@@ -21,6 +21,24 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'coalesceOnUnsealedShapeWithVariableKeyOfKnownStringLiteral' => [
+                'code' => '<?php
+                    /** @param array{a?: array<int>, ...} $array */
+                    function f(array $array): array {
+                        $k = "a";
+
+                        return $array[$k] ?? [];
+                    }',
+            ],
+            'coalesceOnUnsealedShapeWithVariableKeyOfKnownIntLiteral' => [
+                'code' => '<?php
+                    /** @param array{0?: array<int>, ...} $array */
+                    function f(array $array): array {
+                        $k = 0;
+
+                        return $array[$k] ?? [];
+                    }',
+            ],
             'variableIsSetAfterCoalesceThrowStatement' => [
                 'code' => '<?php
                     class H {
@@ -1132,6 +1150,14 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'coalesceOnUnsealedShapeWithVariableKeyOfUnknownValueIsMixed' => [
+                'code' => '<?php
+                    /** @param array{a?: array<int>, ...} $array */
+                    function f(array $array, string $k): array {
+                        return $array[$k] ?? [];
+                    }',
+                'error_message' => 'MixedReturnStatement',
+            ],
             'variableStaysNullableAfterCoalesceWithDefault' => [
                 'code' => '<?php
                     function a(?string $html): string {
