@@ -40,8 +40,6 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -685,7 +683,7 @@ final class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * Writes the item back without its end, when the call changes exactly that item: see isItemWrittenBack()
+     * Writes the item back without its end, see isItemWrittenBack() for the items that are
      */
     private static function writeBackItemWithoutEnd(
         StatementsAnalyzer $statements_analyzer,
@@ -695,17 +693,7 @@ final class ArrayFunctionArgumentsAnalyzer
     ): void {
         $item_type = $statements_analyzer->node_data->getType($item);
 
-        if ($item_type === null) {
-            return;
-        }
-
-        if (self::isItemOfSeveralOffsets($statements_analyzer, $item)) {
-            self::weakenOffsetsOfItem($statements_analyzer, $item, $context, $is_array_shift);
-
-            return;
-        }
-
-        if (!self::isItemWrittenBack($statements_analyzer, $item)) {
+        if ($item_type === null || !self::isItemWrittenBack($statements_analyzer, $item)) {
             return;
         }
 
@@ -739,179 +727,9 @@ final class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * The call changes one of the offsets the keys may be, not which one. Writing the item back would give all of
-     * them the type of the selected one, which may be narrowed: instead the arrays holding the offsets
-     * are updated with each of the offsets possibly shortened.
-     */
-    private static function weakenOffsetsOfItem(
-        StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\ArrayDimFetch $item,
-        Context $context,
-        bool $is_array_shift,
-    ): void {
-        $dim_types = [];
-        $holder = $item;
-        $holder_dim_types = [];
-
-        for ($stmt = $item; $stmt instanceof PhpParser\Node\Expr\ArrayDimFetch; $stmt = $stmt->var) {
-            $dim_type = $stmt->dim ? $statements_analyzer->node_data->getType($stmt->dim) : null;
-            array_unshift($dim_types, $dim_type);
-
-            if ($dim_type !== null && $dim_type->allLiterals() && count($dim_type->getAtomicTypes()) > 1) {
-                $holder = $stmt->var;
-                $holder_dim_types = $dim_types;
-            }
-        }
-
-        $holder_type = $statements_analyzer->node_data->getType($holder);
-
-        if ($holder_type === null) {
-            return;
-        }
-
-        $new_type = self::weakenOffsets(
-            $statements_analyzer->getCodebase(),
-            $context,
-            $holder_type,
-            $holder_dim_types,
-            $is_array_shift,
-        )->addParentNodes($holder_type->parent_nodes);
-
-        AssignmentAnalyzer::assignByRefParam(
-            $statements_analyzer,
-            $holder,
-            $new_type,
-            $new_type,
-            $context,
-            false,
-        );
-    }
-
-    /**
-     * @param list<Union|null> $dim_types the types of the keys leading from $type to the item, null for any
-     */
-    private static function weakenOffsets(
-        Codebase $codebase,
-        Context $context,
-        Union $type,
-        array $dim_types,
-        bool $is_array_shift,
-    ): Union {
-        if ($dim_types === []) {
-            return Type::combineUnionTypes(
-                $type,
-                self::getArrayWithoutEnd($codebase, $context, $type, $is_array_shift),
-                $codebase,
-            );
-        }
-
-        // the offsets a key may select, null for any
-        $dim_type = array_shift($dim_types);
-        $keys = $dim_type ? [] : null;
-
-        foreach ($dim_type ? $dim_type->getAtomicTypes() : [] as $dim_atomic_type) {
-            if (!$dim_atomic_type instanceof TLiteralInt && !$dim_atomic_type instanceof TLiteralString) {
-                $keys = null;
-                break;
-            }
-
-            $keys[(string) $dim_atomic_type->value] = true;
-        }
-
-        $atomic_types = [];
-
-        foreach ($type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TKeyedArray) {
-                $properties = $atomic_type->properties;
-
-                foreach ($properties as $key => $property) {
-                    if ($keys === null || isset($keys[(string) $key])) {
-                        $properties[$key] = self::weakenOffsets(
-                            $codebase,
-                            $context,
-                            $property,
-                            $dim_types,
-                            $is_array_shift,
-                        );
-                    }
-                }
-
-                $fallback_params = $atomic_type->fallback_params;
-
-                if ($fallback_params) {
-                    $fallback_params[1] = self::weakenOffsets(
-                        $codebase,
-                        $context,
-                        $fallback_params[1],
-                        $dim_types,
-                        $is_array_shift,
-                    );
-                }
-
-                $atomic_type = TKeyedArray::make(
-                    $properties,
-                    $atomic_type->class_strings,
-                    $fallback_params,
-                    $atomic_type->is_list,
-                    $atomic_type->from_docblock,
-                );
-            } elseif ($atomic_type instanceof TArray) {
-                $atomic_type = $atomic_type->setTypeParams([
-                    $atomic_type->type_params[0],
-                    self::weakenOffsets($codebase, $context, $atomic_type->type_params[1], $dim_types, $is_array_shift),
-                ]);
-            }
-
-            $atomic_types[] = $atomic_type;
-        }
-
-        return TypeCombiner::combine($atomic_types, $codebase);
-    }
-
-    /**
-     * Whether the keys of the item may select several offsets, in arrays only
-     *
-     * @psalm-capabilities read-props
-     */
-    private static function isItemOfSeveralOffsets(
-        StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\ArrayDimFetch $item,
-    ): bool {
-        $item_type = $statements_analyzer->node_data->getType($item);
-
-        return $item_type !== null
-            && $item_type->hasArray()
-            && self::hasStorageRoot($item)
-            && self::hasKeyOfSeveralLiterals($statements_analyzer, $item)
-            && self::isHeldByArrays($statements_analyzer, $item);
-    }
-
-    /**
-     * Whether array_pop() or array_shift() leaves the item of this argument as its type after the call says.
-     * That holds for a plain array, for an item written back, and for an item of a temporary, e.g. g()[0],
-     * which every evaluation reads anew. Any other item is typed as before the call.
-     *
-     * @psalm-capabilities read-props
-     */
-    public static function isPopOfItemExact(StatementsAnalyzer $statements_analyzer, PhpParser\Node\Expr $arg): bool
-    {
-        if (!$arg instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            return true;
-        }
-
-        if (self::isItemWrittenBack($statements_analyzer, $arg)) {
-            return true;
-        }
-
-        return !self::hasStorageRoot($arg)
-            && !self::hasKeyOfSeveralLiterals($statements_analyzer, $arg)
-            && self::isHeldByArrays($statements_analyzer, $arg);
-    }
-
-    /**
-     * The item is written back only when the write changes that item and nothing else: its keys are single,
-     * it lives in arrays (an ArrayAccess object re-reads it through offsetGet()), and it is an array or null
-     * (templates, unions with scalars and the like keep the type they had).
+     * Only an item the write changes and nothing else is written back: a storage root (not a call or another
+     * temporary), keys of one literal at most, arrays all the way (an ArrayAccess object re-reads the item
+     * through offsetGet()), and an array or null as the item (a template or a union with scalars keeps its type).
      *
      * @psalm-capabilities read-props
      */

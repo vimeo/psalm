@@ -3719,22 +3719,18 @@ final class ArrayFunctionCallTest extends TestCase
             'arrayPopItemIsWrittenBack' => [
                 'code' => '<?php
                     $a = [[1, 2, 3]];
-                    $x = array_pop($a[0]);
-                    $y = array_pop($a[0]);',
+                    array_pop($a[0]);
+                    array_pop($a[0]);',
                 'assertions' => [
-                    '$x===' => '3',
-                    '$y===' => '2',
                     '$a===' => 'list{list{1}}',
                 ],
             ],
             'arrayShiftItemIsWrittenBack' => [
                 'code' => '<?php
                     $a = [[1, 2, 3]];
-                    $x = array_shift($a[0]);
-                    $y = array_shift($a[0]);',
+                    array_shift($a[0]);
+                    array_shift($a[0]);',
                 'assertions' => [
-                    '$x===' => '1',
-                    '$y===' => '2',
                     '$a===' => 'list{list{3}}',
                 ],
             ],
@@ -3750,9 +3746,8 @@ final class ArrayFunctionCallTest extends TestCase
                 'code' => '<?php
                     $a = ["x" => ["y" => [1, 2, 3]]];
                     array_pop($a["x"]["y"]);
-                    $v = array_pop($a["x"]["y"]);',
+                    array_pop($a["x"]["y"]);',
                 'assertions' => [
-                    '$v===' => '2',
                     '$a===' => 'array{x: array{y: list{1}}}',
                 ],
             ],
@@ -3768,14 +3763,12 @@ final class ArrayFunctionCallTest extends TestCase
                     $b = new Box();
                     $b->items = [[1, 2, 3]];
                     array_pop($b->items[0]);
-                    $x = array_pop($b->items[0]);
+                    array_pop($b->items[0]);
 
                     Box::$shared = [[1, 2, 3]];
                     array_shift(Box::$shared[0]);
-                    $y = array_shift(Box::$shared[0]);',
+                    array_shift(Box::$shared[0]);',
                 'assertions' => [
-                    '$x===' => '2',
-                    '$y===' => '2',
                     '$b->items===' => 'list{list{1}}',
                     'Box::$shared===' => 'list{list{3}}',
                 ],
@@ -3784,34 +3777,25 @@ final class ArrayFunctionCallTest extends TestCase
                 'code' => '<?php
                     $a = [[1, 2], [3, 4]];
                     $i = 0;
-                    $x = array_pop($a[$i++]);
+                    array_pop($a[$i++]);
                     $j = 1;
-                    $y = array_shift($a[$j++]);',
+                    array_shift($a[$j++]);',
                 'assertions' => [
                     '$i===' => '1',
                     '$j===' => '2',
-                    '$x===' => '2',
-                    '$y===' => '3',
                     '$a===' => 'list{list{1}, list{4}}',
                 ],
             ],
-            'arrayPopItemOfUnionKeyWeakensEachOffset' => [
+            'arrayPopItemOfUnionKeyIsNotWrittenBack' => [
                 'code' => '<?php
                     $a = [[1, 2], [3, 4]];
                     $k = rand(0, 1) ? 0 : 1;
-                    array_pop($a[$k]);
-                    $x = array_pop($a[0]);
-
-                    $b = ["x" => [[1, 2], [3, 4]], "y" => [5, 6]];
-                    $j = rand(0, 1) ? 0 : 1;
-                    array_shift($b["x"][$j]);',
+                    array_pop($a[$k]);',
                 'assertions' => [
-                    '$a===' => 'list{list{0?: 1}, list{0: 3, 1?: 4}}',
-                    '$x===' => '1|2',
-                    '$b===' => 'array{x: list{list{0: 1|2, 1?: 2}, list{0: 3|4, 1?: 4}}, y: list{5, 6}}',
+                    '$a===' => 'list{list{1, 2}, list{3, 4}}',
                 ],
             ],
-            'arrayPopItemOfCallResultIsNotWrittenBack' => [
+            'arrayPopItemOfCallResultIsUnchanged' => [
                 'code' => '<?php
                     /** @return list{list{int, string}} */
                     function g(): array {
@@ -3821,8 +3805,8 @@ final class ArrayFunctionCallTest extends TestCase
                     $x = array_pop(g()[0]);
                     $y = array_pop(g()[0]);',
                 'assertions' => [
-                    '$x===' => 'string',
-                    '$y===' => 'string',
+                    '$x===' => 'int|string',
+                    '$y===' => 'int|string',
                 ],
             ],
             'arrayPopItemThatMayBeUndefinedBecomesAnArray' => [
@@ -4508,6 +4492,15 @@ final class ArrayFunctionCallTest extends TestCase
                     function f(): int {
                         $a = [[1, 2]];
                         array_pop($a[0]);
+                        return $a[0][1];
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+            ],
+            'arrayShiftItemRemovesTheFirstOffset' => [
+                'code' => '<?php
+                    function f(): int {
+                        $a = [[1, 2]];
+                        array_shift($a[0]);
                         return $a[0][1];
                     }',
                 'error_message' => 'InvalidArrayOffset',

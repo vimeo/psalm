@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
-use Psalm\Internal\Analyzer\Statements\Expression\Call\ArrayFunctionArgumentsAnalyzer;
+use PhpParser\Node\Expr\ArrayDimFetch;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
@@ -47,7 +47,8 @@ final class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInte
             $statements_source->getCodebase(),
             $first_arg_type,
             $event->getFunctionId() === 'array_shift',
-            ArrayFunctionArgumentsAnalyzer::isPopOfItemExact($statements_source, $first_arg->value),
+            // an offset may have lost elements already: the array holding it keeps its type after the call
+            !$first_arg->value instanceof ArrayDimFetch,
         ) ?? Type::getMixed();
     }
 }
