@@ -381,7 +381,7 @@ final class ArrayAssignmentAnalyzer
 
     /**
      * The outermost sub-expressions of $expr (itself included) that change something when analysed: assignments,
-     * increments, yields, and calls given a variable they may take by reference. Closures are not entered.
+     * increments and calls given arguments. Closures are not entered.
      *
      * @return list<PhpParser\Node\Expr>
      */
@@ -412,9 +412,9 @@ final class ArrayAssignmentAnalyzer
             || $node instanceof PhpParser\Node\Expr\PreDec
             || $node instanceof PhpParser\Node\Expr\PostInc
             || $node instanceof PhpParser\Node\Expr\PostDec
-            || $node instanceof PhpParser\Node\Expr\Yield_
-            || $node instanceof PhpParser\Node\Expr\YieldFrom
-            || ($node instanceof PhpParser\Node\Expr\CallLike && self::hasVariableArgument($node))
+            || ($node instanceof PhpParser\Node\Expr\CallLike
+                && !$node->isFirstClassCallable()
+                && $node->getArgs() !== [])
         ) {
             $side_effects[] = $node;
 
@@ -431,29 +431,6 @@ final class ArrayAssignmentAnalyzer
                 }
             }
         }
-    }
-
-    /**
-     * @psalm-capabilities read-props
-     */
-    private static function hasVariableArgument(PhpParser\Node\Expr\CallLike $call): bool
-    {
-        if ($call->isFirstClassCallable()) {
-            return false;
-        }
-
-        foreach ($call->getArgs() as $arg) {
-            if ($arg->value instanceof Variable
-                || $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
-                || $arg->value instanceof PhpParser\Node\Expr\PropertyFetch
-                || $arg->value instanceof PhpParser\Node\Expr\NullsafePropertyFetch
-                || $arg->value instanceof PhpParser\Node\Expr\StaticPropertyFetch
-            ) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
