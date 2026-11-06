@@ -1581,9 +1581,6 @@
       <code><![CDATA[self::$loaded_php_minor_version]]></code>
       <code><![CDATA[self::$taint_sink_map]]></code>
     </ImpureStaticProperty>
-    <PossiblyNullArgument>
-      <code><![CDATA[array_shift($call_map_function_args)]]></code>
-    </PossiblyNullArgument>
   </file>
   <file src="src/Psalm/Internal/Codebase/Methods.php">
     <ImplicitToStringCast>

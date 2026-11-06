@@ -2728,6 +2728,15 @@ final class FunctionCallTest extends TestCase
                     takesNonEmptyLowercase("");',
                 'error_message' => 'InvalidArgument',
             ],
+            'mysqliBindResultRequiresOutputVariable' => [
+                'code' => '<?php
+                    function bind(mysqli_stmt $statement): void {
+                        mysqli_stmt_bind_result($statement);
+                    }',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'invalidScalarArgument' => [
                 'code' => '<?php
                     function fooFoo(int $a): void {}
