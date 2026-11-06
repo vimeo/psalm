@@ -23,6 +23,38 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'literalReturnedWhereATemplateVariableIsIdenticalToIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $a
+                     * @return T
+                     */
+                    function run($a): int {
+                        if ($a === 15) {
+                            return 15;
+                        }
+
+                        return $a;
+                    }',
+            ],
+            'literalReturnedForTheTemplateOfTheReturnTypeWhenAnotherOneIsIdenticalToItToo' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @template U of int
+                     * @param U $a
+                     * @param T $b
+                     * @return T
+                     */
+                    function run($a, $b): int {
+                        if ($a === 15 && $b === 15) {
+                            return 15;
+                        }
+
+                        return $b;
+                    }',
+            ],
             'negatedInstanceofNarrowsTheBoundOfATemplateParam' => [
                 'code' => '<?php
                     class File {
@@ -2489,6 +2521,56 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'otherLiteralReturnedWhereATemplateVariableIsIdenticalToALiteral' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $a
+                     * @return T
+                     */
+                    function run($a): int {
+                        if ($a === 15) {
+                            return 16;
+                        }
+
+                        return $a;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalReturnedWhereATemplateVariableIsLooselyEqualToIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int|string
+                     * @param T $a
+                     * @return T
+                     */
+                    function run($a) {
+                        if ($a == 15) {
+                            return 15;
+                        }
+
+                        return $a;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalReturnedAsAnotherTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @template U of int
+                     * @param T $a
+                     * @param U $b
+                     * @return U
+                     */
+                    function run($a, $b) {
+                        if ($a === 15) {
+                            return 15;
+                        }
+
+                        return $b;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'templateBoundedByMixedIsBoundedByMixedAgainAfterABranchNarrowingIt' => [
                 'code' => '<?php
                     function takesInt(int $i): void {}
