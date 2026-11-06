@@ -501,26 +501,24 @@ final class FunctionCallReturnTypeFetcher
 
                 case 'min':
                 case 'max':
-                    if (isset($call_args[0])) {
-                        $first_arg = $call_args[0]->value;
+                    $first_arg = $call_args[0]->value;
 
-                        if ($first_arg_type = $statements_analyzer->node_data->getType($first_arg)) {
-                            if ($first_arg_type->hasArray()) {
-                                $array_type = $first_arg_type->getArray();
-                                if ($array_type instanceof TKeyedArray) {
-                                    return $array_type->getGenericValueType();
-                                }
-
-                                if ($array_type instanceof TArray) {
-                                    return $array_type->type_params[1];
-                                }
-                            } elseif ($first_arg_type->hasScalarType()
-                                && ($second_arg = ($call_args[1]->value ?? null))
-                                && ($second_arg_type = $statements_analyzer->node_data->getType($second_arg))
-                                && $second_arg_type->hasScalarType()
-                            ) {
-                                return Type::combineUnionTypes($first_arg_type, $second_arg_type);
+                    if ($first_arg_type = $statements_analyzer->node_data->getType($first_arg)) {
+                        if ($first_arg_type->hasArray()) {
+                            $array_type = $first_arg_type->getArray();
+                            if ($array_type instanceof TKeyedArray) {
+                                return $array_type->getGenericValueType();
                             }
+
+                            if ($array_type instanceof TArray) {
+                                return $array_type->type_params[1];
+                            }
+                        } elseif ($first_arg_type->hasScalarType()
+                            && ($second_arg = ($call_args[1]->value ?? null))
+                            && ($second_arg_type = $statements_analyzer->node_data->getType($second_arg))
+                            && $second_arg_type->hasScalarType()
+                        ) {
+                            return Type::combineUnionTypes($first_arg_type, $second_arg_type);
                         }
                     }
 

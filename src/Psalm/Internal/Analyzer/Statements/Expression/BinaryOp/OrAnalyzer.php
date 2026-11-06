@@ -226,19 +226,21 @@ final class OrAnalyzer
         if ($negated_type_assertions) {
             // while in an or, we allow scope to boil over to support
             // statements of the form if ($x === null || $x->foo())
-            [$right_context->vars_in_scope, $right_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
-                $negated_type_assertions,
-                $active_negated_type_assertions,
-                $right_context->vars_in_scope,
-                $right_context->references_in_scope,
-                $changed_var_ids,
-                $left_referenced_var_ids,
-                $statements_analyzer,
-                [],
-                $left_context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $stmt->left),
-                !$context->inside_negation,
-            );
+            [$right_context->vars_in_scope, $right_context->references_in_scope] =
+                Reconciler::reconcileKeyedTypesExcludingAssignedVars(
+                    $negated_type_assertions,
+                    $active_negated_type_assertions,
+                    $right_context->vars_in_scope,
+                    $right_context->references_in_scope,
+                    $changed_var_ids,
+                    $left_referenced_var_ids,
+                    $statements_analyzer,
+                    [],
+                    $left_context->inside_loop,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->left),
+                    !$context->inside_negation,
+                    $left_assigned_var_ids,
+                );
         }
 
         $right_context->clauses = $clauses_for_right_analysis;
