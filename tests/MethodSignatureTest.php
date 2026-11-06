@@ -1396,6 +1396,36 @@ final class MethodSignatureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'optionalParameterOfTheParentDroppedBeforePhp8' => [
+                'code' => '<?php
+                    interface A {
+                        public function test(?array $array = null): void;
+                    }
+
+                    class B implements A {
+                        public function test(): void {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'optionalParameterOfTheParentReplacedByAVariadic' => [
+                'code' => '<?php
+                    interface I {
+                        public function test(?array $array = null): void;
+                    }
+
+                    class A {
+                        public function test(?array $array = null): void {}
+                    }
+
+                    class B extends A implements I {
+                        public function test(mixed ...$array): void {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nativeToStringFromTraits' => [
                 'code' => '<?php
                     trait StringableTrait {
@@ -1517,6 +1547,21 @@ final class MethodSignatureTest extends TestCase
                         }
                     }',
                 'error_message' => 'Method B::fooFoo has fewer parameters than parent method A::fooFoo',
+            ],
+            'optionalParameterOfTheParentDroppedFromPhp8' => [
+                'code' => '<?php
+                    interface A {
+                        public function test(?array $array = null): array;
+                    }
+
+                    class B implements A {
+                        public function test(): array {
+                            return [];
+                        }
+                    }',
+                'error_message' => 'Method B::test has fewer parameters than parent method A::test',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'differentArgumentTypes' => [
                 'code' => '<?php
