@@ -11,6 +11,22 @@ use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use function array_keys;
+use function assert;
+use function file_put_contents;
+use function implode;
+use function mkdir;
+use function rmdir;
+use function spl_autoload_register;
+use function spl_autoload_unregister;
+use function str_ends_with;
+use function str_starts_with;
+use function sys_get_temp_dir;
+use function uniqid;
+use function unlink;
+
+use const DIRECTORY_SEPARATOR;
+
 final class ClassLikeStringTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -33,6 +49,112 @@ final class ClassLikeStringTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * The autoloader would run the analyzed code (and any `exit` of it) inside the process of Psalm.
+     */
+    public function testClassExistsGuardDoesNotRunTheAutoloader(): void
+    {
+        $this->expectNotToPerformAssertions();
+
+        $autoloaded = [];
+        /** @psalm-capabilities read-props|write-this-props|write-refs */
+        $autoloader = static function (string $class) use (&$autoloaded): void {
+            if (str_starts_with($class, 'Guarded\\')) {
+                $autoloaded[] = $class;
+            }
+        };
+
+        spl_autoload_register($autoloader);
+
+        try {
+            $this->addFile(
+                'somefile.php',
+                '<?php
+                    if (!class_exists("Guarded\\Klass")) {
+                        class Klass {}
+                    }
+
+                    if (!interface_exists("Guarded\\Face")) {
+                        class Face {}
+                    }
+
+                    if (!enum_exists("Guarded\\Suit")) {
+                        class Suit {}
+                    }',
+            );
+
+            $this->project_analyzer->setPhpVersion('8.1', 'tests');
+            $this->analyzeFile('somefile.php', new Context());
+        } finally {
+            spl_autoload_unregister($autoloader);
+        }
+
+        if ($autoloaded) {
+            self::fail('The autoloader was run for ' . implode(', ', $autoloaded));
+        }
+    }
+
+    /**
+     * Composer's class map only names the file, so the guard must check that the file declares the guarded kind.
+     */
+    public function testExistsGuardsCheckTheKindOfTheComposerMappedSymbol(): void
+    {
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'psalm_guard_' . uniqid();
+        mkdir($dir);
+
+        $declarations = [
+            'InterfaceBehindClassGuard' => ['interface', 'class_exists'],
+            'ClassBehindInterfaceGuard' => ['class', 'interface_exists'],
+            'ClassBehindEnumGuard' => ['final class', 'enum_exists'],
+            'EnumBehindClassGuard' => ['enum', 'class_exists'],
+            'ClassBehindClassGuard' => ['abstract class', 'class_exists'],
+        ];
+        $class_map = [];
+        $code = '<?php namespace Mapped;';
+
+        foreach ($declarations as $name => [$keyword, $guard]) {
+            $file = $dir . DIRECTORY_SEPARATOR . $name . '.php';
+            $class_map['Mapped\\' . $name] = $file;
+            file_put_contents($file, "<?php\nnamespace Mapped;\n" . $keyword . ' ' . $name . ' {}');
+            $code .= "\n" . 'if (!' . $guard . '("Mapped\\' . $name . '")) { class ' . $name . ' {} }';
+        }
+
+        $config = Config::getInstance();
+        assert($config instanceof TestConfig);
+        $config->composer_files = $class_map;
+
+        try {
+            $this->addFile('somefile.php', $code);
+            $this->project_analyzer->setPhpVersion('8.1', 'tests');
+            $this->analyzeFile('somefile.php', new Context());
+
+            $declared_in_file = [];
+            $storage_provider = $this->project_analyzer->getCodebase()->classlike_storage_provider;
+
+            foreach (array_keys($declarations) as $name) {
+                $location = $storage_provider->get('Mapped\\' . $name)->location;
+                $declared_in_file[$name] = $location !== null && str_ends_with($location->file_path, 'somefile.php');
+            }
+
+            self::assertSame(
+                [
+                    'InterfaceBehindClassGuard' => true,
+                    'ClassBehindInterfaceGuard' => true,
+                    'ClassBehindEnumGuard' => true,
+                    'EnumBehindClassGuard' => false,
+                    'ClassBehindClassGuard' => false,
+                ],
+                $declared_in_file,
+            );
+        } finally {
+            foreach ($class_map as $file) {
+                unlink($file);
+            }
+
+            rmdir($dir);
+        }
     }
 
     public function testAllowBuiltinClassStringStandInForNewClass(): void
