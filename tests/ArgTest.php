@@ -22,6 +22,28 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'namedArgumentWithVariadicParamName' => [
+                'code' => '<?php
+                    function write(string $message, string ...$args): void {
+                        printf($message, ...$args);
+                    }
+
+                    write("Hello, %s! Have a nice %s!", "X", args: "weekend");',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackedNamedArgumentWithVariadicParamName' => [
+                'code' => '<?php
+                    function write(string $message, string ...$args): void {
+                        printf($message, ...$args);
+                    }
+
+                    write("Hello, %s! Have a nice %s!", "X", ...["args" => "weekend"]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'argumentUnpackingLiteral' => [
                 'code' => '<?php
                     function add(int $a, int $b, int $c) : int {
@@ -386,6 +408,35 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'namedArgumentsRepeatingVariadicParamName' => [
+                'code' => '<?php
+                    function write(string $message, string ...$args): void {}
+
+                    write("Hi", args: "X", args: "Y");',
+                'error_message' => 'InvalidNamedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:44',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackedKeyRepeatedByNamedVariadicParamName' => [
+                'code' => '<?php
+                    function write(string $message, string ...$args): void {}
+
+                    write("Hi", ...["args" => "X"], args: "Y");',
+                'error_message' => 'InvalidNamedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:53',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'namedArgumentUsedTwiceBesideVariadic' => [
+                'code' => '<?php
+                    function write(string $message, string ...$args): void {
+                        printf($message, ...$args);
+                    }
+
+                    write("Hello, %s!", message: "Hi", args: "X");',
+                'error_message' => 'InvalidNamedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:41',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'arrayPushArgumentUnpackingWithBadArg' => [
                 'code' => '<?php
                     $a = [];
