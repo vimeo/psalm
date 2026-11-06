@@ -121,6 +121,7 @@ use function str_starts_with;
 use function stripslashes;
 use function strlen;
 use function strpos;
+use function strrpos;
 use function strtolower;
 use function strtr;
 use function substr;
@@ -578,6 +579,27 @@ final class TypeParser
             $parse_tree->text,
             $from_docblock,
         );
+    }
+
+    /**
+     * The name of the constant a name in a namespace stands for: PHP falls back to the global constant
+     * of that name when the namespaced one does not exist
+     *
+     * @psalm-pure
+     */
+    private static function getDefinedConstantName(string $name): ?string
+    {
+        if (defined($name)) {
+            return $name;
+        }
+
+        $last_separator = strrpos($name, '\\');
+
+        if ($last_separator !== false && defined(substr($name, $last_separator + 1))) {
+            return substr($name, $last_separator + 1);
+        }
+
+        return null;
     }
 
     /**
@@ -1177,9 +1199,11 @@ final class TypeParser
                 $atomic_type = reset($generic_param_atomics);
 
                 if ($atomic_type instanceof TNamedObject) {
-                    if (defined($atomic_type->value)) {
+                    $constant_name = self::getDefinedConstantName($atomic_type->value);
+
+                    if ($constant_name !== null) {
                         /** @var mixed */
-                        $constant_value = constant($atomic_type->value);
+                        $constant_value = constant($constant_name);
 
                         if (!is_int($constant_value)) {
                             throw new TypeParseTreeException(
