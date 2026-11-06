@@ -17,9 +17,12 @@ use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Storage\Assertion\Truthy;
 
+use function array_filter;
 use function array_map;
+use function array_values;
 use function count;
 use function spl_object_id;
+use function str_starts_with;
 use function substr;
 
 /**
@@ -64,6 +67,29 @@ final class FormulaGenerator
                 $inside_negation,
                 $cache,
             );
+
+            // what the left side tested of a variable that the right side assigns is about its previous value
+            $right_assigned_var_ids = self::getAssignedVarIds($conditional->right, $this_class_name);
+
+            if ($right_assigned_var_ids) {
+                $left_assertions = array_values(array_filter(
+                    $left_assertions,
+                    static function (Clause $clause) use ($right_assigned_var_ids): bool {
+                        foreach ($clause->possibilities as $var_id => $_) {
+                            foreach ($right_assigned_var_ids as $assigned_var_id => $__) {
+                                if ($var_id === $assigned_var_id
+                                    || str_starts_with($var_id, $assigned_var_id . '[')
+                                    || str_starts_with($var_id, $assigned_var_id . '->')
+                                ) {
+                                    return false;
+                                }
+                            }
+                        }
+
+                        return true;
+                    },
+                ));
+            }
 
             return [...$left_assertions, ...$right_assertions];
         }
