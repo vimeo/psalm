@@ -43,11 +43,13 @@ use function array_flip;
 use function array_intersect_key;
 use function array_keys;
 use function array_map;
+use function array_pop;
 use function basename;
 use function dirname;
 use function error_get_last;
 use function file_get_contents;
 use function file_put_contents;
+use function function_exists;
 use function get_class;
 use function getcwd;
 use function glob;
@@ -2909,5 +2911,94 @@ final class ConfigTest extends TestCase
                 ),
             ),
         );
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerCacheAttributes(): iterable
+    {
+        yield 'compressor' => ['compressor'];
+        yield 'serializer' => ['serializer'];
+    }
+
+    #[DataProvider('providerCacheAttributes')]
+    public function testUnknownValueOfACacheAttributeFailsValidation(string $attribute): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage("attribute '$attribute'");
+
+        Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm ' . $attribute . '="zip"/>');
+    }
+
+    /**
+     * @return iterable<string, array{string, non-empty-string|null, string|null}> compressor, what it needs, a function of it
+     * @psalm-pure
+     */
+    public static function providerCompressorsThatAreResolvedLikeAnAbsentAttribute(): iterable
+    {
+        yield 'auto' => ['auto', null, null];
+        yield 'zstd' => ['zstd', 'ext-zstd', 'zstd_compress'];
+        yield 'lz4' => ['lz4', 'ext-lz4', 'lz4_compress'];
+        yield 'deflate' => ['deflate', 'ext-zlib', 'gzdeflate'];
+    }
+
+    /**
+     * `auto` and a compressor that is not available give what no attribute gives, `auto` without a warning
+     *
+     * @param non-empty-string|null $requirement
+     */
+    #[DataProvider('providerCompressorsThatAreResolvedLikeAnAbsentAttribute')]
+    public function testAutoOrUnavailableCompressorIsResolvedLikeAnAbsentAttribute(
+        string $compressor,
+        ?string $requirement,
+        ?string $function,
+    ): void {
+        if ($function !== null && function_exists($function)) {
+            $this->markTestSkipped("$function exists");
+        }
+
+        $absent = Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm/>');
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            '<?xml version="1.0"?><psalm compressor="' . $compressor . '"/>',
+        );
+
+        $this->assertSame($absent->compressor, $config->compressor);
+        if ($requirement === null) {
+            $this->assertSame($absent->config_warnings, $config->config_warnings);
+
+            return;
+        }
+
+        $warnings = $config->config_warnings;
+        $warning = array_pop($warnings);
+        $this->assertSame($absent->config_warnings, $warnings);
+        $this->assertNotNull($warning);
+        $this->assertStringStartsWith($requirement, $warning);
+        $this->assertStringContainsString(' is missing, ', $warning);
+        $this->assertStringContainsString('compressor="' . $compressor . '"', $warning);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerAttributesOfTheZstdCompressor(): iterable
+    {
+        yield 'absent' => [''];
+        yield 'auto' => [' compressor="auto"'];
+        yield 'zstd' => [' compressor="zstd"'];
+    }
+
+    #[DataProvider('providerAttributesOfTheZstdCompressor')]
+    #[RequiresPhpExtension('zstd', '>=0.15.0')]
+    public function testCompressorIsZstdByDefaultAndWhenAskedFor(string $attributes): void
+    {
+        $config = Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm' . $attributes . '/>');
+
+        $this->assertSame('zstd', $config->compressor);
+        $this->assertSame([], $config->config_warnings);
     }
 }
