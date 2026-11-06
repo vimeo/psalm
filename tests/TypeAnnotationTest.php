@@ -20,6 +20,30 @@ final class TypeAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'importedTypeAliasInAnIntersectionOfAnotherAlias' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type X = array{x: int}
+                     */
+                    class A {}
+
+                    /**
+                     * @psalm-import-type X from A
+                     * @psalm-type Y = array{y: int}
+                     * @psalm-type Q = X&Y
+                     */
+                    class B {
+                        /** @return Q */
+                        public function get(): array {
+                            return ["x" => 1, "y" => 2];
+                        }
+                    }
+
+                    $q = (new B())->get();',
+                'assertions' => [
+                    '$q===' => 'array{x: int, y: int}',
+                ],
+            ],
             'atInArrayKey' => [
                 'code' => '<?php
 
@@ -1134,6 +1158,20 @@ final class TypeAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'importedTypeAliasOfAnArrayMixedWithAnObjectInAnIntersection' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type X = array{x: int}
+                     */
+                    class A {}
+
+                    /**
+                     * @psalm-import-type X from A
+                     * @psalm-type Q = X&Countable
+                     */
+                    class B {}',
+                'error_message' => 'InvalidDocblock',
+            ],
             'invalidTypeAlias' => [
                 'code' => '<?php
                     namespace Barrr;
