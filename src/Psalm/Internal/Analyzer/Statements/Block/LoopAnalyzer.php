@@ -24,6 +24,7 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff_assoc;
 use function array_filter;
 use function array_keys;
 use function array_merge;
@@ -81,6 +82,8 @@ final class LoopAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         $inner_do_context = null;
+        /** @var array<string, Union> $condition_vars */
+        $condition_vars = [];
 
         if ($pre_conditions) {
             foreach ($pre_conditions as $i => $pre_condition) {
@@ -169,6 +172,8 @@ final class LoopAnalyzer
                         $loop_context,
                         $loop_parent_context,
                         $is_do,
+                        $condition_vars,
+                        $condition_offset === 0,
                     );
                 }
             }
@@ -336,6 +341,8 @@ final class LoopAnalyzer
                             $continue_context,
                             $loop_parent_context,
                             false,
+                            $condition_vars,
+                            $condition_offset === 0,
                         );
                     }
                 }
@@ -543,6 +550,13 @@ final class LoopAnalyzer
                 $loop_scope,
                 $always_assigned_unmodified_vars,
             );
+        }
+
+        // the condition of a loop is evaluated at least once, so what it assigns is defined after the loop
+        foreach ($condition_vars as $var_id => $type) {
+            if (!isset($loop_parent_context->vars_in_scope[$var_id])) {
+                $loop_parent_context->vars_in_scope[$var_id] = $type;
+            }
         }
 
         if ($inner_do_context) {
@@ -787,6 +801,7 @@ final class LoopAnalyzer
 
     /**
      * @param  list<Clause>  $pre_condition_clauses
+     * @param  array<string, Union>  $condition_vars the variables the first condition assigned
      * @return list<string>
      */
     private static function applyPreConditionToLoopContext(
@@ -796,7 +811,10 @@ final class LoopAnalyzer
         Context $loop_context,
         Context $outer_context,
         bool $is_do,
+        array &$condition_vars = [],
+        bool $is_first_condition = false,
     ): array {
+        $pre_assigned_var_ids = $loop_context->assigned_var_ids;
         $pre_referenced_var_ids = $loop_context->cond_referenced_var_ids;
         $loop_context->cond_referenced_var_ids = [];
 
@@ -811,6 +829,18 @@ final class LoopAnalyzer
         }
 
         $loop_context->inside_conditional = $was_inside_conditional;
+
+        // the first condition is evaluated for sure, unlike the ones after an `&&`
+        if (!$is_do && $is_first_condition) {
+            // what the condition assigned, as it is when the condition has been evaluated
+            foreach (array_diff_assoc($loop_context->assigned_var_ids, $pre_assigned_var_ids) as $var_id => $_) {
+                if (isset($loop_context->vars_in_scope[$var_id])
+                    && !$loop_context->vars_in_scope[$var_id]->possibly_undefined
+                ) {
+                    $condition_vars[$var_id] = $loop_context->vars_in_scope[$var_id];
+                }
+            }
+        }
 
         $new_referenced_var_ids = $loop_context->cond_referenced_var_ids;
         $loop_context->cond_referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);
