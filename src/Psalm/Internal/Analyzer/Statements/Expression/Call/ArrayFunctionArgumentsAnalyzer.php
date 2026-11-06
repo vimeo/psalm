@@ -19,6 +19,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\ArrayType;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
@@ -39,6 +40,7 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -46,6 +48,7 @@ use function array_filter;
 use function array_pop;
 use function array_shift;
 use function array_unshift;
+use function array_values;
 use function assert;
 use function count;
 use function explode;
@@ -157,40 +160,53 @@ final class ArrayFunctionArgumentsAnalyzer
         );
 
         if ($method_id === 'array_push' && !$unpacked_args) {
-            for ($i = 1; $i < $nb_args; $i++) {
-                $was_inside_assignment = $context->inside_assignment;
+            $node_data = $statements_analyzer->node_data;
+            // the keys of an item pushed to are evaluated with its first value only
+            $evaluated_operands = [];
 
-                $context->inside_assignment = true;
+            try {
+                for ($i = 1; $i < $nb_args; $i++) {
+                    $was_inside_assignment = $context->inside_assignment;
 
-                if (ExpressionAnalyzer::analyze(
-                    $statements_analyzer,
-                    $args[$i]->value,
-                    $context,
-                ) === false) {
+                    $context->inside_assignment = true;
+
+                    if (ExpressionAnalyzer::analyze(
+                        $statements_analyzer,
+                        $args[$i]->value,
+                        $context,
+                    ) === false) {
+                        $context->inside_assignment = $was_inside_assignment;
+
+                        return false;
+                    }
+
                     $context->inside_assignment = $was_inside_assignment;
 
-                    return false;
+                    $old_node_data = $statements_analyzer->node_data;
+
+                    $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+                    ArrayAssignmentAnalyzer::analyze(
+                        $statements_analyzer,
+                        new VirtualArrayDimFetch(
+                            $array_arg,
+                            null,
+                            $args[$i]->value->getAttributes(),
+                        ),
+                        $context,
+                        $args[$i]->value,
+                        $statements_analyzer->node_data->getType($args[$i]->value) ?? Type::getMixed(),
+                    );
+
+                    $statements_analyzer->node_data = $old_node_data;
+
+                    if ($i === 1 && $array_arg instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                        $evaluated_operands = ArrayAssignmentAnalyzer::getOperands($array_arg);
+                        $node_data->markEvaluated($evaluated_operands);
+                    }
                 }
-
-                $context->inside_assignment = $was_inside_assignment;
-
-                $old_node_data = $statements_analyzer->node_data;
-
-                $statements_analyzer->node_data = clone $statements_analyzer->node_data;
-
-                ArrayAssignmentAnalyzer::analyze(
-                    $statements_analyzer,
-                    new VirtualArrayDimFetch(
-                        $args[0]->value,
-                        null,
-                        $args[$i]->value->getAttributes(),
-                    ),
-                    $context,
-                    $args[$i]->value,
-                    $statements_analyzer->node_data->getType($args[$i]->value) ?? Type::getMixed(),
-                );
-
-                $statements_analyzer->node_data = $old_node_data;
+            } finally {
+                $node_data->unmarkEvaluated($evaluated_operands);
             }
 
             return null;
@@ -408,7 +424,7 @@ final class ArrayFunctionArgumentsAnalyzer
             && $offset_arg_type->hasLiteralValue() && $offset_arg_type->isSingleLiteral()
         ) {
             $offset_literal_value = $offset_arg_type->getSingleLiteral()->value;
-            $offset_arg_is_zero = is_numeric($offset_literal_value) && ((int) $offset_literal_value)===0;
+            $offset_arg_is_zero = is_numeric($offset_literal_value) && LiteralCast::toInt($offset_literal_value) === 0;
         }
 
         if (!isset($args[2])) {
@@ -465,7 +481,7 @@ final class ArrayFunctionArgumentsAnalyzer
                 if ($length_arg_type->isSingleLiteral()) {
                     $length_literal =  $length_arg_type->getSingleLiteral();
                     if ($length_literal->isNumericType()) {
-                        $length_min = (int) $length_literal->value;
+                        $length_min = LiteralCast::toInt($length_literal->value);
                     }
                 } else {
                     foreach ([
@@ -474,7 +490,7 @@ final class ArrayFunctionArgumentsAnalyzer
                         ...$length_arg_type->getLiteralFloats(),
                     ] as $literal) {
                         if ($literal->isNumericType()
-                            && ($literal_val = (int) $literal->value)
+                            && ($literal_val = LiteralCast::toInt($literal->value) ?? 0)
                             && ((isset($length_min) && $length_min> $literal_val) || !isset($length_min))) {
                             $length_min = $literal_val;
                         }
@@ -645,8 +661,21 @@ final class ArrayFunctionArgumentsAnalyzer
 
             if (isset($context->vars_in_scope[$var_id])) {
                 $array_atomic_types = [];
+                $var_atomic_types = array_values($context->vars_in_scope[$var_id]->getAtomicTypes());
 
-                foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $array_atomic_type) {
+                while ($array_atomic_type = array_shift($var_atomic_types)) {
+                    // once an element is removed, the array is no longer of the template type, only of its bound
+                    if ($array_atomic_type instanceof TTemplateParam
+                        && !$array_atomic_type->as->isMixed()
+                        && !$array_atomic_type->as->isEmptyArray()
+                    ) {
+                        $var_atomic_types = [
+                            ...$var_atomic_types,
+                            ...array_values($array_atomic_type->as->getAtomicTypes()),
+                        ];
+                        continue;
+                    }
+
                     if ($array_atomic_type instanceof TKeyedArray) {
                         if ($is_array_shift && $array_atomic_type->is_list
                             && !$context->inside_loop
@@ -674,6 +703,14 @@ final class ArrayFunctionArgumentsAnalyzer
                             if (!$array_properties) {
                                 $array_atomic_types []= Type::getEmptyArrayAtomic();
                             } else {
+                                // if the popped element was optional, an earlier one may have been removed instead
+                                $min_count = $array_atomic_type->getMinCount() - 1;
+                                foreach ($array_properties as $offset => $property) {
+                                    if ($offset >= $min_count) {
+                                        $array_properties[$offset] = $property->setPossiblyUndefined(true);
+                                    }
+                                }
+
                                 $array_atomic_types []= $array_atomic_type->setProperties($array_properties);
                             }
                             continue;
@@ -732,7 +769,8 @@ final class ArrayFunctionArgumentsAnalyzer
                 if (!$array_atomic_types) {
                     throw new AssertionError("We must have some types here!");
                 }
-                $array_type = new Union($array_atomic_types);
+                // several atomics may be arrays, which a Union would index by the same key
+                $array_type = TypeCombiner::combine($array_atomic_types, $statements_analyzer->getCodebase());
                 $context->removeDescendents($var_id, $array_type);
                 $context->vars_in_scope[$var_id] = $array_type;
             }

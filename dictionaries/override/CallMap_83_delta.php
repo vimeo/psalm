@@ -476,6 +476,19 @@ return array (
         'update_timestamp=' => 'callable[impure](string):bool|null',
       ),
     ),
+    'snmp_set_quick_print' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'enable' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'enable' => 'bool',
+      ),
+    ),
     'srand' => 
     array (
       'old' => 
