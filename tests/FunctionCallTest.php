@@ -69,6 +69,72 @@ final class FunctionCallTest extends TestCase
                     '$many===' => 'float',
                 ],
             ],
+            'psalmOverloadIsChosenByTheNamesOfTheArguments' => [
+                'code' => '<?php
+                    /**
+                     * @param string $name
+                     * @param int $id
+                     * @return int|string
+                     * @psalm-overload (string $name): int
+                     * @psalm-overload (int $id): string
+                     */
+                    function pick($name = "", $id = 0) {
+                        return 0;
+                    }
+
+                    $byName = pick(name: "a");
+                    $byId = pick(id: 5);',
+                'assertions' => [
+                    '$byName===' => 'int',
+                    '$byId===' => 'string',
+                ],
+            ],
+            'psalmOverloadSkipsAnOptionalParameterWithANamedArgument' => [
+                'code' => '<?php
+                    /**
+                     * @return int|string
+                     * @psalm-overload (string $a, int $b = 0): int
+                     * @psalm-overload (string $a, string $c): string
+                     */
+                    function pick(string $a, int|string $b = 0, string $c = "") {
+                        return 0;
+                    }
+
+                    $first = pick("x", b: 1);
+                    $second = pick("x", c: "y");',
+                'assertions' => [
+                    '$first===' => 'int',
+                    '$second===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmOverloadWithAnUnpackedArgumentChecksTheArgumentsBeforeIt' => [
+                'code' => '<?php
+                    /**
+                     * @param string|int $a
+                     * @param string|int ...$rest
+                     * @return int|string
+                     * @psalm-overload (string $a, string ...$rest): int
+                     * @psalm-overload (int $a, int ...$rest): string
+                     */
+                    function pick($a, ...$rest) {
+                        return 0;
+                    }
+
+                    /** @var list<string> $strings */
+                    $strings = [];
+
+                    /** @var list<int> $numbers */
+                    $numbers = [];
+
+                    $byString = pick("a", ...$strings);
+                    $byInt = pick(1, ...$numbers);',
+                'assertions' => [
+                    '$byString===' => 'int',
+                    '$byInt===' => 'string',
+                ],
+            ],
             'psalmOverloadOfAFunctionInANamespaceUsesTheImports' => [
                 'code' => '<?php
                     namespace Domain {
@@ -2839,6 +2905,21 @@ final class FunctionCallTest extends TestCase
 
                     pick(1.5);',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:26',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmOverloadWithANamedArgumentOfAWrongTypeReportsTheLastDeclared' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $name): int
+                     * @psalm-overload (int $id): string
+                     */
+                    function pick(string|int $name = "", int $id = 0): int|string {
+                        return 0;
+                    }
+
+                    pick(id: "a");',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],

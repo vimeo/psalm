@@ -82,6 +82,10 @@ final class OverloadSelector
     }
 
     /**
+     * Whether the arguments, placed on the parameters by position and by name, fit the overload: each parameter
+     * gets at most one argument of an accepted type, and every required one gets one. The arguments from an
+     * unpacked one on can't be placed, so they are left out.
+     *
      * @param list<PhpParser\Node\Arg> $args
      * @param list<?Union> $arg_types
      */
@@ -92,29 +96,62 @@ final class OverloadSelector
         array $arg_types,
     ): bool {
         $params = $overload->params;
-        $last_param = $params ? $params[count($params) - 1] : null;
+        $last_offset = count($params) - 1;
+        $variadic = $last_offset >= 0 && $params[$last_offset]->is_variadic;
 
-        if (count($args) < $overload->required_param_count
-            || (count($args) > count($params) && !($last_param && $last_param->is_variadic))
-        ) {
-            return false;
-        }
+        $bound = [];
+        $has_unpack = false;
 
         foreach ($args as $offset => $arg) {
-            if ($arg->unpack || $arg->name) {
-                return true;
+            if ($arg->unpack) {
+                $has_unpack = true;
+                break;
             }
 
-            $param = $params[$offset] ?? $last_param;
+            if ($arg->name) {
+                $param_offset = null;
 
-            if (!$param || !$param->type) {
-                continue;
-            }
+                foreach ($params as $candidate_offset => $candidate) {
+                    if ($candidate->name === $arg->name->name && !$candidate->is_variadic) {
+                        $param_offset = $candidate_offset;
+                        break;
+                    }
+                }
 
-            $arg_type = $arg_types[$offset];
+                if ($param_offset === null) {
+                    if ($variadic) {
+                        continue;
+                    }
 
-            if ($arg_type && !UnionTypeComparator::isContainedBy($codebase, $arg_type, $param->type)) {
+                    return false;
+                }
+
+                if (isset($bound[$param_offset])) {
+                    return false;
+                }
+            } elseif (isset($params[$offset])) {
+                $param_offset = $offset;
+            } elseif ($variadic) {
+                $param_offset = $last_offset;
+            } else {
                 return false;
+            }
+
+            $bound[$param_offset] = true;
+            $param_type = $params[$param_offset]->type;
+
+            if ($param_type && $arg_types[$offset]
+                && !UnionTypeComparator::isContainedBy($codebase, $arg_types[$offset], $param_type)
+            ) {
+                return false;
+            }
+        }
+
+        if (!$has_unpack) {
+            for ($required = 0; $required < $overload->required_param_count; $required++) {
+                if (!isset($bound[$required])) {
+                    return false;
+                }
             }
         }
 
