@@ -162,6 +162,7 @@ final class AssignmentAnalyzer
         ?PhpParser\Comment\Doc $doc_comment,
         array $not_ignored_docblock_var_ids = [],
         ?PhpParser\Node\Expr $assign_expr = null,
+        bool $assign_value_analyzed = false,
     ): ?Union {
         $var_id = ExpressionIdentifier::getVarId(
             $assign_var,
@@ -336,7 +337,9 @@ final class AssignmentAnalyzer
                 $context->inside_general_use = true;
             }
 
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_value, $context) === false) {
+            if (!$assign_value_analyzed
+                && ExpressionAnalyzer::analyze($statements_analyzer, $assign_value, $context) === false
+            ) {
                 $context->inside_general_use = $was_inside_general_use;
 
                 if ($var_id) {

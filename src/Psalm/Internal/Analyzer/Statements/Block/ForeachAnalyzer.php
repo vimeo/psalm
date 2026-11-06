@@ -327,6 +327,8 @@ final class ForeachAnalyzer
                 $foreach_context,
                 $doc_comment,
                 ['$' . $stmt->keyVar->name => true],
+                null,
+                true,
             );
         }
 
@@ -358,6 +360,8 @@ final class ForeachAnalyzer
                 && is_string($stmt->valueVar->name)
                 ? ['$' . $stmt->valueVar->name => true]
                 : [],
+            null,
+            true,
         );
 
         if ($stmt->byRef
