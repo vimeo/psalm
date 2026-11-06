@@ -108,6 +108,7 @@ use function array_values;
 use function count;
 use function implode;
 use function in_array;
+use function is_array;
 use function is_int;
 use function spl_object_id;
 use function str_starts_with;
@@ -2218,8 +2219,9 @@ final class ArrayFetchAnalyzer
 
     /**
      * The side effects not to repeat when the virtual offset*() call analyses the operands again. The keys are
-     * analysed before the receiver and again after it, as on a plain array, so the receiver's side effects take
-     * precedence: when it has none, those of the keys
+     * analysed before the receiver and again after it, as on a plain array. When the receiver has side effects,
+     * those are the ones: it may change what the keys read. A receiver with calls but no side effects, as a
+     * method called without arguments, may change it too: then none are, and the keys are analysed again.
      *
      * @return list<PhpParser\Node\Expr>
      */
@@ -2234,6 +2236,7 @@ final class ArrayFetchAnalyzer
         }
 
         $receiver_side_effects = [];
+        $receiver_has_call = false;
         $dim_side_effects = [];
 
         foreach (ArrayAssignmentAnalyzer::getOperands($stmt) as $operand) {
@@ -2241,10 +2244,35 @@ final class ArrayFetchAnalyzer
                 array_push($dim_side_effects, ...ArrayAssignmentAnalyzer::getSideEffects($operand));
             } else {
                 array_push($receiver_side_effects, ...ArrayAssignmentAnalyzer::getSideEffects($operand));
+                $receiver_has_call = $receiver_has_call || self::containsCall($operand);
             }
         }
 
-        return $receiver_side_effects ?: $dim_side_effects;
+        return $receiver_has_call || $receiver_side_effects ? $receiver_side_effects : $dim_side_effects;
+    }
+
+    private static function containsCall(PhpParser\Node $node): bool
+    {
+        if ($node instanceof PhpParser\Node\Expr\Closure || $node instanceof PhpParser\Node\Expr\ArrowFunction) {
+            return false;
+        }
+
+        if ($node instanceof PhpParser\Node\Expr\CallLike) {
+            return true;
+        }
+
+        foreach ($node->getSubNodeNames() as $name) {
+            /** @var PhpParser\Node|list<PhpParser\Node|null>|scalar|null $sub_node */
+            $sub_node = $node->{$name};
+
+            foreach (is_array($sub_node) ? $sub_node : [$sub_node] as $child) {
+                if ($child instanceof PhpParser\Node && self::containsCall($child)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private static function handleArrayAccessOnNamedObject(
