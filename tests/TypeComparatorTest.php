@@ -20,6 +20,7 @@ use Psalm\Type\Union;
 use function array_diff_key;
 use function array_keys;
 use function array_map;
+use function array_reverse;
 
 final class TypeComparatorTest extends TestCase
 {
@@ -72,6 +73,38 @@ final class TypeComparatorTest extends TestCase
         ));
         $this->assertTrue($failure->type_coerced);
         $this->assertTrue($failure->type_coerced_from_mixed);
+    }
+
+    /**
+     * @dataProvider iterableDiagnosticCases
+     */
+    public function testIterableDiagnostics(string $input, string $container, bool $coerced, bool $mixed): void
+    {
+        $container_type = Type::parseString($container);
+        foreach ([$container_type, $container_type->setTypes(array_reverse($container_type->getAtomicTypes()))] as $type) {
+            $result = new TypeComparisonResult();
+            $this->assertFalse(UnionTypeComparator::isContainedBy(
+                $this->project_analyzer->getCodebase(),
+                Type::parseString($input),
+                $type,
+                false,
+                false,
+                $result,
+            ));
+            $this->assertSame($coerced, (bool) $result->type_coerced);
+            $this->assertSame($mixed, (bool) $result->type_coerced_from_mixed);
+        }
+    }
+
+    /** @return iterable<string, array{string, string, bool, bool}> */
+    public function iterableDiagnosticCases(): iterable
+    {
+        yield 'direct iterable coercion' => ['iterable<mixed, mixed>', 'iterable<string>', true, true];
+        yield 'array to iterable coercion' => ['array', 'iterable<string>', true, true];
+        yield 'both halves coerce' => ['iterable<mixed, mixed>', 'array<string>|Traversable<string>', true, true];
+        yield 'array half cannot cover traversable' => ['iterable<mixed, mixed>', 'array<string>', false, false];
+        yield 'uncovered traversable half' => ['iterable<mixed, mixed>', 'array<string>|int', false, false];
+        yield 'known generic mismatch' => ['iterable<string, string>', 'list<int>|Traversable<int, int>', false, false];
     }
 
     /**
