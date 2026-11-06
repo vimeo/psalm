@@ -134,6 +134,8 @@ final class AndAnalyzer
 
         if ($left_type_assertions) {
             $right_context = clone $context;
+            // what the left side guards (function_exists(), class_exists(), defined()...) holds for the right one
+            $right_context->updateChecks($left_context);
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
             [$right_context->vars_in_scope, $right_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
