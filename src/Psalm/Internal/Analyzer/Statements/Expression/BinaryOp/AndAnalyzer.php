@@ -26,6 +26,7 @@ use function array_values;
 use function count;
 use function in_array;
 use function spl_object_id;
+use function str_starts_with;
 
 /**
  * @internal
@@ -97,7 +98,7 @@ final class AndAnalyzer
 
         $left_assigned_var_ids = array_diff_key($left_context->assigned_var_ids, $pre_assigned_var_ids);
 
-        $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
+        $left_referenced_var_ids = self::removeAssignedVarIds($left_referenced_var_ids, $left_assigned_var_ids);
 
         $context_clauses = array_merge($left_context->clauses, $left_clauses);
 
@@ -223,5 +224,30 @@ final class AndAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * Drops the assigned variables and the keys nested in them, which the left side already narrowed.
+     *
+     * @param array<string, bool> $referenced_var_ids
+     * @param array<string, int> $assigned_var_ids
+     * @return array<string, bool>
+     * @psalm-pure
+     */
+    private static function removeAssignedVarIds(array $referenced_var_ids, array $assigned_var_ids): array
+    {
+        foreach ($referenced_var_ids as $referenced_var_id => $_) {
+            foreach ($assigned_var_ids as $assigned_var_id => $__) {
+                if ($referenced_var_id === $assigned_var_id
+                    || str_starts_with($referenced_var_id, $assigned_var_id . '[')
+                    || str_starts_with($referenced_var_id, $assigned_var_id . '->')
+                ) {
+                    unset($referenced_var_ids[$referenced_var_id]);
+                    break;
+                }
+            }
+        }
+
+        return $referenced_var_ids;
     }
 }
