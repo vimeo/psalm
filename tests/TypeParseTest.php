@@ -1237,6 +1237,36 @@ final class TypeParseTest extends TestCase
         );
     }
 
+    public function testKeyedArrayWithTrailingComma(): void
+    {
+        $this->assertSame(
+            'array{a: int, b: string}',
+            (string) Type::parseString('array{a: int, b: string,}'),
+        );
+    }
+
+    public function testNestedKeyedArrayWithTrailingCommas(): void
+    {
+        $this->assertSame(
+            'array{a: int, b?: array{c: string}}',
+            (string) Type::parseString('array{a: int, b?: array{c: string,},}'),
+        );
+    }
+
+    public function testListShapeWithTrailingComma(): void
+    {
+        $this->assertSame(
+            'list{int, string}',
+            (string) Type::parseString('list{int, string,}'),
+        );
+    }
+
+    public function testKeyedArrayWithOnlyACommaIsInvalid(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array{,}');
+    }
+
     public function testCallableWithVariadicAndDefault(): void
     {
         $this->expectException(TypeParseTreeException::class);
