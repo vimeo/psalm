@@ -58,6 +58,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\Issue\InvalidDocblock;
+use Psalm\Plugin\EventHandler\Event\AfterFileParsedEvent;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\StatementsSource;
@@ -1012,12 +1013,25 @@ final class Codebase
      */
     public function getStatementsForFile(string $file_path, ?Progress $progress = null): array
     {
-        return $this->statements_provider->getStatementsForFile(
+        $event_dispatcher = $this->config->eventDispatcher;
+        $has_after_file_parsed_handlers = $event_dispatcher->hasAfterFileParsedHandlers();
+
+        $stmts = $this->statements_provider->getStatementsForFile(
             $file_path,
             $this->analysis_php_version_id,
             $this->diff_methods || $this->diff_run || $this->language_server,
             $progress ?? $this->progress,
+            $has_after_file_parsed_handlers,
         );
+
+        if (!$has_after_file_parsed_handlers) {
+            return $stmts;
+        }
+
+        $event = new AfterFileParsedEvent($file_path, $stmts, $this);
+        $event_dispatcher->dispatchAfterFileParsed($event);
+
+        return $event->getStmts();
     }
 
     /**

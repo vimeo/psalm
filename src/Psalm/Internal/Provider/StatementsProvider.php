@@ -107,6 +107,8 @@ final class StatementsProvider
     }
 
     /**
+     * @param bool $mutable whether the caller may change the statements, which then are never those the parser cache
+     *     keeps
      * @return list<Stmt>
      */
     public function getStatementsForFile(
@@ -114,6 +116,7 @@ final class StatementsProvider
         int $analysis_php_version_id,
         bool $do_diff,
         ?Progress $progress = null,
+        bool $mutable = false,
     ): array {
         unset($this->errors[$file_path]);
 
@@ -167,7 +170,7 @@ final class StatementsProvider
         );
 
         if ($cached !== null) {
-            return $this->useCachedStatements($file_path, $file_contents, ...$cached);
+            return $this->useCachedStatements($file_path, $file_contents, $mutable, ...$cached);
         }
 
         $progress->debug("Parsing $file_path because the cache is absent or outdated\n");
@@ -188,7 +191,7 @@ final class StatementsProvider
 
             // Race condition, another thread wrote the same data we already have
             if ($existing_file_contents === $file_contents && $existing !== null) {
-                return $this->useCachedStatements($file_path, $file_contents, ...$existing);
+                return $this->useCachedStatements($file_path, $file_contents, $mutable, ...$existing);
             }
 
             $file_changes = null;
@@ -202,11 +205,7 @@ final class StatementsProvider
                 $file_changes = FileDiffer::getDiff($existing_file_contents, $file_contents);
 
                 if (count($file_changes) < 10) {
-                    $traverser = new PhpParser\NodeTraverser;
-                    $traverser->addVisitor(new CloningVisitor);
-                    // performs a deep clone
-                    /** @var list<PhpParser\Node\Stmt> */
-                    $existing_statements_copy = $traverser->traverse($existing_statements);
+                    $existing_statements_copy = self::cloneStatements($existing_statements);
                 } else {
                     $file_changes = null;
                 }
@@ -289,7 +288,7 @@ final class StatementsProvider
 
         $this->parser_cache_provider->saveStatementsToCache($file_path, $file_contents, $stmts, $parse_errors);
 
-        return $stmts;
+        return $mutable ? self::cloneStatements($stmts) : $stmts;
     }
 
     /**
@@ -488,6 +487,7 @@ final class StatementsProvider
     private function useCachedStatements(
         string $file_path,
         string $file_contents,
+        bool $mutable,
         array $stmts,
         array $parse_errors,
     ): array {
@@ -500,7 +500,22 @@ final class StatementsProvider
         $this->diff_map[$file_path] = [];
         $this->deletion_ranges[$file_path] = [];
 
-        return $stmts;
+        return $mutable ? self::cloneStatements($stmts) : $stmts;
+    }
+
+    /**
+     * A deep clone: changing it, its comments included, leaves the statements it was cloned from unchanged
+     *
+     * @param list<Stmt> $stmts
+     * @return list<Stmt>
+     */
+    private static function cloneStatements(array $stmts): array
+    {
+        $traverser = new PhpParser\NodeTraverser;
+        $traverser->addVisitor(new CloningVisitor);
+
+        /** @var list<Stmt> */
+        return $traverser->traverse($stmts);
     }
 
     /**

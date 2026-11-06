@@ -31,6 +31,13 @@ final class CloningVisitor extends NodeVisitorAbstract
             $node->setAttribute('comments', $comments);
         }
 
+        // set by SimpleNameResolver, it's not a subnode so the traverser doesn't clone it
+        /** @var Node\Name|string|null */
+        $namespaced_name = $node->getAttribute('namespacedName');
+        if ($namespaced_name instanceof Node\Name) {
+            $node->setAttribute('namespacedName', clone $namespaced_name);
+        }
+
         return $node;
     }
 }

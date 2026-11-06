@@ -13,6 +13,7 @@ use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\AfterEveryFunctionCallAnalysisInterface;
 use Psalm\Plugin\EventHandler\AfterExpressionAnalysisInterface;
 use Psalm\Plugin\EventHandler\AfterFileAnalysisInterface;
+use Psalm\Plugin\EventHandler\AfterFileParsedInterface;
 use Psalm\Plugin\EventHandler\AfterFunctionCallAnalysisInterface;
 use Psalm\Plugin\EventHandler\AfterFunctionLikeAnalysisInterface;
 use Psalm\Plugin\EventHandler\AfterMethodCallAnalysisInterface;
@@ -31,6 +32,7 @@ use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFileAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterFileParsedEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
@@ -146,6 +148,13 @@ final class EventDispatcher
     public array $after_codebase_populated = [];
 
     /**
+     * Static methods to be called after a file has been parsed, before it is scanned or analyzed
+     *
+     * @var list<class-string<AfterFileParsedInterface>>
+     */
+    private array $after_file_parsed = [];
+
+    /**
      * @var list<class-string<BeforeAddIssueInterface>>
      */
     private array $before_add_issue = [];
@@ -253,6 +262,10 @@ final class EventDispatcher
 
         if (is_subclass_of($class, AfterCodebasePopulatedInterface::class)) {
             $this->after_codebase_populated[] = $class;
+        }
+
+        if (is_subclass_of($class, AfterFileParsedInterface::class)) {
+            $this->after_file_parsed[] = $class;
         }
 
         if (is_subclass_of($class, BeforeAddIssueInterface::class)) {
@@ -408,6 +421,21 @@ final class EventDispatcher
     {
         foreach ($this->after_codebase_populated as $handler) {
             $handler::afterCodebasePopulated($event);
+        }
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function hasAfterFileParsedHandlers(): bool
+    {
+        return count($this->after_file_parsed) > 0;
+    }
+
+    public function dispatchAfterFileParsed(AfterFileParsedEvent $event): void
+    {
+        foreach ($this->after_file_parsed as $handler) {
+            $handler::afterFileParsed($event);
         }
     }
 
