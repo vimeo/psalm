@@ -789,7 +789,6 @@ final class SimpleTypeInferer
 
                     $array_creation_info->addItemValueTypes($property_value);
 
-                    $array_creation_info->array_keys[$new_offset] = true;
                     $array_creation_info->property_types[$new_offset] = $property_value;
                 }
                 if ($unpacked_atomic_type->fallback_params !== null) {

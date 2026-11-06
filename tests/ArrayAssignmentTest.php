@@ -1734,6 +1734,33 @@ final class ArrayAssignmentTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'literalKeyOverridesUnpackedStringKey' => [
+                'code' => '<?php
+                    $base = ["name" => "default", "email" => "a@example.com"];
+                    $x = [...$base, "name" => "given"];',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'literalKeyOverridesUnpackedListKey' => [
+                'code' => '<?php
+                    $pair = [1, 2];
+                    $x = [...$pair, 0 => 9];',
+            ],
+            'constantLiteralKeyOverridesUnpackedKey' => [
+                'code' => '<?php
+                    class A {
+                        public const BASE = ["a" => 1];
+                        public const B = [...self::BASE, "a" => 2];
+                    }
+
+                    $b = A::B;',
+                'assertions' => [
+                    '$b===' => 'array{a: 2}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'constantArraySpreadWithString' => [
                 'code' => '<?php
                     class BaseClass {
@@ -2878,6 +2905,22 @@ final class ArrayAssignmentTest extends TestCase
                         2 => 4,
                     ];',
                 'error_message' => 'DuplicateArrayKey',
+            ],
+            'duplicateArrayKeyAfterUnpackedArray' => [
+                'code' => '<?php
+                    $base = ["a" => 0];
+                    $arr = [...$base, "a" => 1, "a" => 2];',
+                'error_message' => 'DuplicateArrayKey - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:49',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'duplicateArrayKeyAroundUnpackedArray' => [
+                'code' => '<?php
+                    $base = ["a" => 0];
+                    $arr = ["a" => 1, ...$base, "a" => 2];',
+                'error_message' => 'DuplicateArrayKey',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'mixedArrayAssignmentOnVariable' => [
                 'code' => '<?php
