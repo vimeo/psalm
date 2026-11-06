@@ -855,10 +855,30 @@ final class ParseTreeCreator
         $this->current_leaf = $new_parent_leaf;
     }
 
+    /**
+     * Whether the current token is a key of a shape (`array{as: int}`, `array{of?: int}`), not an operator
+     *
+     * @psalm-capabilities read-props
+     */
+    private function isKeyOfKeyedArray(): bool
+    {
+        if (!$this->current_leaf instanceof KeyedArrayTree) {
+            return false;
+        }
+
+        $next_token = $this->type_tokens[$this->t + 1][0] ?? null;
+
+        if ($next_token === '?') {
+            $next_token = $this->type_tokens[$this->t + 2][0] ?? null;
+        }
+
+        return $next_token === ':';
+    }
+
     /** @param array{0: string, 1: int, 2?: string} $type_token */
     private function handleIsOrAs(array $type_token): void
     {
-        if ($this->t === 0) {
+        if ($this->t === 0 || $this->isKeyOfKeyedArray()) {
             $this->handleValue($type_token);
         } else {
             $current_parent = $this->current_leaf->parent;
