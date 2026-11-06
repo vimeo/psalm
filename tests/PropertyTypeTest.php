@@ -561,6 +561,17 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'interfaceIntersectedWithAnObjectShapePropertyFetch' => [
+                'code' => '<?php
+                    interface Foo {}
+
+                    /**
+                     * @param Foo&object{id: int} $foo
+                     */
+                    function test(Foo $foo): int {
+                        return $foo->id;
+                    }',
+            ],
             'newVarInIf' => [
                 'code' => '<?php
                     class A {
@@ -2903,6 +2914,19 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'interfaceIntersectedWithAnObjectShapeOtherPropertyFetch' => [
+                'code' => '<?php
+                    interface Foo {}
+
+                    /**
+                     * @param Foo&object{id: int} $foo
+                     * @return mixed
+                     */
+                    function test(Foo $foo) {
+                        return $foo->name;
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+            ],
             'undefinedPropertyAssignment' => [
                 'code' => '<?php
                     class A {
