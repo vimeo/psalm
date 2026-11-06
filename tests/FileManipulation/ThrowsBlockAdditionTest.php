@@ -42,7 +42,36 @@ final class ThrowsBlockAdditionTest extends FileManipulationTestCase
                 'other_files' => [
                     'base.php' => '<?php
                     class Base {
-                        // padding 0\n                        // padding 1\n                        // padding 2\n                        // padding 3\n                        // padding 4\n                        // padding 5\n                        // padding 6\n                        // padding 7\n                        // padding 8\n                        // padding 9\n                        // padding 10\n                        // padding 11\n                        // padding 12\n                        // padding 13\n                        // padding 14\n                        // padding 15\n                        // padding 16\n                        // padding 17\n                        // padding 18\n                        // padding 19\n                        // padding 20\n                        // padding 21\n                        // padding 22\n                        // padding 23\n                        // padding 24\n                        // padding 25\n                        // padding 26\n                        // padding 27\n                        // padding 28\n                        // padding 29
+                        // padding 0
+                        // padding 1
+                        // padding 2
+                        // padding 3
+                        // padding 4
+                        // padding 5
+                        // padding 6
+                        // padding 7
+                        // padding 8
+                        // padding 9
+                        // padding 10
+                        // padding 11
+                        // padding 12
+                        // padding 13
+                        // padding 14
+                        // padding 15
+                        // padding 16
+                        // padding 17
+                        // padding 18
+                        // padding 19
+                        // padding 20
+                        // padding 21
+                        // padding 22
+                        // padding 23
+                        // padding 24
+                        // padding 25
+                        // padding 26
+                        // padding 27
+                        // padding 28
+                        // padding 29
                         public function __construct($config = []) {
                             echo json_encode($config);
                         }
