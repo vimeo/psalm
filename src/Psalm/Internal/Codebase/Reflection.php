@@ -13,6 +13,7 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
@@ -310,7 +311,7 @@ final class Reflection
             : ($method->isProtected() ? ClassLikeAnalyzer::VISIBILITY_PROTECTED : ClassLikeAnalyzer::VISIBILITY_PUBLIC);
 
         $callables = InternalCallMapHandler::getCallablesFromCallMap($method_id);
-        $storage->signature_return_type = $this->getSignatureReturnType($method, $method_id);
+        $this->setSignatureReturnType($storage, $method, $method_id);
 
         if ($callables && $callables[0]->params !== null && $callables[0]->return_type !== null) {
             $storage->setParams([]);
@@ -414,7 +415,7 @@ final class Reflection
 
         $storage = new FunctionStorage();
         $storage->builtin = $reflection_function?->isInternal() ?? true;
-        $storage->signature_return_type = $this->getSignatureReturnType($reflection_function, $function_id);
+        $this->setSignatureReturnType($storage, $reflection_function, $function_id);
 
         if ($callmap_callable !== null
             && $callmap_callable->params !== null
@@ -457,21 +458,31 @@ final class Reflection
         return $storage;
     }
 
-    private function getSignatureReturnType(?ReflectionFunctionAbstract $reflection, string $id): ?Union
-    {
-        $signature = InternalCallMapHandler::getSignatureReturnType($id);
+    private function setSignatureReturnType(
+        FunctionLikeStorage $storage,
+        ?ReflectionFunctionAbstract $reflection,
+        string $id,
+    ): void {
+        $kind = InternalCallMapHandler::getReturnTypeKind($id);
+        $storage->signature_return_type = InternalCallMapHandler::getSignatureReturnType($id);
+        $storage->has_tentative_return_type = $kind === 'tentative';
         // An installed extension can provide APIs absent from the generator images. Its reflection
         // describes the running PHP version, so do not use it to infer contracts of another version.
-        if ($signature !== null
+        if ($kind !== null
             || $reflection === null
             || $this->codebase->getMajorAnalysisPhpVersion() !== PHP_MAJOR_VERSION
             || $this->codebase->getMinorAnalysisPhpVersion() !== PHP_MINOR_VERSION
         ) {
-            return $signature;
+            return;
         }
 
-        $return_type = $reflection->getReturnType() ?? $reflection->getTentativeReturnType();
-        return $return_type === null ? null : self::getPsalmTypeFromReflectionType($return_type);
+        $return_type = $reflection->getReturnType();
+        $tentative = $return_type === null ? $reflection->getTentativeReturnType() : null;
+        $return_type ??= $tentative;
+        $storage->signature_return_type = $return_type === null
+            ? null
+            : self::getPsalmTypeFromReflectionType($return_type);
+        $storage->has_tentative_return_type = $tentative !== null;
     }
 
     public static function getPsalmTypeFromReflectionType(?ReflectionType $reflection_type = null): Union

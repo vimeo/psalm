@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Psalm\Tests\Internal\Codebase;
 
 use DateTimeImmutable;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\Reflection;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Tests\Fixtures\NativeReturnTypeFixture;
 use Psalm\Tests\TestCase;
+use Random\Engine\Xoshiro256StarStar;
 use ReflectionClass;
 
 use function function_exists;
@@ -48,6 +50,23 @@ final class ReflectionReturnTypeTest extends TestCase
 
         self::assertNull($reflection->registerFunction($function_id));
         self::assertSame('void', $reflection->getFunctionStorage($function_id)->signature_return_type?->getId());
+    }
+
+    public function testUnmappedExtensionMethodDoesNotUseANewerRuntimeSignature(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $class = new ReflectionClass(Xoshiro256StarStar::class);
+        self::assertSame('random', $class->getExtensionName());
+        self::assertSame('string', (string) $class->getMethod('generate')->getReturnType());
+        self::assertFalse(InternalCallMapHandler::inCallMap(Xoshiro256StarStar::class . '::generate'));
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $reflection = new Reflection($codebase->classlike_storage_provider, $codebase);
+        $reflection->registerClass($class);
+        $storage = $codebase->classlike_storage_provider->get(Xoshiro256StarStar::class);
+
+        self::assertNull($storage->methods['generate']->signature_return_type);
+        self::assertFalse($storage->methods['generate']->has_tentative_return_type);
     }
 
     public function testVersionedCallmapTakesPriorityOverRuntimeReflection(): void

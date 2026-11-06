@@ -1592,6 +1592,15 @@ final class MethodCallTest extends TestCase
                     }',
                 'error_message' => 'PossiblyUndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:43 - Method Invoice::reason does not exist',
             ],
+            'mysqliBindResultRequiresOutputVariable' => [
+                'code' => '<?php
+                    function bind(mysqli_stmt $statement): void {
+                        $statement->bind_result();
+                    }',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'dateTimeInterfaceMicrosecondBeforeEightFour' => [
                 'code' => '<?php
                     function microseconds(DateTimeInterface $date): void {

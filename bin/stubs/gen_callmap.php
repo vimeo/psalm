@@ -44,10 +44,14 @@ foreach (glob(__DIR__."/../../dictionaries/autogen/CallMap_*.php") as $file) {
     $baseMaps[$version] = normalizeCallMap(require $file);
 
     $signatureReturnTypes = [];
+    $returnTypeKinds = [];
     foreach ($baseMaps[$version] as $func => $params) {
         if (isset($params[-1])) {
             $baseMaps[$version][$func][0] ??= $params[-1];
             $signatureReturnTypes[$func] = $params[-1];
+        }
+        if (isset($params[-2])) {
+            $returnTypeKinds[$func] = $params[-2];
         }
     }
 
@@ -78,7 +82,10 @@ foreach (glob(__DIR__."/../../dictionaries/autogen/CallMap_*.php") as $file) {
         }
     }
     if (isset($baseMaps[$version]['amqpbasicproperties::__construct'])
-        && count($baseMaps[$version]['amqpbasicproperties::__construct']) === 1
+        && normalizeParameters(
+            'amqpbasicproperties::__construct',
+            $baseMaps[$version]['amqpbasicproperties::__construct'],
+        ) === []
     ) {
         $baseMaps[$version]['amqpbasicproperties::__construct'] = [
             0 => 'void',
@@ -114,6 +121,9 @@ foreach (glob(__DIR__."/../../dictionaries/autogen/CallMap_*.php") as $file) {
         // Analysis corrections above may replace an entry; preserve its original reflected contract.
         if (isset($signatureReturnTypes[$func])) {
             $ret = [0 => $ret[0], -1 => $signatureReturnTypes[$func]] + $ret;
+        }
+        if (isset($returnTypeKinds[$func])) {
+            $ret[-2] = $returnTypeKinds[$func];
         }
         if ($func !== 'redis::pipeline' && $func !== 'redis::multi') {
             $ret[0] = str_ireplace('Redis|', '', $ret[0]);
@@ -251,7 +261,7 @@ foreach ($customMaps as $version => &$data) {
 $equal = [];
 foreach ($baseMaps as $version => $data) {
     foreach ($data as $func => $params) {
-        unset($params[-1]);
+        unset($params[-1], $params[-2]);
         $customParams = $customMaps[$version][$func] ?? null;
         if ($params === $customParams) {
             $equal[$func] ??= true;
@@ -285,10 +295,14 @@ foreach ($customMaps as $version => $data) {
     foreach ($data as $func => &$params) {
         $canonical = explode("'", $func, 2)[0];
         $signature = $baseMaps[$version][$canonical][-1] ?? null;
+        $return_type_kind = $baseMaps[$version][$canonical][-2] ?? null;
         // Overrides and overloads refine analysis types, never the reflected signature.
-        unset($params[-1]);
+        unset($params[-1], $params[-2]);
         if ($signature !== null) {
             $params = [0 => $params[0], -1 => $signature] + $params;
+        }
+        if ($return_type_kind !== null) {
+            $params[-2] = $return_type_kind;
         }
     }
     unset($params);

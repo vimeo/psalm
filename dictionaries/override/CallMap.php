@@ -35899,6 +35899,7 @@ return array (
   'mysqli_stmt::bind_result' => 
   array (
     0 => 'bool',
+    '&w var1' => 'mixed',
     '&...w vars=' => 'mixed',
   ),
   'mysqli_stmt::close' => 
@@ -35995,6 +35996,7 @@ return array (
   array (
     0 => 'bool',
     'statement' => 'mysqli_stmt',
+    '&w var1' => 'mixed',
     '&...w vars=' => 'mixed',
   ),
   'mysqli_stmt_close' => 

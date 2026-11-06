@@ -292,7 +292,7 @@ final class InternalCallMapHandler
         foreach ($call_map_functions as $call_map_function_args) {
             assert(isset($call_map_function_args[0]) || isset($call_map_function_args[-1]));
             $return_type = Type::parseString($call_map_function_args[0] ?? $call_map_function_args[-1]);
-            unset($call_map_function_args[0], $call_map_function_args[-1]);
+            unset($call_map_function_args[0], $call_map_function_args[-1], $call_map_function_args[-2]);
 
             $function_params = [];
 
@@ -374,6 +374,10 @@ final class InternalCallMapHandler
     /**
      * Gets the method/function call map
      *
+     * Entries retain their compact disk format: [0] ?? [-1] is the analysis return type.
+     * [-1] is the signature; [-2] marks tentative signatures or confirmed absence.
+     * Only string keys describe parameters.
+     *
      * @return non-empty-array<string, array<int|string, string>>
      * @psalm-assert !null self::$taint_sink_map
      * @psalm-assert !null self::$call_map
@@ -434,6 +438,24 @@ final class InternalCallMapHandler
     {
         $entry = self::getCallMap()[strtolower($method_id)] ?? null;
         return isset($entry[-1]) ? Type::parseString($entry[-1]) : null;
+    }
+
+    /**
+     * @return 'native'|'tentative'|'none'|null
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public static function getReturnTypeKind(string $method_id): ?string
+    {
+        $entry = self::getCallMap()[strtolower($method_id)] ?? null;
+        if (isset($entry[-2])) {
+            return match ($entry[-2]) {
+                'tentative' => 'tentative',
+                'none' => 'none',
+                default => throw new UnexpectedValueException('Invalid return type kind for ' . $method_id),
+            };
+        }
+
+        return isset($entry[-1]) ? 'native' : null;
     }
 
     /**

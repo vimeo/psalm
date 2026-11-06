@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\MethodComparator;
@@ -87,6 +88,33 @@ final class MethodSignatureTest extends TestCase
 
         $this->expectException(CodeException::class);
         $this->expectExceptionMessage('MethodSignatureMustProvideReturnType');
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerLegacyTentativeReturnVersions(): iterable
+    {
+        return ['php74' => ['7.4'], 'php80' => ['8.0']];
+    }
+
+    #[DataProvider('providerLegacyTentativeReturnVersions')]
+    public function testLegacyVersionDoesNotRequireTentativeReturnSignature(string $php_version): void
+    {
+        $this->project_analyzer->setPhpVersion($php_version, 'tests');
+        // The regression introduced a level-8 native-signature error, independently of PHPDoc compatibility.
+        $this->project_analyzer->getConfig()->level = 8;
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @extends LimitIterator<int, string, Iterator<int, string>> */
+                final class Window extends LimitIterator {
+                    /** @psalm-capabilities read-props */
+                    public function getPosition() { return 0; }
+                }',
+        );
         $this->analyzeFile('somefile.php', new Context());
     }
 
@@ -883,6 +911,30 @@ final class MethodSignatureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'tentativeExplicitReturnTypeWillChangeIn81' => [
+                'code' => '<?php
+                    final class Date extends DateTimeImmutable {
+                        /** @psalm-capabilities read-props */
+                        #[ReturnTypeWillChange]
+                        public function modify(string $modifier): int { return 1; }
+                    }
+                    $value = (new Date())->modify("+1 day");',
+                'assertions' => ['$value' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'tentativeExplicitReturnTypeWillChangeIn82' => [
+                'code' => '<?php
+                    final class Date extends DateTimeImmutable {
+                        /** @psalm-capabilities read-props */
+                        #[ReturnTypeWillChange]
+                        public function modify(string $modifier): int { return 1; }
+                    }
+                    $value = (new Date())->modify("+1 day");',
+                'assertions' => ['$value' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'untypedJsonSerializableBeforeTentativeReturns' => [
                 'code' => '<?php
                     final class Value implements JsonSerializable {
@@ -1351,6 +1403,32 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'returnTypeWillChangeDoesNotSuppressNativeContract' => [
+                'code' => '<?php
+                    final class Connection extends mysqli {
+                        #[ReturnTypeWillChange]
+                        public function execute_query(string $query, ?array $params = null): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'returnTypeWillChangeDoesNotSuppressMissingNativeContract' => [
+                'code' => '<?php
+                    trait Renderer {
+                        /** @return string */
+                        #[ReturnTypeWillChange]
+                        public function render() { return "exception"; }
+                    }
+                    final class E extends Exception {
+                        use Renderer { render as __toString; }
+                    }',
+                'error_message' => 'MethodSignatureMustProvideReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'oneParam' => [
                 'code' => '<?php
                     interface I {

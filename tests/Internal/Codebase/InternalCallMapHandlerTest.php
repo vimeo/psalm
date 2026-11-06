@@ -503,7 +503,7 @@ final class InternalCallMapHandlerTest extends TestCase
         }
 
         $entryReturnType = $callMapEntry[0] ?? $callMapEntry[-1];
-        unset($callMapEntry[0], $callMapEntry[-1]);
+        unset($callMapEntry[0], $callMapEntry[-1], $callMapEntry[-2]);
 
         if ($functionIgnored) {
             try {
@@ -557,7 +557,7 @@ final class InternalCallMapHandlerTest extends TestCase
         }
 
         $entryReturnType = $callMapEntry[0] ?? $callMapEntry[-1];
-        unset($callMapEntry[0], $callMapEntry[-1]);
+        unset($callMapEntry[0], $callMapEntry[-1], $callMapEntry[-2]);
 
         /** @var array<string, string> $callMapEntry */
         $this->assertEntryParameters($function, $callMapEntry);

@@ -19022,11 +19022,13 @@ return array (
       'old' => 
       array (
         0 => 'bool',
+        '&w var1' => 'mixed',
         '&...w vars' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'bool',
+        '&w var1' => 'mixed',
         '&...w vars=' => 'mixed',
       ),
     ),
@@ -19113,12 +19115,14 @@ return array (
       array (
         0 => 'bool',
         'stmt' => 'mysqli_stmt',
+        '&w var1' => 'mixed',
         '&...w vars' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'bool',
         'statement' => 'mysqli_stmt',
+        '&w var1' => 'mixed',
         '&...w vars=' => 'mixed',
       ),
     ),

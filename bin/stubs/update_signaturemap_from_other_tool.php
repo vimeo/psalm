@@ -40,13 +40,10 @@ foreach ($new_local as $name => $data) {
     if (!is_array($data)) {
         throw new UnexpectedValueException('bad data for ' . $name);
     }
-    // Foreign analysis refinements must not replace the locally reflected contract.
-    if (isset($local_b[$name][-1])) {
-        $data[0] ??= $data[-1];
-        $data[-1] = $local_b[$name][-1];
-    }
     $return_type = $data[0] ?? $data[-1];
-    unset($data[0]);
+    // Foreign analysis refinements must not replace the local signature or its provenance.
+    unset($data[0], $data[-1], $data[-2]);
+    $data = array_intersect_key($local_b[$name] ?? [], [-1 => true, -2 => true]) + $data;
     echo '\'' . str_replace("'", "\'", $name) . '\' => [\'' . str_replace("'", "\'", $return_type) . '\'';
 
     if ($data) {

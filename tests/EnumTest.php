@@ -20,6 +20,20 @@ final class EnumTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'enumInterfaceMethodRetainsDocumentaryReturn' => [
+                'code' => '<?php
+                    enum Status: string implements JsonSerializable {
+                        case Open = "o";
+                        /** @return array{status: string} */
+                        public function jsonSerialize(): array {
+                            return ["status" => $this->value];
+                        }
+                    }
+                    $serialized = Status::Open->jsonSerialize();',
+                'assertions' => ['$serialized===' => 'array{status: string}'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'instanceEnumCallsRetainCaseTypes' => [
                 'code' => '<?php
                     enum Status: string {

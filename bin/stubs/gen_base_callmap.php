@@ -61,15 +61,23 @@ function typeToString($reflection_type, string $defaultType): string
 function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction, string $defaultReturnType): array
 {
     // phpcs:disable SlevomatCodingStandard.Numbers.RequireNumericLiteralSeparator.RequiredNumericLiteralSeparator
-    $signature = PHP_VERSION_ID >= 80100 ? (
-        $reflectionFunction->getTentativeReturnType() ?? $reflectionFunction->getReturnType()
-    ) : $reflectionFunction->getReturnType();
+    $native = $reflectionFunction->getReturnType();
+    $tentative = PHP_VERSION_ID >= 80100 ? $reflectionFunction->getTentativeReturnType() : null;
+    $signature = $native ?? $tentative;
 
     $res = [typeToString($signature, $defaultReturnType)];
 
     // Keep the reflected contract separate from the return type refined by callmap overrides.
     if ($signature !== null) {
         $res = [-1 => typeToString($signature, 'mixed')];
+        if ($native === null) {
+            $res[-2] = 'tentative';
+        }
+    } elseif ($reflectionFunction->isInternal()
+        || preg_match('~^@\w+/~', (string) $reflectionFunction->getFileName())
+    ) {
+        // An untyped downloaded stub does not establish the absence of a native contract.
+        $res[-2] = 'none';
     }
 
     foreach ($reflectionFunction->getParameters() as $param) {
