@@ -22,6 +22,26 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'constructorCallsAPrivateAliasOfATraitMethodThatSetsAProperty' => [
+                'code' => '<?php
+                    trait TraitA {
+                        private string $foo;
+
+                        public function init(string $foo): void {
+                            $this->foo = $foo;
+                        }
+                    }
+
+                    class A {
+                        use TraitA {
+                            TraitA::init as private initTraitA;
+                        }
+
+                        public function __construct(string $foo) {
+                            $this->initTraitA($foo);
+                        }
+                    }',
+            ],
             'accessiblePrivateMethodFromTrait' => [
                 'code' => '<?php
                     trait T {
@@ -1224,6 +1244,27 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constructorCallsAPublicAliasOfATraitMethodThatSetsAPrivateProperty' => [
+                'code' => '<?php
+                    trait TraitA {
+                        private string $foo;
+
+                        public function init(string $foo): void {
+                            $this->foo = $foo;
+                        }
+                    }
+
+                    class A {
+                        use TraitA {
+                            TraitA::init as public initTraitA;
+                        }
+
+                        public function __construct(string $foo) {
+                            $this->initTraitA($foo);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
             'inaccessiblePrivateMethodFromInheritedTrait' => [
                 'code' => '<?php
                     trait T {
