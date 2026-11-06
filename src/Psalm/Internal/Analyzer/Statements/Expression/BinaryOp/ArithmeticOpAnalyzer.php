@@ -18,6 +18,7 @@ use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\FalseOperand;
+use Psalm\Issue\ImplicitFloatToIntCast;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\MixedOperand;
 use Psalm\Issue\NullOperand;
@@ -53,12 +54,15 @@ use Psalm\Type\Union;
 use function array_diff_key;
 use function array_values;
 use function count;
+use function floor;
 use function is_int;
 use function is_numeric;
 use function max;
 use function min;
 use function preg_match;
 use function strtolower;
+
+use const PHP_INT_MIN;
 
 /**
  * @internal
@@ -191,6 +195,11 @@ final class ArithmeticOpAnalyzer
                         $statements_source->getSuppressedIssues(),
                     );
                 }
+            }
+
+            if ($statements_source && self::isBitwiseOperation($parent)) {
+                self::reportFloatOperand($statements_source, $left, $left_type, 'Left');
+                self::reportFloatOperand($statements_source, $right, $right_type, 'Right');
             }
 
             $bitwise_result_type = self::getBitwiseResultOfNonNegativeLiterals($parent, $left_type, $right_type);
@@ -1075,6 +1084,54 @@ final class ArithmeticOpAnalyzer
         }
 
         return $calculated_type;
+    }
+
+    /**
+     * Whether converting the number to an int loses nothing: it has no fraction and is in the range of an int
+     *
+     * @psalm-pure
+     */
+    public static function isExactInt(float $number): bool
+    {
+        return floor($number) === $number && $number >= (float) PHP_INT_MIN && $number < -(float) PHP_INT_MIN;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isBitwiseOperation(PhpParser\Node $operation): bool
+    {
+        return $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight;
+    }
+
+    /**
+     * A bitwise operation converts its operands to ints, dropping the fraction of a float
+     */
+    private static function reportFloatOperand(
+        StatementsSource $statements_source,
+        PhpParser\Node\Expr $operand,
+        Union $operand_type,
+        string $side,
+    ): void {
+        foreach ($operand_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TFloat
+                && !($atomic_type instanceof TLiteralFloat && self::isExactInt($atomic_type->value))
+            ) {
+                IssueBuffer::maybeAdd(
+                    new ImplicitFloatToIntCast(
+                        $side . ' operand of a bitwise operation is converted to an int, got ' . $operand_type->getId(),
+                        new CodeLocation($statements_source, $operand),
+                    ),
+                    $statements_source->getSuppressedIssues(),
+                );
+
+                return;
+            }
+        }
     }
 
     /**

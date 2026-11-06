@@ -1145,6 +1145,7 @@ final class PreloaderList {
         \Psalm\Issue\ImplementationRequirementViolation::class,
         \Psalm\Issue\ImplementedParamTypeMismatch::class,
         \Psalm\Issue\ImplementedReturnTypeMismatch::class,
+        \Psalm\Issue\ImplicitFloatToIntCast::class,
         \Psalm\Issue\ImplicitToStringCast::class,
         \Psalm\Issue\ImpureByReferenceAssignment::class,
         \Psalm\Issue\ImpureFunctionCall::class,

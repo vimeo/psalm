@@ -43,6 +43,7 @@
  - [ImplementationRequirementViolation](issues/ImplementationRequirementViolation.md)
  - [ImplementedParamTypeMismatch](issues/ImplementedParamTypeMismatch.md)
  - [ImplementedReturnTypeMismatch](issues/ImplementedReturnTypeMismatch.md)
+ - [ImplicitFloatToIntCast](issues/ImplicitFloatToIntCast.md)
  - [ImplicitToStringCast](issues/ImplicitToStringCast.md)
  - [ImpureByReferenceAssignment](issues/ImpureByReferenceAssignment.md)
  - [ImpureFunctionCall](issues/ImpureFunctionCall.md)

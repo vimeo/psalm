@@ -7,10 +7,11 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\Type\LiteralCast;
+use Psalm\Issue\ImplicitFloatToIntCast;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\IssueBuffer;
@@ -59,8 +60,19 @@ final class BitwiseNotAnalyzer
                     $acceptable_types[] = $type_part;
                     $has_valid_operand = true;
                 } elseif ($type_part instanceof TFloat) {
-                    $int = $type_part instanceof TLiteralFloat ? LiteralCast::toInt($type_part->value) : null;
-                    $type_part = $int === null ? new TInt : new TLiteralInt(~$int);
+                    if ($type_part instanceof TLiteralFloat && ArithmeticOpAnalyzer::isExactInt($type_part->value)) {
+                        $type_part = new TLiteralInt(~(int) $type_part->value);
+                    } else {
+                        IssueBuffer::maybeAdd(
+                            new ImplicitFloatToIntCast(
+                                'The operand of a bitwise operation is converted to an int, got ' . $type_part->getId(),
+                                new CodeLocation($statements_analyzer, $stmt->expr),
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+
+                        $type_part = new TInt;
+                    }
 
                     $stmt_expr_type->removeType($type_string);
                     $stmt_expr_type->addType($type_part);
