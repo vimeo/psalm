@@ -705,8 +705,7 @@ final class ArrayAnalyzer
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
                     if ($property_value->possibly_undefined) {
                         // a string key keeps its place: it is either what the unpacked array holds under it, or
-                        // what the array had before (a list renumbers its keys, so their places are unknown);
-                        // not in array_keys, as a later item setting the key is no duplicate of a maybe missing one
+                        // what the array had before (a list renumbers its keys, so their places are unknown)
                         if (is_string($key) && $codebase->analysis_php_version_id > 8_00_00) {
                             $previous_value = $array_creation_info->property_types[$key] ?? null;
 
@@ -765,7 +764,6 @@ final class ArrayAnalyzer
                         $array_creation_info->item_key_atomic_types[] = new TLiteralInt($new_offset);
                     }
 
-                    $array_creation_info->array_keys[$new_offset] = true;
                     $array_creation_info->property_types[$new_offset] = $property_value;
                 }
 

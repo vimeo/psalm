@@ -36,6 +36,9 @@ final class ArrayCreationInfo
     public bool $can_create_objectlike = true;
 
     /**
+     * The keys of the items written in the literal. Keys of unpacked arrays are left out: a later item
+     * overrides them, which is no duplicate.
+     *
      * @var array<int|string, true>
      */
     public array $array_keys = [];

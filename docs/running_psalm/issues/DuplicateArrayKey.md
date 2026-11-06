@@ -23,6 +23,16 @@ function foo($bar, ...$baz): array
 }
 ```
 
+A key that comes from an unpacked array (PHP 8.1+ for string keys) is not reported when a later item overrides it:
+
+```php
+<?php
+
+$defaults = ['a' => 'one', 'b' => 'two'];
+$arr = [...$defaults, 'b' => 'three']; // no issue
+$arr = ['b' => 'zero', ...$defaults, 'b' => 'three']; // DuplicateArrayKey
+```
+
 ## How to fix
 
 Remove the offending duplicates:
