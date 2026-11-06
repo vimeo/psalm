@@ -370,7 +370,12 @@ final class TypeExpander
                 return [$return_type];
             }
 
-            $class_storage = $codebase->classlike_storage_provider->get($declaring_fq_classlike_name);
+            $class_storage = $codebase->classlikes->getStorageFor($declaring_fq_classlike_name);
+
+            // a class that exists but is not scanned yet
+            if ($class_storage === null) {
+                return [$return_type];
+            }
 
             $type_alias_name = $return_type->alias_name;
 
