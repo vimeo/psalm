@@ -494,6 +494,28 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'classExistsGuardedStaticFirstClassCallable' => [
+                'code' => '<?php
+                    if (class_exists("Nope")) {
+                        $callable = Nope::stat(...);
+                        echo $callable !== null ? "set" : "unset";
+                    }',
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'classExistsGuardedStaticCallUsesItsArguments' => [
+                'code' => '<?php
+                    if (class_exists("Nope")) {
+                        $foo = "foo";
+                        Nope::stat($foo);
+                    }',
+            ],
+            'functionExistsGuardedCallUsesItsArguments' => [
+                'code' => '<?php
+                    if (function_exists("nope_fn")) {
+                        $foo = "foo";
+                        nope_fn($foo);
+                    }',
+            ],
             'argumentCastToStringDoesNotReportPossiblyInvalidCast' => [
                 'code' => '<?php
                     /** @psalm-api */
@@ -2186,6 +2208,25 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'undefinedClassStaticFirstClassCallable' => [
+                'code' => '<?php
+                    $callable = Nope::stat(...);',
+                'error_message' => 'UndefinedClass',
+            ],
+            'classExistsGuardedStaticCallAnalysesItsArguments' => [
+                'code' => '<?php
+                    if (class_exists("Nope")) {
+                        Nope::stat($undefined);
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'functionExistsGuardedCallAnalysesItsArguments' => [
+                'code' => '<?php
+                    if (function_exists("nope_fn")) {
+                        nope_fn($undefined);
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'argumentStillReportsPossiblyInvalidArgumentWithUnusedCode' => [
                 'code' => '<?php
                     /**
