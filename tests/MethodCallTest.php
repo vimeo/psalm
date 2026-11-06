@@ -205,6 +205,28 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'psalmOverloadOfAConstructorAcceptsEachDeclaredSignature' => [
+                'code' => '<?php
+                    class Connection {
+                        /**
+                         * @psalm-overload (string $dsn)
+                         * @psalm-overload (string $host, int $port)
+                         */
+                        public function __construct(string $dsnOrHost, ?int $port = null) {
+                        }
+                    }
+
+                    final class Pooled extends Connection {}
+
+                    $first = new Connection("sqlite::memory:");
+                    $second = new Connection("localhost", 3306);
+                    $third = new Pooled("localhost", 3306);',
+                'assertions' => [
+                    '$first===' => 'Connection',
+                    '$second===' => 'Connection',
+                    '$third===' => 'Pooled',
+                ],
+            ],
             'psalmOverloadOfAMethodIsChosenByTheArguments' => [
                 'code' => '<?php
                     interface Query {}
@@ -1722,6 +1744,42 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'psalmOverloadOfAConstructorRejectsAMixOfTheSignatures' => [
+                'code' => '<?php
+                    final class Version {
+                        /**
+                         * @psalm-overload (string $name)
+                         * @psalm-overload (int $id, int $number)
+                         */
+                        public function __construct(string|int $first, ?int $second = null) {
+                        }
+                    }
+
+                    new Version("a", 2);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:33 - '
+                    . 'Argument 1 of Version::__construct expects int, but \'a\' provided',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmOverloadOfAnInheritedConstructorReportsTooFewArguments' => [
+                'code' => '<?php
+                    class Base {
+                        /**
+                         * @psalm-overload (string $name)
+                         * @psalm-overload (int $id, int $number)
+                         */
+                        public function __construct(string|int $first, ?int $second = null) {
+                        }
+                    }
+
+                    final class Child extends Base {}
+
+                    new Child(1);',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:21 - '
+                    . 'Too few arguments for Child::__construct - expecting number to be passed',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'psalmOverloadOfAMethodReportsAMethodOfTheOtherResult' => [
                 'code' => '<?php
                     final class PagedResult {

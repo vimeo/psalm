@@ -526,6 +526,23 @@ final class NewAnalyzer extends CallAnalyzer
 
             $template_result ??= new TemplateResult([], []);
 
+            $declared_constructor_id = $codebase->methods->getDeclaringMethodId($method_id);
+            $overloaded_constructor = $declared_constructor_id
+                ? $codebase->methods->getStorage($declared_constructor_id)
+                : null;
+
+            $overload = null;
+
+            if ($overloaded_constructor && $overloaded_constructor->overloads !== []) {
+                $overload = $overloaded_constructor->overloads[OverloadSelector::findOffset(
+                    $statements_analyzer,
+                    $codebase,
+                    $stmt->getArgs(),
+                    $context,
+                    $overloaded_constructor->overloads,
+                ) ?? count($overloaded_constructor->overloads) - 1];
+            }
+
             if (self::checkMethodArgs(
                 $method_id,
                 $stmt->getArgs(),
@@ -533,6 +550,7 @@ final class NewAnalyzer extends CallAnalyzer
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer,
+                $overload,
             ) === false) {
                 return;
             }
