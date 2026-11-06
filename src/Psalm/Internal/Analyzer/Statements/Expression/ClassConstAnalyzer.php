@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
+use Attribute;
 use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;
@@ -11,6 +12,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\CircularReferenceException;
 use Psalm\FileManipulation;
+use Psalm\Internal\Analyzer\AttributesAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
@@ -718,6 +720,22 @@ final class ClassConstAnalyzer
 
         if ($class_storage->has_visitor_issues) {
             return;
+        }
+
+        // the attributes are those of every constant of the statement
+        $first_const = $stmt->consts[0] ?? null;
+
+        if ($first_const) {
+            $first_const_storage = $class_storage->constants[$first_const->name->name];
+
+            AttributesAnalyzer::analyze(
+                $statements_analyzer,
+                $context,
+                $first_const_storage,
+                $stmt->attrGroups,
+                Attribute::TARGET_CLASS_CONSTANT,
+                $first_const_storage->suppressed_issues + $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         foreach ($stmt->consts as $const) {
