@@ -2283,6 +2283,10 @@ final class SimpleAssertionReconciler extends Reconciler
         foreach ($existing_var_atomic_types as $type) {
             if ($type instanceof TArray) {
                 if ($atomic_assertion_type instanceof TNonEmptyArray) {
+                    if (!$type instanceof TNonEmptyArray) {
+                        $redundant = false;
+                    }
+
                     $array_types[] = new TNonEmptyArray(
                         $type->type_params,
                         $atomic_assertion_type->count,
