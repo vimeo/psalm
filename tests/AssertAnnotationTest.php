@@ -159,6 +159,36 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertIfTrueSelfInATraitMeansTheClassUsingIt' => [
+                'code' => '<?php
+                    interface Comparable {
+                        public function equals(Comparable $object): bool;
+                    }
+
+                    trait ComparableTrait {
+                        /** @psalm-assert-if-true self $object */
+                        public function equals(Comparable $object): bool {
+                            return get_class($this) === get_class($object);
+                        }
+                    }
+
+                    class Foo implements Comparable {
+                        use ComparableTrait;
+
+                        public ?string $baz = null;
+
+                        public function update(Comparable $object): void {
+                            if (!$this->equals($object)) {
+                                throw new LogicException();
+                            }
+
+                            $this->baz = $object->baz;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+                'php_version' => '8.0',
+            ],
             'assertKeyOfAClassConstantNarrowsToItsKeys' => [
                 'code' => '<?php
                     final class OwnerTypes {

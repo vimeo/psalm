@@ -488,6 +488,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $template_result,
                         $lhs_var_id,
                         $codebase,
+                        $class_storage->name,
                     ),
                     $method_storage->if_true_assertions,
                 );
@@ -511,6 +512,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $template_result,
                         $lhs_var_id,
                         $codebase,
+                        $class_storage->name,
                     ),
                     $method_storage->if_false_assertions,
                 );
