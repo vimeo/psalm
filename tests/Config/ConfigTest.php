@@ -569,6 +569,48 @@ final class ConfigTest extends TestCase
         $this->assertFalse($config->reportIssueInFile('UndefinedClass', (string) realpath(__FILE__)));
     }
 
+    public function testIssueHandlerGivenTwiceAddsUp(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+
+                    <issueHandlers>
+                        <UndefinedClass errorLevel="info">
+                            <errorLevel type="suppress">
+                                <referencedClass name="Psalm\Badger" />
+                            </errorLevel>
+                        </UndefinedClass>
+                        <PluginIssue name="MyIssue" errorLevel="info" />
+                        <UndefinedClass>
+                            <errorLevel type="suppress">
+                                <referencedClass name="Psalm\Bodger" />
+                            </errorLevel>
+                        </UndefinedClass>
+                        <PluginIssue name="MyIssue">
+                            <errorLevel type="error">
+                                <directory name="tests" />
+                            </errorLevel>
+                        </PluginIssue>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertSame(Config::REPORT_SUPPRESS, $config->getReportingLevelForClass('UndefinedClass', 'Psalm\Badger'));
+        $this->assertSame(Config::REPORT_SUPPRESS, $config->getReportingLevelForClass('UndefinedClass', 'Psalm\Bodger'));
+        $this->assertSame(Config::REPORT_INFO, $config->getReportingLevelForFile('UndefinedClass', 'unknown.php'));
+        $this->assertSame(Config::REPORT_INFO, $config->getReportingLevelForFile('MyIssue', 'unknown.php'));
+    }
+
     public function testIssueHandlerWithCustomErrorLevels(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

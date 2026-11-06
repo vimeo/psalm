@@ -29,9 +29,12 @@ final class IssueHandler
      */
     private array $custom_levels = [];
 
-    public static function loadFromXMLElement(SimpleXMLElement $e, string $base_dir): self
+    /**
+     * @param ?self $handler the handler an earlier element of the same issue type gave, which this one adds to
+     */
+    public static function loadFromXMLElement(SimpleXMLElement $e, string $base_dir, ?self $handler = null): self
     {
-        $handler = new self();
+        $handler ??= new self();
 
         if (isset($e['errorLevel'])) {
             $handler->error_level = (string) $e['errorLevel'];
