@@ -5974,6 +5974,17 @@ return array (
         0 => 'EventHttpConnection|null',
       ),
     ),
+    'eventhttprequest::gethost' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+      ),
+    ),
     'eventhttprequest::getoutputheaders' => 
     array (
       'old' => 
@@ -5983,6 +5994,17 @@ return array (
       'new' => 
       array (
         0 => 'array<array-key, mixed>',
+      ),
+    ),
+    'eventhttprequest::geturi' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
       ),
     ),
     'eventhttprequest::removeheader' => 
