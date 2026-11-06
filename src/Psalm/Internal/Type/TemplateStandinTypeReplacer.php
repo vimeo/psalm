@@ -804,6 +804,11 @@ final class TemplateStandinTypeReplacer
                     if ($replacement_atomic_type instanceof TTemplateParam
                         && $replacement_atomic_type->defining_class !== $calling_class
                         && $replacement_atomic_type->defining_class !== 'fn-' . $calling_function
+                        && !isset(
+                            $statements_analyzer?->getTemplateTypeMap()
+                                [$replacement_atomic_type->param_name]
+                                [$replacement_atomic_type->defining_class],
+                        )
                     ) {
                         foreach ($replacement_atomic_type->as->getAtomicTypes() as $nested_type_atomic) {
                             $replacements_found = true;
