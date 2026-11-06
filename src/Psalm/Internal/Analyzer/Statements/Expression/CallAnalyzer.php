@@ -240,6 +240,9 @@ abstract class CallAnalyzer
                 $old_calling_method_id = $context->calling_method_id;
 
                 if ($fq_class_name === $source->getFQCLN()) {
+                    // what the caller established about its own variables says nothing about the method's
+                    $context->clauses = [];
+
                     $class_analyzer->getMethodMutations($declaring_method_id->method_name, $context);
                 } else {
                     $declaring_fq_class_name = $declaring_method_id->fq_class_name;
