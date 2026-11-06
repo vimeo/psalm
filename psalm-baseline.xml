@@ -1920,18 +1920,6 @@
                         )]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Internal/PhpVisitor/Reflector/ClassLikeDocblockParser.php">
-    <ImplicitToStringCast>
-      <code><![CDATA[$e]]></code>
-    </ImplicitToStringCast>
-    <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[$method_tree->children[0]]]></code>
-      <code><![CDATA[$method_tree->children[1]]]></code>
-    </PossiblyUndefinedIntArrayOffset>
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!strpos($doc_line_parts[1], '(')]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ClassLikeNodeScanner.php">
     <RedundantCondition>
       <code><![CDATA[$fq_classlike_name !== ""]]></code>
@@ -2021,6 +2009,18 @@
       <code><![CDATA[$stmt->stmts]]></code>
       <code><![CDATA[$this->aliases->namespace]]></code>
       <code><![CDATA[$this->aliases->namespace]]></code>
+    </RiskyTruthyFalsyComparison>
+  </file>
+  <file src="src/Psalm/Internal/PhpVisitor/Reflector/PseudoMethodParser.php">
+    <ImplicitToStringCast>
+      <code><![CDATA[$e]]></code>
+    </ImplicitToStringCast>
+    <PossiblyUndefinedIntArrayOffset>
+      <code><![CDATA[$method_tree->children[0]]]></code>
+      <code><![CDATA[$method_tree->children[1]]]></code>
+    </PossiblyUndefinedIntArrayOffset>
+    <RiskyTruthyFalsyComparison>
+      <code><![CDATA[!strpos($doc_line_parts[1], '(')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/TypeHintResolver.php">

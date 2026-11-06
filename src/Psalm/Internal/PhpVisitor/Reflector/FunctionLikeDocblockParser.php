@@ -144,6 +144,10 @@ final class FunctionLikeDocblockParser
             }
         }
 
+        foreach ($parsed_docblock->tags['psalm-overload'] ?? [] as $offset => $overload_entry) {
+            $info->overloads[] = ['entry' => trim($overload_entry), 'offset' => $offset];
+        }
+
         if (isset($parsed_docblock->tags['psalm-if-this-is'])) {
             foreach ($parsed_docblock->tags['psalm-if-this-is'] as $offset => $param) {
                 $line_parts = CommentAnalyzer::splitDocLine($param);
