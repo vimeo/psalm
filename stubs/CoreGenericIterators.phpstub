@@ -895,8 +895,7 @@ class FilesystemIterator extends DirectoryIterator
     public function __construct(string $path, int $flags = self::KEY_AS_PATHNAME|self::CURRENT_AS_FILEINFO|self::SKIP_DOTS) {}
 
     /**
-     * @return FilesystemIterator|SplFileInfo|string|null
-     * @psalm-ignore-nullable-return
+     * @return FilesystemIterator|SplFileInfo|string
      *
      * @psalm-mutation-free
      */
@@ -1516,8 +1515,7 @@ class RecursiveDirectoryIterator extends FilesystemIterator implements Recursive
     public function getSubPathname() {}
 
     /**
-     * @return RecursiveDirectoryIterator|string|SplFileInfo|null current value or null when iterator is drained
-     * @psalm-ignore-nullable-return
+     * @return RecursiveDirectoryIterator|string|SplFileInfo
      *
      * @psalm-mutation-free
      */
