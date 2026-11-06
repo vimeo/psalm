@@ -1655,6 +1655,9 @@ final class SimpleAssertionReconciler extends Reconciler
                 }
 
                 $redundant = false;
+            } elseif ($type::class === TObject::class && $assertion_type instanceof TObjectWithProperties) {
+                $object_types[] = $assertion_type;
+                $redundant = false;
             } elseif ($type->isObjectType()) {
                 if ($assertion_type_is_intersectable_type
                     && !self::areIntersectionTypesAllowed($codebase, $type)
