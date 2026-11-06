@@ -255,6 +255,17 @@ final class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
+        if ($conditional instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
+            $if_types = self::getNullsafePropertyAssertions(
+                $conditional,
+                new Truthy(),
+                $this_class_name,
+                $source,
+            );
+
+            return $if_types ? [$if_types] : [];
+        }
+
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
         ) {
@@ -2179,6 +2190,32 @@ final class AssertionFinder
     }
 
     /**
+     * A nullsafe property fetch that is not null means the receiver is not null and neither is the property.
+     *
+     * @return array<string, non-empty-list<non-empty-list<Assertion>>>
+     */
+    private static function getNullsafePropertyAssertions(
+        PhpParser\Node\Expr\NullsafePropertyFetch $fetch,
+        Assertion $property_assertion,
+        ?string $this_class_name,
+        FileSource $source,
+    ): array {
+        $receiver_id = ExpressionIdentifier::getExtendedVarId($fetch->var, $this_class_name, $source);
+
+        if ($receiver_id === null) {
+            return [];
+        }
+
+        $if_types = [$receiver_id => [[new IsNotType(new TNull())]]];
+
+        if ($fetch->name instanceof PhpParser\Node\Identifier) {
+            $if_types[$receiver_id . '->' . $fetch->name->name] = [[$property_assertion]];
+        }
+
+        return $if_types;
+    }
+
+    /**
      * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
@@ -2215,6 +2252,15 @@ final class AssertionFinder
             } else {
                 $if_types[$var_name] = [[new Truthy()]];
             }
+        } elseif ($base_conditional instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
+            $if_types = self::getNullsafePropertyAssertions(
+                $base_conditional,
+                $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+                    ? new IsNotType(new TNull())
+                    : new Truthy(),
+                $this_class_name,
+                $source,
+            );
         }
 
         if ($codebase
