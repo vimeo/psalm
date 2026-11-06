@@ -2053,22 +2053,10 @@ final class ArgumentsAnalyzer
                 }
             }
 
-            if (!$arg->value instanceof PhpParser\Node\Expr\Variable) {
-                $suppressed_issues = $statements_analyzer->getSuppressedIssues();
-
-                if (!isset($suppressed_issues['EmptyArrayAccess'])) {
-                    $statements_analyzer->addSuppressedIssues(['EmptyArrayAccess']);
-                }
-
-                $v = ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context);
-
-                if (!isset($suppressed_issues['EmptyArrayAccess'])) {
-                    $statements_analyzer->removeSuppressedIssues(['EmptyArrayAccess']);
-                }
-
-                if ($v === false) {
-                    return false;
-                }
+            if (!$arg->value instanceof PhpParser\Node\Expr\Variable
+                && ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false
+            ) {
+                return false;
             }
 
             return null;

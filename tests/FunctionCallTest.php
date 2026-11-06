@@ -2719,6 +2719,15 @@ final class FunctionCallTest extends TestCase
                     sort(NUMBERS);',
                 'error_message' => 'InvalidPassByReference - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:26 - Parameter 1 of sort expects a variable',
             ],
+            'mysqliBindResultRequiresOutputVariable' => [
+                'code' => '<?php
+                    function bind(mysqli_stmt $statement): void {
+                        mysqli_stmt_bind_result($statement);
+                    }',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'invalidScalarArgument' => [
                 'code' => '<?php
                     function fooFoo(int $a): void {}
