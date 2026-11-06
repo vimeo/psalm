@@ -194,6 +194,27 @@ final class TypeCombinationTest extends TestCase
     public static function providerTestValidTypeCombination(): iterable
     {
         return [
+            'unsealedArrayKeyDeclaredInOneAndMissingInTheOtherTakesTheFallback' => [
+                'array{age?: int|mixed, name?: mixed|string, ...<array-key, mixed>}',
+                [
+                    'array{age: int, ...<array-key, mixed>}',
+                    'array{name: string, ...<array-key, mixed>}',
+                ],
+            ],
+            'unsealedArrayKeyDeclaredInOneAndOptionalInTheOtherKeepsItsType' => [
+                'array{age?: int, ...<array-key, mixed>}',
+                [
+                    'array{age: int, ...<array-key, mixed>}',
+                    'array{age?: int, ...<array-key, mixed>}',
+                ],
+            ],
+            'unsealedArrayKeyDeclaredOptionalInBothKeepsItsType' => [
+                'array{age?: int, name: string, ...<array-key, mixed>}',
+                [
+                    'array{age?: int, name: string, ...<array-key, mixed>}',
+                    'array{age?: int, name: \'x\', ...<array-key, mixed>}',
+                ],
+            ],
             'objectWithPropertiesKeepsNamedObjects' => [
                 'Error|object{foo:string}',
                 [
