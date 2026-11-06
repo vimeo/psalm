@@ -490,10 +490,26 @@ final class TemplateInferredTypeReplacer
                     );
                     if ($intersection !== null) {
                         foreach ($intersection->getAtomicTypes() as $intersection_type) {
+                            if ($candidate_atomic_type instanceof Atomic\TArray
+                                && $intersection_type instanceof Atomic\TArray
+                            ) {
+                                // A structural refinement (e.g. non-empty-array) must not
+                                // replace the candidate's generic parameters with mixed.
+                                $params = $intersection_type->type_params;
+                                foreach ($params as $offset => $param) {
+                                    if ($param->isMixed() || ($offset === 0 && $param->isArrayKey())) {
+                                        $params[$offset] = $candidate_atomic_type->type_params[$offset];
+                                    }
+                                }
+                                $intersection_type = $intersection_type->setTypeParams($params);
+                            }
                             $matching_if_types[] = $intersection_type;
                         }
                     }
-                    $else_candidate = Type::intersectUnionTypes($candidate, $as_type, $codebase);
+                    // Keep template information when the candidate already satisfies its bound.
+                    $else_candidate = UnionTypeComparator::isContainedBy($codebase, $candidate, $as_type)
+                        ? $candidate
+                        : Type::intersectUnionTypes($candidate, $as_type, $codebase);
                     foreach (($else_candidate ?? $candidate)->getAtomicTypes() as $else_candidate_atomic) {
                         $matching_else_types[] = $else_candidate_atomic;
                     }
