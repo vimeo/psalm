@@ -10,7 +10,6 @@ use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
-use UnexpectedValueException;
 
 /**
  * @psalm-immutable
@@ -43,7 +42,8 @@ final class EnumCaseStorage
             if (!$case_value instanceof TLiteralString
                 && !$case_value instanceof TLiteralInt
             ) {
-                throw new UnexpectedValueException('Failed to infer case value');
+                // e.g. a constant defined at runtime
+                return null;
             }
         }
 
