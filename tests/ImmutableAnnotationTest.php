@@ -20,6 +20,89 @@ final class ImmutableAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'memoizedImmutableCallSurvivesTheConstructorInitializationPass' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    final class Foo {
+                        private ?DateTimeImmutable $date = null;
+
+                        public function getDate(): ?DateTimeImmutable {
+                            return $this->date;
+                        }
+                    }
+
+                    final class Bar {
+                        public ?string $tz;
+
+                        public function __construct(Foo $foo) {
+                            if ($foo->getDate()) {
+                                $this->tz = $foo->getDate()->getTimezone()->getName();
+                            } else {
+                                $this->tz = null;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingPureAnnotation'],
+            ],
+            'memoizedImmutableCallInTernaryAssignedToAProperty' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    final class Context {}
+
+                    /** @psalm-immutable */
+                    final class Container {
+                        public function getContext(): ?Context {
+                            throw new RuntimeException("no");
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function mapContext(Context $ctx): array {
+                        return [$ctx];
+                    }
+
+                    /** @psalm-immutable */
+                    final class Holder {
+                        public null|array $ctx;
+
+                        public function __construct(Container $container) {
+                            $this->ctx = $container->getContext() ? mapContext($container->getContext()) : null;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingPureAnnotation'],
+                'php_version' => '8.0',
+            ],
+            'memoizedImmutableCallSurvivesAConstructorCalledMethod' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    final class Foo {
+                        private ?DateTimeImmutable $date = null;
+
+                        public function getDate(): ?DateTimeImmutable {
+                            return $this->date;
+                        }
+                    }
+
+                    final class Bar {
+                        public ?string $tz;
+
+                        public function __construct(Foo $foo) {
+                            $this->init($foo);
+                        }
+
+                        private function init(Foo $foo): void {
+                            if ($foo->getDate()) {
+                                $this->tz = $foo->getDate()->getTimezone()->getName();
+                            } else {
+                                $this->tz = null;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingPureAnnotation'],
+            ],
             'SKIPPED-noMissing' => [
                 'code' => '<?php
                     /** @psalm-immutable */
