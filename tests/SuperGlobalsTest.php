@@ -32,6 +32,15 @@ final class SuperGlobalsTest extends TestCase
             'assertions' => [],
         ];
 
+        yield 'COOKIE keys can be ints' => [
+            'code' => '<?php
+                $cookies = $_COOKIE;
+            ',
+            'assertions' => [
+                '$cookies===' => 'array<int|non-empty-string, string>',
+            ],
+        ];
+
         yield 'ENV has scalar entries only' => [
             'code' => '<?php
                 /** @return array<array-key, scalar> */
@@ -49,6 +58,18 @@ final class SuperGlobalsTest extends TestCase
             ',
             'assertions' => [
                 '$session===' => 'array<never, never>',
+            ],
+        ];
+
+        yield 'SERVER REQUEST_TIME range does not depend on the current time' => [
+            'code' => '<?php
+                $time = null;
+                if (isset($_SERVER["REQUEST_TIME"])) {
+                    $time = $_SERVER["REQUEST_TIME"];
+                }
+            ',
+            'assertions' => [
+                '$time===' => 'int<1, max>|null',
             ],
         ];
     }
@@ -76,6 +97,13 @@ final class SuperGlobalsTest extends TestCase
                 echo $_SESSION["foo"];
             ',
             'error_message' => 'EmptyArrayAccess',
+        ];
+
+        yield 'SERVER REQUEST_TIME shape in issue message does not depend on the current time' => [
+            'code' => '<?php
+                echo $_SERVER["REQUEST_TIME"];
+            ',
+            'error_message' => 'REQUEST_TIME?: int<1, max',
         ];
     }
 }
