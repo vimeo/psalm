@@ -21,6 +21,150 @@ final class NestedTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'templateBoundedByTemplateIsNarrowedByBoolCheck' => [
+                'code' => '<?php
+                    /**
+                     * @template PItem of bool|object
+                     * @template P of PItem
+                     */
+                    class Wrap {
+                        /** @var P */
+                        private $value;
+
+                        /** @param P $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+
+                        public function check(): bool {
+                            if (is_bool($this->value)) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+            ],
+            'templateBoundedByTemplateIsNarrowedByStringCheck' => [
+                'code' => '<?php
+                    /**
+                     * @template PItem of string|object
+                     * @template P of PItem
+                     */
+                    class Wrap {
+                        /** @var P */
+                        private $value;
+
+                        /** @param P $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+
+                        public function check(): bool {
+                            if (is_string($this->value)) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+            ],
+            'templateBoundedByTemplateIsNarrowedByIntCheck' => [
+                'code' => '<?php
+                    /**
+                     * @template PItem of int|object
+                     * @template P of PItem
+                     */
+                    class Wrap {
+                        /** @var P */
+                        private $value;
+
+                        /** @param P $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+
+                        public function check(): bool {
+                            if (is_int($this->value)) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+            ],
+            'templateBoundedByTemplateIsNarrowedByArrayCheck' => [
+                'code' => '<?php
+                    /**
+                     * @template PItem of array<int>|object
+                     * @template P of PItem
+                     */
+                    class Wrap {
+                        /** @var P */
+                        private $value;
+
+                        /** @param P $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+
+                        public function check(): bool {
+                            if (is_array($this->value)) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+            ],
+            'templateBoundedByTemplateIsNarrowedByNumericCheck' => [
+                'code' => '<?php
+                    /**
+                     * @template PItem of int|object
+                     * @template P of PItem
+                     */
+                    class Wrap {
+                        /** @var P */
+                        private $value;
+
+                        /** @param P $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+
+                        public function check(): bool {
+                            if (is_numeric($this->value)) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+            ],
+            'templateBoundedByTemplateIsNarrowedByScalarCheck' => [
+                'code' => '<?php
+                    /**
+                     * @template PItem of int|object
+                     * @template P of PItem
+                     */
+                    class Wrap {
+                        /** @var P */
+                        private $value;
+
+                        /** @param P $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+
+                        public function check(): bool {
+                            if (is_scalar($this->value)) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+            ],
             'nestedTemplateExtends' => [
                 'code' => '<?php
                     namespace Foo;
@@ -359,6 +503,156 @@ final class NestedTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'templateBoundedByTemplateWithoutTheTypeIsNeverNarrowedByBoolCheck' => [
+                'code' => '<?php
+                    /**
+                     * @template PItem of object
+                     * @template P of PItem
+                     */
+                    class Wrap {
+                        /** @var P */
+                        private $value;
+
+                        /** @param P $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+
+                        public function check(): bool {
+                            if (is_bool($this->value)) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'templateBoundedByTemplateWithoutTheTypeIsNeverNarrowedByStringCheck' => [
+                'code' => '<?php
+                    /**
+                     * @template PItem of object
+                     * @template P of PItem
+                     */
+                    class Wrap {
+                        /** @var P */
+                        private $value;
+
+                        /** @param P $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+
+                        public function check(): bool {
+                            if (is_string($this->value)) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'templateBoundedByTemplateWithoutTheTypeIsNeverNarrowedByIntCheck' => [
+                'code' => '<?php
+                    /**
+                     * @template PItem of object
+                     * @template P of PItem
+                     */
+                    class Wrap {
+                        /** @var P */
+                        private $value;
+
+                        /** @param P $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+
+                        public function check(): bool {
+                            if (is_int($this->value)) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'templateBoundedByTemplateWithoutTheTypeIsNeverNarrowedByArrayCheck' => [
+                'code' => '<?php
+                    /**
+                     * @template PItem of object
+                     * @template P of PItem
+                     */
+                    class Wrap {
+                        /** @var P */
+                        private $value;
+
+                        /** @param P $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+
+                        public function check(): bool {
+                            if (is_array($this->value)) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'templateBoundedByTemplateWithoutTheTypeIsNeverNarrowedByNumericCheck' => [
+                'code' => '<?php
+                    /**
+                     * @template PItem of object
+                     * @template P of PItem
+                     */
+                    class Wrap {
+                        /** @var P */
+                        private $value;
+
+                        /** @param P $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+
+                        public function check(): bool {
+                            if (is_numeric($this->value)) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'templateBoundedByTemplateWithoutTheTypeIsNeverNarrowedByScalarCheck' => [
+                'code' => '<?php
+                    /**
+                     * @template PItem of object
+                     * @template P of PItem
+                     */
+                    class Wrap {
+                        /** @var P */
+                        private $value;
+
+                        /** @param P $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+
+                        public function check(): bool {
+                            if (is_scalar($this->value)) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'nestedTemplateExtendsInvalid' => [
                 'code' => '<?php
                     namespace Foo;
