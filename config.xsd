@@ -35,8 +35,8 @@
         <xs:attribute name="longScanWarning" type="xs:float" default="10.0" />
         <xs:attribute name="name" type="xs:string" />
         <xs:attribute name="phpVersion" type="xs:string" />
-        <xs:attribute name="serializer" type="xs:string" />
-        <xs:attribute name="compressor" type="xs:string" />
+        <xs:attribute name="serializer" type="SerializerType" />
+        <xs:attribute name="compressor" type="CompressorType" default="auto" />
 
         <xs:attribute name="addParamDefaultToDocblockType" type="xs:boolean" default="false" />
         <xs:attribute name="allowFileIncludes" type="xs:boolean" default="true" />
@@ -48,6 +48,7 @@
         <xs:attribute name="ensureArrayIntOffsetsExist" type="xs:boolean" default="false" />
         <xs:attribute name="ensureArrayStringOffsetsExist" type="xs:boolean" default="false" />
         <xs:attribute name="ensureOverrideAttribute" type="xs:boolean" default="true" />
+        <xs:attribute name="suggestPurityAnnotations" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedCode" type="xs:boolean" default="true" />
         <xs:attribute name="disallowLiteralKeysOnUnshapedArrays" type="xs:boolean" default="false" />
         <xs:attribute name="allFunctionsGlobal" type="xs:boolean" default="false" />
@@ -70,6 +71,7 @@
         <xs:attribute name="resolveFromConfigFile" type="xs:boolean" default="true" />
         <xs:attribute name="strictBinaryOperands" type="xs:boolean" default="true" />
         <xs:attribute name="allowBoolToLiteralBoolComparison" type="xs:boolean" default="true" />
+        <xs:attribute name="strictNullableComparison" type="xs:boolean" default="false" />
         <xs:attribute name="throwExceptionOnError" type="xs:boolean" default="false" />
         <xs:attribute name="disableVarParsing" type="xs:boolean" default="false" />
         <xs:attribute name="errorLevel" type="xs:integer" default="2" />
@@ -772,6 +774,23 @@
             <xs:enumeration value="error"/>
             <xs:enumeration value="info"/>
             <xs:enumeration value="suppress"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="SerializerType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="igbinary"/>
+            <xs:enumeration value="default"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="CompressorType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="auto"/>
+            <xs:enumeration value="zstd"/>
+            <xs:enumeration value="lz4"/>
+            <xs:enumeration value="deflate"/>
+            <xs:enumeration value="off"/>
         </xs:restriction>
     </xs:simpleType>
 
