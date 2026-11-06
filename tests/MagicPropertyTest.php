@@ -40,6 +40,30 @@ final class MagicPropertyTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testPhpDocPropertyWithoutMagicGetterIsExpanded(): void
+    {
+        Config::getInstance()->use_phpdoc_property_without_magic_or_parent = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                enum Foo: string {
+                    case Bar = "bar";
+                    case Lee = "lee";
+                }
+
+                /** @property value-of<Foo> $attr */
+                class Holder {}
+
+                $holder = new Holder();
+                $attr = $holder->attr;
+                /** @psalm-check-type-exact $attr = \'bar\'|\'lee\' */',
+        );
+
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     /**
      * @psalm-pure
      */
@@ -47,6 +71,36 @@ final class MagicPropertyTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'valueOfPseudoPropertyIsNarrowedByAnEqualityCheck' => [
+                'code' => '<?php
+                    enum Foo: string {
+                        case Bar = "bar";
+                        case Lee = "lee";
+                    }
+
+                    /** @property value-of<Foo> $attr */
+                    class Holder {
+                        public function __set(string $name, mixed $value): void {}
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+
+                        public function check(): string {
+                            if ($this->attr === Foo::Bar->value) {
+                                return "bar";
+                            }
+
+                            if ($this->attr === Foo::Lee->value) {
+                                return "lee";
+                            }
+
+                            return "";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType', 'UnevaluatedCode'],
+                'php_version' => '8.1',
+            ],
             'propertyDocblock' => [
                 'code' => '<?php
                     namespace Bar;
