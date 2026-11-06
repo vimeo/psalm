@@ -1274,16 +1274,24 @@ final class AssignmentAnalyzer
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             // the array holds what the call leaves in the item, as if it was assigned to it; the argument
-            // itself keeps the type it was passed with
-            $arg_type = $statements_analyzer->node_data->getType($stmt);
+            // itself keeps the type it was passed with, and its keys are not evaluated again
+            $node_data = $statements_analyzer->node_data;
+            $arg_type = $node_data->getType($stmt);
+            $operands = ArrayAssignmentAnalyzer::getOperands($stmt);
+            $node_data->markEvaluated($operands);
 
-            ArrayAssignmentAnalyzer::analyze(
-                $statements_analyzer,
-                $stmt,
-                $context,
-                null,
-                $by_ref_out_type,
-            );
+            try {
+                ArrayAssignmentAnalyzer::analyze(
+                    $statements_analyzer,
+                    $stmt,
+                    $context,
+                    null,
+                    $by_ref_out_type,
+                    true,
+                );
+            } finally {
+                $node_data->unmarkEvaluated($operands);
+            }
 
             if ($arg_type !== null) {
                 $statements_analyzer->node_data->setType($stmt, $arg_type);
