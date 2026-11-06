@@ -43,6 +43,7 @@ use Psalm\Type\Atomic\TDependentGetDebugType;
 use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Reconciler;
 
+use function array_diff_assoc;
 use function array_diff_key;
 use function array_intersect_key;
 use function array_merge;
@@ -451,6 +452,12 @@ final class SwitchCaseAnalyzer
         }
 
         $statements_analyzer->analyze($case_stmts, $case_context);
+
+        // what the case assigned counts as assigned by the switch: a case that exits can still have assigned it
+        $switch_scope->new_assigned_var_ids = array_diff_assoc(
+            $case_context->assigned_var_ids,
+            $original_context->assigned_var_ids,
+        ) + ($switch_scope->new_assigned_var_ids ?? []);
 
         $traverser = new PhpParser\NodeTraverser;
         $traverser->addVisitor(
