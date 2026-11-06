@@ -7,9 +7,11 @@ namespace Psalm\Internal\Type;
 use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\KeyedArrayComparator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Type;
@@ -634,6 +636,43 @@ final class TemplateStandinTypeReplacer
         return array_values($matching_atomic_types);
     }
 
+    private static function normalizeNativeStringInput(
+        ?Union $input_type,
+        Union $as,
+        string $defining_class,
+        Codebase $codebase,
+    ): ?Union {
+        if ($input_type === null) {
+            return null;
+        }
+        if (!$as->hasString()
+            || !str_starts_with($defining_class, 'fn-')
+            || !InternalCallMapHandler::inCallMap(substr($defining_class, 3))
+        ) {
+            return $input_type;
+        }
+
+        // Infer native string parameters from their converted value, not the
+        // Stringable object (which could otherwise appear to match a literal string).
+        $converted_input = null;
+        foreach ($input_type->getAtomicTypes() as $input_key => $input_atomic) {
+            $comparison = new TypeComparisonResult();
+            if (UnionTypeComparator::isContainedBy(
+                $codebase,
+                new Union([$input_atomic]),
+                $as,
+                false,
+                false,
+                $comparison,
+            ) && $comparison->to_string_cast) {
+                $converted_input ??= $input_type->getBuilder();
+                $converted_input->removeType($input_key);
+                $converted_input->addType(new Atomic\TString());
+            }
+        }
+        return $converted_input?->freeze() ?? $input_type;
+    }
+
     /**
      * @return list<Atomic>
      */
@@ -829,6 +868,13 @@ final class TemplateStandinTypeReplacer
             $as_resolver->traverse($as);
 
             $atomic_type = $atomic_type->replaceAs($as);
+
+            $input_type = self::normalizeNativeStringInput(
+                $input_type,
+                $as,
+                $atomic_type->defining_class,
+                $codebase,
+            );
 
             if ($input_type
                 && !$template_result->readonly

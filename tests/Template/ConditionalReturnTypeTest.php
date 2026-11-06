@@ -18,6 +18,31 @@ final class ConditionalReturnTypeTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'nativeStringableDoesNotMatchEmptyLiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function test(Stringable $value): void {
+                        $contains = str_contains($value, 'x');
+                        /** @psalm-check-type-exact $contains = bool */
+                        $starts = str_starts_with($value, 'x');
+                        /** @psalm-check-type-exact $starts = bool */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.0',
+            ],
+            'nativeConditionalUsesStringableArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function test(Throwable $error): void {
+                        $result = mb_convert_encoding($error, 'UTF-8');
+                        /** @psalm-check-type-exact $result = false|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+            ],
             'wrapPreservesUnknownArrayValues' => [
                 'code' => <<<'PHP'
                     <?php
