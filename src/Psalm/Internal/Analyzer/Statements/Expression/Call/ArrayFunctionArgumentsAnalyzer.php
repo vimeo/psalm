@@ -693,7 +693,11 @@ final class ArrayFunctionArgumentsAnalyzer
     ): void {
         $item_type = $statements_analyzer->node_data->getType($item);
 
-        if ($item_type === null || !self::isItemWrittenBack($statements_analyzer, $item)) {
+        // in a loop, and in a by-reference closure which is analysed as one, the shortened item would be widened
+        if ($item_type === null
+            || $context->inside_loop
+            || !self::isItemWrittenBack($statements_analyzer, $item)
+        ) {
             return;
         }
 

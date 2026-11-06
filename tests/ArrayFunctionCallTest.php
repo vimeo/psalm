@@ -3828,6 +3828,30 @@ final class ArrayFunctionCallTest extends TestCase
                         return count($a[1]);
                     }',
             ],
+            'arrayPopItemInByReferenceClosureKeepsTheRemainingElements' => [
+                'code' => '<?php
+                    function f(): int {
+                        $a = [];
+                        $remove = static function () use (&$a): int {
+                            $a = [[1, 2]];
+                            array_pop($a[0]);
+                            return array_pop($a[0]);
+                        };
+                        return $remove();
+                    }',
+            ],
+            'arrayShiftItemInLoopKeepsTheRemainingElements' => [
+                'code' => '<?php
+                    function take(int $i): void {}
+
+                    function f(): void {
+                        foreach ([1, 2] as $_) {
+                            $a = [[1, 2]];
+                            array_shift($a[0]);
+                            take(array_shift($a[0]));
+                        }
+                    }',
+            ],
             'arrayPopItemOfMixedIsUnchanged' => [
                 'code' => '<?php
                     /** @param array<int, mixed> $a */
