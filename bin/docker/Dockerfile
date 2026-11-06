@@ -182,6 +182,9 @@ RUN set -eux; \
 # smoke test
 	php --version
 
+# Above the lines that invalidate the cache on every commit, so that it isn't compiled on every build
+RUN pecl install zstd
+
 COPY bin/docker/docker-php-* /usr/local/bin/
 ADD https://raw.githubusercontent.com/php/php-src/refs/heads/PHP-8.4/.gdbinit /root/.gdbinit
 
