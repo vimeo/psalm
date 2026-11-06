@@ -3777,6 +3777,7 @@ final class ArrayFunctionCallTest extends TestCase
                         return array_first($values) ?? 0;
                     }',
                 'error_message' => 'MixedReturnStatement',
+                // Isolate return-type fallback; the iterable union also has an invalid-argument diagnostic.
                 'ignored_issues' => ['PossiblyInvalidArgument'],
                 'php_version' => '8.5',
             ],
