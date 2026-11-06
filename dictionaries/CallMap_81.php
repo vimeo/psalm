@@ -15215,7 +15215,7 @@ return array (
   array (
     -1 => 'bool',
     'constant_name' => 'string',
-    'value' => 'array<array-key, mixed>|null|scalar|UnitEnum',
+    'value' => 'UnitEnum|array<array-key, mixed>|null|scalar',
     'case_insensitive=' => 'false',
   ),
   'define_syslog_variables' => 

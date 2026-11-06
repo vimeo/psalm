@@ -296,7 +296,7 @@ return array (
       array (
         0 => 'bool',
         'constant_name' => 'string',
-        'value' => 'array<array-key, mixed>|null|scalar|UnitEnum',
+        'value' => 'UnitEnum|array<array-key, mixed>|null|scalar',
         'case_insensitive=' => 'false',
       ),
     ),
