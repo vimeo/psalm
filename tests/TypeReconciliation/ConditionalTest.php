@@ -21,6 +21,54 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'identicalKeyedArraysWithTheSameKeysInAnotherOrder' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a: int|string, b: string} $x
+                     * @param array{b: string|int, a: int} $y
+                     */
+                    function f(array $x, array $y): void {
+                        if ($x === $y) {
+                            echo "same";
+                        }
+                    }',
+            ],
+            'identicalKeyedArraysOfOverlappingTypesNarrowTheArray' => [
+                'code' => '<?php
+                    function f(int $x, bool $b): void {
+                        $w = [$x, true];
+
+                        if ($w === [0, $b]) {
+                            $narrowed = $w;
+                        }
+                    }',
+                'assertions' => [],
+            ],
+            'matchOnAnArrayWithItemsOfOverlappingTypes' => [
+                'code' => '<?php
+                    function generateState(int $x, bool $breakOnZero = true): string {
+                        return match ([$x, true]) {
+                            [0, $breakOnZero] => "fail",
+                            [0, !$breakOnZero] => "state_0",
+                            default => "state_" . $x,
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'identicalKeyedArraysWithStringKeysOfOverlappingTypes' => [
+                'code' => '<?php
+                    function f(int $x, string $s): int {
+                        $a = ["id" => $x, "name" => $s];
+
+                        if ($a === ["id" => 1, "name" => "a"]) {
+                            return $a["id"];
+                        }
+
+                        return 0;
+                    }',
+            ],
             'orredClausesOfOneVariableAreAllKept' => [
                 'code' => '<?php
                     interface I1 {}
@@ -3525,6 +3573,28 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'identicalKeyedArraysOfDisjointTypes' => [
+                'code' => '<?php
+                    function f(int $x): void {
+                        $a = [$x, "a"];
+
+                        if ($a === [0, "b"]) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'identicalKeyedArraysOfDifferentKeys' => [
+                'code' => '<?php
+                    function f(int $x): void {
+                        $a = ["a" => $x];
+
+                        if ($a === ["b" => 1]) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'makeNonNullableNull' => [
                 'code' => '<?php
                     class A { }
