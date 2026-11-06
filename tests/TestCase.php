@@ -32,6 +32,8 @@ use function ini_set;
 use function is_string;
 use function preg_match;
 use function preg_quote;
+use function restore_error_handler;
+use function set_error_handler;
 
 use const ARRAY_FILTER_USE_KEY;
 use const DIRECTORY_SEPARATOR;
@@ -241,6 +243,17 @@ class TestCase extends BaseTestCase
             } catch (Throwable $_e) {
             }
             self::assertInstanceOf(Union::class, $union, $message);
+        }
+    }
+
+    /** Runs the operation without PHP warnings, for code that warns on top of reporting a failure */
+    protected function withoutWarnings(callable $operation): void
+    {
+        set_error_handler(static fn(): bool => true);
+        try {
+            $operation();
+        } finally {
+            restore_error_handler();
         }
     }
 }
