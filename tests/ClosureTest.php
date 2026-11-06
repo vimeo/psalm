@@ -22,6 +22,34 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'closureWithSelfParamCalledInATrait' => [
+                'code' => '<?php
+                    trait Walks {
+                        public function direct(): void {
+                            $f = function (self $other): void {};
+                            $f($this);
+                        }
+
+                        public function recursive(): void {
+                            $f = null;
+                            $f = function (self $other, int $depth) use (&$f): void {
+                                if ($depth > 0) {
+                                    $f($other, $depth - 1);
+                                }
+                            };
+                            $f($this, 3);
+                        }
+
+                        public function arrow(): int {
+                            $f = fn (self $other): int => 1;
+                            return $f($this);
+                        }
+                    }
+
+                    final class Walker {
+                        use Walks;
+                    }',
+            ],
             'byRefUseVarUnsetInClosure' => [
                 'code' => '<?php
                     function reserve(): Closure {
@@ -1717,6 +1745,20 @@ final class ClosureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'closureWithSelfParamCalledInATraitRejectsAnotherClass' => [
+                'code' => '<?php
+                    trait Walks {
+                        public function direct(): void {
+                            $f = function (self $other): void {};
+                            $f(new stdClass());
+                        }
+                    }
+
+                    final class Walker {
+                        use Walks;
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'wrongArg' => [
                 'code' => '<?php
                     $bar = ["foo", "bar"];
