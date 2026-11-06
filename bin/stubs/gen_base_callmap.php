@@ -3,6 +3,18 @@
 
 declare(strict_types=1);
 
+// Reject a mistagged image before it overwrites the callmap of a different PHP version.
+if (isset($argv[1]) && $argv[1] !== PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION) {
+    throw new RuntimeException('Expected PHP ' . $argv[1] . ', running ' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION);
+}
+
+// Reject incomplete images before missing reflection metadata erases native override contracts.
+foreach (explode(' ', $argv[2] ?? '') as $extension) {
+    if ($extension !== '' && !extension_loaded($extension)) {
+        throw new RuntimeException('Required extension is not loaded: ' . $extension);
+    }
+}
+
 $callmap = [];
 // the extension of each entry: gen_callmap.php keeps the overrides of the extensions a version's image lacks
 $extensions = [];
@@ -31,7 +43,12 @@ function typeToString($reflection_type, string $defaultType): string
         throw new LogicException('Unexpected reflection class ' . get_class($reflection_type) . ' found.');
     }
 
-    if ($reflection_type->allowsNull() && $type !== 'mixed') {
+    // Union members already include null; mixed and null also need no nullable suffix.
+    if (!$reflection_type instanceof ReflectionUnionType
+        && $reflection_type->allowsNull()
+        && $type !== 'mixed'
+        && $type !== 'null'
+    ) {
         $type .= '|null';
     }
 
@@ -39,16 +56,29 @@ function typeToString($reflection_type, string $defaultType): string
 }
 
 /**
- * @return array<string, array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string}>
+ * @return array<int|string, string>
  */
 function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction, string $defaultReturnType): array
 {
     // phpcs:disable SlevomatCodingStandard.Numbers.RequireNumericLiteralSeparator.RequiredNumericLiteralSeparator
-    $res = PHP_VERSION_ID >= 80100 ? (
-        $reflectionFunction->getTentativeReturnType() ?? $reflectionFunction->getReturnType()
-    ) : $reflectionFunction->getReturnType();
+    $native = $reflectionFunction->getReturnType();
+    $tentative = PHP_VERSION_ID >= 80100 ? $reflectionFunction->getTentativeReturnType() : null;
+    $signature = $native ?? $tentative;
 
-    $res = [typeToString($res, $defaultReturnType)];
+    $res = [typeToString($signature, $defaultReturnType)];
+
+    // Keep the reflected contract separate from the return type refined by callmap overrides.
+    if ($signature !== null) {
+        $res = [-1 => typeToString($signature, 'mixed')];
+        if ($native === null) {
+            $res[-2] = 'tentative';
+        }
+    } elseif ($reflectionFunction->isInternal()
+        || preg_match('~^@\w+/~', (string) $reflectionFunction->getFileName())
+    ) {
+        // An untyped downloaded stub does not establish the absence of a native contract.
+        $res[-2] = 'none';
+    }
 
     foreach ($reflectionFunction->getParameters() as $param) {
         $key = $param->getName();
@@ -68,6 +98,22 @@ function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction, string 
     return $res;
 }
 
+/**
+ * The extension of a function or class, '' if none. Extensions that embed PHP code (swoole's library) evaluate it
+ * under an "@<extension>/..." file name.
+ *
+ * @psalm-param ReflectionFunction|ReflectionClass $reflection
+ */
+function extensionOf($reflection): string
+{
+    $extension = $reflection->getExtensionName();
+    if ($extension !== false) {
+        return strtolower($extension);
+    }
+
+    return preg_match('~^@(\w+)/~', (string) $reflection->getFileName(), $matches) ? strtolower($matches[1]) : '';
+}
+
 // TEMP: not recommended, install the extension in the Dockerfile, instead
 foreach ([
     'couchbase/couchbase.php',
@@ -77,12 +123,26 @@ foreach ([
         continue;
     }
     $stub = file_get_contents("https://github.com/JetBrains/phpstorm-stubs/raw/refs/heads/master/$stub");
+    if ($stub === false) {
+        throw new RuntimeException('Cannot download the extension stub');
+    }
     if (PHP_MAJOR_VERSION === 7 && PHP_MINOR_VERSION === 0) {
         $stub = str_replace(['?', '<php'], ['', '<?php'], $stub);
         $stub = str_replace(['public const', 'protected const', 'private const'], 'const', $stub);
     }
-    file_put_contents('temp.php', $stub);
-    require 'temp.php';
+    // Parallel PHP-version runs must not overwrite a shared extension-stub file.
+    $temporaryFile = tempnam(sys_get_temp_dir(), 'psalm-callmap-');
+    if ($temporaryFile === false) {
+        throw new RuntimeException('Cannot prepare the extension stub');
+    }
+    try {
+        if (file_put_contents($temporaryFile, $stub) === false) {
+            throw new RuntimeException('Cannot write the extension stub');
+        }
+        require $temporaryFile;
+    } finally {
+        unlink($temporaryFile);
+    }
 }
 
 foreach (get_defined_functions() as $sub) {
@@ -97,26 +157,32 @@ foreach (get_defined_functions() as $sub) {
         if ($name === 'namedtypename') {
             continue;
         }
+        if ($name === 'extensionof') {
+            continue;
+        }
         $func = new ReflectionFunction($name);
 
         $args = paramsToEntries($func, 'mixed');
 
         $callmap[$name] = $args;
-        if ($func->getExtensionName() !== false) {
-            $extensions[$name] = strtolower($func->getExtensionName());
+        $extension = extensionOf($func);
+        if ($extension !== '') {
+            $extensions[$name] = $extension;
         }
     }
 }
 
-foreach (get_declared_classes() as $class) {
+// Interfaces are not included in get_declared_classes(); their signatures need separate callmap entries.
+foreach (array_merge(get_declared_classes(), get_declared_interfaces()) as $class) {
     $refl = new ReflectionClass($class);
 
     foreach ($refl->getMethods() as $method) {
         $args = paramsToEntries($method, $method->getName() === '__construct' ? 'void' : 'mixed');
     
         $callmap[strtolower($class.'::'.$method->getName())] = $args;
-        if ($refl->getExtensionName() !== false) {
-            $extensions[strtolower($class.'::'.$method->getName())] = strtolower($refl->getExtensionName());
+        $extension = extensionOf($refl);
+        if ($extension !== '') {
+            $extensions[strtolower($class.'::'.$method->getName())] = $extension;
         }
     }
 }

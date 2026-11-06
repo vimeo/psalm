@@ -21,6 +21,7 @@ use function array_key_exists;
 use function array_reduce;
 use function array_slice;
 use function count;
+use function ctype_space;
 use function implode;
 use function is_string;
 use function ltrim;
@@ -261,7 +262,15 @@ final class FunctionDocblockManipulator
 
                 if (!isset($chars[$i + 1]) || ($chars[$i + 1] !== '\\' && !preg_match('/[\w]/', $chars[$i + 1]))) {
                     $this->return_typehint_end = $i + $end_bracket_position + 2;
-                    break;
+
+                    $next = $i + 1;
+                    while (isset($chars[$next]) && ctype_space($chars[$next])) {
+                        ++$next;
+                    }
+
+                    if (!isset($chars[$next]) || ($chars[$next] !== '|' && $chars[$next] !== '&')) {
+                        break;
+                    }
                 }
             }
         }
