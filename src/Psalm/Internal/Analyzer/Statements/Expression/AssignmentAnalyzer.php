@@ -654,6 +654,14 @@ final class AssignmentAnalyzer
                 $context,
                 $removed_taints,
             );
+
+            // a branch that throws never joins the rest of the try body, but its assignments can still be seen
+            if ($context->try_scope !== null) {
+                $context->try_scope->parent_nodes[$var_id] = [
+                    ...($context->try_scope->parent_nodes[$var_id] ?? []),
+                    ...$context->vars_in_scope[$var_id]->parent_nodes,
+                ];
+            }
         }
 
         $context->inside_assignment = $was_in_assignment;
