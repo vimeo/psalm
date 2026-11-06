@@ -19,6 +19,24 @@ final class SuperGlobalsTest extends TestCase
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
+        yield 'aCopyOfASuperGlobalIsDefined' => [
+            'code' => '<?php
+                function save(): void {
+                    $session = $_SESSION;
+
+                    try {
+                        session_write_close();
+                    } finally {
+                        if ($_SESSION) {
+                            $_SESSION = $session;
+                        }
+                    }
+
+                    echo count($session);
+                }',
+            'assertions' => [],
+        ];
+
         yield 'http_response_headerIsList' => [
             'code' => '<?php
                 /** @return non-empty-list<non-falsy-string> */

@@ -178,7 +178,10 @@ final class VariableFetchAnalyzer
                 $context->vars_in_scope[$var_name] = $type;
                 $statements_analyzer->node_data->setType(
                     $stmt,
-                    self::taintGlobals($statements_analyzer, $var_name, $type, $array_assignment),
+                    self::getReadSuperGlobalType(
+                        self::taintGlobals($statements_analyzer, $var_name, $type, $array_assignment),
+                        $context,
+                    ),
                 );
 
                 return true;
@@ -190,7 +193,10 @@ final class VariableFetchAnalyzer
 
             $statements_analyzer->node_data->setType(
                 $stmt,
-                self::taintGlobals($statements_analyzer, $var_name, $type, $array_assignment),
+                self::getReadSuperGlobalType(
+                    self::taintGlobals($statements_analyzer, $var_name, $type, $array_assignment),
+                    $context,
+                ),
             );
             $context->vars_in_scope[$var_name] = $type;
             $context->vars_possibly_in_scope[$var_name] = true;
@@ -696,6 +702,16 @@ final class VariableFetchAnalyzer
         $graph->addPath($name_node, $files_node, 'arrayvalue-assignment');
 
         return $type->setParentNodes([$files_node->id => $files_node]);
+    }
+
+    /**
+     * The value that is read from a superglobal is defined, whatever the superglobal is (an isset() asks about it)
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getReadSuperGlobalType(Union $type, Context $context): Union
+    {
+        return $context->inside_isset ? $type : $type->setPossiblyUndefined(false);
     }
 
     /**

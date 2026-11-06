@@ -336,7 +336,9 @@ final class AssignmentAnalyzer
             }
 
             // a variable that is read as the value is not an assignment target, so it can't be defined by it
+            // (the keys of an array item or the object of a property that is assigned are evaluated before the value)
             $context->inside_assignment = $assign_value instanceof PhpParser\Node\Expr\Variable
+                && $assign_var instanceof PhpParser\Node\Expr\Variable
                 ? $was_in_assignment
                 : $context->inside_assignment;
 
