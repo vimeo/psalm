@@ -99,6 +99,35 @@ final class ConditionalReturnTypeTest extends TestCase
                     PHP,
                 'assertions' => ['$value===' => "'no'|'yes'"],
             ],
+            'conditionalElsePreservesContainedIterableTemplate' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template X of iterable<int, mixed>
+                     * @param X $values
+                     * @return (X is array ? never : X)
+                     */
+                    function nonArray($values) {
+                        if (is_array($values)) {
+                            throw new InvalidArgumentException();
+                        }
+                        return $values;
+                    }
+                    /**
+                     * @template T
+                     * @param iterable<int, T> $values
+                     * @return T|null
+                     */
+                    function firstValue(iterable $values) {
+                        $result = nonArray($values);
+                        foreach ($result as $value) {
+                            /** @psalm-check-type-exact $value = T */
+                            return $value;
+                        }
+                        return null;
+                    }
+                    PHP,
+            ],
             'arrayValuesPreservesGenericElement' => [
                 'code' => <<<'PHP'
                     <?php
