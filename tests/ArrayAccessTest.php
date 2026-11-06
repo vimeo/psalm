@@ -591,6 +591,16 @@ final class ArrayAccessTest extends TestCase
                 ],
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
+            'appendToASplDoublyLinkedList' => [
+                'code' => '<?php
+                    /** @var SplDoublyLinkedList<int> $dll */
+                    $dll = new SplDoublyLinkedList();
+                    $dll[] = 42;
+                    $dll[0] = 43;
+
+                    $queue = new SplQueue();
+                    $queue[] = "a";',
+            ],
             'coalesceOnOptionalKeysWithComputedOffset' => [
                 'code' => '<?php
                     /** @return array{a?: int, b?: int} */
