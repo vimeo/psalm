@@ -22,6 +22,34 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'firstClassCallableStaticCallForwardedThroughMixin' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Builder
+                    {
+                        public function has(string $relation): self
+                        {
+                            return $this;
+                        }
+                    }
+
+                    /** @mixin Builder */
+                    class Model
+                    {
+                        /** @param array<mixed> $args */
+                        public static function __callStatic(string $name, array $args): mixed
+                        {
+                            return (new Builder())->$name(...$args);
+                        }
+                    }
+
+                    $has = Model::has(...);
+                    /** @psalm-check-type-exact $has = Closure(string):Builder */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'byRefUseVarUnsetInClosure' => [
                 'code' => '<?php
                     function reserve(): Closure {
