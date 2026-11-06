@@ -5,9 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
+use function getcwd;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -15,6 +20,39 @@ final class RedundantConditionTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function testAssertOfATypeCheckFunctionIsReportedOnce(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function f(string $s, int $i, array $a, ?int $n): void {
+                    assert(is_string($s));
+                    assert(is_int($i));
+                    assert(is_array($a));
+                    assert(is_int($n));
+                    if (is_string($s)) {}
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            [
+                ['RedundantCondition', 3, 21],
+                ['RedundantCondition', 4, 21],
+                ['RedundantCondition', 5, 21],
+                ['RedundantConditionGivenDocblockType', 7, 25],
+            ],
+            array_map(
+                static fn($issue): array => [$issue->type, $issue->line_from, $issue->column_from],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
 
     /**
      * @psalm-pure
