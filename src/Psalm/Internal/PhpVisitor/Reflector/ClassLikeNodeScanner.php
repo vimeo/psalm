@@ -1738,7 +1738,10 @@ final class ClassLikeNodeScanner
                     new CodeLocation($this->file_scanner, $const),
                 );
 
-                if (!IssueBuffer::isSuppressedInList($missing_type_issue, $suppressed_issues)) {
+                if (!IssueBuffer::isSuppressedInList(
+                    $missing_type_issue,
+                    $suppressed_issues + $storage->suppressed_issues,
+                )) {
                     $this->file_storage->scan_issues[] = $missing_type_issue;
                 }
             }
