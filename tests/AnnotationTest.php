@@ -1492,6 +1492,34 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'spaceInsideTypeName' => [
+                'code' => '<?php
+                    /**
+                     * @return array<s t r i n g>
+                     */
+                    function f() {
+                        return ["hello"];
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'missingCommaBetweenGenericParams' => [
+                'code' => '<?php
+                    /**
+                     * @return array<int string>
+                     */
+                    function f() {
+                        return [];
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'spaceInsideNamespacedTypeName' => [
+                'code' => '<?php
+                    /**
+                     * @param array<Foo\\Bar Baz> $a
+                     */
+                    function f(array $a): void {}',
+                'error_message' => 'InvalidDocblock',
+            ],
             'invalidTypeInPromotedPropertyDocblock' => [
                 'code' => '<?php
                     class Foo {
