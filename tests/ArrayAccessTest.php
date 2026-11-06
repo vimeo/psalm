@@ -66,6 +66,52 @@ final class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testEnsureArrayOffsetsExistAfterNarrowingTheIssetKey(): void
+    {
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param array<string, string> $arr */
+                function takesArray(array $arr, string $key): void {
+                    if (isset($arr[$key])) {
+                        if ("foo" === $key) {
+                            echo $arr[$key];
+                        } elseif ("bar" === $key) {
+                            echo $arr[$key];
+                        } else {
+                            echo $arr[$key];
+                        }
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testEnsureArrayOffsetsExistAfterAssigningTheIssetKey(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedStringArrayOffset');
+
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param array<string, string> $arr */
+                function takesArray(array $arr, string $key): void {
+                    if (isset($arr[$key])) {
+                        $key = "foo";
+                        echo $arr[$key];
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testEnsureArrayOffsetsExistForOffsetsPassedByReference(): void
     {
         Config::getInstance()->ensure_array_string_offsets_exist = true;
@@ -550,6 +596,24 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOnAnIndexIsKeptWhenTheIndexIsNarrowedInALoop' => [
+                'code' => '<?php
+                    /** @param string[] $in */
+                    function strip(array $in): array {
+                        $out = [];
+                        foreach (["foo", "bar"] as $key) {
+                            if (isset($in[$key])) {
+                                if ("foo" === $key) {
+                                    $out["baz"] = 1;
+                                } else {
+                                    $out[$key] = substr($in[$key], 0, -1);
+                                }
+                            }
+                        }
+                        return $out;
+                    }',
+                'assertions' => [],
+            ],
             'appendToASplDoublyLinkedList' => [
                 'code' => '<?php
                     /** @var SplDoublyLinkedList<int> $dll */
