@@ -2548,6 +2548,41 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'issetOfUninitializedPropertyInConstructor' => [
+                'code' => '<?php
+                    class X {
+                        private string $x;
+
+                        /** @param string[] $a */
+                        public function __construct(array $a) {
+                            foreach ($a as $key => $val) {
+                                if ($key === "x") {
+                                    $this->x = $val;
+                                }
+                            }
+
+                            $this->x ??= "";
+                        }
+                    }
+
+                    class Y {
+                        private string $y;
+
+                        public function __construct() {
+                            $this->y ??= "";
+                        }
+                    }
+
+                    class Z {
+                        private string $z;
+
+                        public function __construct() {
+                            if (!isset($this->z)) {
+                                $this->z = "";
+                            }
+                        }
+                    }',
+            ],
             'memoizePropertyAfterSetting' => [
                 'code' => '<?php
                     class A {

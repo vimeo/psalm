@@ -1264,6 +1264,24 @@ final class IssetTest extends TestCase
                     }',
                 'error_message' => 'RedundantPropertyInitializationCheck',
             ],
+            'negatedIssetOnInstancePropertyOutsideConstructor' => [
+                'code' => '<?php
+                    class A {
+                        private string $s;
+
+                        public function __construct() {
+                            $this->s = "a";
+                        }
+
+                        public function get(): string {
+                            if (!isset($this->s)) {
+                                $this->s = "b";
+                            }
+                            return $this->s;
+                        }
+                    }',
+                'error_message' => 'RedundantPropertyInitializationCheck',
+            ],
             'setArbitraryListElementAfterIsset' => [
                 'code' => '<?php
                     /** @param list<string> $list */
