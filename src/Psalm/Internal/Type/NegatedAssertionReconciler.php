@@ -38,6 +38,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function array_all;
 use function array_merge;
 use function array_values;
 use function count;
@@ -216,6 +217,18 @@ final class NegatedAssertionReconciler extends Reconciler
         ) {
             // checking if two types share a common parent is not enough to guarantee children are instanceof each other
             // fall through
+        } elseif ($assertion->getAtomicType() instanceof TKeyedArray
+            && $assertion->getAtomicType()->is_list
+            && $existing_var_type->isArray()
+            && array_all(
+                $existing_var_type->getAtomicTypes(),
+                static fn(Atomic $part): bool => $part instanceof TArray
+                    && !$part->type_params[0]->hasInt()
+                    && !$part->type_params[0]->hasArrayKey()
+                    && !$part->type_params[0]->hasMixed(),
+            )
+        ) {
+            // an array that cannot have int keys is never a list, so it is not made less specific by !list
         } elseif ($existing_var_type->isArray()
             && ($assertion->getAtomicType() instanceof TArray
                 || $assertion->getAtomicType() instanceof TKeyedArray)
