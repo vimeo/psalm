@@ -88,6 +88,7 @@ class SomePlugin implements \Psalm\Plugin\EventHandler\AfterStatementAnalysisInt
 - `AfterEveryFunctionCallAnalysisInterface` - called after Psalm evaluates any function call. Cannot influence the call further.
 - `AfterExpressionAnalysisInterface` - called after Psalm evaluates an expression.
 - `AfterFileAnalysisInterface` - called after Psalm analyzes a file.
+- `AfterFileParsedInterface`: called each time Psalm gets the statements of a file (project files, files it only scans and stubs), before it scans or analyzes them. Can replace the statements. Psalm reuses what it scanned from a file until the file changes, the cache is cleared, or you're disabling cache with `--no-cache`/`--no-reflection-cache`.
 - `AfterFunctionCallAnalysisInterface` - called after Psalm evaluates a function call to any function defined within the project itself. Can alter the return type or perform modifications of the call.
 - `AfterFunctionLikeAnalysisInterface` - called after Psalm has completed its analysis of a given function-like.
 - `AfterMethodCallAnalysisInterface` - called after Psalm analyzes a method call.
@@ -108,6 +109,30 @@ class SomePlugin implements \Psalm\Plugin\EventHandler\AfterStatementAnalysisInt
 - `PropertyTypeProviderInterface` - can be used to override Psalm's builtin property type lookup for one or more classes.
 - `PropertyVisibilityProviderInterface` - can be used to override Psalm's builtin property visibility checks for one or more classes.
 - `DynamicFunctionStorageProviderInterface` - can be used to override signature for one or more functions. It means you can define variadic param list. Infer return type by input args. Define function templates. Also check out `Psalm\Plugin\DynamicFunctionStorage` to find out what api it brings for you to change function's definition.
+
+An `AfterFileParsedInterface` handler gets statements that no cache holds, so it may change them in place:
+
+```php
+<?php
+use PhpParser\Node\Stmt;
+use PhpParser\NodeTraverser;
+use Psalm\Plugin\EventHandler\AfterFileParsedInterface;
+use Psalm\Plugin\EventHandler\Event\AfterFileParsedEvent;
+
+final class AttributesToDocblocks implements AfterFileParsedInterface
+{
+    public static function afterFileParsed(AfterFileParsedEvent $event): void
+    {
+        // AttributeToDocblockVisitor: your PhpParser\NodeVisitor, e.g. turning #[Returns('list<int>')] into @return list<int>
+        $traverser = new NodeTraverser(new AttributeToDocblockVisitor());
+        /** @var list<Stmt> $stmts */
+        $stmts = $traverser->traverse($event->getStmts());
+        $event->setStmts($stmts);
+    }
+}
+```
+
+Psalm calls the handler every time it needs the statements of a file, each time with a fresh copy, so the handler must be deterministic and must not rely on changes it made before. Files Psalm reads before it loads plugins (`preloadClasses` stubs and Psalm's PHP version backport stubs, and composer `autoload.files` when running `psalm` without paths or as a language server) are not passed to the handler.
 
 Here are a couple of example plugins:
  - [StringChecker](https://github.com/vimeo/psalm/blob/master/examples/plugins/StringChecker.php) - checks class references in strings
