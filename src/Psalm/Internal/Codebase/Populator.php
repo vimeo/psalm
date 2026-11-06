@@ -1673,6 +1673,25 @@ final class Populator
         }
     }
 
+    /**
+     * A property imported from a trait is declared by the trait, not by the class using it
+     *
+     * @psalm-capabilities read-props
+     */
+    private function isPrivateProperty(ClassLikeStorage $storage, string $property_name): bool
+    {
+        $declaring_class = $storage->declaring_property_ids[$property_name] ?? null;
+
+        $declaring_storage = $declaring_class !== null
+            && strtolower($declaring_class) !== strtolower($storage->name)
+            && $this->classlike_storage_provider->has($declaring_class)
+                ? $this->classlike_storage_provider->get($declaring_class)
+                : $storage;
+
+        return isset($declaring_storage->properties[$property_name])
+            && $declaring_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE;
+    }
+
     private function inheritPropertiesFromParent(
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage,
@@ -1687,10 +1706,7 @@ final class Populator
                 continue;
             }
 
-            if (!$parent_storage->is_trait
-                && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-            ) {
+            if (!$parent_storage->is_trait && $this->isPrivateProperty($parent_storage, $property_name)) {
                 continue;
             }
 
@@ -1706,10 +1722,7 @@ final class Populator
                 continue;
             }
 
-            if (!$parent_storage->is_trait
-                && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-            ) {
+            if (!$parent_storage->is_trait && $this->isPrivateProperty($parent_storage, $property_name)) {
                 continue;
             }
 
@@ -1718,10 +1731,7 @@ final class Populator
 
         // register where they're declared
         foreach ($parent_storage->inheritable_property_ids as $property_name => $inheritable_property_id) {
-            if (!$parent_storage->is_trait
-                && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-            ) {
+            if (!$parent_storage->is_trait && $this->isPrivateProperty($parent_storage, $property_name)) {
                 continue;
             }
 

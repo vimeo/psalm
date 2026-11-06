@@ -561,6 +561,36 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'privateTraitPropertyInitializedByTheUsingClassIsNotCheckedInSubclasses' => [
+                'code' => '<?php
+                    trait IdTrait {
+                        private int $id;
+
+                        private function initializeId(): void {
+                            $this->id = 5;
+                        }
+
+                        public function id(): int {
+                            return $this->id;
+                        }
+                    }
+
+                    class BaseUser {
+                        use IdTrait;
+
+                        public function __construct() {
+                            $this->initializeId();
+                        }
+                    }
+
+                    class Admin extends BaseUser {}
+
+                    class Client extends BaseUser {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }',
+            ],
             'newVarInIf' => [
                 'code' => '<?php
                     class A {
@@ -2903,6 +2933,46 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'privateTraitPropertyIsNotVisibleInASubclass' => [
+                'code' => '<?php
+                    trait IdTrait {
+                        private int $id = 1;
+                    }
+
+                    class BaseUser {
+                        use IdTrait;
+                    }
+
+                    class Admin extends BaseUser {
+                        public function id(): int {
+                            return $this->id;
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:36 - Instance property Admin::$id is not defined',
+            ],
+            'privateTraitPropertyNotInitializedIsStillReportedInTheUsingClass' => [
+                'code' => '<?php
+                    trait IdTrait {
+                        private int $id;
+
+                        public function id(): int {
+                            return $this->id;
+                        }
+                    }
+
+                    class BaseUser {
+                        use IdTrait;
+
+                        public function __construct() {}
+                    }
+
+                    class Admin extends BaseUser {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:27 - Property BaseUser::$id',
+            ],
             'undefinedPropertyAssignment' => [
                 'code' => '<?php
                     class A {
