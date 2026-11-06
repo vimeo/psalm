@@ -82,6 +82,8 @@ final class MonologLibraryStubsTest extends LibraryStubsTestCase
             }
 
             namespace Monolog\Handler {
+                use Monolog\Formatter\FormatterInterface;
+
                 interface HandlerInterface {}
                 interface ProcessableHandlerInterface {}
                 trait ProcessableHandlerTrait {}
@@ -106,6 +108,42 @@ final class MonologLibraryStubsTest extends LibraryStubsTestCase
                     \Monolog\ResettableInterface
                 {
                     use ProcessableHandlerTrait;
+                }
+                class BufferHandler extends AbstractHandler implements
+                    ProcessableHandlerInterface,
+                    FormattableHandlerInterface
+                {
+                    use ProcessableHandlerTrait;
+
+                    public function setFormatter(FormatterInterface $formatter): HandlerInterface {
+                        return $this;
+                    }
+
+                    public function getFormatter(): FormatterInterface {
+                        throw new \LogicException();
+                    }
+                }
+                class ElasticaHandler extends AbstractProcessingHandler {
+                    public function setFormatter(FormatterInterface $formatter): HandlerInterface {
+                        return parent::setFormatter($formatter);
+                    }
+                }
+                class PsrHandler extends AbstractHandler implements FormattableHandlerInterface {
+                    protected ?FormatterInterface $formatter = null;
+
+                    public function setFormatter(FormatterInterface $formatter): HandlerInterface {
+                        $this->formatter = $formatter;
+
+                        return $this;
+                    }
+
+                    public function getFormatter(): FormatterInterface {
+                        if ($this->formatter === null) {
+                            throw new \LogicException();
+                        }
+
+                        return $this->formatter;
+                    }
                 }
             }';
     }
@@ -234,6 +272,41 @@ final class MonologLibraryStubsTest extends LibraryStubsTestCase
                         return $handler;
                     }',
                 [],
+            ],
+            'formattableHandlerSubclassCapabilities' => [
+                '<?php
+                    final class MyHandler extends Monolog\Handler\BufferHandler {}',
+                [],
+            ],
+            'formattableHandlerOverridingSubclassCapabilities' => [
+                '<?php
+                    use Monolog\Formatter\FormatterInterface;
+                    use Monolog\Formatter\LineFormatter;
+                    use Monolog\Handler\HandlerInterface;
+
+                    final class MyElasticaHandler extends Monolog\Handler\ElasticaHandler {
+                        /** @psalm-capabilities read-globals|io */
+                        protected function getDefaultFormatter(): FormatterInterface {
+                            return new LineFormatter();
+                        }
+                    }
+
+                    final class MyPsrHandler extends Monolog\Handler\PsrHandler {
+                        /** @psalm-capabilities read-props */
+                        public function getFormatter(): FormatterInterface {
+                            return parent::getFormatter();
+                        }
+                    }
+
+                    final class UnannotatedHandler extends Monolog\Handler\BufferHandler {
+                        public function setFormatter(FormatterInterface $formatter): HandlerInterface {
+                            return parent::setFormatter($formatter);
+                        }
+                    }',
+                [
+                    'ImmutableDependency on line 20',
+                    'ImmutableDependency on line 21',
+                ],
             ],
         ];
     }
