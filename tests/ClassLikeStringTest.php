@@ -196,6 +196,16 @@ final class ClassLikeStringTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedClassExistsOnTheLeftOfAnOrAllowsTheClassOnTheRight' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return !class_exists(Missing::class) || Missing::foo();
+                    }
+
+                    function checkTwo(): bool {
+                        return (!class_exists(First::class) || !class_exists(Second::class)) || First::foo();
+                    }',
+            ],
             'arrayOfClassConstants' => [
                 'code' => '<?php
                     /**
@@ -731,6 +741,51 @@ final class ClassLikeStringTest extends TestCase
                         }
                     }',
             ],
+            'allowClassExistsChecksCombinedWithAnd' => [
+                'code' => '<?php
+                    function test(): void {
+                        if (class_exists(\\Doesnt\\Really::class) && class_exists(\\Doesnt\\Either::class)) {
+                            \\Doesnt\\Really::something();
+                            \\Doesnt\\Either::something();
+                            new \\Doesnt\\Either();
+                        }
+                    }',
+            ],
+            'allowClassExistsChecksCombinedWithOrAndAnEarlyReturn' => [
+                'code' => '<?php
+                    /** @param class-string $class */
+                    function test(string $class): void {
+                        if (!class_exists(\\Doesnt\\Really::class) || !class_exists(\\Doesnt\\Either::class)) {
+                            return;
+                        }
+
+                        if (is_subclass_of($class, \\Doesnt\\Really::class)
+                            || is_subclass_of($class, \\Doesnt\\Either::class)
+                        ) {
+                            new \\Doesnt\\Either();
+                        }
+                    }',
+            ],
+            'allowClassExistsChecksCombinedWithSeveralOperands' => [
+                'code' => '<?php
+                    function test(): void {
+                        if (class_exists("Doesnt\\One") && class_exists("Doesnt\\Two") && class_exists("Doesnt\\Three")) {
+                            \\Doesnt\\Three::something();
+                        }
+                    }',
+            ],
+            'allowInterfaceAndEnumExistsChecksCombinedWithAnd' => [
+                'code' => '<?php
+                    function test(): void {
+                        if (interface_exists(\\Doesnt\\Really::class) && enum_exists(\\Doesnt\\Either::class)) {
+                            \\Doesnt\\Really::something();
+                            \\Doesnt\\Either::something();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'allowComparisonToStaticClassString' => [
                 'code' => '<?php
                     class A {
@@ -1071,6 +1126,44 @@ final class ClassLikeStringTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classExistsOnTheLeftOfAnOrDoesNotAllowTheClassOnTheRight' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return class_exists(Missing::class) || Missing::foo();
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'negatedClassExistsOnTheLeftOfAnAndDoesNotAllowTheClassOnTheRight' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return !class_exists(Missing::class) && Missing::foo();
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'classExistsInAnOrOnTheLeftOfAnAndDoesNotAllowTheClassOnTheRight' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return (class_exists(Missing::class) || class_exists(Other::class)) && Missing::foo();
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'classExistsChecksOfOtherClassesDoNotAllowAnUncheckedOne' => [
+                'code' => '<?php
+                    function test(): void {
+                        if (class_exists(\\Doesnt\\Really::class) && class_exists(\\Doesnt\\Either::class)) {
+                            new \\Doesnt\\Unchecked();
+                        }
+                    }',
+                'error_message' => 'Class, interface or enum named Doesnt\\Unchecked does not exist',
+            ],
+            'classExistsInStandaloneAndDoesNotLeakAfterTheExpression' => [
+                'code' => '<?php
+                    function test(): void {
+                        $result = class_exists(\\Doesnt\\Really::class) && \\Doesnt\\Really::bar();
+                        new \\Doesnt\\Really();
+                    }',
+                'error_message' => 'Class, interface or enum named Doesnt\\Really does not exist',
+            ],
             'arrayOfStringClasses' => [
                 'code' => '<?php
                     /**
