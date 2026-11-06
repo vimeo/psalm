@@ -119,6 +119,50 @@ final class SimpleAssertionReconciler extends Reconciler
         int &$failed_reconciliation = Reconciler::RECONCILIATION_OK,
         bool $inside_loop = false,
     ): ?Union {
+        $reconciled_type = self::reconcileAssertion(
+            $assertion,
+            $codebase,
+            $existing_var_type,
+            $key,
+            $negated,
+            $code_location,
+            $suppressed_issues,
+            $failed_reconciliation,
+            $inside_loop,
+        );
+
+        // `non-empty-mixed` is only known to be truthy, and the type asserted for it stays truthy
+        if ($reconciled_type
+            && $assertion instanceof IsType
+            && $existing_var_type->isSingle()
+            && $existing_var_type->getSingleAtomic() instanceof TNonEmptyMixed
+            && !$reconciled_type->hasMixed()
+        ) {
+            $truthy_type = self::reconcileAssertion(new Truthy(), $codebase, $reconciled_type);
+
+            if ($truthy_type && !$truthy_type->isNever()) {
+                return $truthy_type;
+            }
+        }
+
+        return $reconciled_type;
+    }
+
+    /**
+     * @param   string[]  $suppressed_issues
+     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileAssertion(
+        Assertion $assertion,
+        Codebase $codebase,
+        Union $existing_var_type,
+        ?string $key = null,
+        bool $negated = false,
+        ?CodeLocation $code_location = null,
+        array $suppressed_issues = [],
+        int &$failed_reconciliation = Reconciler::RECONCILIATION_OK,
+        bool $inside_loop = false,
+    ): ?Union {
         if ($assertion instanceof Any) {
             return $existing_var_type;
         }
