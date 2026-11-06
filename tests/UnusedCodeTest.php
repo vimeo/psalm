@@ -494,6 +494,42 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'unusedParamsOfMagicMethodsAreNotReported' => [
+                'code' => '<?php
+                    /**
+                     * @method string foo()
+                     * @method static string bar()
+                     */
+                    final class MethodTest
+                    {
+                        /** @param mixed[] $arguments */
+                        public function __call(string $name, array $arguments): string
+                        {
+                            return $name;
+                        }
+
+                        /** @param mixed[] $arguments */
+                        public static function __callStatic(string $name, array $arguments): string
+                        {
+                            return $name;
+                        }
+
+                        public function __get(string $name): string
+                        {
+                            return "x";
+                        }
+
+                        public function __set(string $name, mixed $value): void
+                        {
+                        }
+                    }
+
+                    $test = new MethodTest();
+                    echo $test->foo() . MethodTest::bar();
+                    echo $test->anything;
+                    $test->other = 1;',
+                'ignored_issues' => ['UndefinedMagicPropertyFetch', 'UndefinedMagicPropertyAssignment', 'MixedArgument'],
+            ],
             'argumentCastToStringDoesNotReportPossiblyInvalidCast' => [
                 'code' => '<?php
                     /** @psalm-api */
@@ -2186,6 +2222,36 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'callStaticOfAClassWithoutStaticMagicCallsIsReportedAsUnused' => [
+                'code' => '<?php
+                    final class Forwarder {
+                        /** @param mixed[] $arguments */
+                        public static function __callStatic(string $name, array $arguments): string
+                        {
+                            return $name;
+                        }
+
+                        public static function real(): string
+                        {
+                            return "real";
+                        }
+                    }
+
+                    echo Forwarder::real();',
+                'error_message' => 'PossiblyUnusedMethod',
+            ],
+            'unusedParamOfARegularPublicMethodIsStillReported' => [
+                'code' => '<?php
+                    final class Reader {
+                        public function read(string $path, string $unused): string
+                        {
+                            return $path;
+                        }
+                    }
+
+                    echo (new Reader())->read("x", "y");',
+                'error_message' => 'UnusedParam',
+            ],
             'argumentStillReportsPossiblyInvalidArgumentWithUnusedCode' => [
                 'code' => '<?php
                     /**
