@@ -494,6 +494,20 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'shebangBeforeNamespaceWithExit' => [
+                'code' => '#!/usr/bin/env php
+<?php
+                    namespace Foo;
+
+                    exit(1);',
+            ],
+            'shebangBeforeNamespaceWithReturn' => [
+                'code' => '#!/usr/bin/env php
+<?php
+                    namespace Foo;
+
+                    return [];',
+            ],
             'argumentCastToStringDoesNotReportPossiblyInvalidCast' => [
                 'code' => '<?php
                     /** @psalm-api */
@@ -2186,6 +2200,15 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'unevaluatedCodeAfterExitInNamespaceWithShebang' => [
+                'code' => '#!/usr/bin/env php
+<?php
+                    namespace Foo;
+
+                    exit(1);
+                    echo "unreachable";',
+                'error_message' => 'UnevaluatedCode',
+            ],
             'argumentStillReportsPossiblyInvalidArgumentWithUnusedCode' => [
                 'code' => '<?php
                     /**
