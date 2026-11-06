@@ -213,6 +213,8 @@ final class MissingMethodCallHandler
                     $defining_class_storage->name,
                     $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $fq_class_name,
                     $defining_class_storage->parent_class,
+                    true,
+                    true,
                 );
 
                 if ($all_intersection_return_type) {
@@ -469,7 +471,7 @@ final class MissingMethodCallHandler
                     $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $fq_class_name,
                     $defining_class_storage->parent_class,
                     true,
-                    false,
+                    true,
                     $class_storage->final,
                 );
 

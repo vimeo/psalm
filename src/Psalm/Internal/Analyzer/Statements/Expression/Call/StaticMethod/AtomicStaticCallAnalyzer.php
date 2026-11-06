@@ -1148,6 +1148,8 @@ final class AtomicStaticCallAnalyzer
                 $class_storage->name,
                 $static_fq_class_name,
                 $class_storage->parent_class,
+                true,
+                true,
             );
 
             if ($method_storage) {
