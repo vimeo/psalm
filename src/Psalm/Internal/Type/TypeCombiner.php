@@ -758,7 +758,9 @@ final class TypeCombiner
                     $has_defined_keys = true;
                 }
 
-                if (($candidate_property_type->possibly_undefined || ($value_type->possibly_undefined ?? true))
+                // the fallback of an array that declares the property doesn't stand for it, only the ones that don't
+                if ($value_type === null
+                    && $existing_objectlike_entries
                     && $combination->fallbackKeyContains($candidate_property_name)
                 ) {
                     $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
