@@ -1852,7 +1852,7 @@ final class PluginTest extends TestCase
         $config->initializePlugins($this->project_analyzer);
 
         $this->addStubFile(
-            (string) getcwd() . '/stubs/after_file_parsed.phpstub',
+            'after_file_parsed.phpstub',
             '<?php
                 namespace Acme;
 
