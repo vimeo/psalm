@@ -2172,7 +2172,7 @@ final class ArgumentsAnalyzer
                 // defines is possibly undefined), but it did evaluate the keys that change something: not again
                 $node_data = $statements_analyzer->node_data;
                 $evaluated = $analyzed_for_assignment && $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
-                    ? ArrayAssignmentAnalyzer::getOperandsWithEffects($arg->value)
+                    ? ArrayAssignmentAnalyzer::getSideEffects($arg->value)
                     : [];
                 $node_data->markEvaluated($evaluated);
 
