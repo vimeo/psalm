@@ -29,6 +29,121 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'counterDecrementedOnlyInTheSecondPassOfALoopIsUsed' => [
+                'code' => '<?php
+                    /** @param string[] $tokens */
+                    function go(array $tokens): array {
+                        $messages = [];
+                        $pending = 0;
+
+                        foreach ($tokens as $token) {
+                            if (str_starts_with($token, ")")) {
+                                if ($pending === 0) {
+                                    $messages[] = $token;
+                                    continue;
+                                }
+                                $pending--;
+                            } else {
+                                $pending++;
+                            }
+                        }
+
+                        return $messages;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'counterDecrementedOnlyInTheSecondPassOfAForLoopIsUsed' => [
+                'code' => '<?php
+                    /** @param list<bool> $flags */
+                    function go(array $flags): void {
+                        $depth = 0;
+
+                        for ($i = 0; $i < count($flags); $i++) {
+                            if ($flags[$i]) {
+                                if ($depth === 0) {
+                                    echo "closing without opening";
+                                } else {
+                                    $depth--;
+                                }
+                            } else {
+                                $depth++;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'counterDecrementedOnlyInTheSecondPassOfADoWhileLoopIsUsed' => [
+                'code' => '<?php
+                    /** @param list<bool> $flags */
+                    function go(array $flags): void {
+                        $depth = 0;
+                        $i = 0;
+
+                        do {
+                            if ($flags[$i]) {
+                                if ($depth === 0) {
+                                    echo "closing without opening";
+                                } else {
+                                    $depth--;
+                                }
+                            } else {
+                                $depth++;
+                            }
+                            $i++;
+                        } while ($i < count($flags));
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'counterDecrementedAfterAGreaterThanZeroCheckInAForeachIsUsed' => [
+                'code' => '<?php
+                    /** @param list<bool> $flags */
+                    function go(array $flags): void {
+                        $depth = 0;
+
+                        foreach ($flags as $flag) {
+                            if ($flag) {
+                                if ($depth > 0) {
+                                    $depth--;
+                                }
+                            } else {
+                                $depth++;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'counterDecrementedOnlyInTheSecondPassOfNestedLoopsIsUsed' => [
+                'code' => '<?php
+                    /** @param list<list<bool>> $rows */
+                    function go(array $rows): void {
+                        $depth = 0;
+
+                        foreach ($rows as $row) {
+                            foreach ($row as $flag) {
+                                if ($flag) {
+                                    if ($depth === 0) {
+                                        echo "closing without opening";
+                                    } else {
+                                        $depth--;
+                                    }
+                                } else {
+                                    $depth++;
+                                }
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'staticPropertiesInDestructuringAreNotVariables' => [
                 'code' => '<?php
                     abstract class Foo {
@@ -2744,6 +2859,24 @@ final class UnusedVariableTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
+            ],
+            'counterChangedInTheSecondPassOfALoopButNeverReadIsStillUnused' => [
+                'code' => '<?php
+                    /** @param list<bool> $flags */
+                    function go(array $flags): void {
+                        $depth = 0;
+
+                        foreach ($flags as $flag) {
+                            if ($flag) {
+                                if (rand(0, 1)) {
+                                    $depth--;
+                                }
+                            } else {
+                                $depth++;
+                            }
+                        }
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25',
             ],
             'simpleUnusedVariable' => [
                 'code' => '<?php
