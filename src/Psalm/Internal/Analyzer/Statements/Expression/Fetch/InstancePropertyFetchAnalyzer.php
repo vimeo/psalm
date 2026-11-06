@@ -31,6 +31,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 use function array_merge;
 use function array_shift;
@@ -317,6 +318,15 @@ final class InstancePropertyFetchAnalyzer
             );
         }
 
+        // a typed property of a class that has no constructor starts uninitialized, so isset() on it asks something
+        if ($context->inside_isset
+            && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
+            && !$stmt_type->possibly_undefined
+            && self::isLeftUninitialized($codebase, $stmt_var_type, $prop_name)
+        ) {
+            $statements_analyzer->node_data->setType($stmt, $stmt_type->setPossiblyUndefined(true));
+        }
+
         if ($invalid_fetch_types) {
             $lhs_type_part = $invalid_fetch_types[0];
 
@@ -344,6 +354,42 @@ final class InstancePropertyFetchAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function isLeftUninitialized(
+        Codebase $codebase,
+        Union $object_type,
+        ?string $property_name,
+    ): bool {
+        if ($property_name === null || !$object_type->isSingle()) {
+            return false;
+        }
+
+        $object_atomic = $object_type->getSingleAtomic();
+
+        if (!$object_atomic instanceof TNamedObject || !$codebase->classExists($object_atomic->value)) {
+            return false;
+        }
+
+        $storage = $codebase->classlike_storage_provider->get($object_atomic->value);
+
+        if (isset($storage->declaring_method_ids['__construct'])
+            || !isset($storage->declaring_property_ids[$property_name])
+        ) {
+            return false;
+        }
+
+        $property = $codebase->classlike_storage_provider->get($storage->declaring_property_ids[$property_name])
+            ->properties[$property_name] ?? null;
+
+        return $property !== null
+            && $property->type !== null
+            && !$property->has_default
+            && !$property->is_promoted
+            && !$property->is_static;
     }
 
     private static function handleScopedProperty(
