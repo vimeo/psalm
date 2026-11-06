@@ -965,6 +965,22 @@ final class Populator
 
         $this->extendTemplateParams($storage, $parent_storage, true);
 
+        // the empty constructor of a `@psalm-consistent-constructor` class without one stands for the lack of
+        // it: where the parent has a constructor, that is the one the class has
+        if ($storage->user_defined
+            && isset($storage->methods['__construct'])
+            && $storage->methods['__construct']->location === null
+            && isset($parent_storage->declaring_method_ids['__construct'])
+        ) {
+            unset(
+                $storage->methods['__construct'],
+                $storage->declaring_method_ids['__construct'],
+                $storage->inheritable_method_ids['__construct'],
+                $storage->appearing_method_ids['__construct'],
+                $storage->overridden_method_ids['__construct'],
+            );
+        }
+
         $this->inheritMethodsFromParent($storage, $parent_storage);
         $this->inheritPropertiesFromParent($storage, $parent_storage);
 
