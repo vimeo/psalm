@@ -561,6 +561,25 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'parentTypedPropertyMatchesItsDocblockType' => [
+                'code' => '<?php
+                    class P {}
+
+                    final class A extends P {
+                        public parent $native;
+
+                        /** @var P */
+                        public parent $documented;
+
+                        /** @var P|null */
+                        public ?parent $nullable = null;
+
+                        public function __construct() {
+                            $this->native = new P();
+                            $this->documented = new P();
+                        }
+                    }',
+            ],
             'newVarInIf' => [
                 'code' => '<?php
                     class A {
@@ -2903,6 +2922,16 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'parentTypedPropertyDocblockOfAnotherClass' => [
+                'code' => '<?php
+                    class P {}
+
+                    final class A extends P {
+                        /** @var stdClass */
+                        public parent $property;
+                    }',
+                'error_message' => 'MismatchingDocblockPropertyType',
+            ],
             'undefinedPropertyAssignment' => [
                 'code' => '<?php
                     class A {
