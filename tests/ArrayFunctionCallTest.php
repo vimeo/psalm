@@ -2118,6 +2118,13 @@ final class ArrayFunctionCallTest extends TestCase
                     '$function_call_result' => 'int',
                 ],
             ],
+            'arrayReduceInternalSignatureReturn' => [
+                'code' => '<?php
+                    $result = array_reduce([2, 2], "intdiv", 16);',
+                'assertions' => ['$result' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'arrayReduceStaticMethods' => [
                 'code' => '<?php
                     $arr = [2, 3, 4, 5];

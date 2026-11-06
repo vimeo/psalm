@@ -125,14 +125,33 @@ final class MethodComparator
             $suppressed_issues,
         );
 
-        if ($guide_method_storage->signature_return_type && $prevent_method_signature_mismatch) {
+        $guide_signature_return_type = $guide_method_storage->signature_return_type;
+        $guide_has_tentative_return_type = $guide_method_storage->has_tentative_return_type;
+        if (!$guide_classlike_storage->user_defined && InternalCallMapHandler::inCallMap($cased_guide_method_id)) {
+            $kind = InternalCallMapHandler::getReturnTypeKind($cased_guide_method_id);
+            // A known absence takes precedence over a stub; an unreflected API can still use its stub contract.
+            if ($kind !== null) {
+                $guide_signature_return_type = InternalCallMapHandler::getSignatureReturnType($cased_guide_method_id);
+                $guide_has_tentative_return_type = $kind === 'tentative';
+            }
+        }
+
+        $ignore_tentative_return_type = $guide_has_tentative_return_type && array_any(
+            $implementer_method_storage->attributes,
+            static fn(AttributeStorage $s): bool => $s->fq_class_name === 'ReturnTypeWillChange',
+        );
+
+        if ($guide_signature_return_type && $prevent_method_signature_mismatch
+            && !$ignore_tentative_return_type
+            && ($guide_classlike_storage->user_defined || $implementer_method_storage->signature_return_type)
+        ) {
             self::compareMethodSignatureReturnTypes(
                 $codebase,
                 $guide_classlike_storage,
                 $implementer_classlike_storage,
                 $guide_method_storage,
                 $implementer_method_storage,
-                $guide_method_storage->signature_return_type,
+                $guide_signature_return_type,
                 $cased_guide_method_id,
                 $implementer_called_class_name,
                 $cased_implementer_method_id,
@@ -141,19 +160,14 @@ final class MethodComparator
             );
         }
 
-        // CallMapHandler needed due to https://github.com/vimeo/psalm/issues/10378
         if (!$guide_classlike_storage->user_defined
             && $implementer_classlike_storage->user_defined
-            && $codebase->analysis_php_version_id >= 8_01_00
-            // PHP supplies string for declared __toString methods, but not trait methods aliased to it.
-            && strtolower($implementer_method_storage->cased_name ?? '') !== '__tostring'
-            && (($guide_method_storage->return_type && InternalCallMapHandler::inCallMap($cased_guide_method_id))
-                || $guide_method_storage->signature_return_type
-            ) && !$implementer_method_storage->signature_return_type
-            && !array_any(
-                $implementer_method_storage->attributes,
-                static fn(AttributeStorage $s): bool => $s->fq_class_name === 'ReturnTypeWillChange',
-            )
+            // PHP 8 supplies string for declared __toString methods, but not trait methods aliased to it.
+            && ($codebase->analysis_php_version_id < 8_00_00
+                || strtolower($implementer_method_storage->cased_name ?? '') !== '__tostring')
+            && $guide_signature_return_type
+            && !$implementer_method_storage->signature_return_type
+            && !$ignore_tentative_return_type
         ) {
             IssueBuffer::maybeAdd(
                 new MethodSignatureMustProvideReturnType(
@@ -1124,13 +1138,7 @@ final class MethodComparator
             : UnionTypeComparator::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type);
 
         if (!$is_contained_by) {
-            if ($implementer_signature_return_type === null
-                && array_any(
-                    $implementer_method_storage->attributes,
-                    static fn(AttributeStorage $s): bool => $s->fq_class_name === 'ReturnTypeWillChange',
-                )) {
-                // no error if return type will change and no signature set at all
-            } elseif ($codebase->analysis_php_version_id >= 8_00_00
+            if ($codebase->analysis_php_version_id >= 8_00_00
                       || $guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
                       || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
                       || $implementer_method_storage->defining_fqcln !== $implementer_classlike_storage->name
