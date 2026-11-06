@@ -163,6 +163,8 @@ final class ClosureTest extends TestCase
                             usort($arr, "fooBar");
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['WrongCaseFunction'],
             ],
             'closureSelf' => [
                 'code' => '<?php

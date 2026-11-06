@@ -821,10 +821,20 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     if ($function_call_info->in_call_map && $function_storage->cased_name !== null) {
                         $declared_name = CallAnalyzer::getUnqualifiedFunctionName($function_storage->cased_name);
 
-                        if ($declared_name !== $function_name->getLast()) {
+                        // a function imported with an alias is called by the alias: its name is the imported one
+                        $imported_name = count($function_name->getParts()) === 1
+                            ? $statements_analyzer->getAliases()->functions[strtolower($function_name->getFirst())]
+                                ?? null
+                            : null;
+
+                        $written_name = $imported_name !== null
+                            ? CallAnalyzer::getUnqualifiedFunctionName($imported_name)
+                            : $function_name->getLast();
+
+                        if ($declared_name !== $written_name) {
                             IssueBuffer::maybeAdd(
                                 new WrongCaseFunction(
-                                    'Function ' . $function_name->getLast() . ' is declared as ' . $declared_name
+                                    'Function ' . $written_name . ' is declared as ' . $declared_name
                                         . ' and has wrong casing',
                                     $code_location,
                                     $function_call_info->function_id,

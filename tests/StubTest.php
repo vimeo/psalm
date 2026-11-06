@@ -316,6 +316,10 @@ final class StubTest extends TestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/phpstorm.meta.php" />
                     </stubs>
+
+                    <issueHandlers>
+                        <WrongCaseFunction errorLevel="suppress" />
+                    </issueHandlers>
                 </psalm>',
             ),
         );

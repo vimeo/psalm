@@ -24,6 +24,19 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'functionImportedWithAnAliasIsCalledWithoutAWrongCaseIssue' => [
+                'code' => '<?php
+                    namespace App;
+
+                    use function json_encode as encode;
+                    use function strtoupper as up;
+
+                    $json = encode([1]);
+                    $upper = up("x");',
+                'assertions' => [
+                    '$upper===' => 'non-falsy-string',
+                ],
+            ],
             'functionCalledWithItsDeclaredCasing' => [
                 'code' => '<?php
                     namespace Foo;
@@ -2758,6 +2771,16 @@ final class FunctionCallTest extends TestCase
 
                     runThis("foo", "aBc");',
                 'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:36',
+            ],
+            'wrongCaseOfAFunctionImportedWithAnAlias' => [
+                'code' => '<?php
+                    namespace App;
+
+                    use function StrToUpper as up;
+
+                    echo up("x");',
+                'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26 - '
+                    . 'Function StrToUpper is declared as strtoupper and has wrong casing',
             ],
             'wrongCaseOfABuiltinFunctionCall' => [
                 'code' => '<?php
