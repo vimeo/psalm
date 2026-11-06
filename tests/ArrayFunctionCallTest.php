@@ -3751,28 +3751,6 @@ final class ArrayFunctionCallTest extends TestCase
                     '$a===' => 'array{x: array{y: list{1}}}',
                 ],
             ],
-            'arrayPopItemOfPropertiesIsWrittenBack' => [
-                'code' => '<?php
-                    final class Box {
-                        /** @var array<int, list<int>> */
-                        public array $items = [];
-                        /** @var array<int, list<int>> */
-                        public static array $shared = [];
-                    }
-
-                    $b = new Box();
-                    $b->items = [[1, 2, 3]];
-                    array_pop($b->items[0]);
-                    array_pop($b->items[0]);
-
-                    Box::$shared = [[1, 2, 3]];
-                    array_shift(Box::$shared[0]);
-                    array_shift(Box::$shared[0]);',
-                'assertions' => [
-                    '$b->items===' => 'list{list{1}}',
-                    'Box::$shared===' => 'list{list{3}}',
-                ],
-            ],
             'arrayPopItemKeyIsEvaluatedOnce' => [
                 'code' => '<?php
                     $a = [[1, 2], [3, 4]];
@@ -4520,31 +4498,6 @@ final class ArrayFunctionCallTest extends TestCase
                     }',
                 'error_message' => 'InvalidArrayOffset',
             ],
-            'arrayPopItemOfPropertyChangesTheProperty' => [
-                'code' => '<?php
-                    final class Box {
-                        /** @var list{list{int, int}} */
-                        public array $items = [[1, 2]];
-
-                        public function f(): void {
-                            array_pop($this->items[0]);
-                        }
-                    }',
-                'error_message' => 'InvalidPropertyAssignmentValue',
-            ],
-            'arrayPopItemOfPropertyIsNotMutationFree' => [
-                'code' => '<?php
-                    final class Box {
-                        /** @var list<list<int>> */
-                        public array $items = [[1, 2]];
-
-                        /** @psalm-mutation-free */
-                        public function f(): void {
-                            array_pop($this->items[0]);
-                        }
-                    }',
-                'error_message' => 'ImpurePropertyAssignment',
-            ],
             'arrayPopNestedItemOfArrayOrArrayObjectIsNotExact' => [
                 'code' => '<?php
                     /** @param array{a: array{b: list{int, string}}}|ArrayObject<string, array{b: list{int, string}}> $o */
@@ -4553,21 +4506,6 @@ final class ArrayFunctionCallTest extends TestCase
                         return array_pop($o["a"]["b"]);
                     }',
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32',
-            ],
-            'arrayPopNestedItemOfPropertyOfArrayOrArrayObjectIsNotExact' => [
-                'code' => '<?php
-                    final class Box {
-                        /** @var array{a: array{b: list{int, string}}}|ArrayObject<string, array{b: list{int, string}}> */
-                        public array|ArrayObject $o = ["a" => ["b" => [1, "s"]]];
-
-                        public function f(): int {
-                            array_pop($this->o["a"]["b"]);
-                            return array_pop($this->o["a"]["b"]);
-                        }
-                    }',
-                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:36',
-                'error_levels' => [],
-                'php_version' => '8.0',
             ],
             'arrayPopItemOfShapedListByIntKeyIsNotExact' => [
                 'code' => '<?php
@@ -4578,40 +4516,24 @@ final class ArrayFunctionCallTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
-            'arrayPopItemOfReadonlyPropertyIsInaccessible' => [
+            'arrayPopItemOfParentStaticPropertyIsNotWrittenBack' => [
                 'code' => '<?php
-                    final class Box {
-                        /** @param list<list<int>> $items */
-                        public function __construct(public readonly array $items) {}
-
-                        public function f(): void {
-                            array_pop($this->items[0]);
-                        }
-                    }',
-                'error_message' => 'InaccessibleProperty',
-                'error_levels' => [],
-                'php_version' => '8.1',
-            ],
-            'arrayPopItemOfMagicPropertyIsNotWrittenBack' => [
-                'code' => '<?php
-                    /**
-                     * @property-read array{list{int, string}} $items
-                     * @property-write array<int, list<int|string>> $items
-                     */
-                    final class Box {
-                        /** @return array{list{int, string}} */
-                        public function __get(string $name): array {
-                            return [[1, "s"]];
-                        }
-
-                        public function __set(string $name, mixed $value): void {}
+                    class ParentBox {
+                        /** @var list<list<int|string>> */
+                        public static array $items = [[1, "s"]];
                     }
 
-                    function f(Box $b): int {
-                        array_pop($b->items[0]);
-                        return array_pop($b->items[0]);
+                    final class Box extends ParentBox {
+                        /** @var list<list<int|string>> */
+                        public static array $items = [[1, "s"]];
+
+                        public static function f(): int {
+                            self::$items = [[1, "s"]];
+                            array_pop(parent::$items[0]);
+                            return array_pop(self::$items[0]);
+                        }
                     }',
-                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:32',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:36',
             ],
             'arrayPopItemOfTemplateTypeIsNotExact' => [
                 'code' => '<?php

@@ -40,7 +40,6 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -728,10 +727,11 @@ final class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * Only an item the write changes and nothing else is written back: a storage root (not a call, another
-     * temporary or a magic property, which return copies), keys of one literal each (any other key may select
-     * offsets besides the one written), arrays all the way (an ArrayAccess object re-reads the item through
-     * offsetGet()), and an array or null as the item (a template or a union with scalars keeps its type).
+     * Only an item the write changes and nothing else is written back: a variable root (a property may be
+     * magic, hooked, inherited or inaccessible, and a call or another temporary has nothing to write to), keys of
+     * one literal each (any other key may select offsets besides the one written), arrays all the way (an
+     * ArrayAccess object re-reads the item through offsetGet()), and an array or null as the item (a template
+     * or a union with scalars keeps its type).
      *
      * @psalm-capabilities read-props
      */
@@ -743,7 +743,7 @@ final class ArrayFunctionArgumentsAnalyzer
 
         if ($item_type === null
             || !$item_type->hasArray()
-            || !self::hasStorageRoot($statements_analyzer, $item)
+            || !self::hasVariableRoot($item)
             || !self::hasOnlyLiteralKeys($statements_analyzer, $item)
             || !self::isHeldByArrays($statements_analyzer, $item)
         ) {
@@ -765,49 +765,14 @@ final class ArrayFunctionArgumentsAnalyzer
     /**
      * @psalm-capabilities read-props
      */
-    private static function hasStorageRoot(
-        StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\ArrayDimFetch $item,
-    ): bool {
+    private static function hasVariableRoot(PhpParser\Node\Expr\ArrayDimFetch $item): bool
+    {
         $root = $item;
         while ($root instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             $root = $root->var;
         }
 
-        if ($root instanceof PhpParser\Node\Expr\PropertyFetch) {
-            return self::isDeclaredProperty($statements_analyzer, $root);
-        }
-
-        return $root instanceof PhpParser\Node\Expr\Variable
-            || $root instanceof PhpParser\Node\Expr\StaticPropertyFetch;
-    }
-
-    /**
-     * An undeclared property is read through __get() or @property, which returns a copy
-     *
-     * @psalm-capabilities read-props
-     */
-    private static function isDeclaredProperty(
-        StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\PropertyFetch $fetch,
-    ): bool {
-        $object_type = $statements_analyzer->node_data->getType($fetch->var);
-
-        if (!$fetch->name instanceof PhpParser\Node\Identifier || !$object_type) {
-            return false;
-        }
-
-        foreach ($object_type->getAtomicTypes() as $object_atomic_type) {
-            $class_storage = $object_atomic_type instanceof TNamedObject
-                ? $statements_analyzer->getCodebase()->classlikes->getStorageFor($object_atomic_type->value)
-                : null;
-
-            if (!$class_storage || !isset($class_storage->declaring_property_ids[$fetch->name->name])) {
-                return false;
-            }
-        }
-
-        return true;
+        return $root instanceof PhpParser\Node\Expr\Variable;
     }
 
     /**
