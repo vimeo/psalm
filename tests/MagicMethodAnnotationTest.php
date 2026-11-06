@@ -368,6 +368,29 @@ final class MagicMethodAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'magicMethodOverloadsAreChosenByTheNamesOfTheArguments' => [
+                'code' => '<?php
+                    /**
+                     * @method int pick(string $name)
+                     * @method string pick(int $id)
+                     */
+                    final class Many {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    $many = new Many();
+
+                    $byName = $many->pick(name: "a");
+                    $byId = $many->pick(id: 5);',
+                'assertions' => [
+                    '$byName===' => 'int',
+                    '$byId===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'magicMethodOverloadDoesNotLoseTheNarrowingOfAnArgument' => [
                 'code' => '<?php
                     final class Foo {
