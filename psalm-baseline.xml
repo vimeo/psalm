@@ -832,7 +832,6 @@
     </ImplicitToStringCast>
     <InvalidOperand>
       <code><![CDATA[$operand1 * $operand2]]></code>
-      <code><![CDATA[$operand1 ** $operand2]]></code>
       <code><![CDATA[$operand1 + $operand2]]></code>
       <code><![CDATA[$operand1 - $operand2]]></code>
       <code><![CDATA[$operand1 / $operand2]]></code>
@@ -2362,11 +2361,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$call_args]]></code>
     </RiskyTruthyFalsyComparison>
-  </file>
-  <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/PowReturnTypeProvider.php">
-    <InvalidOperand>
-      <code><![CDATA[$first_arg_literal ** $second_arg_literal]]></code>
-    </InvalidOperand>
   </file>
   <file src="src/Psalm/Internal/Provider/StatementsProvider.php">
     <ImpureStaticProperty>
