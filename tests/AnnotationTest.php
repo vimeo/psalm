@@ -184,6 +184,66 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'objectShapePropertyNotNullNarrowsTheShape' => [
+                'code' => '<?php
+                    /** @return object{some: null|int, other: string} */
+                    function getA(): object {
+                        return new stdClass();
+                    }
+
+                    $a = getA();
+                    if (null === $a->some) {
+                        throw new Exception("");
+                    }',
+                'assertions' => [
+                    '$a===' => 'object{some:int, other:string}',
+                ],
+            ],
+            'objectShapeNestedPropertyNotNullNarrowsTheOuterShape' => [
+                'code' => '<?php
+                    /** @return object{b: object{c: null|int, d: string}} */
+                    function getA(): object {
+                        return new stdClass();
+                    }
+
+                    $a = getA();
+                    if ($a->b->c === null) {
+                        throw new Exception("");
+                    }',
+                'assertions' => [
+                    '$a===' => 'object{b:object{c:int, d:string}}',
+                ],
+            ],
+            'objectShapePropertyIssetNarrowsTheShape' => [
+                'code' => '<?php
+                    /** @return object{some: null|int, other: string} */
+                    function getA(): object {
+                        return new stdClass();
+                    }
+
+                    $a = getA();
+                    if (!isset($a->some)) {
+                        throw new Exception("");
+                    }',
+                'assertions' => [
+                    '$a===' => 'object{some:int, other:string}',
+                ],
+            ],
+            'objectShapePropertyCheckKeepsTheOtherProperties' => [
+                'code' => '<?php
+                    /** @return object{some: null|int, other: string} */
+                    function getA(): object {
+                        return new stdClass();
+                    }
+
+                    $a = getA();
+                    if ($a->other === "") {
+                        throw new Exception("");
+                    }',
+                'assertions' => [
+                    '$a===' => 'object{some:int|null, other:non-empty-string}',
+                ],
+            ],
             'varWithoutNameDoesNotTakeNameOfPreviousVarLine' => [
                 'code' => '<?php
                     /**
