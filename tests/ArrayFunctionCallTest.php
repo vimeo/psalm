@@ -80,6 +80,42 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayUdiffKeepsTheTypeOfTheFirstArray' => [
+                'code' => '<?php
+                    $removed = array_udiff(
+                        ["foo", "bar"],
+                        ["bar"],
+                        fn (string $a, string $b): int => $a === $b ? 0 : 1,
+                    );
+
+                    $byKey = array_diff_ukey(["a" => 1], ["b" => 2], "strcmp");
+
+                    $common = array_uintersect_uassoc(
+                        ["a" => 1],
+                        ["a" => 1],
+                        fn (int $a, int $b): int => $a <=> $b,
+                        "strcmp",
+                    );
+
+                    /**
+                     * @param list<int>|array<string, string> $either
+                     * @param array<int, string> $others
+                     */
+                    function either(array $either, array $others): array {
+                        return array_udiff_assoc($either, $others, "strcmp");
+                    }
+
+                    /** @var array $untyped */
+                    $untyped = [];
+                    $fromUntyped = array_udiff($untyped, [], "strcmp");',
+                'assertions' => [
+                    '$removed===' => 'array<int<0, 1>, \'bar\'|\'foo\'>',
+                    '$byKey===' => 'array<\'a\', 1>',
+                    '$common===' => 'array<\'a\', 1>',
+                    '$fromUntyped===' => 'array<array-key, mixed>',
+                ],
+                'ignored_issues' => ['MixedArgumentTypeCoercion', 'MixedArgument'],
+            ],
             'arraySpliceWithALengthOutsideTheRangeOfAnInt' => [
                 'code' => '<?php
                     $big = [1, 2, 3];
