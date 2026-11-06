@@ -387,8 +387,6 @@
       <code><![CDATA[$implementer_param_signature_type]]></code>
       <code><![CDATA[$implementer_param_type]]></code>
       <code><![CDATA[$implementer_param_type]]></code>
-      <code><![CDATA[$implementer_signature_return_type]]></code>
-      <code><![CDATA[$implementer_signature_return_type]]></code>
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$guide_classlike_storage->template_types]]></code>
