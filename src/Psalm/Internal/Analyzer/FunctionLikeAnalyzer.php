@@ -528,6 +528,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             (bool) $template_types,
         );
 
+        if (!$this->checkGlobalTypes($storage, $context)) {
+            $check_stmts = false;
+        }
+
         $this->taintPromotedProperties($statements_analyzer, $context);
         // the context of an arrow function is that of the function-like it is in
         $context->by_ref_param_out_nodes = [];
@@ -1559,6 +1563,35 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         return ($capabilities & Capabilities::WRITE_GLOBALS) !== 0
             ? $capabilities & (Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS)
             : Capabilities::NONE;
+    }
+
+    /**
+     * Checks the classes of the `@global` types, like those of the `@param` types
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function checkGlobalTypes(FunctionLikeStorage $storage, Context $context): bool
+    {
+        $is_valid = true;
+
+        foreach ($storage->global_types as $var_name => $global_type) {
+            if (isset($storage->global_type_locations[$var_name])
+                && $global_type->check(
+                    $this,
+                    $storage->global_type_locations[$var_name],
+                    $storage->suppressed_issues,
+                    [],
+                    false,
+                    false,
+                    false,
+                    $context,
+                ) === false
+            ) {
+                $is_valid = false;
+            }
+        }
+
+        return $is_valid;
     }
 
     /**
