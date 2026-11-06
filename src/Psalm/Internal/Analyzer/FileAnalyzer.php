@@ -309,8 +309,17 @@ class FileAnalyzer extends SourceAnalyzer
                     $namespace_analyzer->getAliasedClassesFlippedReplaceable();
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 $this->visitUse($stmt);
+
+                if ($stmt->getDocComment()) {
+                    // what its docblock says (`@var`, `@psalm-suppress`) is still for the analysis
+                    $leftover_stmts[] = new PhpParser\Node\Stmt\Nop($stmt->getAttributes());
+                }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
                 $this->visitGroupUse($stmt);
+
+                if ($stmt->getDocComment()) {
+                    $leftover_stmts[] = new PhpParser\Node\Stmt\Nop($stmt->getAttributes());
+                }
             } else {
                 if ($stmt instanceof PhpParser\Node\Stmt\If_) {
                     foreach ($stmt->stmts as $if_stmt) {
