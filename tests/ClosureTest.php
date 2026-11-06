@@ -22,6 +22,19 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'recursiveClosureCalledThroughItsByReferenceUseHasItsOwnReturnType' => [
+                'code' => '<?php
+                    $factorial = function (int $x) use (&$factorial): int {
+                        if ($x === 1) {
+                            return 1;
+                        }
+
+                        return $x * $factorial($x - 1);
+                    };
+
+                    $result = $factorial(5);',
+                'assertions' => ['$result===' => 'int'],
+            ],
             'byRefUseVarUnsetInClosure' => [
                 'code' => '<?php
                     function reserve(): Closure {
@@ -1717,6 +1730,17 @@ final class ClosureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'recursiveClosureCalledThroughItsByReferenceUseChecksItsParams' => [
+                'code' => '<?php
+                    $factorial = function (int $x) use (&$factorial): int {
+                        if ($x === 1) {
+                            return 1;
+                        }
+
+                        return $factorial("a");
+                    };',
+                'error_message' => 'InvalidScalarArgument',
+            ],
             'wrongArg' => [
                 'code' => '<?php
                     $bar = ["foo", "bar"];

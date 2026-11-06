@@ -89,6 +89,7 @@ use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TMixed;
@@ -117,6 +118,30 @@ use function substr;
  */
 final class AssignmentAnalyzer
 {
+    /**
+     * The type of a variable a closure calls itself through (`$f = function () use (&$f) { $f(); }`): its own signature
+     */
+    private static function getRecursiveClosureType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\Closure $closure,
+    ): Union {
+        $closure_id = strtolower($statements_analyzer->getFilePath())
+            . ':' . $closure->getLine()
+            . ':' . (int) $closure->getAttribute('startFilePos')
+            . ':-:closure';
+
+        try {
+            $storage = $statements_analyzer->getCodebase()->getClosureStorage(
+                $statements_analyzer->getFilePath(),
+                $closure_id,
+            );
+        } catch (UnexpectedValueException) {
+            return Type::getClosure();
+        }
+
+        return new Union([new TClosure($storage->params, $storage->return_type, $storage->capabilities)]);
+    }
+
     /**
      * The capabilities writing a variable needs on top of a local write, for what the variable
      * may be shared with: a superglobal or a `global` variable, a variable captured by reference
@@ -320,7 +345,10 @@ final class AssignmentAnalyzer
                         && is_string($closure_use->var->name)
                         && $var_id === '$' . $closure_use->var->name
                     ) {
-                        $context->vars_in_scope[$var_id] = Type::getClosure();
+                        $context->vars_in_scope[$var_id] = self::getRecursiveClosureType(
+                            $statements_analyzer,
+                            $assign_value,
+                        );
                         $context->vars_possibly_in_scope[$var_id] = true;
                         $assign_value->setAttribute('recursive_var_id', $var_id);
                     }
