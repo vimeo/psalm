@@ -325,3 +325,4 @@
  - [UnusedPsalmSuppress](issues/UnusedPsalmSuppress.md)
  - [UnusedReturnValue](issues/UnusedReturnValue.md)
  - [UnusedVariable](issues/UnusedVariable.md)
+ - [WrongCaseFunction](issues/WrongCaseFunction.md)

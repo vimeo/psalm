@@ -24,6 +24,29 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'functionCalledWithItsDeclaredCasing' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    function fooBar(): int {
+                        return 1;
+                    }
+
+                    /** @param callable $callable */
+                    function runThis($callable): void {
+                        $callable();
+                    }
+
+                    $a = fooBar();
+                    $b = \\Foo\\fooBar();
+                    $c = strlen("foo");
+                    $d = \\strlen("foo");
+                    runThis("Foo\\\\fooBar");',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$c===' => 'int<1, max>',
+                ],
+            ],
             'domXPathEvaluateReturnsATypedResult' => [
                 'code' => '<?php
                     $xpath = new DOMXPath(new DOMDocument());
@@ -2707,6 +2730,41 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'wrongCaseOfAFunctionCall' => [
+                'code' => '<?php
+                    function fooBar(): void {}
+
+                    foobar();',
+                'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:21 - '
+                    . 'Function foobar is declared as fooBar and has wrong casing',
+            ],
+            'wrongCaseOfAFunctionCallInANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    function fooBar(): void {}
+
+                    FOOBAR();',
+                'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21',
+            ],
+            'wrongCaseOfAFunctionPassedAsACallableString' => [
+                'code' => '<?php
+                    function abc(): void {}
+
+                    /** @param callable $callable */
+                    function runThis(string $string, $callable): void {
+                        $callable($string);
+                    }
+
+                    runThis("foo", "aBc");',
+                'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:36',
+            ],
+            'wrongCaseOfABuiltinFunctionCall' => [
+                'code' => '<?php
+                    echo STRLEN("foo");',
+                'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:26 - '
+                    . 'Function STRLEN is declared as strlen and has wrong casing',
+            ],
             'mysqliBindResultRequiresOutputVariable' => [
                 'code' => '<?php
                     function bind(mysqli_stmt $statement): void {

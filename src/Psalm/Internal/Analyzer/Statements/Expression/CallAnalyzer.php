@@ -34,6 +34,7 @@ use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\MixedArgumentTypeCoercion;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\Issue\UndefinedFunction;
+use Psalm\Issue\WrongCaseFunction;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualConstFetch;
@@ -590,6 +591,14 @@ abstract class CallAnalyzer
     }
 
     /**
+     * @psalm-pure
+     */
+    public static function getUnqualifiedFunctionName(string $function_id): string
+    {
+        return (string) preg_replace('/.*\\\\/', '', $function_id);
+    }
+
+    /**
      * @param  non-empty-string     $function_id
      * @param  bool                 $can_be_in_root_scope if true, the function can be shortened to the root version
      */
@@ -637,6 +646,22 @@ abstract class CallAnalyzer
             $function_storage = $codebase->functions->getStorage($statements_analyzer, $function_id);
         } catch (UnexpectedValueException) {
             return true;
+        }
+
+        if ($function_storage->cased_name !== null) {
+            $declared_name = self::getUnqualifiedFunctionName($function_storage->cased_name);
+            $written_name = self::getUnqualifiedFunctionName($cased_function_id);
+
+            if ($declared_name !== $written_name) {
+                IssueBuffer::maybeAdd(
+                    new WrongCaseFunction(
+                        'Function ' . $written_name . ' is declared as ' . $declared_name . ' and has wrong casing',
+                        $code_location,
+                        $function_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
         }
 
         $since_php_version_id = $function_storage->since_php_version_id;

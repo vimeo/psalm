@@ -40,6 +40,7 @@ use Psalm\Issue\NullFunctionCall;
 use Psalm\Issue\PossiblyInvalidFunctionCall;
 use Psalm\Issue\PossiblyNullFunctionCall;
 use Psalm\Issue\UnusedFunctionCall;
+use Psalm\Issue\WrongCaseFunction;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Expr\VirtualMethodCall;
@@ -816,6 +817,22 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     );
 
                     $function_call_info->function_params = $function_call_info->function_storage->params;
+
+                    if ($function_call_info->in_call_map && $function_storage->cased_name !== null) {
+                        $declared_name = CallAnalyzer::getUnqualifiedFunctionName($function_storage->cased_name);
+
+                        if ($declared_name !== $function_name->getLast()) {
+                            IssueBuffer::maybeAdd(
+                                new WrongCaseFunction(
+                                    'Function ' . $function_name->getLast() . ' is declared as ' . $declared_name
+                                        . ' and has wrong casing',
+                                    $code_location,
+                                    $function_call_info->function_id,
+                                ),
+                                $statements_analyzer->getSuppressedIssues(),
+                            );
+                        }
+                    }
 
                     if (!$function_storage->allow_named_arg_calls) {
                         $function_call_info->allow_named_args = false;
