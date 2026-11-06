@@ -21,6 +21,84 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'boolVarIdenticalToFalseNarrowsItsConjuncts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class U {
+                        public int $id = 1;
+                    }
+
+                    function f(?U $v, ?U $e): int {
+                        $c = $v !== null && $e === $v;
+                        if ($c === false) {
+                            return 0;
+                        }
+                        return $v->id;
+                    }
+                    PHP,
+            ],
+            'boolVarIdenticalToTrueNarrowsItsConjuncts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class U {
+                        public int $id = 1;
+                    }
+
+                    function f(?U $v, ?U $e): int {
+                        $c = $v !== null && $e === $v;
+                        if ($c === true) {
+                            return $v->id;
+                        }
+                        return 0;
+                    }
+                    PHP,
+            ],
+            'boolVarNotIdenticalToFalseNarrowsItsConjuncts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class U {
+                        public int $id = 1;
+                    }
+
+                    function f(?U $v, ?U $e): int {
+                        $c = $v !== null && $e === $v;
+                        if ($c !== false) {
+                            return $v->id;
+                        }
+                        return 0;
+                    }
+                    PHP,
+            ],
+            'boolVarNotIdenticalToTrueNarrowsItsConjuncts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class U {
+                        public int $id = 1;
+                    }
+
+                    function f(?U $v, ?U $e): int {
+                        $c = $v !== null && $e === $v;
+                        if ($c !== true) {
+                            return 0;
+                        }
+                        return $v->id;
+                    }
+                    PHP,
+            ],
+            'identityWithFalseOfNonBoolVarStillNarrows' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int|false $x): int {
+                        if ($x === false) {
+                            return 0;
+                        }
+                        return $x;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'twoVarLogicSimple' => [
                 'code' => '<?php
                     function foo(?string $a, ?string $b): string {
