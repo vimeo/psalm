@@ -21,6 +21,24 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedInTheCallOnTheLeftOfACoalesceIsSetOnTheRight' => [
+                'code' => '<?php
+                    function foo(int $limit): ?string {
+                        return random_int(0, $limit) ? "" : null;
+                    }
+
+                    function bar(): string {
+                        return foo($limit = 3) ?? throw new Exception((string) $limit);
+                    }
+
+                    function baz(): string {
+                        $result = foo($limit = 3) ?? (string) $limit;
+                        return $result . $limit;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'variableIsSetAfterCoalesceThrowStatement' => [
                 'code' => '<?php
                     class H {
@@ -1132,6 +1150,20 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableAssignedOnlyOnTheRightOfACoalesceIsNotSetBefore' => [
+                'code' => '<?php
+                    function foo(int $limit): ?string {
+                        return random_int(0, $limit) ? "" : null;
+                    }
+
+                    function bar(): string {
+                        $result = foo(1) ?? ($limit = 3);
+                        return $result . $limit;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'variableStaysNullableAfterCoalesceWithDefault' => [
                 'code' => '<?php
                     function a(?string $html): string {
