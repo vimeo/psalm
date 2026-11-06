@@ -22,6 +22,42 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'traitReadsAClassConstantEachUsingClassDefinesDifferently' => [
+                'code' => '<?php
+                    trait TestTrait {
+                        public function testFunction(): void {
+                            if (self::VALUE) {
+                                echo "True";
+                            } else {
+                                echo "False";
+                            }
+
+                            if (static::VALUE) {
+                                echo "True";
+                            } else {
+                                echo "False";
+                            }
+                        }
+                    }
+
+                    final class ClassOne {
+                        use TestTrait;
+
+                        public const VALUE = true;
+                    }
+
+                    final class ClassTwo {
+                        use TestTrait;
+
+                        public const VALUE = false;
+                    }
+
+                    (new ClassOne())->testFunction();
+                    (new ClassTwo())->testFunction();',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'accessiblePrivateMethodFromTrait' => [
                 'code' => '<?php
                     trait T {
@@ -1224,6 +1260,19 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classConstantOutsideATraitKeepsItsLiteralType' => [
+                'code' => '<?php
+                    final class ClassOne {
+                        public const VALUE = true;
+
+                        public function check(): void {
+                            if (self::VALUE) {
+                                echo "True";
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
             'inaccessiblePrivateMethodFromInheritedTrait' => [
                 'code' => '<?php
                     trait T {
