@@ -42,6 +42,13 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      */
     public array $param_lookup = [];
 
+    /**
+     * The signatures of the `@psalm-overload` tags, in the order of the docblock
+     *
+     * @var list<MethodStorage>
+     */
+    public array $overloads = [];
+
     public ?Union $return_type = null;
 
     public ?CodeLocation $return_type_location = null;
@@ -401,6 +408,25 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public function isExternalMutationFree(): bool
     {
         return Capabilities::allowsAnyOf(Capabilities::EXTERNAL_MUTATION_FREE, $this->capabilities);
+    }
+
+    /**
+     * This function-like called as one of its overloads: with the parameters and the return type of the overload
+     *
+     * @psalm-mutation-free
+     */
+    public function withOverload(self $overload): static
+    {
+        $variant = clone $this;
+        $variant->params = $overload->params;
+        $variant->param_lookup = $overload->param_lookup;
+        $variant->required_param_count = $overload->required_param_count;
+        $variant->return_type = $overload->return_type;
+        $variant->return_type_location = $overload->return_type_location;
+        $variant->template_types = $overload->template_types ?? $this->template_types;
+        $variant->overloads = [];
+
+        return $variant;
     }
 
     /**

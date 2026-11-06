@@ -12,6 +12,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\OverloadSelector;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -143,6 +144,19 @@ final class MissingMethodCallHandler
             $result->existent_method_ids[$method_id->__toString()] = true;
 
             [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
+
+            $overloads = $defining_class_storage->pseudo_method_overloads[$method_name_lc] ?? null;
+
+            if ($overloads !== null) {
+                // none accepting the arguments, the last declared reports the issues
+                $pseudo_method_storage = $overloads[OverloadSelector::findOffset(
+                    $statements_analyzer,
+                    $codebase,
+                    $stmt->getArgs(),
+                    $context,
+                    $overloads,
+                ) ?? count($overloads) - 1];
+            }
 
             $found_generic_params = ClassTemplateParamCollector::collect(
                 $codebase,
