@@ -21,6 +21,31 @@ final class FunctionClassStringTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'classStringOfAnInstanceMethodTemplateAcceptsTheBound' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class Foo {}
+                    class Bar extends Foo {}
+
+                    final class A {
+                        /**
+                         * @template U of Foo
+                         * @param class-string<U> $class
+                         * @return U
+                         */
+                        public function make(string $class) {
+                            return new $class();
+                        }
+                    }
+
+                    $a = new A();
+                    $foo = $a->make(Foo::class);
+                    $bar = $a->make(Bar::class);',
+                'assertions' => [
+                    '$foo===' => 'Foo',
+                    '$bar===' => 'Bar',
+                ],
+            ],
             'callStaticMethodOnTemplatedClassName' => [
                 'code' => '<?php
                     /**
@@ -787,6 +812,23 @@ final class FunctionClassStringTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classStringOfAnInstanceMethodTemplateRejectsAnotherClass' => [
+                'code' => '<?php
+                    class Foo {}
+                    class Different {}
+
+                    final class A {
+                        /**
+                         * @template U of Foo
+                         * @param class-string<U> $class
+                         */
+                        public function mustBeFoo(string $class): void {}
+                    }
+
+                    $a = new A();
+                    $a->mustBeFoo(Different::class);',
+                'error_message' => 'InvalidArgument',
+            ],
             'copyScopedClassInFunction' => [
                 'code' => '<?php
                     /**
