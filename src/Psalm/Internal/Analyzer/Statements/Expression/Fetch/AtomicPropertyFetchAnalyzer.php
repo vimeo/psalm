@@ -1302,6 +1302,23 @@ final class AtomicPropertyFetchAnalyzer
 
             $intersects_with_enum = false;
 
+            // of the classes the interface is intersected with, the one that declares the property wins
+            $property_name = $stmt->name instanceof PhpParser\Node\Identifier ? $stmt->name->name : null;
+
+            if ($property_name !== null) {
+                foreach ($intersection_types as $intersection_type) {
+                    if ($intersection_type instanceof TNamedObject
+                        && $codebase->classExists($intersection_type->value)
+                        && isset($codebase->classlike_storage_provider->get($intersection_type->value)
+                            ->declaring_property_ids[$property_name])
+                    ) {
+                        $fq_class_name = $intersection_type->value;
+                        $class_exists = true;
+                        return;
+                    }
+                }
+            }
+
             foreach ($intersection_types as $intersection_type) {
                 if ($intersection_type instanceof TNamedObject
                     && $codebase->classExists($intersection_type->value)
