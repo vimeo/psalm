@@ -184,6 +184,18 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'suppressDocblockInFrontOfAnArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function describe(): void {
+                        throw new RuntimeException(
+                            /** @psalm-suppress ImpureFunctionCall the last error is part of the message */
+                            sprintf("code: %d", preg_last_error()),
+                        );
+                    }',
+            ],
             'varWithoutNameDoesNotTakeNameOfPreviousVarLine' => [
                 'code' => '<?php
                     /**
@@ -1492,6 +1504,31 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'suppressDocblockInFrontOfAnArgumentOnlyCoversThatArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function describe(): void {
+                        echo sprintf(
+                            "%d %d",
+                            /** @psalm-suppress ImpureFunctionCall */
+                            preg_last_error(),
+                            preg_last_error(),
+                        );
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29',
+            ],
+            'unusedSuppressDocblockInFrontOfAnArgument' => [
+                'code' => '<?php
+                    function describe(): void {
+                        echo strlen(
+                            /** @psalm-suppress ImpureFunctionCall */
+                            "text",
+                        );
+                    }',
+                'error_message' => 'UnusedPsalmSuppress',
+            ],
             'invalidTypeInPromotedPropertyDocblock' => [
                 'code' => '<?php
                     class Foo {

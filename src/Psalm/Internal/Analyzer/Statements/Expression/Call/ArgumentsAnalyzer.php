@@ -117,6 +117,15 @@ final class ArgumentsAnalyzer
             ? $function_params[count($function_params) - 1]
             : null;
 
+        foreach ($args as $arg) {
+            // PhpParser attaches the docblock in front of an argument to the argument, the expression is analysed
+            $arg_docblock = $arg->getDocComment();
+
+            if ($arg_docblock !== null) {
+                $arg->value->setAttribute(ExpressionAnalyzer::ARGUMENT_DOCBLOCK_ATTRIBUTE, $arg_docblock);
+            }
+        }
+
         // if this modifies the array type based on further args
         if (in_array($method_id, ['array_push', 'array_unshift'], true)
             && $function_params
