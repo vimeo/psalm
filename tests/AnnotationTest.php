@@ -184,6 +184,39 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'varCommentDropsKnownElementsOfPreviousType' => [
+                'code' => '<?php
+                    function getNullableInt(): ?int {
+                        return random_int(0, 10) > 1 ? null : 1;
+                    }
+
+                    $a = [];
+                    $a["i"] = getNullableInt();
+                    echo json_encode($a);
+                    /** @var array{i: int} $a */;
+                    $v = $a["i"];
+                    echo $v;',
+                'assertions' => [
+                    '$v' => 'int',
+                ],
+            ],
+            'varCommentOfSameTypeKeepsKnownElements' => [
+                'code' => '<?php
+                    class P {
+                        public ?int $n = null;
+                    }
+
+                    function f(P $p): int {
+                        if ($p->n === null) {
+                            return 0;
+                        }
+
+                        /** @var P $p */;
+                        return $p->n;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnnecessaryVarAnnotation'],
+            ],
             'varWithoutNameDoesNotTakeNameOfPreviousVarLine' => [
                 'code' => '<?php
                     /**
