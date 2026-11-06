@@ -23,6 +23,35 @@ final class ForTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'forIndexBoundedByAVariableOfAnOuterLoopIsNotNarrowedByItsFirstValue' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $old
+                     * @param list<int> $new
+                     */
+                    function trace(array $old, array $new): int {
+                        $max = count($old) + count($new);
+                        $v = [1 => 0];
+                        $result = 0;
+
+                        for ($d = 0; $d <= $max; $d++) {
+                            for ($k = -$d; $k <= $d; $k += 2) {
+                                if ($k === -$d || ($k !== $d && $v[$k - 1] < $v[$k + 1])) {
+                                    $x = $v[$k + 1];
+                                } else {
+                                    $x = $v[$k - 1] + 1;
+                                }
+
+                                $v[$k] = $x;
+                                $result = $x;
+                            }
+                        }
+
+                        return $result;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedOperand', 'MixedReturnStatement'],
+            ],
             'forIndexBoundedByTheCountOfAKnownList' => [
                 'code' => '<?php
                     function f(): string {
