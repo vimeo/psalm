@@ -357,10 +357,6 @@ final class Methods
 
             $params = $storage->params;
 
-            if ($storage->has_docblock_param_types) {
-                return $params;
-            }
-
             $appearing_method_id = $this->getAppearingMethodId($declaring_method_id);
 
             if (!$appearing_method_id) {
@@ -376,18 +372,22 @@ final class Methods
                 return $params;
             }
 
-            if (!isset($class_storage->documenting_method_ids[$appearing_method_name])) {
+            // a docblock documenting only some of the parameters leaves the other ones to the overridden method
+            $overridden_method_id = $storage->has_docblock_param_types
+                ? $this->getOverriddenMethodDocumentingParams($class_storage, $appearing_method_name)
+                : $class_storage->documenting_method_ids[$appearing_method_name] ?? null;
+
+            if ($overridden_method_id === null) {
                 return $params;
             }
-
-            $overridden_method_id = $class_storage->documenting_method_ids[$appearing_method_name];
 
             $overridden_storage = $this->getStorage($overridden_method_id);
 
             $overriding_fq_class_name = $overridden_method_id->fq_class_name;
 
             foreach ($params as $i => $param) {
-                if (isset($overridden_storage->params[$i]->type)
+                if (!$param->has_docblock_type
+                    && isset($overridden_storage->params[$i]->type)
                     && $overridden_storage->params[$i]->has_docblock_type
                 ) {
                     $params[$i] = clone $param;
@@ -1126,6 +1126,24 @@ final class Methods
     }
 
     /** @psalm-mutation-free */
+    private function getOverriddenMethodDocumentingParams(
+        ClassLikeStorage $class_storage,
+        string $method_name,
+    ): ?MethodIdentifier {
+        foreach ($class_storage->overridden_method_ids[$method_name] ?? [] as $overridden_method_id) {
+            if ($this->hasStorage($overridden_method_id)
+                && $this->getStorage($overridden_method_id)->has_docblock_param_types
+            ) {
+                return $overridden_method_id;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
     public function hasStorage(MethodIdentifier $method_id): bool
     {
         try {
