@@ -45,6 +45,33 @@ final class ValueTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nonEmptyStringNotZeroIsNonFalsy' => [
+                'code' => '<?php
+                    /** @var non-empty-string $s */
+                    $s = $_GET["s"];
+                    if ($s === "0") { throw new Exception(""); }',
+                'assertions' => [
+                    '$s===' => 'non-falsy-string',
+                ],
+            ],
+            'nonEmptyStringLooselyNotZeroIsNonFalsy' => [
+                'code' => '<?php
+                    /** @var non-empty-string $s */
+                    $s = $_GET["s"];
+                    if ($s == "0") { throw new Exception(""); }',
+                'assertions' => [
+                    '$s===' => 'non-falsy-string',
+                ],
+            ],
+            'nonEmptyStringNotAnotherLiteralStaysNonEmpty' => [
+                'code' => '<?php
+                    /** @var non-empty-string $s */
+                    $s = $_GET["s"];
+                    if ($s === "a") { throw new Exception(""); }',
+                'assertions' => [
+                    '$s===' => 'non-empty-string',
+                ],
+            ],
             'whileCountUpdate' => [
                 'code' => '<?php
                     $array = [1, 2, 3];
