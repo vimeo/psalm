@@ -927,9 +927,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArrayFunctionArgumentsAnalyzer.php">
-    <ParadoxicalCondition>
-      <code><![CDATA[in_array($method_id, ArgumentsAnalyzer::ARRAY_FILTERLIKE, true)]]></code>
-    </ParadoxicalCondition>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$args[0]]]></code>
       <code><![CDATA[$args[0]]]></code>
