@@ -846,6 +846,30 @@ final class ReferenceTest extends TestCase
                 'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:38 - Possibly undefined variable $i, first seen on line 6',
                 'error_levels' => ['MixedArgument', 'PossiblyInvalidArrayOffset'],
             ],
+            'castKeyOfAnItemPassedByReferenceToASortFunctionInALoopIsPossiblyUndefined' => [
+                'code' => '<?php
+                    /** @param array<int, mixed> $a */
+                    function f(array $a): void {
+                        while (rand(0, 1)) {
+                            asort($a[(int) $i]);
+                            $i = 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:44 - Possibly undefined variable $i, first seen on line 6',
+                'error_levels' => ['MixedArgument', 'RedundantCast'],
+            ],
+            'negatedKeyOfAnItemPassedByReferenceToASortFunctionInALoopIsPossiblyUndefined' => [
+                'code' => '<?php
+                    /** @param array<int, mixed> $a */
+                    function f(array $a): void {
+                        while (rand(0, 1)) {
+                            asort($a[-$i]);
+                            $i = 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:39 - Possibly undefined variable $i, first seen on line 6',
+                'error_levels' => ['MixedArgument'],
+            ],
             'itemOfAnEmptyArrayPassedToAParameterPhpDoesNotTakeByReference' => [
                 'code' => '<?php
                     $pipes = [];
