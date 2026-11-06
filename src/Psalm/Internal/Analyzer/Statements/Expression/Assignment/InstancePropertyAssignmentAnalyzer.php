@@ -210,7 +210,10 @@ final class InstancePropertyAssignmentAnalyzer
 
             if ($type_match_found && $union_comparison_results->replacement_union_type) {
                 if ($var_id) {
-                    $context->vars_in_scope[$var_id] = $union_comparison_results->replacement_union_type;
+                    $context->vars_in_scope[$var_id] = $union_comparison_results->replacement_union_type
+                        ->setProperties([
+                            'initialized_class' => ($context->vars_in_scope[$var_id] ?? null)?->initialized_class,
+                        ]);
                 }
             }
 
