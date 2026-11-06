@@ -450,16 +450,12 @@ final class TryAnalyzer
                         $possibly_undefined = $context->vars_in_scope[$var_id]->possibly_undefined
                             && $context->vars_in_scope[$var_id]->possibly_undefined_from_try;
 
-                        $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                            $context->vars_in_scope[$var_id],
-                            $finally_context->vars_in_scope[$var_id],
-                            $codebase,
-                        );
+                        // the finally block started from every state the try and the catches can end in
+                        $context->vars_in_scope[$var_id] = $finally_context->vars_in_scope[$var_id];
+
                         if ($possibly_undefined) {
-                            /** @psalm-suppress InaccessibleProperty We just created this type */
-                            $context->vars_in_scope[$var_id]->possibly_undefined = false;
-                            /** @psalm-suppress InaccessibleProperty We just created this type */
-                            $context->vars_in_scope[$var_id]->possibly_undefined_from_try = false;
+                            $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]
+                                ->setPossiblyUndefined(false, false);
                         }
                     } elseif (isset($finally_context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = $finally_context->vars_in_scope[$var_id];
