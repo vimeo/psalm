@@ -3830,25 +3830,25 @@ final class ArrayFunctionCallTest extends TestCase
             ],
             'arrayPopItemInByReferenceClosureKeepsTheRemainingElements' => [
                 'code' => '<?php
-                    function f(): int {
+                    function f(): void {
                         $a = [];
-                        $remove = static function () use (&$a): int {
+                        $remove = static function () use (&$a): void {
                             $a = [[1, 2]];
                             array_pop($a[0]);
-                            return array_pop($a[0]);
+                            $x = array_pop($a[0]);
+                            /** @psalm-check-type $x = 1|2 */
                         };
-                        return $remove();
+                        $remove();
                     }',
             ],
             'arrayShiftItemInLoopKeepsTheRemainingElements' => [
                 'code' => '<?php
-                    function take(int $i): void {}
-
                     function f(): void {
                         foreach ([1, 2] as $_) {
                             $a = [[1, 2]];
                             array_shift($a[0]);
-                            take(array_shift($a[0]));
+                            $x = array_shift($a[0]);
+                            /** @psalm-check-type $x = 1|2 */
                         }
                     }',
             ],
