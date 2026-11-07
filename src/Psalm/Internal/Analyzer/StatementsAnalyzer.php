@@ -1055,8 +1055,10 @@ final class StatementsAnalyzer extends SourceAnalyzer
                     );
                 }
 
+                // removing a value that is stored into an array element would leave the store without it
                 if ($codebase->alter_code
                     && $issue instanceof UnusedVariable
+                    && !$this->variable_use_graph->isStoredIntoArrayElement($assignment_node)
                     && !$unused_var_remover->checkIfVarRemoved($var_id, $original_location)
                     && isset($project_analyzer->getIssuesToFix()['UnusedVariable'])
                     && !IssueBuffer::isSuppressed($issue, $this->getSuppressedIssues())
