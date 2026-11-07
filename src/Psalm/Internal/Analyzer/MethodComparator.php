@@ -1231,6 +1231,32 @@ final class MethodComparator
             }
         }
 
+        // a class that gets the method from a parent and the interface from elsewhere knows both templates
+        if (!$implementer_classlike_storage->is_trait
+            && $implementer_method_storage->defining_fqcln !== null
+            && strtolower($implementer_called_class_name) !== strtolower($implementer_classlike_storage->name)
+        ) {
+            $implementer_called_class_storage = $codebase->classlike_storage_provider->get(
+                $implementer_called_class_name,
+            );
+
+            if ($implementer_called_class_storage->template_extended_params !== null) {
+                self::transformTemplates(
+                    $implementer_called_class_storage->template_extended_params,
+                    $guide_class_name,
+                    $guide_method_storage_return_type,
+                    $codebase,
+                );
+
+                self::transformTemplates(
+                    $implementer_called_class_storage->template_extended_params,
+                    $implementer_method_storage->defining_fqcln,
+                    $implementer_method_storage_return_type,
+                    $codebase,
+                );
+            }
+        }
+
         if ($implementer_classlike_storage->is_trait) {
             $implementer_called_class_storage = $codebase->classlike_storage_provider->get(
                 $implementer_called_class_name,
