@@ -471,6 +471,98 @@ final class AssertAnnotationTest extends TestCase
                         $a->foo();
                     }',
             ],
+            'assertIfTrueOfStaticOnInheritedMethod' => [
+                'code' => '<?php
+                    interface Comparable {
+                        /** @psalm-assert-if-true static $object */
+                        public function equals(Comparable $object): bool;
+                    }
+
+                    final class Foo implements Comparable
+                    {
+                        public ?string $baz = null;
+
+                        public function equals(Comparable $object): bool
+                        {
+                            return get_class($this) === get_class($object);
+                        }
+                    }
+
+                    $a = new Foo();
+                    /** @var Comparable $other */
+                    $other = $a;
+                    $t = $a->equals($other) ? $other : null;',
+                'assertions' => [
+                    '$t===' => 'Foo|null',
+                ],
+            ],
+            'assertIfTrueOfStaticOnInterfaceMethod' => [
+                'code' => '<?php
+                    interface Comparable {
+                        /** @psalm-assert-if-true static $object */
+                        public function equals(Comparable $object): bool;
+                    }
+
+                    /** @var Comparable $a */
+                    $a = null;
+                    /** @var Comparable $other */
+                    $other = null;
+                    $t = $a->equals($other) ? $other : null;',
+                'assertions' => [
+                    '$t===' => 'Comparable|null',
+                ],
+            ],
+            'assertIfFalseInheritedFromInterfaceMethod' => [
+                'code' => '<?php
+                    interface Checker {
+                        /** @psalm-assert-if-false string $value */
+                        public function isNotString(mixed $value): bool;
+                    }
+
+                    final class IsNotStringChecker implements Checker
+                    {
+                        public function isNotString(mixed $value): bool
+                        {
+                            return !is_string($value);
+                        }
+                    }
+
+                    $checker = new IsNotStringChecker();
+                    /** @var mixed $v */
+                    $v = null;
+                    $t = $checker->isNotString($v) ? null : $v;',
+                'assertions' => [
+                    '$t===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertIfTrueOfOwnAnnotationWinsOverInherited' => [
+                'code' => '<?php
+                    interface Checker {
+                        /** @psalm-assert-if-true string $value */
+                        public function check(mixed $value): bool;
+                    }
+
+                    final class IntChecker implements Checker
+                    {
+                        /** @psalm-assert-if-true int $value */
+                        public function check(mixed $value): bool
+                        {
+                            return is_int($value);
+                        }
+                    }
+
+                    $checker = new IntChecker();
+                    /** @var mixed $v */
+                    $v = null;
+                    $t = $checker->check($v) ? $v : null;',
+                'assertions' => [
+                    '$t===' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assertIfTrueAnnotation' => [
                 'code' => '<?php
                     namespace Bar;

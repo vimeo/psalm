@@ -19,6 +19,10 @@ use function strtolower;
  */
 final class AssertionsFromInheritanceResolver
 {
+    private const ASSERTIONS = 0;
+    private const IF_TRUE_ASSERTIONS = 1;
+    private const IF_FALSE_ASSERTIONS = 2;
+
     /**
      * @psalm-mutation-free
      */
@@ -35,9 +39,44 @@ final class AssertionsFromInheritanceResolver
         MethodStorage $method_storage,
         ClassLikeStorage $called_class,
     ): array {
+        return $this->resolveKind($method_storage, $called_class, self::ASSERTIONS);
+    }
+
+    /**
+     * @return array<int,Possibilities>
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public function resolveIfTrue(
+        MethodStorage $method_storage,
+        ClassLikeStorage $called_class,
+    ): array {
+        return $this->resolveKind($method_storage, $called_class, self::IF_TRUE_ASSERTIONS);
+    }
+
+    /**
+     * @return array<int,Possibilities>
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public function resolveIfFalse(
+        MethodStorage $method_storage,
+        ClassLikeStorage $called_class,
+    ): array {
+        return $this->resolveKind($method_storage, $called_class, self::IF_FALSE_ASSERTIONS);
+    }
+
+    /**
+     * @param self::* $kind
+     * @return array<int,Possibilities>
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private function resolveKind(
+        MethodStorage $method_storage,
+        ClassLikeStorage $called_class,
+        int $kind,
+    ): array {
         $method_name_lc = strtolower($method_storage->cased_name ?? '');
 
-        $assertions = $method_storage->assertions;
+        $assertions = self::getAssertionsOfKind($method_storage, $kind);
         $inherited_classes_and_interfaces = array_values(array_filter([
             ...$called_class->parent_classes,
             ...$called_class->class_implements,
@@ -58,9 +97,23 @@ final class AssertionsFromInheritanceResolver
              * Since the inheritance does not provide its own assertions, we have to detect those
              * from inherited classes
              */
-            $assertions += $potential_assertion_providing_method_storage->assertions;
+            $assertions += self::getAssertionsOfKind($potential_assertion_providing_method_storage, $kind);
         }
 
         return $assertions;
+    }
+
+    /**
+     * @param self::* $kind
+     * @return array<int,Possibilities>
+     * @psalm-capabilities read-props
+     */
+    private static function getAssertionsOfKind(MethodStorage $method_storage, int $kind): array
+    {
+        return match ($kind) {
+            self::IF_TRUE_ASSERTIONS => $method_storage->if_true_assertions,
+            self::IF_FALSE_ASSERTIONS => $method_storage->if_false_assertions,
+            default => $method_storage->assertions,
+        };
     }
 }
