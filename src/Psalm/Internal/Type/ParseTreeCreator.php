@@ -512,6 +512,16 @@ final class ParseTreeCreator
             throw new TypeParseTreeException('Cannot parse comma without a parent node');
         }
 
+        // after a comma the current leaf is its container, and a second comma would climb out of it
+        $prev = $this->t - 1;
+        while ($prev >= 0 && $this->type_tokens[$prev][0] === ' ') {
+            $prev--;
+        }
+
+        if ($prev >= 0 && $this->type_tokens[$prev][0] === ',') {
+            throw new TypeParseTreeException('Unexpected token ,');
+        }
+
         $context_node = $this->current_leaf;
 
         if ($context_node instanceof PurityTree) {

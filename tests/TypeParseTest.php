@@ -1267,6 +1267,36 @@ final class TypeParseTest extends TestCase
         Type::parseString('array{,}');
     }
 
+    public function testNestedKeyedArrayWithTwoCommasIsInvalid(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array{a: array{b: int,,}}');
+    }
+
+    public function testUnterminatedNestedKeyedArrayWithTwoCommasIsInvalid(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array{a: array{b: int,,}');
+    }
+
+    public function testNestedKeyedArrayWithTwoCommasSeparatedBySpaceIsInvalid(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array{a: array{b: int, ,}');
+    }
+
+    public function testUnterminatedNestedGenericWithTwoCommasIsInvalid(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array<string, array<int,,string>');
+    }
+
+    public function testUnterminatedNestedKeyedArrayWithTrailingCommaIsInvalid(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array{a: array{b: int,}');
+    }
+
     public function testCallableWithVariadicAndDefault(): void
     {
         $this->expectException(TypeParseTreeException::class);
