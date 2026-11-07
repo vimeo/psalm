@@ -1876,6 +1876,12 @@ final class FunctionCallTest extends TestCase
                         other_function();
                     }',
             ],
+            'functionExistsWithLiteralInAConjunctionCoversThatFunction' => [
+                'code' => '<?php
+                    if (rand(0, 1) && function_exists("missing_function")) {
+                        missing_function();
+                    }',
+            ],
             'callableArgumentWithFunctionExists' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2729,6 +2735,13 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'functionExistsWithLiteralInAConjunctionDoesNotCoverOtherFunctions' => [
+                'code' => '<?php
+                    if (rand(0, 1) && function_exists("missing_function")) {
+                        other_function();
+                    }',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25',
+            ],
             'functionExistsWithLiteralDoesNotCoverOtherFunctions' => [
                 'code' => '<?php
                     if (function_exists("missing_function")) {

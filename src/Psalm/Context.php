@@ -904,6 +904,7 @@ final class Context
         $this->check_variables = $this->check_variables && $op_context->check_variables;
         $this->check_methods = $this->check_methods && $op_context->check_methods;
         $this->check_functions = $this->check_functions && $op_context->check_functions;
+        $this->phantom_functions += $op_context->phantom_functions;
         $this->check_consts = $this->check_consts && $op_context->check_consts;
     }
 
