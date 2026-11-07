@@ -1795,6 +1795,41 @@ final class AssertionReconciler extends Reconciler
                     return [$assertion_type];
                 }
 
+                // a `class-string<T>` stays one of `T`, restricted to the asserted class
+                $template_class_strings = [];
+
+                foreach ($existing_var_type->getAtomicTypes() as $existing_type_part) {
+                    if (!$existing_type_part instanceof TTemplateParamClass) {
+                        $template_class_strings = [];
+                        break;
+                    }
+
+                    $bound = $existing_type_part->as_type;
+
+                    if ($bound === null
+                        || AtomicTypeComparator::isContainedBy($codebase, $assertion_type, $bound)
+                    ) {
+                        $refined_bound = $assertion_type;
+                    } elseif (AtomicTypeComparator::isContainedBy($codebase, $bound, $assertion_type)) {
+                        $refined_bound = $bound;
+                    } else {
+                        $refined_bound = $bound->addIntersectionType($assertion_type);
+                    }
+
+                    $template_class_strings[] = new TTemplateParamClass(
+                        $existing_type_part->param_name,
+                        $refined_bound->value,
+                        $refined_bound,
+                        $existing_type_part->defining_class,
+                    );
+                }
+
+                if ($template_class_strings) {
+                    $should_return = true;
+
+                    return $template_class_strings;
+                }
+
                 $new_type_has_interface_string = $codebase->interfaceExists($assertion_type->value);
 
                 $old_type_has_interface_string = false;
