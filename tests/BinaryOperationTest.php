@@ -793,6 +793,46 @@ final class BinaryOperationTest extends TestCase
                     '$j===' => 'non-empty-string',
                 ],
             ],
+            'interpolatedStringWithAnIntIsNotALiteralUnion' => [
+                'code' => '<?php
+                    /** @var "a"|"b" $lit */
+                    $lit = "a";
+                    /** @var int $n */
+                    $n = 5;
+                    $g = "x$lit$n";',
+                'assertions' => [
+                    '$g===' => "non-empty-string",
+                ],
+            ],
+            'interpolatedStringWithALiteralInt' => [
+                'code' => '<?php
+                    /** @var "a"|"b" $lit */
+                    $lit = "a";
+                    $g = "x$lit" . 5;',
+                'assertions' => [
+                    '$g===' => "'xa5'|'xb5'",
+                ],
+            ],
+            'interpolatedStringWithSeveralUnions' => [
+                'code' => '<?php
+                    /** @var "a"|"b" $lit */
+                    $lit = "a";
+                    $g = "x{$lit}y$lit";',
+                'assertions' => [
+                    '$g===' => "'xaya'|'xayb'|'xbya'|'xbyb'",
+                ],
+            ],
+            'interpolatedStringKeepsTheLiteralsOfAUnion' => [
+                'code' => '<?php
+                    /** @var "a"|"b" $lit */
+                    $lit = "a";
+                    $g = "x$lit";
+                    $h = "x" . $lit;',
+                'assertions' => [
+                    '$g===' => "'xa'|'xb'",
+                    '$h===' => "'xa'|'xb'",
+                ],
+            ],
             'zeroToANegativePowerIsAFloat' => [
                 'code' => '<?php
                     $a = 0 ** -1;
@@ -1491,7 +1531,7 @@ final class BinaryOperationTest extends TestCase
                     $bar = "";
                     $interpolated = "{$foo}{$bar}";
                 ',
-                'assertions' => ['$interpolated===' => 'literal-string'],
+                'assertions' => ['$interpolated===' => "''|'bar'|'foo'|'foobar'"],
             ],
             'literalIntConcatCreatesLiteral' => [
                 'code' => '<?php
