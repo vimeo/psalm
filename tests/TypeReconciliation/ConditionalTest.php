@@ -21,6 +21,32 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'orredClausesOfOneVariableAreAllKept' => [
+                'code' => '<?php
+                    interface I1 {}
+                    interface I2 {}
+
+                    /** @param mixed $d */
+                    function f($d): string {
+                        if (!is_array($d) && (!$d instanceof I1 || !$d instanceof I2)) {
+                            throw new Exception("array or I1&I2");
+                        }
+
+                        return is_array($d) ? "array" : get_class($d);
+                    }
+
+                    /** @var mixed $x */
+                    $x = null;
+
+                    if (is_string($x) || ($x instanceof I1 && $x instanceof I2)) {
+                        $result = $x;
+                    } else {
+                        $result = "";
+                    }',
+                'assertions' => [
+                    '$result' => 'I1&I2|string',
+                ],
+            ],
             'nonStrictConditionOnMixedOrNull' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $owners */
@@ -3464,6 +3490,30 @@ final class ConditionalTest extends TestCase
                     '$inside' => 'Countable|null',
                     '$after' => 'Countable|string',
                 ],
+            ],
+            'isArrayOrNegatedIssetGuardNarrowsAfterReturn' => [
+                'code' => '<?php
+                    function f(string|int|array $t, array $map): string {
+                        if (is_array($t) || !isset($map[(string) $t])) {
+                            return "";
+                        }
+
+                        return (string) $t;
+                    }
+
+                    /** @var string|int|array $t */
+                    $t = $_GET["t"];
+                    /** @var array $map */
+                    $map = [];
+                    if (is_array($t) || !isset($map[(string) $t])) {
+                        return;
+                    }
+                    $s = $t;',
+                'assertions' => [
+                    '$s' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
