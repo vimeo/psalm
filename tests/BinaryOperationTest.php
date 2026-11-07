@@ -692,7 +692,7 @@ final class BinaryOperationTest extends TestCase
                     $n = 5;
                     $g = "x$lit$n";',
                 'assertions' => [
-                    '$g===' => "non-empty-string",
+                    '$g===' => "non-falsy-string",
                 ],
             ],
             'interpolatedStringWithALiteralInt' => [
