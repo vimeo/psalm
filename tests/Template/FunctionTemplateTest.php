@@ -23,6 +23,68 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedInstanceofNarrowsTheBoundOfATemplateParam' => [
+                'code' => '<?php
+                    class File {
+                        public ?string $filePath = null;
+                    }
+
+                    class SubFile extends File {}
+
+                    /**
+                     * @template T as string|File
+                     * @param T $file
+                     */
+                    function makeFileUrl(string|File $file): string {
+                        if ($file instanceof File) {
+                            return $file->filePath ?? "";
+                        }
+
+                        return "//file/" . $file;
+                    }
+
+                    /**
+                     * @template T as File|null
+                     * @param T $file
+                     * @return null
+                     */
+                    function nothingButNull(?File $file) {
+                        if ($file instanceof File) {
+                            throw new Exception();
+                        }
+
+                        return $file;
+                    }
+
+                    /**
+                     * @template T as File|null
+                     * @param T $file
+                     * @return T
+                     */
+                    function unchangedWhenNothingIsRemoved(?File $file) {
+                        if ($file instanceof SubFile) {
+                            throw new Exception();
+                        }
+
+                        return $file;
+                    }
+
+                    /**
+                     * @template T as File
+                     * @param T $file
+                     * @return T
+                     */
+                    function boundStaysWhenItWouldBecomeEmpty(File $file) {
+                        if ($file instanceof File) {
+                            return $file;
+                        }
+
+                        return $file;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType', 'NoValue', 'UnevaluatedCode'],
+                'php_version' => '8.0',
+            ],
             'extractTypeParameterValue' => [
                 'code' => '<?php
                     /**
