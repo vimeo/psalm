@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\AmbiguousConstantInheritance;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\DeprecatedClass;
@@ -740,7 +741,13 @@ final class ClassConstAnalyzer
                     && !UnionTypeComparator::isContainedBy(
                         $statements_analyzer->getCodebase(),
                         $assigned_type,
-                        $const_storage_type,
+                        TypeExpander::expandUnion(
+                            $statements_analyzer->getCodebase(),
+                            $const_storage_type,
+                            $class_storage->name,
+                            $class_storage->name,
+                            $class_storage->parent_class,
+                        ),
                     )
                 ) {
                     IssueBuffer::maybeAdd(
