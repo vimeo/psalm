@@ -99,6 +99,8 @@ final class IfElseAnalyzer
 
         $branch_point = $context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
 
+        $phantom_classes_before_cond = $context->phantom_classes;
+
         try {
             $if_conditional_scope = IfConditionalAnalyzer::analyze(
                 $statements_analyzer,
@@ -108,6 +110,12 @@ final class IfElseAnalyzer
                 $if_scope,
                 $branch_point,
             );
+
+            // a class that doesn't exist is only known to be there in the block run when
+            // `class_exists()` (or the like) is true
+            if ($stmt->cond instanceof PhpParser\Node\Expr\FuncCall) {
+                $context->phantom_classes = $phantom_classes_before_cond;
+            }
 
             // this is the context for stuff that happens within the `if` block
             $if_context = $if_conditional_scope->if_context;
