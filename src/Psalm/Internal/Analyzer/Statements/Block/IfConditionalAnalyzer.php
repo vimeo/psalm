@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
+use Override;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\ScopeAnalysisException;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -19,6 +21,7 @@ use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
+use Psalm\Type;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
@@ -199,6 +202,28 @@ final class IfConditionalAnalyzer
                 $first_cond_assigned_var_ids,
                 $more_cond_assigned_var_ids,
             );
+
+            // an assignment the condition may skip (the right of an `&&`) leaves the earlier type possible
+            foreach (self::getAssignmentsInCondition($cond) as $assign) {
+                $assigned_var_id = ExpressionIdentifier::getExtendedVarId(
+                    $assign->var,
+                    $outer_context->self,
+                    $statements_analyzer,
+                );
+                $assigned_type = $statements_analyzer->node_data->getType($assign);
+
+                if ($assigned_var_id !== null
+                    && $assigned_type !== null
+                    && !isset($first_cond_assigned_var_ids[$assigned_var_id])
+                    && isset($post_if_context->vars_in_scope[$assigned_var_id])
+                ) {
+                    $post_if_context->vars_in_scope[$assigned_var_id] = Type::combineUnionTypes(
+                        $post_if_context->vars_in_scope[$assigned_var_id],
+                        $assigned_type,
+                    );
+                    $outer_context->vars_in_scope[$assigned_var_id] = $post_if_context->vars_in_scope[$assigned_var_id];
+                }
+            }
         } else {
             $cond_referenced_var_ids = $first_cond_referenced_var_ids;
 
@@ -376,5 +401,40 @@ final class IfConditionalAnalyzer
                 ExpressionAnalyzer::checkRiskyTruthyFalsyComparison($type, $statements_analyzer, $stmt);
             }
         }
+    }
+
+    /**
+     * @return list<PhpParser\Node\Expr\Assign>
+     */
+    private static function getAssignmentsInCondition(PhpParser\Node\Expr $cond): array
+    {
+        $visitor = new class extends PhpParser\NodeVisitorAbstract {
+            /** @var list<PhpParser\Node\Expr\Assign> */
+            public array $assignments = [];
+
+            /** @psalm-capabilities read-props|write-this-props|write-refs */
+            #[Override]
+            public function enterNode(PhpParser\Node $node): ?int
+            {
+                if ($node instanceof PhpParser\Node\Expr\Closure
+                    || $node instanceof PhpParser\Node\Expr\ArrowFunction
+                    || $node instanceof PhpParser\Node\Stmt\ClassLike
+                ) {
+                    return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                }
+
+                if ($node instanceof PhpParser\Node\Expr\Assign) {
+                    $this->assignments[] = $node;
+                }
+
+                return null;
+            }
+        };
+
+        $traverser = new PhpParser\NodeTraverser();
+        $traverser->addVisitor($visitor);
+        $traverser->traverse([$cond]);
+
+        return $visitor->assignments;
     }
 }
