@@ -20,6 +20,38 @@ final class ReferenceConstraintTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'paramOutOfAByRefParamBeforeTheArgumentThatBindsItsTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TFlags as int
+                     * @param TFlags $flags
+                     * @param-out (TFlags is 256 ? "M256" : "M0") $matches
+                     */
+                    function before(mixed &$matches = [], int $flags = 0): void {}
+
+                    before($m, 256);',
+                'assertions' => [
+                    '$m===' => "'M256'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'paramOutOfAByRefParamAfterTheArgumentThatBindsItsTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TFlags as int
+                     * @param TFlags $flags
+                     * @param-out (TFlags is 256 ? "M256" : "M0") $matches
+                     */
+                    function after(int $flags, mixed &$matches = []): void {}
+
+                    after(0, $m);',
+                'assertions' => [
+                    '$m===' => "'M0'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'paramOutOnInterfaceMethodWithoutBody' => [
                 'code' => '<?php
                     interface I {

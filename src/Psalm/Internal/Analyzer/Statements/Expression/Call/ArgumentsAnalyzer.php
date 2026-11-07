@@ -63,6 +63,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_key_last;
 use function array_reduce;
 use function array_reverse;
 use function array_slice;
@@ -1301,6 +1302,40 @@ final class ArgumentsAnalyzer
                     $in_call_map,
                 ) === false) {
                     return false;
+                }
+            }
+        }
+
+        // the out type of a by-ref param reads the templates the arguments after it bind too
+        $last_argument_offset = array_key_last($args);
+
+        if ($template_result && $template_result->template_types) {
+            foreach ($args as $argument_offset => $arg) {
+                $by_ref_param = $arg_function_params[$argument_offset][0] ?? null;
+                $out_type = $by_ref_param !== null && $by_ref_param->by_ref ? $by_ref_param->out_type : null;
+
+                if ($argument_offset !== $last_argument_offset
+                    && $out_type !== null
+                    && ($out_type->hasTemplate() || $out_type->hasConditional())
+                    && $method_id !== 'extract'
+                    && self::handlePossiblyMatchingByRefParam(
+                        $statements_analyzer,
+                        $codebase,
+                        (string) $method_id,
+                        $cased_method_id,
+                        $last_param,
+                        $function_params,
+                        $argument_offset,
+                        $arg,
+                        $context,
+                        $template_result,
+                        $method_id instanceof MethodIdentifier ? $method_id : null,
+                        $in_call_map ? null : $function_storage,
+                        $code_location,
+                        $args,
+                    ) === false
+                ) {
+                    return null;
                 }
             }
         }
