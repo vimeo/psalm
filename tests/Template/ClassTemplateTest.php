@@ -57,6 +57,56 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'newOfTheClassItselfInsideItsMethodAcceptsAnotherTemplate' => [
+                'code' => '<?php
+                    /** @template T */
+                    class ArrayList {
+                        /** @var array<array-key, T> */
+                        private array $list = [];
+
+                        /** @param T $value */
+                        public function add(mixed $value): void
+                        {
+                            $this->list[] = $value;
+                        }
+
+                        /**
+                         * @template TOut
+                         * @param callable(T): TOut $callback
+                         * @return ArrayList<TOut>
+                         */
+                        public function map(callable $callback): ArrayList
+                        {
+                            $arr = new ArrayList();
+
+                            foreach ($this->list as $value) {
+                                $arr->add($callback($value));
+                            }
+
+                            return $arr;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'anotherInstanceOfTheClassWithAKnownTypeInsideItsMethod' => [
+                'code' => '<?php
+                    /** @template T */
+                    class ArrayList {
+                        /** @param T $value */
+                        public function add(mixed $value): void {}
+
+                        /** @param ArrayList<int> $ints */
+                        public function ints(ArrayList $ints): void
+                        {
+                            $ints->add(5);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticReturnKeepsTheTypeArgumentsOfTheCalledClass' => [
                 'code' => '<?php
                     /** @template T of object */
@@ -5782,6 +5832,56 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'anotherInstanceOfTheClassWithAKnownTypeInsideItsMethodStillChecksTheArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    class ArrayList {
+                        /** @param T $value */
+                        public function add(mixed $value): void {}
+
+                        /** @param ArrayList<int> $ints */
+                        public function ints(ArrayList $ints): void
+                        {
+                            $ints->add("x");
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'thisOfTheClassKeepsItsOwnTemplateInsideItsMethod' => [
+                'code' => '<?php
+                    /** @template T */
+                    class ArrayList {
+                        /** @param T $value */
+                        public function add(mixed $value): void {}
+
+                        public function addFive(): void
+                        {
+                            $this->add(5);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'anotherInstanceOfTheClassWithItsOwnTemplateInsideItsMethod' => [
+                'code' => '<?php
+                    /** @template T */
+                    class ArrayList {
+                        /** @param T $value */
+                        public function add(mixed $value): void {}
+
+                        /** @param ArrayList<T> $other */
+                        public function addFive(ArrayList $other): void
+                        {
+                            $other->add(5);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'classTemplateDefaultNamingAnUndefinedClass' => [
                 'code' => '<?php
                     /**
