@@ -1883,6 +1883,14 @@ final class ArgumentAnalyzer
             ]);
         }
 
+        if (!$was_cloned
+            && !$input_type_changed
+            && !$unpack
+            && ($context->vars_in_scope[$var_id] ?? null) === $input_type
+        ) {
+            return;
+        }
+
         if ($context->inside_conditional && !isset($context->assigned_var_ids[$var_id])) {
             $context->assigned_var_ids[$var_id] = 0;
         }
