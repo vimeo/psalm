@@ -742,6 +742,22 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     return $emit_issues ? null : true;
                 }
 
+                // a property redeclared by a subclass or its trait is the one of the class that declared it first
+                $appearing_class_storage = $codebase->classlike_storage_provider->get($appearing_property_class);
+
+                foreach ($appearing_class_storage->parent_classes as $parent_class_name) {
+                    $parent_property = $codebase->classlike_storage_provider->get($parent_class_name)
+                        ->properties[$property_name] ?? null;
+
+                    if ($parent_property !== null
+                        && $parent_property->visibility !== self::VISIBILITY_PRIVATE
+                        && (strtolower($context->self) === strtolower($parent_class_name)
+                            || $codebase->classExtends($context->self, $parent_class_name))
+                    ) {
+                        return $emit_issues ? null : true;
+                    }
+                }
+
                 if (!$codebase->classExtends($context->self, $appearing_property_class)) {
                     if ($emit_issues) {
                         IssueBuffer::maybeAdd(
