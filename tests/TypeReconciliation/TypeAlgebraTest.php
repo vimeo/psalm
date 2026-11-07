@@ -21,6 +21,20 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedTraitExistsWithAutoloadKeepsATraitStringParam' => [
+                'code' => '<?php
+                    /** @param trait-string $name */
+                    function checkTrait(string $name, bool $autoload = true): string {
+                        if (!trait_exists($name, $autoload)) {
+                            throw new Exception($name);
+                        }
+
+                        return $name;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'twoVarLogicSimple' => [
                 'code' => '<?php
                     function foo(?string $a, ?string $b): string {
