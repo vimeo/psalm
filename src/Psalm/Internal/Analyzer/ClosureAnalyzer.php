@@ -437,6 +437,11 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                 }
             }
 
+            // capturing by reference defines the variable (as null) in the enclosing scope
+            if ($use->byRef && !$context->hasVariable($use_var_id)) {
+                continue;
+            }
+
             if (!$context->hasVariable($use_var_id)) {
                 if ($use_var_id === '$argv' || $use_var_id === '$argc') {
                     continue;
