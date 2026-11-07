@@ -218,6 +218,7 @@ final class FunctionLikeDocblockScanner
         }
 
         $storage->suppressed_issues = $docblock_info->suppressed_issues;
+        $storage->docblock_suppressed_issues = $docblock_info->suppressed_issues;
 
         foreach ($docblock_info->throws as [$throw, $offset, $line]) {
             $throw_location = new DocblockTypeLocation(

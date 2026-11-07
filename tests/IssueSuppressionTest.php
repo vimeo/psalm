@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Closure;
 use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\IssueBuffer;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -275,9 +277,7 @@ final class IssueSuppressionTest extends TestCase
 
     public function testPluginAppendedClassSuppressionIsNotReportedAsUnused(): void
     {
-        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
-        $this->addFile(
-            $file_path,
+        $this->analyzeWithPluginSuppression(
             '<?php
                 /**
                  * @psalm-suppress UndefinedClass
@@ -288,14 +288,125 @@ final class IssueSuppressionTest extends TestCase
                     }
                 }
             ',
+            static function (ClassLikeStorage $storage): void {
+                $storage->suppressed_issues[] = 'MissingConstructor';
+            },
         );
+    }
+
+    public function testUnusedClassSuppressionIsReportedDespitePluginAppendedOne(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UnusedPsalmSuppress - tests' . DIRECTORY_SEPARATOR . 'somefile.php:3:36');
+
+        $this->analyzeWithPluginSuppression(
+            '<?php
+                /**
+                 * @psalm-suppress UndefinedClass
+                 */
+                final class Foo {}
+            ',
+            static function (ClassLikeStorage $storage): void {
+                $storage->suppressed_issues[] = 'MissingConstructor';
+            },
+        );
+    }
+
+    public function testLoneUnusedPsalmSuppressOnClassIsReportedDespitePluginAppendedOne(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UnusedPsalmSuppress');
+
+        $this->analyzeWithPluginSuppression(
+            '<?php
+                /**
+                 * @psalm-suppress UnusedPsalmSuppress
+                 */
+                final class Foo {}
+            ',
+            static function (ClassLikeStorage $storage): void {
+                $storage->suppressed_issues[] = 'MissingConstructor';
+            },
+        );
+    }
+
+    public function testPluginAppendedMethodSuppressionIsNotReportedAsUnused(): void
+    {
+        $this->analyzeWithPluginSuppression(
+            '<?php
+                final class Foo {
+                    /**
+                     * @psalm-suppress UndefinedClass
+                     */
+                    public function foo(): void {
+                        new Missing();
+                    }
+                }
+            ',
+            static function (ClassLikeStorage $storage): void {
+                $storage->methods['foo']->suppressed_issues[] = 'PossiblyUnusedMethod';
+            },
+        );
+    }
+
+    public function testUnusedMethodSuppressionIsReportedDespitePluginAppendedOne(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UnusedPsalmSuppress - tests' . DIRECTORY_SEPARATOR . 'somefile.php:4:40');
+
+        $this->analyzeWithPluginSuppression(
+            '<?php
+                final class Foo {
+                    /**
+                     * @psalm-suppress UndefinedClass
+                     */
+                    public function foo(): void {}
+                }
+            ',
+            static function (ClassLikeStorage $storage): void {
+                $storage->methods['foo']->suppressed_issues[] = 'PossiblyUnusedMethod';
+            },
+        );
+    }
+
+    public function testLoneUnusedPsalmSuppressOnMethodIsReportedDespitePluginAppendedOne(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UnusedPsalmSuppress');
+
+        $this->analyzeWithPluginSuppression(
+            '<?php
+                final class Foo {
+                    /**
+                     * @psalm-suppress UnusedPsalmSuppress
+                     */
+                    public function foo(): void {}
+                }
+            ',
+            static function (ClassLikeStorage $storage): void {
+                $storage->methods['foo']->suppressed_issues[] = 'PossiblyUnusedMethod';
+            },
+        );
+    }
+
+    /**
+     * Scans $code, lets $append_suppression edit the storage of class Foo the way a plugin does in
+     * afterCodebasePopulated() (psalm/plugin-phpunit's TestCaseHandler, psalm/plugin-laravel's
+     * SuppressHandler), then analyzes it. analyzeFile() throws a CodeException for any issue left,
+     * UnusedPsalmSuppress included.
+     *
+     * @param Closure(ClassLikeStorage): void $append_suppression
+     */
+    private function analyzeWithPluginSuppression(string $code, Closure $append_suppression): void
+    {
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $this->addFile($file_path, $code);
 
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->addFilesToAnalyze([$file_path => $file_path]);
         $codebase->scanFiles();
 
-        // what a plugin does in afterCodebasePopulated(), e.g. psalm/plugin-phpunit's TestCaseHandler
-        $codebase->classlike_storage_provider->get('Foo')->suppressed_issues[] = 'MissingConstructor';
+        $append_suppression($codebase->classlike_storage_provider->get('Foo'));
 
         $this->analyzeFile($file_path, new Context());
     }
