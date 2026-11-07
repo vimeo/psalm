@@ -47,6 +47,7 @@ use function array_merge;
 use function array_search;
 use function array_shift;
 use function array_splice;
+use function array_values;
 use function count;
 use function in_array;
 use function key;
