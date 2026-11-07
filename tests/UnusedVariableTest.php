@@ -29,6 +29,33 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'staticPropertiesInDestructuringAreNotVariables' => [
+                'code' => '<?php
+                    abstract class Foo {
+                        protected static string $foo;
+                        protected static string $bar;
+
+                        public static function bar(): void {
+                            [self::$foo] = self::baz();
+                            ["k" => self::$bar] = self::qux();
+                        }
+
+                        /** @return array{string} */
+                        abstract protected static function baz(): array;
+
+                        /** @return array{k: string} */
+                        abstract protected static function qux(): array;
+                    }',
+            ],
+            'keyOfAnArrayItemPassedByReferenceIsUsed' => [
+                'code' => '<?php
+                    /** @param array<string, list<int>> $a */
+                    function by_name(array $a): array {
+                        $k = "x";
+                        sort($a[$k]);
+                        return $a;
+                    }',
+            ],
             'callOfCallableNarrowedFromClassStringOrCallable' => [
                 'code' => '<?php
                     /**
@@ -2642,6 +2669,62 @@ final class UnusedVariableTest extends TestCase
                     }
                 );',
             ],
+            'pipeUsesItsLeftHandSide' => [
+                'code' => '<?php
+                    function f(string $s, string $u): int {
+                        $t = trim($s);
+                        $v = trim($u);
+
+                        return ($t |> strlen(...)) + (($v . "!") |> strlen(...));
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'pipeIntoPartialApplicationUsesItsOperands' => [
+                'code' => '<?php
+                    final class A {
+                        public function two(int $a, string $b): string { return $b . $a; }
+                    }
+
+                    function f(A $o): string {
+                        $method = "two";
+
+                        return "z" |> $o->$method(a: 3, ...);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'partialApplicationUsesTheArrayOfAnItemBoundByReference' => [
+                'code' => '<?php
+                    function readRef(string &$v, int $n): string { return $v . $n; }
+
+                    function f(): string {
+                        $items = ["before"];
+                        $p = readRef($items[0], ?);
+
+                        return $p(2);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'partialApplicationUsesAVariableBoundByReference' => [
+                'code' => '<?php
+                    /** @param-out list<int> $out */
+                    function fill(int $x, ?array &$out, int $y): void { $out = [$x, $y]; }
+
+                    function f(): Closure {
+                        $v = ["a"];
+                        $f = fill(1, $v, ?);
+
+                        return $f;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
         ];
     }
 
@@ -2652,6 +2735,16 @@ final class UnusedVariableTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'keyOfAnArrayItemPassedByReferenceIsIncrementedOnce' => [
+                'code' => '<?php
+                    /** @param list<list<int>> $a */
+                    function f(array $a): array {
+                        $i = 0;
+                        sort($a[$i++]);
+                        return $a;
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
+            ],
             'simpleUnusedVariable' => [
                 'code' => '<?php
                     $a = 5;
@@ -3788,6 +3881,15 @@ final class UnusedVariableTest extends TestCase
                     }
                 );',
                 'error_message' => 'Param float is never referenced in this method',
+            ],
+            'pipeIntoPureFunctionIsUnused' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        $s |> strlen(...);
+                    }',
+                'error_message' => 'UnusedFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.5',
             ],
         ];
     }

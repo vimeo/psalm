@@ -206,10 +206,10 @@ final class TaintFlowGraphTest extends TestCase
     }
 
     /**
-     * The generators what is sent to a generator is linked to can't depend on the order the graphs of the workers
-     * are merged in, which sets the order of the edges of a node: the search for them (see
-     * TaintFlowGraph::GENERATOR_SEND_STACKS) reaches a node with 17 call stacks, from 16 relays and 1 direct call,
-     * and which of them it widens decides whether it also links the generator that isn't sent to.
+     * Which generators a send is linked to must not depend on the order the workers' graphs are merged in, which
+     * sets the order of a node's edges. linkGeneratorSends() reaches a node here with 17 call stacks, one over
+     * TaintFlowGraph::GENERATOR_SEND_STACKS, and which of them it replaces with "any call matches" decides whether
+     * `other`, the generator that isn't sent to, is linked too.
      */
     public function testGeneratorSendLinksAreDeterministicAcrossMergeOrder(): void
     {
@@ -221,11 +221,11 @@ final class TaintFlowGraphTest extends TestCase
     }
 
     /**
-     * What is sent is a source, and a sink follows what is sent to each generator: 17 generators sent to through
-     * 16 relays and 1 direct call, and a last generator that the unspecialized call of the relays' parameter, which
-     * any call matches, would also reach.
+     * Resolves a tainted send that reaches 17 generators, 16 of them through calls of a relay function, with a sink
+     * on what is sent to each. One more generator, `other`, is reachable only where linkGeneratorSends() matches any
+     * call. Merges the workers' graphs in reverse order when $reverse_merge_order is true.
      *
-     * @return list<int> the lines of the sinks reached, one line per generator
+     * @return list<int> the lines of the sinks reached, one per linked generator
      */
     private function getGeneratorSendLinkLines(bool $reverse_merge_order): array
     {
@@ -258,7 +258,7 @@ final class TaintFlowGraphTest extends TestCase
 
         foreach ($order as $i) {
             $worker = new TaintFlowGraph();
-            $call = $node('zzroot#1', "R$i");
+            $call = $node('root#1', "R$i");
             $worker->addNode($shared);
             $worker->addNode($call);
             $worker->addPath($shared, $call, '=');
@@ -295,30 +295,30 @@ final class TaintFlowGraphTest extends TestCase
         for ($i = 0; $i <= $relays; $i++) {
             $direct = $i === $relays;
             $edge(
-                $direct ? $node('zzpass1', 'H') : $node('zzrelay', "A$i"),
-                $node('zzroot#1', "R$i"),
+                $direct ? $node('pass1', 'H') : $node('relay', "A$i"),
+                $node('root#1', "R$i"),
             );
             $generator = $node("gen$i");
             $sent = $node("gen$i sent");
             $graph->addNode($sent);
             $graph->addGenerator($generator, $sent);
             $sink_for($i, $sent);
-            $edge($generator, $direct ? $node('zzpass1#1', 'H') : $node('zzrelay#1', "A$i"));
+            $edge($generator, $direct ? $node('pass1#1', 'H') : $node('relay#1', "A$i"));
         }
 
         // the relays are called through another shared function, called with the generator that isn't sent to
-        $edge($node('zzpass1', 'I'), $node('zzrelay'));
-        $edge($node('zzpass1#1'), $node('zzpass1'));
-        $edge($node('zzpass2', 'K'), $node('zzpass1#1', 'I'));
-        $edge($node('zzpass2#1'), $node('zzpass2'));
-        $edge($node('zzrelay#1'), $node('zzpass2#1', 'K'));
+        $edge($node('pass1', 'I'), $node('relay'));
+        $edge($node('pass1#1'), $node('pass1'));
+        $edge($node('pass2', 'K'), $node('pass1#1', 'I'));
+        $edge($node('pass2#1'), $node('pass2'));
+        $edge($node('relay#1'), $node('pass2#1', 'K'));
 
         $other = $node('other');
         $other_sent = $node('other sent');
         $graph->addNode($other_sent);
         $graph->addGenerator($other, $other_sent);
         $sink_for($relays + 1, $other_sent);
-        $edge($other, $node('zzpass2#1', 'L'));
+        $edge($other, $node('pass2#1', 'L'));
 
         $send = DataFlowNode::getForTaint(
             'send',
@@ -326,7 +326,7 @@ final class TaintFlowGraphTest extends TestCase
             TaintKind::INPUT_HTML,
         );
         $graph->addSource($send);
-        $root = $node('zzroot#1');
+        $root = $node('root#1');
         $graph->addGeneratorSend($send, [$root->id => $root]);
 
         $codebase->taint_flow_graph = $graph;
