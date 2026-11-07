@@ -413,9 +413,14 @@ final class InstancePropertyFetchAnalyzer
                         && $context->vars_in_scope[$var_id]->isNullable()
                     )
                 ) {
-                    $stmt_type = $stmt_type->setProperties(['initialized' => true]);
-                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
-                    $context->vars_in_scope[$var_id] = $stmt_type;
+                    $initialized_type = $stmt_type->setProperties(['initialized' => true]);
+                    $statements_analyzer->node_data->setType($stmt, $initialized_type);
+
+                    // isset() is what tells whether it is initialized: the check itself is not redundant
+                    if (!$context->inside_isset) {
+                        $stmt_type = $initialized_type;
+                        $context->vars_in_scope[$var_id] = $stmt_type;
+                    }
                 } else {
                     IssueBuffer::maybeAdd(
                         new UninitializedProperty(
