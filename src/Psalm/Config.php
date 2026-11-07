@@ -1595,7 +1595,6 @@ final class Config
                 $issue_handler_children = $issue_handlers->children();
                 if ($issue_handler_children) {
                     foreach ($issue_handler_children as $key => $issue_handler) {
-                        /** @var string $key */
                         $issue_key = $key === 'PluginIssue' ? (string) $issue_handler['name'] : $key;
 
                         // an issue type given more than once adds up
