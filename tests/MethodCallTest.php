@@ -205,6 +205,53 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'parentCallOfMethodReturningStaticReturnsTheCallingClass' => [
+                'code' => '<?php
+                    interface ModelInterface
+                    {
+                        public function setId(?string $value): static;
+                    }
+
+                    abstract class BaseModel
+                    {
+                        public function setId(?string $value): static
+                        {
+                            return $this;
+                        }
+                    }
+
+                    class ConcreteModel extends BaseModel implements ModelInterface
+                    {
+                        public function setId(?string $value): static
+                        {
+                            return parent::setId($value);
+                        }
+                    }',
+            ],
+            'selfAndParentStaticCallsOfMethodsReturningStatic' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    abstract class BaseModel
+                    {
+                        public static function make(): static
+                        {
+                            return new static();
+                        }
+                    }
+
+                    class ConcreteModel extends BaseModel
+                    {
+                        public static function viaParent(): static
+                        {
+                            return parent::make();
+                        }
+
+                        public static function viaSelf(): static
+                        {
+                            return self::make();
+                        }
+                    }',
+            ],
             'inheritedThisDocblockKeepsNativeStaticOfSubclass' => [
                 'code' => '<?php
                     class Form {}
@@ -1580,6 +1627,33 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'parentCallOfMethodReturningStaticIsNotTheParent' => [
+                'code' => '<?php
+                    abstract class BaseModel
+                    {
+                        public function setId(?string $value): static
+                        {
+                            return $this;
+                        }
+                    }
+
+                    final class ConcreteModel extends BaseModel
+                    {
+                        public function other(): self
+                        {
+                            return parent::setId(null);
+                        }
+                    }
+
+                    final class Unrelated
+                    {
+                        public function wrong(BaseModel $model): Unrelated
+                        {
+                            return $model->setId(null);
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'methodMissingFromALaterTypeOfAUnionTemplateBound' => [
                 'code' => '<?php
                     final class Invoice {

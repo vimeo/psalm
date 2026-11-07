@@ -862,6 +862,17 @@ final class TypeExpander
             $return_type = $return_type->setIntersectionTypes($return_type_types)
                 ->setIsStatic(true, true);
         } elseif ($return_type->is_static
+            && !$return_type->is_static_resolved
+            && is_string($static_class_type)
+            && !$final
+            && $return_type::class === TNamedObject::class
+            && !$return_type->extra_types
+            && strtolower($static_class_type) !== strtolower($return_type->value)
+            && $codebase->classExtends($static_class_type, $return_type->value)
+        ) {
+            // a `static` the method returns is the class that calls it (`parent::method()` in a child)
+            $return_type = $return_type->setValueIsStatic($static_class_type, true, true);
+        } elseif ($return_type->is_static
             && is_string($static_class_type)
             && $final
             && (
