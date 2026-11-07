@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
-use Amp\Future;
 use InvalidArgumentException;
 use PhpParser;
 use Psalm\Codebase;
@@ -318,15 +317,11 @@ final class Analyzer
             // Wait for all tasks to complete and collect the results.
             await($pool->runAll(new InitAnalyzerTask));
             $pool->run($this->files_to_analyze, AnalyzerTask::class, $task_done_closure);
-            $forked_pool_data = $pool->runAll(new ShutdownAnalyzerTask);
-
             $this->progress->debug('Collecting forked analysis results' . "\n");
             $this->progress->startPhase(Phase::MERGING_THREAD_RESULTS);
-            $this->progress->expand(count($forked_pool_data));
+            $this->progress->expand($pool->threads);
 
-            foreach (Future::iterate($forked_pool_data) as $pool_data) {
-                $pool_data = $pool_data->await();
-
+            foreach ($pool->runAllThenKill(new ShutdownAnalyzerTask) as $pool_data) {
                 IssueBuffer::addIssues($pool_data['issues']);
                 IssueBuffer::addFixableIssues($pool_data['fixable_issue_counts']);
 
@@ -432,12 +427,6 @@ final class Analyzer
 
         $method_dependencies = $file_reference_provider->getAllMethodDependencies();
 
-        $all_referencing_methods = $method_dependencies;
-
-        foreach ($code_use_graph->getFunctionLikeReferencesToMembers() as $member_id => $referencing_methods) {
-            $all_referencing_methods[$member_id] = ($all_referencing_methods[$member_id] ?? []) + $referencing_methods;
-        }
-
         $method_param_uses = $file_reference_provider->getAllMethodParamUses();
 
         $references_to_mixed_member_names = $file_reference_provider->getAllReferencesToMixedMemberNames();
@@ -446,6 +435,17 @@ final class Analyzer
         // Finish loading cached data from disk
 
         $changed_members = $statements_provider->getChangedMembers();
+        $unchanged_signature_members = $statements_provider->getUnchangedSignatureMembers();
+
+        $all_referencing_methods = $method_dependencies;
+
+        // only needed to invalidate the references to changed members, which a run with no changed files has none of
+        if ($changed_members || $unchanged_signature_members) {
+            foreach ($code_use_graph->getFunctionLikeReferencesToMembers() as $member_id => $referencing_methods) {
+                $all_referencing_methods[$member_id]
+                    = ($all_referencing_methods[$member_id] ?? []) + $referencing_methods;
+            }
+        }
 
         foreach ($changed_members as $file_path => $members_by_file) {
             foreach ($members_by_file as $changed_member => $_) {
@@ -471,7 +471,7 @@ final class Analyzer
 
         $newly_invalidated_methods = [];
 
-        foreach ($statements_provider->getUnchangedSignatureMembers() as $file_unchanged_signature_members) {
+        foreach ($unchanged_signature_members as $file_unchanged_signature_members) {
             $newly_invalidated_methods = array_merge($newly_invalidated_methods, $file_unchanged_signature_members);
 
             foreach ($file_unchanged_signature_members as $unchanged_signature_member_id => $_) {

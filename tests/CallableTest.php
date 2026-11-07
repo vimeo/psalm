@@ -20,6 +20,197 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callableArrayToTraitMethodResolvesReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template TOut
+                     * @param callable(int): TOut $c
+                     * @return TOut
+                     */
+                    function apply(callable $c) {
+                        return $c(1);
+                    }
+                    trait T {
+                        public function viaTrait(int $x): int {
+                            return $x;
+                        }
+                    }
+                    class E {
+                        use T;
+                    }
+                    $e = new E();
+                    $a = apply([$e, "viaTrait"]);
+                    $b = apply([E::class, "viaTrait"]);',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                ],
+            ],
+            'callableArrayToInheritedMethodResolvesReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template TOut
+                     * @param callable(int): TOut $c
+                     * @return TOut
+                     */
+                    function apply(callable $c) {
+                        return $c(1);
+                    }
+                    class P {
+                        public function m(int $x): string {
+                            return (string) $x;
+                        }
+                    }
+                    class C extends P {}
+                    $a = apply([new C(), "m"]);',
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
+            ],
+            'callableArrayToTraitMethodExpandsSelfToUsingClass' => [
+                'code' => '<?php
+                    /**
+                     * @template TOut
+                     * @param callable(int): TOut $c
+                     * @return TOut
+                     */
+                    function apply(callable $c) {
+                        return $c(1);
+                    }
+                    trait T {
+                        public static function make(int $x): self {
+                            return new self();
+                        }
+                    }
+                    class E {
+                        use T;
+                    }
+                    $a = apply([E::class, "make"]);',
+                'assertions' => [
+                    '$a===' => 'E',
+                ],
+            ],
+            'callableArrayToInheritedTraitMethodExpandsSelfToTheUsingClass' => [
+                'code' => '<?php
+                    /**
+                     * @template TOut
+                     * @param callable(): TOut $c
+                     * @return TOut
+                     */
+                    function apply(callable $c) {
+                        return $c();
+                    }
+                    trait T {
+                        public function make(): self {
+                            return new self();
+                        }
+                    }
+                    class ParentClass {
+                        use T;
+                    }
+                    class Child extends ParentClass {}
+                    $a = apply([new Child(), "make"]);',
+                'assertions' => [
+                    '$a===' => 'ParentClass',
+                ],
+            ],
+            'callableArrayToInheritedTraitMethodKeepsStaticOfTheCalledClass' => [
+                'code' => '<?php
+                    /**
+                     * @template TOut
+                     * @param callable(): TOut $c
+                     * @return TOut
+                     */
+                    function apply(callable $c) {
+                        return $c();
+                    }
+                    trait T {
+                        public function make(): static {
+                            return $this;
+                        }
+                    }
+                    class ParentClass {
+                        use T;
+                    }
+                    class Child extends ParentClass {}
+                    $a = apply([new Child(), "make"]);',
+                'assertions' => [
+                    '$a===' => 'Child&static',
+                ],
+            ],
+            'callableArrayToInheritedStaticMethodOfFinalClassResolvesStaticToIt' => [
+                'code' => '<?php
+                    abstract class Foo {
+                        final private function __construct() {}
+
+                        public static function create(): static {
+                            return new static();
+                        }
+                    }
+
+                    final class Bar extends Foo {}
+
+                    /**
+                     * @template T
+                     * @param callable(): T $fn
+                     * @return T
+                     */
+                    function apply(callable $fn) {
+                        return $fn();
+                    }
+
+                    $a = apply([Bar::class, "create"]);',
+                'assertions' => [
+                    '$a===' => 'Bar',
+                ],
+            ],
+            'callableArrayToInheritedMethodExpandsSelfToDeclaringClass' => [
+                'code' => '<?php
+                    /**
+                     * @template TOut
+                     * @param callable(int): TOut $c
+                     * @return TOut
+                     */
+                    function apply(callable $c) {
+                        return $c(1);
+                    }
+                    class P {
+                        public function m(int $x): self {
+                            return $this;
+                        }
+                    }
+                    class C extends P {}
+                    $a = apply([new C(), "m"]);',
+                'assertions' => [
+                    '$a===' => 'P',
+                ],
+            ],
+            'callableKeyedArrayKeepsTheCallableFlagWhenItsValuesAreNarrowed' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert array<int, non-empty-string> $value
+                     */
+                    function assertNonEmptyStrings($value): void {}
+
+                    /** @var callable-array{0: string, 1: string} $a */
+                    $a = [];
+                    assertNonEmptyStrings($a);',
+                'assertions' => [
+                    '$a===' => 'callable-array{0: non-empty-string, 1: non-empty-string}',
+                ],
+            ],
+            'callableKeyedArrayShapesKeepTheCallableFlag' => [
+                'code' => '<?php
+                    /** @var callable-array{0: string, 1: non-empty-string} $a */
+                    $a = [];
+                    /** @var callable-list{string, non-empty-string} $l */
+                    $l = [];',
+                'assertions' => [
+                    '$a===' => 'callable-array{0: string, 1: non-empty-string}',
+                    '$l===' => 'callable-list{string, non-empty-string}',
+                ],
+            ],
             'byRefUseVar' => [
                 'code' => '<?php
                     /** @return void */
@@ -2411,7 +2602,7 @@ final class CallableTest extends TestCase
                 'assertions' => [
                     '$a' => 'class-string|object',
                     '$b' => 'string',
-                    '$c' => 'list{class-string|object, string}',
+                    '$c' => 'callable-list{class-string|object, string}',
                 ],
             ],
             'inferTypeWithNestedTemplatesAndExplicitTypeHint' => [
