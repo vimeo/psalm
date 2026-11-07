@@ -536,6 +536,7 @@ final class FunctionLikeNodeScanner
                 $var_comment_type = null;
                 $var_comment_readonly = false;
                 $var_comment_allow_private_mutation = false;
+                $var_comment_suppressed_issues = [];
                 if ($doc_comment) {
                     $template_types = ($this->existing_function_template_types ?: [])
                         + ($classlike_storage->template_types ?: [])
@@ -557,6 +558,7 @@ final class FunctionLikeNodeScanner
                             $var_comment_type = $var_comment->type;
                             $var_comment_readonly = $var_comment->readonly;
                             $var_comment_allow_private_mutation = $var_comment->allow_private_mutation;
+                            $var_comment_suppressed_issues = $var_comment->suppressed_issues;
                         }
                     } catch (IncorrectDocblockException $e) {
                         $storage->docblock_issues[] = new MissingDocblockType(
@@ -605,6 +607,7 @@ final class FunctionLikeNodeScanner
                     || $classlike_storage->readonly
                     || $var_comment_readonly;
                 $property_storage->allow_private_mutation = $var_comment_allow_private_mutation;
+                $property_storage->suppressed_issues = $var_comment_suppressed_issues;
                 $param_storage->promoted_property = true;
                 $property_storage->is_promoted = true;
 
