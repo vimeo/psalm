@@ -851,6 +851,259 @@ return array (
         '...args=' => 'mixed',
       ),
     ),
+    'tidy::__construct' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'filename=' => 'string',
+        'config_file=' => 'array<array-key, mixed>|string',
+        'encoding=' => 'string',
+        'use_include_path=' => 'bool',
+      ),
+    ),
+    'tidy::getopt' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|int|string',
+        'option' => 'string',
+      ),
+    ),
+    'tidy::getoptdoc' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'optname' => 'string',
+      ),
+    ),
+    'tidy::parsefile' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'file' => 'string',
+        'config_options=' => 'array<array-key, mixed>|string',
+        'encoding=' => 'string',
+        'use_include_path=' => 'bool',
+      ),
+    ),
+    'tidy::parsestring' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'input' => 'string',
+        'config_options=' => 'array<array-key, mixed>|string',
+        'encoding=' => 'string',
+      ),
+    ),
+    'tidy::repairfile' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'filename' => 'string',
+        'config_file=' => 'array<array-key, mixed>|string',
+        'encoding=' => 'string',
+        'use_include_path=' => 'bool',
+      ),
+    ),
+    'tidy::repairstring' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'data' => 'string',
+        'config_file=' => 'array<array-key, mixed>|string',
+        'encoding=' => 'string',
+      ),
+    ),
+    'tidy_access_count' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'object' => 'tidy',
+      ),
+    ),
+    'tidy_clean_repair' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'object' => 'tidy',
+      ),
+    ),
+    'tidy_config_count' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'object' => 'tidy',
+      ),
+    ),
+    'tidy_diagnose' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'object' => 'tidy',
+      ),
+    ),
+    'tidy_error_count' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'object' => 'tidy',
+      ),
+    ),
+    'tidy_get_config' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'object' => 'tidy',
+      ),
+    ),
+    'tidy_get_error_buffer' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'object' => 'tidy',
+      ),
+    ),
+    'tidy_get_html_ver' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'object' => 'tidy',
+      ),
+    ),
+    'tidy_get_output' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'object' => 'tidy',
+      ),
+    ),
+    'tidy_get_status' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'object' => 'tidy',
+      ),
+    ),
+    'tidy_is_xhtml' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'object' => 'tidy',
+      ),
+    ),
+    'tidy_is_xml' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'object' => 'tidy',
+      ),
+    ),
+    'tidy_warning_count' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'object' => 'tidy',
+      ),
+    ),
   ),
   'removed' => 
   array (

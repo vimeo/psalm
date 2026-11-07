@@ -1098,6 +1098,7 @@ final class PreloaderList {
         \Psalm\Internal\Type\TypeVariableBounds::class,
         \Psalm\Internal\Type\TypeVariableTracker::class,
         \Psalm\Internal\VersionUtils::class,
+        \Psalm\Internal\ZstdSerializer::class,
         \Psalm\IssueBuffer::class,
         \Psalm\Issue\AbstractInstantiation::class,
         \Psalm\Issue\AbstractMethodCall::class,
