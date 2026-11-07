@@ -69,6 +69,48 @@ final class ErrorBaselineTest extends TestCase
         );
     }
 
+    public function testLoadShouldMergeDuplicatedFilesAndIssueTypes(): void
+    {
+        $baselineFilePath = 'baseline.xml';
+
+        $this->fileProvider->allows()->fileExists($baselineFilePath)->andReturns(true);
+        $this->fileProvider->allows()->getContents($baselineFilePath)->andReturns(
+            '<?xml version="1.0" encoding="UTF-8"?>
+            <files>
+              <file src="sample/sample-file.php">
+                <MixedAssignment>
+                  <code>foo</code>
+                </MixedAssignment>
+                <PossiblyUnusedMethod>
+                  <code>baz</code>
+                </PossiblyUnusedMethod>
+                <MixedAssignment>
+                  <code>bar</code>
+                </MixedAssignment>
+              </file>
+              <file src="sample/sample-file.php">
+                <MixedAssignment>
+                  <code>qux</code>
+                </MixedAssignment>
+                <MissingReturnType>
+                  <code>quux</code>
+                </MissingReturnType>
+              </file>
+            </files>',
+        );
+
+        $this->assertSame(
+            [
+                'sample/sample-file.php' => [
+                    'MixedAssignment' => ['o' => 3, 's' => ['foo', 'bar', 'qux']],
+                    'PossiblyUnusedMethod' => ['o' => 1, 's' => ['baz']],
+                    'MissingReturnType' => ['o' => 1, 's' => ['quux']],
+                ],
+            ],
+            ErrorBaseline::read($this->fileProvider, $baselineFilePath),
+        );
+    }
+
     public function testLoadShouldIgnoreLineEndingsInIssueSnippet(): void
     {
         $baselineFilePath = 'baseline.xml';
