@@ -166,6 +166,21 @@ final class TypeParseTest extends TestCase
         $this->assertSame('array<int, int>', (string) Type::parseString('array<int, int>'));
     }
 
+    public function testLiteralStringIdDoesNotUseEscapesPhpDoesNotHave(): void
+    {
+        $this->assertSame("'\\007\\010\\177'", (new TLiteralString("\x07\x08\x7f"))->getId());
+    }
+
+    public function testLiteralStringIdKeepsAnEscapedBackslashBeforeAOrB(): void
+    {
+        $this->assertSame("'\\\\a\\\\b'", (new TLiteralString('\\a\\b'))->getId());
+    }
+
+    public function testLiteralStringIdKeepsTheEscapesPhpHas(): void
+    {
+        $this->assertSame("'\\n\\t\\r\\f\\v\\033\\000'", (new TLiteralString("\n\t\r\f\v\e\0"))->getId());
+    }
+
     public function testArrayWithoutClosingBracket(): void
     {
         $this->expectException(TypeParseTreeException::class);
@@ -1235,6 +1250,82 @@ final class TypeParseTest extends TestCase
             'callable[impure](mixed...):void',
             (string) Type::parseString('callable(...): void'),
         );
+    }
+
+    public function testCallableWithNamedOptionalParam(): void
+    {
+        $this->assertSame(
+            'callable[impure](int, string=):void',
+            (string) Type::parseString('callable(int, string= $name) : void'),
+        );
+    }
+
+    public function testCallableWithNamedVariadicParamWithoutSpace(): void
+    {
+        $this->assertSame(
+            'callable[impure](int...):void',
+            (string) Type::parseString('callable(int... $rest) : void'),
+        );
+    }
+
+    public function testKeyedArrayWithTrailingComma(): void
+    {
+        $this->assertSame(
+            'array{a: int, b: string}',
+            (string) Type::parseString('array{a: int, b: string,}'),
+        );
+    }
+
+    public function testNestedKeyedArrayWithTrailingCommas(): void
+    {
+        $this->assertSame(
+            'array{a: int, b?: array{c: string}}',
+            (string) Type::parseString('array{a: int, b?: array{c: string,},}'),
+        );
+    }
+
+    public function testListShapeWithTrailingComma(): void
+    {
+        $this->assertSame(
+            'list{int, string}',
+            (string) Type::parseString('list{int, string,}'),
+        );
+    }
+
+    public function testKeyedArrayWithOnlyACommaIsInvalid(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array{,}');
+    }
+
+    public function testNestedKeyedArrayWithTwoCommasIsInvalid(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array{a: array{b: int,,}}');
+    }
+
+    public function testUnterminatedNestedKeyedArrayWithTwoCommasIsInvalid(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array{a: array{b: int,,}');
+    }
+
+    public function testNestedKeyedArrayWithTwoCommasSeparatedBySpaceIsInvalid(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array{a: array{b: int, ,}');
+    }
+
+    public function testUnterminatedNestedGenericWithTwoCommasIsInvalid(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array<string, array<int,,string>');
+    }
+
+    public function testUnterminatedNestedKeyedArrayWithTrailingCommaIsInvalid(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array{a: array{b: int,}');
     }
 
     public function testCallableWithVariadicAndDefault(): void
