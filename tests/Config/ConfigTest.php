@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests\Config;
 
 use Composer\Autoload\ClassLoader;
+use DOMDocument;
+use DOMXPath;
 use ErrorException;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -34,11 +36,14 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use Throwable;
+use UnexpectedValueException;
 
 use function array_map;
+use function array_pop;
 use function dirname;
 use function error_get_last;
 use function file_put_contents;
+use function function_exists;
 use function get_class;
 use function getcwd;
 use function implode;
@@ -1212,6 +1217,53 @@ final class ConfigTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testEveryExtensionOfTheSchemaCanBeEnabled(): void
+    {
+        $schema = new DOMDocument();
+        $schema->load(dirname(__DIR__, 2) . '/config.xsd');
+        $xpath = new DOMXPath($schema);
+        $xpath->registerNamespace('xs', 'http://www.w3.org/2001/XMLSchema');
+        $names = [];
+        foreach ($xpath->query('//xs:simpleType[@name="ExtensionType"]//xs:enumeration/@value') ?: [] as $name) {
+            if ($name->nodeValue !== null) {
+                $names[] = $name->nodeValue;
+            }
+        }
+
+        $this->assertContains('memcached', $names);
+
+        $default_config = TestConfig::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+            </psalm>',
+        );
+
+        $extensions = '';
+        foreach ($names as $name) {
+            $this->assertArrayHasKey($name, $default_config->php_extensions);
+            $extensions .= '<extension name="' . $name . '"/>';
+        }
+
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+                <enableExtensions>' . $extensions . '</enableExtensions>
+            </psalm>',
+        );
+
+        foreach ($names as $name) {
+            $this->assertTrue($config->php_extensions[$name], $name);
+        }
+    }
+
     public function testZstdExtensionStubDeclaresItsFunctions(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -1903,6 +1955,29 @@ final class ConfigTest extends TestCase
         $root = __DIR__ . '/../fixtures/ComposerPhp64bitVersion';
         $cfg = Config::loadFromXML($root, "<?xml version=\"1.0\"?><psalm></psalm>");
         $this->assertSame('8.1', $cfg->getPhpVersion());
+    }
+
+    public function testReadsComposerJsonForPhp86Version(): void
+    {
+        $root = __DIR__ . '/../fixtures/ComposerPhp86Version';
+        $cfg = Config::loadFromXML($root, "<?xml version=\"1.0\"?><psalm></psalm>");
+        $php_version = (string) $cfg->getPhpVersion();
+        $this->assertSame('8.6', $php_version);
+
+        $project_analyzer = $this->getProjectAnalyzerWithConfig($cfg);
+        $project_analyzer->setPhpVersion($php_version, 'composer');
+        $this->assertSame(8_06_00, $project_analyzer->getCodebase()->analysis_php_version_id);
+    }
+
+    public function testRejectsUnreleasedPhpVersion(): void
+    {
+        $project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(dirname(__DIR__, 2), '<?xml version="1.0"?><psalm></psalm>'),
+        );
+
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage('is either not supported or doesn\'t exist');
+        $project_analyzer->setPhpVersion('8.7', 'tests');
     }
 
     /**
@@ -2697,5 +2772,94 @@ final class ConfigTest extends TestCase
                 ),
             ),
         );
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerCacheAttributes(): iterable
+    {
+        yield 'compressor' => ['compressor'];
+        yield 'serializer' => ['serializer'];
+    }
+
+    #[DataProvider('providerCacheAttributes')]
+    public function testUnknownValueOfACacheAttributeFailsValidation(string $attribute): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage("attribute '$attribute'");
+
+        Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm ' . $attribute . '="zip"/>');
+    }
+
+    /**
+     * @return iterable<string, array{string, non-empty-string|null, string|null}> compressor, what it needs, a function of it
+     * @psalm-pure
+     */
+    public static function providerCompressorsThatAreResolvedLikeAnAbsentAttribute(): iterable
+    {
+        yield 'auto' => ['auto', null, null];
+        yield 'zstd' => ['zstd', 'ext-zstd', 'zstd_compress'];
+        yield 'lz4' => ['lz4', 'ext-lz4', 'lz4_compress'];
+        yield 'deflate' => ['deflate', 'ext-zlib', 'gzdeflate'];
+    }
+
+    /**
+     * `auto` and a compressor that is not available give what no attribute gives, `auto` without a warning
+     *
+     * @param non-empty-string|null $requirement
+     */
+    #[DataProvider('providerCompressorsThatAreResolvedLikeAnAbsentAttribute')]
+    public function testAutoOrUnavailableCompressorIsResolvedLikeAnAbsentAttribute(
+        string $compressor,
+        ?string $requirement,
+        ?string $function,
+    ): void {
+        if ($function !== null && function_exists($function)) {
+            $this->markTestSkipped("$function exists");
+        }
+
+        $absent = Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm/>');
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            '<?xml version="1.0"?><psalm compressor="' . $compressor . '"/>',
+        );
+
+        $this->assertSame($absent->compressor, $config->compressor);
+        if ($requirement === null) {
+            $this->assertSame($absent->config_warnings, $config->config_warnings);
+
+            return;
+        }
+
+        $warnings = $config->config_warnings;
+        $warning = array_pop($warnings);
+        $this->assertSame($absent->config_warnings, $warnings);
+        $this->assertNotNull($warning);
+        $this->assertStringStartsWith($requirement, $warning);
+        $this->assertStringContainsString(' is missing, ', $warning);
+        $this->assertStringContainsString('compressor="' . $compressor . '"', $warning);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerAttributesOfTheZstdCompressor(): iterable
+    {
+        yield 'absent' => [''];
+        yield 'auto' => [' compressor="auto"'];
+        yield 'zstd' => [' compressor="zstd"'];
+    }
+
+    #[DataProvider('providerAttributesOfTheZstdCompressor')]
+    #[RequiresPhpExtension('zstd', '>=0.15.0')]
+    public function testCompressorIsZstdByDefaultAndWhenAskedFor(string $attributes): void
+    {
+        $config = Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm' . $attributes . '/>');
+
+        $this->assertSame('zstd', $config->compressor);
+        $this->assertSame([], $config->config_warnings);
     }
 }
