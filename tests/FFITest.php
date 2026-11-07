@@ -39,6 +39,39 @@ final class FFITest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'memcmpAcceptsReferencedExpressionsAndValues' => [
+                'code' => '<?php
+                    final class Holder {
+                        public \\FFI\\CData $data;
+                        public static \\FFI\\CData $shared;
+
+                        /** @param array<int, \\FFI\\CData> $list */
+                        public function cmp(array $list): int {
+                            return FFI::memcmp($this->data, self::$shared, 1)
+                                + FFI::memcmp($list[0], $list[1], 1)
+                                + FFI::memcmp(new FFI\\CData, "abc", 3);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MissingConstructor'],
+                'php_version' => '7.4',
+            ],
+            'memcmpAcceptsNamedArgumentsInAnyOrder' => [
+                'code' => '<?php
+                    function getCData(): FFI\\CData {
+                        return new FFI\\CData;
+                    }
+
+                    function cmp(): int {
+                        $var = new FFI\\CData;
+
+                        return FFI::memcmp(size: 1, ptr2: $var, ptr1: getCData())
+                            + FFI::memcmp(ptr2: "abc", ptr1: $var, size: 3);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             // Examples are from https://www.php.net/manual/en/ffi.examples-basic.php
             // Some of them needed tweaks, e.g. due to unsafe use of var_dump().
             'Example #1 Calling a function from shared library' => [
