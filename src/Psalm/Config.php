@@ -1593,7 +1593,6 @@ final class Config
                 $issue_handler_children = $issue_handlers->children();
                 if ($issue_handler_children) {
                     foreach ($issue_handler_children as $key => $issue_handler) {
-                        /** @var string $handled_issue */
                         $handled_issue = $key === 'PluginIssue' ? (string) $issue_handler['name'] : $key;
 
                         $loaded_handler = IssueHandler::loadFromXMLElement($issue_handler, $base_dir);
