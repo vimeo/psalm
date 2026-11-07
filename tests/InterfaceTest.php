@@ -22,6 +22,25 @@ final class InterfaceTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOfAPropertyOfAnInterfaceIsNotAnInterfaceProperty' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    function check(Shape $shape): string {
+                        if (isset($shape->name)) {
+                            return "named";
+                        }
+
+                        return empty($shape->label) ? "none" : "labelled";
+                    }
+
+                    function fallback(Shape $shape): mixed {
+                        return $shape->name ?? null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType', 'RiskyTruthyFalsyComparison'],
+                'php_version' => '8.2',
+            ],
             'extendsAndImplements' => [
                 'code' => '<?php
                     interface A
