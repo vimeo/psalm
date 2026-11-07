@@ -1601,7 +1601,6 @@ final class Config
                                 $base_dir,
                             );
                         } else {
-                            /** @var string $key */
                             $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
                                 $issue_handler,
                                 $base_dir,
