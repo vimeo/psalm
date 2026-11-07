@@ -250,6 +250,14 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'defineAnObjectConstantSinceEightOne' => [
+                'code' => '<?php
+                    define("OBJECT_CONSTANT", new stdClass());
+                    $object = OBJECT_CONSTANT;',
+                'assertions' => ['$object' => 'stdClass'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'bitwiseOperationsOnFloatConstantsOutsideTheRangeOfAnIntAreNotFolded' => [
                 'code' => '<?php
                     class A {
@@ -2432,6 +2440,13 @@ final class ConstantTest extends TestCase
                         public const ONE = "c";
                     }',
                 'error_message' => 'InvalidConstantAssignmentValue',
+            ],
+            'defineAnObjectConstantBeforeEightOne' => [
+                'code' => '<?php
+                    define("OBJECT_CONSTANT", new stdClass());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'classConstantDividingByAZeroIntConstantOfAnotherClass' => [
                 'code' => '<?php
