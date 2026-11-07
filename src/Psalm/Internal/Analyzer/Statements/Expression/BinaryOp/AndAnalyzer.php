@@ -203,12 +203,16 @@ final class AndAnalyzer
                 ...$context->assigned_var_ids,
             ];
 
+            // clauses simplification derived from the reconciled ones (a nullsafe call's receiver) are applied too
             $if_body_context->reconciled_expression_clauses = [
                 ...$if_body_context->reconciled_expression_clauses,
                 ...array_map(
                     /** @return string|int */
                     static fn(Clause $c) => $c->hash,
-                    $partitioned_clauses[1],
+                    [
+                        ...$partitioned_clauses[1],
+                        ...Context::removeReconciledClauses($simplified_clauses, $changed_var_ids)[1],
+                    ],
                 ),
             ];
 
