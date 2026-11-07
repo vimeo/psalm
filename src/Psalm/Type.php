@@ -212,6 +212,10 @@ abstract class Type
      */
     public static function getIntRange(?int $min, ?int $max): Union
     {
+        if ($min === null && $max === null) {
+            return self::getInt();
+        }
+
         return new Union([new TIntRange($min, $max)]);
     }
 
