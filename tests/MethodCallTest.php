@@ -205,6 +205,36 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nativeStaticReturnTypeOfAStaticMethodCalledFromAChild' => [
+                'code' => '<?php
+                    abstract class ParentException extends Exception
+                    {
+                        public static function withMessage(string $message): static
+                        {
+                            return new static($message);
+                        }
+                    }
+
+                    class MyException extends ParentException
+                    {
+                        private int $user = 0;
+
+                        public static function create(string $message, int $user): static
+                        {
+                            $exception = static::withMessage($message);
+                            $exception->user = $user;
+
+                            return $exception;
+                        }
+
+                        public static function createViaSelf(string $message): static
+                        {
+                            return self::withMessage($message);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnsafeInstantiation'],
+            ],
             'inheritedThisDocblockKeepsNativeStaticOfSubclass' => [
                 'code' => '<?php
                     class Form {}
