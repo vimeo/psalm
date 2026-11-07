@@ -653,6 +653,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         if (!$check_stmts) {
+            // the body is not analysed, so its uses of the params are unknown
+            if ($storage instanceof MethodStorage
+                && $this instanceof MethodAnalyzer
+                && $appearing_class_storage
+            ) {
+                $this->recordMethodParamUses($storage, $appearing_class_storage, $this->getMethodId(), []);
+            }
+
             return false;
         }
 
@@ -1266,8 +1274,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         ?ClassLikeStorage $class_storage,
         Context $context,
     ): void {
-        $codebase = $statements_analyzer->getCodebase();
-
         $unused_params = $this->detectUnusedParameters($statements_analyzer, $storage, $context);
 
         if (!$storage instanceof MethodStorage
@@ -1323,32 +1329,48 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         if ($storage instanceof MethodStorage
             && $this instanceof MethodAnalyzer
             && $class_storage
-            && $storage->cased_name
-            && $storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
         ) {
-            $method_id_lc = strtolower((string) $this->getMethodId());
+            $this->recordMethodParamUses($storage, $class_storage, $this->getMethodId(), $unused_params);
+        }
+    }
 
-            foreach ($storage->params as $i => $_) {
-                if (!isset($unused_params[$i])) {
+    /**
+     * @param array<int, mixed> $unused_params
+     */
+    private function recordMethodParamUses(
+        MethodStorage $storage,
+        ClassLikeStorage $class_storage,
+        MethodIdentifier $method_id,
+        array $unused_params,
+    ): void {
+        $codebase = $this->codebase;
+
+        if ($storage->cased_name === null || $storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
+            return;
+        }
+
+        $method_id_lc = strtolower((string) $method_id);
+
+        foreach ($storage->params as $i => $_) {
+            if (!isset($unused_params[$i])) {
+                $codebase->file_reference_provider->addMethodParamUse(
+                    $method_id_lc,
+                    $i,
+                    $method_id_lc,
+                );
+
+                $method_name_lc = strtolower($storage->cased_name);
+
+                if (!isset($class_storage->overridden_method_ids[$method_name_lc])) {
+                    continue;
+                }
+
+                foreach ($class_storage->overridden_method_ids[$method_name_lc] as $parent_method_id) {
                     $codebase->file_reference_provider->addMethodParamUse(
-                        $method_id_lc,
+                        strtolower((string) $parent_method_id),
                         $i,
                         $method_id_lc,
                     );
-
-                    $method_name_lc = strtolower($storage->cased_name);
-
-                    if (!isset($class_storage->overridden_method_ids[$method_name_lc])) {
-                        continue;
-                    }
-
-                    foreach ($class_storage->overridden_method_ids[$method_name_lc] as $parent_method_id) {
-                        $codebase->file_reference_provider->addMethodParamUse(
-                            strtolower((string) $parent_method_id),
-                            $i,
-                            $method_id_lc,
-                        );
-                    }
                 }
             }
         }

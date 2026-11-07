@@ -342,7 +342,6 @@
       <code><![CDATA[$namespace]]></code>
       <code><![CDATA[$parent_fqcln]]></code>
       <code><![CDATA[$parent_fqcln]]></code>
-      <code><![CDATA[$storage->cased_name]]></code>
       <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$template_types]]></code>
       <code><![CDATA[$this->function->getStmts()]]></code>
