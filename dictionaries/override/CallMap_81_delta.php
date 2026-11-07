@@ -31,17 +31,6 @@ return array (
       'quality=' => 'int',
       'speed=' => 'int',
     ),
-    'mysqli_fetch_column' => 
-    array (
-      0 => 'false|float|int|null|string',
-      'result' => 'mysqli_result',
-      'column=' => 'int',
-    ),
-    'mysqli_result::fetch_column' => 
-    array (
-      0 => 'false|float|int|null|string',
-      'column=' => 'int',
-    ),
     'reflectionenum::getbackingtype' => 
     array (
       0 => 'ReflectionType|null',
@@ -292,6 +281,23 @@ return array (
         'timezone=' => 'DateTimeZone|IntlTimeZone|null|string',
         'calendar=' => 'IntlCalendar|int|null',
         'pattern=' => 'null|string',
+      ),
+    ),
+    'define' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'constant_name' => 'string',
+        'value' => 'array<array-key, mixed>|null|scalar',
+        'case_insensitive=' => 'false',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'constant_name' => 'string',
+        'value' => 'mixed',
+        'case_insensitive=' => 'false',
       ),
     ),
     'domdocument::createcomment' => 
@@ -3404,6 +3410,17 @@ return array (
         0 => 'MongoDB\\BSON\\Int64',
       ),
     ),
+    'mongodb\\driver\\cursorinterface::getid' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorId',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\BSON\\Int64',
+      ),
+    ),
     'mongodb\\driver\\manager::executecommand' => 
     array (
       'old' => 
@@ -3663,6 +3680,17 @@ return array (
         'socket=' => 'null|string',
       ),
     ),
+    'mysqli::get_charset' => 
+    array (
+      'old' => 
+      array (
+        0 => 'object',
+      ),
+      'new' => 
+      array (
+        0 => 'null|object',
+      ),
+    ),
     'mysqli_execute' => 
     array (
       'old' => 
@@ -3765,6 +3793,17 @@ return array (
         'params=' => 'list<mixed>|null',
       ),
     ),
+    'mysqli_stmt::get_warnings' => 
+    array (
+      'old' => 
+      array (
+        0 => 'object',
+      ),
+      'new' => 
+      array (
+        0 => 'false|mysqli_warning',
+      ),
+    ),
     'mysqli_stmt_execute' => 
     array (
       'old' => 
@@ -3826,6 +3865,17 @@ return array (
         'iv=' => 'string',
         'tag=' => 'null|string',
         'aad=' => 'string',
+      ),
+    ),
+    'outeriterator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
       ),
     ),
     'pg_affected_rows' => 
@@ -6112,6 +6162,19 @@ return array (
         '&write' => 'array<array-key, mixed>|null',
         '&except' => 'array<array-key, mixed>|null',
         'timeout=' => 'float|null',
+      ),
+    ),
+    'xsltprocessor::transformtoxml' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'document' => 'DOMDocument',
+      ),
+      'new' => 
+      array (
+        0 => 'false|null|string',
+        'document' => 'DOMDocument',
       ),
     ),
   ),
