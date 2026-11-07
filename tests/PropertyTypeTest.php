@@ -561,6 +561,46 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOfAnUninitializedPropertyInTheConstructor' => [
+                'code' => '<?php
+                    class P {
+                        public function __construct(array $options) {
+                            foreach ($options as $name => $value) {
+                                $this->$name = $value;
+                            }
+                        }
+                    }
+
+                    class A extends P {
+                        public string $a;
+
+                        public function __construct(array $options) {
+                            parent::__construct($options);
+
+                            if (!isset($this->a)) {
+                                throw new InvalidArgumentException("a is mandatory");
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'issetOfAnUninitializedPropertyInTheConstructorThenUsingIt' => [
+                'code' => '<?php
+                    class A {
+                        public string $a;
+
+                        public function __construct() {
+                            if (isset($this->a)) {
+                                echo strlen($this->a);
+                            } else {
+                                $this->a = "x";
+                            }
+
+                            echo strlen($this->a);
+                        }
+                    }',
+            ],
             'newVarInIf' => [
                 'code' => '<?php
                     class A {

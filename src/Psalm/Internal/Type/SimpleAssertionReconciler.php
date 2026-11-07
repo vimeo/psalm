@@ -609,6 +609,7 @@ final class SimpleAssertionReconciler extends Reconciler
 
         $existing_var_type->from_property = false;
         $existing_var_type->from_static_property = false;
+        $existing_var_type->initialized = true;
         $existing_var_type->possibly_undefined = false;
         $existing_var_type->possibly_undefined_from_try = false;
         $existing_var_type->ignore_isset = false;

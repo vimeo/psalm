@@ -97,6 +97,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
             }
 
             if (!$existing_var_type->isNullable()
+                && $existing_var_type->initialized
                 && $key
                 && !str_contains($key, '[')
                 && (!$existing_var_type->hasMixed() || $existing_var_type->isAlwaysTruthy())
