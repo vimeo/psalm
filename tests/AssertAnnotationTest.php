@@ -159,6 +159,33 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertUnionWithAnAlternativeThatCannotBeTheValue' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $subject
+                     * @psalm-assert object|class-string|trait-string|interface-string $subject
+                     */
+                    function assertCanHaveMethods($subject): void
+                    {
+                        if (is_object($subject)
+                            || (is_string($subject)
+                                && (class_exists($subject) || trait_exists($subject) || interface_exists($subject)))
+                        ) {
+                            return;
+                        }
+
+                        throw new InvalidArgumentException("Invalid argument");
+                    }
+
+                    function consume(string $class): void
+                    {
+                        assertCanHaveMethods($class);
+                        /** @psalm-check-type-exact $class = class-string|trait-string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'assertKeyOfAClassConstantNarrowsToItsKeys' => [
                 'code' => '<?php
                     final class OwnerTypes {
@@ -3427,6 +3454,18 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertUnionOfTypesThatCannotBeTheValue' => [
+                'code' => '<?php
+                    /** @psalm-assert int|float $x */
+                    function assertNumber(mixed $x): void {}
+
+                    function consume(string $s): void {
+                        assertNumber($s);
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'assertInstanceOfMultipleInterfaces' => [
                 'code' => '<?php
                     class A {
