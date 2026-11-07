@@ -12,6 +12,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\LanguageServer\Reference;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
@@ -20,6 +21,7 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
+use ReflectionProperty;
 
 use function getcwd;
 
@@ -329,6 +331,68 @@ final class SymbolLookupTest extends TestCase
         $this->assertNotNull($function_symbol_location);
         $this->assertSame(11, $function_symbol_location->getLineNumber());
         $this->assertSame(25, $function_symbol_location->getColumn());
+    }
+
+    public function testSymbolLookupOfBuiltinFunctionInUnanalyzedFile(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                ctype_digit("1");',
+        );
+
+        // the file is not analyzed in this process, e.g. because its results are cached
+        $this->codebase->scanFiles();
+
+        $information = $this->codebase->getMarkupContentForSymbolByReference(
+            new Reference(
+                'somefile.php',
+                'ctype_digit()',
+                new Range(new Position(1, 16), new Position(1, 27)),
+            ),
+        );
+        $this->assertNotNull($information);
+        $this->assertSame('ctype_digit', $information->title);
+        $this->assertStringContainsString('function ctype_digit(', $information->code);
+    }
+
+    public function testSymbolLookupOfCallMapFunctionNotLoaded(): void
+    {
+        // a function only known from the callmap, e.g. of an extension not loaded in the Psalm process
+        $call_map_property = new ReflectionProperty(InternalCallMapHandler::class, 'call_map');
+        $call_map = InternalCallMapHandler::getCallMap();
+        $call_map_property->setValue(
+            null,
+            $call_map + ['psalm_not_loaded_function' => ['bool', 'value' => 'string', 'flags=' => 'int']],
+        );
+
+        try {
+            $this->addFile(
+                'somefile.php',
+                '<?php
+                    psalm_not_loaded_function("1");',
+            );
+
+            $this->codebase->scanFiles();
+            $this->analyzeFile('somefile.php', new Context());
+
+            $information = $this->codebase->getMarkupContentForSymbolByReference(
+                new Reference(
+                    'somefile.php',
+                    'psalm_not_loaded_function()',
+                    new Range(new Position(1, 20), new Position(1, 45)),
+                ),
+            );
+        } finally {
+            $call_map_property->setValue(null, $call_map);
+        }
+
+        $this->assertNotNull($information);
+        $this->assertSame('psalm_not_loaded_function', $information->title);
+        $this->assertSame(
+            "function psalm_not_loaded_function(\n    string \$value,\n    int \$flags\n): bool",
+            $information->code,
+        );
     }
 
     public function testSymbolLookupOfFunctionFromIncludedFile(): void
