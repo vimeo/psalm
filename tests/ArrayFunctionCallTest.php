@@ -80,6 +80,96 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'usortClosureWithoutParamTypesTakesTheElementType' => [
+                'code' => '<?php
+                    /** @param list<array{foo: int}> $list */
+                    function sortByFoo(array $list): void {
+                        usort($list, static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = array{foo: int} */
+                            /** @psalm-check-type-exact $b = array{foo: int} */
+                            return $a["foo"] <=> $b["foo"];
+                        });
+                    }',
+                'assertions' => [],
+            ],
+            'usortClosureWithANativeArrayParamTakesTheElementType' => [
+                'code' => '<?php
+                    /** @param list<array{foo: int}> $list */
+                    function sortByFoo(array $list): void {
+                        usort($list, static function (array $a, array $b): int {
+                            /** @psalm-check-type-exact $a = array{foo: int} */
+                            return $a["foo"] <=> $b["foo"];
+                        });
+                    }',
+                'assertions' => [],
+            ],
+            'uasortAndUksortClosuresTakeTheValuesAndTheKeys' => [
+                'code' => '<?php
+                    /** @param array<string, array{foo: int}> $map */
+                    function sortMap(array $map): void {
+                        uasort($map, static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = array{foo: int} */
+                            return $a["foo"] <=> $b["foo"];
+                        });
+                        uksort($map, static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = string */
+                            return $a <=> $b;
+                        });
+                    }',
+                'assertions' => [],
+            ],
+            'closureTakesTheTemplateBoundsOfTheByRefArgWhateverTheOrderOfNamedArgs' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template TArray as array<T>
+                     * @param TArray $items
+                     * @param list<string> $other
+                     * @param callable(T, T): int $cmp
+                     * @param-out (TArray is non-empty-array ? non-empty-list<T> : list<T>) $items
+                     */
+                    function sortBoth(array &$items, array $other, callable $cmp): void {
+                        usort($items, $cmp);
+                    }
+
+                    /**
+                     * @param list<int> $ints
+                     * @param list<string> $strings
+                     */
+                    function run(array $ints, array $strings): void {
+                        sortBoth($ints, $strings, static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = int */
+                            return $a <=> $b;
+                        });
+                        sortBoth(other: $strings, items: $ints, cmp: static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = int */
+                            return $a <=> $b;
+                        });
+                        sortBoth(items: $ints, other: $strings, cmp: static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = int */
+                            return $a <=> $b;
+                        });
+                    }',
+                'assertions' => [],
+            ],
+            'usortClosureKeepsItsDocblockParamTypes' => [
+                'code' => '<?php
+                    /** @param list<array{foo: int, bar: string}> $list */
+                    function sortByFoo(array $list): void {
+                        usort(
+                            $list,
+                            /**
+                             * @param array<string, int|string> $a
+                             * @param array<string, int|string> $b
+                             */
+                            static function (array $a, array $b): int {
+                                /** @psalm-check-type-exact $a = array<string, int|string> */
+                                return 0;
+                            },
+                        );
+                    }',
+                'assertions' => [],
+            ],
             'arraySpliceWithALengthOutsideTheRangeOfAnInt' => [
                 'code' => '<?php
                     $big = [1, 2, 3];
@@ -2118,6 +2208,13 @@ final class ArrayFunctionCallTest extends TestCase
                     '$function_call_result' => 'int',
                 ],
             ],
+            'arrayReduceInternalSignatureReturn' => [
+                'code' => '<?php
+                    $result = array_reduce([2, 2], "intdiv", 16);',
+                'assertions' => ['$result' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'arrayReduceStaticMethods' => [
                 'code' => '<?php
                     $arr = [2, 3, 4, 5];
@@ -2173,6 +2270,75 @@ final class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     '$e' => 'list<int>',
                 ],
+            ],
+            'arraySpliceReturnKeepsTheTypeOfTheElements' => [
+                'code' => '<?php
+                    /** @var list<array{id: int}> $shapes */
+                    $shapes = [];
+                    /** @var array<int, bool> $bools */
+                    $bools = [];
+                    /** @var non-empty-list<float> $floats */
+                    $floats = [1.0];
+                    /** @var list<"a"|"b"> $literals */
+                    $literals = [];
+                    /** @var array<string, int> $named */
+                    $named = [];
+                    /** @var array<array-key, int> $keys */
+                    $keys = [];
+                    /** @var list<mixed> $mixed */
+                    $mixed = [];
+
+                    $a = array_splice($shapes, 0, 1);
+                    $b = array_splice($bools, 0, 1);
+                    $c = array_splice($floats, 0, 1);
+                    $d = array_splice($literals, 0, 1);
+                    $e = array_splice($named, 0, 1);
+                    $f = array_splice($keys, 0, 1);
+                    $g = array_splice($mixed, 0, 1);',
+                'assertions' => [
+                    '$a===' => 'list<array{id: int}>',
+                    '$b===' => 'list<bool>',
+                    '$c===' => 'list<float>',
+                    '$d===' => 'list<\'a\'|\'b\'>',
+                    '$e===' => 'array<string, int>',
+                    '$f===' => 'array<array-key, int>',
+                    '$g===' => 'list<mixed>',
+                ],
+            ],
+            'arraySpliceReturnIsAcceptedWhereTheElementsAreExpected' => [
+                'code' => '<?php
+                    /**
+                     * @param array[] $body
+                     * @return object[]
+                     */
+                    function sendWebRequest(array $body): array
+                    {
+                        $result = [];
+                        foreach ($body as $item) {
+                            $result[] = (object) $item;
+                        }
+                        return $result;
+                    }
+
+                    /**
+                     * @param int[] $ids
+                     * @return object[]
+                     */
+                    function fetchListing(array $ids, string $type): array {
+                        $fetch = [];
+                        foreach ($ids as $id) {
+                            $fetch[] = [$type => $id];
+                        }
+
+                        $output = [];
+                        while (count($fetch)) {
+                            $length = min(100, count($fetch));
+                            $input = array_splice($fetch, 0, $length);
+                            $output = array_merge($output, sendWebRequest($input));
+                        }
+
+                        return $output;
+                    }',
             ],
             'arraySpliceOtherType' => [
                 'code' => '<?php
