@@ -525,6 +525,36 @@ final class AssertAnnotationTest extends TestCase
                     '$t===' => "'date'|'date-time'|'x'",
                 ],
             ],
+            'assertIfTrueAndFalseOfUnionWithClassString' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $b
+                     * @psalm-assert-if-true "self"|class-string $b
+                     */
+                    function atrue($b): bool {
+                        return $b === "";
+                    }
+
+                    /**
+                     * @param mixed $b
+                     * @psalm-assert-if-false "self"|class-string $b
+                     */
+                    function afalse($b): bool {
+                        return $b === "";
+                    }
+
+                    /** @var string $one */
+                    $one = "";
+                    $t = atrue($one) ? $one : null;
+
+                    /** @var string $two */
+                    $two = "";
+                    $f = afalse($two) ? null : $two;',
+                'assertions' => [
+                    '$t===' => "'self'|class-string|null",
+                    '$f===' => "'self'|class-string|null",
+                ],
+            ],
             'assertIfTrueOfUnionOnThisProperty' => [
                 'code' => '<?php
                     final class A {
