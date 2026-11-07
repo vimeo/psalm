@@ -171,15 +171,41 @@ final class ClassTemplateParamCollector
                         && isset($e[$candidate_class_storage->name][$type_name])
                         && !isset($class_template_params[$type_name][$candidate_class_storage->name])
                     ) {
-                        $class_template_params[$type_name][$candidate_class_storage->name] = new Union(
-                            self::expandType(
+                        // the arguments the object was created with replace the templates of its own class
+                        $resolved_type = null;
+
+                        if ($lhs_type_part instanceof TGenericObject
+                            && $static_class_storage->template_types !== null
+                        ) {
+                            $own_params = self::collect(
+                                $codebase,
+                                $static_class_storage,
+                                $static_class_storage,
+                                null,
+                                $lhs_type_part,
+                            );
+
+                            $resolved_type = self::resolveTemplateParam(
                                 $codebase,
                                 $e[$candidate_class_storage->name][$type_name],
-                                $e,
-                                $static_class_storage->name,
-                                $static_class_storage->template_types,
-                            ),
-                        );
+                                $static_class_storage,
+                                $lhs_type_part,
+                                $own_params !== null
+                                    ? new TemplateResult($static_class_storage->template_types, $own_params)
+                                    : null,
+                            );
+                        }
+
+                        $class_template_params[$type_name][$candidate_class_storage->name] = $resolved_type
+                            ?? new Union(
+                                self::expandType(
+                                    $codebase,
+                                    $e[$candidate_class_storage->name][$type_name],
+                                    $e,
+                                    $static_class_storage->name,
+                                    $static_class_storage->template_types,
+                                ),
+                            );
                     }
                 }
 
