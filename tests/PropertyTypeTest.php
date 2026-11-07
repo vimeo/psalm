@@ -561,6 +561,28 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'inheritedConstructorCallingAMethodReturningStaticInAFinalChild' => [
+                'code' => '<?php
+                    abstract class Base
+                    {
+                        protected stdClass $prop;
+
+                        public function __construct(stdClass $prop) {
+                            $this->prop = $prop;
+                            $this->touch();
+                        }
+
+                        /** @return $this */
+                        public function touch(): static
+                        {
+                            return $this;
+                        }
+                    }
+
+                    final class Child extends Base
+                    {
+                    }',
+            ],
             'newVarInIf' => [
                 'code' => '<?php
                     class A {
