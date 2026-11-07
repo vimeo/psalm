@@ -218,11 +218,18 @@ final class IncludeAnalyzer
                     $include_file_analyzer->addParentFilePath($parent_file_path);
                 }
 
+                // the included code can't make `$this` another object, whatever it checks about it
+                $this_type = $context->vars_in_scope['$this'] ?? null;
+
                 try {
                     $include_file_analyzer->analyze(
                         $context,
                         $global_context,
                     );
+
+                    if ($this_type !== null) {
+                        $context->vars_in_scope['$this'] = $this_type;
+                    }
                 } catch (UnpreparedAnalysisException) {
                     if ($config->skip_checks_on_unresolvable_includes) {
                         $context->check_classes = false;
