@@ -323,9 +323,8 @@ final class CallableTypeComparator
                 $converted_return_type = TypeExpander::expandUnion(
                     $codebase,
                     $method_storage->return_type,
-                    $codebase->classlike_storage_provider->get($declaring_method_id->fq_class_name)->is_trait
-                        ? $method_fqcln
-                        : $declaring_method_id->fq_class_name,
+                    // `self` is the class the method appears in: the one using the trait, for a trait method
+                    ($codebase->methods->getAppearingMethodId($method_id) ?? $declaring_method_id)->fq_class_name,
                     $method_fqcln,
                     null,
                     true,

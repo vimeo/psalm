@@ -90,6 +90,54 @@ final class CallableTest extends TestCase
                     '$a===' => 'E',
                 ],
             ],
+            'callableArrayToInheritedTraitMethodExpandsSelfToTheUsingClass' => [
+                'code' => '<?php
+                    /**
+                     * @template TOut
+                     * @param callable(): TOut $c
+                     * @return TOut
+                     */
+                    function apply(callable $c) {
+                        return $c();
+                    }
+                    trait T {
+                        public function make(): self {
+                            return new self();
+                        }
+                    }
+                    class ParentClass {
+                        use T;
+                    }
+                    class Child extends ParentClass {}
+                    $a = apply([new Child(), "make"]);',
+                'assertions' => [
+                    '$a===' => 'ParentClass',
+                ],
+            ],
+            'callableArrayToInheritedTraitMethodKeepsStaticOfTheCalledClass' => [
+                'code' => '<?php
+                    /**
+                     * @template TOut
+                     * @param callable(): TOut $c
+                     * @return TOut
+                     */
+                    function apply(callable $c) {
+                        return $c();
+                    }
+                    trait T {
+                        public function make(): static {
+                            return $this;
+                        }
+                    }
+                    class ParentClass {
+                        use T;
+                    }
+                    class Child extends ParentClass {}
+                    $a = apply([new Child(), "make"]);',
+                'assertions' => [
+                    '$a===' => 'Child&static',
+                ],
+            ],
             'callableArrayToInheritedStaticMethodOfFinalClassResolvesStaticToIt' => [
                 'code' => '<?php
                     abstract class Foo {
