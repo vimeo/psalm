@@ -469,6 +469,7 @@ final class MethodComparator
                         . ' additionally requires '
                         . Capabilities::toString($implementer_capabilities, $guide_capabilities),
                     $code_location,
+                    $guide_classlike_storage->name,
                 ),
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
             );
