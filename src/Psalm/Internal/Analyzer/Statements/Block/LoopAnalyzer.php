@@ -27,7 +27,6 @@ use UnexpectedValueException;
 
 use function array_filter;
 use function array_keys;
-use function array_map;
 use function array_merge;
 use function array_unique;
 use function array_values;
@@ -850,13 +849,19 @@ final class LoopAnalyzer
 
         foreach ($assignments as $assignment) {
             /** @var PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignRef|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\PreInc|PhpParser\Node\Expr\PreDec|PhpParser\Node\Expr\PostInc|PhpParser\Node\Expr\PostDec $assignment */
-            $targets = $assignment->var instanceof PhpParser\Node\Expr\List_
+            $targets = [$assignment->var];
+
+            if ($assignment->var instanceof PhpParser\Node\Expr\List_
                 || $assignment->var instanceof PhpParser\Node\Expr\Array_
-                ? array_filter(array_map(
-                    static fn(?PhpParser\Node\ArrayItem $item): ?PhpParser\Node\Expr => $item?->value,
-                    $assignment->var->items,
-                ))
-                : [$assignment->var];
+            ) {
+                $targets = [];
+
+                foreach ($assignment->var->items as $item) {
+                    if ($item !== null) {
+                        $targets[] = $item->value;
+                    }
+                }
+            }
 
             foreach ($targets as $target) {
                 $var_id = ExpressionIdentifier::getRootVarId($target, $this_class_name);

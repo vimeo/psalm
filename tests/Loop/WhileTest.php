@@ -51,6 +51,21 @@ final class WhileTest extends TestCase
                     '$i===' => 'int<0, 0>',
                 ],
             ],
+            'destructuringInConditionHoldsTheValueTheLoopExitsWith' => [
+                'code' => '<?php
+                    $i = 5;
+                    while (([$i] = [$i - 1]) && $i > 0) {
+                        echo $i;
+                    }
+                    $j = 5;
+                    while ((list(, $j) = [0, $j - 1]) && $j > 0) {
+                        echo $j;
+                    }',
+                'assertions' => [
+                    '$i===' => 'int<0, max>',
+                    '$j===' => 'int<0, max>',
+                ],
+            ],
             'conditionAssignmentKeepsTheValuesABreakLeaves' => [
                 'code' => '<?php
                     function f(bool $b): int {
