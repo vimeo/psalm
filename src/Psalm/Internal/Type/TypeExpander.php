@@ -877,6 +877,15 @@ final class TypeExpander
                 $static_class_type,
                 false,
             );
+        } elseif ($return_type->is_static
+            && !$return_type->is_static_resolved
+            && $return_type::class === TNamedObject::class
+            && is_string($static_class_type)
+            && (strtolower($static_class_type) === strtolower($return_type->value)
+                || $codebase->classExtends($static_class_type, $return_type->value))
+        ) {
+            // the `static` of a native return type, called on a class that extends the one declaring it
+            $return_type = $return_type->setValueIsStatic($static_class_type, true, true);
         } elseif ($self_class && $return_type_lc === 'self') {
             $return_type = $return_type->setValue($self_class);
         } elseif ($parent_class && $return_type_lc === 'parent') {
