@@ -367,16 +367,17 @@ final class ClassConstAnalyzer
                 }
             }
 
-            if ($context->self
-                && !$context->collect_initializations
+            $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+            if (!$context->collect_initializations
                 && !$context->collect_mutations
-                && !NamespaceAnalyzer::isWithinAny($context->self, $const_class_storage->internal)
+                && !NamespaceAnalyzer::isWithinAny($caller_identifier, $const_class_storage->internal)
             ) {
                 IssueBuffer::maybeAdd(
                     new InternalClass(
                         $fq_class_name . ' is internal to '
                             . InternalClass::listToPhrase($const_class_storage->internal)
-                            . ' but called from ' . $context->self,
+                            . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $fq_class_name,
                     ),
@@ -657,16 +658,17 @@ final class ClassConstAnalyzer
                 }
             }
 
-            if ($context->self
-                && !$context->collect_initializations
+            $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+            if (!$context->collect_initializations
                 && !$context->collect_mutations
-                && !NamespaceAnalyzer::isWithinAny($context->self, $const_class_storage->internal)
+                && !NamespaceAnalyzer::isWithinAny($caller_identifier, $const_class_storage->internal)
             ) {
                 IssueBuffer::maybeAdd(
                     new InternalClass(
                         $fq_class_name . ' is internal to '
                             . InternalClass::listToPhrase($const_class_storage->internal)
-                            . ' but called from ' . $context->self,
+                            . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $fq_class_name,
                     ),

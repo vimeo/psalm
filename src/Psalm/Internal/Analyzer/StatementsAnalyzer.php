@@ -1378,6 +1378,15 @@ final class StatementsAnalyzer extends SourceAnalyzer
             return $function_name;
         }
 
-        return $this->getNamespace();
+        if ($this->source instanceof ClosureAnalyzer) {
+            $enclosing_source = $this->source->getSource();
+
+            if ($enclosing_source instanceof self) {
+                return $enclosing_source->getFullyQualifiedFunctionMethodOrNamespaceName();
+            }
+        }
+
+        // class-level code (constants, property defaults, attributes), or top-level code with @psalm-scope-this
+        return $this->getFQCLN() ?? $this->getNamespace();
     }
 }

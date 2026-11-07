@@ -553,11 +553,13 @@ final class AtomicPropertyFetchAnalyzer
                 );
             }
 
-            if ($context->self && !NamespaceAnalyzer::isWithinAny($context->self, $property_storage->internal)) {
+            $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+            if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $property_storage->internal)) {
                 IssueBuffer::maybeAdd(
                     new InternalProperty(
                         $property_id . ' is internal to ' . InternalClass::listToPhrase($property_storage->internal)
-                            . ' but called from ' . $context->self,
+                            . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id,
                     ),

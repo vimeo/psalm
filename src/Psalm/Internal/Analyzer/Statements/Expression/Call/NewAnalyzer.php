@@ -484,15 +484,16 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
 
-        if ($context->self
-            && !$context->collect_initializations
+        $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+        if (!$context->collect_initializations
             && !$context->collect_mutations
-            && !NamespaceAnalyzer::isWithinAny($context->self, $storage->internal)
+            && !NamespaceAnalyzer::isWithinAny($caller_identifier, $storage->internal)
         ) {
             IssueBuffer::maybeAdd(
                 new InternalClass(
                     $fq_class_name . ' is internal to ' . InternalClass::listToPhrase($storage->internal)
-                        . ' but called from ' . $context->self,
+                        . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $fq_class_name,
                 ),
@@ -555,7 +556,6 @@ final class NewAnalyzer extends CallAnalyzer
             if ($declaring_method_id) {
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
-                $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?: '';
                 if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $method_storage->internal)) {
                     IssueBuffer::maybeAdd(
                         new InternalMethod(
