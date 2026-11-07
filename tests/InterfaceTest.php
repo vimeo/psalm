@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -15,6 +17,40 @@ final class InterfaceTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testEveryAccessOfAnUndeclaredPropertyOfAnInterfaceIsReported(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                interface Shape {}
+
+                function readThenWrite(Shape $shape): void {
+                    echo $shape->name;
+                    $shape->name = "renamed";
+                }
+
+                function issetThenWrite(Shape $shape): void {
+                    if (isset($shape->name)) {
+                        $shape->name = "renamed";
+                    }
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'NoInterfaceProperties') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        // the read and the assignment after it; nothing in the function that checks with isset() first
+        $this->assertSame([5, 6], $lines);
+    }
+
     /**
      * @psalm-pure
      */
@@ -22,6 +58,46 @@ final class InterfaceTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assignmentToAPropertyOfAnInterfaceAfterIsset' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    function renameShape(Shape $shape): void {
+                        if (!isset($shape->name)) {
+                            return;
+                        }
+
+                        $shape->name = "renamed";
+                    }
+
+                    function renameShapeIfNamed(Shape $shape): void {
+                        if (isset($shape->name)) {
+                            $shape->name = "renamed";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'issetOfAPropertyOfAnInterfaceIsNotAnInterfaceProperty' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    function check(Shape $shape): string {
+                        if (isset($shape->name)) {
+                            return "named";
+                        }
+
+                        return empty($shape->label) ? "none" : "labelled";
+                    }
+
+                    function fallback(Shape $shape): mixed {
+                        return $shape->name ?? null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType', 'RiskyTruthyFalsyComparison'],
+                'php_version' => '8.2',
+            ],
             'extendsAndImplements' => [
                 'code' => '<?php
                     interface A
@@ -823,6 +899,19 @@ final class InterfaceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assignmentToAPropertyOfAnInterfaceAfterAnIssetOfAnotherOne' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    function renameShape(Shape $shape): void {
+                        if (!isset($shape->name)) {
+                            return;
+                        }
+
+                        $shape->label = "renamed";
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+            ],
             'invalidInterface' => [
                 'code' => '<?php
                     class C2 implements A { }',

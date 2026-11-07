@@ -31,6 +31,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 use function array_merge;
 use function array_shift;
@@ -339,11 +340,34 @@ final class InstancePropertyFetchAnalyzer
             }
         }
 
-        if ($var_id) {
+        // a fetch that was reported as a property of an interface does not make the property known: only isset() does
+        if ($var_id
+            && ($context->inside_isset
+                || !($stmt->name instanceof PhpParser\Node\Identifier
+                    && self::isUndeclaredInterfaceProperty($codebase, $stmt_var_type, $stmt->name->name)))
+        ) {
             $context->vars_in_scope[$var_id] = $statements_analyzer->node_data->getType($stmt) ?? Type::getMixed();
         }
 
         return true;
+    }
+
+    private static function isUndeclaredInterfaceProperty(
+        Codebase $codebase,
+        Union $object_type,
+        string $property_name,
+    ): bool {
+        foreach ($object_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNamedObject
+                && !$codebase->classExists($atomic_type->value)
+                && $codebase->interfaceExists($atomic_type->value)
+                && !isset($codebase->classlike_storage_provider->get($atomic_type->value)->properties[$property_name])
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function handleScopedProperty(
