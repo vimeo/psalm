@@ -21,6 +21,40 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalOnEmptyOfAnOptionalKeyIsTheKeyTypeWhenSet' => [
+                'code' => '<?php
+                    /**
+                     * @template TReturnOpt as "string"|"int"|"float"
+                     * @param array{ret?: TReturnOpt} $opts
+                     * @return (TReturnOpt is empty ? "stringEmpty" : TReturnOpt)
+                     */
+                    function test(array $opts = []): string {
+                        return "stringEmpty";
+                    }
+
+                    $unset = test();
+                    $set = test(["ret" => "int"]);',
+                'assertions' => [
+                    '$unset===' => "'stringEmpty'",
+                    '$set===' => "'int'",
+                ],
+            ],
+            'conditionalOnEmptyIsOnlyTrueForNever' => [
+                'code' => '<?php
+                    /**
+                     * @template T as string|int
+                     * @param T $t
+                     * @return (T is empty ? "e" : T)
+                     */
+                    function f($t) { return $t; }
+
+                    $zero = f(0);
+                    $text = f("abc");',
+                'assertions' => [
+                    '$zero===' => '0',
+                    '$text===' => "'abc'",
+                ],
+            ],
             'conditionalReturnTypeSimple' => [
                 'code' => '<?php
 

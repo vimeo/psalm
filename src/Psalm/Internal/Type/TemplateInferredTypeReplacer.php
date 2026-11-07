@@ -536,6 +536,11 @@ final class TemplateInferredTypeReplacer
 
                 $matching_else_types[] = $candidate_atomic_type;
 
+                // no value is of the type `never`
+                if ($conditional_type->isNever()) {
+                    continue;
+                }
+
                 $if_part = Type::intersectUnionTypes(
                     $candidate,
                     $conditional_type,
