@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Provider;
 
+use Override;
 use PhpParser;
 use PhpParser\ErrorHandler\Collecting;
+use PhpParser\Node;
 use PhpParser\Node\Stmt;
+use PhpParser\NodeVisitorAbstract;
 use PhpParser\Parser;
 use PhpParser\PhpVersion;
 use Psalm\CodeLocation\ParseErrorLocation;
@@ -14,6 +17,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Diff\FileDiffer;
 use Psalm\Internal\Diff\FileStatementsDiffer;
+use Psalm\Internal\Fork\IgbinarySerializer;
 use Psalm\Internal\PhpTraverser\CustomTraverser;
 use Psalm\Internal\PhpVisitor\CloningVisitor;
 use Psalm\Internal\PhpVisitor\PartialApplicationVisitor;
@@ -32,10 +36,15 @@ use function array_map;
 use function array_merge;
 use function array_values;
 use function count;
+use function hash;
+use function ini_set;
+use function max;
 use function md5;
+use function serialize;
 use function str_starts_with;
 use function strlen;
 use function strpos;
+use function unserialize;
 
 /**
  * @internal
@@ -72,6 +81,20 @@ final class StatementsProvider
      */
     private array $deletion_ranges = [];
 
+    /**
+     * The statements of vendor files, which the parser cache doesn't keep, by path: the PHP version and the hash of
+     * the contents they were parsed from, and from the second request on the serialized statements
+     *
+     * @var array<string, array{array{int, string}, ?string}>
+     */
+    private array $vendor_statements = [];
+
+    /**
+     * Statements nesting deeper are not kept, as (un)serializing them could exhaust a small stack; vendor code
+     * hardly ever nests more than 32 levels
+     */
+    private const MAX_KEPT_NESTING = 128;
+
     private static ?Parser $parser = null;
 
     /**
@@ -105,6 +128,18 @@ final class StatementsProvider
         if (!$this->parser_cache_provider
             || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
         ) {
+            // ProjectAnalyzer::getMethodMutations() asks for the same vendor parent classes over and over. Without a
+            // parser cache provider every project file comes this way too, and keeping all of them is what made the
+            // former StatementsVolatileCache use 8GB+ (#9899).
+            $parsed_from = $this->parser_cache_provider
+                ? [$analysis_php_version_id, hash('xxh128', $file_contents)]
+                : null;
+            [$kept_parsed_from, $kept_statements] = $this->vendor_statements[$file_path] ?? [null, null];
+
+            if ($kept_statements !== null && $kept_parsed_from === $parsed_from) {
+                return self::unserializeStatements($kept_statements);
+            }
+
             $progress->debug('Parsing ' . $file_path . " because we cannot use cache\n");
 
             $parse_errors = [];
@@ -112,6 +147,16 @@ final class StatementsProvider
             $stmts = self::parseStatements($file_contents, $analysis_php_version_id, $parse_errors);
 
             self::reportParseErrors($parse_errors, $file_contents, $file_path);
+
+            // most vendor files are only requested by the scanner, so they are kept from their second request on
+            if ($parsed_from !== null && $parse_errors === []) {
+                $this->vendor_statements[$file_path] = [
+                    $parsed_from,
+                    $kept_parsed_from === $parsed_from && self::getNesting($stmts) <= self::MAX_KEPT_NESTING
+                        ? self::serializeStatements($stmts)
+                        : null,
+                ];
+            }
 
             return $stmts;
         }
@@ -359,7 +404,8 @@ final class StatementsProvider
     }
 
     /**
-     * @param  list<PhpParser\Error>|null $parse_errors the errors the parser recovered from
+     * @param  list<PhpParser\Error>|null $parse_errors the errors the parser recovered from,
+     *     and the compile errors found while resolving names (e.g. a duplicate import)
      * @param-out list<PhpParser\Error> $parse_errors
      * @param  list<Stmt> $existing_statements
      * @param  array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> $file_changes
@@ -420,10 +466,6 @@ final class StatementsProvider
             }
         }
 
-        $parse_errors = array_values($error_handler->getErrors());
-
-        $error_handler->clearErrors();
-
         $resolving_traverser = new PhpParser\NodeTraverser;
         $name_resolver = new SimpleNameResolver(
             $error_handler,
@@ -432,6 +474,8 @@ final class StatementsProvider
         $resolving_traverser->addVisitor($name_resolver);
         $resolving_traverser->addVisitor(new PartialApplicationVisitor());
         $resolving_traverser->traverse($stmts);
+
+        $parse_errors = array_values($error_handler->getErrors());
 
         return $stmts;
     }
@@ -487,6 +531,78 @@ final class StatementsProvider
                 );
             }
         }
+    }
+
+    /**
+     * @param list<Stmt> $stmts
+     */
+    private static function getNesting(array $stmts): int
+    {
+        $visitor = new class extends NodeVisitorAbstract {
+            public int $nesting = 0;
+
+            private int $depth = 0;
+
+            /**
+             * @psalm-capabilities read-props|write-this-props|write-refs
+             */
+            #[Override]
+            public function enterNode(Node $node): null
+            {
+                $this->nesting = max($this->nesting, ++$this->depth);
+
+                return null;
+            }
+
+            /**
+             * @psalm-capabilities read-props|write-this-props|write-refs
+             */
+            #[Override]
+            public function leaveNode(Node $node): null
+            {
+                $this->depth--;
+
+                return null;
+            }
+        };
+
+        (new PhpParser\NodeTraverser($visitor))->traverse($stmts);
+
+        return $visitor->nesting;
+    }
+
+    /**
+     * What serialize() makes of the statements is safe to unserialize, whatever the file they were parsed from
+     *
+     * @param list<Stmt> $stmts
+     * @psalm-taint-escape unserialize
+     */
+    private static function serializeStatements(array $stmts): string
+    {
+        if (Config::getInstance()->use_igbinary) {
+            return (new IgbinarySerializer())->serialize($stmts);
+        }
+
+        // floats have to come back exactly, whatever the configured precision
+        $precision = ini_set('serialize_precision', '-1');
+
+        try {
+            return serialize($stmts);
+        } finally {
+            ini_set('serialize_precision', (string) $precision);
+        }
+    }
+
+    /**
+     * @return list<Stmt>
+     */
+    private static function unserializeStatements(string $stmts): array
+    {
+        /** @var list<Stmt> */
+        return Config::getInstance()->use_igbinary
+            ? (new IgbinarySerializer())->unserialize($stmts)
+            // MAX_KEPT_NESTING bounds the depth, whatever unserialize_max_depth says
+            : unserialize($stmts, ['max_depth' => 0]);
     }
 
     /**

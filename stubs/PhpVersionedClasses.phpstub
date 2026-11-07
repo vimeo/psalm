@@ -35,21 +35,21 @@ namespace {
         /**
          * @return non-empty-string
          *
-         * @psalm-pure
+         * @psalm-capabilities read-props
          */
         public function getName() : string
         {
         }
 
         /**
-         * @psalm-pure
+         * @psalm-capabilities read-props
          * @return Attribute::TARGET_*
          */
         public function getTarget() : int
         {
         }
 
-        /** @psalm-pure */
+        /** @psalm-capabilities read-props */
         public function isRepeated() : bool
         {
         }

@@ -184,6 +184,71 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'invalidParamDefaultSuppressedOnFunction' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidParamDefault
+                     */
+                    function foo(int $a = "x"): void {
+                        echo $a;
+                    }',
+            ],
+            'invalidCallableParamDefaultSuppressedOnFunction' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidParamDefault
+                     */
+                    function foo(?callable $_a = "strlen"): void {}',
+            ],
+            'invalidParamDefaultSuppressedOnPromotedProperty' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    interface Container {}
+
+                    /**
+                     * @template T
+                     * @implements Container<T>
+                     */
+                    final class SomeContainer implements Container {}
+
+                    final class Client
+                    {
+                        /**
+                         * @psalm-suppress InvalidParamDefault
+                         * @param Container<object> $container
+                         */
+                        public function __construct(
+                            public Container $container = new SomeContainer(),
+                        ) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'varWithoutNameDoesNotTakeNameOfPreviousVarLine' => [
+                'code' => '<?php
+                    /**
+                     * @var int $n
+                     * @var string missing_dollar_sign
+                     */
+                    echo $n + $n;',
+            ],
+            'namedVarLinesKeepTheirOwnNames' => [
+                'code' => '<?php
+                    /**
+                     * @var int $n
+                     * @var string $m
+                     */
+                    $x = $n;
+                    $y = $m;
+                    echo $x . $y;',
+                'assertions' => [
+                    '$x===' => 'int',
+                    '$y===' => 'string',
+                ],
+            ],
             'nopType' => [
                 'code' => '<?php
                     $_a = "hello";
@@ -1470,11 +1535,50 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'invalidParamDefaultStillReportedForAnotherFunction' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidParamDefault
+                     */
+                    function foo(int $a = "x"): void {
+                        echo $a;
+                    }
+
+                    function bar(int $b = "x"): void {
+                        echo $b;
+                    }',
+                'error_message' => 'InvalidParamDefault - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:34',
+            ],
+            'callableParamDefaultStillReportedForAnotherFunction' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidParamDefault
+                     */
+                    function foo(?callable $_a = "strlen"): void {}
+
+                    function bar(?callable $_b = "strlen"): void {}',
+                'error_message' => 'InvalidParamDefault - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:34',
+            ],
+            'varDocblockClassWithWrongCasingIsReportedInTheDocblock' => [
+                'code' => '<?php
+                    class FooBar {}
+
+                    /** @var Foobar $obj */
+
+                    echo "x";',
+                'error_message' => 'InvalidClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:30',
+            ],
+            'varDocblockUndefinedClassIsReportedInTheDocblock' => [
+                'code' => '<?php
+                    /** @var Foobar $obj */
+                    $obj = getenv("x");',
+                'error_message' => 'UndefinedDocblockClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:30',
+            ],
             'invalidTypeInPromotedPropertyDocblock' => [
                 'code' => '<?php
                     class Foo {
                         public function __construct(
-                            /** @var array<int, > */
+                            /** @var array<int,, string> */
                             public array $bar,
                         ) {}
                     }',
@@ -1884,7 +1988,7 @@ final class AnnotationTest extends TestCase
             ],
             'objectWithPropertiesAnnotationNoMatchingProperty' => [
                 'code' => '<?php
-                    /** 
+                    /**
                      * @param object{foo:string} $o
                      * @psalm-mutation-free
                       */
@@ -1918,8 +2022,8 @@ final class AnnotationTest extends TestCase
             ],
             'nonEmptyArrayCalledWithEmpty' => [
                 'code' => '<?php
-                    /** 
-                     * @param non-empty-array<string> $arr 
+                    /**
+                     * @param non-empty-array<string> $arr
                      */
                     function foo(array $arr) : void {
                         foreach ($arr as $a) {}
@@ -1933,7 +2037,7 @@ final class AnnotationTest extends TestCase
                 'code' => '<?php
                     namespace ns;
 
-                    /** 
+                    /**
                      * @param non-empty-array<string> $arr
                      */
                     function foo(array $arr) : void {
@@ -2174,6 +2278,16 @@ final class AnnotationTest extends TestCase
 
                     echo $a->licenseType;',
                 'error_message' => 'InvalidArgument',
+            ],
+            'malformedConditionalReturnTypeDoesNotCrash' => [
+                'code' => '<?php
+                    /** @return ($n is int) ? int : float */
+                    function double(int|float $n): int|float {
+                        return $n * 2;
+                    }',
+                'error_message' => 'InvalidDocblock',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

@@ -94,6 +94,9 @@ use const PREG_SPLIT_NO_EMPTY;
  */
 final class ArgumentAnalyzer
 {
+    /** Set on an argument PHP never passes, whose type isn't checked against its parameter */
+    public const NOT_PASSED = 'not_passed';
+
     // callable $this
     // some PHP-internal functions (e.g. array_filter) will call the callback within the current context
     // unlike user-defined functions which call the callback in their context
@@ -166,6 +169,10 @@ final class ArgumentAnalyzer
         bool $specialize_taint,
         bool $in_call_map,
     ): ?bool {
+        if ($arg->getAttribute(self::NOT_PASSED) === true) {
+            return null;
+        }
+
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$arg_value_type) {
@@ -850,7 +857,6 @@ final class ArgumentAnalyzer
 
         if ($param_type->hasMixed()) {
             if ($codebase->infer_types_from_usage
-                && !$input_type->hasMixed()
                 && !$param_type->from_docblock
                 && !$param_type->had_template
                 && $method_id
@@ -1877,6 +1883,14 @@ final class ArgumentAnalyzer
             ]);
         }
 
+        if (!$was_cloned
+            && !$input_type_changed
+            && !$unpack
+            && ($context->vars_in_scope[$var_id] ?? null) === $input_type
+        ) {
+            return;
+        }
+
         if ($context->inside_conditional && !isset($context->assigned_var_ids[$var_id])) {
             $context->assigned_var_ids[$var_id] = 0;
         }
@@ -1951,11 +1965,13 @@ final class ArgumentAnalyzer
         }
 
         if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
+            // only the data-flow path is wanted: the argument check reports a bad argument itself
             $input_type = CastAnalyzer::castStringAttempt(
                 $statements_analyzer,
                 $context,
                 $input_type,
                 $expr,
+                false,
                 false,
             );
         }
