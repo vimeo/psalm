@@ -30,6 +30,7 @@ use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\Issue\PossiblyNullOperand;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -518,6 +519,7 @@ final class ConcatAnalyzer
         }
 
         $operand_type_match = true;
+        $operand_concat_safe = true;
         $has_valid_operand = false;
         $comparison_result = new TypeComparisonResult();
 
@@ -561,6 +563,13 @@ final class ConcatAnalyzer
             );
 
             $operand_type_match = $operand_type_match && $operand_type_part_match;
+
+            if (!($operand_type_part instanceof TInt
+                || $operand_type_part instanceof TString
+                || $operand_type_part instanceof TArrayKey)
+            ) {
+                $operand_concat_safe = false;
+            }
 
             $has_valid_operand = $has_valid_operand || $operand_type_part_match;
 
@@ -622,7 +631,7 @@ final class ConcatAnalyzer
 
         if (!$operand_type_match
             && (!$comparison_result->scalar_type_match_found
-                || (!$operand_type->isConcatSafe() && $config->strict_binary_operands)
+                || (!$operand_concat_safe && $config->strict_binary_operands)
             )
         ) {
             if ($has_valid_operand) {

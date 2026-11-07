@@ -9,6 +9,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Node\Expr\PartialApplication;
 use Psalm\Node\Expr\VirtualIsset;
 use Psalm\Node\Expr\VirtualTernary;
 use Psalm\Node\Expr\VirtualVariable;
@@ -47,7 +48,9 @@ final class CoalesceAnalyzer
             || $root_expr instanceof PhpParser\Node\Expr\Match_
             || $root_expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch
             || $root_expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
-            || $root_expr instanceof PhpParser\Node\Expr\Ternary;
+            || $root_expr instanceof PhpParser\Node\Expr\Ternary
+            || $root_expr instanceof PhpParser\Node\Expr\BinaryOp\Pipe
+            || $root_expr instanceof PartialApplication;
 
         $has_untracked_offset = !$has_call_root
             && $left_expr instanceof PhpParser\Node\Expr\ArrayDimFetch
@@ -63,12 +66,16 @@ final class CoalesceAnalyzer
             // an untracked offset is evaluated unconditionally, so its assignments belong to the real context
             $cloned = $has_untracked_offset ? $context : clone $context;
             $was_inside_isset = $cloned->inside_isset;
+            $was_inside_general_use = $cloned->inside_general_use;
             $cloned->inside_isset = true;
+            // the value of the left operand decides which side is taken
+            $cloned->inside_general_use = true;
 
             ExpressionAnalyzer::analyze($statements_analyzer, $left_expr, $cloned);
 
             if ($has_untracked_offset) {
                 $context->inside_isset = $was_inside_isset;
+                $context->inside_general_use = $was_inside_general_use;
             } else {
                 // the call is evaluated unconditionally: what it assigns is set on the right too
                 foreach ($cloned->assigned_var_ids as $assigned_var_id => $assigned_offset) {
