@@ -57,6 +57,73 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodParamBoundByTheReceiverAcceptsTheSameTypeArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Validator {}
+
+                    /** @implements Validator<int> */
+                    final class IntValidator implements Validator {}
+
+                    /** @template T */
+                    final class Type {
+                        /** @param Validator<T> $v */
+                        public function one(Validator $v): void {}
+
+                        /** @param list<Validator<T>> $v */
+                        public function many(array $v): void {}
+                    }
+
+                    /** @param Type<int> $t */
+                    function f(Type $t): void {
+                        $t->one(new IntValidator());
+                        $t->many([new IntValidator()]);
+                    }',
+            ],
+            'methodParamBoundByTheReceiverAcceptsASubtypeOfACovariantTemplate' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    interface Validator {}
+
+                    /** @implements Validator<positive-int> */
+                    final class MaxValue implements Validator {}
+
+                    /** @template T */
+                    final class Type {
+                        /** @param Validator<T> $v */
+                        public function one(Validator $v): void {}
+                    }
+
+                    /** @param Type<int> $t */
+                    function f(Type $t): void {
+                        $t->one(new MaxValue());
+                    }',
+            ],
+            'methodTemplateStillInfersFromTheArgumentOfAnInvariantParam' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Validator {}
+
+                    /** @implements Validator<positive-int> */
+                    final class MaxValue implements Validator {}
+
+                    final class Type {
+                        /**
+                         * @template U
+                         * @param Validator<U> $v
+                         * @return U
+                         */
+                        public function one(Validator $v) {
+                            throw new Exception();
+                        }
+                    }
+
+                    $t = new Type();
+                    $r = $t->one(new MaxValue());',
+                'assertions' => [
+                    '$r===' => 'int<1, max>',
+                ],
+            ],
             'staticReturnKeepsTheTypeArgumentsOfTheCalledClass' => [
                 'code' => '<?php
                     /** @template T of object */
@@ -5782,6 +5849,51 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'methodParamBoundByTheReceiverIsInvariantOnAnArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Validator {}
+
+                    /** @implements Validator<positive-int> */
+                    final class MaxValue implements Validator {}
+
+                    /** @template T */
+                    final class Type {
+                        /** @param Validator<T> $v */
+                        public function one(Validator $v): void {}
+                    }
+
+                    /** @param Type<int> $t */
+                    function f(Type $t): void {
+                        $t->one(new MaxValue());
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'methodListParamBoundByTheReceiverIsInvariantOnAnArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Validator {}
+
+                    /** @implements Validator<positive-int> */
+                    final class MaxValue implements Validator {}
+
+                    /** @template T */
+                    interface Type {
+                        /**
+                         * @param T $value
+                         * @param non-empty-list<Validator<T>> $validators
+                         */
+                        public function validate(mixed $value, array $validators): void;
+                    }
+
+                    /** @param Type<int> $t */
+                    function f(Type $t): void {
+                        $t->validate(0, [new MaxValue()]);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'classTemplateDefaultNamingAnUndefinedClass' => [
                 'code' => '<?php
                     /**
