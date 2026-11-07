@@ -255,11 +255,11 @@ final class MutationLevelResolver
                             array_keys($wildcards),
                         )) . ' (Closure[_], Traversable[_], ...),'
                         : '')
-                    . ' ' . $project_analyzer->getPuritySuggestionReason()
-                    . ', run with --alter --issues=MissingPureAnnotation to fix this',
+                    . ' ' . $project_analyzer->getPuritySuggestionReason(),
                     $info['location'],
                 ),
                 $info['suppressed_issues'],
+                true,
             );
 
             if ($fix) {

@@ -10,6 +10,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\Class_;
 use Psalm\Codebase;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Exception\UnpopulatedClasslikeException;
@@ -336,6 +337,45 @@ final class CodebaseTest extends TestCase
         $this->analyzeFile('somefile.php', new Context);
         self::assertSame(0, IssueBuffer::getErrorCount());
     }
+
+    #[Test]
+    public function missingPurityAnnotationIssuesAreFixable(): void
+    {
+        $config = $this->codebase->config;
+        $config->throw_exception = false;
+        $config->suggest_purity_annotations = true;
+        $config->setCustomErrorLevel('MissingPureAnnotation', Config::REPORT_ERROR);
+        $config->setCustomErrorLevel('MissingImmutableAnnotation', Config::REPORT_ERROR);
+
+        $before = IssueBuffer::getFixableIssues();
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Psalm\CurrentTest;
+
+                function couldBePure(int $a): int {
+                    return $a + 1;
+                }
+
+                /** @api */
+                final class CouldBeImmutable {
+                }
+            ',
+        );
+
+        $this->analyzeFile($file_path, new Context);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $after = IssueBuffer::getFixableIssues();
+
+        foreach (['MissingPureAnnotation', 'MissingImmutableAnnotation'] as $issue_type) {
+            self::assertSame(($before[$issue_type] ?? 0) + 1, $after[$issue_type] ?? 0);
+        }
+    }
+
     #[Test]
     public function addingCodeIssueIsMarkedAsRedundant(): void
     {
