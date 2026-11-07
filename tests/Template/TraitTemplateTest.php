@@ -543,6 +543,104 @@ final class TraitTemplateTest extends TestCase
                         }
                     }',
             ],
+            'pseudoPropertyTemplateMappedThroughUse' => [
+                'code' => '<?php
+                    /**
+                     * @template T as string
+                     * @property T $status
+                     */
+                    trait Status {}
+
+                    class A {
+                        /** @use Status<"a"|"b"|"c"> */
+                        use Status;
+
+                        public function __get(string $name) {
+                            return 0;
+                        }
+                    }
+
+                    $a = new A();
+                    $status = $a->status;',
+                'assertions' => [
+                    '$status===' => "'a'|'b'|'c'",
+                ],
+            ],
+            'pseudoPropertyReadKeepsTemplateIntersectionThroughUse' => [
+                'code' => '<?php
+                    /**
+                     * @template T as object
+                     * @property T&Countable $value
+                     */
+                    trait MagicValue {}
+
+                    class Payload {}
+
+                    class Holder {
+                        /** @use MagicValue<Payload> */
+                        use MagicValue;
+
+                        public function __get(string $name) {
+                            return 0;
+                        }
+                    }
+
+                    function test(Holder $holder): int {
+                        return count($holder->value);
+                    }',
+                'php_version' => '8.0',
+            ],
+            'pseudoPropertyKeepsCallableObjectWithTemplateIntersectionThroughUse' => [
+                'code' => '<?php
+                    /**
+                     * @template T as object
+                     * @property T&Countable $value
+                     */
+                    trait MagicValue {}
+
+                    class Holder {
+                        /** @use MagicValue<callable-object> */
+                        use MagicValue;
+
+                        public function __get(string $name) {
+                            return 0;
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $value = $holder->value;
+                    $count = count($value);',
+                'assertions' => [
+                    '$value===' => 'Countable&callable-object',
+                ],
+                'php_version' => '8.0',
+            ],
+            'pseudoPropertyOwnDeclarationWinsOverUsedTrait' => [
+                'code' => '<?php
+                    /**
+                     * @template T as string
+                     * @property T $status
+                     */
+                    trait Status {}
+
+                    /**
+                     * @property int $status
+                     */
+                    class A {
+                        /** @use Status<"a"|"b"|"c"> */
+                        use Status;
+
+                        public function __get(string $name) {
+                            return 0;
+                        }
+                    }
+
+                    $a = new A();
+                    $status = $a->status;',
+                'assertions' => [
+                    '$status===' => 'int',
+                ],
+            ],
         ];
     }
 
@@ -769,6 +867,50 @@ final class TraitTemplateTest extends TestCase
                         }
                     }',
                 'error_message' => 'MixedMethodCall',
+            ],
+            'pseudoPropertyWriteTemplateMappedThroughUse' => [
+                'code' => '<?php
+                    /**
+                     * @template T as string
+                     * @property-write T $status
+                     */
+                    trait Status {}
+
+                    class A {
+                        /** @use Status<"a"|"b"|"c"> */
+                        use Status;
+
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    $a = new A();
+                    $a->status = "d";',
+                'error_message' => "with declared type ''a'|'b'|'c'' cannot be assigned",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'pseudoPropertyWriteKeepsTemplateIntersectionThroughUse' => [
+                'code' => '<?php
+                    /**
+                     * @template T as object
+                     * @property-write T&Countable $value
+                     */
+                    trait MagicValue {}
+
+                    class Payload {}
+
+                    class Holder {
+                        /** @use MagicValue<Payload> */
+                        use MagicValue;
+
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    $holder = new Holder();
+                    $holder->value = new Payload();',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
