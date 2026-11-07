@@ -59,6 +59,46 @@ final class ReturnTypeTest extends TestCase
                         return "b";
                     }',
             ],
+            'voidNeverDeclaredWithAThrowingPathAndAnImplicitReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        if (rand(0, 10) > 5) {
+                            throw new Exception();
+                        }
+                    }',
+            ],
+            'voidNeverDeclaredWithANeverReturningCallPathAndAnImplicitReturn' => [
+                'code' => '<?php
+                    function stop(): never {
+                        exit;
+                    }
+
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        if (rand(0, 10) > 5) {
+                            stop();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nullableDocblockReturnWithoutReturnStatements' => [
+                'code' => '<?php
+                    /**
+                     * @return int|null
+                     */
+                    function foo() {
+                        if (rand(0, 10) > 5) {
+                            echo "hello";
+                        }
+                    }',
+            ],
             'nativeArrayReturnTypeTakesTheInheritedIterableDocblock' => [
                 'code' => '<?php
                     abstract class Base {
@@ -1868,6 +1908,30 @@ final class ReturnTypeTest extends TestCase
                         yield 1;
                     }',
                 'error_message' => 'InvalidReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33 - Not all code paths of foo end in a return statement, the generator return type string expected',
+            ],
+            'voidNeverDeclaredWithOnlyAnImplicitReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        if (rand(0, 10) > 5) {
+                            echo "hello";
+                        }
+                    }',
+                'error_message' => 'MoreSpecificReturnType',
+            ],
+            'voidNeverDeclaredWithOnlyAnImplicitReturnInAMethod' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @return void|never
+                         */
+                        public function foo() {
+                            echo "hello";
+                        }
+                    }',
+                'error_message' => 'MoreSpecificReturnType',
             ],
             'nativeArrayReturnTypeMustRespectTheInheritedIterableDocblock' => [
                 'code' => '<?php
