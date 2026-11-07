@@ -35,6 +35,7 @@ use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
@@ -207,6 +208,11 @@ final class NegatedAssertionReconciler extends Reconciler
             // do nothing
         } elseif ($assertion instanceof IsClassNotEqual) {
             // do nothing
+        } elseif ($assertion instanceof IsNotType
+            && $assertion->upper_bound_only
+            && $assertion_type instanceof TTraitString
+        ) {
+            // the name of a trait that has not been loaded
         } elseif ($assertion instanceof IsNotType
             && $assertion->upper_bound_only
             && $existing_var_type->isSingle()

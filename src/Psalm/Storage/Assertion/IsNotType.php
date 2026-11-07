@@ -17,9 +17,9 @@ final class IsNotType extends Assertion
 {
     use UnserializeMemoryUsageSuppressionTrait;
     /**
-     * @param bool $upper_bound_only the type is only an upper bound of what the
-     *     value can be (the class of `instanceof $class` with a `class-string<Foo>`),
-     *     so a value of exactly this type may still be a subclass of the real one
+     * @param bool $upper_bound_only the assertion only holds where it is true: where it is false, a value of
+     *     this type may still be one (a subclass of the class of `instanceof $class` with a `class-string<Foo>`,
+     *     the name of a trait that `trait_exists()` has not loaded)
      */
     public function __construct(public readonly Atomic $type, public readonly bool $upper_bound_only = false)
     {
