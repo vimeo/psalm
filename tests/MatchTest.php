@@ -20,6 +20,21 @@ final class MatchTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'exhaustiveMatchOverAnEnumWithMoreCasesThanTheMaximumShapedArraySize' => [
+                'code' => '<?php
+                    enum Id: string {
+                        ' . implode("\n", array_map(static fn(int $i): string => "case ID_$i = \"$i\";", range(1, 105))) . '
+                    }
+
+                    function label(Id $id): string {
+                        return match ($id) {
+                            ' . implode("\n", array_map(static fn(int $i): string => "Id::ID_$i => \"label $i\",", range(1, 105))) . '
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'subjectIsOneOfTheArmValuesAfterAMatchWithoutDefault' => [
                 'code' => '<?php
                     function f(string $type): int {
@@ -243,6 +258,21 @@ final class MatchTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'matchOverAnEnumWithMoreCasesThanTheMaximumShapedArraySizeMissingOne' => [
+                'code' => '<?php
+                    enum Id: string {
+                        ' . implode("\n", array_map(static fn(int $i): string => "case ID_$i = \"$i\";", range(1, 105))) . '
+                    }
+
+                    function label(Id $id): string {
+                        return match ($id) {
+                            ' . implode("\n", array_map(static fn(int $i): string => "Id::ID_$i => \"label $i\",", range(1, 104))) . '
+                        };
+                    }',
+                'error_message' => 'values enum(Id::ID_105',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'getClassArgWrongClass' => [
                 'code' => '<?php
                     class A {}
