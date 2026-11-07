@@ -157,7 +157,15 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
         $array_arg_type = null;
 
         if ($array_arg_union_type = $statements_source->node_data->getType($array_arg->value)) {
-            $arg_types = $array_arg_union_type->getAtomicTypes();
+            $arg_types = [];
+
+            foreach ($array_arg_union_type->getAtomicTypes() as $arg_type_key => $arg_atomic_type) {
+                if ($arg_atomic_type instanceof TTemplateParam) {
+                    $arg_types = [...$arg_types, ...$arg_atomic_type->as->getAtomicTypes()];
+                } else {
+                    $arg_types[$arg_type_key] = $arg_atomic_type;
+                }
+            }
 
             if (isset($arg_types['array'])) {
                 $array_arg_atomic_type = $arg_types['array'];
