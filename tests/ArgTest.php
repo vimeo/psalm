@@ -402,6 +402,13 @@ final class ArgTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'namedArgumentUnknownToEveryCallmapOverloadIsNotTakenByTheVariadicOne' => [
+                'code' => '<?php
+                    max([1, 2], foo: 3);',
+                'error_message' => 'InvalidNamedArgument',
+                'error_levels' => ['TooManyArguments'],
+                'php_version' => '8.0',
+            ],
             'arrayPushArgumentUnpackingWithBadArg' => [
                 'code' => '<?php
                     $a = [];

@@ -182,13 +182,10 @@ final class InternalCallMapHandler
                         }
                     }
 
+                    // a variadic parameter of a builtin doesn't take unknown named arguments
                     if ($function_param === null) {
-                        if (!$last_param || !$last_param->is_variadic) {
-                            $all_args_match = false;
-                            break;
-                        }
-
-                        $function_param = $last_param;
+                        $all_args_match = false;
+                        break;
                     }
                 } elseif ($argument_offset >= count($possible_function_params)) {
                     if (!$last_param || !$last_param->is_variadic) {
