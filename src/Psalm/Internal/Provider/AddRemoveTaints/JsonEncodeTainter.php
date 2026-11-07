@@ -15,9 +15,11 @@ use function strtolower;
 
 use const JSON_HEX_AMP;
 use const JSON_HEX_TAG;
+use const JSON_PRETTY_PRINT;
 
 /**
- * The taints json_encode() removes with the flags it is called with
+ * The taints json_encode() removes with the flags it is called with: the html one for the HEX flags, the header one
+ * unless it pretty prints
  *
  * @internal
  */
@@ -49,6 +51,7 @@ final class JsonEncodeTainter implements RemoveTaintsInterface
         }
 
         $flags = null;
+        $has_flags = false;
 
         foreach ($item->getArgs() as $offset => $arg) {
             if ($arg->unpack) {
@@ -56,18 +59,25 @@ final class JsonEncodeTainter implements RemoveTaintsInterface
             }
 
             if ($arg->name === null ? $offset === 1 : $arg->name->name === 'flags') {
+                $has_flags = true;
                 $flags = $statements_analyzer->node_data->getType($arg->value);
             }
         }
 
-        if ($flags === null
-            || !$flags->isSingleIntLiteral()
-            || ($flags->getSingleIntLiteral()->value & self::HTML_FLAGS) !== self::HTML_FLAGS
-        ) {
-            return 0;
+        $flag_value = $flags !== null && $flags->isSingleIntLiteral() ? $flags->getSingleIntLiteral()->value : null;
+        $removed_taints = 0;
+
+        // every control character is escaped, so the output holds no CR, LF or NUL (the layout of
+        // JSON_PRETTY_PRINT has LF)
+        if (!$has_flags || ($flag_value !== null && ($flag_value & JSON_PRETTY_PRINT) === 0)) {
+            $removed_taints |= TaintKind::INPUT_HEADER;
         }
 
-        return TaintKind::INPUT_HTML;
+        if ($flag_value !== null && ($flag_value & self::HTML_FLAGS) === self::HTML_FLAGS) {
+            $removed_taints |= TaintKind::INPUT_HTML;
+        }
+
+        return $removed_taints;
     }
 
     /**
