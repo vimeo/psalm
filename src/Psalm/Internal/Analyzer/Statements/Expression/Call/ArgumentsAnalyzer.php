@@ -1442,16 +1442,15 @@ final class ArgumentsAnalyzer
 
             if ($last_param) {
                 if ($arg->name !== null) {
-                    $arg_name = $arg->name->name;
                     $function_param = array_reduce(
                         $function_params,
                         static function (
                             ?FunctionLikeParameter $function_param,
                             FunctionLikeParameter $param,
                         ) use (
-                            $arg_name,
+                            $arg,
                         ) {
-                            if ($param->name === $arg_name) {
+                            if ($param->name === $arg->name->name) {
                                 return $param;
                             }
                             return $function_param;

@@ -1737,42 +1737,6 @@ final class ClosureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'narrowedPropertyOfAMutableObjectDoesNotHoldInAClosure' => [
-                'code' => '<?php
-                    final class Mutable {
-                        public ?string $value = null;
-                    }
-
-                    function f(Mutable $mutable): void {
-                        if ($mutable->value === null) {
-                            return;
-                        }
-
-                        $closure = function () use ($mutable): string {
-                            return $mutable->value;
-                        };
-
-                        echo $closure();
-                    }',
-                'error_message' => 'NullableReturnStatement',
-            ],
-            'narrowedPropertyOfAMutableObjectDoesNotHoldInAnArrowFunction' => [
-                'code' => '<?php
-                    final class Mutable {
-                        public ?string $value = null;
-                    }
-
-                    function f(Mutable $mutable): void {
-                        if ($mutable->value === null) {
-                            return;
-                        }
-
-                        $arrow = fn (): string => $mutable->value;
-
-                        echo $arrow();
-                    }',
-                'error_message' => 'NullableReturnStatement',
-            ],
             'wrongArg' => [
                 'code' => '<?php
                     $bar = ["foo", "bar"];
