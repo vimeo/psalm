@@ -358,24 +358,38 @@ final class ExistingAtomicStaticCallAnalyzer
                 );
             }
 
-            if ($method_storage->if_true_assertions) {
+            $if_true_assertions = $assertionsResolver->resolveIfTrue($method_storage, $class_storage);
+
+            if ($if_true_assertions) {
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
                         static fn(Possibilities $assertion): Possibilities =>
-                            $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                        $method_storage->if_true_assertions,
+                            $assertion->getUntemplatedCopy(
+                                $template_result,
+                                null,
+                                $codebase,
+                                new TNamedObject($fq_class_name),
+                            ),
+                        $if_true_assertions,
                     ),
                 );
             }
 
-            if ($method_storage->if_false_assertions) {
+            $if_false_assertions = $assertionsResolver->resolveIfFalse($method_storage, $class_storage);
+
+            if ($if_false_assertions) {
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
                         static fn(Possibilities $assertion): Possibilities =>
-                            $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                        $method_storage->if_false_assertions,
+                            $assertion->getUntemplatedCopy(
+                                $template_result,
+                                null,
+                                $codebase,
+                                new TNamedObject($fq_class_name),
+                            ),
+                        $if_false_assertions,
                     ),
                 );
             }
