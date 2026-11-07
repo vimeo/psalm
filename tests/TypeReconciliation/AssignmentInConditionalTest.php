@@ -516,6 +516,55 @@ final class AssignmentInConditionalTest extends TestCase
                     }',
                 'error_message' => 'UndefinedVariable',
             ],
+            'variableAssignedByTheRightSideOfANestedOrOnlyIsNotDefinedInTheBodyInALoop' => [
+                'code' => '<?php
+                    function ok(string $value): bool {
+                        return $value !== "";
+                    }
+
+                    function run(): void {
+                        foreach ([1, 2] as $_) {
+                            if ((ok("a") || ok($path = "b")) || ok("c")) {
+                                echo $path;
+                            }
+                        }
+                    }',
+                'error_message' => 'UndefinedVariable',
+            ],
+            'possiblyUndefinedVariableAssignedByTheRightSideOfANestedOrStaysPossiblyUndefinedInTheBody' => [
+                'code' => '<?php
+                    function ok(string $value): bool {
+                        return $value !== "";
+                    }
+
+                    function run(bool $c): void {
+                        if ($c) {
+                            $path = "x";
+                        }
+
+                        if ((ok("a") || ok($path = "b")) || ok("c")) {
+                            echo $path;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'possiblyUndefinedVariableAssignedByTheRightSideOfADeeplyNestedOrStaysPossiblyUndefinedInTheBody' => [
+                'code' => '<?php
+                    function ok(string $value): bool {
+                        return $value !== "";
+                    }
+
+                    function run(bool $c): void {
+                        if ($c) {
+                            $path = "x";
+                        }
+
+                        if ((((ok("a") || ok("b")) || ok("c")) || ok($path = "d")) || ok("e")) {
+                            echo $path;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'assignmentInBranchOfAnd' => [
                 'code' => '<?php
                     function foo(string $str): ?int {
