@@ -230,6 +230,94 @@ final class PluginTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    /**
+     * @return list<string> the messages of the IncorrectFunctionCasing issues
+     */
+    private function analyzeWithFunctionCasingChecker(string $code): array
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <plugin filename="examples/plugins/FunctionCasingChecker.php" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+        $this->project_analyzer->getCodebase()->config->throw_exception = false;
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile($file_path, $code);
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $messages = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'IncorrectFunctionCasing') {
+                $messages[] = $issue->message . ' (line ' . $issue->line_from . ')';
+            }
+        }
+
+        return $messages;
+    }
+
+    public function testFunctionCasingCheckerAcceptsTheAliasOfATraitMethod(): void
+    {
+        self::assertSame(
+            [],
+            $this->analyzeWithFunctionCasingChecker(
+                '<?php
+                trait T {
+                    public function doThing(): void {}
+                }
+
+                class A {
+                    use T { doThing as aliasedThing; }
+                }
+
+                function f(A $a): void {
+                    $a->doThing();
+                    $a->aliasedThing();
+                }',
+            ),
+        );
+    }
+
+    public function testFunctionCasingCheckerExpectsTheCasingOfTheTraitAlias(): void
+    {
+        self::assertSame(
+            [
+                'Function is incorrectly cased, expecting doThing (line 11)',
+                'Function is incorrectly cased, expecting aliasedThing (line 12)',
+            ],
+            $this->analyzeWithFunctionCasingChecker(
+                '<?php
+                trait T {
+                    public function doThing(): void {}
+                }
+
+                class A {
+                    use T { doThing as aliasedThing; }
+                }
+
+                function f(A $a): void {
+                    $a->dothing();
+                    $a->aliasedthing();
+                }',
+            ),
+        );
+    }
+
     public function testEchoAnalyzerPluginWithJustHtml(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
