@@ -253,6 +253,20 @@ class Reconciler
 
             foreach ($new_type_parts as $offset => $new_type_part_parts) {
                 $orred_type = null;
+                $first_alternative = null;
+                $any_alternative_possible = false;
+                $report_location = $code_location
+                    && isset($referenced_var_ids[$key])
+                    && isset($active_new_types[$key][$offset])
+                    ? $code_location
+                    : null;
+                // an alternative of several is only a problem when none of them can be true
+                $is_alternative = count($new_type_part_parts) > 1;
+                $suppressed_issues_of_alternative = $suppressed_issues + [
+                    'TypeDoesNotContainType' => 'TypeDoesNotContainType',
+                    'TypeDoesNotContainNull' => 'TypeDoesNotContainNull',
+                    'DocblockTypeContradiction' => 'DocblockTypeContradiction',
+                ];
 
                 foreach ($new_type_part_parts as $new_type_part_part) {
                     if ($new_type_part_part instanceof NestedAssertions
@@ -290,12 +304,8 @@ class Reconciler
                         $statements_analyzer,
                         $inside_loop,
                         $template_type_map,
-                        $code_location
-                            && isset($referenced_var_ids[$key])
-                            && isset($active_new_types[$key][$offset])
-                            ? $code_location
-                            : null,
-                        $suppressed_issues,
+                        $report_location,
+                        $is_alternative ? $suppressed_issues_of_alternative : $suppressed_issues,
                         $failed_reconciliation,
                         $negated,
                     );
@@ -304,10 +314,33 @@ class Reconciler
                         $result_type_candidate = $result_type_candidate->getBuilder()->addType(new TNever)->freeze();
                     }
 
+                    $first_alternative ??= [$new_type_part_part, $result_type];
+                    $any_alternative_possible = $any_alternative_possible
+                        || $failed_reconciliation !== self::RECONCILIATION_EMPTY;
+
                     $orred_type = Type::combineUnionTypes(
                         $result_type_candidate,
                         $orred_type,
                         $codebase,
+                    );
+                }
+
+                if ($is_alternative && $any_alternative_possible) {
+                    $failed_reconciliation = self::RECONCILIATION_OK;
+                }
+
+                if ($is_alternative && $report_location && $first_alternative && !$any_alternative_possible) {
+                    AssertionReconciler::reconcile(
+                        $first_alternative[0],
+                        $first_alternative[1],
+                        $key,
+                        $statements_analyzer,
+                        $inside_loop,
+                        $template_type_map,
+                        $report_location,
+                        $suppressed_issues,
+                        $failed_reconciliation,
+                        $negated,
                     );
                 }
 
