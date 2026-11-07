@@ -20,6 +20,34 @@ final class TryCatchTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableDefinedInTryWhenCatchContinuesOrRethrows' => [
+                'code' => '<?php
+                    function getData(int $test): array {
+                        if (rand(0, $test) > 5) {
+                            throw new RuntimeException("Help", rand(0, 10));
+                        }
+
+                        return [];
+                    }
+
+                    $array = [];
+
+                    foreach ([0, 1, 2] as $test) {
+                        try {
+                            $data = getData($test);
+                        } catch (RuntimeException $exception) {
+                            if ($exception->getCode() > 5) {
+                                continue;
+                            }
+
+                            throw $exception;
+                        }
+
+                        $array[] = $data;
+                    }
+
+                    echo count($array);',
+            ],
             'addThrowableInterfaceType' => [
                 'code' => '<?php
                     interface CustomThrowable {}
@@ -505,6 +533,29 @@ final class TryCatchTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableDefinedInTryWhenCatchMayFallThrough' => [
+                'code' => '<?php
+                    function getData(int $test): array {
+                        if (rand(0, $test) > 5) {
+                            throw new RuntimeException("Help", rand(0, 10));
+                        }
+
+                        return [];
+                    }
+
+                    foreach ([0, 1, 2] as $test) {
+                        try {
+                            $data = getData($test);
+                        } catch (RuntimeException $exception) {
+                            if ($exception->getCode() > 5) {
+                                continue;
+                            }
+                        }
+
+                        echo count($data);
+                    }',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
             'invalidCatchClass' => [
                 'code' => '<?php
                     class A {}
