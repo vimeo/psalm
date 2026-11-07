@@ -1545,7 +1545,7 @@ final class ArgumentsAnalyzer
             [
                 'ksort', 'asort', 'krsort', 'arsort', 'natcasesort', 'natsort',
                 'reset', 'end', 'next', 'prev', 'array_pop', 'array_shift',
-                'array_push', 'array_unshift', 'socket_select', 'array_splice',
+                'array_push', 'array_unshift', 'socket_select', 'array_splice', 'FFI::memcmp',
             ],
             true,
         )) {
