@@ -420,6 +420,26 @@ final class MethodSignatureTest extends TestCase
                         public function a(int ...$x): void {}
                     }',
             ],
+            'abstractConstructorCompatibleChild' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    class B extends A {
+                        public function __construct(int $a, int $b = 0) {}
+                    }
+                    new B(1);',
+            ],
+            'nonAbstractConstructorMayDiffer' => [
+                'code' => '<?php
+                    abstract class A {
+                        public function __construct(int $a) {}
+                    }
+                    class B extends A {
+                        public function __construct(string $a) {}
+                    }
+                    new B("a");',
+            ],
             'staticReturnOfAnInheritedMethodSatisfiesAnInterface' => [
                 'code' => '<?php
                     interface ModelInterface {
@@ -2110,6 +2130,37 @@ final class MethodSignatureTest extends TestCase
 
                     class BadAChild extends A {
                         public function __construct(string $s) {}
+                    }',
+                'error_message' => 'ConstructorSignatureMismatch',
+            ],
+            'abstractConstructorParamTypeMismatch' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    class B extends A {
+                        public function __construct(string $a) {}
+                    }',
+                'error_message' => 'ConstructorSignatureMismatch',
+            ],
+            'abstractConstructorMoreRequiredParams' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    class B extends A {
+                        public function __construct(int $a, int $b) {}
+                    }',
+                'error_message' => 'ConstructorSignatureMismatch',
+            ],
+            'abstractConstructorInGrandparent' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    abstract class B extends A {}
+                    class C extends B {
+                        public function __construct(string $a) {}
                     }',
                 'error_message' => 'ConstructorSignatureMismatch',
             ],

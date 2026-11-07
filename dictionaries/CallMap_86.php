@@ -15904,7 +15904,7 @@ return array (
   array (
     -1 => 'bool',
     'constant_name' => 'string',
-    'value' => 'array<array-key, mixed>|null|scalar',
+    'value' => 'mixed',
     'case_insensitive=' => 'false',
   ),
   'define_syslog_variables' => 
@@ -102438,7 +102438,7 @@ return array (
   array (
     -1 => 'bool',
     'signal_no' => 'int',
-    'callback=' => 'callable[impure]|null',
+    'callback=' => 'callable[impure]|int|null',
   ),
   'swoole\\process::start' => 
   array (
