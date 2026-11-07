@@ -24,6 +24,56 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'domXPathEvaluateReturnsATypedResult' => [
+                'code' => '<?php
+                    $xpath = new DOMXPath(new DOMDocument());
+                    $value = $xpath->evaluate("count(//a)");
+
+                    if (is_numeric($value)) {
+                        echo "number";
+                    }
+
+                    if (is_string($value)) {
+                        echo "string";
+                    }
+
+                    if ($value instanceof DOMNodeList) {
+                        echo "nodes";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'filterVarIntWithFloatLiteralsOutsideTheRangeOfAnInt' => [
+                'code' => '<?php
+                    $big = filter_var(1e30, FILTER_VALIDATE_INT);
+                    $notANumber = filter_var(NAN, FILTER_VALIDATE_INT);
+                    $whole = filter_var(5.0, FILTER_VALIDATE_INT);
+                    $bigMin = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["min_range" => 1e30]]);
+                    $notANumberMax = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["max_range" => NAN]]);
+                    $knownMinAndNotANumberMax = filter_var(
+                        5,
+                        FILTER_VALIDATE_INT,
+                        ["options" => ["min_range" => 0, "max_range" => NAN]],
+                    );
+                    $bigMinAndKnownMax = filter_var(
+                        5,
+                        FILTER_VALIDATE_INT,
+                        ["options" => ["min_range" => 1e30, "max_range" => 10]],
+                    );
+                    $knownRange = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["min_range" => 0, "max_range" => 10]]);',
+                'assertions' => [
+                    '$big===' => 'false',
+                    '$notANumber===' => 'false',
+                    '$whole===' => '5',
+                    '$bigMin===' => 'false|int',
+                    '$notANumberMax===' => 'false|int',
+                    '$knownMinAndNotANumberMax===' => 'false|int',
+                    '$bigMinAndKnownMax===' => 'false|int',
+                    '$knownRange===' => '5',
+                ],
+            ],
+
             'multibyteLiteralArgument' => [
                 'code' => '<?php
                     function startsWithGreeting(string $s): bool {
@@ -69,6 +119,72 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'substrOfANonEmptyStringFromItsStart' => [
+                'code' => '<?php
+                    /** @var non-empty-string $in */
+                    $in = "a";
+                    /** @var string $any */
+                    $any = "";
+                    /** @var int $int */
+                    $int = 1;
+                    /** @var int<1, max> $positive */
+                    $positive = 1;
+                    /** @var int<min, -1> $negative */
+                    $negative = -1;
+                    /** @var int<0, max> $not_negative */
+                    $not_negative = 0;
+                    /** @var int<min, 0> $not_positive */
+                    $not_positive = 0;
+
+                    $prefix = substr($in, 0, 4);
+                    $tail = substr($in, -3);
+                    $whole = substr($in, 0);
+                    $explicit_null = substr($in, 0, null);
+                    $dynamic_length = substr($in, 0, $positive);
+                    $dynamic_offset = substr($in, $not_positive, 2);
+                    $literal = substr("abc", 0, 2);
+
+                    $zero_length = substr($in, 0, 0);
+                    $unknown_length = substr($in, 0, $int);
+                    $not_negative_length = substr($in, 0, $not_negative);
+                    $negative_length = substr($in, 0, $negative);
+                    $later_offset = substr($in, 1, 4);
+                    $unknown_offset = substr($in, $int, 4);
+                    $positive_offset = substr($in, $positive, 4);
+                    $maybe_empty_input = substr($any, 0, 4);
+                    $empty_literal = substr("", 0, 4);',
+                'assertions' => [
+                    '$prefix===' => 'non-empty-string',
+                    '$tail===' => 'non-empty-string',
+                    '$whole===' => 'non-empty-string',
+                    '$explicit_null===' => 'non-empty-string',
+                    '$dynamic_length===' => 'non-empty-string',
+                    '$dynamic_offset===' => 'non-empty-string',
+                    '$literal===' => 'non-empty-string',
+                    '$zero_length===' => 'string',
+                    '$unknown_length===' => 'string',
+                    '$not_negative_length===' => 'string',
+                    '$negative_length===' => 'string',
+                    '$later_offset===' => 'string',
+                    '$unknown_offset===' => 'string',
+                    '$positive_offset===' => 'string',
+                    '$maybe_empty_input===' => 'string',
+                    '$empty_literal===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'substrBeforePhp8CanReturnFalse' => [
+                'code' => '<?php
+                    /** @var non-empty-string $in */
+                    $in = "a";
+                    $prefix = substr($in, 0, 4);',
+                'assertions' => [
+                    '$prefix===' => 'false|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
             'errorGetLastHasBacktraceSincePhp85' => [
                 'code' => '<?php
                     $error = error_get_last();',
@@ -86,6 +202,72 @@ final class FunctionCallTest extends TestCase
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.4',
+            ],
+            'peclFunctionsOfExtensionsThePhp86ImageLacks' => [
+                'code' => '<?php
+                    $session = ssh2_connect("example.com", 22);
+                    $version = swoole_version();
+                    $string = _string("abc");
+                    $serialized = igbinary_serialize([1]);',
+                'assertions' => [
+                    '$version===' => 'string',
+                    '$string===' => 'Swoole\StringObject',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.6',
+            ],
+            'clampOfIntegers' => [
+                'code' => '<?php
+                    /** @var int $i */;
+                    $result = clamp($i, 0, 100);',
+                'assertions' => [
+                    '$result===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'clampOfFloats' => [
+                'code' => '<?php
+                    /** @var float $f */;
+                    $result = clamp($f, 0.0, 1.0);',
+                'assertions' => [
+                    '$result===' => 'float',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'clampOfMixedIntAndFloat' => [
+                'code' => '<?php
+                    /** @var int $i */;
+                    /** @var float $f */;
+                    $result = clamp($i, 0.5, $f);',
+                'assertions' => [
+                    '$result===' => 'float|int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'clampOfObjects' => [
+                'code' => '<?php
+                    $d = new DateTimeImmutable();
+                    $min = new DateTimeImmutable("yesterday");
+                    $max = new DateTimeImmutable("tomorrow");
+                    $result = clamp($d, $min, $max);',
+                'assertions' => [
+                    '$result===' => 'DateTimeImmutable',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'clampOfStrings' => [
+                'code' => '<?php
+                    /** @var string $s */;
+                    $result = clamp($s, "a", "z");',
+                'assertions' => [
+                    '$result===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
             ],
             'callTemplatedFunctionWithUnionArgument' => [
                 'code' => '<?php
@@ -2232,6 +2414,21 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'strtolowerOfAStringableObjectIsNotRedundant' => [
+                'code' => '<?php
+                    class Test {
+                        public function __toString(): string {
+                            return "AAA";
+                        }
+                    }
+
+                    function lower(Test $test, Stringable $stringable): string {
+                        return strtolower($test) . strtolower($stringable);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
+            ],
             'array_is_list_on_empty_array' => [
                 'code' => '<?php
                     $a = [];
@@ -2612,6 +2809,15 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'mysqliBindResultRequiresOutputVariable' => [
+                'code' => '<?php
+                    function bind(mysqli_stmt $statement): void {
+                        mysqli_stmt_bind_result($statement);
+                    }',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'invalidScalarArgument' => [
                 'code' => '<?php
                     function fooFoo(int $a): void {}
@@ -2785,6 +2991,13 @@ final class FunctionCallTest extends TestCase
                     'MixedArrayAccess',
                     'RedundantConditionGivenDocblockType',
                 ],
+            ],
+            'clampIsUndefinedBeforePhp86' => [
+                'code' => '<?php
+                    $result = clamp(5, 0, 10);',
+                'error_message' => 'UndefinedFunction',
+                'error_levels' => [],
+                'php_version' => '8.5',
             ],
             'undefinedFunctionInArrayMap' => [
                 'code' => '<?php
@@ -3329,6 +3542,11 @@ final class FunctionCallTest extends TestCase
                     takesArrayShapeWithZeroOrPositiveInt(["bar" => $mayBeInt]);
                 ',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'strtolowerOfALowercaseString' => [
+                'code' => '<?php
+                    echo strtolower("abc");',
+                'error_message' => 'The call to strtolower is unnecessary',
             ],
             'is_a_withAStringAndNoThirdArg' => [
                 'code' => '<?php
