@@ -19,9 +19,12 @@ use function array_reverse;
 use function json_encode;
 use function ksort;
 use function range;
+use function serialize;
 use function sort;
 use function str_repeat;
 use function str_starts_with;
+use function substr_count;
+use function unserialize;
 
 use const JSON_THROW_ON_ERROR;
 
@@ -166,6 +169,43 @@ final class TaintFlowGraphTest extends TestCase
             $reverse,
             'Taint issues must not depend on the order partial graphs are merged in',
         );
+    }
+
+    /**
+     * A forked worker's graph reaches the main process serialized (see TaintFlowGraph::__serialize()). The graph
+     * merged from it must be the same as the one merged from the worker's own object, and its nodes must not share
+     * objects in the serialized string: PHP's unserialize() is slow to resolve a reference to one.
+     */
+    public function testGraphMergedAfterSerializationIsTheSame(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $location = new Raw(str_repeat('$a = 1;', 10), $file_path, 'somefile.php', 0, 4);
+
+        $graph = new TaintFlowGraph();
+        $previous = null;
+        foreach (range(1, 12_000) as $i) {
+            $node = DataFlowNode::getForAssignment('$var' . $i, $location);
+            $graph->addNode($node);
+            if ($previous !== null) {
+                $graph->addPath($previous, $node, '=');
+            }
+            $previous = $node;
+        }
+        $graph->addSink(DataFlowNode::getForAssignment('$sink', $location));
+        $graph->addSource(DataFlowNode::getForAssignment('$source', $location));
+
+        $serialized = serialize($graph);
+        $this->assertSame(0, substr_count($serialized, ';r:') + substr_count($serialized, '{r:'));
+
+        $expected = new TaintFlowGraph();
+        $expected->addGraph($graph);
+
+        /** @var TaintFlowGraph $unserialized */
+        $unserialized = unserialize($serialized);
+        $actual = new TaintFlowGraph();
+        $actual->addGraph($unserialized);
+
+        $this->assertEquals($expected, $actual);
     }
 
     /**

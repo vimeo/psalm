@@ -50,9 +50,11 @@ use function array_pop;
 use function array_unshift;
 use function count;
 use function end;
+use function get_object_vars;
 use function implode;
 use function ksort;
 use function min;
+use function spl_object_id;
 use function strcmp;
 use function strlen;
 use function strpos;
@@ -61,6 +63,7 @@ use function substr;
 use const SORT_STRING;
 
 /**
+ * @psalm-import-type SerializedNode from DataFlowNode
  * @internal
  */
 final class TaintFlowGraph extends DataFlowGraph
@@ -648,6 +651,164 @@ final class TaintFlowGraph extends DataFlowGraph
 
     /**
      * @psalm-external-mutation-free
+     */
+    /**
+     * The graph of a forked worker goes back to the main process serialized. Nodes share CodeLocation objects, and
+     * PHP's own unserialize() finds the object a back-reference to one points to by walking its list of the values
+     * read so far from the start, 1018 at a time: with hundreds of thousands of nodes that takes minutes. So each
+     * node is written as a list of its fields, with its location as an index into one list of the graph's
+     * locations, and nothing in the nodes is shared. A node of the sources, sinks or generator sent nodes that is
+     * also the node of its id is written as null.
+     *
+     * @return array<string, mixed>
+     * @psalm-capabilities read-props
+     */
+    public function __serialize(): array
+    {
+        $locations = [];
+        $location_indexes = [];
+
+        $data = get_object_vars($this);
+        $data['nodes'] = self::serializeNodes($this->nodes, null, $locations, $location_indexes);
+        $data['sources'] = self::serializeNodes($this->sources, $this->nodes, $locations, $location_indexes);
+        $data['sinks'] = self::serializeNodes($this->sinks, $this->nodes, $locations, $location_indexes);
+        $data['generator_sent_nodes'] = self::serializeNodes(
+            $this->generator_sent_nodes,
+            $this->nodes,
+            $locations,
+            $location_indexes,
+        );
+        $data['locations'] = $locations;
+
+        return $data;
+    }
+
+    /**
+     * @param array{
+     *     nodes: array<string, SerializedNode>,
+     *     sources: array<string, SerializedNode|null>,
+     *     sinks: array<string, SerializedNode|null>,
+     *     generator_sent_nodes: array<string, SerializedNode|null>,
+     *     locations: list<CodeLocation>,
+     *     ...<string, mixed>
+     * } $data
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function __unserialize(array $data): void
+    {
+        $locations = $data['locations'];
+
+        $nodes = [];
+        foreach ($data['nodes'] as $id => $fields) {
+            $nodes[$id] = self::unserializeNode($fields, $locations);
+        }
+
+        $this->nodes = $nodes;
+        $this->sources = self::unserializeNodes($data['sources'], $nodes, $locations);
+        $this->sinks = self::unserializeNodes($data['sinks'], $nodes, $locations);
+        $this->generator_sent_nodes = self::unserializeNodes($data['generator_sent_nodes'], $nodes, $locations);
+
+        unset($data['nodes'], $data['sources'], $data['sinks'], $data['generator_sent_nodes'], $data['locations']);
+
+        /** @psalm-suppress MixedAssignment */
+        foreach ($data as $property => $value) {
+            $this->$property = $value;
+        }
+    }
+
+    /**
+     * @param array<string, DataFlowNode> $nodes
+     * @param array<string, DataFlowNode>|null $all_nodes a node of $nodes that is the node of its id here is null
+     * @param list<CodeLocation> $locations
+     * @param array<int, int> $location_indexes
+     * @param-out list<CodeLocation> $locations
+     * @param-out array<int, int> $location_indexes
+     * @return array<string, SerializedNode|null>
+     * @psalm-capabilities read-props|write-refs
+     */
+    private static function serializeNodes(
+        array $nodes,
+        ?array $all_nodes,
+        array &$locations,
+        array &$location_indexes,
+    ): array {
+        $serialized = [];
+
+        foreach ($nodes as $id => $node) {
+            $serialized[$id] = $all_nodes !== null && ($all_nodes[$id] ?? null) === $node
+                ? null
+                : self::serializeNode($node, $locations, $location_indexes);
+        }
+
+        return $serialized;
+    }
+
+    /**
+     * @param list<CodeLocation> $locations
+     * @param array<int, int> $location_indexes
+     * @param-out list<CodeLocation> $locations
+     * @param-out array<int, int> $location_indexes
+     * @return SerializedNode
+     * @psalm-capabilities read-props|write-refs
+     */
+    private static function serializeNode(DataFlowNode $node, array &$locations, array &$location_indexes): array
+    {
+        $location_index = null;
+
+        if ($node->code_location !== null) {
+            $object_id = spl_object_id($node->code_location);
+            $location_index = $location_indexes[$object_id] ?? null;
+
+            if ($location_index === null) {
+                $location_index = count($locations);
+                $location_indexes[$object_id] = $location_index;
+                $locations[] = $node->code_location;
+            }
+        }
+
+        return $node->toSerializedFields(
+            $location_index,
+            $node->taintSource === null ? null : self::serializeNode($node->taintSource, $locations, $location_indexes),
+        );
+    }
+
+    /**
+     * @param array<string, SerializedNode|null> $serialized
+     * @param array<string, DataFlowNode> $all_nodes
+     * @param list<CodeLocation> $locations
+     * @return array<string, DataFlowNode>
+     * @psalm-pure
+     */
+    private static function unserializeNodes(array $serialized, array $all_nodes, array $locations): array
+    {
+        $nodes = [];
+
+        foreach ($serialized as $id => $fields) {
+            $nodes[$id] = $fields === null ? $all_nodes[$id] : self::unserializeNode($fields, $locations);
+        }
+
+        return $nodes;
+    }
+
+    /**
+     * @param SerializedNode $fields
+     * @param list<CodeLocation> $locations
+     * @psalm-pure
+     */
+    private static function unserializeNode(array $fields, array $locations): DataFlowNode
+    {
+        /** @var SerializedNode|null $taint_source */
+        $taint_source = $fields[6];
+
+        return DataFlowNode::fromSerializedFields(
+            $fields,
+            $fields[4] === null ? null : $locations[$fields[4]] ?? null,
+            $taint_source === null ? null : self::unserializeNode($taint_source, $locations),
+        );
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     public function addGraph(self $other): void
     {
