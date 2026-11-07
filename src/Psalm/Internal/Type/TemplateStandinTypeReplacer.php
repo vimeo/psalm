@@ -1118,7 +1118,14 @@ final class TemplateStandinTypeReplacer
                         $valid_input_atomic_types[] = new TObject(true);
                     }
                 } elseif ($input_atomic_type instanceof TDependentGetClass) {
-                    $valid_input_atomic_types[] = new TObject(true);
+                    // what get_class($x) is known to be: the class of $x, or any object if that is not known
+                    if ($input_atomic_type->as_type->isMixed() || $input_atomic_type->as_type->hasObject()) {
+                        $valid_input_atomic_types[] = new TObject(true);
+                    } else {
+                        foreach ($input_atomic_type->as_type->getAtomicTypes() as $as_atomic_type) {
+                            $valid_input_atomic_types[] = $as_atomic_type;
+                        }
+                    }
                 }
             }
 
