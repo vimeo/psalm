@@ -260,6 +260,14 @@ final class ConstantTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedArgument'],
             ],
+            'defineAnObjectConstantSinceEightOne' => [
+                'code' => '<?php
+                    define("OBJECT_CONSTANT", new stdClass());
+                    $object = OBJECT_CONSTANT;',
+                'assertions' => ['$object' => 'stdClass'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'bitwiseOperationsOnFloatConstantsOutsideTheRangeOfAnIntAreNotFolded' => [
                 'code' => '<?php
                     class A {
@@ -2419,6 +2427,13 @@ final class ConstantTest extends TestCase
 
                     echo ZZZ;',
                 'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26 - Const ZZZ is not defined',
+            ],
+            'defineAnObjectConstantBeforeEightOne' => [
+                'code' => '<?php
+                    define("OBJECT_CONSTANT", new stdClass());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'classConstantDividingByAZeroIntConstantOfAnotherClass' => [
                 'code' => '<?php
