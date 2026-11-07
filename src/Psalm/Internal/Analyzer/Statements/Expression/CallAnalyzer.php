@@ -239,7 +239,10 @@ abstract class CallAnalyzer
 
                 $old_calling_method_id = $context->calling_method_id;
 
-                if ($fq_class_name === $source->getFQCLN()) {
+                // the class the method is in, also when it comes from a trait
+                $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id) ?? $declaring_method_id;
+
+                if (strtolower($appearing_method_id->fq_class_name) === strtolower((string) $source->getFQCLN())) {
                     $class_analyzer->getMethodMutations($declaring_method_id->method_name, $context);
                 } else {
                     $declaring_fq_class_name = $declaring_method_id->fq_class_name;

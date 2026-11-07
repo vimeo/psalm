@@ -561,6 +561,46 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyInitializedByAFinalMethodOfAParentClass' => [
+                'code' => '<?php
+                    abstract class Event {
+                        protected string $uniqueId;
+
+                        final protected function generateUniqueId(): void {
+                            $this->uniqueId = "id";
+                        }
+                    }
+
+                    final class SomeEvent extends Event {
+                        public function __construct() {
+                            $this->generateUniqueId();
+                        }
+                    }',
+            ],
+            'propertyInitializedByAFinalMethodOfATraitUsedByAParentClass' => [
+                'code' => '<?php
+                    trait Initializes {
+                        protected int $value;
+
+                        final protected function setValue(): void {
+                            $this->value = 5;
+                        }
+                    }
+
+                    class Base {
+                        use Initializes;
+
+                        protected function __construct() {
+                            $this->setValue();
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public static function make(): self {
+                            return new self();
+                        }
+                    }',
+            ],
             'newVarInIf' => [
                 'code' => '<?php
                     class A {
@@ -2903,6 +2943,22 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'propertyNotInitializedByTheFinalMethodOfAParentClass' => [
+                'code' => '<?php
+                    abstract class Event {
+                        protected string $uniqueId;
+
+                        final protected function generateUniqueId(): void {
+                        }
+                    }
+
+                    final class SomeEvent extends Event {
+                        public function __construct() {
+                            $this->generateUniqueId();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
             'undefinedPropertyAssignment' => [
                 'code' => '<?php
                     class A {
