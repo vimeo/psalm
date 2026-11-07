@@ -586,6 +586,65 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => ['MissingConstructor'],
                 'php_version' => '8.0',
             ],
+            'protectedPropertyRedeclaredInASubclassAccessedFromASibling' => [
+                'code' => '<?php
+                    class A
+                    {
+                        protected string $prop = "";
+                    }
+
+                    class B extends A
+                    {
+                        protected string $prop = "b";
+                    }
+
+                    class C extends A
+                    {
+                        public B $b;
+
+                        public function __construct()
+                        {
+                            $this->b = new B();
+                        }
+
+                        public function read(): string
+                        {
+                            return $this->b->prop;
+                        }
+                    }',
+            ],
+            'protectedPropertyRedeclaredByATraitAccessedFromASibling' => [
+                'code' => '<?php
+                    class A
+                    {
+                        protected string $prop = "";
+                    }
+
+                    trait Mangler
+                    {
+                        protected string $prop = "";
+                    }
+
+                    class B extends A
+                    {
+                        use Mangler;
+                    }
+
+                    class C extends A
+                    {
+                        public B $b;
+
+                        public function __construct()
+                        {
+                            $this->b = new B();
+                        }
+
+                        public function write(): void
+                        {
+                            $this->b->prop = "x";
+                        }
+                    }',
+            ],
             'newVarInIf' => [
                 'code' => '<?php
                     class A {
@@ -2948,6 +3007,27 @@ final class PropertyTypeTest extends TestCase
                 'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:29 - Type string for $book->name is always isset',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'protectedPropertyOfAnUnrelatedClassIsInaccessible' => [
+                'code' => '<?php
+                    class A
+                    {
+                        protected string $prop = "";
+                    }
+
+                    class B extends A
+                    {
+                        protected string $prop = "b";
+                    }
+
+                    class Unrelated
+                    {
+                        public function read(B $b): string
+                        {
+                            return $b->prop;
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty',
             ],
             'undefinedPropertyAssignment' => [
                 'code' => '<?php
