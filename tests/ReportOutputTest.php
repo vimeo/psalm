@@ -64,7 +64,7 @@ final class ReportOutputTest extends TestCase
 
         // No exception
         foreach (['.xml', '.txt', '.json', '.emacs'] as $extension) {
-            ProjectAnalyzer::getFileReportOptions(['/tmp/report' . $extension]);
+            self::assertNotEmpty(ProjectAnalyzer::getFileReportOptions(['/tmp/report' . $extension]));
         }
     }
 
@@ -74,7 +74,7 @@ final class ReportOutputTest extends TestCase
         $config = new TestConfig();
         $config->throw_exception = false;
 
-        ProjectAnalyzer::getFileReportOptions(['/tmp/report.log']);
+        self::assertNotEmpty(ProjectAnalyzer::getFileReportOptions(['/tmp/report.log']));
     }
 
     public function analyzeTaintFlowFilesForReport(): void
