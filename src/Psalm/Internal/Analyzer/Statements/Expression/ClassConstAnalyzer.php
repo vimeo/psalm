@@ -412,8 +412,22 @@ final class ClassConstAnalyzer
             ) {
                 $stmt_type = $class_constant_type;
 
+                if ($first_part_lc === 'static') {
+                    // a condition on `static::NAME` holds for the next `static::NAME`, not for `self::NAME`
+                    // (a subclass may override the constant)
+                    $static_const_id = 'static::' . $stmt->name->name;
+
+                    $stmt_type = $context->vars_in_scope[$static_const_id] ?? $stmt_type;
+                    $context->vars_in_scope[$static_const_id] = $stmt_type;
+
+                    if ($context->inside_conditional) {
+                        $context->cond_referenced_var_ids[$static_const_id] = true;
+                    }
+                } else {
+                    $context->vars_in_scope[$const_id] = $stmt_type;
+                }
+
                 $statements_analyzer->node_data->setType($stmt, $stmt_type);
-                $context->vars_in_scope[$const_id] = $stmt_type;
             }
 
             return true;
