@@ -532,6 +532,39 @@ final class UnusedCodeTest extends TestCase
                     }
                     PHP,
             ],
+            'usedResultOfAPureStaticMethodCall' => [
+                'code' => '<?php
+                    final class Math
+                    {
+                        /** @psalm-pure */
+                        public static function addOne(int $number): int
+                        {
+                            return $number + 1;
+                        }
+                    }
+
+                    /** @psalm-api */
+                    function f(): int {
+                        $a = Math::addOne(5);
+                        echo Math::addOne($a);
+
+                        return Math::addOne(Math::addOne(1));
+                    }',
+            ],
+            'unusedResultOfAnImpureStaticMethodCallIsNotReported' => [
+                'code' => '<?php
+                    final class Counter
+                    {
+                        public static int $count = 0;
+
+                        public static function increment(): int
+                        {
+                            return ++self::$count;
+                        }
+                    }
+
+                    Counter::increment();',
+            ],
             'pureMethodCallAsTheLeftOperandOfACoalesceThatThrows' => [
                 'code' => '<?php
                     final class A {
@@ -2238,6 +2271,20 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'unusedResultOfAPureStaticMethodCall' => [
+                'code' => '<?php
+                    final class Math
+                    {
+                        /** @psalm-pure */
+                        public static function addOne(int $number): int
+                        {
+                            return $number + 1;
+                        }
+                    }
+
+                    Math::addOne(5);',
+                'error_message' => 'UnusedMethodCall',
+            ],
             'argumentStillReportsPossiblyInvalidArgumentWithUnusedCode' => [
                 'code' => '<?php
                     /**
