@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\PurityWildcardInference;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -324,6 +325,24 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             if ($function_call_info->function_storage?->has_yield) {
                 // a generator function always returns a new generator: nothing else holds it
                 $stmt_type = $stmt_type->setProperties(['reference_free' => true]);
+            }
+
+            // the result of a pure function called with literals is the same every time (the capabilities of a
+            // function of the call map are only worked out at the call): what is known about it
+            // (`if (lookup('a') !== null)`) holds for the next call
+            if (!$is_first_class_callable
+                && !$function_call_info->in_call_map
+                && $function_call_info->function_storage?->isPure()
+                && ($call_var_id = ExpressionIdentifier::getFunctionCallId($stmt)) !== null
+            ) {
+                if (isset($context->vars_in_scope[$call_var_id])) {
+                    // the call itself is made here, whatever happened to the id in a loop or a branch
+                    $stmt_type = $context->vars_in_scope[$call_var_id]->setPossiblyUndefined(false);
+                } else {
+                    $context->vars_in_scope[$call_var_id] = $stmt_type;
+                }
+
+                $stmt->setAttribute('memoizable', true);
             }
 
             $statements_analyzer->node_data->setType($real_stmt, $stmt_type);

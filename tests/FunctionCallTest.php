@@ -24,6 +24,65 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'pureFunctionCalledWithLiteralsRemembersWhatTheConditionTold' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function lookup(string $name): ?string {
+                        return $name === "test" ? "found" : null;
+                    }
+
+                    $a = "";
+                    if (lookup("test") !== null) {
+                        $a = lookup("test");
+                    }',
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
+            ],
+            'pureFunctionCalledWithLiteralsRemembersAnEarlyReturnGuard' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function lookup(string $name): ?string {
+                        return $name === "test" ? "found" : null;
+                    }
+
+                    function guarded(): string {
+                        if (lookup("test") === null) {
+                            return "";
+                        }
+
+                        return lookup("test");
+                    }',
+            ],
+            'pureFunctionCalledWithLiteralsInALoopIsNotPossiblyUndefined' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function lookup(string $name): ?string {
+                        return $name === "test" ? "found" : null;
+                    }
+
+                    function loop(int $times): void {
+                        for ($i = 0; $i < $times; $i++) {
+                            $found = lookup("test");
+                            echo $found;
+                        }
+                    }',
+            ],
+            'pureFunctionCalledWithOtherArgumentsIsAnotherCall' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function lookup(string $name): ?string {
+                        return $name === "test" ? "found" : null;
+                    }
+
+                    $other = "";
+                    if (lookup("test") !== null) {
+                        $other = lookup("other");
+                    }',
+                'assertions' => [
+                    '$other===' => 'null|string',
+                ],
+            ],
             'domXPathEvaluateReturnsATypedResult' => [
                 'code' => '<?php
                     $xpath = new DOMXPath(new DOMDocument());

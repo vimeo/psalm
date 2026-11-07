@@ -243,6 +243,12 @@ class Reconciler
                 $has_object_array_access,
             );
 
+            // the remembered result of a function call that this context never made (the call was in the
+            // condition of an `if`): nothing is known to refine
+            if ($result_type === null && !$did_type_exist && preg_match('/^[\\w\\\\]+\\(.*\\)$/s', $key) === 1) {
+                continue;
+            }
+
             if ($result_type && $result_type->isUnionEmpty()) {
                 throw new InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
             }
