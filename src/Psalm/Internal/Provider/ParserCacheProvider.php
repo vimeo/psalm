@@ -49,7 +49,6 @@ final class ParserCacheProvider
         string $file_path,
         ?string $file_content_hash,
     ): ?array {
-        /** @var array{list<PhpParser\Node\Stmt>, list<array{string, array<string, mixed>}>}|null $item */
         $item = $this->stmtCache->getItem($file_path, $file_content_hash);
 
         if ($item === null) {
@@ -68,6 +67,20 @@ final class ParserCacheProvider
     public function getHash(string $file_path): ?string
     {
         return $this->stmtCache->getHash($file_path);
+    }
+
+    /**
+     * Whether the cached statements of a file were parsed from other contents. A file that was never cached has
+     * nothing to be stale. One with cached statements but no usable stored hash can no longer be trusted.
+     */
+    public function hasChanged(string $file_path, string $file_contents): bool
+    {
+        $hash = $this->getHash($file_path);
+        if ($hash !== null) {
+            return $hash !== $file_contents;
+        }
+
+        return $this->stmtCache->hasItem($file_path);
     }
 
     /**
