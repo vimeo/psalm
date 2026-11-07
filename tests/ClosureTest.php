@@ -22,6 +22,26 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'narrowedPropertyOfAnImmutableObjectHoldsInAClosure' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    final class Imm {
+                        public function __construct(public ?string $value = null) {}
+                    }
+
+                    function f(Imm $imm): void {
+                        if ($imm->value === null) {
+                            return;
+                        }
+
+                        $closure = function () use ($imm): string {
+                            return $imm->value;
+                        };
+                        $arrow = fn (): string => $imm->value;
+
+                        echo $closure() . $arrow();
+                    }',
+            ],
             'byRefUseVarUnsetInClosure' => [
                 'code' => '<?php
                     function reserve(): Closure {
@@ -1717,6 +1737,42 @@ final class ClosureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'narrowedPropertyOfAMutableObjectDoesNotHoldInAClosure' => [
+                'code' => '<?php
+                    final class Mutable {
+                        public ?string $value = null;
+                    }
+
+                    function f(Mutable $mutable): void {
+                        if ($mutable->value === null) {
+                            return;
+                        }
+
+                        $closure = function () use ($mutable): string {
+                            return $mutable->value;
+                        };
+
+                        echo $closure();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'narrowedPropertyOfAMutableObjectDoesNotHoldInAnArrowFunction' => [
+                'code' => '<?php
+                    final class Mutable {
+                        public ?string $value = null;
+                    }
+
+                    function f(Mutable $mutable): void {
+                        if ($mutable->value === null) {
+                            return;
+                        }
+
+                        $arrow = fn (): string => $mutable->value;
+
+                        echo $arrow();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
             'wrongArg' => [
                 'code' => '<?php
                     $bar = ["foo", "bar"];

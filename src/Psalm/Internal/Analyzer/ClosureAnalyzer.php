@@ -300,8 +300,20 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 $use_context->vars_possibly_in_scope[$use_var_id] = true;
 
+                // what is known of a property of the captured object holds when the closure runs only if the object
+                // cannot change
+                $captured_object_is_immutable = $context->hasVariable($use_var_id)
+                    && self::isImmutableObject(
+                        $statements_analyzer->getCodebase(),
+                        $context->vars_in_scope[$use_var_id],
+                    );
+
                 foreach ($context->vars_in_scope as $var_id => $type) {
                     if (preg_match('/^\$' . $use->var->name . '[\[\-]/', $var_id)) {
+                        if (!$captured_object_is_immutable && preg_match('/^\$' . $use->var->name . '->/', $var_id)) {
+                            continue;
+                        }
+
                         $use_context->vars_in_scope[$var_id] = self::getCapturedType($type);
                         $use_context->vars_possibly_in_scope[$var_id] = true;
                     }
@@ -320,6 +332,19 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                     $use_context->vars_in_scope[$use_var_id] = self::getCapturedType(
                         $context->vars_in_scope[$use_var_id],
                     );
+
+                    // what is known of a property of an object that cannot change holds in the closure
+                    if (self::isImmutableObject(
+                        $statements_analyzer->getCodebase(),
+                        $context->vars_in_scope[$use_var_id],
+                    )) {
+                        foreach ($context->vars_in_scope as $var_id => $type) {
+                            if (str_starts_with($var_id, $use_var_id . '->')) {
+                                $use_context->vars_in_scope[$var_id] = self::getCapturedType($type);
+                                $use_context->vars_possibly_in_scope[$var_id] = true;
+                            }
+                        }
+                    }
 
                     if ($statements_analyzer->data_flow_graph) {
                         $parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;
@@ -395,6 +420,23 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
 
         if (!$statements_analyzer->node_data->getType($stmt)) {
             $statements_analyzer->node_data->setType($stmt, Type::getClosure());
+        }
+
+        return true;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function isImmutableObject(Codebase $codebase, Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject
+                || !$codebase->classlike_storage_provider->has($atomic_type->value)
+                || !$codebase->classlike_storage_provider->get($atomic_type->value)->isMutationFree()
+            ) {
+                return false;
+            }
         }
 
         return true;
