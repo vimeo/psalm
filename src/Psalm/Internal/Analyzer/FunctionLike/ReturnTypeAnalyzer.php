@@ -71,6 +71,7 @@ use function strtolower;
 final class ReturnTypeAnalyzer
 {
     /**
+     * @param ?string $fq_class_name the class analyzed, not the parent or interface the return type comes from
      * @psalm-capabilities read-props
      */
     private static function isOverridable(
@@ -553,7 +554,7 @@ final class ReturnTypeAnalyzer
                 // https://3v4l.org/vCSF4#v8.1.12
                 && !ScopeAnalyzer::onlyThrows($function_stmts)
                 // a method a child class may override must not be given the type of its stub implementation
-                && !self::isOverridable($codebase, $function_like_storage, $fq_class_name)
+                && !self::isOverridable($codebase, $function_like_storage, $static_fq_class_name ?? $fq_class_name)
             ) {
                 if ($codebase->alter_code
                     && isset($project_analyzer->getIssuesToFix()['InvalidReturnType'])
