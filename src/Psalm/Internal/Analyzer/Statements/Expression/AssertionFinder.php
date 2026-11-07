@@ -4018,6 +4018,38 @@ final class AssertionFinder
     }
 
     /**
+     * For `$a-- > 0` and the like: the variable and the value to compare it with after the expression,
+     * where it has been decremented or incremented
+     *
+     * @return array{0: ?string, 1: int}
+     */
+    private static function getIncrementedVarAssertionValue(
+        PhpParser\Node\Expr $expr,
+        int $value,
+        ?string $this_class_name,
+        FileSource $source,
+    ): array {
+        if ($expr instanceof PhpParser\Node\Expr\PostInc) {
+            $shift = 1;
+        } elseif ($expr instanceof PhpParser\Node\Expr\PostDec) {
+            $shift = -1;
+        } elseif ($expr instanceof PhpParser\Node\Expr\PreInc || $expr instanceof PhpParser\Node\Expr\PreDec) {
+            $shift = 0;
+        } else {
+            return [null, $value];
+        }
+
+        $var_name = ExpressionIdentifier::getExtendedVarId($expr->var, $this_class_name, $source);
+        $shifted_value = $value + $shift;
+
+        if ($var_name === null || !is_int($shifted_value)) {
+            return [null, $value];
+        }
+
+        return [$var_name, $shifted_value];
+    }
+
+    /**
      * @param PhpParser\Node\Expr\BinaryOp\Greater|PhpParser\Node\Expr\BinaryOp\GreaterOrEqual $conditional
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
@@ -4103,6 +4135,17 @@ final class AssertionFinder
             } else {
                 $var_name = ExpressionIdentifier::getExtendedVarId(
                     $conditional->right,
+                    $this_class_name,
+                    $source,
+                );
+            }
+
+            if ($var_name === null) {
+                [$var_name, $superior_value_comparison] = self::getIncrementedVarAssertionValue(
+                    $superior_value_position === self::ASSIGNMENT_TO_RIGHT
+                        ? $conditional->left
+                        : $conditional->right,
+                    $superior_value_comparison,
                     $this_class_name,
                     $source,
                 );
@@ -4216,6 +4259,17 @@ final class AssertionFinder
                 );
             }
 
+
+            if ($var_name === null && $inferior_value_comparison !== null) {
+                [$var_name, $inferior_value_comparison] = self::getIncrementedVarAssertionValue(
+                    $inferior_value_position === self::ASSIGNMENT_TO_RIGHT
+                        ? $conditional->left
+                        : $conditional->right,
+                    $inferior_value_comparison,
+                    $this_class_name,
+                    $source,
+                );
+            }
 
             if ($var_name !== null && $inferior_value_comparison !== null) {
                 if ($inferior_value_position === self::ASSIGNMENT_TO_RIGHT) {
