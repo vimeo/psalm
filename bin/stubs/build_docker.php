@@ -181,7 +181,7 @@ function fail(string $message): never
 /** Run a command, streaming output; retry transient failures (registry and download 5xx), abort if all fail. */
 function run(string $cmd, int $attempts = 3): void
 {
-    for ($attempt = 1; ; $attempt++) {
+    for ($attempt = 1;; $attempt++) {
         echo "> $cmd\n";
         passthru($cmd, $exit);
         if ($exit === 0) {
