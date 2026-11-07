@@ -21,6 +21,33 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'traitExistsWithoutAutoloadNarrowsTheName' => [
+                'code' => '<?php
+                    function checkTrait(string $name): void {
+                        if (!trait_exists($name, false)) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $name = trait-string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'negatedTraitExistsWithAutoloadKeepsATraitStringParam' => [
+                'code' => '<?php
+                    /** @param trait-string $name */
+                    function checkTrait(string $name, bool $autoload = true): string {
+                        if (!trait_exists($name, $autoload)) {
+                            throw new Exception($name);
+                        }
+
+                        return $name;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'twoVarLogicSimple' => [
                 'code' => '<?php
                     function foo(?string $a, ?string $b): string {
@@ -1358,6 +1385,25 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'negationOfAConjunctionKeepsAClauseThatSaysNothingWhenFalse' => [
+                'code' => '<?php
+                    class A {}
+                    class B {}
+
+                    /** @param A|B|stdClass $x */
+                    function test(object $x, string $needle): A {
+                        if (!$x instanceof A
+                            && !($x instanceof B && !str_contains($needle, "a"))
+                        ) {
+                            throw new Exception("x");
+                        }
+
+                        return $x;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'staticPropertyNarrowedToDeclaredTypeAfterEarlyReturn' => [
                 'code' => '<?php
                     final class A {
