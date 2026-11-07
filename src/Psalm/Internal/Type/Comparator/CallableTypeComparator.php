@@ -308,8 +308,13 @@ final class CallableTypeComparator
         MethodIdentifier $method_id,
         ?TCallable $container_type_part,
     ): ?TCallable {
+        if (!$codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
+            return null;
+        }
+
         try {
-            $method_storage = $codebase->methods->getStorage($method_id);
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
+            $method_storage = $codebase->methods->getStorage($declaring_method_id);
             $method_fqcln = $method_id->fq_class_name;
 
             $converted_return_type = null;
@@ -318,13 +323,17 @@ final class CallableTypeComparator
                 $converted_return_type = TypeExpander::expandUnion(
                     $codebase,
                     $method_storage->return_type,
-                    $method_fqcln,
+                    // `self` is the class the method appears in: the one using the trait, for a trait method
+                    ($codebase->methods->getAppearingMethodId($method_id) ?? $declaring_method_id)->fq_class_name,
                     $method_fqcln,
                     null,
+                    true,
+                    false,
+                    $codebase->classlike_storage_provider->get($method_fqcln)->final,
                 );
             }
 
-            $class_template_types = $codebase->methods->getClassLikeStorageForMethod($method_id)
+            $class_template_types = $codebase->methods->getClassLikeStorageForMethod($declaring_method_id)
                 ->template_types ?? [];
 
             $callable = self::withoutPurityTemplates(
