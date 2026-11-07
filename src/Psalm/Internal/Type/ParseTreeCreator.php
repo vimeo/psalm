@@ -112,6 +112,17 @@ final class ParseTreeCreator
                     break;
 
                 case '}':
+                    // after a trailing comma the array itself is the current leaf
+                    if ($this->current_leaf instanceof KeyedArrayTree
+                        && $this->current_leaf->children !== []
+                        && $this->t > 0
+                        && $this->type_tokens[$this->t - 1][0] === ','
+                    ) {
+                        $this->current_leaf->terminated = true;
+
+                        break;
+                    }
+
                     do {
                         if ($this->current_leaf->parent === null) {
                             throw new TypeParseTreeException('Cannot parse array type');
@@ -499,6 +510,16 @@ final class ParseTreeCreator
 
         if (!$this->current_leaf->parent) {
             throw new TypeParseTreeException('Cannot parse comma without a parent node');
+        }
+
+        // after a comma the current leaf is its container, and a second comma would climb out of it
+        $prev = $this->t - 1;
+        while ($prev >= 0 && $this->type_tokens[$prev][0] === ' ') {
+            $prev--;
+        }
+
+        if ($prev >= 0 && $this->type_tokens[$prev][0] === ',') {
+            throw new TypeParseTreeException('Unexpected token ,');
         }
 
         $context_node = $this->current_leaf;
