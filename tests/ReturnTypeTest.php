@@ -28,6 +28,44 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'overridableMethodThatThrowsAfterAnotherStatementKeepsItsDeclaredReturnType' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    abstract class Base {
+                        /** @return string */
+                        public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }',
+            ],
+            'traitMethodOfAnOverridableClassThatThrowsAfterAnotherStatementKeepsTheReturnTypeOfTheInterface' => [
+                'code' => '<?php
+                    final class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    interface I {
+                        /** @return string */
+                        public function doSomething();
+                    }
+
+                    trait T {
+                        public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }
+
+                    class C implements I {
+                        use T;
+                    }',
+            ],
             'nativeArrayReturnTypeTakesTheInheritedIterableDocblock' => [
                 'code' => '<?php
                     abstract class Base {
@@ -1826,6 +1864,72 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'finalMethodThatAlwaysThrowsAfterAnotherStatementIsNever' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    class Base {
+                        /** @return string */
+                        final public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'traitMethodOfAFinalClassThatAlwaysThrowsIsNeverForTheReturnTypeOfTheInterface' => [
+                'code' => '<?php
+                    final class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    interface I {
+                        /** @return string */
+                        public function doSomething();
+                    }
+
+                    trait T {
+                        public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }
+
+                    final class C implements I {
+                        use T;
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'traitMethodOfAFinalClassThatAlwaysThrowsIsNeverForTheReturnTypeOfTheParent' => [
+                'code' => '<?php
+                    final class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    class P {
+                        /** @return string */
+                        public function doSomething() {
+                            return "a";
+                        }
+                    }
+
+                    trait T {
+                        public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }
+
+                    final class C extends P {
+                        use T;
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
             'nativeArrayReturnTypeMustRespectTheInheritedIterableDocblock' => [
                 'code' => '<?php
                     abstract class Base {
