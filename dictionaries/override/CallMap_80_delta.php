@@ -3634,7 +3634,7 @@ return array (
       'old' => 
       array (
         0 => 'DateInterval',
-        'datetime2' => 'DateTimeInterface',
+        'object' => 'DateTimeInterface',
         'absolute=' => 'bool',
       ),
       'new' => 
@@ -5974,6 +5974,17 @@ return array (
         0 => 'EventHttpConnection|null',
       ),
     ),
+    'eventhttprequest::gethost' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+      ),
+    ),
     'eventhttprequest::getoutputheaders' => 
     array (
       'old' => 
@@ -5983,6 +5994,17 @@ return array (
       'new' => 
       array (
         0 => 'array<array-key, mixed>',
+      ),
+    ),
+    'eventhttprequest::geturi' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
       ),
     ),
     'eventhttprequest::removeheader' => 
@@ -17830,8 +17852,8 @@ return array (
       'old' => 
       array (
         0 => 'void',
-        'hostname=' => 'string',
-        'username=' => 'string',
+        'host=' => 'string',
+        'user=' => 'string',
         'password=' => 'string',
         'database=' => 'string',
         'port=' => 'int',
@@ -17848,6 +17870,19 @@ return array (
         'socket=' => 'null|string',
       ),
     ),
+    'mysqli::autocommit' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'mode' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'enable' => 'bool',
+      ),
+    ),
     'mysqli::begin_transaction' => 
     array (
       'old' => 
@@ -17861,6 +17896,23 @@ return array (
         0 => 'bool',
         'flags=' => 'int',
         'name=' => 'null|string',
+      ),
+    ),
+    'mysqli::change_user' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'user' => 'string',
+        'password' => 'string',
+        'database' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'username' => 'string',
+        'password' => 'string',
+        'database' => 'null|string',
       ),
     ),
     'mysqli::commit' => 
@@ -17883,8 +17935,8 @@ return array (
       'old' => 
       array (
         0 => 'false|null',
-        'hostname=' => 'string',
-        'username=' => 'string',
+        'host=' => 'string',
+        'user=' => 'string',
         'password=' => 'string',
         'database=' => 'string',
         'port=' => 'int',
@@ -17899,6 +17951,132 @@ return array (
         'database=' => 'null|string',
         'port=' => 'int|null',
         'socket=' => 'null|string',
+      ),
+    ),
+    'mysqli::debug' => 
+    array (
+      'old' => 
+      array (
+        0 => 'true',
+        'debug_options' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'options' => 'string',
+      ),
+    ),
+    'mysqli::escape_string' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'string_to_escape' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'string' => 'string',
+      ),
+    ),
+    'mysqli::kill' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'connection_id' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'process_id' => 'int',
+      ),
+    ),
+    'mysqli::poll' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        '&w read' => 'array<array-key, mixed>|null',
+        '&w write' => 'array<array-key, mixed>|null',
+        '&w error' => 'array<array-key, mixed>|null',
+        'sec' => 'int',
+        'usec=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        '&w read' => 'array<array-key, mixed>|null',
+        '&w error' => 'array<array-key, mixed>|null',
+        '&w reject' => 'array<array-key, mixed>',
+        'seconds' => 'int',
+        'microseconds=' => 'int',
+      ),
+    ),
+    'mysqli::query' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|mysqli_result',
+        'query' => 'string',
+        'resultmode=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|mysqli_result',
+        'query' => 'string',
+        'result_mode=' => 'int',
+      ),
+    ),
+    'mysqli::real_connect' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'host=' => 'null|string',
+        'user=' => 'null|string',
+        'password=' => 'null|string',
+        'database=' => 'null|string',
+        'port=' => 'int|null',
+        'socket=' => 'null|string',
+        'flags=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'hostname=' => 'null|string',
+        'username=' => 'null|string',
+        'password=' => 'null|string',
+        'database=' => 'null|string',
+        'port=' => 'int|null',
+        'socket=' => 'null|string',
+        'flags=' => 'int',
+      ),
+    ),
+    'mysqli::real_escape_string' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'string_to_escape' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'string' => 'string',
+      ),
+    ),
+    'mysqli::refresh' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'options' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'flags' => 'int',
       ),
     ),
     'mysqli::rollback' => 
@@ -17916,12 +18094,74 @@ return array (
         'name=' => 'null|string',
       ),
     ),
+    'mysqli::ssl_set' => 
+    array (
+      'old' => 
+      array (
+        0 => 'true',
+        'key' => 'null|string',
+        'cert' => 'null|string',
+        'certificate_authority' => 'null|string',
+        'certificate_authority_path' => 'null|string',
+        'cipher' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'key' => 'null|string',
+        'certificate' => 'null|string',
+        'ca_certificate' => 'null|string',
+        'ca_path' => 'null|string',
+        'cipher_algos' => 'null|string',
+      ),
+    ),
+    'mysqli::store_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|mysqli_result',
+        'flags=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|mysqli_result',
+        'mode=' => 'int',
+      ),
+    ),
+    'mysqli_affected_rows' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int<-1, max>|numeric-string',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'int<-1, max>|numeric-string',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_autocommit' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+        'mode' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'mysql' => 'mysqli',
+        'enable' => 'bool',
+      ),
+    ),
     'mysqli_begin_transaction' => 
     array (
       'old' => 
       array (
         0 => 'bool',
-        'mysql' => 'mysqli',
+        'link' => 'mysqli',
         'flags=' => 'int',
         'name=' => 'string',
       ),
@@ -17933,12 +18173,57 @@ return array (
         'name=' => 'null|string',
       ),
     ),
+    'mysqli_change_user' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+        'user' => 'string',
+        'password' => 'string',
+        'database' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'mysql' => 'mysqli',
+        'username' => 'string',
+        'password' => 'string',
+        'database' => 'null|string',
+      ),
+    ),
+    'mysqli_character_set_name' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_close' => 
+    array (
+      'old' => 
+      array (
+        0 => 'true',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'mysql' => 'mysqli',
+      ),
+    ),
     'mysqli_commit' => 
     array (
       'old' => 
       array (
         0 => 'bool',
-        'mysql' => 'mysqli',
+        'link' => 'mysqli',
         'flags=' => 'int',
         'name=' => 'string',
       ),
@@ -17955,8 +18240,8 @@ return array (
       'old' => 
       array (
         0 => 'false|mysqli',
-        'hostname=' => 'string',
-        'username=' => 'string',
+        'host=' => 'string',
+        'user=' => 'string',
         'password=' => 'string',
         'database=' => 'string',
         'port=' => 'int',
@@ -17973,13 +18258,182 @@ return array (
         'socket=' => 'null|string',
       ),
     ),
+    'mysqli_debug' => 
+    array (
+      'old' => 
+      array (
+        0 => 'true',
+        'debug_options' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'options' => 'string',
+      ),
+    ),
+    'mysqli_dump_debug_info' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_errno' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_error' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_error_list' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_escape_string' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'link' => 'mysqli',
+        'query' => 'string',
+        'resultmode=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'mysql' => 'mysqli',
+        'string' => 'string',
+      ),
+    ),
+    'mysqli_execute' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_fetch_all' => 
+    array (
+      'old' => 
+      array (
+        0 => 'list<array<array-key, float|int|null|string>>',
+        'result' => 'mysqli_result',
+        'result_type=' => '3',
+      ),
+      'new' => 
+      array (
+        0 => 'list<array<array-key, float|int|null|string>>',
+        'result' => 'mysqli_result',
+        'mode=' => '3',
+      ),
+    ),
+    'mysqli_fetch_array' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, float|int|null|string>|false|null',
+        'result' => 'mysqli_result',
+        'result_type=' => '3',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, float|int|null|string>|false|null',
+        'result' => 'mysqli_result',
+        'mode=' => '3',
+      ),
+    ),
+    'mysqli_fetch_field_direct' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|object{name:string, orgname:string, table:string, orgtable:string, max_length:int, length:int, charsetnr:int, flags:int, type:int, decimals:int, db:string, def:\'\', catalog:\'def\'}',
+        'result' => 'mysqli_result',
+        'field_nr' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|object{name:string, orgname:string, table:string, orgtable:string, max_length:int, length:int, charsetnr:int, flags:int, type:int, decimals:int, db:string, def:\'\', catalog:\'def\'}',
+        'result' => 'mysqli_result',
+        'index' => 'int',
+      ),
+    ),
+    'mysqli_fetch_object' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|null|object',
+        'result' => 'mysqli_result',
+        'class_name=' => 'string',
+        'params=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'false|null|object',
+        'result' => 'mysqli_result',
+        'class=' => 'string',
+        'constructor_args=' => 'array<array-key, mixed>',
+      ),
+    ),
+    'mysqli_field_count' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'mysql' => 'mysqli',
+      ),
+    ),
     'mysqli_field_seek' => 
     array (
       'old' => 
       array (
         0 => 'bool',
         'result' => 'mysqli_result',
-        'index' => 'int',
+        'field_nr' => 'int',
       ),
       'new' => 
       array (
@@ -17988,12 +18442,434 @@ return array (
         'index' => 'int',
       ),
     ),
+    'mysqli_get_charset' => 
+    array (
+      'old' => 
+      array (
+        0 => 'null|object',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'null|object',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_get_client_info' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'mysql=' => 'mysqli|null',
+      ),
+    ),
+    'mysqli_get_connection_stats' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_get_host_info' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_get_proto_info' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_get_server_info' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_get_server_version' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_get_warnings' => 
+    array (
+      'old' => 
+      array (
+        0 => 'mysqli_warning',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'mysqli_warning',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_info' => 
+    array (
+      'old' => 
+      array (
+        0 => 'null|string',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_insert_id' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int|string',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'int|string',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_kill' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+        'connection_id' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'mysql' => 'mysqli',
+        'process_id' => 'int',
+      ),
+    ),
+    'mysqli_more_results' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_multi_query' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+        'query=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'mysql' => 'mysqli',
+        'query' => 'string',
+      ),
+    ),
+    'mysqli_next_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_options' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+        'option' => 'int',
+        'value' => 'int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'mysql' => 'mysqli',
+        'option' => 'int',
+        'value' => 'int|string',
+      ),
+    ),
+    'mysqli_ping' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_poll' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        '&w read' => 'array<array-key, mixed>|null',
+        '&w write' => 'array<array-key, mixed>|null',
+        '&w error' => 'array<array-key, mixed>|null',
+        'sec' => 'int',
+        'usec=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        '&w read' => 'array<array-key, mixed>|null',
+        '&w error' => 'array<array-key, mixed>|null',
+        '&w reject' => 'array<array-key, mixed>',
+        'seconds' => 'int',
+        'microseconds=' => 'int',
+      ),
+    ),
+    'mysqli_prepare' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|mysqli_stmt',
+        'link' => 'mysqli',
+        'query' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|mysqli_stmt',
+        'mysql' => 'mysqli',
+        'query' => 'string',
+      ),
+    ),
+    'mysqli_query' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|mysqli_result',
+        'link' => 'mysqli',
+        'query' => 'string',
+        'resultmode=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|mysqli_result',
+        'mysql' => 'mysqli',
+        'query' => 'string',
+        'result_mode=' => 'int',
+      ),
+    ),
+    'mysqli_real_connect' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+        'host=' => 'null|string',
+        'user=' => 'null|string',
+        'password=' => 'null|string',
+        'database=' => 'null|string',
+        'port=' => 'int|null',
+        'socket=' => 'null|string',
+        'flags=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'mysql' => 'mysqli',
+        'hostname=' => 'null|string',
+        'username=' => 'null|string',
+        'password=' => 'null|string',
+        'database=' => 'null|string',
+        'port=' => 'int|null',
+        'socket=' => 'null|string',
+        'flags=' => 'int',
+      ),
+    ),
+    'mysqli_real_escape_string' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'link' => 'mysqli',
+        'string_to_escape' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'mysql' => 'mysqli',
+        'string' => 'string',
+      ),
+    ),
+    'mysqli_real_query' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+        'query=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'mysql' => 'mysqli',
+        'query' => 'string',
+      ),
+    ),
+    'mysqli_reap_async_query' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|mysqli_result',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'false|mysqli_result',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_refresh' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+        'options' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'mysql' => 'mysqli',
+        'flags' => 'int',
+      ),
+    ),
+    'mysqli_release_savepoint' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+        'name' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'mysql' => 'mysqli',
+        'name' => 'string',
+      ),
+    ),
+    'mysqli_result::fetch_all' => 
+    array (
+      'old' => 
+      array (
+        0 => 'list<array<array-key, float|int|null|string>>',
+        'result_type=' => '3',
+      ),
+      'new' => 
+      array (
+        0 => 'list<array<array-key, float|int|null|string>>',
+        'mode=' => '3',
+      ),
+    ),
+    'mysqli_result::fetch_array' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, float|int|null|string>|false|null',
+        'result_type=' => '3',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, float|int|null|string>|false|null',
+        'mode=' => '3',
+      ),
+    ),
+    'mysqli_result::fetch_field_direct' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|object{name:string, orgname:string, table:string, orgtable:string, max_length:int, length:int, charsetnr:int, flags:int, type:int, decimals:int, db:string, def:\'\', catalog:\'def\'}',
+        'field_nr' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|object{name:string, orgname:string, table:string, orgtable:string, max_length:int, length:int, charsetnr:int, flags:int, type:int, decimals:int, db:string, def:\'\', catalog:\'def\'}',
+        'index' => 'int',
+      ),
+    ),
+    'mysqli_result::fetch_object' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|null|object',
+        'class_name=' => 'string',
+        'params=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'false|null|object',
+        'class=' => 'string',
+        'constructor_args=' => 'array<array-key, mixed>',
+      ),
+    ),
     'mysqli_result::field_seek' => 
     array (
       'old' => 
       array (
         0 => 'bool',
-        'index' => 'int',
+        'field_nr' => 'int',
       ),
       'new' => 
       array (
@@ -18006,7 +18882,7 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'mysql' => 'mysqli',
+        'link' => 'mysqli',
         'flags=' => 'int',
         'name=' => 'string',
       ),
@@ -18018,19 +18894,597 @@ return array (
         'name=' => 'null|string',
       ),
     ),
-    'mysqli_stmt::__construct' => 
+    'mysqli_savepoint' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+        'name' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'mysql' => 'mysqli',
+        'name' => 'string',
+      ),
+    ),
+    'mysqli_select_db' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+        'database' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'mysql' => 'mysqli',
+        'database' => 'string',
+      ),
+    ),
+    'mysqli_set_charset' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+        'charset' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'mysql' => 'mysqli',
+        'charset' => 'string',
+      ),
+    ),
+    'mysqli_set_opt' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'mysql' => 'mysqli',
+        'option' => 'int',
+        'value' => 'int|string',
+      ),
+    ),
+    'mysqli_sqlstate' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_ssl_set' => 
+    array (
+      'old' => 
+      array (
+        0 => 'true',
+        'link' => 'mysqli',
+        'key' => 'null|string',
+        'cert' => 'null|string',
+        'certificate_authority' => 'null|string',
+        'certificate_authority_path' => 'null|string',
+        'cipher' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'mysql' => 'mysqli',
+        'key' => 'null|string',
+        'certificate' => 'null|string',
+        'ca_certificate' => 'null|string',
+        'ca_path' => 'null|string',
+        'cipher_algos' => 'null|string',
+      ),
+    ),
+    'mysqli_stat' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_stmt::bind_param' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'types' => 'string',
+        '&...vars' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'types' => 'string',
+        '&...vars=' => 'mixed',
+      ),
+    ),
+    'mysqli_stmt::bind_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        '&w var1' => 'mixed',
+        '&...w vars' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        '&w var1' => 'mixed',
+        '&...w vars=' => 'mixed',
+      ),
+    ),
+    'mysqli_stmt::send_long_data' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'param_nr' => 'int',
+        'data' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'param_num' => 'int',
+        'data' => 'string',
+      ),
+    ),
+    'mysqli_stmt_affected_rows' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int<-1, max>|numeric-string',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'int<-1, max>|numeric-string',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_stmt_attr_get' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'stmt' => 'mysqli_stmt',
+        'attribute' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'mysqli_stmt',
+        'attribute' => 'int',
+      ),
+    ),
+    'mysqli_stmt_attr_set' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stmt' => 'mysqli_stmt',
+        'attribute' => 'int',
+        'value' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'mysqli_stmt',
+        'attribute' => 'int',
+        'value' => 'int',
+      ),
+    ),
+    'mysqli_stmt_bind_param' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stmt' => 'mysqli_stmt',
+        'types' => 'string',
+        '&...vars' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'mysqli_stmt',
+        'types' => 'string',
+        '&...vars=' => 'mixed',
+      ),
+    ),
+    'mysqli_stmt_bind_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stmt' => 'mysqli_stmt',
+        '&w var1' => 'mixed',
+        '&...w vars' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'mysqli_stmt',
+        '&w var1' => 'mixed',
+        '&...w vars=' => 'mixed',
+      ),
+    ),
+    'mysqli_stmt_close' => 
+    array (
+      'old' => 
+      array (
+        0 => 'true',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_stmt_data_seek' => 
     array (
       'old' => 
       array (
         0 => 'void',
-        'mysql' => 'mysqli',
-        'query=' => 'string',
+        'stmt' => 'mysqli_stmt',
+        'offset' => 'int',
       ),
       'new' => 
       array (
         0 => 'void',
+        'statement' => 'mysqli_stmt',
+        'offset' => 'int',
+      ),
+    ),
+    'mysqli_stmt_errno' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_stmt_error' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_stmt_error_list' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_stmt_execute' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_stmt_fetch' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|null',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|null',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_stmt_field_count' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_stmt_free_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_stmt_get_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|mysqli_result',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'false|mysqli_result',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_stmt_get_warnings' => 
+    array (
+      'old' => 
+      array (
+        0 => 'object',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'false|mysqli_warning',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_stmt_init' => 
+    array (
+      'old' => 
+      array (
+        0 => 'mysqli_stmt',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'mysqli_stmt',
         'mysql' => 'mysqli',
-        'query=' => 'null|string',
+      ),
+    ),
+    'mysqli_stmt_insert_id' => 
+    array (
+      'old' => 
+      array (
+        0 => 'mixed',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'int|string',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_stmt_more_results' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_stmt_next_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_stmt_num_rows' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_stmt_param_count' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_stmt_prepare' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stmt' => 'mysqli_stmt',
+        'query' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'mysqli_stmt',
+        'query' => 'string',
+      ),
+    ),
+    'mysqli_stmt_reset' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_stmt_result_metadata' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|mysqli_result',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'false|mysqli_result',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_stmt_send_long_data' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stmt' => 'mysqli_stmt',
+        'param_nr' => 'int',
+        'data' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'mysqli_stmt',
+        'param_num' => 'int',
+        'data' => 'string',
+      ),
+    ),
+    'mysqli_stmt_sqlstate' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_stmt_store_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stmt' => 'mysqli_stmt',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'mysqli_stmt',
+      ),
+    ),
+    'mysqli_store_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|mysqli_result',
+        'link' => 'mysqli',
+        'flags=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|mysqli_result',
+        'mysql' => 'mysqli',
+        'mode=' => 'int',
+      ),
+    ),
+    'mysqli_thread_id' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_use_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|mysqli_result',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'false|mysqli_result',
+        'mysql' => 'mysqli',
+      ),
+    ),
+    'mysqli_warning_count' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'link' => 'mysqli',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'mysql' => 'mysqli',
       ),
     ),
     'natcasesort' => 
@@ -26370,6 +27824,19 @@ return array (
         'context=' => 'resource',
       ),
     ),
+    'seekableiterator::seek' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'position' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'offset' => 'int',
+      ),
+    ),
     'sem_acquire' => 
     array (
       'old' => 
@@ -26428,6 +27895,19 @@ return array (
       array (
         0 => 'bool',
         'semaphore' => 'SysvSemaphore',
+      ),
+    ),
+    'serializable::unserialize' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'serialized' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'data' => 'string',
       ),
     ),
     'serialize' => 
@@ -26609,6 +28089,103 @@ return array (
         0 => 'bool',
         'id' => 'string',
         'data' => 'string',
+      ),
+    ),
+    'sessionhandlerinterface::destroy' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'id' => 'string',
+      ),
+    ),
+    'sessionhandlerinterface::gc' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'maxlifetime' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'max_lifetime' => 'int',
+      ),
+    ),
+    'sessionhandlerinterface::open' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'save_path' => 'string',
+        'session_name' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'path' => 'string',
+        'name' => 'string',
+      ),
+    ),
+    'sessionhandlerinterface::read' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'key' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'id' => 'string',
+      ),
+    ),
+    'sessionhandlerinterface::write' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'string',
+        'val' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'id' => 'string',
+        'data' => 'string',
+      ),
+    ),
+    'sessionupdatetimestamphandlerinterface::updatetimestamp' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'string',
+        'val' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'id' => 'string',
+        'data' => 'string',
+      ),
+    ),
+    'sessionupdatetimestamphandlerinterface::validateid' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'id' => 'string',
       ),
     ),
     'set_error_handler' => 
@@ -27229,6 +28806,579 @@ return array (
       array (
         0 => 'int',
         'seconds' => 'int<0, max>',
+      ),
+    ),
+    'snmp2_get' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'host' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'hostname' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+    ),
+    'snmp2_getnext' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'host' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'hostname' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+    ),
+    'snmp2_real_walk' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'host' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'hostname' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+    ),
+    'snmp2_set' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'host' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'type' => 'array<array-key, mixed>|string',
+        'value' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'hostname' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'type' => 'array<array-key, mixed>|string',
+        'value' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+    ),
+    'snmp2_walk' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'host' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'hostname' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+    ),
+    'snmp3_get' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'host' => 'string',
+        'sec_name' => 'string',
+        'sec_level' => 'string',
+        'auth_protocol' => 'string',
+        'auth_passphrase' => 'string',
+        'priv_protocol' => 'string',
+        'priv_passphrase' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'hostname' => 'string',
+        'security_name' => 'string',
+        'security_level' => 'string',
+        'auth_protocol' => 'string',
+        'auth_passphrase' => 'string',
+        'privacy_protocol' => 'string',
+        'privacy_passphrase' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+    ),
+    'snmp3_getnext' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'host' => 'string',
+        'sec_name' => 'string',
+        'sec_level' => 'string',
+        'auth_protocol' => 'string',
+        'auth_passphrase' => 'string',
+        'priv_protocol' => 'string',
+        'priv_passphrase' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'hostname' => 'string',
+        'security_name' => 'string',
+        'security_level' => 'string',
+        'auth_protocol' => 'string',
+        'auth_passphrase' => 'string',
+        'privacy_protocol' => 'string',
+        'privacy_passphrase' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+    ),
+    'snmp3_real_walk' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'host' => 'string',
+        'sec_name' => 'string',
+        'sec_level' => 'string',
+        'auth_protocol' => 'string',
+        'auth_passphrase' => 'string',
+        'priv_protocol' => 'string',
+        'priv_passphrase' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'hostname' => 'string',
+        'security_name' => 'string',
+        'security_level' => 'string',
+        'auth_protocol' => 'string',
+        'auth_passphrase' => 'string',
+        'privacy_protocol' => 'string',
+        'privacy_passphrase' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+    ),
+    'snmp3_set' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'host' => 'string',
+        'sec_name' => 'string',
+        'sec_level' => 'string',
+        'auth_protocol' => 'string',
+        'auth_passphrase' => 'string',
+        'priv_protocol' => 'string',
+        'priv_passphrase' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'type' => 'array<array-key, mixed>|string',
+        'value' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'hostname' => 'string',
+        'security_name' => 'string',
+        'security_level' => 'string',
+        'auth_protocol' => 'string',
+        'auth_passphrase' => 'string',
+        'privacy_protocol' => 'string',
+        'privacy_passphrase' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'type' => 'array<array-key, mixed>|string',
+        'value' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+    ),
+    'snmp3_walk' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'host' => 'string',
+        'sec_name' => 'string',
+        'sec_level' => 'string',
+        'auth_protocol' => 'string',
+        'auth_passphrase' => 'string',
+        'priv_protocol' => 'string',
+        'priv_passphrase' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'hostname' => 'string',
+        'security_name' => 'string',
+        'security_level' => 'string',
+        'auth_protocol' => 'string',
+        'auth_passphrase' => 'string',
+        'privacy_protocol' => 'string',
+        'privacy_passphrase' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+    ),
+    'snmp::__construct' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'version' => 'int',
+        'host' => 'string',
+        'community' => 'string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'version' => 'int',
+        'hostname' => 'string',
+        'community' => 'string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+    ),
+    'snmp::get' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false|string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'use_orignames=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false|string',
+        'objectId' => 'array<array-key, mixed>|string',
+        'preserveKeys=' => 'bool',
+      ),
+    ),
+    'snmp::getnext' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false|string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'use_orignames=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false|string',
+        'objectId' => 'array<array-key, mixed>|string',
+      ),
+    ),
+    'snmp::set' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'object_id' => 'array<array-key, mixed>|string',
+        'type' => 'array<array-key, mixed>|string',
+        'value' => 'array<array-key, mixed>|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'objectId' => 'array<array-key, mixed>|string',
+        'type' => 'array<array-key, mixed>|string',
+        'value' => 'array<array-key, mixed>|string',
+      ),
+    ),
+    'snmp::setsecurity' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'sec_level' => 'string',
+        'auth_protocol' => 'string',
+        'auth_passphrase' => 'string',
+        'priv_protocol' => 'string',
+        'priv_passphrase' => 'string',
+        'contextName' => 'string',
+        'contextEngineID' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'securityLevel' => 'string',
+        'authProtocol=' => 'string',
+        'authPassphrase=' => 'string',
+        'privacyProtocol=' => 'string',
+        'privacyPassphrase=' => 'string',
+        'contextName=' => 'string',
+        'contextEngineId=' => 'string',
+      ),
+    ),
+    'snmp::walk' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'object_id' => 'array<array-key, mixed>|string',
+        'suffix_keys' => 'bool',
+        'max_repetitions' => 'int',
+        'non_repeaters' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'objectId' => 'array<array-key, mixed>|string',
+        'suffixAsKey=' => 'bool',
+        'maxRepetitions=' => 'int',
+        'nonRepeaters=' => 'int',
+      ),
+    ),
+    'snmp_get_quick_print' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'd' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+      ),
+    ),
+    'snmp_set_enum_print' => 
+    array (
+      'old' => 
+      array (
+        0 => 'true',
+        'enum_print' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'enable' => 'bool',
+      ),
+    ),
+    'snmp_set_oid_numeric_print' => 
+    array (
+      'old' => 
+      array (
+        0 => 'true',
+        'oid_format' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'format' => 'int',
+      ),
+    ),
+    'snmp_set_oid_output_format' => 
+    array (
+      'old' => 
+      array (
+        0 => 'true',
+        'oid_format' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'format' => 'int',
+      ),
+    ),
+    'snmp_set_quick_print' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'quick_print' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'enable' => 'bool',
+      ),
+    ),
+    'snmpget' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'host' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'hostname' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+    ),
+    'snmpgetnext' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'host' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'hostname' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+    ),
+    'snmprealwalk' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'host' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'hostname' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+    ),
+    'snmpset' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'host' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'type' => 'array<array-key, string>|string',
+        'value' => 'array<array-key, string>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'hostname' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'type' => 'array<array-key, string>|string',
+        'value' => 'array<array-key, string>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+    ),
+    'snmpwalk' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'host' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'hostname' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+    ),
+    'snmpwalkoid' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'host' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'hostname' => 'string',
+        'community' => 'string',
+        'object_id' => 'array<array-key, mixed>|string',
+        'timeout=' => 'int',
+        'retries=' => 'int',
       ),
     ),
     'soapclient::__call' => 
@@ -32947,9 +35097,9 @@ return array (
       array (
         0 => 'void',
         'filename=' => 'string',
-        'config=' => 'array<array-key, mixed>|string',
+        'config_file=' => 'array<array-key, mixed>|string',
         'encoding=' => 'string',
-        'useIncludePath=' => 'bool',
+        'use_include_path=' => 'bool',
       ),
       'new' => 
       array (
@@ -32960,15 +35110,28 @@ return array (
         'useIncludePath=' => 'bool',
       ),
     ),
+    'tidy::getoptdoc' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'optname' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'option' => 'string',
+      ),
+    ),
     'tidy::parsefile' => 
     array (
       'old' => 
       array (
         0 => 'bool',
-        'filename' => 'string',
-        'config=' => 'array<array-key, mixed>|string',
+        'file' => 'string',
+        'config_options=' => 'array<array-key, mixed>|string',
         'encoding=' => 'string',
-        'useIncludePath=' => 'bool',
+        'use_include_path=' => 'bool',
       ),
       'new' => 
       array (
@@ -32984,8 +35147,8 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'string' => 'string',
-        'config=' => 'array<array-key, mixed>|string',
+        'input' => 'string',
+        'config_options=' => 'array<array-key, mixed>|string',
         'encoding=' => 'string',
       ),
       'new' => 
@@ -33002,9 +35165,9 @@ return array (
       array (
         0 => 'string',
         'filename' => 'string',
-        'config=' => 'array<array-key, mixed>|string',
+        'config_file=' => 'array<array-key, mixed>|string',
         'encoding=' => 'string',
-        'useIncludePath=' => 'bool',
+        'use_include_path=' => 'bool',
       ),
       'new' => 
       array (
@@ -33020,8 +35183,8 @@ return array (
       'old' => 
       array (
         0 => 'string',
-        'string' => 'string',
-        'config=' => 'array<array-key, mixed>|string',
+        'data' => 'string',
+        'config_file=' => 'array<array-key, mixed>|string',
         'encoding=' => 'string',
       ),
       'new' => 
@@ -33032,15 +35195,240 @@ return array (
         'encoding=' => 'null|string',
       ),
     ),
+    'tidy_access_count' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'object' => 'tidy',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'tidy' => 'tidy',
+      ),
+    ),
+    'tidy_clean_repair' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'object' => 'tidy',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'tidy' => 'tidy',
+      ),
+    ),
+    'tidy_config_count' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'object' => 'tidy',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'tidy' => 'tidy',
+      ),
+    ),
+    'tidy_diagnose' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'object' => 'tidy',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'tidy' => 'tidy',
+      ),
+    ),
+    'tidy_error_count' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'object' => 'tidy',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'tidy' => 'tidy',
+      ),
+    ),
+    'tidy_get_config' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'object' => 'tidy',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'tidy' => 'tidy',
+      ),
+    ),
+    'tidy_get_error_buffer' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'object' => 'tidy',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'tidy' => 'tidy',
+      ),
+    ),
+    'tidy_get_head' => 
+    array (
+      'old' => 
+      array (
+        0 => 'null|tidyNode',
+        'object' => 'tidy',
+      ),
+      'new' => 
+      array (
+        0 => 'null|tidyNode',
+        'tidy' => 'tidy',
+      ),
+    ),
+    'tidy_get_html' => 
+    array (
+      'old' => 
+      array (
+        0 => 'null|tidyNode',
+        'object' => 'tidy',
+      ),
+      'new' => 
+      array (
+        0 => 'null|tidyNode',
+        'tidy' => 'tidy',
+      ),
+    ),
+    'tidy_get_html_ver' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'object' => 'tidy',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'tidy' => 'tidy',
+      ),
+    ),
+    'tidy_get_opt_doc' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'resource' => 'tidy',
+        'optname' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'tidy' => 'tidy',
+        'option' => 'string',
+      ),
+    ),
+    'tidy_get_output' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'object' => 'tidy',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'tidy' => 'tidy',
+      ),
+    ),
+    'tidy_get_root' => 
+    array (
+      'old' => 
+      array (
+        0 => 'null|tidyNode',
+        'object' => 'tidy',
+      ),
+      'new' => 
+      array (
+        0 => 'null|tidyNode',
+        'tidy' => 'tidy',
+      ),
+    ),
+    'tidy_get_status' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'object' => 'tidy',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'tidy' => 'tidy',
+      ),
+    ),
+    'tidy_getopt' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|int|string',
+        'object' => 'tidy',
+        'option' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|int|string',
+        'tidy' => 'tidy',
+        'option' => 'string',
+      ),
+    ),
+    'tidy_is_xhtml' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'object' => 'tidy',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'tidy' => 'tidy',
+      ),
+    ),
+    'tidy_is_xml' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'object' => 'tidy',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'tidy' => 'tidy',
+      ),
+    ),
     'tidy_parse_file' => 
     array (
       'old' => 
       array (
         0 => 'tidy',
-        'filename' => 'string',
-        'config=' => 'array<array-key, mixed>|string',
+        'file' => 'string',
+        'config_options=' => 'array<array-key, mixed>|string',
         'encoding=' => 'string',
-        'useIncludePath=' => 'bool',
+        'use_include_path=' => 'bool',
       ),
       'new' => 
       array (
@@ -33056,8 +35444,8 @@ return array (
       'old' => 
       array (
         0 => 'tidy',
-        'string' => 'string',
-        'config=' => 'array<array-key, mixed>|string',
+        'input' => 'string',
+        'config_options=' => 'array<array-key, mixed>|string',
         'encoding=' => 'string',
       ),
       'new' => 
@@ -33074,9 +35462,9 @@ return array (
       array (
         0 => 'string',
         'filename' => 'string',
-        'config=' => 'array<array-key, mixed>|string',
+        'config_file=' => 'array<array-key, mixed>|string',
         'encoding=' => 'string',
-        'useIncludePath=' => 'bool',
+        'use_include_path=' => 'bool',
       ),
       'new' => 
       array (
@@ -33092,8 +35480,8 @@ return array (
       'old' => 
       array (
         0 => 'string',
-        'string' => 'string',
-        'config=' => 'array<array-key, mixed>|string',
+        'data' => 'string',
+        'config_file=' => 'array<array-key, mixed>|string',
         'encoding=' => 'string',
       ),
       'new' => 
@@ -33102,6 +35490,19 @@ return array (
         'string' => 'string',
         'config=' => 'array<array-key, mixed>|null|string',
         'encoding=' => 'null|string',
+      ),
+    ),
+    'tidy_warning_count' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'object' => 'tidy',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'tidy' => 'tidy',
       ),
     ),
     'timezone_identifiers_list' => 
@@ -34923,6 +37324,104 @@ return array (
         0 => 'bool',
         'writer' => 'XMLWriter',
         'content' => 'string',
+      ),
+    ),
+    'xsltprocessor::importstylesheet' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'doc' => 'object',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'stylesheet' => 'object',
+      ),
+    ),
+    'xsltprocessor::registerphpfunctions' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'restrict=' => 'array<array-key, mixed>|null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'functions=' => 'array<array-key, mixed>|null|string',
+      ),
+    ),
+    'xsltprocessor::setparameter' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'namespace' => 'string',
+        'name' => 'string',
+        'value=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'namespace' => 'string',
+        'name' => 'string',
+        'value=' => 'null|string',
+      ),
+    ),
+    'xsltprocessor::setsecurityprefs' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'securityPrefs' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'preferences' => 'int',
+      ),
+    ),
+    'xsltprocessor::transformtodoc' => 
+    array (
+      'old' => 
+      array (
+        0 => 'DOMDocument|false',
+        'doc' => 'DOMNode',
+      ),
+      'new' => 
+      array (
+        0 => 'DOMDocument|false',
+        'document' => 'DOMNode',
+        'returnClass=' => 'null|string',
+      ),
+    ),
+    'xsltprocessor::transformtouri' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'doc' => 'DOMDocument',
+        'uri' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'document' => 'DOMDocument',
+        'uri' => 'string',
+      ),
+    ),
+    'xsltprocessor::transformtoxml' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'doc' => 'DOMDocument',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'document' => 'DOMDocument',
       ),
     ),
     'zip_entry_close' => 
