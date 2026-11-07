@@ -24,6 +24,7 @@ use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -1603,6 +1604,53 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * A trait method is analyzed as a method of the class using the trait, where the templates of the trait
+     * are the types given to `@use`.
+     */
+    private function bindTraitTemplatesToUse(
+        Codebase $codebase,
+        FunctionLikeStorage $storage,
+        Context $context,
+        Union $type,
+    ): Union {
+        if (!$storage instanceof MethodStorage
+            || $storage->defining_fqcln === null
+            || $storage->cased_name === null
+            || $context->self === null
+            || strtolower($storage->defining_fqcln) === strtolower($context->self)
+        ) {
+            return $type;
+        }
+
+        $declaring_storage = $codebase->classlike_storage_provider->get($storage->defining_fqcln);
+
+        if (!$declaring_storage->is_trait || $declaring_storage->template_types === null) {
+            return $type;
+        }
+
+        $class_template_params = ClassTemplateParamCollector::collect(
+            $codebase,
+            $declaring_storage,
+            $codebase->classlike_storage_provider->get($context->self),
+            strtolower($storage->cased_name),
+        );
+
+        if ($class_template_params === null) {
+            return $type;
+        }
+
+        return TemplateStandinTypeReplacer::replace(
+            $type,
+            new TemplateResult($class_template_params, []),
+            $codebase,
+            null,
+            null,
+            null,
+            $context->self,
+        );
+    }
+
+    /**
      * @param list<FunctionLikeParameter> $params
      * @param list<Param> $param_stmts
      */
@@ -1730,6 +1778,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         );
                     }
                 }
+
+                $param_type = $this->bindTraitTemplatesToUse($codebase, $storage, $context, $param_type);
 
                 if ($function_param->type_location) {
                     if ($param_type->check(

@@ -21,6 +21,52 @@ final class TraitTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'traitMethodParamIsTheTypeGivenToUse' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    trait Foo {
+                        /**
+                         * @param T $data
+                         * @return T
+                         */
+                        function a($data) {
+                            return $this->b($data);
+                        }
+                    }
+
+                    class Bar {
+                        /** @use Foo<DateTime> */
+                        use Foo;
+
+                        function b(DateTime $data): DateTime {
+                            return $data;
+                        }
+                    }',
+            ],
+            'traitUsedWithDifferentTypesBindsEachOfThem' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    trait Foo {
+                        /** @param T $data */
+                        function a($data): void {
+                            $this->b($data);
+                        }
+                    }
+
+                    class Bar {
+                        /** @use Foo<DateTime> */
+                        use Foo;
+
+                        function b(DateTime $data): void {}
+                    }
+
+                    class Baz {
+                        /** @use Foo<stdClass> */
+                        use Foo;
+
+                        function b(stdClass $data): void {}
+                    }',
+            ],
             'traitUseNotExtended' => [
                 'code' => '<?php
                     /**
@@ -553,6 +599,24 @@ final class TraitTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'traitMethodParamIsNotAcceptedWhereTheUseTypeDoesNotFit' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    trait Foo {
+                        /** @param T $data */
+                        function a($data): void {
+                            $this->b($data);
+                        }
+                    }
+
+                    class Bar {
+                        /** @use Foo<DateTime> */
+                        use Foo;
+
+                        function b(stdClass $data): void {}
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'badTemplateUse' => [
                 'code' => '<?php
                     /**
