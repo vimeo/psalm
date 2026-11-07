@@ -285,6 +285,10 @@ final class TypeCombiner
                 $from_docblock,
             );
 
+            if ($combination->object_static_resolved[$generic_type] ?? false) {
+                $generic_object = $generic_object->setIsStatic($generic_object->is_static, true);
+            }
+
             $new_types[] = $generic_object;
         }
 
@@ -604,6 +608,10 @@ final class TypeCombiner
             } else {
                 $combination->object_static[$type->value] = $type->is_static;
             }
+
+            // a static already bound to its receiver stays bound, or the next method call binds it again
+            $combination->object_static_resolved[$type->value] = $type->is_static_resolved
+                && ($combination->object_static_resolved[$type->value] ?? true);
         }
 
         if ($type instanceof TKeyedArray && $type->is_callable) {
