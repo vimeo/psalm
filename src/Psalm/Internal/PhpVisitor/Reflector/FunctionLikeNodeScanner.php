@@ -241,6 +241,10 @@ final class FunctionLikeNodeScanner
                                     continue 2;
                                 }
 
+                                if ($rule_part === []) {
+                                    continue;
+                                }
+
                                 if (isset($existing_params[$var_id])) {
                                     $param_offset = $existing_params[$var_id];
 
