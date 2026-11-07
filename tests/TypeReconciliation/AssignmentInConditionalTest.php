@@ -21,6 +21,63 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assignmentInTheRightOperandOfAndInAnIfKeepsTheEarlierType' => [
+                'code' => '<?php
+                    function fetch(): ?float {
+                        return rand(0, 1) ? 1.5 : null;
+                    }
+
+                    function check(bool $enabled): void {
+                        $value = 0;
+                        if ($enabled && null !== ($value = fetch())) {
+                            echo "found";
+                        }
+
+                        /** @psalm-check-type-exact $value = 0|float|null */;
+                    }',
+            ],
+            'assignmentInTheRightOperandOfAndInAnIfIsNarrowedInTheBody' => [
+                'code' => '<?php
+                    function fetch(): ?float {
+                        return rand(0, 1) ? 1.5 : null;
+                    }
+
+                    function check(bool $enabled): void {
+                        $value = 0;
+                        if ($enabled && null !== ($value = fetch())) {
+                            /** @psalm-check-type-exact $value = float */;
+                        }
+                    }',
+            ],
+            'assignmentInTheRightOperandOfAndInAnIfWithAFloatPreviously' => [
+                'code' => '<?php
+                    class Check {
+                        private bool $isTrue = false;
+                        private ?float $value = 0.0;
+
+                        public function isTrue(): bool {
+                            return $this->isTrue;
+                        }
+
+                        public function getValue(): ?float {
+                            return $this->value;
+                        }
+                    }
+
+                    function run(Check $check): void {
+                        $bar = .0;
+
+                        if ($check->isTrue() && null === ($bar = $check->getValue())) {
+                            echo "condition match";
+                        }
+
+                        if ($bar) {
+                            echo "condition 2 match";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
             'orWithAssignment' => [
                 'code' => '<?php
                     function maybeString(): ?string {
