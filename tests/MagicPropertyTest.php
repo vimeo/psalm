@@ -47,6 +47,44 @@ final class MagicPropertyTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'magicGetNameKeepsItsClassStringType' => [
+                'code' => '<?php
+                    interface MakeMe {
+                        public function __construct();
+                    }
+
+                    final class A implements MakeMe {
+                        public function __construct() {}
+                    }
+
+                    final class IAmMagic {
+                        /** @psalm-param class-string<MakeMe> $name */
+                        public function __get(string $name): object {
+                            return new $name();
+                        }
+                    }
+
+                    $magic = new IAmMagic();
+                    $made = $magic->{A::class};',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedMagicPropertyFetch', 'MixedAssignment'],
+            ],
+            'magicGetNameOfAStringVariableKeepsItsType' => [
+                'code' => '<?php
+                    final class IAmMagic {
+                        /** @psalm-param non-empty-string $name */
+                        public function __get(string $name): int {
+                            return strlen($name);
+                        }
+                    }
+
+                    /** @var non-empty-string $key */
+                    $key = "a";
+                    $magic = new IAmMagic();
+                    $value = $magic->$key;',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedMagicPropertyFetch', 'MixedAssignment'],
+            ],
             'propertyDocblock' => [
                 'code' => '<?php
                     namespace Bar;
