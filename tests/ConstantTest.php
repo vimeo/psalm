@@ -268,6 +268,14 @@ final class ConstantTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'defineAnObjectConstantSinceEightOne' => [
+                'code' => '<?php
+                    define("OBJECT_CONSTANT", new stdClass());
+                    $object = OBJECT_CONSTANT;',
+                'assertions' => ['$object' => 'stdClass'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'bitwiseOperationsOnFloatConstantsOutsideTheRangeOfAnIntAreNotFolded' => [
                 'code' => '<?php
                     class A {
@@ -2435,6 +2443,13 @@ final class ConstantTest extends TestCase
                 'error_message' => 'MixedArgument',
                 'error_levels' => ['MissingClassConstType'],
                 'php_version' => '8.1',
+            ],
+            'defineAnObjectConstantBeforeEightOne' => [
+                'code' => '<?php
+                    define("OBJECT_CONSTANT", new stdClass());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'classConstantDividingByAZeroIntConstantOfAnotherClass' => [
                 'code' => '<?php
