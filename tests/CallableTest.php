@@ -90,6 +90,41 @@ final class CallableTest extends TestCase
                     '$a===' => 'E',
                 ],
             ],
+            'literalArraysOfAnExistingMethodAreCallableArrays' => [
+                'code' => '<?php
+                    final class Foo {
+                        public static function bar(): void {}
+                        public function inst(): void {}
+                    }
+
+                    final class Magic {
+                        public function __call(string $name, array $args): void {}
+                        public static function __callStatic(string $name, array $args): void {}
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function existingStatic(): array {
+                        return ["Foo", "bar"];
+                    }
+
+                    /** @return callable-array{Foo, string} */
+                    function existingInstance(): array {
+                        return [new Foo(), "inst"];
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function magic(): array {
+                        return ["Magic", "anything"];
+                    }
+
+                    /**
+                     * @param array{string, string} $pair
+                     * @return callable-array{string, string}
+                     */
+                    function dynamic(array $pair): array {
+                        return $pair;
+                    }',
+            ],
             'callableArrayToInheritedTraitMethodExpandsSelfToTheUsingClass' => [
                 'code' => '<?php
                     /**
@@ -2707,6 +2742,26 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'literalArrayOfAnUnknownClassIsNotACallableArray' => [
+                'code' => '<?php
+                    /** @return callable-array{string, string} */
+                    function ret(): array {
+                        return ["a", "hello"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalArrayOfAMissingMethodIsNotACallableArray' => [
+                'code' => '<?php
+                    final class Foo {
+                        public static function bar(): void {}
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function ret(): array {
+                        return ["Foo", "nope"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'undefinedCallableClass' => [
                 'code' => '<?php
                     class A {
