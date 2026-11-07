@@ -58,6 +58,17 @@ final class CloneTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'cloneWithPropertiesIsStillValidOnPhp86' => [
+                'code' => '<?php
+                    class Foo {
+                        public function __construct(public int $x) {}
+                    }
+                    $o = new Foo(1);
+                    $b = clone($o, ["x" => 2]);',
+                'assertions' => ['$b===' => 'Foo'],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
             'cloneWithReadonlyPropertyAllowed' => [
                 'code' => '<?php
                     class Foo {

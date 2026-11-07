@@ -48,6 +48,8 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public ?Union $signature_return_type = null;
 
+    public bool $has_tentative_return_type = false;
+
     public ?CodeLocation $signature_return_type_location = null;
 
     public ?string $cased_name = null;
@@ -107,6 +109,21 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * @var array<string, non-empty-array<string, Union>>|null
      */
     public ?array $template_types = null;
+
+    /**
+     * What each template with a default (`@template T of Bound = Default`) is when a call does not infer it, the
+     * earlier templates of the function-like and those of its class standing for what they are at the call.
+     *
+     * @var array<string, Union>
+     */
+    public array $template_defaults = [];
+
+    /**
+     * Where each template default is, for the issues about it.
+     *
+     * @var array<string, CodeLocation>
+     */
+    public array $template_default_locations = [];
 
     /**
      * @var array<int, Possibilities>
