@@ -23,6 +23,9 @@
     <stubs>
         <file name="stubs/phpparser.phpstub"/>
     </stubs>
+    <enableExtensions>
+        <extension name="zstd"/>
+    </enableExtensions>
     <projectFiles>
         <directory name="src"/>
         <directory name="tests"/>
