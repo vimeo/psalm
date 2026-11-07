@@ -192,10 +192,11 @@ final class TestConfig extends Config
         }
 
         $functions_by_returned_class = [];
-        foreach (InternalCallMapHandler::getCallMap() as $function => [$return_type]) {
+        foreach (InternalCallMapHandler::getCallMap() as $function => $signature) {
             if (str_contains($function, '::')) {
                 continue;
             }
+            $return_type = $signature[0] ?? $signature[-1] ?? '';
             preg_match_all('/[a-z_\\\\][a-z0-9_\\\\]*/i', $return_type, $matches);
             foreach ($matches[0] as $class) {
                 $functions_by_returned_class[strtolower(ltrim($class, '\\'))][] = strtolower($function);
