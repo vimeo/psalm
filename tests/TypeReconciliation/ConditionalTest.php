@@ -59,6 +59,59 @@ final class ConditionalTest extends TestCase
                         return 0;
                     }',
             ],
+            'negatedAndWhoseRightSideAssignsAnotherOffsetKeepsWhatTheLeftOneTestedOfAnOffset' => [
+                'code' => '<?php
+                    /** @param array{x?: int, y?: string} $a */
+                    function test(array $a): int {
+                        if (!(isset($a["y"]) && ($a["x"] = 5) > 0)) {
+                            return 0;
+                        }
+
+                        return strlen($a["y"]);
+                    }',
+            ],
+            'andWhoseRightSideAssignsAnotherOffsetKeepsWhatTheLeftOneTestedOfAnOffsetAfterTheIf' => [
+                'code' => '<?php
+                    /** @param array{x?: int, y?: string} $a */
+                    function test(array $a): int {
+                        if (isset($a["y"]) && ($a["x"] = 5) > 0) {
+                        } else {
+                            return 0;
+                        }
+
+                        return strlen($a["y"]);
+                    }',
+            ],
+            'andWhoseRightSideAssignsAnotherOffsetKeepsAnOrredClauseOfTheLeftOneOnAnOffset' => [
+                'code' => '<?php
+                    /** @param array{x?: int, y?: string} $a */
+                    function test(array $a, bool $b): int {
+                        if ((isset($a["y"]) || $b) && ($a["x"] = 5) > 0) {
+                            if (!$b) {
+                                return strlen($a["y"]);
+                            }
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'andWhoseRightSideAssignsAnotherPropertyKeepsAnOrredClauseOfTheLeftOneOnAProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public ?string $q = null;
+                        public int $p = 0;
+                    }
+
+                    function test(A $o, bool $b): int {
+                        if (($o->q !== null || $b) && ($o->p = 5) > 0) {
+                            if (!$b) {
+                                return strlen($o->q);
+                            }
+                        }
+
+                        return 0;
+                    }',
+            ],
             'orredClausesOfOneVariableAreAllKept' => [
                 'code' => '<?php
                     interface I1 {}
@@ -3563,6 +3616,31 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'andWhoseRightSideReassignsAnObjectForgetsAnOrredClauseOfTheLeftOneOnItsProperty' => [
+                'code' => '<?php
+                    final class P {
+                        public ?string $r = null;
+                    }
+
+                    final class A {
+                        public P $p;
+
+                        public function __construct() {
+                            $this->p = new P();
+                        }
+                    }
+
+                    function test(A $o, bool $b): int {
+                        if (($o->p->r !== null || $b) && ($o->p = new P()) instanceof P) {
+                            if (!$b) {
+                                return strlen($o->p->r);
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
             'makeNonNullableNull' => [
                 'code' => '<?php
                     class A { }
