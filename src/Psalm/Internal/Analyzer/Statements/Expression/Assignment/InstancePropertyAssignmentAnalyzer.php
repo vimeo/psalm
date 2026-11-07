@@ -1270,6 +1270,11 @@ final class InstancePropertyAssignmentAnalyzer
                     && $interface_property?->hook_set !== null;
 
                 if (!$class_exists && !$has_set_hook) {
+                    // a property an isset() found is there: it is the object that has it, not the interface
+                    if ($var_id !== null && $context->hasVariable($var_id)) {
+                        return null;
+                    }
+
                     if (IssueBuffer::accepts(
                         new NoInterfaceProperties(
                             'Interfaces cannot have properties',
