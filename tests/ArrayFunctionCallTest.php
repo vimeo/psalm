@@ -118,6 +118,40 @@ final class ArrayFunctionCallTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'closureTakesTheTemplateBoundsOfTheByRefArgWhateverTheOrderOfNamedArgs' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template TArray as array<T>
+                     * @param TArray $items
+                     * @param list<string> $other
+                     * @param callable(T, T): int $cmp
+                     * @param-out (TArray is non-empty-array ? non-empty-list<T> : list<T>) $items
+                     */
+                    function sortBoth(array &$items, array $other, callable $cmp): void {
+                        usort($items, $cmp);
+                    }
+
+                    /**
+                     * @param list<int> $ints
+                     * @param list<string> $strings
+                     */
+                    function run(array $ints, array $strings): void {
+                        sortBoth($ints, $strings, static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = int */
+                            return $a <=> $b;
+                        });
+                        sortBoth(other: $strings, items: $ints, cmp: static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = int */
+                            return $a <=> $b;
+                        });
+                        sortBoth(items: $ints, other: $strings, cmp: static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = int */
+                            return $a <=> $b;
+                        });
+                    }',
+                'assertions' => [],
+            ],
             'usortClosureKeepsItsDocblockParamTypes' => [
                 'code' => '<?php
                     /** @param list<array{foo: int, bar: string}> $list */

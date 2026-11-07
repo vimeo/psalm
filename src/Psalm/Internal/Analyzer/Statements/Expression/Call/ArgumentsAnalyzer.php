@@ -178,24 +178,7 @@ final class ArgumentsAnalyzer
                 continue;
             }
 
-            $param = null;
-
-            if ($arg->name && $allow_named_args) {
-                foreach ($function_params as $candidate_param) {
-                    if ($candidate_param->name === $arg->name->name) {
-                        $param = $candidate_param;
-                        break;
-                    }
-                }
-
-                if ($param === null && $last_param && $last_param->is_variadic) {
-                    $param = $last_param;
-                }
-            } elseif ($argument_offset < count($function_params)) {
-                $param = $function_params[$argument_offset];
-            } elseif ($last_param && $last_param->is_variadic) {
-                $param = $last_param;
-            }
+            $param = self::getParamOfArg($function_params, $last_param, $allow_named_args, $arg, $argument_offset);
 
             // the operands of the `$eq` of the fields of a MongoDB filter literal
             if ($arg->value instanceof PhpParser\Node\Expr\Array_ && $statements_analyzer->taint_flow_graph) {
@@ -281,6 +264,8 @@ final class ArgumentsAnalyzer
                         $statements_analyzer,
                         $args,
                         $function_params,
+                        $last_param,
+                        $allow_named_args,
                         $argument_offset,
                         $context,
                         $template_result ?? new TemplateResult([], []),
@@ -482,6 +467,37 @@ final class ArgumentsAnalyzer
     }
 
     /**
+     * The parameter an argument is passed to: the one it is named after (when the function allows named arguments),
+     * else the one at its position, a variadic one taking the rest
+     *
+     * @param array<int, FunctionLikeParameter> $function_params
+     * @psalm-capabilities read-props
+     */
+    private static function getParamOfArg(
+        array $function_params,
+        ?FunctionLikeParameter $last_param,
+        bool $allow_named_args,
+        PhpParser\Node\Arg $arg,
+        int $argument_offset,
+    ): ?FunctionLikeParameter {
+        if ($arg->name && $allow_named_args) {
+            foreach ($function_params as $candidate_param) {
+                if ($candidate_param->name === $arg->name->name) {
+                    return $candidate_param;
+                }
+            }
+
+            return $last_param && $last_param->is_variadic ? $last_param : null;
+        }
+
+        if ($argument_offset < count($function_params)) {
+            return $function_params[$argument_offset];
+        }
+
+        return $last_param && $last_param->is_variadic ? $last_param : null;
+    }
+
+    /**
      * The templates of the arguments passed by reference get their bounds only once the call is checked, but a
      * closure given after them takes its parameter types from those templates (usort($array, fn($a, $b) => ...)).
      *
@@ -492,6 +508,8 @@ final class ArgumentsAnalyzer
         StatementsAnalyzer $statements_analyzer,
         array $args,
         array $function_params,
+        ?FunctionLikeParameter $last_param,
+        bool $allow_named_args,
         int $argument_offset,
         Context $context,
         TemplateResult $template_result,
@@ -503,7 +521,7 @@ final class ArgumentsAnalyzer
                 break;
             }
 
-            $param = $function_params[$offset] ?? null;
+            $param = self::getParamOfArg($function_params, $last_param, $allow_named_args, $arg, $offset);
             $input_type = $statements_analyzer->node_data->getType($arg->value);
 
             if (!$param || !$param->by_ref || !$param->type || !$input_type || !$param->type->hasTemplate()) {
