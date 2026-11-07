@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Issue\ContinueOutsideLoop;
+use Psalm\IssueBuffer;
 use Psalm\Type;
 
+use function count;
 use function end;
 
 /**
@@ -22,6 +26,20 @@ final class BreakAnalyzer
         PhpParser\Node\Stmt\Break_ $stmt,
         Context $context,
     ): void {
+        if ($context->break_types
+            && $stmt->num instanceof PhpParser\Node\Scalar\Int_
+            && $stmt->num->value > count($context->break_types)
+        ) {
+            IssueBuffer::maybeAdd(
+                new ContinueOutsideLoop(
+                    'Cannot \'break\' ' . $stmt->num->value . ' levels, only ' . count($context->break_types)
+                        . ' enclosing loop or switch structure(s)',
+                    new CodeLocation($statements_analyzer, $stmt),
+                ),
+                $statements_analyzer->getSource()->getSuppressedIssues(),
+            );
+        }
+
         $loop_scope = $context->loop_scope;
 
         $leaving_switch = true;
