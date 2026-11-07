@@ -22,6 +22,26 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'narrowedPropertyOfAnImmutableObjectHoldsInAClosure' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    final class Imm {
+                        public function __construct(public ?string $value = null) {}
+                    }
+
+                    function f(Imm $imm): void {
+                        if ($imm->value === null) {
+                            return;
+                        }
+
+                        $closure = function () use ($imm): string {
+                            return $imm->value;
+                        };
+                        $arrow = fn (): string => $imm->value;
+
+                        echo $closure() . $arrow();
+                    }',
+            ],
             'byRefUseVarUnsetInClosure' => [
                 'code' => '<?php
                     function reserve(): Closure {
