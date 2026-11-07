@@ -67,6 +67,27 @@ final class IssetTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'variableAssertedNotSetAndThenDefinedStaysDefined' => [
+                'code' => '<?php
+                    if (random_int(0, 1)) {
+                        $foo = 1;
+                    }
+
+                    if (!isset($foo)) {
+                        $foo = 2;
+                    }
+
+                    $bar = $foo;
+
+                    foreach ([1, 2] as $subject) {
+                        if (preg_match("/a/", (string) $subject, $matches)) {
+                            $first = $matches[0];
+                            echo $first;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'variableIsSetAfterCoalesceThrowStatement' => [
                 'code' => '<?php
                     class H {
@@ -1178,6 +1199,34 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableNotSetByTheEmptyBranchOfAnIssetCheckIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+
+                    if (random_int(0, 1)) {
+                        $foo = 1;
+                    }
+
+                    if (!isset($foo)) {
+                    }
+
+                    $bar = $foo;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'variableNotSetByTheEmptyBranchOfAnIssetCheckIsPossiblyUndefinedAfterItInAFunction' => [
+                'code' => '<?php
+
+                    function f(): void {
+                        if (random_int(0, 1)) {
+                            $foo = 1;
+                        }
+
+                        if (!isset($foo)) {
+                        }
+
+                        echo $foo;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'variableStaysNullableAfterCoalesceWithDefault' => [
                 'code' => '<?php
                     function a(?string $html): string {
