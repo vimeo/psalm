@@ -277,7 +277,14 @@ final class ArgumentsAnalyzer
                     $args,
                     $method_id,
                     $context,
-                    $template_result ?? new TemplateResult([], []),
+                    self::withBoundsOfPrecedingByRefArgs(
+                        $statements_analyzer,
+                        $args,
+                        $function_params,
+                        $argument_offset,
+                        $context,
+                        $template_result ?? new TemplateResult([], []),
+                    ),
                     $argument_offset,
                     $arg,
                     $param,
@@ -475,6 +482,52 @@ final class ArgumentsAnalyzer
     }
 
     /**
+     * The templates of the arguments passed by reference get their bounds only once the call is checked, but a
+     * closure given after them takes its parameter types from those templates (usort($array, fn($a, $b) => ...)).
+     *
+     * @param array<int, PhpParser\Node\Arg> $args
+     * @param array<int, FunctionLikeParameter> $function_params
+     */
+    private static function withBoundsOfPrecedingByRefArgs(
+        StatementsAnalyzer $statements_analyzer,
+        array $args,
+        array $function_params,
+        int $argument_offset,
+        Context $context,
+        TemplateResult $template_result,
+    ): TemplateResult {
+        $result = null;
+
+        foreach ($args as $offset => $arg) {
+            if ($offset >= $argument_offset) {
+                break;
+            }
+
+            $param = $function_params[$offset] ?? null;
+            $input_type = $statements_analyzer->node_data->getType($arg->value);
+
+            if (!$param || !$param->by_ref || !$param->type || !$input_type || !$param->type->hasTemplate()) {
+                continue;
+            }
+
+            $result ??= clone $template_result;
+
+            TemplateStandinTypeReplacer::replace(
+                $param->type,
+                $result,
+                $statements_analyzer->getCodebase(),
+                $statements_analyzer,
+                $input_type,
+                $offset,
+                $context->self,
+                $context->calling_method_id ?? $context->calling_function_id,
+            );
+        }
+
+        return $result ?? $template_result;
+    }
+
+    /**
      * @param   array<int, PhpParser\Node\Arg>  $args
      */
     private static function handleClosureArg(
@@ -534,6 +587,42 @@ final class ArgumentsAnalyzer
                 );
             }
         }
+        // `T` of `@template TArray as array<T>` is only known through what `TArray` was given
+        foreach ($template_result->lower_bounds as $k => $template_map) {
+            foreach ($template_map as $kk => $_) {
+                $as_type = $template_result->template_types[$k][$kk] ?? null;
+
+                if (!$as_type || !$as_type->getTemplateTypes()) {
+                    continue;
+                }
+
+                $bound_template_result = new TemplateResult($template_result->template_types, []);
+
+                TemplateStandinTypeReplacer::replace(
+                    $as_type,
+                    $bound_template_result,
+                    $codebase,
+                    $statements_analyzer,
+                    $new_bounds[$k][$kk],
+                    $argument_offset,
+                    $context->self,
+                    $context->calling_method_id ?? $context->calling_function_id,
+                );
+
+                foreach ($bound_template_result->lower_bounds as $bound_k => $bound_template_map) {
+                    foreach ($bound_template_map as $bound_kk => $bound_lower_bounds) {
+                        if (!isset($template_result->lower_bounds[$bound_k][$bound_kk])) {
+                            $new_bounds[$bound_k][$bound_kk]
+                                = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                    $bound_lower_bounds,
+                                    $codebase,
+                                );
+                        }
+                    }
+                }
+            }
+        }
+
         $replace_template_result = new TemplateResult(
             $new_bounds,
             [],
