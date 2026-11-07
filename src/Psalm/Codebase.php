@@ -875,10 +875,10 @@ final class Codebase
             $parser_cache_provider = $this->statements_provider->parser_cache_provider;
 
             foreach ($candidate_files as $candidate_file_path) {
-                $hash = $parser_cache_provider->getHash($candidate_file_path);
-                if ($hash !== null &&
-                    $hash !== $this->file_provider->getContents($candidate_file_path)
-                ) {
+                if ($parser_cache_provider->hasChanged(
+                    $candidate_file_path,
+                    $this->file_provider->getContents($candidate_file_path),
+                )) {
                     $diff_files[] = $candidate_file_path;
                 }
             }
@@ -1007,10 +1007,7 @@ final class Codebase
         return $this->statements_provider->getStatementsForFile(
             $file_path,
             $this->analysis_php_version_id,
-            $this->diff_methods
-                || $this->diff_run
-                || $this->language_server
-                || $this->file_reference_provider->cache?->persistent,
+            $this->diff_methods || $this->diff_run || $this->language_server,
             $progress ?? $this->progress,
         );
     }
@@ -1590,9 +1587,6 @@ final class Codebase
         $this->global_constant_types_by_wildcard = [];
     }
 
-    /**
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
-     */
     public function getFunctionStorageForSymbol(string $file_path, string $symbol): ?FunctionLikeStorage
     {
         if (strpos($symbol, '::')) {
@@ -1620,7 +1614,7 @@ final class Codebase
             return null;
         }
 
-        return $this->functions->getStorage(null, $function_id, $file_path, $file_path);
+        return $this->functions->getStorageForSymbolLookup($function_id, $file_path);
     }
 
     /**
@@ -1756,12 +1750,7 @@ final class Codebase
                 return null;
             }
 
-            $function = $this->functions->getStorage(
-                null,
-                $function_id,
-                $reference->file_path,
-                $reference->file_path,
-            );
+            $function = $this->functions->getStorageForSymbolLookup($function_id, $reference->file_path);
 
             return new PHPMarkdownContent(
                 $function->getHoverMarkdown(),
@@ -1930,12 +1919,7 @@ final class Codebase
                     return null;
                 }
 
-                return $this->functions->getStorage(
-                    null,
-                    $function_id,
-                    $reference->file_path,
-                    $reference->file_path,
-                )->location;
+                return $this->functions->getStorageForSymbolLookup($function_id, $reference->file_path)->location;
             }
 
             return $this->classlike_storage_provider->get(
