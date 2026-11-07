@@ -235,7 +235,7 @@ final class NamedFunctionCallHandler
         }
 
         if ($function_id === 'defined') {
-            if ($first_arg && !$context->inside_negation) {
+            if ($first_arg) {
                 $fq_const_name = ConstFetchAnalyzer::getConstName(
                     $first_arg->value,
                     $statements_analyzer->node_data,
@@ -259,7 +259,11 @@ final class NamedFunctionCallHandler
                             $context,
                         );
 
-                        $context->check_consts = false;
+                        // `if (!defined('X')) { exit; }` defines X for the code after it, but says nothing
+                        // about the other constants
+                        if (!$context->inside_negation) {
+                            $context->check_consts = false;
+                        }
                     }
                 } else {
                     $context->check_consts = false;

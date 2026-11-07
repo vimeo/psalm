@@ -250,6 +250,16 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'constantDefinedByANegatedDefinedGuardWithAnExit' => [
+                'code' => '<?php
+                    if (!defined("ABSPATH")) {
+                        exit;
+                    }
+
+                    echo ABSPATH;',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+            ],
             'defineAnObjectConstantSinceEightOne' => [
                 'code' => '<?php
                     define("OBJECT_CONSTANT", new stdClass());
@@ -2409,6 +2419,15 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'undefinedConstantAfterANegatedDefinedCheck' => [
+                'code' => '<?php
+                    if (!defined("AAA")) {
+                        define("NOT_DEFINED", 1);
+                    }
+
+                    echo ZZZ;',
+                'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26 - Const ZZZ is not defined',
+            ],
             'defineAnObjectConstantBeforeEightOne' => [
                 'code' => '<?php
                     define("OBJECT_CONSTANT", new stdClass());',
