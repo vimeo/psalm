@@ -59,6 +59,58 @@ final class TryCatchTest extends TestCase
                         return 0;
                     }',
             ],
+            'variableAssignedInTryIsDefinedWhenTheCatchContinuesOrRethrows' => [
+                'code' => '<?php
+                    function getData(int $test): int {
+                        if (rand(0, $test) > 5) {
+                            throw new RuntimeException("Help", rand(0, 10));
+                        }
+
+                        return $test;
+                    }
+
+                    function f(): int {
+                        foreach ([0, 1, 2] as $test) {
+                            try {
+                                $data = getData($test);
+                            } catch (RuntimeException $exception) {
+                                if ($exception->getCode() > 5) {
+                                    continue;
+                                }
+
+                                throw $exception;
+                            }
+
+                            return $data;
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'variableAssignedInTryIsDefinedWhenTheCatchBreaksOrReturns' => [
+                'code' => '<?php
+                    function getData(int $test): int {
+                        return $test;
+                    }
+
+                    function f(): int {
+                        foreach ([0, 1, 2] as $test) {
+                            try {
+                                $data = getData($test);
+                            } catch (RuntimeException $exception) {
+                                if ($exception->getCode() > 5) {
+                                    break;
+                                }
+
+                                return 0;
+                            }
+
+                            return $data;
+                        }
+
+                        return 0;
+                    }',
+            ],
             'addThrowableInterfaceType' => [
                 'code' => '<?php
                     interface CustomThrowable {}
@@ -563,6 +615,29 @@ final class TryCatchTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
+            ],
+            'variableAssignedInTryIsPossiblyUndefinedWhenOneCatchPathFallsThrough' => [
+                'code' => '<?php
+                    function getData(int $test): int {
+                        return $test;
+                    }
+
+                    function f(): int {
+                        foreach ([0, 1, 2] as $test) {
+                            try {
+                                $data = getData($test);
+                            } catch (RuntimeException $exception) {
+                                if ($exception->getCode() > 5) {
+                                    continue;
+                                }
+                            }
+
+                            return $data;
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
             'invalidCatchClass' => [
                 'code' => '<?php
