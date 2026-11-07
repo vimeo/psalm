@@ -43,6 +43,12 @@ final class TemplateResult
     public bool $readonly = false;
 
     /**
+     * The class a `new` expression constructs: its templates stand for the new object's type arguments, even in
+     * code of that class, where they are otherwise the types of the object the code runs for
+     */
+    public ?string $constructed_class = null;
+
+    /**
      * @var list<Union>
      */
     public array $upper_bounds_unintersectable_types = [];

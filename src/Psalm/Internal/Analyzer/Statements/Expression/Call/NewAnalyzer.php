@@ -525,6 +525,7 @@ final class NewAnalyzer extends CallAnalyzer
             }
 
             $template_result ??= new TemplateResult([], []);
+            $template_result->constructed_class = $storage->name;
 
             if (self::checkMethodArgs(
                 $method_id,

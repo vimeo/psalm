@@ -677,7 +677,9 @@ final class TemplateStandinTypeReplacer
         int $depth,
         bool &$had_template,
     ): array {
-        if ($atomic_type->defining_class === $calling_class) {
+        if ($atomic_type->defining_class === $calling_class
+            && $template_result->constructed_class !== $calling_class
+        ) {
             return [$atomic_type];
         }
 
