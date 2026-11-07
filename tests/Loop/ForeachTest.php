@@ -55,6 +55,48 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'iteratorCurrentNullIsNotPartOfTheForeachValueType' => [
+                'code' => '<?php
+                    class Foo {
+                        public function bar(): void {}
+                    }
+
+                    /**
+                     * @implements Iterator<int, Foo>
+                     */
+                    class FooIterator implements Iterator {
+                        /** @var list<Foo> */
+                        private array $items = [];
+                        private int $position = 0;
+
+                        public function current(): ?Foo {
+                            return $this->items[$this->position] ?? null;
+                        }
+
+                        public function next(): void {
+                            $this->position++;
+                        }
+
+                        public function key(): ?int {
+                            return $this->valid() ? $this->position : null;
+                        }
+
+                        public function valid(): bool {
+                            return $this->position < count($this->items);
+                        }
+
+                        public function rewind(): void {
+                            $this->position = 0;
+                        }
+                    }
+
+                    function f(FooIterator $iterator): void {
+                        foreach ($iterator as $key => $foo) {
+                            echo $key + 1;
+                            $foo->bar();
+                        }
+                    }',
+            ],
             'variableAssignedInBothOperandsOfAnOrConditionIsDefinedInTheLoopBody' => [
                 'code' => '<?php
                     interface Container {
@@ -1481,6 +1523,48 @@ final class ForeachTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'iteratorCurrentNullStaysWhenTheTemplateValueIsNullable' => [
+                'code' => '<?php
+                    class Foo {
+                        public function bar(): void {}
+                    }
+
+                    /**
+                     * @implements Iterator<int, Foo|null>
+                     */
+                    class FooIterator implements Iterator {
+                        /** @var list<Foo> */
+                        private array $items = [];
+                        private int $position = 0;
+
+                        public function current(): ?Foo {
+                            return $this->items[$this->position] ?? null;
+                        }
+
+                        public function next(): void {
+                            $this->position++;
+                        }
+
+                        public function key(): ?int {
+                            return $this->valid() ? $this->position : null;
+                        }
+
+                        public function valid(): bool {
+                            return $this->position < count($this->items);
+                        }
+
+                        public function rewind(): void {
+                            $this->position = 0;
+                        }
+                    }
+
+                    function f(FooIterator $iterator): void {
+                        foreach ($iterator as $foo) {
+                            $foo->bar();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
             'variableAssignedOnlyInTheRightOperandOfAnOrConditionIsUndefinedInTheLoopBody' => [
                 'code' => '<?php
                     function check(string $value): bool {
@@ -1640,6 +1724,32 @@ final class ForeachTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
+            ],
+            'continueTooManyLevels' => [
+                'code' => '<?php
+                    foreach ([1, 2] as $i) {
+                        continue 2;
+                    }',
+                'error_message' => 'ContinueOutsideLoop - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25',
+            ],
+            'breakTooManyLevels' => [
+                'code' => '<?php
+                    foreach ([1, 2] as $i) {
+                        foreach ([3, 4] as $j) {
+                            break 3;
+                        }
+                    }',
+                'error_message' => 'ContinueOutsideLoop - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'continueTooManyLevelsInSwitch' => [
+                'code' => '<?php
+                    foreach ([1, 2] as $i) {
+                        switch ($i) {
+                            case 1:
+                                continue 3;
+                        }
+                    }',
+                'error_message' => 'ContinueOutsideLoop - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
             ],
             'possiblyUndefinedVariableInForeachDueToBreakBefore' => [
                 'code' => '<?php
