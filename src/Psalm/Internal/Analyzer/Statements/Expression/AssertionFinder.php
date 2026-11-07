@@ -114,6 +114,7 @@ use function is_int;
 use function is_numeric;
 use function is_string;
 use function ltrim;
+use function spl_object_id;
 use function sprintf;
 use function str_ends_with;
 use function str_replace;
@@ -248,6 +249,10 @@ final class AssertionFinder
 
             if ($var_name) {
                 $if_types[$var_name] = [[new IsNotType(new TNull())]];
+
+                // the call being truthy is a clause of its own, so that negating the condition is "the call is
+                // falsy or the variable is null" rather than "the variable is null"
+                $if_types['__nullsafe_call_' . spl_object_id($conditional)] = [[new Truthy()]];
             }
 
             //we may throw a RedundantNullsafeMethodCall here in the future if $var_name is never null
