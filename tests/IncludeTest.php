@@ -14,6 +14,7 @@ use ReflectionProperty;
 
 use function getcwd;
 use function preg_quote;
+use function set_time_limit;
 use function strpos;
 
 use const DIRECTORY_SEPARATOR;
@@ -1018,5 +1019,56 @@ final class IncludeTest extends TestCase
         // This must not crash — previously threw UnexpectedValueException
         // from MethodAnalyzer when the method was missing from storage.
         $file_analyzer->analyze();
+    }
+
+    /**
+     * A class whose parent's file requires the class's file made the analysis of the constructor call
+     * collect the parent's file again and again. A hang shows as the time limit being hit.
+     */
+    public function testTaintAnalysisOfFilesRequiringEachOtherTerminates(): void
+    {
+        set_time_limit(30);
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $child_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'Child.php';
+        $parent_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'ParentClass.php';
+
+        $this->addFile($child_path, '<?php
+            namespace Foo;
+
+            class Child extends ParentClass {
+                public $prop;
+            }
+        ');
+        $this->addFile($parent_path, '<?php
+            namespace Foo;
+
+            require_once __DIR__ . "/Child.php";
+
+            class ParentClass {
+                public function __construct() {}
+            }
+        ');
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        foreach ([$child_path, $parent_path] as $file_path) {
+            $codebase->scanner->addFilesToShallowScan([$file_path => $file_path]);
+            $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        }
+
+        $codebase->scanFiles();
+
+        $file_analyzer = new FileAnalyzer(
+            $this->project_analyzer,
+            $child_path,
+            $config->shortenFileName($child_path),
+        );
+        $file_analyzer->analyze();
+
+        self::assertTrue(true);
     }
 }

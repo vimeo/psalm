@@ -163,6 +163,14 @@ final class ProjectAnalyzer
     private array $to_refactor = [];
 
     /**
+     * The files whose statements are being collected to find the mutations of a method: collecting them
+     * analyses the files they include, and those may call back into the same method.
+     *
+     * @var array<string, true>
+     */
+    private array $files_collecting_method_mutations = [];
+
+    /**
      * @var array<int, class-string<CodeIssue>>
      */
     private const SUPPORTED_ISSUES_TO_FIX = [
@@ -1342,18 +1350,28 @@ final class ProjectAnalyzer
             $file_analyzer = $this->getFileAnalyzerForClassLike($appearing_fq_class_name);
         }
 
-        $stmts = $this->codebase->getStatementsForFile(
-            $file_analyzer->getFilePath(),
-        );
+        $file_path = $file_analyzer->getFilePath();
 
-        $file_analyzer->populateCheckers($stmts);
-
-        if (!$this_context->self) {
-            $this_context->self = $fq_class_name;
-            $this_context->vars_in_scope['$this'] = Type::parseString($fq_class_name);
+        if (isset($this->files_collecting_method_mutations[$file_path])) {
+            return;
         }
 
-        $file_analyzer->getMethodMutations($appearing_method_id, $this_context, true);
+        $this->files_collecting_method_mutations[$file_path] = true;
+
+        try {
+            $stmts = $this->codebase->getStatementsForFile($file_path);
+
+            $file_analyzer->populateCheckers($stmts);
+
+            if (!$this_context->self) {
+                $this_context->self = $fq_class_name;
+                $this_context->vars_in_scope['$this'] = Type::parseString($fq_class_name);
+            }
+
+            $file_analyzer->getMethodMutations($appearing_method_id, $this_context, true);
+        } finally {
+            unset($this->files_collecting_method_mutations[$file_path]);
+        }
 
         $file_analyzer->class_analyzers_to_analyze = [];
         $file_analyzer->interface_analyzers_to_analyze = [];
