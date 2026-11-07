@@ -254,6 +254,21 @@ final class TernaryAnalyzer
                     $if_context->vars_in_scope[$var_id],
                     $t_else_context->vars_in_scope[$var_id],
                 );
+
+                // an enclosing ternary needs to know the variable is assigned in both of its branches too
+                $context->assigned_var_ids[$var_id] = $if_context->assigned_var_ids[$var_id];
+            }
+        }
+
+        // a branch that ends (`throw`, `exit`, ...) leaves the variables of the other one
+        if ($if_context->has_returned !== $t_else_context->has_returned) {
+            $live_context = $if_context->has_returned ? $t_else_context : $if_context;
+
+            foreach ($live_context->assigned_var_ids as $var_id => $assigned_at) {
+                if (isset($live_context->vars_in_scope[$var_id])) {
+                    $context->vars_in_scope[$var_id] = $live_context->vars_in_scope[$var_id];
+                    $context->assigned_var_ids[$var_id] = $assigned_at;
+                }
             }
         }
 
