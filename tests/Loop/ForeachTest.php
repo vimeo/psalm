@@ -44,6 +44,70 @@ final class ForeachTest extends TestCase
                     '$value===' => "''|numeric-string",
                 ],
             ],
+            'variableAssignedInBothOperandsOfAnOrConditionIsDefinedInTheLoopBody' => [
+                'code' => '<?php
+                    interface Container {
+                        public function fileExists(string $file): bool;
+                    }
+
+                    /** @param list<array{path: string}> $bundles */
+                    function collect(Container $container, array $bundles, string $suffix): array {
+                        $files = [];
+
+                        foreach ($bundles as $bundle) {
+                            if ($container->fileExists($file = $bundle["path"] . "/Resources" . $suffix)
+                                || $container->fileExists($file = $bundle["path"] . $suffix)
+                            ) {
+                                $files[] = $file;
+                                echo $file;
+                            }
+                        }
+
+                        return $files;
+                    }',
+                'assertions' => [],
+            ],
+            'variableAssignedInTheLeftOperandOfAnOrConditionIsDefinedInTheLoopBody' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string> $names
+                     * @return array<string, string>
+                     */
+                    function lower(ReflectionClass $class, array $names): array {
+                        $properties = [];
+
+                        foreach ($names as $name) {
+                            if (!$name) {
+                                continue;
+                            }
+
+                            if ($class->hasProperty($lowerCased = lcfirst($name))
+                                || (!$class->hasProperty($name) && !preg_match("/^[A-Z]{2,}/", $name))
+                            ) {
+                                $name = $lowerCased;
+                            }
+
+                            $properties[$name] = $name;
+                        }
+
+                        return $properties;
+                    }',
+                'assertions' => [],
+            ],
+            'variableAssignedInTheKeyOfAnArrayItemIsDefinedAsItsValueInALoop' => [
+                'code' => '<?php
+                    /** @param list<object> $nodes */
+                    function roots(array $nodes): array {
+                        $roots = [];
+
+                        foreach ($nodes as $node) {
+                            $roots[spl_object_id($root = $node)] = $root;
+                        }
+
+                        return $roots;
+                    }',
+                'assertions' => [],
+            ],
             'foreachByReferenceWritesIntoTheItemsOfTheArray' => [
                 'code' => '<?php
                     $values = ["key" => ""];
@@ -1361,6 +1425,19 @@ final class ForeachTest extends TestCase
                     '$a===' => "''|int",
                 ],
             ],
+            'weakMapKeyTypeKeptOnPhp80' => [
+                'code' => '<?php
+                    interface Action {}
+
+                    /** @var WeakMap<Action, null> $map */
+                    $map = new WeakMap();
+                    foreach ($map as $action => $_) {
+                        /** @psalm-check-type-exact $action = Action */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1371,6 +1448,22 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableAssignedOnlyInTheRightOperandOfAnOrConditionIsUndefinedInTheLoopBody' => [
+                'code' => '<?php
+                    function check(string $value): bool {
+                        return $value === "a";
+                    }
+
+                    /** @param list<string> $items */
+                    function collect(array $items): void {
+                        foreach ($items as $item) {
+                            if (rand(0, 1) || check($file = $item)) {
+                                echo $file;
+                            }
+                        }
+                    }',
+                'error_message' => 'UndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38',
+            ],
             'foreachKeyAndDestructuredValueNotNullAfterBreakingLoopOnNonEmptyArray' => [
                 'code' => '<?php
                     /** @param non-empty-array<int, array{int, string|null}> $argument_map */
