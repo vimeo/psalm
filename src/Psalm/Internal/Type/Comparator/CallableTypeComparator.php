@@ -129,6 +129,11 @@ final class CallableTypeComparator
                     return false;
                 }
 
+                // a callee that takes the argument by reference can't be called with a value
+                if ($input_param->by_ref && !$container_param->by_ref) {
+                    return false;
+                }
+
                 if ($container_param->type
                     && !$container_param->type->hasMixed()
                     && !self::isParamContainedBy(

@@ -967,6 +967,30 @@ final class TypeParseTest extends TestCase
         );
     }
 
+    public function testCallableWithByReferenceParam(): void
+    {
+        $this->assertSame(
+            'callable[impure](int &$_, string, int...):void',
+            (string)Type::parseString('callable(int &$foo, string $bar, int ...$baz) : void'),
+        );
+    }
+
+    public function testCallableWithByReferenceOptionalParam(): void
+    {
+        $this->assertSame(
+            'callable[impure](int &$_=):void',
+            (string)Type::parseString('callable(int &$foo=) : void'),
+        );
+    }
+
+    public function testCallableWithNamedOptionalParam(): void
+    {
+        $this->assertSame(
+            'callable[impure](int=):void',
+            (string)Type::parseString('callable(int $foo=) : void'),
+        );
+    }
+
     public function testCallableReturningIntersection(): void
     {
         $this->assertSame(
