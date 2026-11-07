@@ -91,6 +91,7 @@ These issues have very low false-positive rates and indicate definite problems. 
  - [OverriddenPropertyAccess](issues/OverriddenPropertyAccess.md)
  - [ParadoxicalCondition](issues/ParadoxicalCondition.md)
  - [ParentNotFound](issues/ParentNotFound.md)
+ - [ParseError](issues/ParseError.md)
  - [TooFewArguments](issues/TooFewArguments.md)
  - [UndefinedAttributeClass](issues/UndefinedAttributeClass.md)
  - [UndefinedClass](issues/UndefinedClass.md)

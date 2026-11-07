@@ -193,7 +193,6 @@ final class DocumentationTest extends TestCase
     public function testAllIssuesCovered(): void
     {
         $all_issues = IssueHandler::getAllIssueTypes();
-        $all_issues[] = 'ParseError';
         $all_issues[] = 'PluginIssue';
 
         sort($all_issues);

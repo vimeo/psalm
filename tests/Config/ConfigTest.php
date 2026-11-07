@@ -1133,6 +1133,16 @@ final class ConfigTest extends TestCase
         );
     }
 
+    public function testAllIssueTypesIncludeTheIssuesWithAShortcode(): void
+    {
+        $issue_types = IssueHandler::getAllIssueTypes();
+
+        // psalm.dev resolves the https://psalm.dev/<shortcode> links of the issues in this list
+        $this->assertContains('ParseError', $issue_types);
+        $this->assertNotContains('CodeIssue', $issue_types);
+        $this->assertNotContains('PluginIssue', $issue_types);
+    }
+
     public function testAllPossibleIssues(): void
     {
         $all_possible_handlers = implode(
