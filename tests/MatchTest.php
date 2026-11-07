@@ -8,6 +8,10 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use function array_map;
+use function implode;
+use function range;
+
 final class MatchTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
