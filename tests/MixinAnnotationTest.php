@@ -1052,6 +1052,72 @@ final class MixinAnnotationTest extends TestCase
                     '$has' => 'Closure[impure](string):Builder',
                 ],
             ],
+            'mixinMissingMethodAnalyzesNarrowingArgumentOnce' => [
+                'code' => '<?php
+                    final class Inner {}
+
+                    /** @mixin Inner */
+                    final class Outer
+                    {
+                        public function __call(string $name, array $arguments): mixed
+                        {
+                            return [$name, $arguments];
+                        }
+                    }
+
+                    function f(Outer $o, ?DateTimeImmutable $d): void
+                    {
+                        $o->missing($d ?? throw new LogicException());
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedMagicMethod'],
+                'php_version' => '8.0',
+            ],
+            'unsealedMixinMissingMethodAnalyzesNarrowingArgumentOnce' => [
+                'code' => '<?php
+                    final class Inner {}
+
+                    /**
+                     * @mixin Inner
+                     * @psalm-no-seal-methods
+                     */
+                    final class Outer
+                    {
+                        public function __call(string $name, array $arguments): mixed
+                        {
+                            return [$name, $arguments];
+                        }
+                    }
+
+                    function f(Outer $o, ?DateTimeImmutable $d): void
+                    {
+                        $o->missing($d ?? throw new LogicException());
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedMagicMethod'],
+                'php_version' => '8.0',
+            ],
+            'mixinMissingStaticMethodAnalyzesNarrowingArgumentOnce' => [
+                'code' => '<?php
+                    final class Inner {}
+
+                    /** @mixin Inner */
+                    final class Outer
+                    {
+                        public static function __callStatic(string $name, array $arguments): mixed
+                        {
+                            return [$name, $arguments];
+                        }
+                    }
+
+                    function f(?DateTimeImmutable $d): void
+                    {
+                        Outer::missing($d ?? throw new LogicException());
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedMagicMethod'],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

@@ -60,6 +60,30 @@ final class WhileTest extends TestCase
 
                     echo $result;',
             ],
+            'variableAssignedInTheConditionOfAnIfThatBreaks' => [
+                'code' => '<?php
+                    final class Link {
+                        public function getPrevious(): ?Link {
+                            return null;
+                        }
+
+                        public function getClass(): string {
+                            return "link";
+                        }
+                    }
+
+                    function root(Link $link): Link {
+                        while ($link->getClass() === "link") {
+                            if (($previous = $link->getPrevious()) === null) {
+                                break;
+                            }
+
+                            $link = $previous;
+                        }
+
+                        return $link;
+                    }',
+            ],
             'variableAssignedLaterInTheBodyHoldsWhatThePreviousIterationLeft' => [
                 'code' => '<?php
                     function f(): void {
