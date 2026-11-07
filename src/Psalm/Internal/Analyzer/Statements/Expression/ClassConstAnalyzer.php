@@ -862,14 +862,9 @@ final class ClassConstAnalyzer
         $parent_classlike_storage = $interface_const_storage = $parent_const_storage = null;
         $interface_overrides = [];
         foreach ($class_storage->class_implements ?: $class_storage->direct_interface_parents as $interface) {
-            // an undefined interface is reported where it is named
             $interface_storage = $codebase->classlikes->getStorageFor($interface);
-            if ($interface_storage === null) {
-                continue;
-            }
-
             $parent_const_storage = $interface_storage->constants[$const_name] ?? null;
-            if ($parent_const_storage !== null) {
+            if ($interface_storage !== null && $parent_const_storage !== null) {
                 if ($const_storage->location
                     && $const_storage !== $parent_const_storage
                     && $codebase->analysis_php_version_id < 8_01_00
@@ -904,12 +899,8 @@ final class ClassConstAnalyzer
 
         foreach ($class_storage->parent_classes as $parent_class) {
             $parent_class_storage = $codebase->classlikes->getStorageFor($parent_class);
-            if ($parent_class_storage === null) {
-                continue;
-            }
-
             $parent_const_storage = $parent_class_storage->constants[$const_name] ?? null;
-            if ($parent_const_storage !== null) {
+            if ($parent_class_storage !== null && $parent_const_storage !== null) {
                 if ($const_storage->location !== null && $interface_const_storage !== null) {
                     assert($parent_classlike_storage !== null);
                     if (!isset($parent_class_storage->class_implements[strtolower($parent_classlike_storage->name)])) {
