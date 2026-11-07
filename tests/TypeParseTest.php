@@ -1253,6 +1253,66 @@ final class TypeParseTest extends TestCase
         );
     }
 
+    public function testKeyedArrayWithTrailingComma(): void
+    {
+        $this->assertSame(
+            'array{a: int, b: string}',
+            (string) Type::parseString('array{a: int, b: string,}'),
+        );
+    }
+
+    public function testNestedKeyedArrayWithTrailingCommas(): void
+    {
+        $this->assertSame(
+            'array{a: int, b?: array{c: string}}',
+            (string) Type::parseString('array{a: int, b?: array{c: string,},}'),
+        );
+    }
+
+    public function testListShapeWithTrailingComma(): void
+    {
+        $this->assertSame(
+            'list{int, string}',
+            (string) Type::parseString('list{int, string,}'),
+        );
+    }
+
+    public function testKeyedArrayWithOnlyACommaIsInvalid(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array{,}');
+    }
+
+    public function testNestedKeyedArrayWithTwoCommasIsInvalid(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array{a: array{b: int,,}}');
+    }
+
+    public function testUnterminatedNestedKeyedArrayWithTwoCommasIsInvalid(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array{a: array{b: int,,}');
+    }
+
+    public function testNestedKeyedArrayWithTwoCommasSeparatedBySpaceIsInvalid(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array{a: array{b: int, ,}');
+    }
+
+    public function testUnterminatedNestedGenericWithTwoCommasIsInvalid(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array<string, array<int,,string>');
+    }
+
+    public function testUnterminatedNestedKeyedArrayWithTrailingCommaIsInvalid(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array{a: array{b: int,}');
+    }
+
     public function testCallableWithVariadicAndDefault(): void
     {
         $this->expectException(TypeParseTreeException::class);
@@ -1810,7 +1870,7 @@ final class TypeParseTest extends TestCase
         $callmap_types = InternalCallMapHandler::getCallMap();
 
         foreach ($callmap_types as $signature) {
-            $return_type = $signature[0] ?? null;
+            $return_type = $signature[0] ?? $signature[-1] ?? null;
             $param_type_1 = $signature[1] ?? null;
             $param_type_2 = $signature[2] ?? null;
             $param_type_3 = $signature[3] ?? null;
