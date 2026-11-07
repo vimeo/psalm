@@ -27,6 +27,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidDocblock;
@@ -1141,9 +1142,13 @@ abstract class CallAnalyzer
                         continue;
                     }
 
+                    // type variables of different instantiations that stand for the same type are one type
                     $equality_types = array_unique(
                         array_map(
-                            static fn($bound_with_equality) => $bound_with_equality->type->getId(),
+                            static fn($bound_with_equality) => TypeVariableTracker::resolveTypeVariables(
+                                $bound_with_equality->type,
+                                $statements_analyzer->getCodebase(),
+                            )->getId(),
                             $bounds_with_equality,
                         ),
                     );
