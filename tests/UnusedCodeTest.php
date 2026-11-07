@@ -509,6 +509,20 @@ final class UnusedCodeTest extends TestCase
                         return $value;
                     }',
             ],
+            'pureMethodCallAsTheLeftOperandOfACoalesceThatThrows' => [
+                'code' => '<?php
+                    final class A {
+                        /** @psalm-pure */
+                        public function getTransportType(): ?stdClass {
+                            return null;
+                        }
+                    }
+
+                    /** @psalm-api */
+                    function validate(A $a): void {
+                        $a->getTransportType() ?? throw new Exception("missing");
+                    }',
+            ],
             'argumentCastToStringDoesNotReportPossiblyInvalidCast' => [
                 'code' => '<?php
                     /** @psalm-api */
