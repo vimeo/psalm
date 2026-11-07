@@ -23,7 +23,7 @@ final class SystemCommandExecutorTest extends TestCase
     {
         self::assertSame(
             ['hello'],
-            (new SystemCommandExecutor())->execute(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg('echo "hello";')),
+            (new SystemCommandExecutor())->execute(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg("echo 'hello';")),
         );
     }
 
@@ -38,7 +38,14 @@ final class SystemCommandExecutorTest extends TestCase
     {
         $command = escapeshellarg(PHP_BINARY)
             . ' -r '
-            . escapeshellarg('fwrite(STDERR, "fatal: not a git repository"); exit(128);');
+            . escapeshellarg("fwrite(STDERR, 'fatal: not a git repository'); exit(128);");
+
+        $direct = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $direct_pipes);
+        self::assertIsResource($direct);
+        $direct_stderr = (string) stream_get_contents($direct_pipes[2]);
+        stream_get_contents($direct_pipes[1]);
+        proc_close($direct);
+        self::assertSame('fatal: not a git repository', $direct_stderr);
 
         $script = 'require ' . var_export(dirname(__DIR__, 3) . '/vendor/autoload.php', true) . ';
             try {
