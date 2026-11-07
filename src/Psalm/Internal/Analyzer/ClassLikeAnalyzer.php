@@ -762,13 +762,13 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * Reports the docblock issues found when the class-like was scanned, and the template defaults outside their
-     * bounds, which can only be checked once the codebase is populated.
+     * Reports the docblock issues found when the class-like was scanned, and the template defaults naming undefined
+     * classes or outside their bounds, which can only be checked once the codebase is populated.
      *
      * @param array<string> $suppressed_issues
      */
     protected static function reportDocblockIssues(
-        Codebase $codebase,
+        StatementsSource $source,
         ClassLikeStorage $storage,
         array $suppressed_issues,
     ): void {
@@ -777,11 +777,12 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         }
 
         TemplateDefaults::checkBounds(
-            $codebase,
+            $source,
             $storage->template_types ?? [],
             $storage->template_defaults,
             $storage->template_default_locations,
             $storage->name,
+            $storage->parent_class,
             $storage->name,
             $suppressed_issues,
         );
@@ -849,6 +850,10 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
         if ($parent_storage->template_types && $storage->template_extended_params) {
             $i = 0;
+
+            // the written arguments, but for the purity arguments, which come last
+            $written_type_arg_count = $given_param_count
+                - count(PurityArguments::split($storage->template_extended_offsets[$parent_storage->name] ?? [])[1]);
 
             // the bounds of type templates may use purity templates, which come after them
             $previous_extended = [];
@@ -942,9 +947,14 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                         }
                     }
 
-                    // a parent template left to its default is checked where the default is declared
+                    // a parent template left to its default is checked where the default is declared: any of them
+                    // when no arguments are written, else a type template past the written type arguments (type
+                    // templates come first, so $i is its position among them)
                     if (!$template_type->isMixed()
-                        && !isset($storage->template_extended_defaults[$parent_storage->name][$template_name])
+                        && !(isset($parent_storage->template_defaults[$template_name])
+                            && ($given_param_count === 0
+                                || ($i >= $written_type_arg_count
+                                    && !isset($parent_storage->purity_templates[$template_name]))))
                     ) {
                         $template_result = new TemplateResult(
                             $previous_extended ?: [],

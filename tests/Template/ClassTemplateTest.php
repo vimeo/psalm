@@ -4796,6 +4796,28 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'classTemplateDefaultUsingKeyOfAnEarlierTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T of array
+                     * @template K of array-key = key-of<T>
+                     */
+                    final class Keyed {
+                        /** @return K */
+                        public function key(): int|string {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @param Keyed<array{a: int}> $keyed */
+                    function keyOf(Keyed $keyed): string {
+                        return $keyed->key();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'selfReferencingTemplateDefault' => [
                 'code' => '<?php
                     /**
@@ -5031,6 +5053,130 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'newLeavesATemplateWithADefaultToLaterCodeAfterATemplateFreeArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template T = int
+                     */
+                    final class Lazy {
+                        /** @param (callable(): T)|null $factory */
+                        public function __construct(?callable $factory = null) {}
+
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @return Lazy<string> */
+                    function lazy(): Lazy {
+                        $lazy = new Lazy(null);
+                        $lazy->set("x");
+
+                        return $lazy;
+                    }
+
+                    $unbound = new Lazy(null);',
+                'assertions' => [
+                    '$unbound===' => 'Lazy<`_0:mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'newLeavesATemplateWithADefaultThatLaterCodeNeverFixesToItsBound' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template TError of Throwable = RuntimeException
+                     */
+                    final class Result {
+                        public function __construct() {}
+
+                        /** @param TError $error */
+                        public function fail(Throwable $error): void {}
+
+                        /** @return TError|null */
+                        public function error(): ?Throwable {
+                            return null;
+                        }
+                    }
+
+                    $error = (new Result())->error();',
+                'assertions' => [
+                    '$error===' => 'Throwable|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'newLeavesATemplateWithADefaultNamedInAPublicPropertyToLaterCode' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template T = int
+                     */
+                    final class Holder {
+                        /** @var T|null */
+                        public mixed $value = null;
+
+                        public function __construct() {}
+                    }
+
+                    /** @return Holder<string> */
+                    function holder(): Holder {
+                        $holder = new Holder();
+                        $holder->value = "x";
+
+                        return $holder;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'newUsesTheDefaultOfATemplateOnlyAnInheritedMethodTakes' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template T
+                     */
+                    abstract class Setter {
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /**
+                     * @psalm-mutable
+                     * @template T = int
+                     * @extends Setter<T>
+                     */
+                    final class Inherited extends Setter {
+                        public function __construct() {}
+                    }
+
+                    /** @template T */
+                    trait SetsIt {
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /**
+                     * @psalm-mutable
+                     * @template T = int
+                     */
+                    final class FromTrait {
+                        /** @use SetsIt<T> */
+                        use SetsIt;
+
+                        public function __construct() {}
+                    }
+
+                    $inherited = new Inherited();
+                    $from_trait = new FromTrait();',
+                'assertions' => [
+                    '$inherited===' => 'Inherited<int>',
+                    '$from_trait===' => 'FromTrait<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'newWithTemplateFreeConstructorArgumentUsesTheDefault' => [
                 'code' => '<?php
                     /**
@@ -5262,6 +5408,370 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.0',
             ],
+            'methodTemplateDefaultNamingClassTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template T
+                     */
+                    interface Promise {
+                        /**
+                         * @psalm-impure
+                         * @template TResult1 = T
+                         * @template TResult2 = never
+                         * @param (callable(T): TResult1)|null $a
+                         * @param (callable(mixed): TResult2)|null $b
+                         * @return Promise<TResult1|TResult2>
+                         */
+                        public function then(?callable $a = null, ?callable $b = null): Promise;
+                    }
+
+                    /** @var Promise<int> $p */
+                    $p = null;
+
+                    $nulls = $p->then(null, null);
+                    $omitted = $p->then();
+                    $first = $p->then(fn(int $i): string => (string) $i);
+                    $second = $p->then(null, fn(mixed $e): float => 1.0);',
+                'assertions' => [
+                    '$nulls===' => 'Promise<int>',
+                    '$omitted===' => 'Promise<int>',
+                    '$first===' => 'Promise<decimal-int-string>',
+                    '$second===' => 'Promise<float(1)|int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'methodTemplateDefaultNamingClassTemplateGivenANonCallableArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template TValue
+                     */
+                    final class Coll {
+                        /**
+                         * @template TResult = TValue
+                         * @param (callable(TValue): TResult)|string|null $callback
+                         * @return TResult|null
+                         */
+                        public function max(callable|string|null $callback = null): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @var Coll<int> $c */
+                    $c = null;
+
+                    $omitted = $c->max();
+                    $key = $c->max("price");
+                    $callback = $c->max(fn(int $i): string => "x");',
+                'assertions' => [
+                    '$omitted===' => 'int|null',
+                    '$key===' => 'int|null',
+                    '$callback===' => '\'x\'|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inheritedMethodTemplateDefault' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template T
+                     */
+                    abstract class Base {
+                        /**
+                         * @template R = T
+                         * @param (callable(T): R)|null $cb
+                         * @return list<R>
+                         */
+                        public function map(?callable $cb = null): array {
+                            return [];
+                        }
+                    }
+
+                    /** @extends Base<int> */
+                    final class Child extends Base {
+                        public function map(?callable $cb = null): array {
+                            return [];
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     */
+                    trait MapsT {
+                        /**
+                         * @template R = T
+                         * @param (callable(T): R)|null $cb
+                         * @return list<R>
+                         */
+                        public function tmap(?callable $cb = null): array {
+                            return [];
+                        }
+                    }
+
+                    /** @psalm-mutable */
+                    final class UsesT {
+                        /** @use MapsT<string> */
+                        use MapsT;
+                    }
+
+                    $overridden = (new Child())->map();
+                    $from_trait = (new UsesT())->tmap();',
+                'assertions' => [
+                    '$overridden===' => 'list<int>',
+                    '$from_trait===' => 'list<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'methodTemplateDefaultLeavesTemplateInferredFromParamDefault' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template TModel of object
+                     */
+                    abstract class Factory {
+                        /**
+                         * @template TV = TModel
+                         * @param TV|null $v
+                         * @return TV
+                         */
+                        public static function pick(mixed $v = null): mixed {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @psalm-mutable */
+                    final class Req {
+                        /**
+                         * @template TDefault = null
+                         * @param TDefault $default
+                         * @return string|TDefault
+                         */
+                        public function input(string $k, mixed $default = null): mixed {
+                            throw new Exception();
+                        }
+
+                        /**
+                         * @template TAsync of bool = false
+                         * @param TAsync $async
+                         * @return (TAsync is true ? int : string)
+                         */
+                        public function send(bool $async = false): mixed {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    final class User {}
+
+                    /** @extends Factory<User> */
+                    final class UserFactory extends Factory {}
+
+                    $picked = UserFactory::pick();
+                    $input = (new Req())->input("x");
+                    $input_with_default = (new Req())->input("x", 5);
+                    $sent = (new Req())->send();
+                    $sent_async = (new Req())->send(true);',
+                'assertions' => [
+                    '$picked===' => 'null',
+                    '$input===' => 'null|string',
+                    '$input_with_default===' => '5|string',
+                    '$sent===' => 'string',
+                    '$sent_async===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classTemplateBoundUsingTemplateRedeclaredWithAnotherTagPrefix' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /**
+                     * @template T
+                     * @template U of T
+                     * @psalm-template T of object
+                     */
+                    final class DupBox {
+                        /** @param U $u */
+                        public function __construct(private object $u) {}
+
+                        /** @return U */
+                        public function get(): object {
+                            return $this->u;
+                        }
+                    }
+
+                    $u = (new DupBox(new Foo()))->get();',
+                'assertions' => [
+                    '$u===' => 'Foo',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'bindTemplateRegardlessOfArgumentOrderWithUnboundNullFirst' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /** @template T of object */
+                    final class Pair {
+                        /**
+                         * @param T|null $a
+                         * @param T|null $b
+                         */
+                        public function __construct(?object $a, ?object $b) {}
+                    }
+
+                    final class S {
+                        /**
+                         * @template T of object
+                         * @param T|null $a
+                         * @param T|null $b
+                         * @return T
+                         */
+                        public static function s(?object $a, ?object $b): object {
+                            throw new \Exception();
+                        }
+                    }
+
+                    $foo = new Foo();
+                    $a = new Pair(null, $foo);
+                    $b = new Pair($foo, null);
+                    $c = S::s(null, $foo);',
+                'assertions' => [
+                    '$a' => 'Pair<Foo>',
+                    '$b' => 'Pair<Foo>',
+                    '$c' => 'Foo',
+                ],
+            ],
+            'bindClassStringTemplateAfterUnboundNull' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /** @template T of object */
+                    final class X {
+                        /**
+                         * @param T|null $a
+                         * @param class-string<T> $b
+                         */
+                        public function __construct(?object $a, string $b) {}
+                    }
+
+                    $x = new X(null, Foo::class);',
+                'assertions' => [
+                    '$x' => 'X<Foo>',
+                ],
+            ],
+            'bindTemplateAfterUnboundArgInConditionalParam' => [
+                'code' => '<?php
+                    /** @template T of self::* */
+                    final class SomeTemplatedClass {
+                        public const TYPE1 = "type1";
+                        public const TYPE2 = "type2";
+
+                        /**
+                         * @param (T is self::TYPE1 ? string : null) $someParam
+                         * @param T $type
+                         */
+                        public function __construct(private ?string $someParam, private string $type) {}
+
+                        /** @return SomeTemplatedClass<self::TYPE1> */
+                        public static function create(): self {
+                            return new self("some-string", self::TYPE1);
+                        }
+                    }
+
+                    $r = new SomeTemplatedClass("some-string", SomeTemplatedClass::TYPE1);',
+                'assertions' => [
+                    '$r===' => 'SomeTemplatedClass<\'type1\'>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateInVarDocblockOfPromotedProperty' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Foo {
+                        public function __construct(
+                            /** @var T */
+                            public mixed $withVar,
+                        ) {}
+                    }
+
+                    /** @var Foo<int> $foo */
+                    $foo = new Foo(1);
+                    $x = $foo->withVar;',
+                'assertions' => [
+                    '$x===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'staticReturnFromInterfaceOnGenericClassKeepsTemplateParams' => [
+                'code' => '<?php
+                    interface CopyInterface {
+                        public function copy(): static;
+                    }
+
+                    /**
+                     * @template T
+                     */
+                    class Collection implements CopyInterface {
+                        /** @var T[] */
+                        private $x;
+
+                        /** @param T[] $x */
+                        public function __construct($x) {
+                            $this->x = $x;
+                        }
+
+                        public function copy(): static {
+                            return $this;
+                        }
+                    }
+
+                    /** @param Collection<int> $x */
+                    function checkCollection($x): string {
+                        return get_class($x);
+                    }
+
+                    /** @var Collection<int> $intCollection */
+                    $intCollection = new Collection([1]);
+
+                    checkCollection($intCollection->copy());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateBoundReferencesEarlierTemplateInPropertyAndParamDocblock' => [
+                'code' => '<?php
+                    interface Entity {}
+                    final class Customer implements Entity {}
+
+                    /** @template T */
+                    interface Dao {}
+
+                    /** @implements Dao<Customer> */
+                    final class CustomerDao implements Dao {}
+
+                    /**
+                     * @template TModel of Entity
+                     * @template TDao of Dao<TModel>
+                     */
+                    class Cache {}
+
+                    class Test {
+                        /** @var Cache<Customer, CustomerDao> */
+                        public $c;
+
+                        /** @param Cache<Customer, CustomerDao> $c */
+                        public function __construct($c) {
+                            $this->c = $c;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -5272,6 +5782,15 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classTemplateDefaultNamingAnUndefinedClass' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T = Missing
+                     */
+                    final class C {}',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33 - Class, interface or enum named Missing does not exist',
+            ],
             'partialGenericNextToASelfNamingDefaultChecksItsDefaults' => [
                 'code' => '<?php
                     /**
