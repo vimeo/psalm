@@ -503,7 +503,8 @@ final class SwitchCaseAnalyzer
             if ($switch_scope->new_vars_in_scope !== null) {
                 foreach ($switch_scope->new_vars_in_scope as $var_id => $type) {
                     if (isset($case_scope->break_vars[$var_id])) {
-                        if (!isset($case_context->vars_in_scope[$var_id])) {
+                        // a case that ends with a return or a throw leaves the switch only through its breaks
+                        if (!$case_context->has_returned && !isset($case_context->vars_in_scope[$var_id])) {
                             unset($switch_scope->new_vars_in_scope[$var_id]);
                         } else {
                             $switch_scope->new_vars_in_scope[$var_id] = Type::combineUnionTypes(
