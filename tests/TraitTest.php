@@ -22,6 +22,19 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'traitPropertiesTypedSelf' => [
+                'code' => '<?php
+                    trait MyTrait {
+                        private static self $instance;
+                        public ?self $next = null;
+                    }
+
+                    class Implementor {
+                        use MyTrait;
+                    }
+
+                    class Child extends Implementor {}',
+            ],
             'accessiblePrivateMethodFromTrait' => [
                 'code' => '<?php
                     trait T {
@@ -1224,6 +1237,16 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'docblockPropertyTypeNotContainedBySignatureTypeSelf' => [
+                'code' => '<?php
+                    class Child {}
+
+                    class Wrong {
+                        /** @var Child */
+                        public ?self $x = null;
+                    }',
+                'error_message' => 'MismatchingDocblockPropertyType',
+            ],
             'inaccessiblePrivateMethodFromInheritedTrait' => [
                 'code' => '<?php
                     trait T {
