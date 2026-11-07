@@ -341,6 +341,44 @@ final class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
+    public function testThrowsOfOverrideInheritingTemplatedDocblock(): void
+    {
+        $this->expectExceptionMessage('MissingThrowsDocblock - somefile.php:22:25 - LogicException is thrown');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {
+                    /**
+                     * @template T
+                     * @param T $x
+                     * @return T
+                     * @throws RuntimeException
+                     */
+                    public function f($x) {
+                        return $x;
+                    }
+                }
+
+                final class B extends A {
+                    /** @throws LogicException */
+                    public function f($x) {
+                        throw new LogicException();
+                    }
+                }
+
+                function bar(B $b): void {
+                    $b->f(1);
+                }',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
     public function testDocumentedThrowInFunctionCallWithThrow(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
