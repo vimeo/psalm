@@ -80,6 +80,33 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayMergeRecursiveOfShapesWithoutSharedKeys' => [
+                'code' => '<?php
+                    /**
+                     * @param array{name: string} $a
+                     * @param array{age: int} $b
+                     * @return array{name: string, age: int}
+                     */
+                    function merge(array $a, array $b): array {
+                        return array_merge_recursive($a, $b);
+                    }
+
+                    $a = ["name" => "a"];
+                    $b = ["age" => 1];
+                    $merged = array_merge_recursive($a, $b);',
+                'assertions' => [
+                    '$merged===' => "array{age: 1, name: 'a'}",
+                ],
+            ],
+            'arrayMergeRecursiveOfShapesWithSharedKeysStaysGeneric' => [
+                'code' => '<?php
+                    $a = ["name" => "a"];
+                    $b = ["name" => "b", "age" => 1];
+                    $merged = array_merge_recursive($a, $b);',
+                'assertions' => [
+                    '$merged===' => "array<'age'|'name', 'a'|'b'|1>",
+                ],
+            ],
             'arraySpliceWithALengthOutsideTheRangeOfAnInt' => [
                 'code' => '<?php
                     $big = [1, 2, 3];
