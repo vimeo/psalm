@@ -7,7 +7,7 @@
 
 namespace {
     class ReflectionClass implements Reflector {
-        /** @psalm-pure */
+        /** @psalm-capabilities read-props */
         public function isEnum(): bool {}
     }
 
@@ -16,7 +16,7 @@ namespace {
         /**
          * @deprecated Starting from PHP 8.1, this method is pure, and has no effect.
          *
-         * @psalm-pure
+         * @psalm-capabilities read-props
          */
         public function setAccessible(bool $accessible): void {}
     }
@@ -26,7 +26,7 @@ namespace {
         /**
          * @deprecated Starting from PHP 8.1, this method is pure, and has no effect.
          *
-         * @psalm-pure
+         * @psalm-capabilities read-props
          */
         public function setAccessible(bool $accessible): void {}
     }
