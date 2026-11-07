@@ -840,6 +840,39 @@ final class InterfaceTest extends TestCase
                     interface Foo extends Missing, Ok {}',
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:43',
             ],
+            'constantOfAnInterfaceExtendingAnUndefinedInterface' => [
+                'code' => '<?php
+                    interface Foo extends Missing {
+                        public const A = 0;
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:43',
+            ],
+            'constantOfAnInterfaceExtendingAnUndefinedInterfaceIsCheckedAgainstTheDefinedOne' => [
+                'code' => '<?php
+                    interface Ok {
+                        public const A = 0;
+                    }
+                    interface Foo extends Missing, Ok {
+                        public const A = 1;
+                    }',
+                'error_message' => 'InvalidClassConstantType - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:38',
+                'error_levels' => ['UndefinedClass'],
+                'php_version' => '8.1',
+            ],
+            'constantOfAClassImplementingAnUndefinedInterface' => [
+                'code' => '<?php
+                    final class Foo implements Missing {
+                        public const A = 0;
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:48',
+            ],
+            'constantOfAClassExtendingAnUndefinedClass' => [
+                'code' => '<?php
+                    final class Foo extends Missing {
+                        public const A = 0;
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:45',
+            ],
             'invalidInterface' => [
                 'code' => '<?php
                     class C2 implements A { }',
