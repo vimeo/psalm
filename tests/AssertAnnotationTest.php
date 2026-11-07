@@ -471,6 +471,110 @@ final class AssertAnnotationTest extends TestCase
                         $a->foo();
                     }',
             ],
+            'assertIfTrueOfUnionKeepsEveryMember' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $f
+                     * @psalm-pure
+                     * @psalm-assert-if-true "a"|"b"|"c" $f
+                     */
+                    function isAbc($f): bool {
+                        return in_array($f, ["a", "b", "c"], true);
+                    }
+
+                    /** @var string $s */
+                    $s = "";
+                    $t = isAbc($s) ? $s : "x";',
+                'assertions' => [
+                    '$t===' => "'a'|'b'|'c'|'x'",
+                ],
+            ],
+            'assertIfFalseOfUnionExcludesEveryMember' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $f
+                     * @psalm-pure
+                     * @psalm-assert-if-false "a"|"b" $f
+                     */
+                    function isNotAb($f): bool {
+                        return !in_array($f, ["a", "b"], true);
+                    }
+
+                    /** @var string $s */
+                    $s = "";
+                    $t = isNotAb($s) ? "x" : $s;',
+                'assertions' => [
+                    '$t===' => "'a'|'b'|'x'",
+                ],
+            ],
+            'assertIfTrueOfUnionOnArrayOffset' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $f
+                     * @psalm-pure
+                     * @psalm-assert-if-true "date"|"date-time" $f
+                     */
+                    function isFormat($f): bool {
+                        return in_array($f, ["date", "date-time"], true);
+                    }
+
+                    /** @var array{format?: string} $a */
+                    $a = [];
+                    $t = isset($a["format"]) && isFormat($a["format"]) ? $a["format"] : "x";',
+                'assertions' => [
+                    '$t===' => "'date'|'date-time'|'x'",
+                ],
+            ],
+            'assertIfTrueAndFalseOfUnionWithClassString' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $b
+                     * @psalm-assert-if-true "self"|class-string $b
+                     */
+                    function atrue($b): bool {
+                        return $b === "";
+                    }
+
+                    /**
+                     * @param mixed $b
+                     * @psalm-assert-if-false "self"|class-string $b
+                     */
+                    function afalse($b): bool {
+                        return $b === "";
+                    }
+
+                    /** @var string $one */
+                    $one = "";
+                    $t = atrue($one) ? $one : null;
+
+                    /** @var string $two */
+                    $two = "";
+                    $f = afalse($two) ? null : $two;',
+                'assertions' => [
+                    '$t===' => "'self'|class-string|null",
+                    '$f===' => "'self'|class-string|null",
+                ],
+            ],
+            'assertIfTrueOfUnionOnThisProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public string $v = "a";
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert-if-true "a"|"b" $this->v
+                         */
+                        public function isAb(): bool {
+                            return $this->v === "a" || $this->v === "b";
+                        }
+                    }
+
+                    $a = new A();
+                    $t = $a->isAb() ? $a->v : "x";',
+                'assertions' => [
+                    '$t===' => "'a'|'b'|'x'",
+                ],
+            ],
             'assertIfTrueAnnotation' => [
                 'code' => '<?php
                     namespace Bar;

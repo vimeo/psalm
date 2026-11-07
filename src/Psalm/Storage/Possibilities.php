@@ -21,7 +21,7 @@ final class Possibilities
     use UnserializeMemoryUsageSuppressionTrait;
 
     /**
-     * @param list<Assertion> $rule
+     * @param non-empty-list<Assertion> $rule
      * @psalm-mutation-free
      */
     public function __construct(
