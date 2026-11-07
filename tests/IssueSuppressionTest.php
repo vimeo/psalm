@@ -297,7 +297,7 @@ final class IssueSuppressionTest extends TestCase
     public function testUnusedClassSuppressionIsReportedDespitePluginAppendedOne(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('UnusedPsalmSuppress - tests' . DIRECTORY_SEPARATOR . 'somefile.php:3:36');
+        $this->expectExceptionMessage('UnusedPsalmSuppress - tests/somefile.php:3:36');
 
         $this->analyzeWithPluginSuppression(
             '<?php
@@ -352,7 +352,7 @@ final class IssueSuppressionTest extends TestCase
     public function testUnusedMethodSuppressionIsReportedDespitePluginAppendedOne(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('UnusedPsalmSuppress - tests' . DIRECTORY_SEPARATOR . 'somefile.php:4:40');
+        $this->expectExceptionMessage('UnusedPsalmSuppress - tests/somefile.php:4:40');
 
         $this->analyzeWithPluginSuppression(
             '<?php
