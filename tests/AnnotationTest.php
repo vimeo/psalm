@@ -184,6 +184,49 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'invalidParamDefaultSuppressedOnFunction' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidParamDefault
+                     */
+                    function foo(int $a = "x"): void {
+                        echo $a;
+                    }',
+            ],
+            'invalidCallableParamDefaultSuppressedOnFunction' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidParamDefault
+                     */
+                    function foo(?callable $_a = "strlen"): void {}',
+            ],
+            'invalidParamDefaultSuppressedOnPromotedProperty' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    interface Container {}
+
+                    /**
+                     * @template T
+                     * @implements Container<T>
+                     */
+                    final class SomeContainer implements Container {}
+
+                    final class Client
+                    {
+                        /**
+                         * @psalm-suppress InvalidParamDefault
+                         * @param Container<object> $container
+                         */
+                        public function __construct(
+                            public Container $container = new SomeContainer(),
+                        ) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'varWithoutNameDoesNotTakeNameOfPreviousVarLine' => [
                 'code' => '<?php
                     /**
@@ -1526,6 +1569,30 @@ final class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
+            'invalidParamDefaultStillReportedForAnotherFunction' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidParamDefault
+                     */
+                    function foo(int $a = "x"): void {
+                        echo $a;
+                    }
+
+                    function bar(int $b = "x"): void {
+                        echo $b;
+                    }',
+                'error_message' => 'InvalidParamDefault - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:34',
+            ],
+            'callableParamDefaultStillReportedForAnotherFunction' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidParamDefault
+                     */
+                    function foo(?callable $_a = "strlen"): void {}
+
+                    function bar(?callable $_b = "strlen"): void {}',
+                'error_message' => 'InvalidParamDefault - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:34',
+            ],
             'varDocblockClassWithWrongCasingIsReportedInTheDocblock' => [
                 'code' => '<?php
                     class FooBar {}
@@ -1545,7 +1612,7 @@ final class AnnotationTest extends TestCase
                 'code' => '<?php
                     class Foo {
                         public function __construct(
-                            /** @var array<int, > */
+                            /** @var array<int,, string> */
                             public array $bar,
                         ) {}
                     }',
