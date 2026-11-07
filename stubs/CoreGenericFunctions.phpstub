@@ -2056,6 +2056,7 @@ function extract(array &$array, int $flags = EXTR_OVERWRITE, string $prefix = ""
  * @param object|string $object_or_class
  *
  * @return ($object_or_class is object ? array<class-string, class-string> : array<class-string, class-string>|false)
+ * @psalm-ignore-falsable-return
  */
 function class_parents($object_or_class, bool $autoload = true)
 {
@@ -2065,6 +2066,7 @@ function class_parents($object_or_class, bool $autoload = true)
  * @param object|string $object_or_class
  *
  * @return ($object_or_class is object ? array<interface-string, interface-string> : array<interface-string, interface-string>|false)
+ * @psalm-ignore-falsable-return
  */
 function class_implements($object_or_class, bool $autoload = true)
 {
@@ -2074,6 +2076,7 @@ function class_implements($object_or_class, bool $autoload = true)
  * @param object|string $object_or_class
  *
  * @return ($object_or_class is object ? array<trait-string, trait-string> : array<trait-string, trait-string>|false)
+ * @psalm-ignore-falsable-return
  */
 function class_uses($object_or_class, bool $autoload = true)
 {

@@ -119,6 +119,20 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'classHierarchyFunctionsOfAClassNameAreNotPossiblyFalseArguments' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /** @param class-string $class */
+                    function f(string $class): bool {
+                        return in_array(I::class, class_implements($class), true)
+                            || in_array(I::class, class_parents($class), true)
+                            || in_array(I::class, class_uses($class), true);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'substrOfANonEmptyStringFromItsStart' => [
                 'code' => '<?php
                     /** @var non-empty-string $in */
