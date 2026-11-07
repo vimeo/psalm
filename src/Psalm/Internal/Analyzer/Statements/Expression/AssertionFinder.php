@@ -821,13 +821,9 @@ final class AssertionFinder
                 $class_string_type = new TClassString('object', null, $class_exists_check_type === 1);
                 $if_types[$first_var_name] = [[new IsType($class_string_type)]];
             }
-        } elseif ($class_exists_check_type = self::hasTraitExistsCheck($expr)) {
+        } elseif (self::hasTraitExistsCheck($expr)) {
             if ($first_var_name) {
-                if ($class_exists_check_type === 2) {
-                    $if_types[$first_var_name] = [[new IsType(new TTraitString())]];
-                } else {
-                    $if_types[$first_var_name] = [[new IsIdentical(new TTraitString())]];
-                }
+                $if_types[$first_var_name] = [[new IsType(new TTraitString())]];
             }
         } elseif (self::hasEnumExistsCheck($expr)) {
             if ($first_var_name) {
@@ -1410,6 +1406,7 @@ final class AssertionFinder
                     } elseif ($atomic_type instanceof TClassString && $atomic_type->as !== 'object') {
                         $literal_class_strings[] = new IsType(
                             $atomic_type->as_type ?: new TNamedObject($atomic_type->as),
+                            true,
                         );
                     }
                 }

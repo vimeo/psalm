@@ -16,14 +16,19 @@ use Psalm\Type\Atomic;
 final class IsType extends Assertion
 {
     use UnserializeMemoryUsageSuppressionTrait;
-    public function __construct(public readonly Atomic $type)
+    /**
+     * @param bool $upper_bound_only the type is only an upper bound of what the
+     *     value can be (the class of `instanceof $class` with a `class-string<Foo>`),
+     *     so a value of exactly this type may still be a subclass of the real one
+     */
+    public function __construct(public readonly Atomic $type, public readonly bool $upper_bound_only = false)
     {
     }
 
     #[Override]
     public function getNegation(): Assertion
     {
-        return new IsNotType($this->type);
+        return new IsNotType($this->type, $this->upper_bound_only);
     }
 
     public function __toString(): string
@@ -39,12 +44,12 @@ final class IsType extends Assertion
 
     /**
      * @return static
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     #[Override]
     public function setAtomicType(Atomic $type): self
     {
-        return new static($type);
+        return new static($type, $this->upper_bound_only);
     }
 
     #[Override]

@@ -707,17 +707,13 @@ final class Algebra
      */
     public static function negateFormula(array $clauses): array
     {
-        $reconcilable_clauses = array_filter(
-            $clauses,
-            static fn(Clause $clause): bool => $clause->reconcilable,
-        );
-
         // A clause that can't be reconciled, as one of its disjuncts says nothing (`$a === null || !f($a)`, with
-        // f() asserting nothing when false), still lists disjuncts that are all false where it is: where there is
-        // nothing else to negate, that is what the negation says
-        $clauses = $reconcilable_clauses ?: array_filter(
+        // f() asserting nothing when false), still lists disjuncts that are all false where the clause is: its
+        // negation says at least that. Leaving such a clause out would negate only the others, which is a
+        // stronger claim than the negation of all of them.
+        $clauses = array_filter(
             $clauses,
-            static fn(Clause $clause): bool => $clause->possibilities && !$clause->wedge,
+            static fn(Clause $clause): bool => $clause->reconcilable || ($clause->possibilities && !$clause->wedge),
         );
 
         if (!$clauses) {

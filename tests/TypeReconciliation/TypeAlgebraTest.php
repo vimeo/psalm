@@ -1358,6 +1358,25 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'negationOfAConjunctionKeepsAClauseThatSaysNothingWhenFalse' => [
+                'code' => '<?php
+                    class A {}
+                    class B {}
+
+                    /** @param A|B|stdClass $x */
+                    function test(object $x, string $needle): A {
+                        if (!$x instanceof A
+                            && !($x instanceof B && !str_contains($needle, "a"))
+                        ) {
+                            throw new Exception("x");
+                        }
+
+                        return $x;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'staticPropertyNarrowedToDeclaredTypeAfterEarlyReturn' => [
                 'code' => '<?php
                     final class A {
