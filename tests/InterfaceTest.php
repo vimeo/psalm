@@ -813,6 +813,26 @@ final class InterfaceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'interfaceExtendsUndefinedInterfaceAndDeclaresConstant' => [
+                'code' => '<?php
+                    interface Foo extends Missing {
+                        public const B = 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedClass'],
+            ],
+            'interfaceExtendsUndefinedAndDefinedInterfaceWithSameConstant' => [
+                'code' => '<?php
+                    interface Ok {
+                        public const B = 1;
+                    }
+                    interface Foo extends Missing, Ok {
+                        public const B = 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedClass'],
+                'php_version' => '8.2',
+            ],
         ];
     }
 

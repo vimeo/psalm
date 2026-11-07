@@ -862,6 +862,10 @@ final class ClassConstAnalyzer
         $parent_classlike_storage = $interface_const_storage = $parent_const_storage = null;
         $interface_overrides = [];
         foreach ($class_storage->class_implements ?: $class_storage->direct_interface_parents as $interface) {
+            if (!$codebase->classlike_storage_provider->has($interface)) {
+                continue;
+            }
+
             $interface_storage = $codebase->classlike_storage_provider->get($interface);
             $parent_const_storage = $interface_storage->constants[$const_name] ?? null;
             if ($parent_const_storage !== null) {
@@ -898,6 +902,10 @@ final class ClassConstAnalyzer
         }
 
         foreach ($class_storage->parent_classes as $parent_class) {
+            if (!$codebase->classlike_storage_provider->has($parent_class)) {
+                continue;
+            }
+
             $parent_class_storage = $codebase->classlike_storage_provider->get($parent_class);
             $parent_const_storage = $parent_class_storage->constants[$const_name] ?? null;
             if ($parent_const_storage !== null) {
