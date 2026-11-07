@@ -12,6 +12,9 @@ use Psalm\Type\Atomic\TNull;
 function internalNormalizeCallMap(array|string $callMap, string|int $key = 0): array|string
 {
     if (is_string($callMap)) {
+        if ($key === -2) {
+            return $callMap;
+        }
         return Type::parseString($callMap === '' ? 'mixed' : $callMap)->getId(true);
     }
 
@@ -47,7 +50,7 @@ function normalizeParameters(string $func, array $parameters): array
     $normalizedEntries = [];
     
     foreach ($parameters as $key => $entry) {
-        if ($key === 0) {
+        if (is_int($key)) {
             continue;
         }
         $normalizedKey = $key;
@@ -124,6 +127,16 @@ function assertEntryParameters(string $func, array $baseParameters, array $custo
     $final = [];
     $idx = 0;
     foreach ($baseParameters as $name => $parameter) {
+        if ($parameter['variadic'] && count($customParameters) > $idx + 1) {
+            // C variadics can require a first argument that reflection does not distinguish from the rest.
+            foreach (array_slice($customParameters, $idx) as $customName => $customParameter) {
+                $variadicBase = $parameter;
+                $variadicBase['variadic'] = $customParameter['variadic'];
+                $variadicBase['optional'] = $customParameter['optional'];
+                $final[$customName] = assertParameter($func, $customName, $customParameter, $variadicBase);
+            }
+            break;
+        }
         if (isset($customParameters[$name])) {
             $final[$name] = assertParameter($func, $name, $customParameters[$name], $parameter);
         } elseif (isset($customParametersByVal[$idx])) {
@@ -226,6 +239,13 @@ function assertTypeValidity(string $base, string $custom, string $msgPrefix): st
 
 function writeCallMap(string $file, array $callMap): void
 {
+    foreach ($callMap as &$entry) {
+        if (isset($entry[-1]) && ($entry[0] ?? null) === $entry[-1]) {
+            unset($entry[0]);
+        }
+    }
+    unset($entry);
+
     file_put_contents($file, '<?php // phpcs:ignoreFile
 
 return '.var_export($callMap, true).';');
