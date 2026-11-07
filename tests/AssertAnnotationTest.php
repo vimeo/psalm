@@ -182,6 +182,25 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'negatedAssertIfTrueOfALiteralStringKeepsTheString' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true literal-string $s */
+                    function isKnown(mixed $s): bool {
+                        return in_array($s, ["a", "b"], true);
+                    }
+
+                    function check(string $s): void {
+                        if (isKnown($s)) {
+                            /** @psalm-check-type-exact $s = literal-string */
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $s = string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'staticInAnAssertionOfAnInheritedMethodIsTheCalledClass' => [
                 'code' => '<?php
                     interface Comparable {
@@ -231,6 +250,25 @@ final class AssertAnnotationTest extends TestCase
                             return $object->amount;
                         }
                     }',
+            ],
+            'negatedAssertIfTrueOfALowercaseStringKeepsTheString' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true lowercase-string $s */
+                    function isLower(mixed $s): bool {
+                        return is_string($s) && $s === strtolower($s);
+                    }
+
+                    function check(string $s): void {
+                        if (isLower($s)) {
+                            /** @psalm-check-type-exact $s = lowercase-string */
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $s = string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'assertKeyOfAClassConstantNarrowsToItsKeys' => [
                 'code' => '<?php
