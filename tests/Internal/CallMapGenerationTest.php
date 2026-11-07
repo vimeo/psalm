@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\Internal;
 
 use PHPUnit\Framework\TestCase;
+use Psalm\Internal\Stubs\CallMapVersionFilter;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 
@@ -19,6 +20,36 @@ use const PHP_OS_FAMILY;
 
 final class CallMapGenerationTest extends TestCase
 {
+    public function testPolyfillsDoNotBecomeBuiltins(): void
+    {
+        require_once dirname(__DIR__, 2) . '/bin/stubs/CallMapVersionFilter.php';
+
+        $filter = new CallMapVersionFilter([
+            'array_key_first' => ['standard' => true],
+            'random_int' => ['standard' => true, 'random' => true],
+        ]);
+        $entry = [0 => 'mixed'];
+        $map = [
+            'array_key_first' => $entry,
+            "array_key_first'1" => $entry,
+            'random_int' => $entry,
+            'swoole_string' => $entry,
+            'external_api' => $entry,
+        ];
+        foreach ([[], ['array_key_first' => 'swoole']] as $owners) {
+            foreach (['standard', 'random'] as $random_owner) {
+                self::assertSame(
+                    ['random_int' => $entry, 'swoole_string' => $entry, 'external_api' => $entry],
+                    $filter->filter($map, $owners + ['random_int' => $random_owner, 'external_api' => 'redis']),
+                );
+            }
+        }
+        self::assertSame($map, $filter->filter($map, [
+            'array_key_first' => 'standard',
+            'random_int' => 'random',
+        ]));
+    }
+
     public function testFailedImagePreventsMergingCallmaps(): void
     {
         if (PHP_OS_FAMILY === 'Windows') {
