@@ -62,6 +62,7 @@ use UnexpectedValueException;
 
 use function array_any;
 use function array_filter;
+use function array_intersect_assoc;
 use function array_intersect_key;
 use function array_key_exists;
 use function array_keys;
@@ -71,6 +72,7 @@ use function assert;
 use function count;
 use function is_int;
 use function is_numeric;
+use function ksort;
 use function min;
 use function strcspn;
 use function strtolower;
@@ -864,6 +866,19 @@ final class TypeCombiner
             // an object with properties is a shape, which a named object doesn't have to match
             if (!$type instanceof TObjectWithProperties) {
                 $combination->named_object_types = null;
+            }
+
+            $existing_object = $combination->value_types[$type_key] ?? null;
+
+            if ($type instanceof TObjectWithProperties
+                && $existing_object instanceof TObjectWithProperties
+            ) {
+                $type = self::combineObjectShapes($existing_object, $type, $codebase);
+            } elseif ($existing_object !== null
+                && $existing_object::class === TObject::class
+                && $type instanceof TObjectWithProperties
+            ) {
+                return null;
             }
 
             $combination->value_types[$type_key] = $type;
@@ -1945,5 +1960,39 @@ final class TypeCombiner
         }
 
         return $array_type->setFromDocblock($from_docblock);
+    }
+
+    /**
+     * An object is one of two shapes: it has the properties both have, and maybe the others.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function combineObjectShapes(
+        TObjectWithProperties $first,
+        TObjectWithProperties $second,
+        ?Codebase $codebase,
+    ): TObjectWithProperties {
+        $properties = [];
+
+        foreach ($first->properties as $name => $first_property) {
+            $properties[$name] = isset($second->properties[$name])
+                ? Type::combineUnionTypes($first_property, $second->properties[$name], $codebase)
+                : $first_property->setPossiblyUndefined(true);
+        }
+
+        foreach ($second->properties as $name => $second_property) {
+            if (!isset($first->properties[$name])) {
+                $properties[$name] = $second_property->setPossiblyUndefined(true);
+            }
+        }
+
+        ksort($properties);
+
+        return new TObjectWithProperties(
+            $properties,
+            array_intersect_assoc($first->methods, $second->methods),
+            [],
+            $first->from_docblock && $second->from_docblock,
+        );
     }
 }

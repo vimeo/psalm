@@ -208,6 +208,41 @@ final class TypeCombinationTest extends TestCase
                     'Error',
                 ],
             ],
+            'objectShapesWithDifferentPropertiesAreMerged' => [
+                'object{a?:int, b?:string}',
+                [
+                    'object{a: int}',
+                    'object{b: string}',
+                ],
+            ],
+            'objectShapesWithOptionalProperty' => [
+                'object{bar?:string}',
+                [
+                    'object{bar: string}',
+                    'object{bar?: string}',
+                ],
+            ],
+            'objectShapesWithTheSamePropertyCombineItsTypes' => [
+                'object{a:int|string}',
+                [
+                    'object{a: int}',
+                    'object{a: string}',
+                ],
+            ],
+            'objectShapeInObject' => [
+                'object',
+                [
+                    'object{a: int}',
+                    'object',
+                ],
+            ],
+            'objectInObjectShape' => [
+                'object',
+                [
+                    'object',
+                    'object{a: int}',
+                ],
+            ],
             'complexArrayFallback1' => [
                 'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: list<array<array-key, mixed>>|null, ...<string, mixed>}',
                 [

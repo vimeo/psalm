@@ -1143,6 +1143,34 @@ final class IssetTest extends TestCase
                         echo $test[0];
                     }',
             ],
+            'issetNarrowsOptionalPropertyOfObjectShape' => [
+                'code' => '<?php
+                    /** @param object{bar?: string} $foo */
+                    function takesRequired(object $foo): void {
+                        if (isset($foo->bar)) {
+                            requiresBar($foo);
+                        }
+                    }
+
+                    /** @param object{bar: string} $foo */
+                    function requiresBar(object $foo): void {
+                        echo $foo->bar;
+                    }',
+            ],
+            'issetNarrowsNestedOptionalPropertiesOfObjectShape' => [
+                'code' => '<?php
+                    /** @param object{bar?: object{baz?: string}}|null $foo */
+                    function testSparse($foo): void {
+                        if (isset($foo->bar->baz)) {
+                            testConcrete($foo);
+                        }
+                    }
+
+                    /** @param object{bar: object{baz: string}} $foo */
+                    function testConcrete(object $foo): void {
+                        echo $foo->bar->baz;
+                    }',
+            ],
         ];
     }
 
@@ -1331,6 +1359,23 @@ final class IssetTest extends TestCase
                         }
                     }',
                 'error_message' => 'ReferenceConstraintViolation',
+            ],
+            'issetOfOptionalPropertyOfObjectShapeDoesNotLeakOutOfTheBranch' => [
+                'code' => '<?php
+                    /** @param object{bar?: string} $foo */
+                    function check(object $foo): void {
+                        if (isset($foo->bar)) {
+                            echo $foo->bar;
+                        }
+
+                        requiresBar($foo);
+                    }
+
+                    /** @param object{bar: string} $foo */
+                    function requiresBar(object $foo): void {
+                        echo $foo->bar;
+                    }',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }
