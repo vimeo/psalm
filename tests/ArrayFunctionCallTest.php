@@ -132,6 +132,71 @@ final class ArrayFunctionCallTest extends TestCase
                     '$strings' => 'array<int<0, max>, string>',
                 ],
             ],
+            'arrayFilterStringCallableOnCallResult' => [
+                'code' => '<?php
+                    /** @param array<string|int, float> $bar */
+                    function foo(array $bar): array {
+                        return array_filter(array_keys($bar), "is_string");
+                    }
+
+                    /** @param array<string|int, float> $bar */
+                    function foo2(array $bar): array {
+                        $keys = array_keys($bar);
+                        return array_filter($keys, "is_string");
+                    }
+
+                    /** @var array<string|int, float> $bar */
+                    $bar = [];
+                    $strings = array_filter(array_keys($bar), "is_string");',
+                'assertions' => [
+                    '$strings===' => 'array<int<0, max>, string>',
+                ],
+            ],
+            'arrayFilterStringCallableOnMethodCallResult' => [
+                'code' => '<?php
+                    final class A {
+                        /** @return array<int, int|string|null> */
+                        public function items(): array {
+                            return [];
+                        }
+
+                        public function strings(): array {
+                            return array_filter($this->items(), "is_string");
+                        }
+
+                        public function ints(): array {
+                            return array_filter($this->items(), "is_int");
+                        }
+                    }
+
+                    $a = new A();
+                    $strings = array_filter($a->items(), "is_string");
+                    $ints = array_filter($a->items(), "is_int");',
+                'assertions' => [
+                    '$strings===' => 'array<int, string>',
+                    '$ints===' => 'array<int, int>',
+                ],
+            ],
+            'arrayFilterStringCallableOnArrayMapResult' => [
+                'code' => '<?php
+                    /** @var list<int|string> $in */
+                    $in = [];
+
+                    $ints = array_filter(
+                        array_map(
+                            /**
+                             * @param int|string $x
+                             * @return int|string
+                             */
+                            static fn($x) => $x,
+                            $in,
+                        ),
+                        "is_int",
+                    );',
+                'assertions' => [
+                    '$ints===' => 'array<int<0, max>, int>',
+                ],
+            ],
             'arrayFilterMixed' => [
                 'code' => '<?php
                     /** @psalm-suppress UndefinedGlobalVariable, MixedArgument, MixedArrayAccess */
