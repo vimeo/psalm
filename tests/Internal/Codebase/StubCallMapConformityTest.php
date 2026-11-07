@@ -146,7 +146,7 @@ final class StubCallMapConformityTest extends TestCase
                 continue;
             }
 
-            $expected[] = self::parseCallMapParam((string) $key);
+            $expected[] = self::parseCallMapParam($key);
         }
 
         $differences = [];
