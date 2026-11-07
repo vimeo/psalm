@@ -655,6 +655,45 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'coalesceOfAStaticAndASelfPropertyOffset' => [
+                'code' => '<?php
+                    class Test1
+                    {
+                        protected static array $var = ["item" => "Test1"];
+
+                        public static function testmethod(string $item): string
+                        {
+                            return (string) (static::$var[$item] ?? self::$var[$item] ?? "none");
+                        }
+                    }
+
+                    class Test2 extends Test1
+                    {
+                        protected static array $var = ["item" => "Test2"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'issetOfAStaticPropertyOffsetNarrowsTheSameFetch' => [
+                'code' => '<?php
+                    class Cache
+                    {
+                        protected static array $items = [];
+
+                        public static function get(string $key): string
+                        {
+                            if (isset(static::$items[$key])) {
+                                return (string) static::$items[$key];
+                            }
+
+                            return "none";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
             'zeroToANegativePowerIsAFloat' => [
                 'code' => '<?php
                     $a = 0 ** -1;
