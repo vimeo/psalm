@@ -16,6 +16,7 @@ use function array_key_exists;
 use function count;
 use function file_get_contents;
 use function glob;
+use function is_int;
 use function is_string;
 use function min;
 use function preg_replace;
@@ -140,7 +141,8 @@ final class StubCallMapConformityTest extends TestCase
     {
         $expected = [];
         foreach ($call_map_entry as $key => $_type) {
-            if ($key === 0) {
+            // the int keys are the return types (0, -1) and the tentative marker (-2), not parameters
+            if (is_int($key)) {
                 continue;
             }
 
