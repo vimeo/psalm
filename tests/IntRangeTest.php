@@ -1046,6 +1046,56 @@ final class IntRangeTest extends TestCase
                     '$z' => 'int<min, 9223372036854775807>|null',
                 ],
             ],
+            'compoundAddOfRangeInLoopIsUnbounded' => [
+                'code' => '<?php
+                    $result = 0;
+                    for ($i = 0; $i < 100_000; $i++) {
+                        $result += ord("a");
+                    }',
+                'assertions' => [
+                    '$result===' => 'int<0, max>',
+                ],
+            ],
+            'compoundSubOfRangeInLoopIsUnbounded' => [
+                'code' => '<?php
+                    $result = 0;
+                    for ($i = 0; $i < 100_000; $i++) {
+                        $result -= rand(0, 255);
+                    }',
+                'assertions' => [
+                    '$result===' => 'int<min, 0>',
+                ],
+            ],
+            'compoundAddOfNegativeRangeInLoopIsUnboundedDownwards' => [
+                'code' => '<?php
+                    $result = 0;
+                    for ($i = 0; $i < 100_000; $i++) {
+                        $result += rand(-5, 0);
+                    }',
+                'assertions' => [
+                    '$result===' => 'int<min, 0>',
+                ],
+            ],
+            'compoundAddOfRangeOutsideLoopStaysBounded' => [
+                'code' => '<?php
+                    $result = 0;
+                    $result += rand(0, 255);
+                    $result += rand(0, 255);',
+                'assertions' => [
+                    '$result===' => 'int<0, 510>',
+                ],
+            ],
+            'addOfRangeInLoopWithoutAccumulationStaysBounded' => [
+                'code' => '<?php
+                    $base = rand(0, 10);
+                    $sum = 0;
+                    for ($i = 0; $i < 10; $i++) {
+                        $sum = $base + rand(0, 5);
+                    }',
+                'assertions' => [
+                    '$sum===' => 'int<0, 15>',
+                ],
+            ],
         ];
     }
 
