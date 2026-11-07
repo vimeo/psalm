@@ -13,22 +13,26 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Union;
 use ReflectionClass;
-use ReflectionException;
 use ReflectionFunction;
+use ReflectionFunctionAbstract;
 use ReflectionMethod;
 use ReflectionParameter;
 use ReflectionType;
 use UnexpectedValueException;
 
 use function array_merge;
+use function function_exists;
 use function strtolower;
 
+use const PHP_MAJOR_VERSION;
+use const PHP_MINOR_VERSION;
 use const PHP_VERSION_ID;
 
 /**
@@ -307,6 +311,7 @@ final class Reflection
             : ($method->isProtected() ? ClassLikeAnalyzer::VISIBILITY_PROTECTED : ClassLikeAnalyzer::VISIBILITY_PUBLIC);
 
         $callables = InternalCallMapHandler::getCallablesFromCallMap($method_id);
+        $this->setSignatureReturnType($storage, $method, $method_id);
 
         if ($callables && $callables[0]->params !== null && $callables[0]->return_type !== null) {
             $storage->setParams([]);
@@ -333,6 +338,7 @@ final class Reflection
                 $param_array = $this->getReflectionParamData($param);
                 $storage->addParam($param_array);
             }
+            $storage->return_type = $storage->signature_return_type;
         }
 
         $storage->required_param_count = 0;
@@ -374,67 +380,109 @@ final class Reflection
      */
     public function registerFunction(string $function_id): ?bool
     {
-        try {
-            $reflection_function = new ReflectionFunction($function_id);
+        if (isset(self::$builtin_functions[$function_id])) {
+            return null;
+        }
 
-            $callmap_callable = null;
+        $storage = $this->createFunctionStorage($function_id);
 
-            if (isset(self::$builtin_functions[$function_id])) {
-                return null;
-            }
-
-            $storage = self::$builtin_functions[$function_id] = new FunctionStorage();
-            $storage->builtin = $reflection_function->isInternal();
-
-            if (InternalCallMapHandler::inCallMap($function_id)) {
-                $callmap_callable = InternalCallMapHandler::getCallableFromCallMapById(
-                    $this->codebase,
-                    $function_id,
-                    [],
-                    null,
-                );
-            }
-
-            if ($callmap_callable !== null
-                && $callmap_callable->params !== null
-                && $callmap_callable->return_type !== null
-            ) {
-                $storage->setParams($callmap_callable->params);
-                InternalCallMapHandler::addReturnTaintFlows($storage, $function_id);
-                $storage->return_type = $callmap_callable->return_type;
-            } else {
-                $reflection_params = $reflection_function->getParameters();
-
-                foreach ($reflection_params as $param) {
-                    $param_obj = $this->getReflectionParamData($param);
-                    $storage->addParam($param_obj);
-                }
-
-                if ($reflection_return_type = (PHP_VERSION_ID >= 8_01_00 ? (
-                    ($reflection_function->getTentativeReturnType()
-                        ?? $reflection_function->getReturnType()
-                    )
-                ) : $reflection_function->getReturnType())) {
-                    $storage->return_type = self::getPsalmTypeFromReflectionType($reflection_return_type);
-                }
-            }
-
-            $storage->capabilities = Capabilities::NONE;
-
-            $storage->required_param_count = 0;
-
-            foreach ($storage->params as $i => $param) {
-                if (!$param->is_optional && !$param->is_variadic) {
-                    $storage->required_param_count = $i + 1;
-                }
-            }
-
-            $storage->cased_name = $reflection_function->getName();
-        } catch (ReflectionException) {
+        if ($storage === null) {
             return false;
         }
 
+        self::$builtin_functions[$function_id] = $storage;
+
         return null;
+    }
+
+    /**
+     * Creates storage for a builtin function from the callmap, falling back to reflection, without registering it.
+     * Functions that are in the callmap, but not defined in this process (e.g. their extension isn't loaded) work too.
+     */
+    public function createFunctionStorage(string $function_id): ?FunctionStorage
+    {
+        $reflection_function = function_exists($function_id) ? new ReflectionFunction($function_id) : null;
+        $callmap_callable = null;
+
+        if (InternalCallMapHandler::inCallMap($function_id)) {
+            $callmap_callable = InternalCallMapHandler::getCallableFromCallMapById(
+                $this->codebase,
+                $function_id,
+                [],
+                null,
+            );
+        }
+
+        $storage = new FunctionStorage();
+        $storage->builtin = $reflection_function?->isInternal() ?? true;
+        $this->setSignatureReturnType($storage, $reflection_function, $function_id);
+
+        if ($callmap_callable !== null
+            && $callmap_callable->params !== null
+            && $callmap_callable->return_type !== null
+        ) {
+            $storage->setParams($callmap_callable->params);
+            InternalCallMapHandler::addReturnTaintFlows($storage, $function_id);
+            $storage->return_type = $callmap_callable->return_type;
+        } elseif ($reflection_function !== null) {
+            $reflection_params = $reflection_function->getParameters();
+
+            foreach ($reflection_params as $param) {
+                $param_obj = $this->getReflectionParamData($param);
+                $storage->addParam($param_obj);
+            }
+
+            if ($reflection_return_type = (PHP_VERSION_ID >= 8_01_00 ? (
+                ($reflection_function->getTentativeReturnType()
+                    ?? $reflection_function->getReturnType()
+                )
+            ) : $reflection_function->getReturnType())) {
+                $storage->return_type = self::getPsalmTypeFromReflectionType($reflection_return_type);
+            }
+        } else {
+            return null;
+        }
+
+        $storage->capabilities = Capabilities::NONE;
+
+        $storage->required_param_count = 0;
+
+        foreach ($storage->params as $i => $param) {
+            if (!$param->is_optional && !$param->is_variadic) {
+                $storage->required_param_count = $i + 1;
+            }
+        }
+
+        $storage->cased_name = $reflection_function?->getName() ?? $function_id;
+
+        return $storage;
+    }
+
+    private function setSignatureReturnType(
+        FunctionLikeStorage $storage,
+        ?ReflectionFunctionAbstract $reflection,
+        string $id,
+    ): void {
+        $kind = InternalCallMapHandler::getReturnTypeKind($id);
+        $storage->signature_return_type = InternalCallMapHandler::getSignatureReturnType($id);
+        $storage->has_tentative_return_type = $kind === 'tentative';
+        // An installed extension can provide APIs absent from the generator images. Its reflection
+        // describes the running PHP version, so do not use it to infer contracts of another version.
+        if ($kind !== null
+            || $reflection === null
+            || $this->codebase->getMajorAnalysisPhpVersion() !== PHP_MAJOR_VERSION
+            || $this->codebase->getMinorAnalysisPhpVersion() !== PHP_MINOR_VERSION
+        ) {
+            return;
+        }
+
+        $return_type = $reflection->getReturnType();
+        $tentative = $return_type === null ? $reflection->getTentativeReturnType() : null;
+        $return_type ??= $tentative;
+        $storage->signature_return_type = $return_type === null
+            ? null
+            : self::getPsalmTypeFromReflectionType($return_type);
+        $storage->has_tentative_return_type = $tentative !== null;
     }
 
     public static function getPsalmTypeFromReflectionType(?ReflectionType $reflection_type = null): Union
@@ -444,13 +492,7 @@ final class Reflection
         }
 
         // as PHP writes it (?int, A|B, (A&B)|null), which Psalm parses
-        $type = (string) $reflection_type;
-
-        if ($reflection_type->allowsNull()) {
-            $type .= '|null';
-        }
-
-        return Type::parseString($type);
+        return Type::parseString((string) $reflection_type);
     }
 
     private function registerInheritedMethods(
