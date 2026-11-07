@@ -163,12 +163,12 @@ final class ProjectAnalyzer
     private array $to_refactor = [];
 
     /**
-     * The files whose statements are being collected to find the mutations of a method: collecting them
-     * analyses the files they include, and those may call back into the same method.
+     * The methods whose mutations are being collected: collecting them analyses their file and the files
+     * it includes, and those may call back into the same method.
      *
-     * @var array<string, true>
+     * @var array<lowercase-string, true>
      */
-    private array $files_collecting_method_mutations = [];
+    private array $methods_collecting_mutations = [];
 
     /**
      * @var array<int, class-string<CodeIssue>>
@@ -1351,12 +1351,13 @@ final class ProjectAnalyzer
         }
 
         $file_path = $file_analyzer->getFilePath();
+        $method_id_lc = strtolower((string) $appearing_method_id);
 
-        if (isset($this->files_collecting_method_mutations[$file_path])) {
+        if (isset($this->methods_collecting_mutations[$method_id_lc])) {
             return;
         }
 
-        $this->files_collecting_method_mutations[$file_path] = true;
+        $this->methods_collecting_mutations[$method_id_lc] = true;
 
         try {
             $stmts = $this->codebase->getStatementsForFile($file_path);
@@ -1370,7 +1371,7 @@ final class ProjectAnalyzer
 
             $file_analyzer->getMethodMutations($appearing_method_id, $this_context, true);
         } finally {
-            unset($this->files_collecting_method_mutations[$file_path]);
+            unset($this->methods_collecting_mutations[$method_id_lc]);
         }
 
         $file_analyzer->class_analyzers_to_analyze = [];
