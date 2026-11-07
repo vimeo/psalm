@@ -210,12 +210,15 @@ final class MethodCallReturnTypeFetcher
             );
 
             if ($return_type_candidate) {
+                // the `static` of the declared type is the receiver's, not that of what the templates are bound to
+                $expand_static_first = $template_result->lower_bounds && !$static_type instanceof TTemplateParam;
+
                 if ($template_result->lower_bounds) {
                     $return_type_candidate = TypeExpander::expandUnion(
                         $codebase,
                         $return_type_candidate,
                         $fq_class_name,
-                        null,
+                        $expand_static_first ? $static_type : null,
                         $class_storage->parent_class,
                         true,
                         false,
@@ -237,7 +240,7 @@ final class MethodCallReturnTypeFetcher
                     $codebase,
                     $return_type_candidate,
                     $self_fq_class_name,
-                    $static_type,
+                    $expand_static_first ? null : $static_type,
                     $class_storage->parent_class,
                     true,
                     false,

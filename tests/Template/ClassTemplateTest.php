@@ -57,6 +57,34 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticReturnOfAMethodCalledOnATemplateParamReceiver' => [
+                'code' => '<?php
+                    /** @template U */
+                    class Box {
+                        /** @param U $u */
+                        public function __construct(public mixed $u) {}
+
+                        /**
+                         * @param list<U> $l
+                         * @return static
+                         */
+                        public function with(array $l): static { return $this; }
+                    }
+
+                    /**
+                     * @template T of Box<int>
+                     * @param T $t
+                     * @return T
+                     */
+                    function f(Box $t): Box {
+                        $t = $t->with([1]);
+
+                        return $t;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticReturnKeepsTheTypeArgumentsOfTheCalledClass' => [
                 'code' => '<?php
                     /** @template T of object */
@@ -5782,6 +5810,46 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticOfTheCallerStaysInATemplateBoundThroughAReturnType' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    class Box {
+                        /** @param T $o */
+                        public function __construct(private object $o) {}
+
+                        /** @return T */
+                        public function get(): object { return $this->o; }
+                    }
+
+                    class C {
+                        public function f(): void {
+                            $b = new Box($this);
+                            $x = $b->get();
+                            /** @psalm-trace $x */;
+                        }
+                    }',
+                'error_message' => 'Trace - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:51 - $x: C&static',
+            ],
+            'staticOfTheCallerStaysInAClassStringTemplateBoundThroughAReturnType' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    class Box {
+                        /** @param T $o */
+                        public function __construct(private object $o) {}
+
+                        /** @return class-string<T> */
+                        public function name(): string { return get_class($this->o); }
+                    }
+
+                    class C {
+                        public function f(): void {
+                            $b = new Box($this);
+                            $n = $b->name();
+                            /** @psalm-trace $n */;
+                        }
+                    }',
+                'error_message' => 'Trace - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:51 - $n: class-string<C&static',
+            ],
             'classTemplateDefaultNamingAnUndefinedClass' => [
                 'code' => '<?php
                     /**
