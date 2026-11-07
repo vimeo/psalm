@@ -1377,42 +1377,40 @@ final class ForeachAnalyzer
                         'key',
                     );
 
-                    $traversable_key_type = null;
-                    $traversable_value_type = null;
-
+                    $template_key_type = null;
+                    $template_value_type = null;
                     self::getKeyValueParamsForTraversableObject(
                         $iterator_atomic_type,
                         $codebase,
-                        $traversable_key_type,
-                        $traversable_value_type,
+                        $template_key_type,
+                        $template_value_type,
                     );
 
-                    // current() and key() are null past the end, which a foreach never gets to
-                    if ($iterator_value_type
-                        && $traversable_value_type
-                        && !$traversable_value_type->isNullable()
-                        && !$traversable_value_type->isNever()
-                    ) {
-                        $iterator_value_type = $iterator_value_type->getBuilder();
-                        $iterator_value_type->removeType('null');
-                        $iterator_value_type = $iterator_value_type->freeze();
-                    }
-
-                    if ($iterator_key_type
-                        && $traversable_key_type
-                        && !$traversable_key_type->isNullable()
-                        && !$traversable_key_type->isNever()
-                    ) {
-                        $iterator_key_type = $iterator_key_type->getBuilder();
-                        $iterator_key_type->removeType('null');
-                        $iterator_key_type = $iterator_key_type->freeze();
-                    }
-
                     if ($iterator_value_type && !$iterator_value_type->isMixed()) {
+                        // null from current() signifies an invalid iteration, and foreach never reaches one
+                        if ($template_value_type
+                            && !$template_value_type->isMixed()
+                            && !$template_value_type->isNullable()
+                        ) {
+                            $iterator_value_type = $iterator_value_type->getBuilder();
+                            $iterator_value_type->removeType('null');
+                            $iterator_value_type = $iterator_value_type->freeze();
+                        }
+
                         $value_type = Type::combineUnionTypes($value_type, $iterator_value_type);
                     }
 
                     if ($iterator_key_type && !$iterator_key_type->isMixed()) {
+                        // null from key() signifies an invalid iteration, and foreach never reaches one
+                        if ($template_key_type
+                            && !$template_key_type->isMixed()
+                            && !$template_key_type->isNullable()
+                        ) {
+                            $iterator_key_type = $iterator_key_type->getBuilder();
+                            $iterator_key_type->removeType('null');
+                            $iterator_key_type = $iterator_key_type->freeze();
+                        }
+
                         $key_type = Type::combineUnionTypes($key_type, $iterator_key_type);
                     }
                 }
