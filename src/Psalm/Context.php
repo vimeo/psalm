@@ -240,6 +240,13 @@ final class Context
     public bool $check_functions = true;
 
     /**
+     * A list of functions checked with function_exists
+     *
+     * @var array<lowercase-string,true>
+     */
+    public array $phantom_functions = [];
+
+    /**
      * A list of classes checked with class_exists
      *
      * @var array<lowercase-string,true>

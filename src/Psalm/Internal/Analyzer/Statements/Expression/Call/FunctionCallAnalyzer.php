@@ -759,7 +759,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $is_predefined = isset($predefined_functions[strtolower($original_function_id)])
                 || isset($predefined_functions[strtolower($function_call_info->function_id)]);
 
-            if ($context->check_functions) {
+            if ($context->check_functions
+                && !isset($context->phantom_functions[strtolower($original_function_id)])
+                && !isset($context->phantom_functions[strtolower($function_call_info->function_id)])
+            ) {
                 if (self::checkFunctionExists(
                     $statements_analyzer,
                     $function_call_info->function_id,
