@@ -18,6 +18,36 @@ final class ConstantTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testConstantDefinedInSeveralBranchesIsTheUnionInAnotherFile(): void
+    {
+        // the constants of other files are known without including them
+        $this->project_analyzer->getCodebase()->all_constants_global = true;
+
+        $file1 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file1.php';
+        $file2 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file2.php';
+
+        $this->addFile(
+            $file1,
+            '<?php
+                if (rand(0, 1)) {
+                    define("BRANCHED", "x");
+                } else {
+                    define("BRANCHED", "y");
+                }
+            ',
+        );
+
+        $this->addFile(
+            $file2,
+            '<?php
+                /** @psalm-check-type-exact $value = \'x\'|\'y\' */
+                $value = BRANCHED;
+            ',
+        );
+
+        $this->analyzeFile($file2, new Context());
+    }
+
     public function testGlobalConstantOfEnumCasesFromAnotherFile(): void
     {
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
@@ -250,6 +280,43 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'defineInSeveralSwitchBranchesWithoutDefault' => [
+                'code' => '<?php
+                    switch (random_int(1, 3)) {
+                        case 1:
+                            define("ASD", "x");
+                            break;
+                        case 2:
+                            define("ASD", "y");
+                            break;
+                    }
+
+                    if (ASD === "x") {
+                        echo "x";
+                    }
+
+                    if (ASD === "y") {
+                        echo "y";
+                    }
+
+                    $value = ASD;',
+                'assertions' => [
+                    '$value===' => '\'x\'|\'y\'',
+                ],
+            ],
+            'defineInBothBranchesOfAnIf' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        define("CHOICE", 1);
+                    } else {
+                        define("CHOICE", 2);
+                    }
+
+                    $value = CHOICE;',
+                'assertions' => [
+                    '$value===' => '1|2',
+                ],
+            ],
             'defineAnObjectConstantSinceEightOne' => [
                 'code' => '<?php
                     define("OBJECT_CONSTANT", new stdClass());
