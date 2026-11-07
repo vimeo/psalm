@@ -520,6 +520,20 @@ final class UnusedCodeTest extends TestCase
                     PHP,
                 'ignored_issues' => ['MixedAssignment'],
             ],
+            'pureMethodCallAsTheLeftOperandOfACoalesceThatThrows' => [
+                'code' => '<?php
+                    final class A {
+                        /** @psalm-pure */
+                        public function getTransportType(): ?stdClass {
+                            return null;
+                        }
+                    }
+
+                    /** @psalm-api */
+                    function validate(A $a): void {
+                        $a->getTransportType() ?? throw new Exception("missing");
+                    }',
+            ],
             'argumentCastToStringDoesNotReportPossiblyInvalidCast' => [
                 'code' => '<?php
                     /** @psalm-api */
