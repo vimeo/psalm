@@ -99,6 +99,16 @@ final class SuperGlobalsTest extends TestCase
             'error_message' => 'InvalidReturnStatement',
         ];
 
+        yield 'aCopyOfHttpResponseHeaderIsPossiblyUndefined' => [
+            'code' => '<?php
+                function headers(): void {
+                    $headers = $http_response_header;
+                    echo count($headers);
+                }
+            ',
+            'error_message' => 'PossiblyUndefinedVariable',
+        ];
+
         yield 'access SESSION key after session_unset' => [
             'code' => '<?php
                 $_SESSION["foo"] = 42;

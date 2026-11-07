@@ -180,6 +180,7 @@ final class VariableFetchAnalyzer
                     $stmt,
                     self::getReadSuperGlobalType(
                         self::taintGlobals($statements_analyzer, $var_name, $type, $array_assignment),
+                        $var_name,
                         $context,
                     ),
                 );
@@ -195,6 +196,7 @@ final class VariableFetchAnalyzer
                 $stmt,
                 self::getReadSuperGlobalType(
                     self::taintGlobals($statements_analyzer, $var_name, $type, $array_assignment),
+                    $var_name,
                     $context,
                 ),
             );
@@ -705,13 +707,16 @@ final class VariableFetchAnalyzer
     }
 
     /**
-     * The value that is read from a superglobal is defined, whatever the superglobal is (an isset() asks about it)
+     * The value that is read from a superglobal is defined, whatever the superglobal is (an isset() asks about it),
+     * but $http_response_header, which only exists after a network request, may not be
      *
      * @psalm-capabilities read-props
      */
-    private static function getReadSuperGlobalType(Union $type, Context $context): Union
+    private static function getReadSuperGlobalType(Union $type, string $var_name, Context $context): Union
     {
-        return $context->inside_isset ? $type : $type->setPossiblyUndefined(false);
+        return $context->inside_isset || $var_name === '$http_response_header'
+            ? $type
+            : $type->setPossiblyUndefined(false);
     }
 
     /**
