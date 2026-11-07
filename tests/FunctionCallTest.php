@@ -1854,6 +1854,28 @@ final class FunctionCallTest extends TestCase
                         }
                     }',
             ],
+            'functionExistsWithLiteralCoversThatFunctionOnly' => [
+                'code' => '<?php
+                    if (function_exists("missing_function")) {
+                        missing_function();
+                    }
+
+                    if (!function_exists("other_missing_function")) {
+                        return;
+                    }
+
+                    other_missing_function();',
+            ],
+            'functionExistsWithNonLiteralCoversEveryFunction' => [
+                'code' => '<?php
+                    function bar(string $name): void {
+                        if (function_exists($name)) {
+                        }
+
+                        $name();
+                        other_function();
+                    }',
+            ],
             'callableArgumentWithFunctionExists' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2707,6 +2729,26 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'functionExistsWithLiteralDoesNotCoverOtherFunctions' => [
+                'code' => '<?php
+                    if (function_exists("missing_function")) {
+                    }
+
+                    other_function();',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21',
+            ],
+            'functionExistsWithLiteralDoesNotCoverOtherFunctionsInALoop' => [
+                'code' => '<?php
+                    function bar(): void {
+                        while (true) {
+                            if (function_exists("any_function")) {
+                            }
+
+                            second_function(1);
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29',
+            ],
             'mysqliBindResultRequiresOutputVariable' => [
                 'code' => '<?php
                     function bind(mysqli_stmt $statement): void {
