@@ -720,11 +720,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         if (!$this->function instanceof VirtualNode
-            && ($this->function instanceof Function_
-                || $this->function instanceof ClassMethod
-                || $this->function instanceof Closure
-                || $this->function instanceof ArrowFunction
-            )
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
@@ -873,12 +868,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         $final_actions = ScopeAnalyzer::getControlActions(
-            $this->function->getStmts() ?: [],
+            $this->function->getStmts() ?? [],
             null,
             [],
         );
 
-        if ($final_actions !== [ScopeAnalyzer::ACTION_END]) {
+        // a method without a body (abstract, interface) assigns nothing to its by-reference parameters
+        if ($final_actions !== [ScopeAnalyzer::ACTION_END] && $this->function->getStmts() !== null) {
             $this->examineParamTypes($statements_analyzer, $context, $codebase);
         }
 
@@ -1372,10 +1368,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * The by-reference parameter $var_id stops referencing the variable passed to it (unset(), =&, global,
-     * static, ...): that variable keeps what the parameter holds now.
+     * static, ...): that variable keeps what the parameter holds now. Also the case for a variable bound to
+     * a global.
      */
     public static function unbindByRefParam(Codebase $codebase, Context $context, string $var_id): void
     {
+        unset($context->bound_globals[$var_id]);
+
         if (isset($context->by_ref_param_out_nodes[$var_id])) {
             self::taintByRefParamOut($codebase, $context, $var_id);
 
@@ -1871,6 +1870,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                                 . ' does not match the given type ' . $param_type->getId(),
                             $function_param->type_location,
                         ),
+                        $storage->suppressed_issues,
                     );
                 }
 
@@ -1886,6 +1886,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                                 . ' can only be null, ' . $default_type->getId() . ' specified',
                             $function_param->type_location,
                         ),
+                        $storage->suppressed_issues,
                     );
                 }
             }
@@ -2374,7 +2375,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $targets = [];
 
         foreach ($finder->find(
-            $this->function->getStmts(),
+            $this->function->getStmts() ?? [],
             static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
                 || $node instanceof PhpParser\Node\Expr\AssignRef
                 || $node instanceof PhpParser\Node\Expr\AssignOp
@@ -2862,6 +2863,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                     if ($this->function->name->name === '__construct'
                         && !$parent_storage->preserve_constructor_signature
+                        && !$parent_method_storage->abstract
                     ) {
                         continue;
                     }
