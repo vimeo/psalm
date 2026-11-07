@@ -3258,7 +3258,15 @@ final class Config
             // may have been removed in the meantime
             clearstatcache(true, $dir);
             if (is_dir($dir)) {
-                rmdir($dir);
+                try {
+                    rmdir($dir);
+                } catch (RuntimeException $e) {
+                    // another Psalm process may have removed the directory or created files in it in the meantime
+                    clearstatcache(true, $dir);
+                    if (is_dir($dir) && count((array) scandir($dir, SCANDIR_SORT_NONE)) <= 2) {
+                        throw $e;
+                    }
+                }
             }
         }
     }
