@@ -1940,6 +1940,7 @@ final class ArrayFetchAnalyzer
 
         if ($key_values) {
             $properties = $type->properties;
+            $missing_key_in_isset = false;
             foreach ($key_values as $key_value) {
                 $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($key_value->value);
                 $key_value = $string_to_int === false ? $key_value : new TLiteralInt($string_to_int);
@@ -2059,8 +2060,16 @@ final class ArrayFetchAnalyzer
 
                     $expected_offset_types[] = $key_string;
 
-                    $array_access_type = Type::getMixed();
+                    if ($context->inside_isset) {
+                        $missing_key_in_isset = true;
+                    } else {
+                        $array_access_type = Type::getMixed();
+                    }
                 }
+            }
+
+            if ($missing_key_in_isset && $array_access_type === null) {
+                $array_access_type = Type::getMixed();
             }
 
             $type = $type->setProperties($properties);
