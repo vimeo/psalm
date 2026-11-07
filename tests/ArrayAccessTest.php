@@ -611,6 +611,32 @@ final class ArrayAccessTest extends TestCase
                     '$a===' => 'ArrayAccess<string, int>|array{b: int, ...<string, int>}|null',
                 ],
             ],
+            'issetOnANestedOffsetOfAnArrayOrArrayAccessDefinesTheOuterOffset' => [
+                'code' => '<?php
+                    /** @var array{a?: array{b?: int}}|ArrayAccess<string, int> $test */
+                    $test = $_GET["x"];
+                    if (isset($test["a"]["b"])) {
+                        $a = $test["a"]["b"];
+                    } else {
+                        $a = 0;
+                    }',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+            ],
+            'issetOnArrayOrArrayAccessKeepsTheValueTypeOfTheObject' => [
+                'code' => '<?php
+                    /** @var array{a?: int}|ArrayAccess<string, string> $test */
+                    $test = $_GET["x"];
+                    if (isset($test["a"])) {
+                        $a = $test["a"];
+                    } else {
+                        $a = 0;
+                    }',
+                'assertions' => [
+                    '$a===' => 'int|null|string',
+                ],
+            ],
             'appendToASplDoublyLinkedList' => [
                 'code' => '<?php
                     /** @var SplDoublyLinkedList<int> $dll */

@@ -468,6 +468,9 @@ class Reconciler
 
             if (!$has_object_array_access) {
                 $existing_types[$key] = $result_type;
+            } elseif (!$did_type_exist) {
+                // the offset of an object isn't tracked, nor what its array alternatives gave before the narrowing
+                unset($existing_types[$key]);
             }
 
             if (!$did_type_exist && isset($existing_types[$key]) && isset($reference_graph[$key_parts[0]])) {
