@@ -12,7 +12,7 @@ function r(string $cmd): void
     }
 }
 
-$user = getenv('ACTOR');
+$image = getenv('IMAGE');
 $is_tag = str_starts_with(getenv('REF'), 'refs/tags/');
 $ref = str_replace(['refs/heads/', 'refs/tags/'], '', getenv('REF'));
 
@@ -35,11 +35,11 @@ if ($is_tag && preg_match($stable_pattern, $ref)) {
 
 $ref = escapeshellarg($ref);
 
-r("docker pull ghcr.io/$user/psalm:$ref-arm64 --platform arm64");
-r("docker pull ghcr.io/$user/psalm:$ref-amd64 --platform amd64");
+r("docker pull $image:$ref-arm64 --platform arm64");
+r("docker pull $image:$ref-amd64 --platform amd64");
 
-r("docker buildx imagetools create -t ghcr.io/$user/psalm:$ref ghcr.io/$user/psalm:$ref-arm64 ghcr.io/$user/psalm:$ref-amd64");
+r("docker buildx imagetools create -t $image:$ref $image:$ref-arm64 $image:$ref-amd64");
 
 if ($is_latest) {
-    r("docker buildx imagetools create -t ghcr.io/$user/psalm:latest ghcr.io/$user/psalm:$ref-arm64 ghcr.io/$user/psalm:$ref-amd64");
+    r("docker buildx imagetools create -t $image:latest $image:$ref-arm64 $image:$ref-amd64");
 }
