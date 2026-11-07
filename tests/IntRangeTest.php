@@ -32,6 +32,15 @@ final class IntRangeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'randOfUnboundedIntsIsInt' => [
+                'code' => '<?php
+                    function getInt(): int{return 0;}
+                    $a = getInt();
+                    $b = rand($a, $a);',
+                'assertions' => [
+                    '$b===' => 'int',
+                ],
+            ],
             'intRangeContained' => [
                 'code' => '<?php
                     /**
@@ -342,7 +351,7 @@ final class IntRangeTest extends TestCase
                     '$h===' => '0|1|float',
                     '$i===' => 'int',
                     '$j===' => 'float',
-                    '$k===' => '-1',
+                    '$k===' => '1',
                     '$l===' => 'float|int',
                     '$m===' => 'int<1, max>',
                     '$n===' => 'float',
@@ -351,7 +360,7 @@ final class IntRangeTest extends TestCase
                     '$q===' => '1',
                     '$r===' => 'int<1, max>',
                     '$s===' => 'float',
-                    '$t===' => '-1',
+                    '$t===' => '1',
                     '$u===' => 'int<1, max>',
                     '$v===' => 'float',
                     '$w===' => '1',
@@ -589,7 +598,7 @@ final class IntRangeTest extends TestCase
                     ',
                 'assertions' => [
                     '$c===' => 'int<-94, 19>',
-                    '$f===' => 'int<min, max>',
+                    '$f===' => 'int',
                     '$g===' => 'int<min, 9>',
                 ],
             ],

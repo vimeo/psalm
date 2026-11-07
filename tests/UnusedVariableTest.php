@@ -69,6 +69,15 @@ final class UnusedVariableTest extends TestCase
                         abstract protected static function qux(): array;
                     }',
             ],
+            'keyOfAnArrayItemPassedByReferenceIsUsed' => [
+                'code' => '<?php
+                    /** @param array<string, list<int>> $a */
+                    function by_name(array $a): array {
+                        $k = "x";
+                        sort($a[$k]);
+                        return $a;
+                    }',
+            ],
             'callOfCallableNarrowedFromClassStringOrCallable' => [
                 'code' => '<?php
                     /**
@@ -2748,6 +2757,16 @@ final class UnusedVariableTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'keyOfAnArrayItemPassedByReferenceIsIncrementedOnce' => [
+                'code' => '<?php
+                    /** @param list<list<int>> $a */
+                    function f(array $a): array {
+                        $i = 0;
+                        sort($a[$i++]);
+                        return $a;
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
+            ],
             'simpleUnusedVariable' => [
                 'code' => '<?php
                     $a = 5;
