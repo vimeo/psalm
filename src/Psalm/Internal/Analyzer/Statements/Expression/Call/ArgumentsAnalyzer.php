@@ -1621,7 +1621,7 @@ final class ArgumentsAnalyzer
                         $template_result,
                         $codebase,
                         $statements_analyzer,
-                        $statements_analyzer->node_data->getType($arg->value),
+                        null,
                         $argument_offset,
                         $context->self,
                         $context->calling_method_id ?: $context->calling_function_id,
