@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnal
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\FalseOperand;
@@ -782,7 +783,7 @@ final class ArithmeticOpAnalyzer
                     }
                 }
 
-                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                if (self::isIntegerOperator($parent)) {
                     $new_result_type = Type::getInt();
                 } else {
                     $new_result_type = new Union([new TFloat(), new TInt()]);
@@ -907,7 +908,7 @@ final class ArithmeticOpAnalyzer
             }
 
             if ($left_type_part instanceof TFloat && $right_type_part instanceof TFloat) {
-                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                if (self::isIntegerOperator($parent)) {
                     $result_type = Type::getInt();
                 } else {
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
@@ -935,7 +936,7 @@ final class ArithmeticOpAnalyzer
                     }
                 }
 
-                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                if (self::isIntegerOperator($parent)) {
                     $result_type = Type::getInt();
                 } else {
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
@@ -961,7 +962,7 @@ final class ArithmeticOpAnalyzer
                     }
                 }
 
-                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                if (self::isIntegerOperator($parent)) {
                     $result_type = Type::getInt();
                 } else {
                     $result_type = new Union([new TInt, new TFloat]);
@@ -992,6 +993,21 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
+     * Operators that convert their operands to int, so their result is an int whatever the operands are
+     *
+     * @psalm-pure
+     */
+    private static function isIntegerOperator(PhpParser\Node $operation): bool
+    {
+        return $operation instanceof PhpParser\Node\Expr\BinaryOp\Mod
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight;
+    }
+
+    /**
      * @psalm-pure
      */
     public static function arithmeticOperation(
@@ -1000,30 +1016,49 @@ final class ArithmeticOpAnalyzer
         float|int $operand2,
         bool $allow_float_result,
     ): ?Union {
-        if ($operation instanceof PhpParser\Node\Expr\BinaryOp\Plus) {
-            $result = $operand1 + $operand2;
-        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
-            $result = $operand1 - $operand2;
-        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
-            if ($operand2 === 0) {
+        if (self::isIntegerOperator($operation)) {
+            // PHP converts float operands of these operators to int implicitly, which raises
+            // a warning/deprecation for non-representable or fractional floats
+            $int1 = LiteralCast::toInt($operand1);
+            $int2 = LiteralCast::toInt($operand2);
+
+            if ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mod && $int2 === 0) {
                 return Type::getNever();
             }
 
-            $result = $operand1 % $operand2;
+            if ($int1 === null || $int2 === null) {
+                return Type::getInt();
+            }
+
+            // a shift by a negative number always throws
+            if ($int2 < 0
+                && ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+                    || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight)
+            ) {
+                return Type::getNever();
+            }
+
+            $result = match (true) {
+                $operation instanceof PhpParser\Node\Expr\BinaryOp\Mod => $int1 % $int2,
+                $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr => $int1 | $int2,
+                $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd => $int1 & $int2,
+                $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor => $int1 ^ $int2,
+                $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft => $int1 << $int2,
+                default => $int1 >> $int2,
+            };
+        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Plus) {
+            $result = $operand1 + $operand2;
+        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
+            $result = $operand1 - $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
             $result = $operand1 * $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
+            // zero to a negative power is INF, with a deprecation since PHP 8.4
+            if ($operand1 == 0 && $operand2 < 0) {
+                return Type::getFloat();
+            }
+
             $result = $operand1 ** $operand2;
-        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
-            $result = $operand1 | $operand2;
-        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
-            $result = $operand1 & $operand2;
-        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor) {
-            $result = $operand1 ^ $operand2;
-        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft) {
-            $result = $operand1 << $operand2;
-        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight) {
-            $result = $operand1 >> $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Div) {
             if ($operand2 === 0 || $operand2 === 0.0) {
                 return Type::getNever();
@@ -1423,7 +1458,7 @@ final class ArithmeticOpAnalyzer
         TIntRange $right_type_part,
     ): void {
         //If Pow first operand is negative, the result could be positive or negative, else it will be positive
-        //If Pow second operand is negative, the result will be float, if it's 0, it will be 1/-1, else positive
+        //If Pow second operand is negative, the result will be float, if it's 0, it will be 1, else positive
         if ($left_type_part->isPositive()) {
             if ($right_type_part->isPositive()) {
                 $new_result_type = Type::getIntRange(1, null);
@@ -1449,7 +1484,7 @@ final class ArithmeticOpAnalyzer
             } elseif ($right_type_part->isNegative()) {
                 $new_result_type = Type::getFloat();
             } elseif ($right_type_part->min_bound === 0 && $right_type_part->max_bound === 0) {
-                $new_result_type = Type::getInt(true, -1);
+                $new_result_type = Type::getInt(true, 1);
             } else {
                 //$right_type_part may be a mix of positive, negative and 0
                 $new_result_type = new Union([new TInt(), new TFloat()]);

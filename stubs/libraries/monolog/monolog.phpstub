@@ -2,7 +2,7 @@
 
 // The taints and the capabilities (see docs/annotating_code/purity_model.md) of monolog/monolog 3. Loaded
 // when the analysed code uses the package, refining its classes (see Config::visitStubFiles()): the methods declared
-// here keep the signatures and docblocks of monolog/monolog 3.10.
+// here keep the signatures and docblocks of monolog/monolog 3.12.1.
 //
 // The stream a StreamHandler writes to is a file sink, and the address a SocketHandler connects to an SSRF sink.
 //
@@ -16,7 +16,9 @@
 //
 // Getting or setting the formatter of any formattable handler may pass it on to the handlers a wrapper holds (a group,
 // buffer, filter or sampling handler: write-props), and a fingers-crossed handler first makes its nested handler
-// with the factory it was given, which may do anything but write the caller's references.
+// with the factory it was given, which may do anything but write the caller's references. The wrappers and the
+// handlers overriding the formatter methods are declared here so that their subclasses satisfy the contract of
+// FormattableHandlerInterface.
 //
 // A web processor reads the request's server data when made and when it runs (read-globals), and adds the extra
 // fields to the record it is given (write-props).
@@ -27,6 +29,7 @@ use Closure;
 use DateTimeZone;
 use Monolog\Handler\HandlerInterface;
 use Monolog\Processor\ProcessorInterface;
+use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Stringable;
@@ -47,11 +50,12 @@ class Logger implements LoggerInterface, ResettableInterface
      * @param list<HandlerInterface> $handlers   Optional stack of handlers, the first one in the array is called first, etc.
      * @param callable[]         $processors Optional array of processors
      * @param DateTimeZone|null  $timezone   Optional timezone, if not provided date_default_timezone_get() will be used
+     * @param ClockInterface|null $clock     Optional clock to read the current time from, if not provided the engine's current time is used
      *
      * @phpstan-param array<(callable(LogRecord): LogRecord)|ProcessorInterface> $processors
      * @psalm-capabilities read-globals
      */
-    public function __construct(string $name, array $handlers = [], array $processors = [], DateTimeZone|null $timezone = null)
+    public function __construct(string $name, array $handlers = [], array $processors = [], DateTimeZone|null $timezone = null, ClockInterface|null $clock = null)
     {
     }
     /**
@@ -383,6 +387,25 @@ class Logger implements LoggerInterface, ResettableInterface
     {
     }
     /**
+     * Sets the clock to read the current time from when timestamping log records.
+     *
+     * Pass null to go back to reading the engine's current time. The timezone
+     * configured on the logger still decides how the timestamp is rendered.
+     *
+     * @return $this
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function setClock(ClockInterface|null $clock): self
+    {
+    }
+    /**
+     * Returns the clock used to timestamp log records, or null if the engine's current time is used.
+     * @psalm-capabilities read-props
+     */
+    public function getClock(): ClockInterface|null
+    {
+    }
+    /**
      * @return array<string, mixed>
      * @psalm-capabilities read-props
      */
@@ -559,6 +582,305 @@ class GroupHandler extends Handler implements ProcessableHandlerInterface, Reset
      * @psalm-capabilities write-this-props
      */
     public function __construct(array $handlers, bool $bubble = true)
+    {
+    }
+}
+
+/**
+ * This simple wrapper class can be used to extend handlers functionality.
+ *
+ * Example: A custom filtering that can be applied to any handler.
+ *
+ * Inherit from this class and override handle() like this:
+ *
+ *   public function handle(LogRecord $record)
+ *   {
+ *        if ($record meets certain conditions) {
+ *            return false;
+ *        }
+ *        return $this->handler->handle($record);
+ *   }
+ *
+ * @author Alexey Karapetov <alexey@karapetov.com>
+ */
+class HandlerWrapper implements HandlerInterface, ProcessableHandlerInterface, FormattableHandlerInterface, ResettableInterface
+{
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function setFormatter(FormatterInterface $formatter): HandlerInterface
+    {
+    }
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function getFormatter(): FormatterInterface
+    {
+    }
+}
+
+/**
+ * Buffers all records until closing the handler and then pass them as batch.
+ *
+ * This is useful for a MailHandler to send only one mail per request instead of
+ * sending one per log message.
+ *
+ * @author Christophe Coevoet <stof@notk.org>
+ */
+class BufferHandler extends AbstractHandler implements ProcessableHandlerInterface, FormattableHandlerInterface
+{
+    use ProcessableHandlerTrait;
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function setFormatter(FormatterInterface $formatter): HandlerInterface
+    {
+    }
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function getFormatter(): FormatterInterface
+    {
+    }
+}
+
+/**
+ * Simple handler wrapper that filters records based on a list of levels
+ *
+ * It can be configured with an exact list of levels to allow, or a min/max level.
+ *
+ * @author Hennadiy Verkh
+ * @author Jordi Boggiano <j.boggiano@seld.be>
+ */
+class FilterHandler extends Handler implements ProcessableHandlerInterface, ResettableInterface, FormattableHandlerInterface
+{
+    use ProcessableHandlerTrait;
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function setFormatter(FormatterInterface $formatter): HandlerInterface
+    {
+    }
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function getFormatter(): FormatterInterface
+    {
+    }
+}
+
+/**
+ * Buffers all records until a certain level is reached
+ *
+ * The advantage of this approach is that you don't get any clutter in your log files.
+ * Only requests which actually trigger an error (or whatever your actionLevel is) will be
+ * in the logs, but they will contain all records, not only those above the level threshold.
+ *
+ * You can then have a passthruLevel as well which means that at the end of the request,
+ * even if it did not get activated, it will still send through log records of e.g. at least a
+ * warning level.
+ *
+ * You can find the various activation strategies in the
+ * Monolog\Handler\FingersCrossed\ namespace.
+ *
+ * @author Jordi Boggiano <j.boggiano@seld.be>
+ */
+class FingersCrossedHandler extends Handler implements ProcessableHandlerInterface, ResettableInterface, FormattableHandlerInterface
+{
+    use ProcessableHandlerTrait;
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function setFormatter(FormatterInterface $formatter): HandlerInterface
+    {
+    }
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function getFormatter(): FormatterInterface
+    {
+    }
+}
+
+/**
+ * Watches log records go by and expects to be fed at least $hunger of them before
+ * the process ends. If it stays hungry until close() (and was not manually fed()),
+ * the monster gets angry and emits a complaint record at $angerLevel to the nested
+ * handler. Useful as a dead-man's switch for cron jobs / workers that should produce
+ * a known amount of log activity before they finish, or to make sure that every code
+ * path / request in the application at least logs some amount of records.
+ *
+ * Records carrying context are "cookies with chocolate chips" — when $wantsContextChips
+ * is true, only records with non-empty context count toward feeding the monster.
+ *
+ * @author Jordi Boggiano <j.boggiano@seld.be>
+ */
+class LogMonsterHandler extends Handler implements ProcessableHandlerInterface, ResettableInterface, FormattableHandlerInterface
+{
+    use ProcessableHandlerTrait;
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function setFormatter(FormatterInterface $formatter): HandlerInterface
+    {
+    }
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function getFormatter(): FormatterInterface
+    {
+    }
+}
+
+/**
+ * Handler to only pass log messages when a certain threshold of number of messages is reached.
+ *
+ * This can be useful in cases of processing a batch of data, but you're for example only interested
+ * in case it fails catastrophically instead of a warning for 1 or 2 events. Worse things can happen, right?
+ *
+ * @author Kris Buist <krisbuist@gmail.com>
+ */
+class OverflowHandler extends AbstractHandler implements FormattableHandlerInterface
+{
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function setFormatter(FormatterInterface $formatter): HandlerInterface
+    {
+    }
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function getFormatter(): FormatterInterface
+    {
+    }
+}
+
+/**
+ * Sampling handler
+ *
+ * A sampled event stream can be useful for logging high frequency events in
+ * a production environment where you only need an idea of what is happening
+ * and are not concerned with capturing every occurrence. Since the decision to
+ * handle or not handle a particular event is determined randomly, the
+ * resulting sampled log is not guaranteed to contain 1/N of the events that
+ * occurred in the application, but based on the Law of large numbers, it will
+ * tend to be close to this ratio with a large number of attempts.
+ *
+ * @author Bryan Davis <bd808@wikimedia.org>
+ * @author Kunal Mehta <legoktm@gmail.com>
+ */
+class SamplingHandler extends AbstractHandler implements ProcessableHandlerInterface, FormattableHandlerInterface
+{
+    use ProcessableHandlerTrait;
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function setFormatter(FormatterInterface $formatter): HandlerInterface
+    {
+    }
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function getFormatter(): FormatterInterface
+    {
+    }
+}
+
+/**
+ * Proxies log messages to an existing PSR-3 compliant logger.
+ *
+ * If a formatter is configured, the formatter's output MUST be a string and the
+ * formatted message will be fed to the wrapped PSR logger instead of the original
+ * log record's message.
+ *
+ * @author Michael Moussa <michael.moussa@gmail.com>
+ */
+class PsrHandler extends AbstractHandler implements FormattableHandlerInterface
+{
+    /**
+     * @inheritDoc
+     * @psalm-capabilities write-this-props
+     */
+    public function setFormatter(FormatterInterface $formatter): HandlerInterface
+    {
+    }
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props
+     */
+    public function getFormatter(): FormatterInterface
+    {
+    }
+}
+
+/**
+ * Elastic Search handler
+ *
+ * @author Jelle Vink <jelle.vink@gmail.com>
+ */
+class ElasticaHandler extends AbstractProcessingHandler
+{
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function setFormatter(FormatterInterface $formatter): HandlerInterface
+    {
+    }
+}
+
+/**
+ * Elasticsearch handler
+ *
+ * @link https://www.elastic.co/guide/en/elasticsearch/client/php-api/current/index.html
+ *
+ * @author Avtandil Kikabidze <akalongman@gmail.com>
+ */
+class ElasticsearchHandler extends AbstractProcessingHandler
+{
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function setFormatter(FormatterInterface $formatter): HandlerInterface
+    {
+    }
+}
+
+/**
+ * Sends notifications through the Flowdock push API
+ *
+ * This must be configured with a FlowdockFormatter instance via setFormatter()
+ *
+ * Notes:
+ * API token - Flowdock API token
+ *
+ * @author Dominik Liebler <liebler.dominik@gmail.com>
+ * @see https://www.flowdock.com/api/push
+ * @deprecated Since 2.9.0 and 3.3.0, Flowdock was shutdown we will thus drop this handler in Monolog 4
+ */
+class FlowdockHandler extends SocketHandler
+{
+    /**
+     * @inheritDoc
+     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+     */
+    public function setFormatter(FormatterInterface $formatter): HandlerInterface
     {
     }
 }
