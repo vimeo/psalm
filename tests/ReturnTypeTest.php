@@ -28,6 +28,55 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'docblockStringLiteralWithEscapeSequences' => [
+                'code' => '<?php
+                    /** @return "\t" */
+                    function tab(): string {
+                        return "\t";
+                    }
+
+                    /** @return "a\nb" */
+                    function newline(): string {
+                        return "a\nb";
+                    }
+
+                    /** @return "\x41\101\u{42}" */
+                    function numeric(): string {
+                        return "AAB";
+                    }
+
+                    /** @return "\$x" */
+                    function dollar(): string {
+                        return \'$x\';
+                    }
+
+                    /** @return "say \"hi\"" */
+                    function quotes(): string {
+                        return \'say "hi"\';
+                    }',
+            ],
+            'docblockStringLiteralKeepsWhatIsNotAnEscapeSequence' => [
+                'code' => '<?php
+                    /** @return "\d+" */
+                    function regex(): string {
+                        return "\\d+";
+                    }
+
+                    /** @return "\\d" */
+                    function backslash(): string {
+                        return "\\d";
+                    }
+
+                    /** @return \'a\\\\b\' */
+                    function single(): string {
+                        return \'a\\\\b\';
+                    }
+
+                    /** @return \'it\\\'s\' */
+                    function apostrophe(): string {
+                        return "it\'s";
+                    }',
+            ],
             'nativeArrayReturnTypeTakesTheInheritedIterableDocblock' => [
                 'code' => '<?php
                     abstract class Base {
@@ -1826,6 +1875,14 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'docblockStringLiteralWithEscapeSequenceIsNotTheBackslashAndLetter' => [
+                'code' => '<?php
+                    /** @return "\t" */
+                    function tab(): string {
+                        return "\\\\t";
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'nativeArrayReturnTypeMustRespectTheInheritedIterableDocblock' => [
                 'code' => '<?php
                     abstract class Base {
