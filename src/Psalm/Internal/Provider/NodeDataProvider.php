@@ -42,6 +42,14 @@ final class NodeDataProvider implements NodeTypeProvider
     /** @var SplObjectStorage<Expr, list<string>> */
     private SplObjectStorage $node_literal_prefixes;
 
+    /**
+     * Expressions analysed already, whose analysis is not repeated (see markEvaluated()), with how many times
+     * they were marked
+     *
+     * @var SplObjectStorage<Expr, positive-int>
+     */
+    private SplObjectStorage $evaluated;
+
     public bool $cache_assertions = true;
 
     /**
@@ -54,6 +62,7 @@ final class NodeDataProvider implements NodeTypeProvider
         $this->node_if_true_assertions = new SplObjectStorage();
         $this->node_if_false_assertions = new SplObjectStorage();
         $this->node_literal_prefixes = new SplObjectStorage();
+        $this->evaluated = new SplObjectStorage();
     }
 
     /**
@@ -156,6 +165,44 @@ final class NodeDataProvider implements NodeTypeProvider
     public function getLiteralPrefixes(Expr $node): ?array
     {
         return $this->node_literal_prefixes[$node] ?? null;
+    }
+
+    /**
+     * Until unmarkEvaluated(), ExpressionAnalyzer::analyze() keeps the type of these expressions instead of
+     * analysing them again: their side effects happen once
+     *
+     * @param list<Expr> $nodes
+     */
+    public function markEvaluated(array $nodes): void
+    {
+        foreach ($nodes as $node) {
+            $this->evaluated[$node] = ($this->evaluated[$node] ?? 0) + 1;
+        }
+    }
+
+    /**
+     * @param list<Expr> $nodes
+     */
+    public function unmarkEvaluated(array $nodes): void
+    {
+        foreach ($nodes as $node) {
+            $count = $this->evaluated[$node] ?? 0;
+
+            if ($count > 1) {
+                $this->evaluated[$node] = $count - 1;
+            } else {
+                unset($this->evaluated[$node]);
+            }
+        }
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    public function isEvaluated(Expr $node): bool
+    {
+        return $this->evaluated->count() !== 0
+            && isset($this->evaluated[$node], $this->node_types[$node]);
     }
 
     public function isPureCompatible(Expr $node): bool

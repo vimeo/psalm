@@ -36,6 +36,7 @@ use function array_pop;
 use function ceil;
 use function class_exists;
 use function count;
+use function defined;
 use function enum_exists;
 use function error_reporting;
 use function explode;
@@ -728,11 +729,17 @@ final class Scanner
                 || $this->codebase->all_constants_global
             ) {
                 foreach ($file_storage->constants as $name => $type) {
-                    $this->codebase->addGlobalConstantType($name, $type);
-                }
+                    // like on a fresh scan (see ReflectorVisitor, ExpressionScanner), a declaration that doesn't tell
+                    // its type doesn't replace the constant defined in this process: native, or by the autoloader
+                    if ($type->isMixed() && defined($name)) {
+                        continue;
+                    }
 
-                foreach ($file_storage->unresolved_constants as $name => $value) {
-                    $this->codebase->addUnresolvedGlobalConstant($name, $value);
+                    $this->codebase->addGlobalConstantType($name, $type);
+
+                    if (isset($file_storage->unresolved_constants[$name])) {
+                        $this->codebase->addUnresolvedGlobalConstant($name, $file_storage->unresolved_constants[$name]);
+                    }
                 }
             }
 
