@@ -336,7 +336,18 @@ final class AssignmentAnalyzer
                 $context->inside_general_use = true;
             }
 
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_value, $context) === false) {
+            // a variable that is read as the value is not an assignment target, so it can't be defined by it
+            // (the keys of an array item or the object of a property that is assigned are evaluated before the value)
+            $context->inside_assignment = $assign_value instanceof PhpParser\Node\Expr\Variable
+                && $assign_var instanceof PhpParser\Node\Expr\Variable
+                ? $was_in_assignment
+                : $context->inside_assignment;
+
+            $analyzed_value = ExpressionAnalyzer::analyze($statements_analyzer, $assign_value, $context);
+
+            $context->inside_assignment = true;
+
+            if ($analyzed_value === false) {
                 $context->inside_general_use = $was_inside_general_use;
 
                 if ($var_id) {
@@ -868,18 +879,6 @@ final class AssignmentAnalyzer
                 'by_ref' => $by_ref,
             ]);
 
-            /** @psalm-suppress UnusedMethodCall This actually has the side effect of generating issues */
-            $var_comment_type->check(
-                $statements_analyzer,
-                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                $statements_analyzer->getSuppressedIssues(),
-                [],
-                false,
-                false,
-                false,
-                $context,
-            );
-
             $type_location = null;
 
             if ($var_comment->type_start
@@ -892,16 +891,28 @@ final class AssignmentAnalyzer
                     $var_comment->type_end,
                     $var_comment->line_number,
                 );
+            }
 
-                if ($codebase->alter_code) {
-                    $codebase->classlikes->handleDocblockTypeInMigration(
-                        $codebase,
-                        $statements_analyzer,
-                        $var_comment_type,
-                        $type_location,
-                        $context->calling_method_id,
-                    );
-                }
+            /** @psalm-suppress UnusedMethodCall This actually has the side effect of generating issues */
+            $var_comment_type->check(
+                $statements_analyzer,
+                $type_location ?? new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getSuppressedIssues(),
+                [],
+                false,
+                false,
+                false,
+                $context,
+            );
+
+            if ($type_location && $codebase->alter_code) {
+                $codebase->classlikes->handleDocblockTypeInMigration(
+                    $codebase,
+                    $statements_analyzer,
+                    $var_comment_type,
+                    $type_location,
+                    $context->calling_method_id,
+                );
             }
 
             if (!$var_comment->var_id || $var_comment->var_id === $var_id) {
@@ -1274,16 +1285,24 @@ final class AssignmentAnalyzer
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             // the array holds what the call leaves in the item, as if it was assigned to it; the argument
-            // itself keeps the type it was passed with
-            $arg_type = $statements_analyzer->node_data->getType($stmt);
+            // itself keeps the type it was passed with, and its keys are not evaluated again
+            $node_data = $statements_analyzer->node_data;
+            $arg_type = $node_data->getType($stmt);
+            $operands = ArrayAssignmentAnalyzer::getOperands($stmt);
+            $node_data->markEvaluated($operands);
 
-            ArrayAssignmentAnalyzer::analyze(
-                $statements_analyzer,
-                $stmt,
-                $context,
-                null,
-                $by_ref_out_type,
-            );
+            try {
+                ArrayAssignmentAnalyzer::analyze(
+                    $statements_analyzer,
+                    $stmt,
+                    $context,
+                    null,
+                    $by_ref_out_type,
+                    true,
+                );
+            } finally {
+                $node_data->unmarkEvaluated($operands);
+            }
 
             if ($arg_type !== null) {
                 $statements_analyzer->node_data->setType($stmt, $arg_type);
