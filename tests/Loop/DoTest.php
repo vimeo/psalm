@@ -23,6 +23,26 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'preDecrementInConditionHoldsTheValueTheLoopExitsWith' => [
+                'code' => '<?php
+                    $i = 5;
+                    do {
+                        echo $i;
+                    } while (--$i > 0);',
+                'assertions' => [
+                    '$i===' => 'int<0, 0>',
+                ],
+            ],
+            'postDecrementInConditionHoldsTheValueTheLoopExitsWith' => [
+                'code' => '<?php
+                    $i = 5;
+                    do {
+                        echo $i;
+                    } while ($i-- > 0);',
+                'assertions' => [
+                    '$i===' => 'int<-1, -1>',
+                ],
+            ],
             'doWhileTrue' => [
                 'code' => '<?php
                     function ret(): int {

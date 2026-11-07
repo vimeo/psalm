@@ -23,6 +23,15 @@ final class ForTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'postIncrementInConditionHoldsTheValueTheLoopExitsWith' => [
+                'code' => '<?php
+                    for ($i = 0; $i++ < 3;) {
+                        echo $i;
+                    }',
+                'assertions' => [
+                    '$i===' => 'int<4, 4>',
+                ],
+            ],
             'forTrue' => [
                 'code' => '<?php
                     function ret(): int {

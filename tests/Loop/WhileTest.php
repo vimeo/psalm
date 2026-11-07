@@ -21,6 +21,60 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'preDecrementInConditionHoldsTheValueTheLoopExitsWith' => [
+                'code' => '<?php
+                    $i = 5;
+                    while (--$i > 0) {
+                        echo $i;
+                    }',
+                'assertions' => [
+                    '$i===' => 'int<0, 0>',
+                ],
+            ],
+            'postDecrementInConditionHoldsTheValueTheLoopExitsWith' => [
+                'code' => '<?php
+                    $i = 5;
+                    while ($i-- > 0) {
+                        echo $i;
+                    }',
+                'assertions' => [
+                    '$i===' => 'int<-1, -1>',
+                ],
+            ],
+            'assignmentInConditionHoldsTheValueTheLoopExitsWith' => [
+                'code' => '<?php
+                    $i = 5;
+                    while (($i = $i - 1) > 0) {
+                        echo $i;
+                    }',
+                'assertions' => [
+                    '$i===' => 'int<0, 0>',
+                ],
+            ],
+            'conditionAssignmentKeepsTheValuesABreakLeaves' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        $i = 5;
+                        while (--$i > 0) {
+                            if ($b) {
+                                break;
+                            }
+                        }
+                        /** @psalm-check-type-exact $i = int<0, 5> */;
+                        return $i;
+                    }',
+            ],
+            'conditionAssignmentKeepsItsValueWhenAnotherConditionFails' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        $i = 5;
+                        while (--$i > 0 && $b) {
+                            echo $i;
+                        }
+                        /** @psalm-check-type-exact $i = int<0, 5> */;
+                        return $i;
+                    }',
+            ],
             'variableAssignedLaterInTheBodyHoldsWhatThePreviousIterationLeft' => [
                 'code' => '<?php
                     function f(): void {
