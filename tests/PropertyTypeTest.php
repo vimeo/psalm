@@ -649,6 +649,65 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'protectedPropertyRedeclaredInASubclassAccessedFromASibling' => [
+                'code' => '<?php
+                    class A
+                    {
+                        protected string $prop = "";
+                    }
+
+                    class B extends A
+                    {
+                        protected string $prop = "b";
+                    }
+
+                    class C extends A
+                    {
+                        public B $b;
+
+                        public function __construct()
+                        {
+                            $this->b = new B();
+                        }
+
+                        public function read(): string
+                        {
+                            return $this->b->prop;
+                        }
+                    }',
+            ],
+            'protectedPropertyRedeclaredByATraitAccessedFromASibling' => [
+                'code' => '<?php
+                    class A
+                    {
+                        protected string $prop = "";
+                    }
+
+                    trait Mangler
+                    {
+                        protected string $prop = "";
+                    }
+
+                    class B extends A
+                    {
+                        use Mangler;
+                    }
+
+                    class C extends A
+                    {
+                        public B $b;
+
+                        public function __construct()
+                        {
+                            $this->b = new B();
+                        }
+
+                        public function write(): void
+                        {
+                            $this->b->prop = "x";
+                        }
+                    }',
+            ],
             'newVarInIf' => [
                 'code' => '<?php
                     class A {
@@ -3010,6 +3069,27 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:33 - Operand of type false is always falsy',
+            ],
+            'protectedPropertyOfAnUnrelatedClassIsInaccessible' => [
+                'code' => '<?php
+                    class A
+                    {
+                        protected string $prop = "";
+                    }
+
+                    class B extends A
+                    {
+                        protected string $prop = "b";
+                    }
+
+                    class Unrelated
+                    {
+                        public function read(B $b): string
+                        {
+                            return $b->prop;
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty',
             ],
             'undefinedPropertyAssignment' => [
                 'code' => '<?php
