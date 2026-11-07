@@ -64,6 +64,15 @@ final class FakeParserCacheProvider extends ParserCacheProvider
     }
 
     /**
+     * @psalm-pure
+     */
+    #[Override]
+    public function hasChanged(string $file_path, string $file_contents): bool
+    {
+        return false;
+    }
+
+    /**
      * The parser follows the analysed PHP version (StatementsProvider::parseStatements()), so the statements do too
      *
      * @psalm-capabilities read-props
