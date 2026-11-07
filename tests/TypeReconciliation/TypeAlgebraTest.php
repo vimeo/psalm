@@ -21,6 +21,69 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'notIdenticalToAStringVariableThenExitingGivesTheString' => [
+                'code' => '<?php
+                    /** @param mixed $b */
+                    function f(string $a, $b): string {
+                        if ($b !== $a) {
+                            throw new Exception("not equal");
+                        }
+
+                        /** @psalm-check-type-exact $b = string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalWithTheTypedVariableOnTheLeftGivesTheString' => [
+                'code' => '<?php
+                    /** @param mixed $b */
+                    function f(string $a, $b): string {
+                        if ($a !== $b) {
+                            throw new Exception("not equal");
+                        }
+
+                        /** @psalm-check-type-exact $b = string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalOfTwoUnionsKeepsTheUnion' => [
+                'code' => '<?php
+                    function f(int|string $a, int|string $b): int|string {
+                        if ($a !== $b) {
+                            return 0;
+                        }
+
+                        /** @psalm-check-type-exact $a = int|string */
+                        /** @psalm-check-type-exact $b = int|string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalElseBranchOfAnUnrelatedPairIsUnchanged' => [
+                'code' => '<?php
+                    function f(string $a, string $b): string {
+                        if ($a !== $b) {
+                            return $a;
+                        }
+
+                        /** @psalm-check-type-exact $b = string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'inArrayWithAValueAnEarlierConditionExcludedIsNotParadoxical' => [
                 'code' => '<?php
                     const A = "a";
