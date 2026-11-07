@@ -35,6 +35,7 @@ use function array_intersect;
 use function array_intersect_key;
 use function array_key_exists;
 use function array_keys;
+use function array_map;
 use function array_merge;
 use function array_reduce;
 use function count;
@@ -476,6 +477,7 @@ final class IfAnalyzer
         }
 
         $if_scope->possibly_assigned_var_ids += $possibly_assigned_var_ids;
+        $if_scope->reassigned_var_ids += array_map(static fn(int $_): bool => true, $assigned_var_ids);
 
         if ($if_scope->redefined_vars === null) {
             $if_scope->redefined_vars = $redefined_vars;

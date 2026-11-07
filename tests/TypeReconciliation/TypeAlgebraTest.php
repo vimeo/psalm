@@ -21,6 +21,33 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'offsetKnownFromTheConditionIsForgottenWhenTheArrayIsReassigned' => [
+                'code' => '<?php
+                    $dummy = ["test" => ""];
+                    $a = ["test" => rand(0, 1) ? null : "x"];
+
+                    if ($a["test"] === null) {
+                        $a = $dummy;
+                    }
+
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var===' => "''|'x'",
+                ],
+            ],
+            'offsetKnownFromTheConditionIsKeptWhenTheArrayIsNotReassigned' => [
+                'code' => '<?php
+                    $a = ["test" => rand(0, 1) ? null : "x"];
+
+                    if ($a["test"] === null) {
+                        $a["other"] = 1;
+                    }
+
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var===' => "'x'|null",
+                ],
+            ],
             'twoVarLogicSimple' => [
                 'code' => '<?php
                     function foo(?string $a, ?string $b): string {
