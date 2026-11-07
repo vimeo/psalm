@@ -48,6 +48,8 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public ?Union $signature_return_type = null;
 
+    public bool $has_tentative_return_type = false;
+
     public ?CodeLocation $signature_return_type_location = null;
 
     public ?string $cased_name = null;

@@ -15,6 +15,11 @@ use const PHP_BINARY;
 /** @psalm-mutable */
 trait PsalmRunnerTrait
 {
+    /**
+     * Seconds a Psalm process may run: a cold run on a slow CI runner (Windows) can take longer than the 60 default
+     */
+    private const PROCESS_TIMEOUT = 300;
+
     private string $psalm = __DIR__ . '/../../psalm';
 
     private string $psalter = __DIR__ . '/../../psalter';
@@ -91,6 +96,8 @@ trait PsalmRunnerTrait
                 self::agentEnvVarsToUnset(),
             );
         }
+
+        $process->setTimeout(self::PROCESS_TIMEOUT);
 
         if (!$shouldFail) {
             $process->mustRun();

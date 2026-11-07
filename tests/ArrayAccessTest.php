@@ -550,6 +550,16 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'appendToASplDoublyLinkedList' => [
+                'code' => '<?php
+                    /** @var SplDoublyLinkedList<int> $dll */
+                    $dll = new SplDoublyLinkedList();
+                    $dll[] = 42;
+                    $dll[0] = 43;
+
+                    $queue = new SplQueue();
+                    $queue[] = "a";',
+            ],
             'coalesceOnOptionalKeysWithComputedOffset' => [
                 'code' => '<?php
                     /** @return array{a?: int, b?: int} */
@@ -1501,6 +1511,17 @@ final class ArrayAccessTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'coalesceOnArrayFetchWithFunctionCallKeyDropsNullFromValue' => [
+                'code' => '<?php
+                    function bar(string $key): string {
+                        return "aa" . $key;
+                    }
+
+                    /** @param array<string, ?string> $foo */
+                    function foo(array $foo, string $key, string $default): string {
+                        return $foo[bar($key)] ?? $default;
+                    }',
             ],
         ];
     }
