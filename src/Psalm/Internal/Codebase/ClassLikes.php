@@ -91,6 +91,27 @@ use const T_WHITESPACE;
 final class ClassLikes
 {
     /**
+     * Magic methods PHP may call without a call Psalm can see; the others (`__get`, `__call`, ...)
+     * are referenced where the access that triggers them is analysed.
+     *
+     * @var array<lowercase-string, true>
+     */
+    private const IMPLICITLY_CALLED_METHODS = [
+        '__destruct' => true,
+        '__clone' => true,
+        '__invoke' => true,
+        '__unset' => true,
+        '__isset' => true,
+        '__sleep' => true,
+        '__wakeup' => true,
+        '__serialize' => true,
+        '__unserialize' => true,
+        '__set_state' => true,
+        '__debuginfo' => true,
+        '__tostring' => true, // e.g. by array_unique()
+    ];
+
+    /**
      * @var array<lowercase-string, bool>
      */
     private array $existing_classlikes_lc = [];
@@ -874,6 +895,10 @@ final class ClassLikes
 
                 $code_use_graph->addEdge($return_node, $method_node, CodeUseGraph::EDGE_RETURN);
 
+                if (isset(self::IMPLICITLY_CALLED_METHODS[$method_name])) {
+                    $code_use_graph->addEdge($class_node, $method_node, CodeUseGraph::EDGE_IMPLICIT_CALL);
+                }
+
                 $appearing_method_id = $classlike_storage->appearing_method_ids[$method_name] ?? null;
 
                 if ($appearing_method_id !== null
@@ -946,7 +971,11 @@ final class ClassLikes
                 || !$this->config->isInProjectDirs($owner_storage->location->file_path);
         });
 
-        $subclass_capabilities = $this->getSubclassCapabilities($codebase->analyzer->mutable_classes);
+        $suggest_purity_annotations = $project_analyzer->suggestsPurityAnnotations();
+        $benefit = $project_analyzer->getPuritySuggestionReason();
+        $subclass_capabilities = $suggest_purity_annotations
+            ? $this->getSubclassCapabilities($codebase->analyzer->mutable_classes)
+            : [];
 
         foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
             try {
@@ -1018,6 +1047,10 @@ final class ClassLikes
                     continue;
                 }
 
+                if (!$suggest_purity_annotations) {
+                    continue;
+                }
+
                 $mut = Capabilities::toNamedLevel(
                     ($codebase->analyzer->mutable_classes[$fq_class_name_lc] ?? Capabilities::NONE)
                     | $this->getRequiredContractCapabilities($classlike_storage)
@@ -1055,6 +1088,7 @@ final class ClassLikes
                                         $classlike_storage,
                                         $namespace_stmt,
                                         $project_analyzer,
+                                        $benefit,
                                     );
                                 }
                             }
@@ -1067,6 +1101,7 @@ final class ClassLikes
                                 $classlike_storage,
                                 $stmt,
                                 $project_analyzer,
+                                $benefit,
                             );
                         }
                     }
@@ -1178,7 +1213,7 @@ final class ClassLikes
         ClassLikeStorage $storage,
         ClassLike $class_stmt,
         ProjectAnalyzer $project_analyzer,
-        ?string $msg = null,
+        string $benefit,
     ): void {
         if ($class_stmt instanceof VirtualNode || $storage->location === null) {
             return;
@@ -1190,8 +1225,9 @@ final class ClassLikes
             IssueBuffer::maybeAdd(
                 new MissingInterfaceImmutableAnnotation(
                     $storage->name
-                    . ' must be marked with either @psalm-pure, @psalm-immutable, @psalm-capabilities or @psalm-mutable'
-                    . ' to aid security analysis',
+                    . ' could be marked with either @psalm-pure, @psalm-immutable, @psalm-capabilities'
+                    . ' or @psalm-mutable'
+                    . ' ' . $benefit,
                     $storage->location,
                 ),
                 $storage->suppressed_issues,
@@ -1212,9 +1248,9 @@ final class ClassLikes
 
         IssueBuffer::maybeAdd(
             new MissingImmutableAnnotation(
-                $msg ?? ($storage->name . ' must be marked @' . Capabilities::toClassAnnotation($capabilities)
-                    . ' to aid security analysis,'
-                    .' run with --alter --issues=MissingImmutableAnnotation to fix this'),
+                $storage->name . ' could be marked @' . Capabilities::toClassAnnotation($capabilities)
+                    . ' ' . $benefit
+                    . ', run with --alter --issues=MissingImmutableAnnotation to fix this',
                 $storage->location,
             ),
             $storage->suppressed_issues,
@@ -2110,156 +2146,97 @@ final class ClassLikes
             if (!$method_referenced
                 && $method_storage->location
             ) {
-                if ($method_name !== '__destruct'
-                    && $method_name !== '__clone'
-                    && $method_name !== '__invoke'
-                    && $method_name !== '__unset'
-                    && $method_name !== '__isset'
-                    && $method_name !== '__sleep'
-                    && $method_name !== '__wakeup'
-                    && $method_name !== '__serialize'
-                    && $method_name !== '__unserialize'
-                    && $method_name !== '__set_state'
-                    && $method_name !== '__debuginfo'
-                    && $method_name !== '__tostring' // can be called in array_unique
-                ) {
-                    $method_location = $method_storage->location;
+                $method_location = $method_storage->location;
 
-                    $method_id = $classlike_storage->name . '::' . $method_storage->cased_name;
+                $method_id = $classlike_storage->name . '::' . $method_storage->cased_name;
 
-                    if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
-                        $has_parent_references = false;
+                if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
+                    $has_parent_references = false;
 
-                        if ($codebase->classImplements($classlike_storage->name, 'Serializable')
-                            && ($method_name === 'serialize' || $method_name === 'unserialize')
-                        ) {
-                            continue;
-                        }
+                    if ($codebase->classImplements($classlike_storage->name, 'Serializable')
+                        && ($method_name === 'serialize' || $method_name === 'unserialize')
+                    ) {
+                        continue;
+                    }
 
-                        if ($codebase->classImplements($classlike_storage->name, 'JsonSerializable')
-                            && ($method_name === 'jsonserialize')
-                        ) {
-                            continue;
-                        }
+                    if ($codebase->classImplements($classlike_storage->name, 'JsonSerializable')
+                        && ($method_name === 'jsonserialize')
+                    ) {
+                        continue;
+                    }
 
-                        $has_variable_calls = $codebase->analyzer->hasMixedMemberName($method_name)
-                            || $codebase->analyzer->hasMixedMemberName(strtolower($classlike_storage->name . '::'));
+                    $has_variable_calls = $codebase->analyzer->hasMixedMemberName($method_name)
+                        || $codebase->analyzer->hasMixedMemberName(strtolower($classlike_storage->name . '::'));
 
-                        if (isset($classlike_storage->overridden_method_ids[$method_name])) {
-                            foreach ($classlike_storage->overridden_method_ids[$method_name] as $parent_method_id) {
-                                $parent_method_storage = $methods->getStorage($parent_method_id);
+                    if (isset($classlike_storage->overridden_method_ids[$method_name])) {
+                        foreach ($classlike_storage->overridden_method_ids[$method_name] as $parent_method_id) {
+                            $parent_method_storage = $methods->getStorage($parent_method_id);
 
-                                if ($parent_method_storage->location
-                                    && !$project_analyzer->canReportIssues($parent_method_storage->location->file_path)
-                                ) {
-                                    // here we just don’t know
-                                    $has_parent_references = true;
-                                    break;
-                                }
-
-                                $parent_method_referenced = $codebase->code_use_graph->isUsed(
-                                    CodeUseGraph::functionLikeNode(strtolower((string) $parent_method_id)),
-                                );
-
-                                if (!$parent_method_storage->abstract || $parent_method_referenced) {
-                                    $has_parent_references = true;
-                                    break;
-                                }
+                            if ($parent_method_storage->location
+                                && !$project_analyzer->canReportIssues($parent_method_storage->location->file_path)
+                            ) {
+                                // here we just don’t know
+                                $has_parent_references = true;
+                                break;
                             }
-                        }
 
-                        foreach ($classlike_storage->parent_classes as $parent_method_fqcln) {
-                            if ($codebase->analyzer->hasMixedMemberName(
-                                strtolower($parent_method_fqcln) . '::',
-                            )) {
-                                $has_variable_calls = true;
+                            $parent_method_referenced = $codebase->code_use_graph->isUsed(
+                                CodeUseGraph::functionLikeNode(strtolower((string) $parent_method_id)),
+                            );
+
+                            if (!$parent_method_storage->abstract || $parent_method_referenced) {
+                                $has_parent_references = true;
                                 break;
                             }
                         }
+                    }
 
-                        foreach ($classlike_storage->class_implements as $fq_interface_name_lc => $_) {
-                            try {
-                                $interface_storage = $this->classlike_storage_provider->get($fq_interface_name_lc);
-                            } catch (InvalidArgumentException) {
-                                continue;
-                            }
+                    foreach ($classlike_storage->parent_classes as $parent_method_fqcln) {
+                        if ($codebase->analyzer->hasMixedMemberName(
+                            strtolower($parent_method_fqcln) . '::',
+                        )) {
+                            $has_variable_calls = true;
+                            break;
+                        }
+                    }
 
-                            if ($codebase->analyzer->hasMixedMemberName(
-                                $fq_interface_name_lc . '::',
-                            )) {
-                                $has_variable_calls = true;
-                            }
-
-                            if (isset($interface_storage->methods[$method_name])) {
-                                $interface_method_referenced = $codebase->code_use_graph->isUsed(
-                                    CodeUseGraph::functionLikeNode($fq_interface_name_lc . '::' . $method_name),
-                                );
-
-                                if ($interface_method_referenced) {
-                                    $has_parent_references = true;
-                                }
-                            }
+                    foreach ($classlike_storage->class_implements as $fq_interface_name_lc => $_) {
+                        try {
+                            $interface_storage = $this->classlike_storage_provider->get($fq_interface_name_lc);
+                        } catch (InvalidArgumentException) {
+                            continue;
                         }
 
-                        if (!$has_parent_references) {
-                            $issue = new PossiblyUnusedMethod(
-                                'Cannot find ' . ($has_variable_calls ? 'explicit' : 'any')
-                                    . ' calls to method ' . $method_id
-                                    . ($has_variable_calls ? ' (but did find some potential callers)' : ''),
-                                $method_storage->location,
-                                $method_id,
+                        if ($codebase->analyzer->hasMixedMemberName(
+                            $fq_interface_name_lc . '::',
+                        )) {
+                            $has_variable_calls = true;
+                        }
+
+                        if (isset($interface_storage->methods[$method_name])) {
+                            $interface_method_referenced = $codebase->code_use_graph->isUsed(
+                                CodeUseGraph::functionLikeNode($fq_interface_name_lc . '::' . $method_name),
                             );
 
-                            if ($codebase->alter_code) {
-                                if ($method_storage->stmt_location
-                                    && !$declaring_classlike_storage->is_trait
-                                    && isset($project_analyzer->getIssuesToFix()['PossiblyUnusedMethod'])
-                                    && !$has_variable_calls
-                                    && !IssueBuffer::isSuppressed($issue, $method_storage->suppressed_issues)
-                                ) {
-                                    FileManipulationBuffer::addForCodeLocation(
-                                        $method_storage->stmt_location,
-                                        '',
-                                        true,
-                                    );
-                                }
-                            } else {
-                                IssueBuffer::maybeAdd(
-                                    $issue,
-                                    $method_storage->suppressed_issues,
-                                    $method_storage->stmt_location
-                                        && !$declaring_classlike_storage->is_trait
-                                        && !$has_variable_calls,
-                                );
+                            if ($interface_method_referenced) {
+                                $has_parent_references = true;
                             }
                         }
-                    } elseif (!isset($classlike_storage->declaring_method_ids['__call'])) {
-                        $has_variable_calls = $codebase->analyzer->hasMixedMemberName(
-                            strtolower($classlike_storage->name . '::'),
-                        ) || $codebase->analyzer->hasMixedMemberName($method_name);
+                    }
 
-                        if ($method_name === '__construct') {
-                            $issue = new UnusedConstructor(
-                                'Cannot find ' . ($has_variable_calls ? 'explicit' : 'any')
-                                    . ' calls to private constructor ' . $method_id
-                                    . ($has_variable_calls ? ' (but did find some potential callers)' : ''),
-                                $method_location,
-                                $method_id,
-                            );
-                        } else {
-                            $issue = new UnusedMethod(
-                                'Cannot find ' . ($has_variable_calls ? 'explicit' : 'any')
-                                    . ' calls to private method ' . $method_id
-                                    . ($has_variable_calls ? ' (but did find some potential callers)' : ''),
-                                $method_location,
-                                $method_id,
-                            );
-                        }
+                    if (!$has_parent_references) {
+                        $issue = new PossiblyUnusedMethod(
+                            'Cannot find ' . ($has_variable_calls ? 'explicit' : 'any')
+                                . ' calls to method ' . $method_id
+                                . ($has_variable_calls ? ' (but did find some potential callers)' : ''),
+                            $method_storage->location,
+                            $method_id,
+                        );
 
                         if ($codebase->alter_code) {
                             if ($method_storage->stmt_location
                                 && !$declaring_classlike_storage->is_trait
-                                && isset($project_analyzer->getIssuesToFix()['UnusedMethod'])
+                                && isset($project_analyzer->getIssuesToFix()['PossiblyUnusedMethod'])
                                 && !$has_variable_calls
                                 && !IssueBuffer::isSuppressed($issue, $method_storage->suppressed_issues)
                             ) {
@@ -2274,10 +2251,55 @@ final class ClassLikes
                                 $issue,
                                 $method_storage->suppressed_issues,
                                 $method_storage->stmt_location
-                                && !$declaring_classlike_storage->is_trait
-                                && !$has_variable_calls,
+                                    && !$declaring_classlike_storage->is_trait
+                                    && !$has_variable_calls,
                             );
                         }
+                    }
+                } elseif (!isset($classlike_storage->declaring_method_ids['__call'])) {
+                    $has_variable_calls = $codebase->analyzer->hasMixedMemberName(
+                        strtolower($classlike_storage->name . '::'),
+                    ) || $codebase->analyzer->hasMixedMemberName($method_name);
+
+                    if ($method_name === '__construct') {
+                        $issue = new UnusedConstructor(
+                            'Cannot find ' . ($has_variable_calls ? 'explicit' : 'any')
+                                . ' calls to private constructor ' . $method_id
+                                . ($has_variable_calls ? ' (but did find some potential callers)' : ''),
+                            $method_location,
+                            $method_id,
+                        );
+                    } else {
+                        $issue = new UnusedMethod(
+                            'Cannot find ' . ($has_variable_calls ? 'explicit' : 'any')
+                                . ' calls to private method ' . $method_id
+                                . ($has_variable_calls ? ' (but did find some potential callers)' : ''),
+                            $method_location,
+                            $method_id,
+                        );
+                    }
+
+                    if ($codebase->alter_code) {
+                        if ($method_storage->stmt_location
+                            && !$declaring_classlike_storage->is_trait
+                            && isset($project_analyzer->getIssuesToFix()['UnusedMethod'])
+                            && !$has_variable_calls
+                            && !IssueBuffer::isSuppressed($issue, $method_storage->suppressed_issues)
+                        ) {
+                            FileManipulationBuffer::addForCodeLocation(
+                                $method_storage->stmt_location,
+                                '',
+                                true,
+                            );
+                        }
+                    } else {
+                        IssueBuffer::maybeAdd(
+                            $issue,
+                            $method_storage->suppressed_issues,
+                            $method_storage->stmt_location
+                            && !$declaring_classlike_storage->is_trait
+                            && !$has_variable_calls,
+                        );
                     }
                 }
             } else {
