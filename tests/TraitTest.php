@@ -50,6 +50,19 @@ final class TraitTest extends TestCase
                     (new Plain)->overridden();
                     (new Narrowing)->exposed();',
             ],
+            'traitPropertiesTypedSelf' => [
+                'code' => '<?php
+                    trait MyTrait {
+                        private static self $instance;
+                        public ?self $next = null;
+                    }
+
+                    class Implementor {
+                        use MyTrait;
+                    }
+
+                    class Child extends Implementor {}',
+            ],
             'accessiblePrivateMethodFromTrait' => [
                 'code' => '<?php
                     trait T {
@@ -1291,6 +1304,16 @@ final class TraitTest extends TestCase
 
                     (new Narrowing)->f();',
                 'error_message' => 'InaccessibleMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:38 - Cannot access protected method Narrowing::f',
+            ],
+            'docblockPropertyTypeNotContainedBySignatureTypeSelf' => [
+                'code' => '<?php
+                    class Child {}
+
+                    class Wrong {
+                        /** @var Child */
+                        public ?self $x = null;
+                    }',
+                'error_message' => 'MismatchingDocblockPropertyType',
             ],
             'inaccessiblePrivateMethodFromInheritedTrait' => [
                 'code' => '<?php
