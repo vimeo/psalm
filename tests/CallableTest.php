@@ -36,6 +36,22 @@ final class CallableTest extends TestCase
                     });',
                 'assertions' => [],
             ],
+            'byReferenceCallableParamAcceptsByValueCallee' => [
+                'code' => '<?php
+                    /** @param callable(int &$i): void $closure */
+                    function takesRefCallable(callable $closure): void {
+                        $v = 1;
+                        $closure($v);
+                    }
+                    function show(int $i): void {
+                        echo $i;
+                    }
+                    takesRefCallable("show");
+                    takesRefCallable(function (int $i): void {
+                        echo $i;
+                    });',
+                'assertions' => [],
+            ],
             'namedOptionalCallableParam' => [
                 'code' => '<?php
                     /** @param callable(int $i=): void $closure */
