@@ -1025,7 +1025,7 @@ final class TypeParseTest extends TestCase
         );
     }
 
-    public function testCallableWithNamedOptionalParam(): void
+    public function testCallableWithOptionalParamNamedBeforeTheEquals(): void
     {
         $this->assertSame(
             'callable[impure](int=):void',
