@@ -28,6 +28,23 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'docblockStringLiteralWithEscapedBackslashes' => [
+                'code' => '<?php
+                    /** @return "\\\\t" */
+                    function backslashAndLetter(): string {
+                        return "\\\\t";
+                    }
+
+                    /** @return "\\\\\\\\" */
+                    function twoBackslashes(): string {
+                        return "\\\\\\\\";
+                    }
+
+                    /** @return \'\\\\\\\\\' */
+                    function twoBackslashesSingleQuoted(): string {
+                        return \'\\\\\\\\\';
+                    }',
+            ],
             'docblockStringLiteralWithEscapeSequences' => [
                 'code' => '<?php
                     /** @return "\t" */
