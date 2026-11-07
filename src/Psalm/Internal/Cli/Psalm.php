@@ -300,6 +300,16 @@ final class Psalm
 
         $progress = self::initProgress($options, $config, $in_ci);
 
+        if (self::lacksPosixForThreads()
+            && (self::getRequestedThreads($options, $config, false) > 1
+                || self::getRequestedThreads($options, $config, true) > 1)
+        ) {
+            $progress->warning(
+                'Running on one thread: Psalm needs the posix extension for more, which is not loaded.'
+                . PHP_EOL . PHP_EOL,
+            );
+        }
+
         $force_jit = $config->force_jit || isset($options['force-jit']);
         self::restart($options, $force_jit, $threads, $scanThreads, $progress);
 
@@ -451,17 +461,33 @@ final class Psalm
         }
     }
 
+    /**
+     * Whether Psalm runs on one thread only because the posix extension is missing, where it could use more
+     *
+     * @psalm-pure
+     */
+    private static function lacksPosixForThreads(): bool
+    {
+        return !defined('PHP_WINDOWS_VERSION_MAJOR') && extension_loaded('pcntl') && !extension_loaded('posix');
+    }
+
     /** @return int<1, max> */
     public static function getThreads(array $options, Config $config, bool $for_scan): int
     {
         if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
             // No support desired for Windows at the moment
             return 1;
-        } elseif (!extension_loaded('pcntl')) {
-            // Psalm requires pcntl for multi-threads support
+        } elseif (!extension_loaded('pcntl') || !extension_loaded('posix')) {
+            // Psalm requires pcntl and posix for multi-threads support
             return 1;
         }
 
+        return self::getRequestedThreads($options, $config, $for_scan);
+    }
+
+    /** @return int<1, max> */
+    private static function getRequestedThreads(array $options, Config $config, bool $for_scan): int
+    {
         if ($for_scan) {
             if (isset($options['scan-threads'])) {
                 $threads = max(1, (int)$options['scan-threads']);

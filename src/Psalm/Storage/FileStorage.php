@@ -43,6 +43,14 @@ final class FileStorage
      */
     public array $functions = [];
 
+    /**
+     * The first function declared with each name in the file, which `$functions` keeps the last one of. It is the
+     * one that becomes the global function if no other file declared that name before.
+     *
+     * @var array<string, FunctionStorage>
+     */
+    public array $first_declared_functions = [];
+
     /** @var array<string, string> */
     public array $declaring_function_ids = [];
 

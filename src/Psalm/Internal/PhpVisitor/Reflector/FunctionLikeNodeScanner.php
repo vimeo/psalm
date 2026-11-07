@@ -463,6 +463,7 @@ final class FunctionLikeNodeScanner
             }
 
             $this->file_storage->functions[$function_id] = $storage;
+            $this->file_storage->first_declared_functions[$function_id] ??= $storage;
             $this->file_storage->declaring_function_ids[$function_id] = strtolower($this->file_path);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
             && $classlike_storage
