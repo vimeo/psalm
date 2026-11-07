@@ -8,6 +8,7 @@ use PhpParser;
 use Psalm\Codebase;
 use Psalm\FileSource;
 use Psalm\Internal\Algebra;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -17,9 +18,13 @@ use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Storage\Assertion\Truthy;
 
+use function array_diff_key;
+use function array_filter;
 use function array_map;
+use function array_values;
 use function count;
 use function spl_object_id;
+use function str_starts_with;
 use function substr;
 
 /**
@@ -64,6 +69,20 @@ final class FormulaGenerator
                 $inside_negation,
                 $cache,
             );
+
+            // what the left one tested of the previous value of a variable the right one assigns says nothing
+            // of the value that follows the assignment
+            $right_assigned_ids = array_diff_key(
+                self::getAssignedTargetIds($conditional->right, $this_class_name),
+                self::getAssignedTargetIds($conditional->left, $this_class_name),
+            );
+
+            if ($right_assigned_ids) {
+                $left_assertions = array_values(array_filter(
+                    $left_assertions,
+                    static fn(Clause $clause): bool => !self::mentionsAnyAssigned($clause, $right_assigned_ids),
+                ));
+            }
 
             return [...$left_assertions, ...$right_assertions];
         }
@@ -486,11 +505,127 @@ final class FormulaGenerator
     }
 
     /**
+     * Whether the clause tests what one of the assignments writes, an item or property of it, or the array holding it
+     *
+     * @param array<string, true> $assigned_ids
+     * @psalm-pure
+     */
+    private static function mentionsAnyAssigned(Clause $clause, array $assigned_ids): bool
+    {
+        foreach ($clause->possibilities as $var => $_) {
+            foreach ($assigned_ids as $assigned_id => $_) {
+                if ($var === $assigned_id
+                    || str_starts_with($var, $assigned_id . '[')
+                    || str_starts_with($var, $assigned_id . '->')
+                    || str_starts_with($assigned_id, $var . '[')
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * The variables an expression assigns, or assigns an item or property of
      *
      * @return array<string, true>
      */
     private static function getAssignedVarIds(PhpParser\Node\Expr $expr, ?string $this_class_name): array
+    {
+        $var_ids = [];
+
+        foreach (self::getAssignTargets($expr) as $target) {
+            $var_id = ExpressionIdentifier::getRootVarId($target, $this_class_name);
+
+            if ($var_id !== null) {
+                $var_ids[$var_id] = true;
+            }
+        }
+
+        return $var_ids;
+    }
+
+    /**
+     * What an expression assigns: `$a['x']` for `$a['x'] = 1`, and the array holding an item of an unknown
+     * offset, `$a` for `$a[$i] = 1`
+     *
+     * @return array<string, true>
+     */
+    private static function getAssignedTargetIds(PhpParser\Node\Expr $expr, ?string $this_class_name): array
+    {
+        $target_ids = [];
+
+        foreach (self::getAssignTargets($expr) as $target) {
+            $exact = true;
+            $target_id = self::getAssignedTargetId($target, $this_class_name, $exact);
+
+            if ($target_id !== null) {
+                $target_ids[$target_id] = true;
+            }
+        }
+
+        return $target_ids;
+    }
+
+    /**
+     * @param-out bool $exact
+     */
+    private static function getAssignedTargetId(
+        PhpParser\Node\Expr $target,
+        ?string $this_class_name,
+        bool &$exact,
+    ): ?string {
+        if ($target instanceof PhpParser\Node\Expr\Variable
+            || $target instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
+            return ExpressionIdentifier::getVarId($target, $this_class_name);
+        }
+
+        if ($target instanceof PhpParser\Node\Expr\PropertyFetch) {
+            $object_id = self::getAssignedTargetId($target->var, $this_class_name, $exact);
+
+            if ($object_id === null || !$exact) {
+                return $object_id;
+            }
+
+            if (!$target->name instanceof PhpParser\Node\Identifier) {
+                $exact = false;
+
+                return $object_id;
+            }
+
+            return $object_id . '->' . $target->name->name;
+        }
+
+        if ($target instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            $array_id = self::getAssignedTargetId($target->var, $this_class_name, $exact);
+
+            if ($array_id === null || !$exact) {
+                return $array_id;
+            }
+
+            if (!$target->dim instanceof PhpParser\Node\Scalar\String_
+                && !$target->dim instanceof PhpParser\Node\Scalar\Int_
+            ) {
+                $exact = false;
+
+                return $array_id;
+            }
+
+            $key = ArrayAnalyzer::getLiteralArrayKeyInt($target->dim->value);
+
+            return $array_id . '[' . ($key === false ? '\'' . $target->dim->value . '\'' : $key) . ']';
+        }
+
+        return null;
+    }
+
+    /**
+     * @return list<PhpParser\Node\Expr>
+     */
+    private static function getAssignTargets(PhpParser\Node\Expr $expr): array
     {
         $targets = [];
 
@@ -522,16 +657,6 @@ final class FormulaGenerator
             },
         );
 
-        $var_ids = [];
-
-        foreach ($targets as $target) {
-            $var_id = ExpressionIdentifier::getRootVarId($target, $this_class_name);
-
-            if ($var_id !== null) {
-                $var_ids[$var_id] = true;
-            }
-        }
-
-        return $var_ids;
+        return $targets;
     }
 }
