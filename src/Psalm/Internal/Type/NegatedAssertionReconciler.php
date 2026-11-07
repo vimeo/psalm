@@ -232,8 +232,19 @@ final class NegatedAssertionReconciler extends Reconciler
         } elseif (!$is_equality) {
             $assertion_type = $assertion->getAtomicType();
 
+            // a wider type of the same key is no direct hit: `string` stays where `lowercase-string` is negated
+            $same_key_type = $assertion_type
+                ? $existing_var_type->getAtomicTypes()[$assertion_type->getKey()] ?? null
+                : null;
+
+            $is_direct_hit = $assertion_type
+                && (!$same_key_type
+                    || $same_key_type::class === $assertion_type::class
+                    || AtomicTypeComparator::isContainedBy($codebase, $same_key_type, $assertion_type))
+                && $existing_var_type->removeType($assertion_type->getKey());
+
             // if there wasn't a direct hit, go deeper, eliminating subtypes
-            if ($assertion_type && !$existing_var_type->removeType($assertion_type->getKey())) {
+            if ($assertion_type && !$is_direct_hit) {
                 if ($assertion_type instanceof TNamedObject) {
                     foreach ($existing_var_type->getAtomicTypes() as $part_name => $existing_var_type_part) {
                         if ($existing_var_type_part instanceof TTemplateParam
