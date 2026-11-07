@@ -457,6 +457,11 @@ final class ProjectAnalyzer
 
         $this->full_run = true;
 
+        // only `--diff`, unused code detection and reference lookups read the code use graph edges
+        $this->codebase->code_use_graph->record_edges = $is_diff
+            || $this->codebase->find_unused_code !== null
+            || $this->codebase->collect_locations;
+
         $reference_cache = $this->file_reference_provider->loadReferenceCache(true);
 
         $this->codebase->diff_methods = $is_diff;
