@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 /**
@@ -14,6 +15,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
  */
 final class FFITest extends TestCase
 {
+    use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
     /**
@@ -53,7 +55,7 @@ final class FFITest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MissingConstructor'],
+                'ignored_issues' => ['MissingConstructor'],
                 'php_version' => '7.4',
             ],
             'memcmpAcceptsNamedArgumentsInAnyOrder' => [
@@ -71,6 +73,20 @@ final class FFITest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'memcmpKeepsTheTypeOfItsVariableArguments' => [
+                'code' => '<?php
+                    $ptr = new FFI\\CData;
+                    $name = "abc";
+
+                    $result = FFI::memcmp($ptr, $name, 3);
+                ',
+                'assertions' => [
+                    '$ptr===' => 'FFI\\CData',
+                    '$name===' => "'abc'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             // Examples are from https://www.php.net/manual/en/ffi.examples-basic.php
             // Some of them needed tweaks, e.g. due to unsafe use of var_dump().
@@ -134,6 +150,40 @@ final class FFITest extends TestCase
                 ',
                 'assertions' => [],
                 'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+        ];
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerInvalidCodeParse(): iterable
+    {
+        return [
+            'memcmpRejectsAnIntVariable' => [
+                'code' => '<?php
+                    function cmp(int $number): int {
+                        return FFI::memcmp($number, "abc", 3);
+                    }
+                ',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
+            'memcmpRejectsAnIntValue' => [
+                'code' => '<?php
+                    function number(): int {
+                        return 1;
+                    }
+
+                    function cmp(): int {
+                        return FFI::memcmp(number(), "abc", 3);
+                    }
+                ',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
                 'php_version' => '7.4',
             ],
         ];

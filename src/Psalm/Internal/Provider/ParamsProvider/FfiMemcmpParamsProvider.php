@@ -14,6 +14,8 @@ use Psalm\Plugin\EventHandler\MethodParamsProviderInterface;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
 /**
@@ -45,6 +47,8 @@ final class FfiMemcmpParamsProvider implements MethodParamsProviderInterface
             return null;
         }
 
+        $pointer_type = new Union([new TString(), new TNamedObject('FFI\\CData')]);
+
         $params = [];
 
         foreach (['ptr1', 'ptr2'] as $offset => $name) {
@@ -69,7 +73,7 @@ final class FfiMemcmpParamsProvider implements MethodParamsProviderInterface
                     || $arg->value instanceof PropertyFetch
                     || $arg->value instanceof StaticPropertyFetch
                 ),
-                null,
+                $pointer_type,
                 null,
                 null,
                 null,
