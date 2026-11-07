@@ -1030,6 +1030,14 @@ final class ArithmeticOpAnalyzer
                 return Type::getInt();
             }
 
+            // a shift by a negative number always throws
+            if ($int2 < 0
+                && ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+                    || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight)
+            ) {
+                return Type::getNever();
+            }
+
             $result = match (true) {
                 $operation instanceof PhpParser\Node\Expr\BinaryOp\Mod => $int1 % $int2,
                 $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr => $int1 | $int2,
@@ -1045,6 +1053,11 @@ final class ArithmeticOpAnalyzer
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
             $result = $operand1 * $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
+            // zero to a negative power is INF, with a deprecation since PHP 8.4
+            if ($operand1 == 0 && $operand2 < 0) {
+                return Type::getFloat();
+            }
+
             $result = $operand1 ** $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Div) {
             if ($operand2 === 0 || $operand2 === 0.0) {
@@ -1445,7 +1458,7 @@ final class ArithmeticOpAnalyzer
         TIntRange $right_type_part,
     ): void {
         //If Pow first operand is negative, the result could be positive or negative, else it will be positive
-        //If Pow second operand is negative, the result will be float, if it's 0, it will be 1/-1, else positive
+        //If Pow second operand is negative, the result will be float, if it's 0, it will be 1, else positive
         if ($left_type_part->isPositive()) {
             if ($right_type_part->isPositive()) {
                 $new_result_type = Type::getIntRange(1, null);
@@ -1471,7 +1484,7 @@ final class ArithmeticOpAnalyzer
             } elseif ($right_type_part->isNegative()) {
                 $new_result_type = Type::getFloat();
             } elseif ($right_type_part->min_bound === 0 && $right_type_part->max_bound === 0) {
-                $new_result_type = Type::getInt(true, -1);
+                $new_result_type = Type::getInt(true, 1);
             } else {
                 //$right_type_part may be a mix of positive, negative and 0
                 $new_result_type = new Union([new TInt(), new TFloat()]);
