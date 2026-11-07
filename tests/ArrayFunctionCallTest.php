@@ -80,6 +80,31 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayMapWithAVariadicCallbackAndSeveralArrays' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $x
+                     * @param list<int> $y
+                     * @param list<int> $z
+                     * @return list<array<array-key, int>>
+                     */
+                    function zip(array $x, array $y, array $z): array {
+                        return array_map(static fn (...$values): array => $values, $x, $y, $z);
+                    }',
+            ],
+            'arrayMapWithACallbackUsingFuncGetArgsAndSeveralArrays' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $x
+                     * @param list<int> $y
+                     * @param list<int> $z
+                     */
+                    function zip(array $x, array $y, array $z): array {
+                        return array_map(static fn ($_): array => func_get_args(), $x, $y, $z);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnTypeCoercion'],
+            ],
             'arraySpliceWithALengthOutsideTheRangeOfAnInt' => [
                 'code' => '<?php
                     $big = [1, 2, 3];
@@ -3557,6 +3582,17 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayMapWithACallbackTakingFewerParametersThanArrays' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $x
+                     * @param list<int> $y
+                     */
+                    function zip(array $x, array $y): array {
+                        return array_map(static fn (int $a): int => $a, $x, $y);
+                    }',
+                'error_message' => 'TooManyArguments',
+            ],
             'arrayFilterUseMethodOnInferableInt' => [
                 'code' => '<?php
                     $a = array_filter([1, 2, 3, 4], function ($i) { return $i->foo(); });',

@@ -970,7 +970,23 @@ final class ArrayFunctionArgumentsAnalyzer
             }
         }
 
-        if (count($closure_params) < $min_closure_param_count) {
+        // a variadic parameter, or func_get_args(), takes any number of arguments
+        $accepts_any_count = false;
+
+        foreach ($closure_params as $param) {
+            if ($param->is_variadic) {
+                $accepts_any_count = true;
+            }
+        }
+
+        if (!$accepts_any_count && $closure_type instanceof TClosure && $closure_type->callable_id !== null) {
+            $accepts_any_count = FunctionCallReturnTypeFetcher::getClosureStorage(
+                $statements_analyzer,
+                $closure_type->callable_id,
+            )?->variadic === true;
+        }
+
+        if (!$accepts_any_count && count($closure_params) < $min_closure_param_count) {
             $argument_text = $min_closure_param_count === 1 ? 'one argument' : $min_closure_param_count . ' arguments';
 
             IssueBuffer::maybeAdd(
