@@ -1520,6 +1520,21 @@ final class AnnotationTest extends TestCase
                     function f(array $a): void {}',
                 'error_message' => 'InvalidDocblock',
             ],
+            'varDocblockClassWithWrongCasingIsReportedInTheDocblock' => [
+                'code' => '<?php
+                    class FooBar {}
+
+                    /** @var Foobar $obj */
+
+                    echo "x";',
+                'error_message' => 'InvalidClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:30',
+            ],
+            'varDocblockUndefinedClassIsReportedInTheDocblock' => [
+                'code' => '<?php
+                    /** @var Foobar $obj */
+                    $obj = getenv("x");',
+                'error_message' => 'UndefinedDocblockClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:30',
+            ],
             'invalidTypeInPromotedPropertyDocblock' => [
                 'code' => '<?php
                     class Foo {
@@ -1934,7 +1949,7 @@ final class AnnotationTest extends TestCase
             ],
             'objectWithPropertiesAnnotationNoMatchingProperty' => [
                 'code' => '<?php
-                    /** 
+                    /**
                      * @param object{foo:string} $o
                      * @psalm-mutation-free
                       */
@@ -1968,8 +1983,8 @@ final class AnnotationTest extends TestCase
             ],
             'nonEmptyArrayCalledWithEmpty' => [
                 'code' => '<?php
-                    /** 
-                     * @param non-empty-array<string> $arr 
+                    /**
+                     * @param non-empty-array<string> $arr
                      */
                     function foo(array $arr) : void {
                         foreach ($arr as $a) {}
@@ -1983,7 +1998,7 @@ final class AnnotationTest extends TestCase
                 'code' => '<?php
                     namespace ns;
 
-                    /** 
+                    /**
                      * @param non-empty-array<string> $arr
                      */
                     function foo(array $arr) : void {
