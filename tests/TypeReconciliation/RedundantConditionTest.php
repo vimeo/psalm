@@ -141,6 +141,35 @@ final class RedundantConditionTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'noRedundantConditionForAnUnchangedArgumentInStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    function foo(array $type): void {
+                        if (count($type) && is_object($type[0]) && rand(0, 1) && rand(0, 1)) {
+                            return;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedIntArrayOffset'],
+            ],
+            'noRedundantConditionForAnUnchangedPropertyArgumentInStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class Bag {
+                        /** @var array<int, mixed> */
+                        public array $items = [];
+                    }
+
+                    function foo(Bag $bag): void {
+                        if (count($bag->items) && is_object($bag->items[0]) && rand(0, 1) && rand(0, 1)) {
+                            return;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedIntArrayOffset'],
+            ],
             'noRedundantConditionAfterDocblockTypeNullCheck' => [
                 'code' => '<?php
                     class A {
