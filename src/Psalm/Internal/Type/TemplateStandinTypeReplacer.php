@@ -749,8 +749,11 @@ final class TemplateStandinTypeReplacer
         bool $was_single,
         bool &$had_template,
     ): array {
+        // the templates of the class being analysed are the types of the object the code runs for, unless the
+        // result is for another object: the receiver of a call (`$other->add()` inside the class of `$other`) or
+        // the object a `new` constructs
         if ($atomic_type->defining_class === $calling_class
-            && $template_result->constructed_class !== $calling_class
+            && !$template_result->isForAnotherObject($calling_class)
         ) {
             return [$atomic_type];
         }

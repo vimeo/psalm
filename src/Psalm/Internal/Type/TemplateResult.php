@@ -77,6 +77,17 @@ final class TemplateResult
     }
 
     /**
+     * Whether the bindings are those of another object than the one code of $class runs for: the receiver of a
+     * call (read-only) or the object a `new` of $class constructs
+     *
+     * @psalm-mutation-free
+     */
+    public function isForAnotherObject(string $class): bool
+    {
+        return $this->readonly || $this->constructed_class === $class;
+    }
+
+    /**
      * @psalm-capabilities read-props
      */
     public function merge(TemplateResult $result): TemplateResult
