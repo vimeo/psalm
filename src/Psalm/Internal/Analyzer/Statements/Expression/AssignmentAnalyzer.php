@@ -947,7 +947,14 @@ final class AssignmentAnalyzer
                 }
             }
 
-            $parent_nodes = $context->vars_in_scope[$var_comment->var_id]->parent_nodes ?? [];
+            $existing_var_type = $context->vars_in_scope[$var_comment->var_id] ?? null;
+
+            // what was known about the elements of the previous type doesn't hold for the declared one
+            if ($existing_var_type !== null && $existing_var_type->getId() !== $var_comment_type->getId()) {
+                $context->removeDescendents($var_comment->var_id, $existing_var_type, $var_comment_type);
+            }
+
+            $parent_nodes = $existing_var_type->parent_nodes ?? [];
             $var_comment_type = $var_comment_type->setParentNodes($parent_nodes);
 
             $context->vars_in_scope[$var_comment->var_id] = $var_comment_type;
@@ -1585,7 +1592,6 @@ final class AssignmentAnalyzer
     /**
      * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $assign_var
      * @param list<VarDocblockComment> $var_comments
-     * @psalm-suppress ComplexMethod to be refactored
      */
     private static function analyzeDestructuringAssignment(
         StatementsAnalyzer $statements_analyzer,
