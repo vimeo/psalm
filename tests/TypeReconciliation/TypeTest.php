@@ -23,6 +23,16 @@ final class TypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'closedResourceIsTruthyLikeAnyResource' => [
+                'code' => '<?php
+                    /** @param resource|closed-resource|null $stream */
+                    function check($stream): bool {
+                        return $stream ? true : false;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'sealArray' => [
                 'code' => '<?php
                     /** @var array */
