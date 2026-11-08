@@ -682,14 +682,14 @@ final class AssertionReconciler extends Reconciler
             $type_params[] = $inferred;
         }
 
-        return new TGenericObject(
+        return (new TGenericObject(
             $child->value,
             $type_params,
             false,
             $child->is_static,
             $child->extra_types,
             $child->from_docblock,
-        );
+        ))->setIsStatic($child->is_static, $child->is_static_resolved);
     }
 
     private static function filterAtomicWithAnother(

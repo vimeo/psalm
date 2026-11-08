@@ -197,6 +197,14 @@ final class TypeExpander
         if ($return_type instanceof TNamedObject
             || $return_type instanceof TTemplateParam
         ) {
+            // a bound late static is the caller's: another called object binds no static in it or its type arguments
+            if ($return_type instanceof TNamedObject
+                && $return_type->is_static_resolved
+                && !is_string($static_class_type)
+            ) {
+                $static_class_type = null;
+            }
+
             if ($return_type->extra_types) {
                 $new_intersection_types = [];
 
