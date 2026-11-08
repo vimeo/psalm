@@ -549,7 +549,14 @@ final class AssertionReconciler extends Reconciler
                         && !($existing_var_type->hasLiteralClassString()
                             && $assertion instanceof IsAClass))
                 ) {
-                    if ($existing_var_type->from_docblock) {
+                    if ($existing_var_type->from_docblock
+                        || DocblockRefinement::isNeededFor(
+                            $codebase,
+                            $existing_var_type,
+                            new Union([$new_type_part]),
+                            false,
+                        )
+                    ) {
                         IssueBuffer::maybeAdd(
                             new DocblockTypeContradiction(
                                 'Cannot resolve types for ' . $key . ' - docblock-defined type '

@@ -633,6 +633,7 @@ final class SimpleAssertionReconciler extends Reconciler
         bool $is_equality,
     ): Union {
         $old_var_type_string = $existing_var_type->getId();
+        $original_var_type = $existing_var_type;
         $existing_var_type = $existing_var_type->getBuilder();
 
         if ($existing_var_type->hasType('array')) {
@@ -739,7 +740,7 @@ final class SimpleAssertionReconciler extends Reconciler
             ) {
                 if ($key && $code_location) {
                     self::triggerIssueForImpossible(
-                        $existing_var_type,
+                        $original_var_type,
                         $old_var_type_string,
                         $key,
                         $assertion,

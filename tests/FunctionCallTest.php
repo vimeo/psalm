@@ -3637,7 +3637,7 @@ final class FunctionCallTest extends TestCase
                     function f(array $arr): void {
                         assert(array_is_list($arr));
                     }',
-                'error_message' => 'RedundantCondition',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
@@ -3647,7 +3647,7 @@ final class FunctionCallTest extends TestCase
                     function f(array $arr): void {
                         assert(array_is_list($arr));
                     }',
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
@@ -3657,7 +3657,7 @@ final class FunctionCallTest extends TestCase
                     function f(array $arr): void {
                         assert(array_is_list($arr));
                     }',
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
@@ -3667,7 +3667,7 @@ final class FunctionCallTest extends TestCase
                     function f(array $arr): void {
                         assert(array_is_list($arr));
                     }',
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
@@ -3683,7 +3683,7 @@ final class FunctionCallTest extends TestCase
                     function f(array $arr): void {
                         assertIntList($arr);
                     }',
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25',
             ],
             'passingObjectToStringableObjectParam' => [
                 'code' => '<?php

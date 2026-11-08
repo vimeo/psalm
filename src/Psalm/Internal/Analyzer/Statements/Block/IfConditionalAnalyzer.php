@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Internal\Scope\IfScope;
+use Psalm\Internal\Type\DocblockRefinement;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
@@ -329,7 +330,7 @@ final class IfConditionalAnalyzer
 
         if ($type !== null) {
             if ($type->isAlwaysFalsy()) {
-                if ($type->from_docblock) {
+                if ($type->from_docblock || DocblockRefinement::hasRefinement($type)) {
                     IssueBuffer::maybeAdd(
                         new DocblockTypeContradiction(
                             'Operand of type ' . $type->getId() . ' is always falsy',
@@ -351,7 +352,7 @@ final class IfConditionalAnalyzer
             } elseif ($type->isAlwaysTruthy() &&
                 (!$stmt instanceof PhpParser\Node\Expr\Assign || $emit_redundant_with_assignation)
             ) {
-                if ($type->from_docblock) {
+                if ($type->from_docblock || DocblockRefinement::hasRefinement($type)) {
                     IssueBuffer::maybeAdd(
                         new RedundantConditionGivenDocblockType(
                             'Operand of type ' . $type->getId() . ' is always truthy',

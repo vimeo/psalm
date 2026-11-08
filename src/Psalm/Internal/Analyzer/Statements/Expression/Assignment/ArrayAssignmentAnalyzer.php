@@ -24,6 +24,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Type\DocblockRefinement;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\ImpurePropertyAssignment;
@@ -259,7 +260,8 @@ final class ArrayAssignmentAnalyzer
 
         $new_child_type = $new_child_type->getBuilder();
         $new_child_type->removeType('null');
-        $new_child_type = $new_child_type->freeze();
+        // the code wrote to the array, so its refinements no longer come from the docblock alone
+        $new_child_type = DocblockRefinement::withoutRefinements($new_child_type->freeze());
 
         if (!$root_type->hasObjectType()) {
             $root_type = $new_child_type;
