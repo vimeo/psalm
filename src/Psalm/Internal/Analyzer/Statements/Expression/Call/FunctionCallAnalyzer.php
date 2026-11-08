@@ -449,11 +449,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         );
 
         if ($function_call_info->function_storage) {
-            if ($function_call_info->function_storage->assertions && $function_name instanceof PhpParser\Node\Name) {
+            $function_storage = $function_call_info->function_storage;
+
+            if ($function_storage->assertions && $function_name instanceof PhpParser\Node\Name) {
                 self::applyAssertionsToContext(
                     $function_name,
                     null,
-                    $function_call_info->function_storage->assertions,
+                    self::getAssertionsOnArgs($function_storage->assertions, $function_storage, $stmt->getArgs()),
                     $stmt->getArgs(),
                     $template_result,
                     $context,
@@ -461,24 +463,32 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 );
             }
 
-            if ($function_call_info->function_storage->if_true_assertions) {
+            if ($function_storage->if_true_assertions) {
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
                         static fn(Possibilities $assertion): Possibilities =>
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                        $function_call_info->function_storage->if_true_assertions,
+                        self::getAssertionsOnArgs(
+                            $function_storage->if_true_assertions,
+                            $function_storage,
+                            $stmt->getArgs(),
+                        ),
                     ),
                 );
             }
 
-            if ($function_call_info->function_storage->if_false_assertions) {
+            if ($function_storage->if_false_assertions) {
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
                         static fn(Possibilities $assertion): Possibilities =>
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                        $function_call_info->function_storage->if_false_assertions,
+                        self::getAssertionsOnArgs(
+                            $function_storage->if_false_assertions,
+                            $function_storage,
+                            $stmt->getArgs(),
+                        ),
                     ),
                 );
             }
