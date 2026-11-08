@@ -879,18 +879,6 @@ final class AssignmentAnalyzer
                 'by_ref' => $by_ref,
             ]);
 
-            /** @psalm-suppress UnusedMethodCall This actually has the side effect of generating issues */
-            $var_comment_type->check(
-                $statements_analyzer,
-                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                $statements_analyzer->getSuppressedIssues(),
-                [],
-                false,
-                false,
-                false,
-                $context,
-            );
-
             $type_location = null;
 
             if ($var_comment->type_start
@@ -903,16 +891,28 @@ final class AssignmentAnalyzer
                     $var_comment->type_end,
                     $var_comment->line_number,
                 );
+            }
 
-                if ($codebase->alter_code) {
-                    $codebase->classlikes->handleDocblockTypeInMigration(
-                        $codebase,
-                        $statements_analyzer,
-                        $var_comment_type,
-                        $type_location,
-                        $context->calling_method_id,
-                    );
-                }
+            /** @psalm-suppress UnusedMethodCall This actually has the side effect of generating issues */
+            $var_comment_type->check(
+                $statements_analyzer,
+                $type_location ?? new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getSuppressedIssues(),
+                [],
+                false,
+                false,
+                false,
+                $context,
+            );
+
+            if ($type_location && $codebase->alter_code) {
+                $codebase->classlikes->handleDocblockTypeInMigration(
+                    $codebase,
+                    $statements_analyzer,
+                    $var_comment_type,
+                    $type_location,
+                    $context->calling_method_id,
+                );
             }
 
             if (!$var_comment->var_id || $var_comment->var_id === $var_id) {
@@ -1585,7 +1585,6 @@ final class AssignmentAnalyzer
     /**
      * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $assign_var
      * @param list<VarDocblockComment> $var_comments
-     * @psalm-suppress ComplexMethod to be refactored
      */
     private static function analyzeDestructuringAssignment(
         StatementsAnalyzer $statements_analyzer,
