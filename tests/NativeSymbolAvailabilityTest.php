@@ -805,6 +805,21 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'php_version' => '8.5',
         ];
 
+        yield 'constantFunctionGuardedByPhpVersionId' => [
+            'code' => '<?php
+                function f(): int {
+                    if (PHP_VERSION_ID >= 80600) {
+                        return constant("ARRAY_FILTER_USE_VALUE");
+                    }
+
+                    return 0;
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.5',
+        ];
+
         yield 'constantGuardedByDefined' => [
             'code' => '<?php
                 function a(): int {
@@ -1165,6 +1180,35 @@ final class NativeSymbolAvailabilityTest extends TestCase
                 }
             ',
             'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:40 - Const'
+                . ' ARRAY_FILTER_USE_VALUE is not defined for the analysed PHP version 8.5'
+                . ' (it was introduced in PHP 8.6',
+            'error_levels' => [],
+            'php_version' => '8.5',
+        ];
+
+        yield 'constantFetchedBeforeItsPolyfillIsDefined' => [
+            'code' => '<?php
+                function f(): int {
+                    $x = ARRAY_FILTER_USE_VALUE;
+                    define("ARRAY_FILTER_USE_VALUE", 7);
+
+                    return $x;
+                }
+            ',
+            'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:26 - Const'
+                . ' ARRAY_FILTER_USE_VALUE is not defined for the analysed PHP version 8.5'
+                . ' (it was introduced in PHP 8.6',
+            'error_levels' => [],
+            'php_version' => '8.5',
+        ];
+
+        yield 'constantFunctionBelowItsVersion' => [
+            'code' => '<?php
+                function f(): int {
+                    return constant("ARRAY_FILTER_USE_VALUE");
+                }
+            ',
+            'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:28 - Const'
                 . ' ARRAY_FILTER_USE_VALUE is not defined for the analysed PHP version 8.5'
                 . ' (it was introduced in PHP 8.6',
             'error_levels' => [],

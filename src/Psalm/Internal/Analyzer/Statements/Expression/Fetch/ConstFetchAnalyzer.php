@@ -106,26 +106,14 @@ final class ConstFetchAnalyzer
                     $fq_const_name = Type::getFQCLNFromString($const_name, $statements_analyzer->getAliases());
                 }
 
-                if ($const_type !== null && $context->check_consts) {
-                    $since_php_version_id = self::getStubSincePhpVersionId(
+                if ($const_type !== null) {
+                    self::reportConstUnavailableForPhpVersion(
                         $statements_analyzer,
+                        $const_name,
                         $fq_const_name,
                         $context,
+                        $stmt,
                     );
-
-                    if ($since_php_version_id !== null
-                        && ($codebase->getGuardedPhpVersionId($context) ?? $codebase->analysis_php_version_id)
-                            < $since_php_version_id
-                    ) {
-                        IssueBuffer::maybeAdd(
-                            new UndefinedConstant(
-                                'Const ' . $const_name . ' '
-                                    . $codebase->getUnavailableSymbolMessageSuffix($since_php_version_id),
-                                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
-                    }
                 }
 
                 $codebase->analyzer->addNodeReference(
@@ -451,10 +439,10 @@ final class ConstFetchAnalyzer
 
         $file_storage = $codebase->file_storage_provider->get($statements_analyzer->getRootFilePath());
 
-        // a constant defined inside the function (see ExpressionScanner::scan) is not known to the context yet
-        // where only the scanned declarations are available, e.g. when scraping the assertions of a condition
+        // Without a context (when scraping the assertions of a condition) a constant defined in the enclosing
+        // function (see ExpressionScanner::scan) is only known from its scanned declarations
         $source = $statements_analyzer->getSource();
-        $defined_constants = $source instanceof FunctionLikeAnalyzer
+        $defined_constants = $context === null && $source instanceof FunctionLikeAnalyzer
             ? $source->getFunctionLikeStorage($statements_analyzer)->defined_constants
             : [];
 
@@ -468,6 +456,40 @@ final class ConstFetchAnalyzer
         }
 
         return $since_php_version_id;
+    }
+
+    /**
+     * Reports a constant that a stub introduced in a PHP version newer than the one the code runs on, unless
+     * a project constant or a version guard covers it.
+     */
+    public static function reportConstUnavailableForPhpVersion(
+        StatementsAnalyzer $statements_analyzer,
+        string $const_name,
+        string $fq_const_name,
+        Context $context,
+        PhpParser\Node $location_node,
+    ): void {
+        if (!$context->check_consts) {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $since_php_version_id = self::getStubSincePhpVersionId($statements_analyzer, $fq_const_name, $context);
+
+        if ($since_php_version_id === null
+            || ($codebase->getGuardedPhpVersionId($context) ?? $codebase->analysis_php_version_id)
+                >= $since_php_version_id
+        ) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new UndefinedConstant(
+                'Const ' . $const_name . ' ' . $codebase->getUnavailableSymbolMessageSuffix($since_php_version_id),
+                new CodeLocation($statements_analyzer->getSource(), $location_node),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
     }
 
     /**
