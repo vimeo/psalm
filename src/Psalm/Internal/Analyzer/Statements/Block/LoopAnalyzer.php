@@ -347,6 +347,9 @@ final class LoopAnalyzer
                                 !== $pre_loop_context->vars_in_scope[$var_id]->getId()
                             || $continue_context->vars_in_scope[$var_id]->from_docblock
                                 !== $pre_loop_context->vars_in_scope[$var_id]->from_docblock
+                            // the value of an iteration is not the one the last one ended with
+                            || array_keys($continue_context->vars_in_scope[$var_id]->parent_nodes)
+                                !== array_keys($pre_loop_context->vars_in_scope[$var_id]->parent_nodes)
                         )
                     ) {
                         if (isset($pre_loop_context->vars_in_scope[$var_id])) {
