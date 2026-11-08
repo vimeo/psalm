@@ -163,6 +163,26 @@ final class UnusedCodeTest extends TestCase
         );
     }
 
+    public function testTheArgumentsOfACallOfAMissingClassAreNotAnalysedWhenItsIssueIsSuppressed(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('UndefinedClass', Config::REPORT_SUPPRESS);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                Missing::call($undefined);',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            [],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
     public function testDeadDirectCallDoesNotTriggerUnusedReturnOnLiveOverride(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;

@@ -257,8 +257,8 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
                 if (!$does_class_exist) {
                     // PHP resolves the class first: the arguments of a call of a class that is missing are never
-                    // evaluated, but where the class isn't checked (null) the call may well run
-                    if ($does_class_exist === null) {
+                    // evaluated, but where the classes aren't checked the call may well run
+                    if (!$context->check_classes) {
                         ArgumentsAnalyzer::analyze(
                             $statements_analyzer,
                             $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
