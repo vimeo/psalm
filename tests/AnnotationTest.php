@@ -212,6 +212,64 @@ final class AnnotationTest extends TestCase
 
                     takesMask(E_ERROR);',
             ],
+            'propertyWithNonAsciiName' => [
+                'code' => '<?php
+                    /**
+                     * @property list<string> $bär
+                     */
+                    final class A {
+                        /**
+                         * @return mixed
+                         */
+                        public function __get(string $name) {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @return list<string>
+                     */
+                    function f(A $a): array {
+                        return $a->bär;
+                    }',
+            ],
+            'globalWithNonAsciiName' => [
+                'code' => '<?php
+                    /**
+                     * @global list<string> $bär
+                     * @return list<string>
+                     */
+                    function f(): array {
+                        global $bär;
+
+                        return $bär;
+                    }',
+            ],
+            'paramOutWithNonAsciiName' => [
+                'code' => '<?php
+                    /**
+                     * @param-out list<int> $föö
+                     */
+                    function f(array &$föö): void {
+                        $föö = [1];
+                    }
+
+                    $x = [];
+                    f($x);',
+                'assertions' => [
+                    '$x' => 'list<int>',
+                ],
+            ],
+            'paramWithNonAsciiName' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string> $bär
+                     * @return list<string>
+                     */
+                    function f(array $bär): array {
+                        return $bär;
+                    }',
+            ],
             'globalDocblockWithAFunctionTemplate' => [
                 'code' => '<?php
                     /**
