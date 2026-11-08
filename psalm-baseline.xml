@@ -82,7 +82,6 @@
     </ComplexMethod>
     <ImplicitToStringCast>
       <code><![CDATA[$config_xml['errorLevel']]]></code>
-      <code><![CDATA[$stub_file['name']]]></code>
     </ImplicitToStringCast>
     <ImpureStaticProperty>
       <code><![CDATA[self::$instance]]></code>
@@ -585,13 +584,6 @@
       <code><![CDATA[$var_id+1]]></code>
     </InvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[$assertion->rule[0]]]></code>
-      <code><![CDATA[$assertion->rule[0]]]></code>
-      <code><![CDATA[$assertion->rule[0]]]></code>
-      <code><![CDATA[$assertion->rule[0]]]></code>
-      <code><![CDATA[$assertion->rule[0]]]></code>
-      <code><![CDATA[$assertion->rule[0]]]></code>
-      <code><![CDATA[$assertion->rule[0]]]></code>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>

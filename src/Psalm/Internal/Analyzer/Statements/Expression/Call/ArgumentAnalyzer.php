@@ -1787,6 +1787,7 @@ final class ArgumentAnalyzer
                                     $function_id,
                                     $arg_location,
                                     false,
+                                    $context,
                                 ) === false
                             ) {
                                 return;
