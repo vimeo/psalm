@@ -718,7 +718,7 @@ final class PropertyTypeTest extends TestCase
             }
         }
 
-        self::assertSame(['UndefinedDocblockClass src/parent.php:7'], $issues);
+        self::assertSame(['UndefinedDocblockClass src' . DIRECTORY_SEPARATOR . 'parent.php:7'], $issues);
     }
 
     /**
