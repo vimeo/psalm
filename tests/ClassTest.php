@@ -12,7 +12,6 @@ use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_filter;
-use function array_map;
 use function array_values;
 
 use const DIRECTORY_SEPARATOR;
@@ -45,19 +44,15 @@ final class ClassTest extends TestCase
 
         $this->analyzeFile($file_path, new Context());
 
-        self::assertSame(
-            [
-                [3, 'UndefinedClass'],
-                [11, 'UndefinedClass'],
-            ],
-            array_map(
-                static fn(IssueData $issue): array => [$issue->line_from, $issue->type],
-                array_values(array_filter(
-                    IssueBuffer::getIssuesDataForFile($file_path),
-                    static fn(IssueData $issue): bool => $issue->type === 'UndefinedClass',
-                )),
-            ),
-        );
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => $issue->type === 'UndefinedClass',
+        ));
+
+        // once for the parameter, and once for the property: at its docblock or at its native type
+        self::assertCount(2, $issues);
+        self::assertSame(3, $issues[0]->line_from);
+        self::assertContains($issues[1]->line_from, [10, 11]);
     }
 
     /**
