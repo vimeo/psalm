@@ -83,12 +83,10 @@ final class ConstFetchAnalyzer
                     return;
                 }
     
-                $is_fully_qualified = $stmt->name instanceof PhpParser\Node\Name\FullyQualified;
-
                 $const_type = self::getConstType(
                     $statements_analyzer,
                     $const_name,
-                    $is_fully_qualified,
+                    $stmt->name instanceof PhpParser\Node\Name\FullyQualified,
                     $context,
                 );
 
@@ -99,11 +97,19 @@ final class ConstFetchAnalyzer
 
                 $codebase = $statements_analyzer->getCodebase();
 
+                $aliased_constants = $statements_analyzer->getAliases()->constants;
+                if (isset($aliased_constants[$const_name])) {
+                    $fq_const_name = $aliased_constants[$const_name];
+                } elseif ($stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
+                    $fq_const_name = $const_name;
+                } else {
+                    $fq_const_name = Type::getFQCLNFromString($const_name, $statements_analyzer->getAliases());
+                }
+
                 if ($const_type !== null && $context->check_consts) {
                     $since_php_version_id = self::getStubSincePhpVersionId(
                         $statements_analyzer,
-                        $const_name,
-                        $is_fully_qualified,
+                        $fq_const_name,
                         $context,
                     );
 
@@ -120,15 +126,6 @@ final class ConstFetchAnalyzer
                             $statements_analyzer->getSuppressedIssues(),
                         );
                     }
-                }
-
-                $aliased_constants = $statements_analyzer->getAliases()->constants;
-                if (isset($aliased_constants[$const_name])) {
-                    $fq_const_name = $aliased_constants[$const_name];
-                } elseif ($stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
-                    $fq_const_name = $const_name;
-                } else {
-                    $fq_const_name = Type::getFQCLNFromString($const_name, $statements_analyzer->getAliases());
                 }
 
                 $codebase->analyzer->addNodeReference(
@@ -430,20 +427,10 @@ final class ConstFetchAnalyzer
      */
     public static function getStubSincePhpVersionId(
         StatementsAnalyzer $statements_analyzer,
-        string $const_name,
-        bool $is_fully_qualified,
+        string $fq_const_name,
         ?Context $context,
     ): ?int {
         $codebase = $statements_analyzer->getCodebase();
-        $aliased_constants = $statements_analyzer->getAliases()->constants;
-
-        if (isset($aliased_constants[$const_name])) {
-            $fq_const_name = $aliased_constants[$const_name];
-        } elseif ($is_fully_qualified) {
-            $fq_const_name = $const_name;
-        } else {
-            $fq_const_name = Type::getFQCLNFromString($const_name, $statements_analyzer->getAliases());
-        }
 
         $const_name_parts = explode('\\', $fq_const_name);
         $const_name = array_pop($const_name_parts);

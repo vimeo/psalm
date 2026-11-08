@@ -937,7 +937,6 @@ final class AssertionFinder
             $since_php_version_id = ConstFetchAnalyzer::getStubSincePhpVersionId(
                 $source,
                 ltrim($args[0]->value->value, '\\'),
-                true,
                 null,
             );
         } elseif (in_array($function_name, ['class_exists', 'interface_exists', 'enum_exists'], true)) {
