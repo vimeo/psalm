@@ -535,18 +535,8 @@ final class PartialApplicationAnalyzer
             // read like an ordinary by-reference argument: a missing offset is created, not an empty access
             $was_inside_by_ref_offset = $context->inside_by_ref_offset;
             $context->inside_by_ref_offset = $location instanceof ArrayDimFetch;
-            $suppress_empty_array_access = !$location instanceof Variable
-                && !isset($statements_analyzer->getSuppressedIssues()['EmptyArrayAccess']);
-
-            if ($suppress_empty_array_access) {
-                $statements_analyzer->addSuppressedIssues(['EmptyArrayAccess']);
-            }
 
             $result = ExpressionAnalyzer::analyze($statements_analyzer, $location, $context);
-
-            if ($suppress_empty_array_access) {
-                $statements_analyzer->removeSuppressedIssues(['EmptyArrayAccess']);
-            }
 
             $context->inside_by_ref_offset = $was_inside_by_ref_offset;
 
@@ -613,15 +603,26 @@ final class PartialApplicationAnalyzer
             AssignmentAnalyzer::assignByRefParam($statements_analyzer, $location, $param_type, $type, $context, false);
         } elseif ($location instanceof ArrayDimFetch) {
             // PHP creates a missing item, but a property holding the array is not assigned
-            if (ArrayAssignmentAnalyzer::updateArrayType(
-                $statements_analyzer,
-                $location,
-                null,
-                $type,
-                $context,
-                true,
-                false,
-            ) === false) {
+            $node_data = $statements_analyzer->node_data;
+            $operands = ArrayAssignmentAnalyzer::getOperands($location);
+            $node_data->markEvaluated($operands);
+
+            try {
+                $updated = ArrayAssignmentAnalyzer::updateArrayType(
+                    $statements_analyzer,
+                    $location,
+                    null,
+                    $type,
+                    $context,
+                    true,
+                    false,
+                    true,
+                );
+            } finally {
+                $node_data->unmarkEvaluated($operands);
+            }
+
+            if ($updated === false) {
                 return false;
             }
         } elseif ($var_id !== null) {

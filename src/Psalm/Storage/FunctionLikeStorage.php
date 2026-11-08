@@ -48,6 +48,8 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public ?Union $signature_return_type = null;
 
+    public bool $has_tentative_return_type = false;
+
     public ?CodeLocation $signature_return_type_location = null;
 
     public ?string $cased_name = null;
@@ -56,6 +58,15 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * @var array<int, string>
      */
     public array $suppressed_issues = [];
+
+    /**
+     * The subset of $suppressed_issues written in this function-like's own docblock, keyed by the
+     * char offset of the issue name. Plugins append to $suppressed_issues, never to this, so only
+     * these entries have a source location to report as unused.
+     *
+     * @var array<int, string>
+     */
+    public array $docblock_suppressed_issues = [];
 
     public ?bool $deprecated = null;
 
