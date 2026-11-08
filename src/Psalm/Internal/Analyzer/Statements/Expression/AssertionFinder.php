@@ -44,6 +44,7 @@ use Psalm\Issue\UnevaluatedCode;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\BinaryOp\VirtualNotIdentical;
+use Psalm\Node\Expr\VirtualArrayDimFetch;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Storage\Assertion\DoesNotHaveAtLeastCount;
@@ -115,6 +116,7 @@ use function is_int;
 use function is_numeric;
 use function is_string;
 use function ltrim;
+use function preg_match;
 use function sprintf;
 use function str_ends_with;
 use function str_replace;
@@ -1146,6 +1148,17 @@ final class AssertionFinder
                     if ($var_id) {
                         $if_types[$var_id] = [$newRules];
                     }
+                } elseif (is_string($assertion->var_id) && self::isArrayOffsetAssertionId($assertion->var_id)) {
+                    $offset_var_id = self::getArrayOffsetVarId(
+                        $assertion->var_id,
+                        $expr->getArgs(),
+                        $this_class_name,
+                        $source,
+                    );
+
+                    if ($offset_var_id !== null && $assertion->rule !== []) {
+                        $if_types[$offset_var_id] = [$assertion->rule];
+                    }
                 } elseif (is_string($assertion->var_id)) {
                     $is_function = str_ends_with($assertion->var_id, '()');
                     $exploded_id = explode('->', $assertion->var_id);
@@ -1278,6 +1291,20 @@ final class AssertionFinder
 
                     if ($var_id) {
                         $if_types[$var_id] = self::negateAlternatives($newRules);
+                    }
+                } elseif (is_string($assertion->var_id) && self::isArrayOffsetAssertionId($assertion->var_id)) {
+                    $offset_var_id = self::getArrayOffsetVarId(
+                        $assertion->var_id,
+                        $expr->getArgs(),
+                        $this_class_name,
+                        $source,
+                    );
+
+                    if ($offset_var_id !== null && $assertion->rule !== []) {
+                        $if_types[$offset_var_id] = [array_map(
+                            static fn(Assertion $rule): Assertion => $rule->getNegation(),
+                            $assertion->rule,
+                        )];
                     }
                 } elseif (is_string($assertion->var_id)) {
                     $is_function = str_ends_with($assertion->var_id, '()');
@@ -4424,6 +4451,67 @@ final class AssertionFinder
                 }
             }
         }
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function isArrayOffsetAssertionId(string $var_id): bool
+    {
+        return preg_match('/^\d+:\w+\[\d+:\w+]$/', $var_id) === 1;
+    }
+
+    /**
+     * The id of the offset of the argument that an assertion on `<array index>:<array name>[<key index>:<key name>]`
+     * is about, such as `$c[0]` or `$c[$key]`: null if the arguments don't name one
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     */
+    public static function getArrayOffsetVarId(
+        string $var_id,
+        array $args,
+        ?string $this_class_name,
+        FileSource $source,
+    ): ?string {
+        if (preg_match('/^(\d+):(\w+)\[(\d+):(\w+)]$/', $var_id, $matches) !== 1
+            || !isset($matches[1], $matches[2], $matches[3], $matches[4])
+        ) {
+            return null;
+        }
+
+        $array_arg = self::getArgumentOfParameter($args, (int) $matches[1], $matches[2]);
+        $key_arg = self::getArgumentOfParameter($args, (int) $matches[3], $matches[4]);
+
+        if ($array_arg === null || $key_arg === null) {
+            return null;
+        }
+
+        return ExpressionIdentifier::getExtendedVarId(
+            new VirtualArrayDimFetch($array_arg->value, $key_arg->value),
+            $this_class_name,
+            $source,
+        );
+    }
+
+    /**
+     * The argument passed for the parameter at $index called $name: by its name, or by its position if it isn't named
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     * @psalm-capabilities read-props
+     */
+    private static function getArgumentOfParameter(array $args, int $index, string $name): ?PhpParser\Node\Arg
+    {
+        foreach ($args as $position => $arg) {
+            if ($arg->unpack) {
+                return null;
+            }
+
+            if ($arg->name !== null ? $arg->name->name === $name : $position === $index) {
+                return $arg;
+            }
+        }
+
+        return null;
     }
 
     /**
