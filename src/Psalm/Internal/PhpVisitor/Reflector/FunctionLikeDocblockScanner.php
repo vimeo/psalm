@@ -103,6 +103,7 @@ final class FunctionLikeDocblockScanner
         string $cased_function_id,
     ): void {
         $storage->docblock_issues = [...$storage->docblock_issues, ...$docblock_info->docblock_issues];
+        $file_storage->scan_issues = [...$file_storage->scan_issues, ...$docblock_info->scan_issues];
 
         self::handleUnexpectedTags($docblock_info, $storage, $stmt, $file_scanner, $cased_function_id);
 
@@ -217,6 +218,7 @@ final class FunctionLikeDocblockScanner
         }
 
         $storage->suppressed_issues = $docblock_info->suppressed_issues;
+        $storage->docblock_suppressed_issues = $docblock_info->suppressed_issues;
 
         foreach ($docblock_info->throws as [$throw, $offset, $line]) {
             $throw_location = new DocblockTypeLocation(
@@ -313,14 +315,31 @@ final class FunctionLikeDocblockScanner
 
         foreach ($docblock_info->globals as $global) {
             try {
-                $storage->global_types[$global['name']] = TypeParser::parseTokens(
+                $global_type = TypeParser::parseTokens(
                     TypeTokenizer::getFullyQualifiedTokens(
                         $global['type'],
                         $aliases,
-                        null,
+                        $function_template_types + $class_template_types,
                         $type_aliases,
+                        $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null,
                     ),
                     null,
+                    $function_template_types + $class_template_types,
+                    $type_aliases,
+                    true,
+                );
+                $storage->global_types[$global['name']] = $global_type;
+                /** @psalm-suppress UnusedMethodCall */
+                $global_type->queueClassLikesForScanning(
+                    $codebase,
+                    $file_storage,
+                    $function_template_types + $class_template_types,
+                );
+                $storage->global_type_locations[$global['name']] = new DocblockTypeLocation(
+                    $file_scanner,
+                    $global['start'],
+                    $global['end'],
+                    $global['line_number'],
                 );
             } catch (TypeParseTreeException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
@@ -411,14 +430,19 @@ final class FunctionLikeDocblockScanner
         $location = new CodeLocation($file_scanner, $stmt, null, true);
 
         foreach ($docblock_info->added_taints as $taint) {
-            $t = $codebase->getOrRegisterTaint($taint, $location);
+            $t = FunctionLikeDocblockParser::registerTaint($codebase, $taint, $location, $file_storage->scan_issues);
             if ($t !== null) {
                 $storage->added_taints |= $t;
             }
         }
 
         foreach ($docblock_info->removed_taints as $removed_taint) {
-            $t = $codebase->getOrRegisterTaint($removed_taint, $location);
+            $t = FunctionLikeDocblockParser::registerTaint(
+                $codebase,
+                $removed_taint,
+                $location,
+                $file_storage->scan_issues,
+            );
             if ($t !== null) {
                 $storage->removed_taints |= $t;
             }

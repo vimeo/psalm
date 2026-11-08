@@ -18,13 +18,16 @@ const ALLOWED_PATHS = [
     '~^docs/running_psalm/(error_levels|issues)\.md$~',
 ];
 
-// arrays, scalars, class constants and ::class names; a ( may only follow array or declare, so nothing can be called
+// arrays, scalars, class constants and ::class names; a ( may only follow array or declare, so nothing can be called,
+// and a - may only precede an integer (callmaps have -1 keys)
 const ALLOWED_TOKENS = [
     T_OPEN_TAG, T_WHITESPACE, T_COMMENT, T_DOC_COMMENT, T_DECLARE, T_NAMESPACE, T_RETURN, T_ARRAY,
     T_FINAL, T_CLASS, T_PUBLIC, T_CONST, T_STRING, T_NAME_QUALIFIED, T_NAME_FULLY_QUALIFIED, T_DOUBLE_COLON,
     T_CONSTANT_ENCAPSED_STRING, T_LNUMBER, T_DOUBLE_ARROW,
-    '[', ']', '(', ')', ',', ';', '=', '{', '}',
+    '[', ']', '(', ')', ',', ';', '=', '{', '}', '-',
 ];
+
+const IGNORED_TOKENS = [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT];
 
 /** @param list<string> $command */
 $run = static function (array $command): string {
@@ -92,13 +95,14 @@ foreach ($status_output === '' ? [] : explode("\0", $status_output) as $entry) {
         $type = is_array($token) ? $token[0] : $token;
         if (!in_array($type, ALLOWED_TOKENS, true)
             || ($type === '(' && $previous !== T_ARRAY && $previous !== T_DECLARE)
+            || ($previous === '-' && $type !== T_LNUMBER && !in_array($type, IGNORED_TOKENS, true))
         ) {
             $line = is_array($token) ? " on line $token[2]" : '';
             $errors[] = "$path: unexpected " . (is_int($type) ? token_name($type) : "'$type'") . $line;
             continue 2;
         }
 
-        if ($type !== T_WHITESPACE && $type !== T_COMMENT && $type !== T_DOC_COMMENT) {
+        if (!in_array($type, IGNORED_TOKENS, true)) {
             $previous = $type;
         }
     }
