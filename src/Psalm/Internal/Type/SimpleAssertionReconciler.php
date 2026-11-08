@@ -2003,7 +2003,9 @@ final class SimpleAssertionReconciler extends Reconciler
                 $redundant = false;
                 $existing_var_type->removeType($atomic_type->getKey());
             } elseif ($atomic_type instanceof TIntRange) {
-                if ($atomic_type->contains($assertion_value)) {
+                if ($atomic_type->min_bound !== null && $atomic_type->min_bound >= $assertion_value) {
+                    // if the whole range is greater than the assertion, the check is redundant
+                } elseif ($atomic_type->contains($assertion_value)) {
                     // if the range contains the assertion, the range must be adapted
                     $redundant = false;
                     $existing_var_type->removeType($atomic_type->getKey());
@@ -2024,8 +2026,6 @@ final class SimpleAssertionReconciler extends Reconciler
                     // if the range is lesser than the assertion, the type must be removed
                     $redundant = false;
                     $existing_var_type->removeType($atomic_type->getKey());
-                } elseif ($atomic_type->isGreaterThan($assertion_value)) {
-                    // if the range is greater than the assertion, the check is redundant
                 }
             } elseif ($atomic_type instanceof TLiteralInt) {
                 if ($atomic_type->value < $assertion_value) {
@@ -2117,7 +2117,9 @@ final class SimpleAssertionReconciler extends Reconciler
                 $redundant = false;
                 $existing_var_type->removeType($atomic_type->getKey());
             } elseif ($atomic_type instanceof TIntRange) {
-                if ($atomic_type->contains($assertion_value)) {
+                if ($atomic_type->max_bound !== null && $atomic_type->max_bound <= $assertion_value) {
+                    // if the whole range is lesser than the assertion, the check is redundant
+                } elseif ($atomic_type->contains($assertion_value)) {
                     // if the range contains the assertion, the range must be adapted
                     $redundant = false;
                     $existing_var_type->removeType($atomic_type->getKey());
@@ -2131,8 +2133,6 @@ final class SimpleAssertionReconciler extends Reconciler
                         $atomic_type->min_bound,
                         $max_bound,
                     ));
-                } elseif ($atomic_type->isLesserThan($assertion_value)) {
-                    // if the range is lesser than the assertion, the check is redundant
                 } elseif ($atomic_type->isGreaterThan($assertion_value)) {
                     // if the range is greater than the assertion, the type must be removed
                     $redundant = false;
