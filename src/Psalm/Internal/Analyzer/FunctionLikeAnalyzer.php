@@ -315,11 +315,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $codebase = $this->codebase;
         $project_analyzer = $this->getProjectAnalyzer();
 
-        if ($codebase->track_unused_suppressions && !isset($storage->suppressed_issues[0])) {
-            if (count($storage->suppressed_issues) === 1 // UnusedPsalmSuppress by itself should be marked as unused
-                || !$codebase->config->suppressesIssueType($storage->suppressed_issues, 'UnusedPsalmSuppress')
+        $docblock_suppressed_issues = $storage->docblock_suppressed_issues;
+
+        if ($codebase->track_unused_suppressions && $docblock_suppressed_issues !== []) {
+            if (count($docblock_suppressed_issues) === 1 // UnusedPsalmSuppress by itself should be marked as unused
+                || !$codebase->config->suppressesIssueType($docblock_suppressed_issues, 'UnusedPsalmSuppress')
             ) {
-                foreach ($storage->suppressed_issues as $offset => $issue_name) {
+                foreach ($docblock_suppressed_issues as $offset => $issue_name) {
                     IssueBuffer::addUnusedSuppression(
                         $storage->location !== null
                             ? $storage->location->file_path
@@ -1870,6 +1872,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                                 . ' does not match the given type ' . $param_type->getId(),
                             $function_param->type_location,
                         ),
+                        $storage->suppressed_issues,
                     );
                 }
 
@@ -1885,6 +1888,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                                 . ' can only be null, ' . $default_type->getId() . ' specified',
                             $function_param->type_location,
                         ),
+                        $storage->suppressed_issues,
                     );
                 }
             }
@@ -2861,6 +2865,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                     if ($this->function->name->name === '__construct'
                         && !$parent_storage->preserve_constructor_signature
+                        && !$parent_method_storage->abstract
                     ) {
                         continue;
                     }
