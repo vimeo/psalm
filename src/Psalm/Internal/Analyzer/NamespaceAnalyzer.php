@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Override;
 use PhpParser;
 use PhpParser\Node\Stmt\Namespace_;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Type;
@@ -94,6 +95,14 @@ final class NamespaceAnalyzer extends SourceAnalyzer
                 $context->collect_exceptions = $codebase->config->check_for_throws_in_global_scope;
             }
             $statements_analyzer->analyze($leftover_stmts, $context);
+
+            if ($statements_analyzer->owns_type_variable_tracker) {
+                $statements_analyzer->type_variable_tracker->reconcile(
+                    $codebase,
+                    new CodeLocation($this, $leftover_stmts[0]),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
         }
     }
 

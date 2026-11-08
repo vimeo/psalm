@@ -494,6 +494,157 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'unusedParamsOfMagicMethodsAreNotReported' => [
+                'code' => '<?php
+                    /**
+                     * @method string foo()
+                     * @method static string bar()
+                     */
+                    final class MethodTest
+                    {
+                        /** @param mixed[] $arguments */
+                        public function __call(string $name, array $arguments): string
+                        {
+                            return $name;
+                        }
+
+                        /** @param mixed[] $arguments */
+                        public static function __callStatic(string $name, array $arguments): string
+                        {
+                            return $name;
+                        }
+
+                        public function __get(string $name): string
+                        {
+                            return "x";
+                        }
+
+                        public function __set(string $name, mixed $value): void
+                        {
+                        }
+                    }
+
+                    $test = new MethodTest();
+                    echo $test->foo() . MethodTest::bar();
+                    echo $test->anything;
+                    $test->other = 1;',
+                'ignored_issues' => ['UndefinedMagicPropertyFetch', 'UndefinedMagicPropertyAssignment', 'MixedArgument'],
+            ],
+            'unusedVariableSuppressedOnItsStatement' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): void {
+                        /**
+                         * @psalm-suppress UnusedVariable
+                         */
+                        $a = 1;
+
+                        /** @psalm-suppress UnusedVariable */
+                        $b = 2;
+
+                        /** @psalm-suppress UnusedVariable */
+                        [$d, $e] = [1, 2];
+                    }
+
+                    /**
+                     * @psalm-suppress UnusedVariable
+                     */
+                    $global = 1;',
+            ],
+            'unusedVariableSuppressedOnABlockStatement' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(bool $b): void {
+                        /** @psalm-suppress UnusedVariable */
+                        if ($b) {
+                            $a = 1;
+                            $c = 2;
+                        }
+                    }',
+            ],
+            'unusedForeachValueSuppressedOnItsForeach' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-api
+                     * @param list<int> $values
+                     */
+                    function f(array $values): void {
+                        /** @psalm-suppress UnusedForeachValue */
+                        foreach ($values as $value) {
+                        }
+                    }',
+            ],
+            'unusedVariableSuppressionAlsoCoversTheForeachValue' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-api
+                     * @param list<int> $values
+                     */
+                    function f(array $values): void {
+                        /** @psalm-suppress UnusedVariable */
+                        foreach ($values as $value) {
+                        }
+                    }',
+            ],
+            'unusedVariableSuppressedInAClosure' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): Closure {
+                        return function (): int {
+                            /** @psalm-suppress UnusedVariable */
+                            $a = 1;
+
+                            return 2;
+                        };
+                    }',
+            ],
+            'usedResultOfAPureStaticMethodCall' => [
+                'code' => '<?php
+                    final class Math
+                    {
+                        /** @psalm-pure */
+                        public static function addOne(int $number): int
+                        {
+                            return $number + 1;
+                        }
+                    }
+
+                    /** @psalm-api */
+                    function f(): int {
+                        $a = Math::addOne(5);
+                        echo Math::addOne($a);
+
+                        return Math::addOne(Math::addOne(1));
+                    }',
+            ],
+            'unusedResultOfAnImpureStaticMethodCallIsNotReported' => [
+                'code' => '<?php
+                    final class Counter
+                    {
+                        public static int $count = 0;
+
+                        public static function increment(): int
+                        {
+                            return ++self::$count;
+                        }
+                    }
+
+                    Counter::increment();',
+            ],
+            'pureMethodCallAsTheLeftOperandOfACoalesceThatThrows' => [
+                'code' => '<?php
+                    final class A {
+                        /** @psalm-pure */
+                        public function getTransportType(): ?stdClass {
+                            return null;
+                        }
+                    }
+
+                    /** @psalm-api */
+                    function validate(A $a): void {
+                        $a->getTransportType() ?? throw new Exception("missing");
+                    }',
+            ],
             'argumentCastToStringDoesNotReportPossiblyInvalidCast' => [
                 'code' => '<?php
                     /** @psalm-api */
@@ -892,6 +1043,38 @@ final class UnusedCodeTest extends TestCase
                     }
 
                     takesCallable([C::class, "foo"]);',
+            ],
+            'methodUsedAsCallableArrayForArrayOrCallableParam' => [
+                'code' => '<?php
+                    final class C {
+                        private static int $x = 1;
+
+                        public static function foo() : void {
+                            echo self::$x;
+                        }
+                    }
+
+                    /** @param array|callable $c */
+                    function takesUnion($c) : void {
+                        if (is_callable($c)) {
+                            $c();
+                        }
+                    }
+
+                    takesUnion([C::class, "foo"]);',
+            ],
+            'plainArrayForArrayOrCallableParam' => [
+                'code' => '<?php
+                    /** @param array|callable $c */
+                    function takesUnion($c) : void {
+                        if (is_callable($c)) {
+                            $c();
+                        }
+                    }
+
+                    takesUnion(["Nope", "foo"]);
+                    takesUnion([1, 2]);',
+                'ignored_issues' => ['UndefinedClass'],
             ],
             'propertyAndMethodOverriddenDownstream' => [
                 'code' => '<?php
@@ -2186,6 +2369,80 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'callStaticOfAClassWithoutStaticMagicCallsIsReportedAsUnused' => [
+                'code' => '<?php
+                    final class Forwarder {
+                        /** @param mixed[] $arguments */
+                        public static function __callStatic(string $name, array $arguments): string
+                        {
+                            return $name;
+                        }
+
+                        public static function real(): string
+                        {
+                            return "real";
+                        }
+                    }
+
+                    echo Forwarder::real();',
+                'error_message' => 'PossiblyUnusedMethod',
+            ],
+            'unusedParamOfARegularPublicMethodIsStillReported' => [
+                'code' => '<?php
+                    final class Reader {
+                        public function read(string $path, string $unused): string
+                        {
+                            return $path;
+                        }
+                    }
+
+                    echo (new Reader())->read("x", "y");',
+                'error_message' => 'UnusedParam',
+            ],
+            'unusedVariableSuppressionDoesNotReachOtherStatements' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): void {
+                        /** @psalm-suppress UnusedVariable */
+                        $a = 1;
+                        $b = 2;
+                    }',
+                'error_message' => 'b is never referenced',
+            ],
+            'unusedVariableIsNotSuppressedByAnotherIssueType' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): void {
+                        /** @psalm-suppress UnusedForeachValue */
+                        $a = 1;
+                    }',
+                'error_message' => 'a is never referenced',
+            ],
+            'unusedVariableSuppressionOfAnUsedVariableIsUnused' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): int {
+                        /** @psalm-suppress UnusedVariable */
+                        $a = 1;
+
+                        return $a;
+                    }',
+                'error_message' => 'UnusedPsalmSuppress',
+            ],
+            'unusedResultOfAPureStaticMethodCall' => [
+                'code' => '<?php
+                    final class Math
+                    {
+                        /** @psalm-pure */
+                        public static function addOne(int $number): int
+                        {
+                            return $number + 1;
+                        }
+                    }
+
+                    Math::addOne(5);',
+                'error_message' => 'UnusedMethodCall',
+            ],
             'argumentStillReportsPossiblyInvalidArgumentWithUnusedCode' => [
                 'code' => '<?php
                     /**
