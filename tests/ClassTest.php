@@ -5,8 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_filter;
+use function array_values;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -14,6 +20,40 @@ final class ClassTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testAnUndefinedClassOfTheSameNativeAndDocblockTypeIsReportedOnce(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @param UndefinedClass $a
+                 */
+                function foo(UndefinedClass $a): void {
+                    echo 1;
+                }
+
+                final class A {
+                    /** @var UndefinedClass */
+                    public UndefinedClass $a;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => $issue->type === 'UndefinedClass',
+        ));
+
+        // once for the parameter, and once for the property: at its docblock or at its native type
+        self::assertCount(2, $issues);
+        self::assertSame(3, $issues[0]->line_from);
+        self::assertContains($issues[1]->line_from, [10, 11]);
+    }
 
     /**
      * @psalm-capabilities read-props|write-this-props|write-props
@@ -1276,6 +1316,46 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'undefinedClassParamWithTemplateDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $a
+                     */
+                    function foo(UndefinedClass $a): void {
+                        echo 1;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'undefinedClassParamWithMixedDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $a
+                     */
+                    function foo(UndefinedClass $a): void {
+                        echo 1;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'undefinedClassPropertyWithMixedDocblock' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var mixed */
+                        public UndefinedClass $a;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'undefinedClassPropertyWithTemplateDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class A {
+                        /** @var T */
+                        public UndefinedClass $a;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
             'elseOfAKnownTrueAndIsNotDeclared' => [
                 'code' => '<?php
                     if (function_exists("strlen") && function_exists("strpos")) {
