@@ -96,30 +96,75 @@ final class ConstantTest extends TestCase
         $this->addFile(
             $file1,
             '<?php
-                define("APP_START", microtime(true));
-                define("NOW", time());
-                define("START_TEXT", microtime());
+                namespace Foo {
+                    function time(): string {
+                        return "";
+                    }
+                }
+
+                namespace Bar {
+                    use function Foo\time;
+
+                    define("SHADOWED_TIME", time());
+                }
+
+                namespace Baz {
+                    use function microtime;
+
+                    define("IMPORTED_START", microtime(true));
+                }
+
+                namespace {
+                    define("APP_START", microtime(true));
+                    define("NOW", time());
+                    define("TIME_OF_DAY", gettimeofday(true));
+                    define("HOME", getenv("HOME"));
+                }
             ',
         );
 
         $this->addFile(
             $file2,
             '<?php
-                function elapsed(): float {
-                    return microtime(true) - APP_START;
+                function appStart(): void {
+                    $x = APP_START;
+                    /** @psalm-check-type-exact $x = float */;
                 }
 
-                function now(): int {
-                    return NOW;
+                function now(): void {
+                    $x = NOW;
+                    /** @psalm-check-type-exact $x = int<1, max> */;
                 }
 
-                function startText(): string {
-                    return START_TEXT;
+                function timeOfDay(): void {
+                    /** @psalm-suppress MixedAssignment */
+                    $x = TIME_OF_DAY;
+                    /** @psalm-check-type-exact $x = mixed */;
+                }
+
+                function home(): void {
+                    /** @psalm-suppress MixedAssignment */
+                    $x = HOME;
+                    /** @psalm-check-type-exact $x = mixed */;
+                }
+
+                function importedStart(): void {
+                    $x = IMPORTED_START;
+                    /** @psalm-check-type-exact $x = float */;
+                }
+
+                function shadowedTime(): void {
+                    /** @psalm-suppress MixedAssignment */
+                    $x = SHADOWED_TIME;
+                    /** @psalm-check-type-exact $x = mixed */;
                 }
             ',
         );
 
-        $this->analyzeFile($file1, new Context());
+        // Scan file1 without analyzing it, so file2 sees the types inferred by the scanner.
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->addFilesToAnalyze([$file1 => $file1]);
+        $codebase->scanFiles();
         $this->analyzeFile($file2, new Context());
     }
 

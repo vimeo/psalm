@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassConstantStorage;
@@ -34,9 +35,11 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
+use function array_filter;
 use function array_merge;
 use function array_values;
 use function count;
+use function in_array;
 use function is_string;
 use function strtolower;
 
@@ -530,45 +533,48 @@ final class SimpleTypeInferer
             ]);
         }
 
-        // Callers with $file_source analyze calls using richer node types.
+        // ArrayFilterParamsProvider and ArrayMultisortParamsProvider rely on calls inferring to null (#8905).
         if ($file_source === null
             && $stmt instanceof PhpParser\Node\Expr\FuncCall
             && $stmt->name instanceof PhpParser\Node\Name
             && !$stmt->isFirstClassCallable()
-            && !isset($aliases->functions[strtolower($stmt->name->toString())])
-            && ($callables = InternalCallMapHandler::getCallablesFromCallMap($stmt->name->toString()))
+            && strtolower($aliases->functions[$name = strtolower($stmt->name->toString())] ?? $name) === $name
+            && ($callables = InternalCallMapHandler::getCallablesFromCallMap($name))
         ) {
             if (count($callables) === 1) {
                 return $callables[0]->return_type;
             }
+
+            $arg_types = [];
             foreach ($stmt->getArgs() as $arg) {
-                $arg_type = self::infer(
-                    $codebase,
-                    $nodes,
-                    $arg->value,
-                    $aliases,
-                    null,
-                    $existing_class_constants,
-                    $fq_classlike_name,
-                );
-                if (!$arg_type || !($arg_type->isTrue() || $arg_type->isFalse() || $arg_type->isNull()
-                    || $arg_type->isSingleIntLiteral() || $arg_type->isSingleFloatLiteral())
-                ) {
-                    $return_types = [];
-                    foreach ($callables as $callable) {
-                        $return_types[] = $callable->return_type ?? Type::getMixed();
-                    }
-                    return Type::combineUnionTypeArray($return_types, null);
-                }
-                $nodes->setType($arg->value, $arg_type);
+                $value = $arg->value;
+                $arg_types[] = !$arg->unpack && !$arg->name
+                    && ($value instanceof PhpParser\Node\Scalar\Int_ || $value instanceof PhpParser\Node\Scalar\Float_
+                        || ($value instanceof PhpParser\Node\Expr\ConstFetch
+                            && in_array(strtolower($value->name->toString()), ['true', 'false', 'null'], true)))
+                    ? self::infer($codebase, $nodes, $value, $aliases)
+                    : null;
             }
-            return InternalCallMapHandler::getMatchingCallableFromCallMapOptions(
-                $codebase,
-                $callables,
-                $stmt->getArgs(),
-                $nodes,
-                $stmt->name->toString(),
-            )->return_type;
+
+            // Unique match only: the first compatible variant is wrong for `bool` params (e.g. gettimeofday).
+            $matches = [];
+            foreach ($callables as $callable) {
+                $params = $callable->params ?? [];
+                $required = count(array_filter($params, static fn($p): bool => !$p->is_optional && !$p->is_variadic));
+                $last = $params ? $params[count($params) - 1] : null;
+                if (count($arg_types) < $required || (count($arg_types) > count($params) && !$last?->is_variadic)) {
+                    continue;
+                }
+                foreach ($arg_types as $i => $arg_type) {
+                    $type = ($params[$i] ?? $last)?->type;
+                    if (!$arg_type || ($type && !UnionTypeComparator::isContainedBy($codebase, $arg_type, $type))) {
+                        continue 2;
+                    }
+                }
+                $matches[] = $callable;
+            }
+
+            return count($matches) === 1 ? $matches[0]->return_type : null;
         }
 
         return null;
