@@ -205,6 +205,87 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedMethodExistsOfABuiltinClassKeepsTheBranchPossible' => [
+                'code' => '<?php
+                    function f(DateTime $date): string {
+                        if (!method_exists($date, "format")) {
+                            return "no format";
+                        }
+
+                        return $date->format("c");
+                    }',
+                'assertions' => [],
+            ],
+            'negatedMethodExistsOfAClassInheritingTheMethodFromABuiltinClassKeepsTheBranchPossible' => [
+                'code' => '<?php
+                    final class MyDate extends DateTime {}
+
+                    function f(MyDate $date): string {
+                        if (!method_exists($date, "format")) {
+                            return "no format";
+                        }
+
+                        return $date->format("c");
+                    }',
+                'assertions' => [],
+            ],
+            'negatedMethodExistsOfAnObjectWithTheMethodKeepsItsType' => [
+                'code' => '<?php
+                    abstract class Platform {
+                        public function fold(): int {
+                            return 1;
+                        }
+                    }
+
+                    function getPlatform(): Platform {
+                        throw new Exception();
+                    }
+
+                    $platform = getPlatform();
+
+                    if (method_exists($platform, "fold")) {
+                        throw new Exception();
+                    }
+
+                    $after = $platform;',
+                'assertions' => ['$after' => 'Platform'],
+                'ignored_issues' => ['RedundantCondition'],
+            ],
+            'negatedMethodExistsOfAnObjectWithoutTheMethodNarrowsNothing' => [
+                'code' => '<?php
+                    class A {}
+
+                    function f(A $a): void {
+                        if (!method_exists($a, "bar")) {
+                            echo "no bar";
+                        }
+                    }',
+            ],
+            'negatedMethodExistsOfAnObjectOrAnotherType' => [
+                'code' => '<?php
+                    class A {
+                        public function bar(): void {}
+                    }
+
+                    class B {}
+
+                    function f(A|B $a): void {
+                        if (!method_exists($a, "bar")) {
+                            /** @psalm-check-type-exact $a = B */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'negatedMethodExistsOfAnObjectType' => [
+                'code' => '<?php
+                    function f(object $a): void {
+                        if (!method_exists($a, "bar")) {
+                            echo "no bar";
+                        }
+                    }',
+            ],
             'parentCallOfAStaticReturnTypeInAChildOfAGenericClass' => [
                 'code' => '<?php
                     /** @template T */
@@ -1686,6 +1767,59 @@ final class MethodCallTest extends TestCase
                         }
                     }',
             ],
+            'parentCallOfStaticReturnKeepsCallingClass' => [
+                'code' => '<?php
+                    abstract class P {
+                        public function copy(): static {
+                            return clone $this;
+                        }
+
+                        final public function __construct() {}
+
+                        public static function make(): static {
+                            return new static();
+                        }
+                    }
+
+                    class C extends P {
+                        public ?string $extra = null;
+
+                        public function copy(): static {
+                            $new = parent::copy();
+                            $new->extra = "a";
+
+                            return $new;
+                        }
+
+                        public static function make(): static {
+                            $new = parent::make();
+                            $new->extra = "b";
+
+                            return $new;
+                        }
+                    }',
+            ],
+            'parentCallOfStaticReturnInNonFinalSubclass' => [
+                'code' => '<?php
+                    interface I {}
+
+                    abstract class P implements I {
+                        public function copy(): static {
+                            return clone $this;
+                        }
+                    }
+
+                    class F extends P {
+                        public int $n = 0;
+
+                        public function copy(): static {
+                            $new = parent::copy();
+                            $new->n = 1;
+
+                            return $new;
+                        }
+                    }',
+            ],
             'pdoSqliteCreateFunctionTakesFlags' => [
                 'code' => '<?php
                     function register(PDO $pdo): void {
@@ -1705,6 +1839,19 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'negatedMethodExistsOfAnObjectWithTheMethod' => [
+                'code' => '<?php
+                    class A {
+                        public function bar(): void {}
+                    }
+
+                    function f(A $a): void {
+                        if (!method_exists($a, "bar")) {
+                            echo "no bar";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'methodMissingFromALaterTypeOfAUnionTemplateBound' => [
                 'code' => '<?php
                     final class Invoice {
