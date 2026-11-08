@@ -74,6 +74,62 @@ final class FunctionTemplateTest extends TestCase
                     '$r===' => 'int|null',
                 ],
             ],
+            'templateOrStringIsBoundToTheLiteralStringsWhenNothingElseIsLeft' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|string $arg
+                     * @return ArrayObject<int, T>
+                     */
+                    function wrap($arg) { throw new Exception(); }
+
+                    $w = wrap(random_int(0, 1) ? "a" : "b");',
+                'assertions' => [
+                    '$w===' => "ArrayObject<int, 'a'|'b'>",
+                ],
+            ],
+            'stringOrClassStringOfTheTemplateIsBoundByTheClassStringOfTheArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param string|class-string<T> $abstract
+                     * @return ($abstract is class-string<T> ? T : mixed)
+                     */
+                    function make($abstract) { throw new Exception(); }
+
+                    /** @var ArrayObject|class-string<ArrayObject> $h */
+                    $h = ArrayObject::class;
+                    $r = make($h);',
+                'assertions' => [
+                    '$r===' => 'ArrayObject[write-props]<array-key, mixed>',
+                ],
+                'ignored_issues' => ['PossiblyInvalidArgument'],
+            ],
+            'templateOrIterableOfTheTemplateIsBoundByTheIterablesOfTheArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @implements IteratorAggregate<TKey, TValue>
+                     */
+                    final class Coll implements IteratorAggregate {
+                        public function getIterator(): Iterator { throw new Exception(); }
+
+                        /**
+                         * @template TWrapValue
+                         * @param iterable<array-key, TWrapValue>|TWrapValue $value
+                         * @return Coll<array-key, TWrapValue>
+                         */
+                        public static function wrap($value): Coll { throw new Exception(); }
+                    }
+
+                    /** @var Coll<array-key, mixed>|array<array-key, mixed> $in */
+                    $in = [];
+                    $w = Coll::wrap($in);',
+                'assertions' => [
+                    '$w===' => 'Coll<array-key, mixed>',
+                ],
+            ],
             'negatedInstanceofNarrowsTheBoundOfATemplateParam' => [
                 'code' => '<?php
                     class File {
