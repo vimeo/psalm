@@ -512,6 +512,42 @@ final class UnusedCodeTest extends TestCase
                         }
                     }',
             ],
+            'unusedParamsOfMagicMethodsAreNotReported' => [
+                'code' => '<?php
+                    /**
+                     * @method string foo()
+                     * @method static string bar()
+                     */
+                    final class MethodTest
+                    {
+                        /** @param mixed[] $arguments */
+                        public function __call(string $name, array $arguments): string
+                        {
+                            return $name;
+                        }
+
+                        /** @param mixed[] $arguments */
+                        public static function __callStatic(string $name, array $arguments): string
+                        {
+                            return $name;
+                        }
+
+                        public function __get(string $name): string
+                        {
+                            return "x";
+                        }
+
+                        public function __set(string $name, mixed $value): void
+                        {
+                        }
+                    }
+
+                    $test = new MethodTest();
+                    echo $test->foo() . MethodTest::bar();
+                    echo $test->anything;
+                    $test->other = 1;',
+                'ignored_issues' => ['UndefinedMagicPropertyFetch', 'UndefinedMagicPropertyAssignment', 'MixedArgument'],
+            ],
             'unusedVariableSuppressedOnItsStatement' => [
                 'code' => '<?php
                     /** @psalm-api */
@@ -1025,6 +1061,38 @@ final class UnusedCodeTest extends TestCase
                     }
 
                     takesCallable([C::class, "foo"]);',
+            ],
+            'methodUsedAsCallableArrayForArrayOrCallableParam' => [
+                'code' => '<?php
+                    final class C {
+                        private static int $x = 1;
+
+                        public static function foo() : void {
+                            echo self::$x;
+                        }
+                    }
+
+                    /** @param array|callable $c */
+                    function takesUnion($c) : void {
+                        if (is_callable($c)) {
+                            $c();
+                        }
+                    }
+
+                    takesUnion([C::class, "foo"]);',
+            ],
+            'plainArrayForArrayOrCallableParam' => [
+                'code' => '<?php
+                    /** @param array|callable $c */
+                    function takesUnion($c) : void {
+                        if (is_callable($c)) {
+                            $c();
+                        }
+                    }
+
+                    takesUnion(["Nope", "foo"]);
+                    takesUnion([1, 2]);',
+                'ignored_issues' => ['UndefinedClass'],
             ],
             'propertyAndMethodOverriddenDownstream' => [
                 'code' => '<?php
@@ -2327,6 +2395,36 @@ final class UnusedCodeTest extends TestCase
                         $y[] = 1;
                     }',
                 'error_message' => 'UnusedVariable',
+            ],
+            'callStaticOfAClassWithoutStaticMagicCallsIsReportedAsUnused' => [
+                'code' => '<?php
+                    final class Forwarder {
+                        /** @param mixed[] $arguments */
+                        public static function __callStatic(string $name, array $arguments): string
+                        {
+                            return $name;
+                        }
+
+                        public static function real(): string
+                        {
+                            return "real";
+                        }
+                    }
+
+                    echo Forwarder::real();',
+                'error_message' => 'PossiblyUnusedMethod',
+            ],
+            'unusedParamOfARegularPublicMethodIsStillReported' => [
+                'code' => '<?php
+                    final class Reader {
+                        public function read(string $path, string $unused): string
+                        {
+                            return $path;
+                        }
+                    }
+
+                    echo (new Reader())->read("x", "y");',
+                'error_message' => 'UnusedParam',
             ],
             'unusedVariableSuppressionDoesNotReachOtherStatements' => [
                 'code' => '<?php
