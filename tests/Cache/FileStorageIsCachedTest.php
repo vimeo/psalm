@@ -18,6 +18,7 @@ use function file_put_contents;
 use function glob;
 use function hash;
 use function pack;
+use function strlen;
 use function strtolower;
 use function substr;
 use function sys_get_temp_dir;
@@ -117,15 +118,24 @@ final class FileStorageIsCachedTest extends TestCase
         self::assertTrue($this->newProvider()->isCached('/SRC/A.php', hash('xxh128', 'contents')));
     }
 
-    /**
-     * A writer that died midway leaves a header that is empty or shorter than it declares: the file is scanned
-     * without a storage.
-     */
-    #[DataProvider('provideUnusableHeaders')]
-    public function testEntryWithAnUnusableHeader(string $header): void
+    /** Only the hash and the key of the record are read */
+    public function testEntryWithARecordOfTheKey(): void
     {
         $this->cacheStorage(self::PATH, 'contents');
-        file_put_contents($this->headerPath(), $header);
+        file_put_contents($this->entryPath(), self::record(hash('xxh128', 'contents'), strtolower(self::PATH)));
+
+        self::assertTrue($this->newProvider()->isCached(self::PATH, hash('xxh128', 'contents')));
+    }
+
+    /**
+     * A record that is cut short, declares more than the file holds, or is of another key: the file is scanned
+     * without a storage.
+     */
+    #[DataProvider('provideUnusableRecords')]
+    public function testEntryWithAnUnusableRecord(string $record): void
+    {
+        $this->cacheStorage(self::PATH, 'contents');
+        file_put_contents($this->entryPath(), $record);
 
         self::assertFalse($this->newProvider()->isCached(self::PATH, hash('xxh128', 'contents')));
     }
@@ -134,12 +144,19 @@ final class FileStorageIsCachedTest extends TestCase
      * @return iterable<string, list{string}>
      * @psalm-pure
      */
-    public static function provideUnusableHeaders(): iterable
+    public static function provideUnusableRecords(): iterable
     {
+        $hash = hash('xxh128', 'contents');
+        $key = strtolower(self::PATH);
+        $record = self::record($hash, $key);
+
         yield 'empty' => [''];
-        yield 'length prefix only' => [pack('V', 8)];
-        yield 'declared length overruns the header' => [pack('V', 4096) . 'the hash' . strtolower(self::PATH)];
-        yield 'key cut short' => [pack('V', 8) . 'the hash' . substr(strtolower(self::PATH), 0, 4)];
+        yield 'prefix cut short' => [substr($record, 0, 20)];
+        yield 'hash and key cut short' => [substr($record, 0, 28 + 8)];
+        yield 'declared hash length overruns the file' => [
+            pack('VVV', 4096, strlen($key), 0) . hash('xxh128', '', true) . $hash . $key,
+        ];
+        yield 'record of another key' => [self::record($hash, '/src/b.php')];
     }
 
     public function testFileStorageInMemory(): void
@@ -179,10 +196,20 @@ final class FileStorageIsCachedTest extends TestCase
             ->writeToCache(new FileStorage($file_path), $file_contents);
     }
 
-    /** The header file of PATH: <cache directory>/file_cache/<config hash>/<hash of the key>.hash */
-    private function headerPath(): string
+    /**
+     * A record as Cache writes it, with an empty payload
+     *
+     * @psalm-pure
+     */
+    private static function record(string $hash, string $key): string
     {
-        $paths = glob($this->cache_directory . '/*/*/' . hash('xxh128', strtolower(self::PATH)) . '.hash');
+        return pack('VVV', strlen($hash), strlen($key), 0) . hash('xxh128', '', true) . $hash . $key;
+    }
+
+    /** The entry of PATH: <cache directory>/file_cache/<cache hash>/<hash of the key> */
+    private function entryPath(): string
+    {
+        $paths = glob($this->cache_directory . '/*/*/' . hash('xxh128', strtolower(self::PATH)));
 
         self::assertNotFalse($paths);
         self::assertCount(1, $paths);

@@ -79,8 +79,8 @@ final class FileStorageCacheProvider
     }
 
     /**
-     * Whether the storage cached for the file is for the contents with this hash. The entry of a writer that was
-     * killed midway is none.
+     * Whether the storage cached for the file is for the contents with this hash. Only the header of the entry is
+     * read, so getItem() may still find its payload unusable.
      */
     public function hasEntry(string $file_path, string $file_contents_hash): bool
     {
