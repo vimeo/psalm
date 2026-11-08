@@ -37,6 +37,27 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'arrayFilterWithAStringCallableNarrowsTheResultOfACall' => [
+                'code' => '<?php
+                    /** @return list<object|null> */
+                    function objects(): array {
+                        return [];
+                    }
+
+                    /** @return list<int|string|null> */
+                    function scalars(): array {
+                        return [];
+                    }
+
+                    $objects = array_values(array_filter(objects(), "is_object"));
+                    $ints = array_filter(scalars(), "is_int");
+                    $unchanged = array_filter(objects(), "boolval");',
+                'assertions' => [
+                    '$objects===' => 'list<object>',
+                    '$ints===' => 'array<int<0, max>, int>',
+                    '$unchanged===' => 'array<int<0, max>, null|object>',
+                ],
+            ],
             'fcloseTakesTheStandardStreamConstants' => [
                 'code' => '<?php
                     fclose(STDIN);
@@ -97,6 +118,56 @@ final class FunctionCallTest extends TestCase
                 'code' => '<?php
                     function startsWithGreeting(string $s): bool {
                         return str_starts_with($s, "здравствуй");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classHierarchyFunctionsOfAnObjectNeverReturnFalse' => [
+                'code' => '<?php
+                    /** @var mixed $mixed */
+                    $mixed = null;
+                    /** @var object $object */
+                    $object = new stdClass();
+                    /** @var string $string */
+                    $string = "";
+                    /** @var object|string $either */
+                    $either = "";
+                    /** @var bool $autoload */
+                    $autoload = true;
+
+                    if (!is_object($mixed)) {
+                        throw new Exception();
+                    }
+
+                    $parents = class_parents($mixed);
+                    $interfaces = class_implements($object, $autoload);
+                    $traits = class_uses(object_or_class: $object, autoload: false);
+                    $parents_of_name = class_parents($string);
+                    $interfaces_of_name = class_implements($string, false);
+                    $traits_of_name = class_uses($string);
+                    $parents_of_either = class_parents($either);',
+                'assertions' => [
+                    '$parents===' => 'array<class-string, class-string>',
+                    '$interfaces===' => 'array<interface-string, interface-string>',
+                    '$traits===' => 'array<trait-string, trait-string>',
+                    '$parents_of_name===' => 'array<class-string, class-string>|false',
+                    '$interfaces_of_name===' => 'array<interface-string, interface-string>|false',
+                    '$traits_of_name===' => 'array<trait-string, trait-string>|false',
+                    '$parents_of_either===' => 'array<class-string, class-string>|false',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classHierarchyFunctionsOfAClassNameAreNotPossiblyFalseArguments' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /** @param class-string $class */
+                    function f(string $class): bool {
+                        return in_array(I::class, class_implements($class), true)
+                            || in_array(I::class, class_parents($class), true)
+                            || in_array(I::class, class_uses($class), true);
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -384,6 +455,26 @@ final class FunctionCallTest extends TestCase
                     '$value===' => 'Value<42>',
                     '$nestedValue===' => '42',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'paramDefaultNewObjectImplementingInterface' => [
+                'code' => '<?php
+                    function f(Traversable $p = new ArrayObject()): void {}
+                    function g(Countable&Traversable $p = new ArrayObject()): void {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'paramDefaultNonFinalClassMayImplementInterface' => [
+                'code' => '<?php
+                    interface I {}
+                    class Foo {}
+                    class Impl extends Foo implements I {}
+                    /** @var Foo */
+                    const C = new Impl();
+                    function f(I $p = C): void {}',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
@@ -824,6 +915,62 @@ final class FunctionCallTest extends TestCase
 
                     a(["a" => "hello"]);',
             ],
+            'functionExistsGuardsTheRightOperandInsideAnotherNarrowingCondition' => [
+                'code' => '<?php
+                    function a(int $arg): void {
+                        if ($arg) {
+                            if (function_exists("do_something_a") && rand(0, 1)) {
+                                do_something_a("hello");
+                            }
+                        }
+                    }
+
+                    function b(int $arg): void {
+                        if (!empty($arg)) {
+                            if (function_exists("do_something_b") && do_something_b("hello")) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function c(int $arg): void {
+                        if ($arg) {
+                            if (defined("SOME_MISSING_CONSTANT") && SOME_MISSING_CONSTANT) {
+                                echo 1;
+                            }
+                        }
+                    }',
+            ],
+            'functionExistsGuardsOnlyTheFunctionsItNames' => [
+                'code' => '<?php
+                    function callable_string(int $arg): void {
+                        if (function_exists("guarded_callback")) {
+                            array_map("guarded_callback", [1]);
+                        }
+                    }
+
+                    function namespaced_name(int $arg): void {
+                        if ($arg) {
+                            if (function_exists("\\guarded_root") && \guarded_root()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function guarded_class(int $arg): void {
+                        if ($arg) {
+                            if (class_exists("GuardedClass") && GuardedClass::run()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function guarded_class_body(): void {
+                        if (class_exists("GuardedBodyClass") && rand(0, 1)) {
+                            GuardedBodyClass::run();
+                        }
+                    }',
+            ],
             'getenv' => [
                 'code' => '<?php
                     $a = getenv();
@@ -1018,6 +1165,28 @@ final class FunctionCallTest extends TestCase
                     function exploder(string $d, string $s) : array {
                         return explode($d, $s);
                     }',
+            ],
+            'assertAcceptsObjectAndNarrowsIt' => [
+                'code' => '<?php
+                    function f(?DateTime $d): DateTime {
+                        assert($d);
+                        return $d;
+                    }
+                    /** @var DateTime|null $foo */
+                    $foo = null;
+                    assert($foo);',
+                'assertions' => [
+                    '$foo===' => 'DateTime',
+                ],
+            ],
+            'assertAcceptsArrayAndFloat' => [
+                'code' => '<?php
+                    function f(array $a, float $f): void {
+                        assert($a);
+                        assert($f);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
             ],
             'allowPossiblyUndefinedClassInClassExists' => [
                 'code' => <<<'PHP'
@@ -2479,6 +2648,31 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => ['ImplicitToStringCast'],
                 'php_version' => '8.1',
             ],
+            'strReplaceWithAsManyReplacementsAsSearches' => [
+                'code' => '<?php
+                    /** @var string $subject */
+                    $subject = getenv("X");
+                    /** @var list<string> $searches */
+                    $searches = [];
+                    /** @var list<string> $replacements */
+                    $replacements = [];
+                    /** @var list{0?: string, 1?: string} $optional */
+                    $optional = [];
+
+                    $a = str_replace(["a", "b"], ["x", "y"], $subject);
+                    $b = str_replace(["a", "b"], ["x", "y", "z"], $subject);
+                    $c = str_replace(["a", "b"], "x", $subject);
+                    $d = str_replace(["a", "b"], [], $subject);
+                    $e = str_replace($searches, ["x"], $subject);
+                    $f = str_replace(["a", "b"], $replacements, $subject);
+                    $g = str_replace(["a", "b"], $optional, $subject);
+                    $h = str_replace("a", "x", $subject);
+                    $i = str_replace(...["a", "x", $subject]);
+                    $j = str_replace(subject: $subject, replace: ["x"], search: ["a", "b"]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'array_is_list_on_empty_array' => [
                 'code' => '<?php
                     $a = [];
@@ -2859,6 +3053,45 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'functionExistsDoesNotGuardAnotherFunctionInsideAnotherNarrowingCondition' => [
+                'code' => '<?php
+                    function run(int $arg): void {
+                        if ($arg) {
+                            if (function_exists("strlen") && unknown_function()) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:62 - Function unknown_function does not exist',
+            ],
+            'functionExistsDoesNotGuardAnotherFunctionInTheSameCondition' => [
+                'code' => '<?php
+                    function run(): void {
+                        if (function_exists("strlen") && unknown_function()) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:58 - Function unknown_function does not exist',
+            ],
+            'functionExistsDoesNotGuardAnotherFunctionInItsBody' => [
+                'code' => '<?php
+                    function run(): void {
+                        if (function_exists("guarded_function")) {
+                            guarded_function();
+                            unknown_function();
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29 - Function unknown_function does not exist',
+            ],
+            'functionExistsDoesNotGuardAnotherCallableString' => [
+                'code' => '<?php
+                    function run(): void {
+                        if (function_exists("guarded_callback")) {
+                            array_map("unknown_callback", [1]);
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction',
+            ],
             'builtInByReferenceParameterRejectsAConstant' => [
                 'code' => '<?php
                     const NUMBERS = [3, 1, 2];
@@ -3007,6 +3240,20 @@ final class FunctionCallTest extends TestCase
                 'code' => '<?php
                     function f(int $p = false) {}',
                 'error_message' => 'InvalidParamDefault',
+            ],
+            'invalidParamDefaultNewObjectNotImplementingInterface' => [
+                'code' => '<?php
+                    function f(Traversable $p = new stdClass()): void {}',
+                'error_message' => 'InvalidParamDefault',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'invalidParamDefaultNewObjectNotInUnion' => [
+                'code' => '<?php
+                    function f(Countable|int $p = new stdClass()): void {}',
+                'error_message' => 'InvalidParamDefault',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'invalidDocblockParamDefault' => [
                 'code' => '<?php
@@ -3446,6 +3693,19 @@ final class FunctionCallTest extends TestCase
                         $a = count_chars("foo", $mode);
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'strReplaceWithFewerReplacementsThanSearches' => [
+                'code' => '<?php
+                    $subject = "Hello";
+                    $search = ["a", "b", "c"];
+                    $replace = ["x", "y"];
+                    echo str_replace($search, $replace, $subject);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'strIreplaceWithFewerReplacementsThanSearches' => [
+                'code' => '<?php
+                    echo str_ireplace(["a", "b"], ["x"], "Hello");',
+                'error_message' => 'InvalidArgument',
             ],
             'array_is_list_literal_array' => [
                 'code' => '<?php
