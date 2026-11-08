@@ -315,11 +315,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $codebase = $this->codebase;
         $project_analyzer = $this->getProjectAnalyzer();
 
-        if ($codebase->track_unused_suppressions && !isset($storage->suppressed_issues[0])) {
-            if (count($storage->suppressed_issues) === 1 // UnusedPsalmSuppress by itself should be marked as unused
-                || !$codebase->config->suppressesIssueType($storage->suppressed_issues, 'UnusedPsalmSuppress')
+        $docblock_suppressed_issues = $storage->docblock_suppressed_issues;
+
+        if ($codebase->track_unused_suppressions && $docblock_suppressed_issues !== []) {
+            if (count($docblock_suppressed_issues) === 1 // UnusedPsalmSuppress by itself should be marked as unused
+                || !$codebase->config->suppressesIssueType($docblock_suppressed_issues, 'UnusedPsalmSuppress')
             ) {
-                foreach ($storage->suppressed_issues as $offset => $issue_name) {
+                foreach ($docblock_suppressed_issues as $offset => $issue_name) {
                     IssueBuffer::addUnusedSuppression(
                         $storage->location !== null
                             ? $storage->location->file_path
@@ -527,6 +529,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $context,
             (bool) $template_types,
         );
+
+        if (!$this->checkGlobalTypes($storage, $context)) {
+            $check_stmts = false;
+        }
 
         $this->taintPromotedProperties($statements_analyzer, $context);
         // the context of an arrow function is that of the function-like it is in
@@ -873,7 +879,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             [],
         );
 
-        if ($final_actions !== [ScopeAnalyzer::ACTION_END]) {
+        // a method without a body (abstract, interface) assigns nothing to its by-reference parameters
+        if ($final_actions !== [ScopeAnalyzer::ACTION_END] && $this->function->getStmts() !== null) {
             $this->examineParamTypes($statements_analyzer, $context, $codebase);
         }
 
@@ -1561,6 +1568,35 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * Checks the classes of the `@global` types, like those of the `@param` types
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function checkGlobalTypes(FunctionLikeStorage $storage, Context $context): bool
+    {
+        $is_valid = true;
+
+        foreach ($storage->global_types as $var_name => $global_type) {
+            if (isset($storage->global_type_locations[$var_name])
+                && $global_type->check(
+                    $this,
+                    $storage->global_type_locations[$var_name],
+                    $storage->suppressed_issues,
+                    [],
+                    false,
+                    false,
+                    false,
+                    $context,
+                ) === false
+            ) {
+                $is_valid = false;
+            }
+        }
+
+        return $is_valid;
+    }
+
+    /**
      * A promoted constructor parameter is assigned to its property: what the constructor is given flows into it,
      * as with `$this->name = $name`.
      */
@@ -1869,6 +1905,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                                 . ' does not match the given type ' . $param_type->getId(),
                             $function_param->type_location,
                         ),
+                        $storage->suppressed_issues,
                     );
                 }
 
@@ -1884,6 +1921,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                                 . ' can only be null, ' . $default_type->getId() . ' specified',
                             $function_param->type_location,
                         ),
+                        $storage->suppressed_issues,
                     );
                 }
             }
@@ -2860,6 +2898,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                     if ($this->function->name->name === '__construct'
                         && !$parent_storage->preserve_constructor_signature
+                        && !$parent_method_storage->abstract
                     ) {
                         continue;
                     }

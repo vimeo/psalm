@@ -29,6 +29,33 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'objectForeachValueUsedAfterItIsReassigned' => [
+                'code' => '<?php
+                    class D { public int $n = 0; }
+
+                    function impure(D $o): D { return $o; }
+
+                    function f(): void {
+                        foreach ([new D()] as $x) {
+                            $x = impure($x);
+                            echo $x->n;
+                        }
+                    }',
+            ],
+            'objectLoopVarCarriedToTheNextIteration' => [
+                'code' => '<?php
+                    class D { public int $n = 0; }
+
+                    function f(): void {
+                        $prev = null;
+                        foreach ([new D(), new D()] as $x) {
+                            if ($prev) {
+                                echo $prev->n;
+                            }
+                            $prev = $x;
+                        }
+                    }',
+            ],
             'staticPropertiesInDestructuringAreNotVariables' => [
                 'code' => '<?php
                     abstract class Foo {
@@ -2795,6 +2822,19 @@ final class UnusedVariableTest extends TestCase
                         return $max;
                     }',
                 'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:36',
+            ],
+            'objectForeachValueReassignedFromACallOfItself' => [
+                'code' => '<?php
+                    class D { public int $n = 0; }
+
+                    function impure(D $o): D { return $o; }
+
+                    function f(): void {
+                        foreach ([new D()] as $x) {
+                            $x = impure($x);
+                        }
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29',
             ],
             'keyOfAnArrayItemPassedByReferenceIsIncrementedOnce' => [
                 'code' => '<?php
