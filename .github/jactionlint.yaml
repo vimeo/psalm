@@ -9,6 +9,11 @@ rules:
   superfluous-actions: off
 
 ignores:
+  - rule: concurrency-limits
+    file: .github/workflows/build-phar.yml
+    reason: >-
+      pre_job (skip-duplicate-actions, concurrent_skipping always, cancel_others) handles concurrent runs;
+      a native concurrency group keeps successors pending, and the action then skips both runs
   - rule: dangerous-triggers
     file: .github/workflows/perf-comment.yml
     reason: never checks out or runs PR code; the artifact is validated as untrusted input

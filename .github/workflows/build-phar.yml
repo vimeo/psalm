@@ -12,11 +12,6 @@ on:
   # and by bin/ci/apply-queued-changes.php after merging, which doesn't trigger pushes
   workflow_dispatch:
 
-# Queued, not cancelled: a release run must finish uploading its phar.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
-
 permissions:
   contents: read
 
