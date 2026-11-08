@@ -205,6 +205,278 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedMethodExistsOfABuiltinClassKeepsTheBranchPossible' => [
+                'code' => '<?php
+                    function f(DateTime $date): string {
+                        if (!method_exists($date, "format")) {
+                            return "no format";
+                        }
+
+                        return $date->format("c");
+                    }',
+                'assertions' => [],
+            ],
+            'negatedMethodExistsOfAClassInheritingTheMethodFromABuiltinClassKeepsTheBranchPossible' => [
+                'code' => '<?php
+                    final class MyDate extends DateTime {}
+
+                    function f(MyDate $date): string {
+                        if (!method_exists($date, "format")) {
+                            return "no format";
+                        }
+
+                        return $date->format("c");
+                    }',
+                'assertions' => [],
+            ],
+            'negatedMethodExistsOfAnObjectWithTheMethodKeepsItsType' => [
+                'code' => '<?php
+                    abstract class Platform {
+                        public function fold(): int {
+                            return 1;
+                        }
+                    }
+
+                    function getPlatform(): Platform {
+                        throw new Exception();
+                    }
+
+                    $platform = getPlatform();
+
+                    if (method_exists($platform, "fold")) {
+                        throw new Exception();
+                    }
+
+                    $after = $platform;',
+                'assertions' => ['$after' => 'Platform'],
+                'ignored_issues' => ['RedundantCondition'],
+            ],
+            'negatedMethodExistsOfAnObjectWithoutTheMethodNarrowsNothing' => [
+                'code' => '<?php
+                    class A {}
+
+                    function f(A $a): void {
+                        if (!method_exists($a, "bar")) {
+                            echo "no bar";
+                        }
+                    }',
+            ],
+            'negatedMethodExistsOfAnObjectOrAnotherType' => [
+                'code' => '<?php
+                    class A {
+                        public function bar(): void {}
+                    }
+
+                    class B {}
+
+                    function f(A|B $a): void {
+                        if (!method_exists($a, "bar")) {
+                            /** @psalm-check-type-exact $a = B */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'negatedMethodExistsOfAnObjectType' => [
+                'code' => '<?php
+                    function f(object $a): void {
+                        if (!method_exists($a, "bar")) {
+                            echo "no bar";
+                        }
+                    }',
+            ],
+            'parentCallOfAStaticReturnTypeInAChildOfAGenericClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Box {
+                        public function same(): static {
+                            return $this;
+                        }
+                    }
+
+                    /** @extends Box<int> */
+                    class IntBox extends Box {
+                        public function same(): static {
+                            return parent::same();
+                        }
+                    }
+
+                    trait Chain {
+                        public function chain(): static {
+                            return parent::same();
+                        }
+                    }
+
+                    /** @extends Box<string> */
+                    class StringBox extends Box {
+                        use Chain;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+            ],
+            'selfStaticAndParentCallsKeepTheTypeArgumentsOfAStaticReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    class Collection {
+                        /**
+                         * @template TMakeKey of array-key
+                         * @template TMakeValue
+                         * @param array<TMakeKey, TMakeValue> $items
+                         * @return static<TMakeKey, TMakeValue>
+                         */
+                        public static function make(array $items = []): static {
+                            /** @psalm-suppress UnsafeInstantiation */
+                            return new static();
+                        }
+
+                        public function check(): void {
+                            $self = self::make(["a" => 1]);
+                            /** @psalm-check-type-exact $self = Collection<\'a\', 1>&static */;
+                            $static = static::make(["a" => 1]);
+                            /** @psalm-check-type-exact $static = Collection<\'a\', 1>&static */;
+                        }
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @extends Collection<TKey, TValue>
+                     */
+                    class SubCollection extends Collection {
+                        public function again(): void {
+                            $parent = parent::make(["a" => 1]);
+                            /** @psalm-check-type-exact $parent = SubCollection<\'a\', 1>&static */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ClassMustBeFinal'],
+            ],
+            'parentSelfAndStaticCallsReturnTheStaticTypeOfTheCallingClass' => [
+                'code' => '<?php
+                    abstract class Core {
+                        public function instance(): static {
+                            return $this;
+                        }
+
+                        public static function make(): static {
+                            /** @psalm-suppress UnsafeInstantiation */
+                            return new static();
+                        }
+                    }
+
+                    class Child extends Core {
+                        public function check(): void {
+                            $this->parentInstance = parent::instance();
+                            $this->parentStatic = parent::make();
+                            $this->selfStatic = self::make();
+                            $this->staticStatic = static::make();
+                        }
+
+                        /** @var mixed */
+                        public $parentInstance;
+                        /** @var mixed */
+                        public $parentStatic;
+                        /** @var mixed */
+                        public $selfStatic;
+                        /** @var mixed */
+                        public $staticStatic;
+
+                        public function parentInstanceReturn(): static {
+                            return parent::instance();
+                        }
+
+                        public static function parentStaticReturn(): static {
+                            return parent::make();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+            ],
+            'mysqliGetWarningsMayReturnFalse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function warnings(mysqli $link): void {
+                        $object = $link->get_warnings();
+                        $procedural = mysqli_get_warnings($link);
+
+                        /** @psalm-check-type-exact $object = false|mysqli_warning */
+                        /** @psalm-check-type-exact $procedural = false|mysqli_warning */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'inheritedThisDocblockKeepsNativeStaticOfSubclass' => [
+                'code' => '<?php
+                    class Form {}
+
+                    interface BuilderInterface {
+                        /**
+                         * @return $this
+                         */
+                        public function setCompound(): static;
+                    }
+
+                    class Builder implements BuilderInterface {
+                        public function setCompound(): static {
+                            return $this;
+                        }
+                    }
+
+                    class FormBuilder extends Builder {
+                        public function getForm(): Form {
+                            return new Form();
+                        }
+                    }
+
+                    $form = (new FormBuilder())->setCompound()->getForm();',
+                'assertions' => ['$form' => 'Form'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inheritedStaticDocblockKeepsNativeStaticOfSubclass' => [
+                'code' => '<?php
+                    class Form {}
+
+                    interface BuilderInterface {
+                        /**
+                         * @return static
+                         */
+                        public function setCompound(): static;
+                    }
+
+                    class Builder implements BuilderInterface {
+                        public function setCompound(): static {
+                            return $this;
+                        }
+                    }
+
+                    class FormBuilder extends Builder {
+                        public function getForm(): Form {
+                            return new Form();
+                        }
+                    }
+
+                    $form = (new FormBuilder())->setCompound()->getForm();',
+                'assertions' => ['$form' => 'Form'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'dateTimeInterfaceMicrosecond' => [
+                'code' => '<?php
+                    function asInterface(DateTimeInterface $date): DateTimeInterface {
+                        return $date;
+                    }
+                    $result = asInterface(new DateTimeImmutable())->getMicrosecond();',
+                'assertions' => ['$result' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'notInCallMapTest' => [
                 'code' => '<?php
                     new DOMImplementation();',
@@ -1495,6 +1767,68 @@ final class MethodCallTest extends TestCase
                         }
                     }',
             ],
+            'parentCallOfStaticReturnKeepsCallingClass' => [
+                'code' => '<?php
+                    abstract class P {
+                        public function copy(): static {
+                            return clone $this;
+                        }
+
+                        final public function __construct() {}
+
+                        public static function make(): static {
+                            return new static();
+                        }
+                    }
+
+                    class C extends P {
+                        public ?string $extra = null;
+
+                        public function copy(): static {
+                            $new = parent::copy();
+                            $new->extra = "a";
+
+                            return $new;
+                        }
+
+                        public static function make(): static {
+                            $new = parent::make();
+                            $new->extra = "b";
+
+                            return $new;
+                        }
+                    }',
+            ],
+            'parentCallOfStaticReturnInNonFinalSubclass' => [
+                'code' => '<?php
+                    interface I {}
+
+                    abstract class P implements I {
+                        public function copy(): static {
+                            return clone $this;
+                        }
+                    }
+
+                    class F extends P {
+                        public int $n = 0;
+
+                        public function copy(): static {
+                            $new = parent::copy();
+                            $new->n = 1;
+
+                            return $new;
+                        }
+                    }',
+            ],
+            'pdoSqliteCreateFunctionTakesFlags' => [
+                'code' => '<?php
+                    function register(PDO $pdo): void {
+                        $pdo->sqliteCreateFunction("double", static fn(int $i): int => $i * 2, 1, 2048);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
         ];
     }
 
@@ -1505,6 +1839,59 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'negatedMethodExistsOfAnObjectWithTheMethod' => [
+                'code' => '<?php
+                    class A {
+                        public function bar(): void {}
+                    }
+
+                    function f(A $a): void {
+                        if (!method_exists($a, "bar")) {
+                            echo "no bar";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'methodMissingFromALaterTypeOfAUnionTemplateBound' => [
+                'code' => '<?php
+                    final class Invoice {
+                        public function total(): int { return 1; }
+                    }
+
+                    final class CreditNote {
+                        public function total(): int { return -1; }
+                        public function reason(): string { return ""; }
+                    }
+
+                    /**
+                     * @template T of CreditNote|Invoice
+                     * @param T $document
+                     * @return mixed
+                     */
+                    function reason($document) {
+                        return $document->reason();
+                    }',
+                'error_message' => 'PossiblyUndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:43 - Method Invoice::reason does not exist',
+            ],
+            'mysqliBindResultRequiresOutputVariable' => [
+                'code' => '<?php
+                    function bind(mysqli_stmt $statement): void {
+                        $statement->bind_result();
+                    }',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'dateTimeInterfaceMicrosecondBeforeEightFour' => [
+                'code' => '<?php
+                    function microseconds(DateTimeInterface $date): void {
+                        $date->getMicrosecond();
+                    }',
+                // The runtime determines whether this is an absent interface method or a version-gated method.
+                'error_message' => 'src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - Method DateTimeInterface::getMicrosecond',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'staticInvocation' => [
                 'code' => '<?php
                     class Foo {
@@ -1698,6 +2085,18 @@ final class MethodCallTest extends TestCase
 
                     $q = new A;
                     $q->foo(bar());',
+                'error_message' => 'UndefinedFunction',
+            ],
+            'undefinedMethodPassedAsArgOnPossiblyInvalidCallee' => [
+                'code' => '<?php
+                    class A {
+                        public function __call(string $method, array $args) {}
+                    }
+
+                    /** @param A|int $q */
+                    function f($q): void {
+                        $q->foo(bar());
+                    }',
                 'error_message' => 'UndefinedFunction',
             ],
             'noIntersectionMethod' => [
