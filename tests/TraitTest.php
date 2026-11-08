@@ -22,6 +22,50 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodOfTheClassIsNotMadePrivateByTheVisibilityOfANestedTrait' => [
+                'code' => '<?php
+                    trait Inner {
+                        public function f(): void {}
+                    }
+
+                    trait Outer {
+                        use Inner {
+                            f as private;
+                        }
+                    }
+
+                    class Consumer {
+                        use Outer;
+
+                        public function f(): void {}
+                    }
+
+                    (new Consumer)->f();',
+            ],
+            'methodExcludedByInsteadofIsNotMadePrivateByTheVisibilityOfANestedTrait' => [
+                'code' => '<?php
+                    trait Inner {
+                        public function f(): void {}
+                    }
+
+                    trait Other {
+                        public function f(): void {}
+                    }
+
+                    trait Outer {
+                        use Inner {
+                            f as private;
+                        }
+                    }
+
+                    class Consumer {
+                        use Outer, Other {
+                            Other::f insteadof Outer;
+                        }
+                    }
+
+                    (new Consumer)->f();',
+            ],
             'visibilityChangedInANestedTraitReachesTheClass' => [
                 'code' => '<?php
                     trait Inner {
