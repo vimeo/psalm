@@ -62,6 +62,7 @@ use UnexpectedValueException;
 
 use function array_any;
 use function array_filter;
+use function array_intersect_assoc;
 use function array_intersect_key;
 use function array_key_exists;
 use function array_keys;
@@ -436,6 +437,39 @@ final class TypeCombiner
         }
 
         return $new_types;
+    }
+
+    /**
+     * `object` is every object, shapes included; two shapes are the objects having the properties of one of them,
+     * the ones of only one being optional
+     *
+     * @return ?TObject the type to hold, null if $existing is that already
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function combineObjects(?Atomic $existing, TObject $type, ?Codebase $codebase): ?TObject
+    {
+        if ($existing instanceof TObject && $existing::class === TObject::class) {
+            return null;
+        }
+
+        if (!$existing instanceof TObjectWithProperties || !$type instanceof TObjectWithProperties) {
+            return $type;
+        }
+
+        $properties = [];
+
+        foreach ($existing->properties + $type->properties as $name => $_) {
+            $properties[$name] = isset($existing->properties[$name], $type->properties[$name])
+                ? Type::combineUnionTypes($existing->properties[$name], $type->properties[$name], $codebase)
+                : ($existing->properties[$name] ?? $type->properties[$name])->setPossiblyUndefined(true);
+        }
+
+        return new TObjectWithProperties(
+            $properties,
+            array_intersect_assoc($existing->methods, $type->methods),
+            [],
+            $existing->from_docblock && $type->from_docblock,
+        );
     }
 
     /**
@@ -866,7 +900,15 @@ final class TypeCombiner
                 $combination->named_object_types = null;
             }
 
-            $combination->value_types[$type_key] = $type;
+            $combined_object = self::combineObjects(
+                $type_key === 'object' ? ($combination->value_types['object'] ?? null) : null,
+                $type,
+                $codebase,
+            );
+
+            if ($combined_object !== null) {
+                $combination->value_types[$type_key] = $combined_object;
+            }
 
             return null;
         }

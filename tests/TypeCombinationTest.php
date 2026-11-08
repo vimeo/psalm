@@ -194,6 +194,27 @@ final class TypeCombinationTest extends TestCase
     public static function providerTestValidTypeCombination(): iterable
     {
         return [
+            'objectShapesWithAnExtraPropertyMakeItOptional' => [
+                'object{a:string, b?:int}',
+                [
+                    'object{a: string}',
+                    'object{a: string, b: int}',
+                ],
+            ],
+            'objectShapesWithTheSameProperty' => [
+                'object{a:int|string}',
+                [
+                    'object{a: string}',
+                    'object{a: int}',
+                ],
+            ],
+            'objectAbsorbsObjectShapes' => [
+                'object',
+                [
+                    'object',
+                    'object{a: string}',
+                ],
+            ],
             'objectWithPropertiesKeepsNamedObjects' => [
                 'Error|object{foo:string}',
                 [
