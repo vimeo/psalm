@@ -208,6 +208,48 @@ final class TypeCombinationTest extends TestCase
                     'array{0: string, ...<array-key, mixed>}',
                 ],
             ],
+            'objectShapesWithAnExtraPropertyKeepOnlyTheCommonOnes' => [
+                'object{a:string}',
+                [
+                    'object{a: string}',
+                    'object{a: string, b: int}',
+                ],
+            ],
+            'objectShapesKeepAnOptionalPropertyBothDeclare' => [
+                'object{a:string, b?:int}',
+                [
+                    'object{a: string, b?: int}',
+                    'object{a: string, b: int}',
+                ],
+            ],
+            'objectShapesWithDisjointPropertiesShareNone' => [
+                'object{}',
+                [
+                    'object{a: string}',
+                    'object{b: int}',
+                ],
+            ],
+            'objectShapesWithTheSameProperty' => [
+                'object{a:int|string}',
+                [
+                    'object{a: string}',
+                    'object{a: int}',
+                ],
+            ],
+            'objectShapesKeepTheirCommonIntersection' => [
+                'object{a:string}&Iterator',
+                [
+                    'object{a: string}&Iterator',
+                    'object{a: string, b: int}&Iterator&Countable',
+                ],
+            ],
+            'objectAbsorbsObjectShapes' => [
+                'object',
+                [
+                    'object',
+                    'object{a: string}',
+                ],
+            ],
             'objectWithPropertiesKeepsNamedObjects' => [
                 'Error|object{foo:string}',
                 [

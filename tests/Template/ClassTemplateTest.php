@@ -57,6 +57,83 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'iteratorWrappersTakeTheKeyAndTheValueTypeOnly' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @implements IteratorAggregate<array-key, T>
+                     */
+                    final class Cached implements IteratorAggregate
+                    {
+                        /** @var CachingIterator<array-key, T> */
+                        private CachingIterator $caching;
+
+                        /** @var LimitIterator<array-key, T> */
+                        private LimitIterator $limited;
+
+                        /** @var NoRewindIterator<array-key, T> */
+                        private NoRewindIterator $noRewind;
+
+                        /** @param Iterator<array-key, T> $iterator */
+                        public function __construct(Iterator $iterator)
+                        {
+                            $this->caching = new CachingIterator($iterator);
+                            $this->limited = new LimitIterator($iterator, 0, 1);
+                            $this->noRewind = new NoRewindIterator($iterator);
+                        }
+
+                        public function getIterator(): Iterator
+                        {
+                            return $this->caching;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedProperty'],
+                'php_version' => '8.0',
+            ],
+            'recursiveFilterIteratorChildrenAreAFilter' => [
+                'code' => '<?php
+                    class RegexFilter extends RecursiveFilterIterator
+                    {
+                        public function __construct(RecursiveIterator $iterator, protected string $regex = "")
+                        {
+                            parent::__construct($iterator);
+                        }
+
+                        public function accept(): bool
+                        {
+                            return true;
+                        }
+
+                        public function getChildren(): ?RecursiveFilterIterator
+                        {
+                            $children = parent::getChildren();
+                            if ($children instanceof self && $children->regex === "") {
+                                $children->regex = $this->regex;
+                            }
+                            return $children;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingTemplateParam'],
+                'php_version' => '8.0',
+            ],
+            'recursiveIteratorWrapperChildrenWrapTheChildrenOfTheInnerIterator' => [
+                'code' => '<?php
+                    /** @var RecursiveArrayIterator<int, string> */
+                    $inner = new RecursiveArrayIterator([]);
+                    $cachingChildren = (new RecursiveCachingIterator($inner))->getChildren();
+                    $callbackChildren = (new RecursiveCallbackFilterIterator(
+                        $inner,
+                        fn(string $_value, int $_key, RecursiveArrayIterator $_iterator): bool => true,
+                    ))->getChildren();',
+                'assertions' => [
+                    '$cachingChildren' => 'RecursiveCachingIterator[write-this-props|write-props]<int, string, Iterator<int, string>>',
+                    '$callbackChildren' => 'RecursiveCallbackFilterIterator[write-this-props|write-props]<int, string, RecursiveIterator<int, string>>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticReturnKeepsTheTypeArgumentsOfTheCalledClass' => [
                 'code' => '<?php
                     /** @template T of object */
