@@ -24,6 +24,12 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'fcloseTakesTheStandardStreamConstants' => [
+                'code' => '<?php
+                    fclose(STDIN);
+                    fclose(STDOUT);
+                    fclose(STDERR);',
+            ],
             'domXPathEvaluateReturnsATypedResult' => [
                 'code' => '<?php
                     $xpath = new DOMXPath(new DOMDocument());
@@ -82,6 +88,72 @@ final class FunctionCallTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'substrOfANonEmptyStringFromItsStart' => [
+                'code' => '<?php
+                    /** @var non-empty-string $in */
+                    $in = "a";
+                    /** @var string $any */
+                    $any = "";
+                    /** @var int $int */
+                    $int = 1;
+                    /** @var int<1, max> $positive */
+                    $positive = 1;
+                    /** @var int<min, -1> $negative */
+                    $negative = -1;
+                    /** @var int<0, max> $not_negative */
+                    $not_negative = 0;
+                    /** @var int<min, 0> $not_positive */
+                    $not_positive = 0;
+
+                    $prefix = substr($in, 0, 4);
+                    $tail = substr($in, -3);
+                    $whole = substr($in, 0);
+                    $explicit_null = substr($in, 0, null);
+                    $dynamic_length = substr($in, 0, $positive);
+                    $dynamic_offset = substr($in, $not_positive, 2);
+                    $literal = substr("abc", 0, 2);
+
+                    $zero_length = substr($in, 0, 0);
+                    $unknown_length = substr($in, 0, $int);
+                    $not_negative_length = substr($in, 0, $not_negative);
+                    $negative_length = substr($in, 0, $negative);
+                    $later_offset = substr($in, 1, 4);
+                    $unknown_offset = substr($in, $int, 4);
+                    $positive_offset = substr($in, $positive, 4);
+                    $maybe_empty_input = substr($any, 0, 4);
+                    $empty_literal = substr("", 0, 4);',
+                'assertions' => [
+                    '$prefix===' => 'non-empty-string',
+                    '$tail===' => 'non-empty-string',
+                    '$whole===' => 'non-empty-string',
+                    '$explicit_null===' => 'non-empty-string',
+                    '$dynamic_length===' => 'non-empty-string',
+                    '$dynamic_offset===' => 'non-empty-string',
+                    '$literal===' => 'non-empty-string',
+                    '$zero_length===' => 'string',
+                    '$unknown_length===' => 'string',
+                    '$not_negative_length===' => 'string',
+                    '$negative_length===' => 'string',
+                    '$later_offset===' => 'string',
+                    '$unknown_offset===' => 'string',
+                    '$positive_offset===' => 'string',
+                    '$maybe_empty_input===' => 'string',
+                    '$empty_literal===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'substrBeforePhp8CanReturnFalse' => [
+                'code' => '<?php
+                    /** @var non-empty-string $in */
+                    $in = "a";
+                    $prefix = substr($in, 0, 4);',
+                'assertions' => [
+                    '$prefix===' => 'false|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'errorGetLastHasBacktraceSincePhp85' => [
                 'code' => '<?php
@@ -299,6 +371,26 @@ final class FunctionCallTest extends TestCase
                     '$value===' => 'Value<42>',
                     '$nestedValue===' => '42',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'paramDefaultNewObjectImplementingInterface' => [
+                'code' => '<?php
+                    function f(Traversable $p = new ArrayObject()): void {}
+                    function g(Countable&Traversable $p = new ArrayObject()): void {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'paramDefaultNonFinalClassMayImplementInterface' => [
+                'code' => '<?php
+                    interface I {}
+                    class Foo {}
+                    class Impl extends Foo implements I {}
+                    /** @var Foo */
+                    const C = new Impl();
+                    function f(I $p = C): void {}',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
@@ -933,6 +1025,28 @@ final class FunctionCallTest extends TestCase
                     function exploder(string $d, string $s) : array {
                         return explode($d, $s);
                     }',
+            ],
+            'assertAcceptsObjectAndNarrowsIt' => [
+                'code' => '<?php
+                    function f(?DateTime $d): DateTime {
+                        assert($d);
+                        return $d;
+                    }
+                    /** @var DateTime|null $foo */
+                    $foo = null;
+                    assert($foo);',
+                'assertions' => [
+                    '$foo===' => 'DateTime',
+                ],
+            ],
+            'assertAcceptsArrayAndFloat' => [
+                'code' => '<?php
+                    function f(array $a, float $f): void {
+                        assert($a);
+                        assert($f);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
             ],
             'allowPossiblyUndefinedClassInClassExists' => [
                 'code' => <<<'PHP'
@@ -2312,6 +2426,73 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'trimOfALiteralStringIsALiteralString' => [
+                'code' => '<?php
+                    $a = trim("  abc \n");
+                    $b = ltrim("  abc  ");
+                    $c = rtrim("  abc  ");
+                    $d = chop("abc \n");
+                    $e = trim("xxabcxx", "x");
+                    $f = trim("abc", "");
+                    $g = trim("");
+                    $h = trim("\0\x0B\t abc \r");
+                    $i = ltrim("0012", "0");
+
+                    /** @param "string"|"int"|"float" $type */
+                    function takesAType(string $type): void {}
+
+                    takesAType(trim("string "));',
+                'assertions' => [
+                    '$a===' => '\'abc\'',
+                    '$b===' => '\'abc  \'',
+                    '$c===' => '\'  abc\'',
+                    '$d===' => '\'abc\'',
+                    '$e===' => '\'abc\'',
+                    '$f===' => '\'abc\'',
+                    '$g===' => '\'\'',
+                    '$h===' => '\'abc\'',
+                    '$i===' => '\'12\'',
+                ],
+            ],
+            'trimOfALiteralStringIgnoresTheCaseOfTheCall' => [
+                'code' => '<?php
+                    $a = LTRIM("  abc  ");
+                    $b = \\rtrim("  abc  ");
+                    $c = Chop("  abc  ");
+                    $d = \\TRIM("  abc  ");',
+                'assertions' => [
+                    '$a===' => '\'abc  \'',
+                    '$b===' => '\'  abc\'',
+                    '$c===' => '\'  abc\'',
+                    '$d===' => '\'abc\'',
+                ],
+            ],
+            'trimThatIsNotOfOneLiteralKeepsTheStubType' => [
+                'code' => '<?php
+                    /** @var string $s */
+                    $s = getenv("X");
+                    /** @var "a "|"b " $union */
+                    $union = rand(0, 1) ? "a " : "b ";
+                    /** @var string $chars */
+                    $chars = getenv("Y");
+
+                    $a = trim($s);
+                    $b = trim($union);
+                    $c = trim("abc ", $chars);
+                    $d = trim("abc", "a..c");
+                    $e = trim(string: " abc ");
+                    $f = trim(...["abc "]);
+                    $g = trim(" abc ", " ", "extra");',
+                'assertions' => [
+                    '$a===' => 'string',
+                    '$b===' => 'lowercase-string',
+                    '$c===' => 'lowercase-string',
+                    '$d===' => 'lowercase-string',
+                    '$e===' => 'lowercase-string',
+                    '$f===' => 'lowercase-string',
+                ],
+                'ignored_issues' => ['TooManyArguments'],
+            ],
             'strtolowerOfAStringableObjectIsNotRedundant' => [
                 'code' => '<?php
                     class Test {
@@ -2325,6 +2506,31 @@ final class FunctionCallTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
+            ],
+            'strReplaceWithAsManyReplacementsAsSearches' => [
+                'code' => '<?php
+                    /** @var string $subject */
+                    $subject = getenv("X");
+                    /** @var list<string> $searches */
+                    $searches = [];
+                    /** @var list<string> $replacements */
+                    $replacements = [];
+                    /** @var list{0?: string, 1?: string} $optional */
+                    $optional = [];
+
+                    $a = str_replace(["a", "b"], ["x", "y"], $subject);
+                    $b = str_replace(["a", "b"], ["x", "y", "z"], $subject);
+                    $c = str_replace(["a", "b"], "x", $subject);
+                    $d = str_replace(["a", "b"], [], $subject);
+                    $e = str_replace($searches, ["x"], $subject);
+                    $f = str_replace(["a", "b"], $replacements, $subject);
+                    $g = str_replace(["a", "b"], $optional, $subject);
+                    $h = str_replace("a", "x", $subject);
+                    $i = str_replace(...["a", "x", $subject]);
+                    $j = str_replace(subject: $subject, replace: ["x"], search: ["a", "b"]);',
+                'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'array_is_list_on_empty_array' => [
@@ -2707,6 +2913,12 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'builtInByReferenceParameterRejectsAConstant' => [
+                'code' => '<?php
+                    const NUMBERS = [3, 1, 2];
+                    sort(NUMBERS);',
+                'error_message' => 'InvalidPassByReference - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:26 - Parameter 1 of sort expects a variable',
+            ],
             'mysqliBindResultRequiresOutputVariable' => [
                 'code' => '<?php
                     function bind(mysqli_stmt $statement): void {
@@ -2849,6 +3061,20 @@ final class FunctionCallTest extends TestCase
                 'code' => '<?php
                     function f(int $p = false) {}',
                 'error_message' => 'InvalidParamDefault',
+            ],
+            'invalidParamDefaultNewObjectNotImplementingInterface' => [
+                'code' => '<?php
+                    function f(Traversable $p = new stdClass()): void {}',
+                'error_message' => 'InvalidParamDefault',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'invalidParamDefaultNewObjectNotInUnion' => [
+                'code' => '<?php
+                    function f(Countable|int $p = new stdClass()): void {}',
+                'error_message' => 'InvalidParamDefault',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'invalidDocblockParamDefault' => [
                 'code' => '<?php
@@ -3300,6 +3526,19 @@ final class FunctionCallTest extends TestCase
 
                     takesAnArray(get_object_vars($obj));',
                 'error_message' => 'MixedArgumentTypeCoercion',
+            ],
+            'strReplaceWithFewerReplacementsThanSearches' => [
+                'code' => '<?php
+                    $subject = "Hello";
+                    $search = ["a", "b", "c"];
+                    $replace = ["x", "y"];
+                    echo str_replace($search, $replace, $subject);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'strIreplaceWithFewerReplacementsThanSearches' => [
+                'code' => '<?php
+                    echo str_ireplace(["a", "b"], ["x"], "Hello");',
+                'error_message' => 'InvalidArgument',
             ],
             'array_is_list_literal_array' => [
                 'code' => '<?php
