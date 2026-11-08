@@ -3561,6 +3561,21 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'negatedInstanceofOfTheWholeBoundOfATemplateParamLeavesNoType' => [
+                'code' => '<?php
+                    interface Foo {}
+
+                    /**
+                     * @template T of Foo
+                     * @param T $value
+                     */
+                    function takeFoo($value): void {
+                        if (!$value instanceof Foo) {
+                            echo "impossible";
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'negatedInstanceofKeepsAnUnrelatedClassInTheBoundOfATemplateParam' => [
                 'code' => '<?php
                     /**
