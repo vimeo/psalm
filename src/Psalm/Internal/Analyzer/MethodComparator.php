@@ -39,6 +39,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -242,6 +243,7 @@ final class MethodComparator
 
         if (($guide_classlike_storage->is_interface
              || $guide_classlike_storage->preserve_constructor_signature
+             || $guide_method_storage->abstract
              || $implementer_method_storage->cased_name !== '__construct')
             && $implementer_method_storage->required_param_count > $guide_method_storage->required_param_count
         ) {
@@ -1122,9 +1124,8 @@ final class MethodComparator
                 $implementer_classlike_storage->is_trait
                     ? $implementer_called_class_name
                     : $implementer_classlike_storage->name,
-                $implementer_classlike_storage->is_trait
-                    ? $implementer_called_class_name
-                    : $implementer_classlike_storage->name,
+                // an inherited method returns `static` of the class it is called on
+                new TNamedObject($implementer_called_class_name),
                 $implementer_classlike_storage->parent_class,
             ) : null;
 

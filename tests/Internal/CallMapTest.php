@@ -35,6 +35,24 @@ final class CallMapTest extends TestCase
 {
     protected const DICTIONARY_PATH = 'dictionaries';
 
+    public function testBuiltinVersionAvailability(): void
+    {
+        foreach ([70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 86] as $version) {
+            foreach (['', 'autogen/'] as $directory) {
+                $map = require self::DICTIONARY_PATH . '/' . $directory . 'CallMap_' . $version . '.php';
+                foreach (['array_key_first', 'array_key_last'] as $function) {
+                    self::assertSame($version >= 73, isset($map[$function]), $directory . $version . ':' . $function);
+                }
+                if ($version === 71) {
+                    self::assertArrayHasKey('swoole_string', $map);
+                }
+                // These builtins moved between bundled extensions across PHP versions.
+                self::assertArrayHasKey('random_int', $map);
+                self::assertArrayHasKey('countable::count', $map);
+            }
+        }
+    }
+
     public function testForeignImportPreservesLocalReturnMetadata(): void
     {
         $local = [
