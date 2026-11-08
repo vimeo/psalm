@@ -230,7 +230,13 @@ final class MethodComparator
                 $implementer_called_class_name,
                 $guide_method_storage,
                 $implementer_method_storage,
-                $guide_param,
+                self::getDocumentedGuideParam(
+                    $codebase,
+                    $guide_classlike_storage,
+                    $guide_method_storage,
+                    $guide_param,
+                    $i,
+                ),
                 $implementer_method_storage->params[$i],
                 $i,
                 $cased_guide_method_id,
@@ -753,6 +759,46 @@ final class MethodComparator
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
             );
         }
+    }
+
+    /**
+     * A method with no docblock of its own is documented by the one it inherits it from (see Populator), and a
+     * method overriding it is compared with that
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getDocumentedGuideParam(
+        Codebase $codebase,
+        ClassLikeStorage $guide_classlike_storage,
+        MethodStorage $guide_method_storage,
+        FunctionLikeParameter $guide_param,
+        int $i,
+    ): FunctionLikeParameter {
+        if ($guide_method_storage->has_docblock_param_types) {
+            return $guide_param;
+        }
+
+        $documenting_method_id = $guide_classlike_storage->documenting_method_ids[
+            strtolower($guide_method_storage->cased_name ?? '')
+        ] ?? null;
+
+        if ($documenting_method_id === null
+            || strtolower($documenting_method_id->fq_class_name) === strtolower($guide_classlike_storage->name)
+        ) {
+            return $guide_param;
+        }
+
+        $documenting_param = $codebase->methods->getStorage($documenting_method_id)->params[$i] ?? null;
+
+        // its templates are the ones of the class it is declared in
+        if ($documenting_param === null
+            || $documenting_param->type === null
+            || $documenting_param->type->hasTemplate()
+        ) {
+            return $guide_param;
+        }
+
+        return $documenting_param;
     }
 
     /**

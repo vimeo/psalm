@@ -400,6 +400,28 @@ final class MethodSignatureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'overrideOfAMethodDocumentedByTheInterfaceItImplements' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @param Closure $c
+                         * @psalm-param Closure():string $c
+                         */
+                        public function foo(Closure $c): void;
+                    }
+
+                    class A implements I {
+                        public function foo(Closure $c): void {}
+                    }
+
+                    class B extends A {
+                        /**
+                         * @param Closure $c
+                         * @psalm-param Closure():string $c
+                         */
+                        public function foo(Closure $c): void {}
+                    }',
+            ],
             'abstractConstructorCompatibleChild' => [
                 'code' => '<?php
                     abstract class A {
@@ -1449,6 +1471,29 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'overrideOfAMethodDocumentedByTheInterfaceWithAMoreSpecificParam' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @param Closure $c
+                         * @psalm-param Closure():string $c
+                         */
+                        public function foo(Closure $c): void;
+                    }
+
+                    class A implements I {
+                        public function foo(Closure $c): void {}
+                    }
+
+                    class B extends A {
+                        /**
+                         * @param Closure $c
+                         * @psalm-param Closure():non-empty-string $c
+                         */
+                        public function foo(Closure $c): void {}
+                    }',
+                'error_message' => 'MoreSpecificImplementedParamType',
+            ],
             'staticReturnOfAnInheritedMethodDoesNotSatisfyAnUnrelatedInterface' => [
                 'code' => '<?php
                     interface OtherInterface {
