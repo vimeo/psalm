@@ -251,6 +251,116 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'parentCallOfAStaticReturnTypeInAChildOfAGenericClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Box {
+                        public function same(): static {
+                            return $this;
+                        }
+                    }
+
+                    /** @extends Box<int> */
+                    class IntBox extends Box {
+                        public function same(): static {
+                            return parent::same();
+                        }
+                    }
+
+                    trait Chain {
+                        public function chain(): static {
+                            return parent::same();
+                        }
+                    }
+
+                    /** @extends Box<string> */
+                    class StringBox extends Box {
+                        use Chain;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+            ],
+            'selfStaticAndParentCallsKeepTheTypeArgumentsOfAStaticReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    class Collection {
+                        /**
+                         * @template TMakeKey of array-key
+                         * @template TMakeValue
+                         * @param array<TMakeKey, TMakeValue> $items
+                         * @return static<TMakeKey, TMakeValue>
+                         */
+                        public static function make(array $items = []): static {
+                            /** @psalm-suppress UnsafeInstantiation */
+                            return new static();
+                        }
+
+                        public function check(): void {
+                            $self = self::make(["a" => 1]);
+                            /** @psalm-check-type-exact $self = Collection<\'a\', 1>&static */;
+                            $static = static::make(["a" => 1]);
+                            /** @psalm-check-type-exact $static = Collection<\'a\', 1>&static */;
+                        }
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @extends Collection<TKey, TValue>
+                     */
+                    class SubCollection extends Collection {
+                        public function again(): void {
+                            $parent = parent::make(["a" => 1]);
+                            /** @psalm-check-type-exact $parent = SubCollection<\'a\', 1>&static */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ClassMustBeFinal'],
+            ],
+            'parentSelfAndStaticCallsReturnTheStaticTypeOfTheCallingClass' => [
+                'code' => '<?php
+                    abstract class Core {
+                        public function instance(): static {
+                            return $this;
+                        }
+
+                        public static function make(): static {
+                            /** @psalm-suppress UnsafeInstantiation */
+                            return new static();
+                        }
+                    }
+
+                    class Child extends Core {
+                        public function check(): void {
+                            $this->parentInstance = parent::instance();
+                            $this->parentStatic = parent::make();
+                            $this->selfStatic = self::make();
+                            $this->staticStatic = static::make();
+                        }
+
+                        /** @var mixed */
+                        public $parentInstance;
+                        /** @var mixed */
+                        public $parentStatic;
+                        /** @var mixed */
+                        public $selfStatic;
+                        /** @var mixed */
+                        public $staticStatic;
+
+                        public function parentInstanceReturn(): static {
+                            return parent::instance();
+                        }
+
+                        public static function parentStaticReturn(): static {
+                            return parent::make();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+            ],
             'mysqliGetWarningsMayReturnFalse' => [
                 'code' => <<<'PHP'
                     <?php
