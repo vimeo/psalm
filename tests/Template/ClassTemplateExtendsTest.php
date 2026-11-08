@@ -23,6 +23,83 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'inheritedDocblockReturnTypeResolvesThroughSubclassTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     */
+                    interface ReadableList {
+                        /** @return list<T> */
+                        public function toArray(): array;
+                    }
+
+                    /**
+                     * @template T
+                     * @implements ReadableList<T>
+                     */
+                    class Collection implements ReadableList {
+                        /** @param list<T> $values */
+                        public function __construct(protected array $values = []) {}
+
+                        public function toArray(): array {
+                            return $this->values;
+                        }
+                    }
+
+                    /**
+                     * @template T of scalar
+                     * @extends Collection<T>
+                     */
+                    class ScalarList extends Collection {}
+
+                    /** @var ScalarList<string> $strings */
+                    $strings = new ScalarList();
+                    $list = $strings->toArray();
+                ',
+                'assertions' => [
+                    '$list===' => 'list<string>',
+                ],
+            ],
+            'inheritedDocblockReturnTypeResolvesSwappedTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    interface Pair {
+                        /** @return array{A, B} */
+                        public function toArray(): array;
+                    }
+
+                    /**
+                     * @template K
+                     * @template V
+                     * @implements Pair<V, K>
+                     */
+                    class Impl implements Pair {
+                        /** @param array{V, K} $pair */
+                        public function __construct(private array $pair) {}
+
+                        public function toArray(): array {
+                            return $this->pair;
+                        }
+                    }
+
+                    /**
+                     * @template X
+                     * @template Y
+                     * @extends Impl<Y, X>
+                     */
+                    class Swapped extends Impl {}
+
+                    /** @var Swapped<int, string> $swapped */
+                    $swapped = new Swapped([1, "a"]);
+                    $pair = $swapped->toArray();
+                ',
+                'assertions' => [
+                    '$pair===' => 'list{int, string}',
+                ],
+            ],
             'newResolvesATemplateNotGivenToTheParentToItsBound' => [
                 'code' => '<?php
                     /** @template T */
