@@ -452,10 +452,16 @@ final class NegatedAssertionReconciler extends Reconciler
                 if ($existing_var_type->getLiteralStrings()) {
                     $did_match_literal_type = true;
 
-                    if ($existing_var_type->removeType($assertion_type->getKey())) {
+                    if ($existing_var_type->removeType($assertion_type->getKey())
+                        || UnionTypeComparator::canExpressionTypesBeIdentical(
+                            $statements_analyzer->getCodebase(),
+                            $existing_var_type->freeze(),
+                            new Union([$assertion_type]),
+                        )
+                    ) {
                         $redundant = false;
                     }
-                } elseif ($assertion_type->value === "" && $existing_var_type->hasType('string')) {
+                } elseif ($assertion_type->value === ""&& $existing_var_type->hasType('string')) {
                     $string_type = $existing_var_type->getAtomicTypes()['string'];
                     if ($string_type::class === TString::class) {
                         $existing_var_type->addType(new TNonEmptyString());

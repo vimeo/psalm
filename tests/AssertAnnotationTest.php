@@ -1854,6 +1854,37 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'reflectionNameTypeClassStringCanDifferFromAClass' => [
+                'code' => '<?php
+                    final class Envelope {}
+
+                    function check(\ReflectionNamedType $type): bool {
+                        if ($type->isBuiltin()) {
+                            return false;
+                        }
+
+                        $class = $type->getName();
+
+                        return Envelope::class !== $class && $class != Envelope::class;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classStringNextToLiteralStringCanDifferFromAClass' => [
+                'code' => '<?php
+                    class Envelope {}
+
+                    /** @param \'self\'|class-string<Envelope> $name */
+                    function check(string $name): void {
+                        if ($name !== Envelope::class) {
+                            echo $name;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ClassMustBeFinal'],
+                'php_version' => '8.0',
+            ],
             'withHasTypeCall' => [
                 'code' => '<?php
                     /**
