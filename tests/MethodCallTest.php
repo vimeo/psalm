@@ -220,6 +220,21 @@ final class MethodCallTest extends TestCase
                         return $draft->total();
                     }',
             ],
+            'mysqliGetWarningsMayReturnFalse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function warnings(mysqli $link): void {
+                        $object = $link->get_warnings();
+                        $procedural = mysqli_get_warnings($link);
+
+                        /** @psalm-check-type-exact $object = false|mysqli_warning */
+                        /** @psalm-check-type-exact $procedural = false|mysqli_warning */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'inheritedThisDocblockKeepsNativeStaticOfSubclass' => [
                 'code' => '<?php
                     class Form {}
@@ -275,6 +290,16 @@ final class MethodCallTest extends TestCase
                 'assertions' => ['$form' => 'Form'],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'dateTimeInterfaceMicrosecond' => [
+                'code' => '<?php
+                    function asInterface(DateTimeInterface $date): DateTimeInterface {
+                        return $date;
+                    }
+                    $result = asInterface(new DateTimeImmutable())->getMicrosecond();',
+                'assertions' => ['$result' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
             ],
             'notInCallMapTest' => [
                 'code' => '<?php
@@ -1566,6 +1591,15 @@ final class MethodCallTest extends TestCase
                         }
                     }',
             ],
+            'pdoSqliteCreateFunctionTakesFlags' => [
+                'code' => '<?php
+                    function register(PDO $pdo): void {
+                        $pdo->sqliteCreateFunction("double", static fn(int $i): int => $i * 2, 1, 2048);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
         ];
     }
 
@@ -1613,6 +1647,25 @@ final class MethodCallTest extends TestCase
                         return $document->reason();
                     }',
                 'error_message' => 'PossiblyUndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:43 - Method Invoice::reason does not exist',
+            ],
+            'mysqliBindResultRequiresOutputVariable' => [
+                'code' => '<?php
+                    function bind(mysqli_stmt $statement): void {
+                        $statement->bind_result();
+                    }',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'dateTimeInterfaceMicrosecondBeforeEightFour' => [
+                'code' => '<?php
+                    function microseconds(DateTimeInterface $date): void {
+                        $date->getMicrosecond();
+                    }',
+                // The runtime determines whether this is an absent interface method or a version-gated method.
+                'error_message' => 'src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - Method DateTimeInterface::getMicrosecond',
+                'error_levels' => [],
+                'php_version' => '8.3',
             ],
             'staticInvocation' => [
                 'code' => '<?php
