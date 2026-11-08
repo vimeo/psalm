@@ -77,7 +77,7 @@ final class BreakAnalyzer
             }
 
             if ($context->finally_scope) {
-                foreach ($context->vars_in_scope as $var_id => &$type) {
+                foreach ($context->vars_in_scope as $var_id => $type) {
                     if (isset($context->finally_scope->vars_in_scope[$var_id])) {
                         $context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->finally_scope->vars_in_scope[$var_id],
@@ -85,11 +85,9 @@ final class BreakAnalyzer
                             $statements_analyzer->getCodebase(),
                         );
                     } else {
-                        $type = $type->setPossiblyUndefined(true, true);
-                        $context->finally_scope->vars_in_scope[$var_id] = $type;
+                        $context->finally_scope->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true, true);
                     }
                 }
-                unset($type);
             }
         }
 

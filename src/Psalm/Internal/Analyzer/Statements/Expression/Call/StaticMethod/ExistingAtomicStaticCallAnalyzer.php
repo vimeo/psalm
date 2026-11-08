@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\FileManipulation;
+use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
@@ -99,13 +100,13 @@ final class ExistingAtomicStaticCallAnalyzer
         ) {
             $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
 
-            if (!$appearing_method_id) {
-                return;
-            }
+            // a method no class defines (declared by an interface or an abstract class) has no body to collect from
+            $appearing_method_class_name = $appearing_method_id?->fq_class_name;
 
-            $appearing_method_class_name = $appearing_method_id->fq_class_name;
-
-            if ($codebase->classExtends($context->self, $appearing_method_class_name)) {
+            if ($appearing_method_id !== null
+                && $appearing_method_class_name !== null
+                && $codebase->classExtends($context->self, $appearing_method_class_name)
+            ) {
                 $old_context_include_location = $context->include_location;
                 $old_self = $context->self;
                 $context->include_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
@@ -268,6 +269,13 @@ final class ExistingAtomicStaticCallAnalyzer
 
             $call_args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
+            MethodCallPurityAnalyzer::markStaticCallReturningThis(
+                $statements_analyzer,
+                $stmt,
+                $method_id,
+                $method_storage,
+            );
+
             // what the purity templates of the method are bound to here
             $template_capabilities = CallPurityResolver::getCallCapabilities(
                 $statements_analyzer,
@@ -386,7 +394,7 @@ final class ExistingAtomicStaticCallAnalyzer
                 CallAnalyzer::applyAssertionsToContext(
                     $stmt_name,
                     null,
-                    $assertions,
+                    CallAnalyzer::getAssertionsOnArgs($assertions, $method_storage, $stmt->getArgs()),
                     $stmt->getArgs(),
                     $template_result,
                     $context,
@@ -400,7 +408,11 @@ final class ExistingAtomicStaticCallAnalyzer
                     array_map(
                         static fn(Possibilities $assertion): Possibilities =>
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                        $method_storage->if_true_assertions,
+                        CallAnalyzer::getAssertionsOnArgs(
+                            $method_storage->if_true_assertions,
+                            $method_storage,
+                            $stmt->getArgs(),
+                        ),
                     ),
                 );
             }
@@ -411,7 +423,11 @@ final class ExistingAtomicStaticCallAnalyzer
                     array_map(
                         static fn(Possibilities $assertion): Possibilities =>
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                        $method_storage->if_false_assertions,
+                        CallAnalyzer::getAssertionsOnArgs(
+                            $method_storage->if_false_assertions,
+                            $method_storage,
+                            $stmt->getArgs(),
+                        ),
                     ),
                 );
             }
@@ -682,7 +698,7 @@ final class ExistingAtomicStaticCallAnalyzer
      * What `static` stands for in the signature of the method $stmt calls on $fq_class_name, and whether it is that
      * class exactly
      *
-     * @return array{string|TTemplateParam|null, bool}
+     * @return array{string|TNamedObject|TTemplateParam|null, bool}
      */
     public static function getStaticClassType(
         Codebase $codebase,
@@ -711,8 +727,9 @@ final class ExistingAtomicStaticCallAnalyzer
             && $lhs_type_part instanceof TNamedObject
             && $context->self
         ) {
-            $static_type = $context->self;
-            $context_final = $codebase->classlike_storage_provider->get($context->self)->final;
+            $self_storage = $codebase->classlike_storage_provider->get($context->self);
+            $static_type = ClassAnalyzer::getThisObjectType($self_storage, $context->self);
+            $context_final = $self_storage->final;
         } elseif ($context->calling_method_id !== null) {
             // differentiate between these cases:
             //   1. "static" comes from the CALLED static method - use $fq_class_name.
@@ -727,10 +744,12 @@ final class ExistingAtomicStaticCallAnalyzer
 
         return [
             $static_type,
-            is_string($static_type)
-            && ($static_type !== $context->self
-                || $class_storage->final
-                || $context_final),
+            $static_type instanceof TNamedObject
+                ? $class_storage->final || $context_final
+                : is_string($static_type)
+                    && ($static_type !== $context->self
+                        || $class_storage->final
+                        || $context_final),
         ];
     }
 
