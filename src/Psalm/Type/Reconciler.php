@@ -1451,11 +1451,13 @@ class Reconciler
                 }
                 return;
             }
+        } elseif ($array_key[0] === '\'' || $array_key[0] === '"') {
+            $array_key_offsets []= ExpressionIdentifier::unquoteOffset($array_key);
+        } elseif (preg_match('/^-?[0-9]+$/', $array_key) === 1) {
+            $array_key_offsets []= $array_key;
         } else {
-            $array_key_offsets []= $array_key[0] === '\'' || $array_key[0] === '"'
-                ? ExpressionIdentifier::unquoteOffset($array_key)
-                : $array_key
-            ;
+            // the value of a constant such as `static::class` isn't known
+            return;
         }
 
         $base_key = implode('', $key_parts);
