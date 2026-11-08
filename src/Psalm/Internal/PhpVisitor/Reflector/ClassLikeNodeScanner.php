@@ -182,9 +182,8 @@ final class ClassLikeNodeScanner
                     return false;
                 }
 
-                // While stubs are registered, a plugin may queue a file defining a stubbed class: it's scanned as
-                // regular code (see Scanner::scanAPath()), and its definition is merged into the stub's, as it was
-                // when such files were scanned as stubs.
+                // A regular file scanned while stubs are registered (see Scanner::scanAPath()) is merged into
+                // the stubbed class it redefines.
                 $merges_into_stub = $this->codebase->register_stub_files
                     || ($duplicate_storage->stubbed && $this->codebase->scanner->isRegisteringStubs());
 

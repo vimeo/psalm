@@ -810,9 +810,8 @@ final class Scanner
 
     public function scanAPath(string $file_path): void
     {
-        // While stubs are registered, plugins may queue other classes for scanning (e.g. from an
-        // AfterClassLikeVisit handler). Their files are regular code: scanned as stubs, their storage
-        // would be cached as such, so that later runs would see them as stubs until they change.
+        // Only stub files (and what they include) register stubs: a file queued meanwhile (e.g. by a plugin
+        // hook) is regular code, and must not be cached as a stub.
         $register_stub_files = $this->codebase->register_stub_files;
         $outer_registering_stubs = $this->registering_stubs;
         // a file scanned while another one is (e.g. from a hook) is scanned in the same phase

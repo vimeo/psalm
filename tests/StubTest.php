@@ -1573,7 +1573,6 @@ final class StubTest extends TestCase
         );
         $codebase = $this->project_analyzer->getCodebase();
 
-        // As e.g. a Laravel container binding handler does when it visits a stubbed class
         $hook = new class implements AfterClassLikeVisitInterface {
             #[Override]
             public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event): void
@@ -1631,7 +1630,7 @@ final class StubTest extends TestCase
 
         $this->addStubFile(
             (string) getcwd() . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'redefined.phpstub',
-            '<?php class Redefined { public function fromStub(): void {} }',
+            '<?php class Redefined { public function fromStub(): void {} public function shared(): int { return 1; } }',
         );
 
         $hook = new class implements AfterClassLikeVisitInterface {
@@ -1648,7 +1647,7 @@ final class StubTest extends TestCase
         $queued_path = (string) getcwd() . '/src/queued.php';
         $this->file_provider->registerFile(
             $queued_path,
-            '<?php class Redefined { public function m(): void {} } class Queued {}',
+            '<?php class Redefined { public function m(): void {} public function shared(): string { return ""; } } class Queued {}',
         );
         $codebase->scanner->setClassLikeFilePath('queued', $queued_path);
 
@@ -1657,13 +1656,68 @@ final class StubTest extends TestCase
 
         $this->analyzeFile($file_path, new Context());
 
-        // as when the file is scanned before the stub
         $redefined_storage = $codebase->classlike_storage_provider->get('Redefined');
         $this->assertTrue($redefined_storage->stubbed);
         $this->assertFalse($redefined_storage->user_defined);
         $this->assertArrayHasKey('m', $redefined_storage->methods);
         $this->assertArrayHasKey('fromstub', $redefined_storage->methods);
+        // a method both define takes the signature of the queued file
+        $this->assertSame(
+            'string',
+            (string) $codebase->methods->getStorage(new MethodIdentifier('Redefined', 'shared'))->return_type,
+        );
+        $this->assertFalse($redefined_storage->has_visitor_issues);
+        $this->assertFalse($codebase->file_storage_provider->get($queued_path)->has_visitor_issues);
         $this->assertTrue($codebase->classlike_storage_provider->get('Queued')->user_defined);
+    }
+
+    public function testMethodDeclaredTwiceInFileQueuedWhileRegisteringStubsIsADuplicate(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $this->addStubFile(
+            (string) getcwd() . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'redefined.phpstub',
+            '<?php class Redefined { public function shared(): int { return 1; } }',
+        );
+
+        $hook = new class implements AfterClassLikeVisitInterface {
+            #[Override]
+            public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event): void
+            {
+                if ($event->getStorage()->name === 'Redefined') {
+                    $event->getCodebase()->queueClassLikeForScanning('Queued', true);
+                }
+            }
+        };
+        (new PluginRegistrationSocket($codebase->config, $codebase))->registerHooksFromClass($hook::class);
+
+        $queued_path = (string) getcwd() . '/src/queued.php';
+        $this->file_provider->registerFile(
+            $queued_path,
+            '<?php class Redefined { public function shared(): string { return ""; } '
+                . 'public function shared(): bool { return true; } } class Queued {}',
+        );
+        $codebase->scanner->setClassLikeFilePath('queued', $queued_path);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php echo 1;');
+
+        $this->analyzeFile($file_path, new Context());
+
+        $this->assertTrue($codebase->file_storage_provider->get($queued_path)->has_visitor_issues);
     }
 
     public function testFileIncludedByStubIsAStub(): void
