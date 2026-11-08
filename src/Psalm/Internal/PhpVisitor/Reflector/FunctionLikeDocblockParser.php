@@ -120,19 +120,17 @@ final class FunctionLikeDocblockParser
                 foreach ($parsed_docblock->tags[$alias] as $offset => $param) {
                     $line_parts = CommentAnalyzer::splitDocLine($param);
 
-                    if (count($line_parts) > 0) {
-                        $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
+                    $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
 
-                        $info->self_out = [
-                            'type' => $line_parts[0],
-                            'line_number' => $comment->getStartLine() + substr_count(
-                                $comment_text,
-                                "\n",
-                                0,
-                                $offset - $comment->getStartFilePos(),
-                            ),
-                        ];
-                    }
+                    $info->self_out = [
+                        'type' => $line_parts[0],
+                        'line_number' => $comment->getStartLine() + substr_count(
+                            $comment_text,
+                            "\n",
+                            0,
+                            $offset - $comment->getStartFilePos(),
+                        ),
+                    ];
                 }
                 break;
             }
@@ -203,6 +201,8 @@ final class FunctionLikeDocblockParser
                                 0,
                                 $offset - $comment->getStartFilePos(),
                             ),
+                            'start' => $offset,
+                            'end' => $offset + strlen($line_parts[0]),
                         ];
                     }
                 } else {

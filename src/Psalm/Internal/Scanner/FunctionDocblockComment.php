@@ -67,7 +67,7 @@ final class FunctionDocblockComment
     public array $overloads = [];
 
     /**
-     * @var array<int, array{name:string, type:string, line_number: int}>
+     * @var array<int, array{name:string, type:string, line_number: int, start: int, end: int}>
      */
     public array $globals = [];
 
