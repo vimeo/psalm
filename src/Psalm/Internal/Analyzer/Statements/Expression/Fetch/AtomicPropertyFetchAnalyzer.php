@@ -1423,12 +1423,8 @@ final class AtomicPropertyFetchAnalyzer
                 || in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name))
                 || $intersects_with_enum;
 
-            // Since PHP 8.4 interfaces can have hook properties
-            $interface_property = $stmt->name instanceof PhpParser\Node\Identifier
-                ? $interface_storage->properties[$stmt->name->name] ?? null
-                : null;
-            $has_get_hook = $codebase->analysis_php_version_id >= 8_04_00 &&
-                $interface_property?->hook_get !== null;
+            $has_get_hook = $stmt->name instanceof PhpParser\Node\Identifier
+                && self::interfaceDeclaresPropertyHook($codebase, $lhs_type_part, $stmt->name->name, false);
 
             if (!$class_exists && !$is_enum_interface && !$has_get_hook && !$intersects_with_shape_property) {
                 if (IssueBuffer::accepts(
@@ -1469,6 +1465,35 @@ final class AtomicPropertyFetchAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * Since PHP 8.4 interfaces can declare hooked properties. Every interface of an intersection is checked,
+     * as narrowing puts the declaring interface after the original type (FieldInterface&LabelableInterface).
+     */
+    public static function interfaceDeclaresPropertyHook(
+        Codebase $codebase,
+        TNamedObject $lhs_type_part,
+        string $prop_name,
+        bool $is_write,
+    ): bool {
+        if ($codebase->analysis_php_version_id < 8_04_00) {
+            return false;
+        }
+
+        foreach ([$lhs_type_part, ...$lhs_type_part->getIntersectionTypes()] as $type_part) {
+            if (!$type_part instanceof TNamedObject || !$codebase->interfaceExists($type_part->value)) {
+                continue;
+            }
+
+            $property = $codebase->classlike_storage_provider->get($type_part->value)->properties[$prop_name] ?? null;
+
+            if (($is_write ? $property?->hook_set : $property?->hook_get) !== null) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

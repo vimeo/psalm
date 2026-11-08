@@ -1272,10 +1272,12 @@ final class InstancePropertyAssignmentAnalyzer
                     }
                 }
 
-                // Test if the property has a 'set' hook
-                $interface_property = $interface_storage->properties[$prop_name] ?? null;
-                $has_set_hook = $codebase->analysis_php_version_id >= 8_04_00
-                    && $interface_property?->hook_set !== null;
+                $has_set_hook = AtomicPropertyFetchAnalyzer::interfaceDeclaresPropertyHook(
+                    $codebase,
+                    $lhs_type_part,
+                    $prop_name,
+                    true,
+                );
 
                 if (!$class_exists && !$has_set_hook) {
                     if (IssueBuffer::accepts(
