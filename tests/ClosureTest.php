@@ -1110,6 +1110,23 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => ['UnsafeInstantiation'],
                 'php_version' => '8.1',
             ],
+            'FirstClassCallable:InstanceMethod:BackedEnumFromOnEnumCase' => [
+                'code' => '<?php
+                    enum E: string {
+                        case A = "a";
+                        case B = "b";
+                    }
+
+                    $e = E::A;
+                    $from = $e->from(...);
+                    $result = $from("b");
+                ',
+                'assertions' => [
+                    '$result===' => 'E',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'FirstClassCallable:WithArrayMap' => [
                 'code' => '<?php
                     $array = [1, 2, 3];
