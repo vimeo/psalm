@@ -66,7 +66,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use ReflectionProperty;
 use UnexpectedValueException;
 
-use function array_diff_key;
 use function array_keys;
 use function array_merge;
 use function array_pop;
@@ -465,6 +464,11 @@ class Reconciler
 
             if ($failed_reconciliation === self::RECONCILIATION_EMPTY) {
                 $result_type = $result_type->setProperties(['failed_reconciliation' => true]);
+            }
+
+            // a variable that was not set before is still possibly undefined where it is asserted not to be set
+            if (!$did_type_exist && $has_inverted_isset && count($key_parts) === 1 && $key[0] === '$') {
+                $result_type = $result_type->setPossiblyUndefined(true);
             }
 
             if (!$has_object_array_access) {
@@ -1044,7 +1048,8 @@ class Reconciler
 
     /**
      * The key `$x->m()` denotes a call without arguments, so the method's parameters take their defaults.
-     * Templates that neither defaults nor the receiver can bind would become `never`, so the declared type is kept.
+     * Templates that neither defaults nor the receiver can bind become `never`, as for an actual call,
+     * unless that turns the whole type into `never`: those templates are then left unbound.
      */
     private static function resolveZeroArgCallReturnType(
         Codebase $codebase,
@@ -1069,8 +1074,6 @@ class Reconciler
             ) ?? [],
         );
 
-        $defaulted_templates = [];
-
         foreach ($method_storage->params as $offset => $param) {
             if ($param->type && $param->default_type instanceof Union) {
                 TemplateStandinTypeReplacer::fillTemplateResult(
@@ -1081,16 +1084,27 @@ class Reconciler
                     $param->default_type,
                     $offset,
                 );
-
-                foreach ($param->type->getTemplateTypes() as $template_type) {
-                    $defaulted_templates[$template_type->param_name] = true;
-                }
             }
         }
 
-        if (array_diff_key($method_storage->template_types ?? [], $defaulted_templates) !== []) {
-            return $return_type;
+        // replaceTemplateTypes() adds the bounds to never of the templates it can't bind
+        $lower_bounds = $template_result->lower_bounds;
+
+        $resolved_type = MethodCallReturnTypeFetcher::replaceTemplateTypes(
+            $return_type,
+            $template_result,
+            $declaring_method_id,
+            0,
+            $codebase,
+        );
+
+        if (!$resolved_type->isNever() || $return_type->isNever()) {
+            return $resolved_type;
         }
+
+        $template_result->lower_bounds = $lower_bounds;
+        // with no template types, replaceTemplateTypes() doesn't bind the unbound ones to never
+        $template_result->template_types = [];
 
         return MethodCallReturnTypeFetcher::replaceTemplateTypes(
             $return_type,
@@ -1258,7 +1272,9 @@ class Reconciler
                     $issue = new TypeDoesNotContainType(
                         'Type ' . $old_var_type_string
                             . ' for ' . $key
-                            . ' is ' . ($not ? 'always ' : 'never ') . $assertion,
+                            . ' is ' . ($not
+                                ? 'always ' . $assertion_string . ', so its negation can never be true'
+                                : 'never ' . $assertion),
                         $code_location,
                         $old_var_type_string . ' ' . $assertion,
                     );
@@ -1434,11 +1450,13 @@ class Reconciler
                 }
                 return;
             }
+        } elseif ($array_key[0] === '\'' || $array_key[0] === '"') {
+            $array_key_offsets []= substr($array_key, 1, -1);
+        } elseif (preg_match('/^-?[0-9]+$/', $array_key) === 1) {
+            $array_key_offsets []= $array_key;
         } else {
-            $array_key_offsets []= $array_key[0] === '\'' || $array_key[0] === '"'
-                ? substr($array_key, 1, -1)
-                : $array_key
-            ;
+            // the value of a constant such as `static::class` isn't known
+            return;
         }
 
         $base_key = implode('', $key_parts);

@@ -6,7 +6,8 @@ set -euo pipefail
 #
 # The build-stubs workflow runs `composer build` against the freshly-built stub
 # images and, when that changes any committed file, uploads the diff as the
-# `composer-build-patch` artifact. This script fetches that artifact for HEAD and
+# `composer-build-patch` artifact, which its push-composer-build job commits to
+# the branch. When that job fails, this script fetches the artifact for HEAD and
 # applies it, so regenerated callmaps (etc.) can be pulled in without rerunning
 # the images locally.
 #

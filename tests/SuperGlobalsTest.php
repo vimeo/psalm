@@ -19,6 +19,24 @@ final class SuperGlobalsTest extends TestCase
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
+        yield 'aCopyOfASuperGlobalIsDefined' => [
+            'code' => '<?php
+                function save(): void {
+                    $session = $_SESSION;
+
+                    try {
+                        session_write_close();
+                    } finally {
+                        if ($_SESSION) {
+                            $_SESSION = $session;
+                        }
+                    }
+
+                    echo count($session);
+                }',
+            'assertions' => [],
+        ];
+
         yield 'http_response_headerIsList' => [
             'code' => '<?php
                 /** @return non-empty-list<non-falsy-string> */
@@ -30,6 +48,15 @@ final class SuperGlobalsTest extends TestCase
                 }
             ',
             'assertions' => [],
+        ];
+
+        yield 'COOKIE keys can be ints' => [
+            'code' => '<?php
+                $cookies = $_COOKIE;
+            ',
+            'assertions' => [
+                '$cookies===' => 'array<int|non-empty-string, string>',
+            ],
         ];
 
         yield 'ENV has scalar entries only' => [
@@ -51,6 +78,18 @@ final class SuperGlobalsTest extends TestCase
                 '$session===' => 'array<never, never>',
             ],
         ];
+
+        yield 'SERVER REQUEST_TIME range does not depend on the current time' => [
+            'code' => '<?php
+                $time = null;
+                if (isset($_SERVER["REQUEST_TIME"])) {
+                    $time = $_SERVER["REQUEST_TIME"];
+                }
+            ',
+            'assertions' => [
+                '$time===' => 'int<1, max>|null',
+            ],
+        ];
     }
 
     /**
@@ -69,6 +108,16 @@ final class SuperGlobalsTest extends TestCase
             'error_message' => 'InvalidReturnStatement',
         ];
 
+        yield 'aCopyOfHttpResponseHeaderIsPossiblyUndefined' => [
+            'code' => '<?php
+                function headers(): void {
+                    $headers = $http_response_header;
+                    echo count($headers);
+                }
+            ',
+            'error_message' => 'PossiblyUndefinedVariable',
+        ];
+
         yield 'access SESSION key after session_unset' => [
             'code' => '<?php
                 $_SESSION["foo"] = 42;
@@ -76,6 +125,13 @@ final class SuperGlobalsTest extends TestCase
                 echo $_SESSION["foo"];
             ',
             'error_message' => 'EmptyArrayAccess',
+        ];
+
+        yield 'SERVER REQUEST_TIME shape in issue message does not depend on the current time' => [
+            'code' => '<?php
+                echo $_SERVER["REQUEST_TIME"];
+            ',
+            'error_message' => 'REQUEST_TIME?: int<1, max',
         ];
     }
 }
