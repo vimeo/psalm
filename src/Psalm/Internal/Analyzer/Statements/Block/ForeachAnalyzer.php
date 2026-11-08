@@ -320,20 +320,6 @@ final class ForeachAnalyzer
             $foreach_context->branch_point = (int) $stmt->getAttribute('startFilePos');
         }
 
-        if ($stmt->keyVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->keyVar->name)) {
-            $key_type ??= Type::getMixed();
-
-            AssignmentAnalyzer::analyze(
-                $statements_analyzer,
-                $stmt->keyVar,
-                $stmt->expr,
-                $key_type,
-                $foreach_context,
-                $doc_comment,
-                ['$' . $stmt->keyVar->name => true],
-            );
-        }
-
         if ($value_type !== null) {
             $value_type = $value_type->setProperties(['by_ref' => $stmt->byRef]);
         } else {
@@ -370,6 +356,21 @@ final class ForeachAnalyzer
         ) {
             // TODO support references with destructuring
             $foreach_context->references_to_external_scope['$' . $stmt->valueVar->name] = true;
+        }
+
+        // PHP evaluates the iterated expression once, before it assigns the value and then a key of the same name
+        if ($stmt->keyVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->keyVar->name)) {
+            $key_type ??= Type::getMixed();
+
+            AssignmentAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt->keyVar,
+                null,
+                $key_type,
+                $foreach_context,
+                $doc_comment,
+                ['$' . $stmt->keyVar->name => true],
+            );
         }
 
         foreach ($var_comments as $var_comment) {
@@ -490,6 +491,7 @@ final class ForeachAnalyzer
 
         if ($context->collect_exceptions) {
             $context->mergeExceptions($foreach_context);
+            $context->mergeExceptions($inner_loop_context);
         }
 
         return null;
