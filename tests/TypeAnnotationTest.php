@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class TypeAnnotationTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -20,43 +22,13 @@ final class TypeAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'typeAliasUsingTheTemplateOfItsClassInANamespace' => [
-                'code' => '<?php
-                    namespace Some\\Ns;
-
-                    /**
-                     * @template DT of object
-                     */
-                    interface DataInner {
-                        /**
-                         * @param DT $inner
-                         */
-                        public function setInner($inner): void;
-                    }
-
-                    /**
-                     * @template T of object
-                     *
-                     * @psalm-type DataType=array<class-string<T>, DataInner<T>>
-                     */
-                    final class Data {
-                        /**
-                         * @var DataType
-                         */
-                        private array $inner = [];
-
-                        public function count(): int {
-                            return count($this->inner);
-                        }
-                    }',
-            ],
-            'typeAliasUsingTheTemplateOfItsClassKeepsTheTemplate' => [
+            'typeAliasOfAClassWithATemplateThatDoesNotUseIt' => [
                 'code' => '<?php
                     namespace Some\\Ns;
 
                     /**
                      * @template T of object
-                     * @psalm-type Items=list<T>
+                     * @psalm-type Items=list<int>
                      */
                     final class Box {
                         /**
@@ -68,7 +40,7 @@ final class TypeAnnotationTest extends TestCase
                          * @return T|null
                          */
                         public function first(): ?object {
-                            return $this->items[0] ?? null;
+                            return null;
                         }
                     }',
             ],
@@ -1186,6 +1158,44 @@ final class TypeAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'typeAliasUsingTheTemplateOfItsClassInANamespace' => [
+                'code' => '<?php
+                    namespace Some\\Ns;
+
+                    interface DataInner {}
+
+                    /**
+                     * @template T of object
+                     *
+                     * @psalm-type DataType=array<class-string<T>, DataInner>
+                     */
+                    final class Data {
+                        /**
+                         * @var DataType
+                         */
+                        private array $inner = [];
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:11:21 - Type alias DataType cannot use the template T of its class',
+            ],
+            'typeAliasUsingTheTemplateOfItsClassWithoutANamespace' => [
+                'code' => '<?php
+                    interface DataInner {}
+
+                    /**
+                     * @template T of object
+                     *
+                     * @psalm-type DataType=array<class-string<T>, DataInner>
+                     */
+                    final class Data {
+                        /**
+                         * @var DataType
+                         */
+                        private array $inner = [];
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:9:21 - Type alias DataType cannot use the template T of its class',
+            ],
             'invalidTypeAlias' => [
                 'code' => '<?php
                     namespace Barrr;

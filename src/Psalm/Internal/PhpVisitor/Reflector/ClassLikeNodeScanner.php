@@ -2340,7 +2340,6 @@ final class ClassLikeNodeScanner
             $parsed_docblock->tags['psalm-type'] ?? [],
         );
 
-        // the templates of the class the alias is declared on are not class names, whatever the namespace
         $template_names = [];
 
         foreach (['template', 'psalm-template', 'phpstan-template', 'template-covariant',
@@ -2411,6 +2410,15 @@ final class ClassLikeNodeScanner
                 );
             } catch (TypeParseTreeException $e) {
                 throw new DocblockParseException($type_string . ' is not a valid type: '.$e->getMessage());
+            }
+
+            // an alias can be imported into classes that don't have the template
+            foreach ($type_tokens as $type_token) {
+                if (isset($template_names[$type_token[0]])) {
+                    throw new DocblockParseException(
+                        'Type alias ' . $type_alias . ' cannot use the template ' . $type_token[0] . ' of its class',
+                    );
+                }
             }
 
             $type_alias_tokens[$type_alias] = new InlineTypeAlias($type_tokens);
