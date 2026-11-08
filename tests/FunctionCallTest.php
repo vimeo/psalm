@@ -3780,6 +3780,14 @@ final class FunctionCallTest extends TestCase
                     echo strtolower("abc");',
                 'error_message' => 'The call to strtolower is unnecessary',
             ],
+            'strtolowerOfALowercaseStringParamDeclaredString' => [
+                'code' => '<?php
+                    /** @param lowercase-string $s */
+                    function foo(string $s): string {
+                        return strtolower($s);
+                    }',
+                'error_message' => 'RedundantFunctionCallGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32',
+            ],
             'is_a_withAStringAndNoThirdArg' => [
                 'code' => '<?php
                     is_a("Foo", Exception::class);

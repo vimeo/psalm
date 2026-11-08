@@ -11,6 +11,8 @@ use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ArrayAssignmentTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -3141,7 +3143,15 @@ final class ArrayAssignmentTest extends TestCase
                     function foo(array $a) : array {
                         return array_values($a);
                     }',
-                'error_message' => 'RedundantFunctionCall',
+                'error_message' => 'RedundantFunctionCallGivenDocblockType',
+            ],
+            'arrayValuesOnNativeList' => [
+                'code' => '<?php
+                    function foo() : array {
+                        $a = [1, 2];
+                        return array_values($a);
+                    }',
+                'error_message' => 'RedundantFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32',
             ],
             'assignToListWithUpdatedForeachKey' => [
                 'code' => '<?php
