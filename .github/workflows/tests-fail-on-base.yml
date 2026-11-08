@@ -1,0 +1,76 @@
+name: Changed tests fail on base
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    paths: ['tests/**']
+permissions:
+  contents: read
+
+# A new push to a pull request cancels its previous run. A label that doesn't affect this job
+# gets a group of its own, so that its skipped run doesn't cancel a run that is still going.
+concurrency:
+  group: >-
+    ${{ github.workflow }}-${{ github.event.pull_request.number }}${{
+    (contains(fromJSON('["labeled", "unlabeled"]'), github.event.action) && !startsWith(github.event.label.name, 'release:'))
+    && format('-{0}', github.run_id) || '' }}
+  cancel-in-progress: true
+
+jobs:
+  tests-fail-on-base:
+    name: Changed tests fail on base
+    runs-on: ubuntu-latest
+    # refactoring, typo and docs pull requests have no behaviour change to assert; mixed ones use guard markers
+    if: >-
+      !contains(github.event.pull_request.labels.*.name, 'release:internal')
+      && !contains(github.event.pull_request.labels.*.name, 'release:typo')
+      && !contains(github.event.pull_request.labels.*.name, 'release:docs')
+      && (!contains(fromJSON('["labeled", "unlabeled"]'), github.event.action) || startsWith(github.event.label.name, 'release:'))
+
+    steps:
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: "8.3"
+          ini-values: zend.assertions=1, assert.exception=1
+          tools: composer:v2
+          coverage: none
+          extensions: none, curl, dom, filter, intl, json, libxml, mbstring, opcache, openssl, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
+        env:
+          fail-fast: true
+
+      # the merge base is needed, and the head, not the merge commit, so that the tests are the ones of the pull request
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Get Composer Cache Directories
+        id: composer-cache
+        run: |
+          echo "files_cache=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+          echo "vcs_cache=$(composer config cache-vcs-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate composer.lock
+        run: |
+          composer update --no-install
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Cache composer cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
+        with:
+          path: |
+            ${{ steps.composer-cache.outputs.files_cache }}
+            ${{ steps.composer-cache.outputs.vcs_cache }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Run composer install
+        run: composer install -o
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Check that the changed test cases fail on the base
+        run: php bin/ci/check-tests-fail-on-base.php --base=${{ github.event.pull_request.base.sha }}
