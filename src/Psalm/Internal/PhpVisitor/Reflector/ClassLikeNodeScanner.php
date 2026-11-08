@@ -1763,7 +1763,10 @@ final class ClassLikeNodeScanner
                     new CodeLocation($this->file_scanner, $const),
                 );
 
-                if (!IssueBuffer::isSuppressedInList($missing_type_issue, $suppressed_issues)) {
+                if (!IssueBuffer::isSuppressedInList(
+                    $missing_type_issue,
+                    $suppressed_issues + $storage->suppressed_issues,
+                )) {
                     $this->file_storage->scan_issues[] = $missing_type_issue;
                 }
             }
@@ -2083,6 +2086,8 @@ final class ClassLikeNodeScanner
                 }
 
                 if ($property_storage->signature_type) {
+                    $property_storage->type_location = $doc_var_location ?? $property_storage->type_location;
+
                     $all_typehint_types_match = true;
                     $signature_atomic_types = $property_storage->signature_type->getAtomicTypes();
 

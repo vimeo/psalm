@@ -236,6 +236,9 @@ abstract class CallAnalyzer
                     }
                 }
 
+                // what the followed method learns about `$this` holds only inside it
+                $local_this_type = $context->vars_in_scope['$this'] ?? null;
+
                 $local_vars_possibly_in_scope = $context->vars_possibly_in_scope;
 
                 $old_calling_method_id = $context->calling_method_id;
@@ -260,6 +263,10 @@ abstract class CallAnalyzer
 
                 foreach ($local_vars_in_scope as $var => $type) {
                     $context->vars_in_scope[$var] = $type;
+                }
+
+                if ($local_this_type !== null) {
+                    $context->vars_in_scope['$this'] = $local_this_type;
                 }
 
                 foreach ($local_vars_possibly_in_scope as $var => $_) {
@@ -295,8 +302,13 @@ abstract class CallAnalyzer
             ) !== false;
         }
 
-        $method_params = $overload->params
-            ?? $codebase->methods->getMethodParams($method_id, $statements_analyzer, $args, $context);
+        $method_params = $overload->params ?? $codebase->methods->getMethodParams(
+            $method_id,
+            $statements_analyzer,
+            $args,
+            $context,
+            $code_location,
+        );
 
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
