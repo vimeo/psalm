@@ -41,6 +41,32 @@ final class DoTest extends TestCase
                         $i++;
                     } while ($options->foo && $i < 3);',
             ],
+            'doWhileConditionAfterContinueBeforeAssignment' => [
+                'code' => '<?php
+                    do {
+                        $run = false;
+
+                        if (time() % 3 === 0) {
+                            continue;
+                        }
+
+                        $run = true;
+                    } while ($run);',
+            ],
+            'doWhileConditionAfterContinueWithSeveralVars' => [
+                'code' => '<?php
+                    do {
+                        $a = false;
+                        $b = 0;
+
+                        if (time() % 3 === 0) {
+                            continue;
+                        }
+
+                        $a = true;
+                        $b = 1;
+                    } while ($a || $b === 1);',
+            ],
             'doWhileTrue' => [
                 'code' => '<?php
                     function ret(): int {
@@ -151,7 +177,6 @@ final class DoTest extends TestCase
                             break;
                         }
 
-                        /** @psalm-suppress MixedArgument */
                         foo($a);
                     }
                     while (rand(0,100) === 10);',
