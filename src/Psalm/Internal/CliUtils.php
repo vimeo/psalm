@@ -493,19 +493,10 @@ final class CliUtils
     }
 
     /**
-     * Psalm runs recursive workloads (parsing, serializing ASTs into the cache, type resolution)
-     * inside Revolt event loop fibers: every parallel worker executes its task in one, and so does
-     * the language server. A fiber's C stack is capped by `fiber.stack_size`, which on a typical
-     * 64-bit setup is 2 MiB against a main thread stack of about 8 MiB, so deeply nested code aborts with
-     * "Maximum call stack size of 2031616 bytes ... reached. Infinite recursion?" even though the
-     * very same file analyses fine in-process (#11967).
-     *
-     * Give fibers at least as much stack as the main thread typically has. On demand-paged systems
-     * the larger size reserves virtual address space, and only the pages actually used become resident.
-     *
-     * Must run before the first fiber is started, as that is when its stack is allocated.
-     * Unlike the opcache settings, `fiber.stack_size` can be changed at runtime, so this does not
-     * rely on PsalmRestarter and also covers runs that are not restarted. Forked workers inherit it.
+     * Raises `fiber.stack_size` to MINIMUM_FIBER_STACK_SIZE (parallel workers and the language server run
+     * their tasks in fibers, whose small default stack overflows on deeply nested ASTs, #11967) unless it
+     * is already larger. Must run before the first fiber starts, as that allocates its stack. Forked
+     * workers inherit the setting.
      */
     public static function ensureFiberStackSize(): void
     {
@@ -531,12 +522,11 @@ final class CliUtils
 
         $unit = strtolower($value[strlen($value) - 1]);
 
-        if (in_array($unit, ['g', 'm', 'k'], true)) {
-            $value = (int) $value;
-        } else {
+        if (!in_array($unit, ['g', 'm', 'k'], true)) {
             $unit = '';
-            $value = (int) $value;
         }
+
+        $value = (int) $value;
 
         switch ($unit) {
             case 'g':

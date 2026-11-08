@@ -20,6 +20,7 @@ use function in_array;
 use function ini_get;
 use function is_int;
 use function preg_replace;
+use function strtolower;
 
 /**
  * @internal
