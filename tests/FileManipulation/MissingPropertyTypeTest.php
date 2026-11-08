@@ -18,6 +18,39 @@ final class MissingPropertyTypeTest extends FileManipulationTestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'leavePropertiesDeclaredTogetherUntouched' => [
+                'input' => '<?php
+                    class A {
+                        public $v, $w;
+                        public $x;
+
+                        public function __construct() {
+                            $this->v = 4;
+                            $this->w = "hello";
+                            $this->x = 5;
+                        }
+                    }',
+                'output' => '<?php
+                    class A {
+                        public $v, $w;
+
+                        /**
+                         * @var int
+                         *
+                         * @psalm-var 5
+                         */
+                        public $x;
+
+                        public function __construct() {
+                            $this->v = 4;
+                            $this->w = "hello";
+                            $this->x = 5;
+                        }
+                    }',
+                'php_version' => '5.6',
+                'issues_to_fix' => ['MissingPropertyType'],
+                'safe_types' => true,
+            ],
             'addMissingUnionType56' => [
                 'input' => '<?php
                     class A {
