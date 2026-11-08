@@ -61,7 +61,8 @@ use const PHP_EOL;
  *     array<string, string>,
  *     array<string, bool>,
  *     array<string, bool>,
- *     array<string, bool>
+ *     array<string, bool>,
+ *     array<string, true>
  * }
  *
  * @psalm-type  PoolData = array{
@@ -764,6 +765,7 @@ final class Scanner
             $this->deep_scanned_classlike_files,
             $this->scanned_files,
             $this->reflected_classlikes_lc,
+            $this->stub_files,
         ];
     }
 
@@ -782,6 +784,7 @@ final class Scanner
             $deep_scanned_classlike_files,
             $scanned_files,
             $reflected_classlikes_lc,
+            $stub_files,
         ] = $thread_data;
 
         $this->files_to_scan = array_merge($files_to_scan, $this->files_to_scan);
@@ -796,6 +799,8 @@ final class Scanner
         );
         $this->scanned_files = array_merge($scanned_files, $this->scanned_files);
         $this->reflected_classlikes_lc = array_merge($reflected_classlikes_lc, $this->reflected_classlikes_lc);
+        // a forked scan of a stub records the files it includes as stubs
+        $this->stub_files += $stub_files;
     }
 
     public function isForked(): void

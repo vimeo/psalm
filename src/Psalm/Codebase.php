@@ -148,6 +148,9 @@ final class Codebase
 
     /**
      * Whether to log functions just at the file level or globally (for stubs)
+     *
+     * While a file is scanned, whether that file is a stub: other files scanned while stubs are registered see it
+     * off (see Scanner::scanAPath() and Scanner::isRegisteringStubs()).
      */
     public bool $register_stub_files = false;
 

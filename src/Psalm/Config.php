@@ -2327,7 +2327,8 @@ final class Config
         }
 
         // A preloaded stub may need a class that another stub defines, if that stub is also autoloadable. Scanned
-        // now, it would not be rescanned, so it must be scanned as a stub already.
+        // now, it would not be rescanned, so it must be scanned as a stub already. Stubs that plugins register
+        // aren't known yet.
         foreach ($this->stub_files as $file_path) {
             $codebase->scanner->addStubFile(self::normalizeStubFilePath($file_path));
         }

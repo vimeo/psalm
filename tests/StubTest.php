@@ -13,6 +13,7 @@ use Psalm\Exception\InvalidClasslikeOverrideException;
 use Psalm\Exception\InvalidMethodOverrideException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
@@ -1589,7 +1590,10 @@ final class StubTest extends TestCase
         // Only known to the file provider, as a class first scanned when the hook queues it
         $contract_path = (string) getcwd() . '/lib/contract.php';
         $this->file_provider->registerFile($contract_path, '<?php namespace A\B\C; interface Contract {}');
-        $this->file_provider->registerFile((string) getcwd() . '/lib/other.php', '<?php namespace A\B\C; class Other {}');
+        $this->file_provider->registerFile(
+            (string) getcwd() . '/lib/other.php',
+            '<?php namespace A\B\C; class Other { public function m(): void {} } function other_function(): void {}',
+        );
         $codebase->scanner->setClassLikeFilePath('a\b\c\contract', $contract_path);
 
         $file_path = (string) getcwd() . '/src/somefile.php';
@@ -1603,6 +1607,8 @@ final class StubTest extends TestCase
             $this->assertTrue($queued_storage->user_defined, $queued_class);
             $this->assertFalse($queued_storage->stubbed, $queued_class);
         }
+        $this->assertFalse($codebase->methods->getStorage(new MethodIdentifier('A\B\C\Other', 'm'))->stubbed);
+        $this->assertFalse($codebase->functions->hasStubbedFunction('A\B\C\other_function'));
         $this->assertTrue($codebase->classlike_storage_provider->get('SystemClass')->stubbed);
     }
 
@@ -1651,8 +1657,10 @@ final class StubTest extends TestCase
 
         $this->analyzeFile($file_path, new Context());
 
+        // as when the file is scanned before the stub
         $redefined_storage = $codebase->classlike_storage_provider->get('Redefined');
-        $this->assertTrue($redefined_storage->user_defined);
+        $this->assertTrue($redefined_storage->stubbed);
+        $this->assertFalse($redefined_storage->user_defined);
         $this->assertArrayHasKey('m', $redefined_storage->methods);
         $this->assertArrayHasKey('fromstub', $redefined_storage->methods);
         $this->assertTrue($codebase->classlike_storage_provider->get('Queued')->user_defined);
