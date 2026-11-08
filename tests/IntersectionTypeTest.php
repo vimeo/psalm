@@ -73,6 +73,28 @@ final class IntersectionTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'methodOfIntersectedInterfaceIsNotRoutedThroughMagicCall' => [
+                'code' => '<?php
+                    interface MockObject {
+                        public function expects(): string;
+                    }
+
+                    class Client {
+                        /**
+                         * @deprecated
+                         * @param list<mixed> $arguments
+                         */
+                        public function __call(string $method, array $arguments): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @param Client&MockObject $client */
+                    function test($client): string {
+                        $result = $client->expects();
+                        return $result;
+                    }',
+            ],
             'methodOfTheSecondInterfaceOfAnIntersectionBoundOfATemplate' => [
                 'code' => '<?php
                     interface HasName {}
@@ -438,6 +460,58 @@ final class IntersectionTypeTest extends TestCase
                 'error_message' => 'UndefinedPropertyAssignment',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'methodMissingInAllIntersectedTypesGoesThroughMagicCall' => [
+                'code' => '<?php
+                    interface MockObject {
+                        public function expects(): string;
+                    }
+
+                    class Client {
+                        /**
+                         * @deprecated
+                         * @param list<mixed> $arguments
+                         */
+                        public function __call(string $method, array $arguments): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @param Client&MockObject $client */
+                    function test($client): int {
+                        return $client->other();
+                    }',
+                'error_message' => 'UndefinedMagicMethod',
+            ],
+            'methodOfAnEarlierUnionArmDoesNotHideMagicCallOfAnIntersection' => [
+                'code' => '<?php
+                    interface HasFoo {
+                        public function foo(): string;
+                    }
+
+                    interface Other {
+                        public function other(): string;
+                    }
+
+                    class FirstClient {
+                        /** @param list<mixed> $arguments */
+                        public function __call(string $method, array $arguments): int {
+                            return 1;
+                        }
+                    }
+
+                    class SecondClient {
+                        /** @param list<mixed> $arguments */
+                        public function __call(string $method, array $arguments): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @param (HasFoo&FirstClient)|(SecondClient&Other) $client */
+                    function test($client): void {
+                        echo $client->foo();
+                    }',
+                'error_message' => 'UndefinedMagicMethod',
             ],
             'interfaceIntersectedWithShapeRejectsOtherProperty' => [
                 'code' => '<?php
