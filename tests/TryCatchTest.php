@@ -70,6 +70,98 @@ final class TryCatchTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'loopVariableStaysDefinedInCatchOfTryNestedInTheBodyOfATryWithFinally' => [
+                'code' => '<?php
+                    /** @param list<string> $stores */
+                    function returning(array $stores): string {
+                        try {
+                            foreach ($stores as $store) {
+                                try {
+                                    return strtoupper($store);
+                                } catch (Throwable $e) {
+                                    echo $store;
+                                }
+                            }
+                        } finally {
+                            echo "done";
+                        }
+
+                        throw new RuntimeException("failed");
+                    }
+
+                    /** @param list<string> $stores */
+                    function throwing(array $stores): void {
+                        try {
+                            foreach ($stores as $key => $store) {
+                                try {
+                                    throw new RuntimeException($store);
+                                } catch (Throwable $e) {
+                                    echo $store, $key;
+                                }
+                            }
+                        } finally {
+                            echo "done";
+                        }
+                    }
+
+                    /** @param list<string> $stores */
+                    function leaving(array $stores): void {
+                        try {
+                            foreach ($stores as $key => $store) {
+                                try {
+                                    if ($key === 0) {
+                                        continue;
+                                    }
+
+                                    break;
+                                } catch (Throwable $e) {
+                                    echo $store, $key;
+                                }
+                            }
+                        } finally {
+                            echo "done";
+                        }
+                    }',
+            ],
+            'finallySeesVariableSetInCatchOfNestedTryThatRethrows' => [
+                'code' => '<?php
+                    function g2(): void {}
+
+                    function h(): void {
+                        $retry = false;
+                        try {
+                            try {
+                                g2();
+                            } catch (Throwable $e) {
+                                $retry = true;
+                                throw $e;
+                            }
+                        } finally {
+                            if (!$retry) {
+                                echo 1;
+                            }
+                        }
+                    }',
+            ],
+            'finallySeesVariableSetBeforeReturnInTryBody' => [
+                'code' => '<?php
+                    function a(): int {
+                        $x = null;
+                        try {
+                            $x = 1;
+                            if (rand(0, 1)) {
+                                return 5;
+                            }
+                            $x = "a";
+                        } finally {
+                            if ($x === 1) {
+                                echo 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+            ],
             'variableAssignedInTryIsDefinedWhenTheCatchContinuesOrRethrows' => [
                 'code' => '<?php
                     function getData(int $test): int {
@@ -618,6 +710,26 @@ final class TryCatchTest extends TestCase
                         return ["a" => $x];
                     }',
                 'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'finallyStillKnowsVariableNotSetByNestedTryThatRethrows' => [
+                'code' => '<?php
+                    function g2(): void {}
+
+                    function h(): void {
+                        $retry = false;
+                        try {
+                            try {
+                                g2();
+                            } catch (Throwable $e) {
+                                throw $e;
+                            }
+                        } finally {
+                            if (!$retry) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
             ],
             'variableAssignedInTryIsPossiblyUndefinedWhenOneCatchPathFallsThrough' => [
                 'code' => '<?php
