@@ -81,28 +81,18 @@ final class MethodCallReturnTypeFetcher
 
         if ($stmt->isFirstClassCallable()) {
             if ($method_storage) {
-                // the type the method inherits from a parent docblock
-                $callable_return_type = $method_storage->return_type;
-
-                if ($callable_return_type === null) {
-                    $return_type_class = null;
-                    $callable_return_type = $codebase->methods->getMethodReturnType(
-                        $codebase,
-                        $method_id,
-                        $return_type_class,
-                    );
-                }
+                [$closure, $method_template_types] = self::getInheritedClosure(
+                    $codebase,
+                    $method_id,
+                    $method_storage,
+                );
 
                 return self::getFirstClassCallableType(
                     $codebase,
                     $stmt,
-                    new TClosure(
-                        $method_storage->params,
-                        $callable_return_type,
-                        $method_storage->capabilities,
-                    ),
+                    $closure,
                     $template_result,
-                    $method_storage->template_types ?? [],
+                    $method_template_types,
                     $fq_class_name,
                     $static_type,
                     $class_storage->parent_class,
@@ -922,6 +912,40 @@ final class MethodCallReturnTypeFetcher
      * of its method itself: they then stay in its closure. Other calls bind them through the inferred template result.
      */
     public const CALL_ARGUMENT_ATTRIBUTE = 'first_class_callable_argument';
+
+    /**
+     * The closure of a method for a first-class callable. A method without a return type of its own inherits the type
+     * of the parent that declares one, and the parameters and templates that type refers to come with it.
+     *
+     * @return array{TClosure, array<string, non-empty-array<string, Union>>} the closure and its method templates
+     */
+    public static function getInheritedClosure(
+        Codebase $codebase,
+        MethodIdentifier $method_id,
+        MethodStorage $method_storage,
+    ): array {
+        $return_type = $method_storage->return_type;
+        $signature_storage = $method_storage;
+
+        if ($return_type === null) {
+            $self_class = null;
+            $return_type = $codebase->methods->getMethodReturnType($codebase, $method_id, $self_class);
+
+            foreach ($codebase->methods->getOverriddenMethodIds($method_id) as $overridden_method_id) {
+                $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
+
+                if ($overridden_storage->return_type !== null) {
+                    $signature_storage = $overridden_storage;
+                    break;
+                }
+            }
+        }
+
+        return [
+            new TClosure($signature_storage->params, $return_type, $method_storage->capabilities),
+            $signature_storage->template_types ?? [],
+        ];
+    }
 
     /**
      * The closure of a first-class callable of a method, typed as a call of the method on the same receiver: with its
