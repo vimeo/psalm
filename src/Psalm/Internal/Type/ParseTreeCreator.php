@@ -99,13 +99,19 @@ final class ParseTreeCreator
                     break;
 
                 case '>':
-                    do {
-                        if ($this->current_leaf->parent === null || $this->current_leaf instanceof PurityTree) {
-                            throw new TypeParseTreeException('Cannot parse generic type');
-                        }
+                    // after a trailing comma the generic itself is the current leaf
+                    if (!($this->current_leaf instanceof GenericTree
+                        && $this->t > 0
+                        && $this->type_tokens[$this->t - 1][0] === ',')
+                    ) {
+                        do {
+                            if ($this->current_leaf->parent === null || $this->current_leaf instanceof PurityTree) {
+                                throw new TypeParseTreeException('Cannot parse generic type');
+                            }
 
-                        $this->current_leaf = $this->current_leaf->parent;
-                    } while (!$this->current_leaf instanceof GenericTree);
+                            $this->current_leaf = $this->current_leaf->parent;
+                        } while (!$this->current_leaf instanceof GenericTree);
+                    }
 
                     $this->current_leaf->terminated = true;
 
@@ -276,6 +282,19 @@ final class ParseTreeCreator
      */
     private function parseCallableParam(array $current_token, ParseTree $current_parent): void
     {
+        // the `=` or `...` written right after the type has already made the param: `int= $name`
+        if ($this->current_leaf instanceof CallableParamTree
+            && $this->current_leaf->name === null
+            && $current_token[0][0] === '$'
+            && strlen($current_token[0]) > 1
+        ) {
+            /** @var non-empty-string $name */
+            $name = substr($current_token[0], 1);
+            $this->current_leaf->name = $name;
+
+            return;
+        }
+
         $variadic = false;
         $has_default = false;
 

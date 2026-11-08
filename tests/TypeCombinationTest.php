@@ -194,6 +194,48 @@ final class TypeCombinationTest extends TestCase
     public static function providerTestValidTypeCombination(): iterable
     {
         return [
+            'objectShapesWithAnExtraPropertyKeepOnlyTheCommonOnes' => [
+                'object{a:string}',
+                [
+                    'object{a: string}',
+                    'object{a: string, b: int}',
+                ],
+            ],
+            'objectShapesKeepAnOptionalPropertyBothDeclare' => [
+                'object{a:string, b?:int}',
+                [
+                    'object{a: string, b?: int}',
+                    'object{a: string, b: int}',
+                ],
+            ],
+            'objectShapesWithDisjointPropertiesShareNone' => [
+                'object{}',
+                [
+                    'object{a: string}',
+                    'object{b: int}',
+                ],
+            ],
+            'objectShapesWithTheSameProperty' => [
+                'object{a:int|string}',
+                [
+                    'object{a: string}',
+                    'object{a: int}',
+                ],
+            ],
+            'objectShapesKeepTheirCommonIntersection' => [
+                'object{a:string}&Iterator',
+                [
+                    'object{a: string}&Iterator',
+                    'object{a: string, b: int}&Iterator&Countable',
+                ],
+            ],
+            'objectAbsorbsObjectShapes' => [
+                'object',
+                [
+                    'object',
+                    'object{a: string}',
+                ],
+            ],
             'objectWithPropertiesKeepsNamedObjects' => [
                 'Error|object{foo:string}',
                 [
@@ -208,13 +250,6 @@ final class TypeCombinationTest extends TestCase
                     'Error',
                 ],
             ],
-            'objectShapesWithDifferentPropertiesAreMerged' => [
-                'object{a?:int, b?:string}',
-                [
-                    'object{a: int}',
-                    'object{b: string}',
-                ],
-            ],
             'objectShapesWithOptionalProperty' => [
                 'object{bar?:string}',
                 [
@@ -222,25 +257,11 @@ final class TypeCombinationTest extends TestCase
                     'object{bar?: string}',
                 ],
             ],
-            'objectShapesWithTheSamePropertyCombineItsTypes' => [
-                'object{a:int|string}',
-                [
-                    'object{a: int}',
-                    'object{a: string}',
-                ],
-            ],
             'objectShapeInObject' => [
                 'object',
                 [
                     'object{a: int}',
                     'object',
-                ],
-            ],
-            'objectInObjectShape' => [
-                'object',
-                [
-                    'object',
-                    'object{a: int}',
                 ],
             ],
             'complexArrayFallback1' => [
