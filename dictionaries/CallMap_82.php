@@ -53732,7 +53732,6 @@ return array (
   ),
   'mysqli::get_warnings' => 
   array (
-    0 => 'mysqli_warning',
     -1 => 'false|mysqli_warning',
     -2 => 'tentative',
   ),
@@ -54218,7 +54217,6 @@ return array (
   ),
   'mysqli_get_warnings' => 
   array (
-    0 => 'mysqli_warning',
     -1 => 'false|mysqli_warning',
     'mysql' => 'mysqli',
   ),
