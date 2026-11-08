@@ -452,6 +452,16 @@ final class ArgTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'iterableInUnionPassedToArrayParam' => [
+                'code' => '<?php
+                    function takesArray(array $a): void {}
+
+                    /** @param list<int>|iterable<string> $values */
+                    function f(iterable $values): void {
+                        takesArray($values);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
             'arrayPushArgumentUnpackingWithBadArg' => [
                 'code' => '<?php
                     $a = [];

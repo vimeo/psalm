@@ -28,6 +28,78 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'voidNeverDeclaredWithAThrowingPathAndAnImplicitReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        if (rand(0, 10) > 5) {
+                            throw new Exception();
+                        }
+                    }',
+            ],
+            'voidNeverDeclaredWithANeverReturningCallPathAndAnImplicitReturn' => [
+                'code' => '<?php
+                    function stop(): never {
+                        exit;
+                    }
+
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        if (rand(0, 10) > 5) {
+                            stop();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nullableDocblockReturnWithoutReturnStatements' => [
+                'code' => '<?php
+                    /**
+                     * @return int|null
+                     */
+                    function foo() {
+                        if (rand(0, 10) > 5) {
+                            echo "hello";
+                        }
+                    }',
+            ],
+            'nativeArrayReturnTypeTakesTheInheritedIterableDocblock' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @return iterable<int, stdClass> */
+                        abstract public function items(): iterable;
+                    }
+
+                    final class Child extends Base {
+                        public function items(): array {
+                            return [new stdClass()];
+                        }
+                    }
+
+                    $items = (new Child())->items();',
+                'assertions' => ['$items===' => 'array<int, stdClass>'],
+            ],
+            'iterableDocblockReturnTypeOfNativeArrayOrObject' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     */
+                    interface FooInterface {
+                        /**
+                         * @return T|iterable<T>|null
+                         */
+                        public function foo(): object|array|null;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nativeNullReturnTypeOfAnInterfaceMethodWithADocblock' => [
                 'code' => '<?php
                     interface I {
@@ -1769,6 +1841,21 @@ final class ReturnTypeTest extends TestCase
                     '$b===' => "''",
                 ],
             ],
+            'objectShapePropertyNarrowedByIdenticalCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param object{n: string} $s
+                     * @return non-empty-string
+                     */
+                    function f(object $s): string {
+                        if ($s->n === "") {
+                            throw new RuntimeException("empty-string");
+                        }
+                        return $s->n;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingThrowsDocblock'],
+            ],
         ];
     }
 
@@ -1779,6 +1866,73 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'voidNeverDeclaredWithOnlyAnImplicitReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        if (rand(0, 10) > 5) {
+                            echo "hello";
+                        }
+                    }',
+                'error_message' => 'MoreSpecificReturnType',
+            ],
+            'voidNeverDeclaredWithOnlyAnImplicitReturnInAMethod' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @return void|never
+                         */
+                        public function foo() {
+                            echo "hello";
+                        }
+                    }',
+                'error_message' => 'MoreSpecificReturnType',
+            ],
+            'nativeArrayReturnTypeMustRespectTheInheritedIterableDocblock' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @return iterable<int, stdClass> */
+                        abstract public function items(): iterable;
+                    }
+
+                    final class Child extends Base {
+                        public function items(): array {
+                            return [3, 4];
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'iterableDocblockReturnTypeOfNativeObjectRejectsANonIterableObject' => [
+                'code' => '<?php
+                    interface FooInterface {
+                        /**
+                         * @return iterable
+                         */
+                        public function foo(): object|array {
+                            return new A();
+                        }
+                    }
+
+                    final class A {}',
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'objectIsNotAcceptedWhereAnIterableIsExpected' => [
+                'code' => '<?php
+                    function takesIterable(iterable $items): void {
+                        foreach ($items as $_) {
+                            echo 1;
+                        }
+                    }
+
+                    function test(object $object): void {
+                        takesIterable($object);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'unrepresentableScalarIntersection' => [
                 'code' => '<?php
                     /** @return literal-string&non-falsy-string */
