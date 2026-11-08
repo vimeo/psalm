@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Methods;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\KeyedArrayComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -127,9 +128,22 @@ final class TemplateStandinTypeReplacer
         if ($input_type && !$input_type->isSingle()) {
             $new_input_type = $input_type->getBuilder();
 
-            foreach ($original_atomic_types as $key => $_) {
+            foreach ($original_atomic_types as $key => $original_atomic_type) {
                 if ($new_input_type->hasType($key)) {
                     $new_input_type->removeType($key);
+                }
+
+                // a literal or a more specific type of one the union has, `'a'` for `string`, is not the template's
+                if ($original_atomic_type instanceof TTemplateParam
+                    || (new Union([$original_atomic_type]))->hasTemplate()
+                ) {
+                    continue;
+                }
+
+                foreach ($new_input_type->getAtomicTypes() as $input_key => $input_atomic_type) {
+                    if (AtomicTypeComparator::isContainedBy($codebase, $input_atomic_type, $original_atomic_type)) {
+                        $new_input_type->removeType($input_key);
+                    }
                 }
             }
 

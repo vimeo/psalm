@@ -23,6 +23,57 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'templateOrStringIsNotBoundToALiteralString' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|string $arg
+                     * @return T
+                     */
+                    function notString($arg) {
+                        if (is_string($arg)) {
+                            throw new Exception();
+                        }
+
+                        return $arg;
+                    }
+
+                    $foo = random_int(0, 1) ? "foobar" : [];
+                    $bar = notString($foo);',
+                'assertions' => [
+                    '$bar===' => 'array<never, never>',
+                ],
+            ],
+            'templateOrIntIsNotBoundToALiteralInt' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|int $arg
+                     * @return T
+                     */
+                    function notInt($arg) { throw new Exception(); }
+
+                    $r = notInt(random_int(0, 1) ? 5 : "x");',
+                'assertions' => [
+                    '$r===' => "'x'",
+                ],
+            ],
+            'templateOrStringStillTakesTheOtherTypesOfTheArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|string $arg
+                     * @return T
+                     */
+                    function notString($arg) { throw new Exception(); }
+
+                    /** @var int|"lit"|null $v */
+                    $v = 1;
+                    $r = notString($v);',
+                'assertions' => [
+                    '$r===' => 'int|null',
+                ],
+            ],
             'negatedInstanceofNarrowsTheBoundOfATemplateParam' => [
                 'code' => '<?php
                     class File {
