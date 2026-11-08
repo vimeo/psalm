@@ -374,8 +374,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $class_storage->parent_class,
                         true,
                         false,
-                        $static_type instanceof TNamedObject
-                            && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                        MethodCallReturnTypeFetcher::bindsStaticToReceiverClass($codebase, $static_type),
                         true,
                     );
                 }
@@ -396,8 +395,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $class_storage->parent_class,
                     true,
                     false,
-                    $static_type instanceof TNamedObject
-                        && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                    MethodCallReturnTypeFetcher::bindsStaticToReceiverClass($codebase, $static_type),
                     true,
                 );
 

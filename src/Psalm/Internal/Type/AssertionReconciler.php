@@ -705,7 +705,10 @@ final class AssertionReconciler extends Reconciler
             return $type_2_atomic;
         }
 
+        // `$this instanceof Child` narrows a late static `$this` to a `Child` that is still late static
+        $type_1_is_static = false;
         if ($type_1_atomic instanceof TNamedObject) {
+            $type_1_is_static = $type_1_atomic->is_static;
             $type_1_atomic = $type_1_atomic->setIsStatic(false);
         }
 
@@ -725,12 +728,14 @@ final class AssertionReconciler extends Reconciler
         if ($atomic_contained_by && $atomic_comparison_results->to_string_cast === true) {
             $any_scalar_type_match_found = true;
         } elseif ($atomic_contained_by) {
-            return self::refineContainedAtomicWithAnother(
+            $refined = self::refineContainedAtomicWithAnother(
                 $type_1_atomic,
                 $type_2_atomic,
                 $codebase,
                 $atomic_comparison_results->type_coerced ?? false,
             );
+
+            return $type_1_is_static && $refined instanceof TNamedObject ? $refined->setIsStatic(true) : $refined;
         }
 
         $atomic_comparison_results = new TypeComparisonResult();
@@ -745,12 +750,14 @@ final class AssertionReconciler extends Reconciler
         );
 
         if ($atomic_contained_by) {
-            return self::refineContainedAtomicWithAnother(
+            $refined = self::refineContainedAtomicWithAnother(
                 $type_2_atomic,
                 $type_1_atomic,
                 $codebase,
                 $atomic_comparison_results->type_coerced ?? false,
             );
+
+            return $type_1_is_static && $refined instanceof TNamedObject ? $refined->setIsStatic(true) : $refined;
         }
 
         $matching_atomic_type = null;
@@ -765,6 +772,16 @@ final class AssertionReconciler extends Reconciler
             }
 
             return $type_2_atomic->addIntersectionType($type_1_atomic);
+        }
+
+        // a child that fixes the template arguments (`@extends Bag<string>`) isn't contained by a templated `$this`
+        if ($type_1_is_static
+            && $type_1_atomic instanceof TNamedObject
+            && $type_2_atomic instanceof TNamedObject
+            && $codebase->classExists($type_2_atomic->value)
+            && $codebase->classlikes->classExtends($type_2_atomic->value, $type_1_atomic->value)
+        ) {
+            return $type_2_atomic->setIsStatic(true);
         }
 
         /*if ($type_2_atomic instanceof TKeyedArray

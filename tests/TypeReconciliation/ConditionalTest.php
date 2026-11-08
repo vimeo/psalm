@@ -1431,6 +1431,52 @@ final class ConditionalTest extends TestCase
                     }
                 ',
             ],
+            'thisNarrowedToAChildStaysLateStatic' => [
+                'code' => '<?php
+                    class Node {
+                        public function fluent(): static {
+                            return $this;
+                        }
+
+                        public function toChild(): static {
+                            if ($this instanceof ChildNode) {
+                                /** @psalm-check-type-exact $this = ChildNode&static */;
+                                return $this->fluent();
+                            }
+
+                            return $this;
+                        }
+
+                        public function toSelf(): static {
+                            if ($this instanceof Node) {
+                                /** @psalm-check-type-exact $this = Node&static */;
+                                return $this->fluent();
+                            }
+
+                            return $this;
+                        }
+                    }
+
+                    class ChildNode extends Node {}
+
+                    /** @template T */
+                    class Bag {
+                        public function toChild(): static {
+                            if ($this instanceof StringBag) {
+                                /** @psalm-check-type-exact $this = StringBag&static */;
+                                return $this;
+                            }
+
+                            return $this;
+                        }
+                    }
+
+                    /** @extends Bag<string> */
+                    class StringBag extends Bag {}',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType', 'RedundantCondition'],
+                'php_version' => '8.0',
+            ],
             'reconcileCallable' => [
                 'code' => '<?php
                     function reflectCallable(callable $callable): ReflectionFunctionAbstract {

@@ -219,8 +219,7 @@ final class MethodCallReturnTypeFetcher
                         $class_storage->parent_class,
                         true,
                         false,
-                        $static_type instanceof TNamedObject
-                        && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                        self::bindsStaticToReceiverClass($codebase, $static_type),
                         true,
                     );
                 }
@@ -241,8 +240,7 @@ final class MethodCallReturnTypeFetcher
                     $class_storage->parent_class,
                     true,
                     false,
-                    $static_type instanceof TNamedObject
-                    && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                    self::bindsStaticToReceiverClass($codebase, $static_type),
                     true,
                 );
 
@@ -854,6 +852,19 @@ final class MethodCallReturnTypeFetcher
         }
 
         return $call_node;
+    }
+
+    /**
+     * Whether `static` in the signature of a method called on the receiver is the receiver's class itself, not a late
+     * static type: the class is final, or the receiver isn't late static itself (`$bag`, unlike `$this`).
+     *
+     * @psalm-capabilities read-props
+     */
+    public static function bindsStaticToReceiverClass(Codebase $codebase, ?Atomic $static_type): bool
+    {
+        return $static_type instanceof TNamedObject
+            && (!$static_type->is_static
+                || $codebase->classlike_storage_provider->get($static_type->value)->final);
     }
 
     /**

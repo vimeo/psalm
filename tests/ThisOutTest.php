@@ -159,8 +159,8 @@ final class ThisOutTest extends TestCase
                     $c2->prepend(true, 0);
                 ',
                 'assertions' => [
-                    '$c1===' => 'Coll<int|string, bool>&static',
-                    '$c2===' => 'Coll<string, bool>&static',
+                    '$c1===' => 'Coll<int|string, bool>',
+                    '$c2===' => 'Coll<string, bool>',
                 ],
             ],
             'parameterConditionalOnBothReturnAndSelfOutForSameParam' => [
@@ -183,9 +183,9 @@ final class ThisOutTest extends TestCase
                     $r2 = $h2->m(5);
                 ',
                 'assertions' => [
-                    '$h1===' => 'H<int>&static',
+                    '$h1===' => 'H<int>',
                     '$r1===' => 'int',
-                    '$h2===' => 'H<string>&static',
+                    '$h2===' => 'H<string>',
                     '$r2===' => 'string',
                 ],
             ],
@@ -204,9 +204,45 @@ final class ThisOutTest extends TestCase
                     $k2 = new K(5);
                 ',
                 'assertions' => [
-                    '$k1===' => 'K<int>&static',
-                    '$k2===' => 'K<string>&static',
+                    '$k1===' => 'K<int>',
+                    '$k2===' => 'K<string>',
                 ],
+            ],
+            'selfOutOfALateStaticReceiverStaysLateStatic' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    class K {
+                        /**
+                         * @psalm-self-out static<int>
+                         */
+                        public function __construct() {}
+
+                        /**
+                         * @psalm-self-out static<int>
+                         */
+                        public function toInt(): void {}
+
+                        /** @return static<int> */
+                        public static function make(): static {
+                            $k = new static();
+                            /** @psalm-check-type-exact $k = K<int>&static */;
+                            return $k;
+                        }
+
+                        /** @return static<int> */
+                        public function copy(): static {
+                            $k = clone $this;
+                            $k->toInt();
+                            /** @psalm-check-type-exact $k = K<int>&static */;
+                            return $k;
+                        }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => ['UnsafeInstantiation'],
+                'php_version' => '8.0',
             ],
             'selfOutInTraitResolvesToUsingClass' => [
                 'code' => '<?php

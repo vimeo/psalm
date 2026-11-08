@@ -1230,13 +1230,50 @@ final class MethodCallTest extends TestCase
                     $finalNative = (new D())->returnThis();
                     $finalDocblock = (new D())->docReturnThis();',
                 'assertions' => [
-                    '$z===' => 'C&static',
-                    '$y===' => 'C&static',
-                    '$chained===' => 'C&static',
+                    '$z===' => 'C',
+                    '$y===' => 'C',
+                    '$chained===' => 'C',
                     '$finalNative===' => 'D',
                     '$finalDocblock===' => 'D',
                 ],
                 'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'lateStaticReceiversKeepStatic' => [
+                'code' => '<?php
+                    class Bag {
+                        public function fluent(): static {
+                            return $this;
+                        }
+
+                        public function viaThis(): static {
+                            return $this->fluent()->fluent();
+                        }
+
+                        public function viaClone(): static {
+                            $copy = clone $this;
+                            return $copy->fluent();
+                        }
+
+                        public function viaNewStatic(): static {
+                            return (new static())->fluent();
+                        }
+
+                        /** @param static $other */
+                        public function viaStaticParam($other): static {
+                            return $other->fluent();
+                        }
+
+                        public function viaInstanceofStatic(object $other): static {
+                            if ($other instanceof static) {
+                                return $other->fluent();
+                            }
+
+                            return $this;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnsafeInstantiation'],
                 'php_version' => '8.0',
             ],
             'resolveFinalInParentCall' => [
@@ -1580,6 +1617,40 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticReturnOfAnotherInstanceIsNotTheCallersStatic' => [
+                'code' => '<?php
+                    class Bag {
+                        public function fluent(): static {
+                            return $this;
+                        }
+
+                        public function copyOf(self $other): static {
+                            return $other->fluent();
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'staticIntersectionReturnOfAnotherInstanceIsNotTheCallersStatic' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    class Bag {
+                        /** @return Marker&static */
+                        public function marked(): Marker {
+                            throw new RuntimeException();
+                        }
+
+                        /** @return Marker&static */
+                        public function markedOf(self $other): Marker {
+                            return $other->marked();
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'methodMissingFromALaterTypeOfAUnionTemplateBound' => [
                 'code' => '<?php
                     final class Invoice {

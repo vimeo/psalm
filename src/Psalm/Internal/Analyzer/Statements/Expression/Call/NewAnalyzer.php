@@ -1566,7 +1566,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $storage->parent_class,
                     true,
                     false,
-                    false,
+                    !$from_static || $storage->final,
                     true,
                 );
             }
@@ -1610,7 +1610,7 @@ final class NewAnalyzer extends CallAnalyzer
             $storage->parent_class,
             true,
             false,
-            false,
+            !$from_static || $storage->final,
             true,
         );
 

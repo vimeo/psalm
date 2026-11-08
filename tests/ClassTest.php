@@ -857,14 +857,12 @@ final class ClassTest extends TestCase
                         }
                     }
                     class b extends a {
-                    }
-
-                    $a = new b;
-                    $a = $a->ret();
-                    $a = $a->stabilize();',
-                'assertions' => [
-                    '$a===' => 'iter<int, b&static>',
-                ],
+                        public function test(): void {
+                            $a = $this->ret();
+                            $a = $a->stabilize();
+                            /** @psalm-check-type-exact $a = iter<int, b&static> */;
+                        }
+                    }',
             ],
             'preventDoubleStaticResolution2' => [
                 'code' => '<?php
@@ -890,19 +888,13 @@ final class ClassTest extends TestCase
                          */
                         public function ret(): iter;
                     }
-                    class b implements a {
-                        public function ret(): iter {
-                            return new iter([$this]);
+                    abstract class b implements a {
+                        public function test(): void {
+                            $a = $this->ret();
+                            $a = $a->stabilize();
+                            /** @psalm-check-type-exact $a = iter<int, b&static> */;
                         }
-                    }
-
-                    /** @var a */
-                    $a = new b;
-                    $a = $a->ret();
-                    $a = $a->stabilize();',
-                'assertions' => [
-                    '$a===' => 'iter<int, a&static>',
-                ],
+                    }',
             ],
             'preventDoubleStaticResolution3' => [
                 'code' => '<?php
@@ -928,19 +920,13 @@ final class ClassTest extends TestCase
                          */
                         public function ret(): iter;
                     }
-                    class b implements a {
-                        public function ret(): iter {
-                            return new iter([$this]);
+                    abstract class b implements a {
+                        public function test(): void {
+                            $a = $this->ret();
+                            $a = $a->stabilize();
+                            /** @psalm-check-type-exact $a = iter<int, b&static&a> */;
                         }
-                    }
-
-                    /** @var a */
-                    $a = new b;
-                    $a = $a->ret();
-                    $a = $a->stabilize();',
-                'assertions' => [
-                    '$a===' => 'iter<int, a&static>',
-                ],
+                    }',
             ],
             'preventDoubleStaticResolutionAfterUnionWithNull' => [
                 'code' => '<?php
@@ -953,14 +939,17 @@ final class ClassTest extends TestCase
                     }
 
                     /** @template T */
-                    interface Bag {
+                    abstract class Bag {
                         /** @return static<int> */
-                        public function map(): static;
-                    }
+                        abstract public function map(): static;
 
-                    /** @return Bag<string> */
-                    function bag(): Bag {
-                        throw new RuntimeException();
+                        public function test(): void {
+                            $a = box($this->map());
+                            /** @psalm-check-type-exact $a = Box<Bag<int>&static|null> */;
+                            $b = $a->same();
+                            $c = $b->same();
+                            /** @psalm-check-type-exact $c = Box<Bag<int>&static|null> */;
+                        }
                     }
 
                     /**
@@ -970,17 +959,8 @@ final class ClassTest extends TestCase
                      */
                     function box(mixed $value): Box {
                         return new Box();
-                    }
-
-                    $bag = bag();
-                    $a = box($bag->map());
-                    $b = $a->same();
-                    $c = $b->same();',
-                'assertions' => [
-                    '$a===' => 'Box<Bag<int>&static|null>',
-                    '$b===' => 'Box<Bag<int>&static|null>',
-                    '$c===' => 'Box<Bag<int>&static|null>',
-                ],
+                    }',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
@@ -995,17 +975,18 @@ final class ClassTest extends TestCase
                     }
 
                     /** @template T */
-                    interface Bag {
+                    abstract class Bag {
                         /** @return static<int> */
-                        public function toInt(): static;
+                        abstract public function toInt(): static;
 
                         /** @return static<float> */
-                        public function toFloat(): static;
-                    }
+                        abstract public function toFloat(): static;
 
-                    /** @return Bag<string> */
-                    function bag(): Bag {
-                        throw new RuntimeException();
+                        public function test(): void {
+                            $a = box(rand(0, 1) ? $this->toInt() : $this->toFloat());
+                            $b = $a->same();
+                            /** @psalm-check-type-exact $b = Box<Bag<float>&static|Bag<int>&static> */;
+                        }
                     }
 
                     /**
@@ -1015,14 +996,8 @@ final class ClassTest extends TestCase
                      */
                     function box(mixed $value): Box {
                         return new Box();
-                    }
-
-                    $bag = bag();
-                    $a = box(rand(0, 1) ? $bag->toInt() : $bag->toFloat());
-                    $b = $a->same();',
-                'assertions' => [
-                    '$b===' => 'Box<Bag<float>&static|Bag<int>&static>',
-                ],
+                    }',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
@@ -1046,14 +1021,16 @@ final class ClassTest extends TestCase
                     }
 
                     /** @template T */
-                    interface Bag {
+                    abstract class Bag {
                         /** @return static<int> */
-                        public function map(): static;
-                    }
+                        abstract public function map(): static;
 
-                    /** @return Bag<string> */
-                    function bag(): Bag {
-                        throw new RuntimeException();
+                        public function test(): void {
+                            $a = box($this->map())->apply(fn($x) => $x);
+                            /** @psalm-check-type-exact $a = Box<Bag<int>&static> */;
+                            $b = $a->same();
+                            /** @psalm-check-type-exact $b = Box<Bag<int>&static> */;
+                        }
                     }
 
                     /**
@@ -1063,13 +1040,47 @@ final class ClassTest extends TestCase
                      */
                     function box(mixed $value): Box {
                         return new Box();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticReturnOfANonStaticReceiverIsItsClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
                     }
 
-                    $a = box(bag()->map())->apply(fn($x) => $x);
+                    /** @template T */
+                    class Bag {
+                        /** @return static<int> */
+                        public function map(): static {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T|null>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }
+
+                    /** @var Bag<string> $bag */
+                    $bag = new Bag();
+                    $mapped = $bag->map();
+                    $a = box($bag->map());
                     $b = $a->same();',
                 'assertions' => [
-                    '$a===' => 'Box<Bag<int>&static>',
-                    '$b===' => 'Box<Bag<int>&static>',
+                    '$mapped===' => 'Bag<int>',
+                    '$a===' => 'Box<Bag<int>|null>',
+                    '$b===' => 'Box<Bag<int>|null>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
