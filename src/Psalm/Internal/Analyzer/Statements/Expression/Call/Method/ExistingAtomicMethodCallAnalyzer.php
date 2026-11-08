@@ -474,7 +474,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 self::applyAssertionsToContext(
                     $stmt_name,
                     ExpressionIdentifier::getExtendedVarId($stmt->var, null, $statements_analyzer),
-                    $assertions,
+                    self::getAssertionsOnArgs($assertions, $method_storage, $args),
                     $args,
                     $template_result,
                     $context,
@@ -489,7 +489,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $lhs_var_id,
                         $codebase,
                     ),
-                    $method_storage->if_true_assertions,
+                    self::getAssertionsOnArgs($method_storage->if_true_assertions, $method_storage, $args),
                 );
                 if ($lhs_var_id === null) {
                     $possibilities = array_filter(
@@ -512,7 +512,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $lhs_var_id,
                         $codebase,
                     ),
-                    $method_storage->if_false_assertions,
+                    self::getAssertionsOnArgs($method_storage->if_false_assertions, $method_storage, $args),
                 );
                 if ($lhs_var_id === null) {
                     $possibilities = array_filter(

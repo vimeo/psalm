@@ -171,7 +171,23 @@ final class InternalCallMapHandler
             }
 
             foreach ($args as $argument_offset => $arg) {
-                if ($argument_offset >= count($possible_function_params)) {
+                if ($arg->name !== null) {
+                    // a named argument is matched with the parameter of that name
+                    $function_param = null;
+
+                    foreach ($possible_function_params as $candidate_param) {
+                        if ($candidate_param->name === $arg->name->name) {
+                            $function_param = $candidate_param;
+                            break;
+                        }
+                    }
+
+                    // a variadic parameter of a builtin doesn't take unknown named arguments
+                    if ($function_param === null) {
+                        $all_args_match = false;
+                        break;
+                    }
+                } elseif ($argument_offset >= count($possible_function_params)) {
                     if (!$last_param || !$last_param->is_variadic) {
                         $all_args_match = false;
                         break;
