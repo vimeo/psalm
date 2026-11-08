@@ -373,6 +373,60 @@ final class ArgTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'neverIterableKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int>|Traversable<never, never> $v */
+                    function accept($v): void {}
+                    /** @param iterable<never, never> $v */
+                    function test(iterable $v): void { accept($v); }
+                    PHP,
+            ],
+            'objectIterableKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int>|Traversable<object, int> $v */
+                    function accept($v): void {}
+                    /** @param iterable<object, int> $v */
+                    function test(iterable $v): void { accept($v); }
+                    PHP,
+            ],
+            'mixedIterableKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<array-key, int>|Traversable<mixed, int> $v */
+                    function accept($v): void {}
+                    /** @param iterable<mixed, int> $v */
+                    function test(iterable $v): void { accept($v); }
+                    PHP,
+            ],
+            'partialIterableKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, int>|Traversable<string|object, int> $v */
+                    function accept($v): void {}
+                    /** @param iterable<string|object, int> $v */
+                    function test(iterable $v): void { accept($v); }
+                    PHP,
+            ],
+            'iterableIntersectionFitsUnion' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<int, int>|(Traversable<int, int>&Countable) $value */
+                    function accept($value): void {}
+                    /** @param iterable<int, int>&Countable $value */
+                    function test(iterable $value): void { accept($value); }
+                    PHP,
+            ],
+            'iterableObjectIntersectionFitsTraversable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param Traversable<int, int>&Countable $value */
+                    function accept($value): void {}
+                    /** @param iterable<int, int>&Countable $value */
+                    function test(iterable $value): void { accept($value); }
+                    PHP,
+            ],
         ];
     }
 
@@ -852,6 +906,182 @@ final class ArgTest extends TestCase
 
                     caller("foo");',
                 'error_message' => 'InvalidArgument',
+            ],
+            'iterableToListOrTraversableParentChildCoercion' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface Item {}
+                    final class ConcreteItem implements Item {}
+                    /** @param list<ConcreteItem>|Traversable<int, ConcreteItem> $v */
+                    function accept($v): void {}
+                    /** @param iterable<int, Item> $v */
+                    function test($v): void { accept($v); }
+                    PHP,
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'mixedIterableToListOrTraversableCoercion' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface Item {}
+                    final class ConcreteItem implements Item {}
+                    /** @param list<string>|Traversable<string> $v */
+                    function accept($v): void {}
+                    /** @param iterable<mixed, mixed> $v */
+                    function test($v): void { accept($v); }
+                    PHP,
+                'error_message' => 'MixedArgumentTypeCoercion',
+            ],
+            'arrayToIterableMixedCoercion' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface Item {}
+                    final class ConcreteItem implements Item {}
+                    /** @param iterable<string> $v */
+                    function accept($v): void {}
+                    /** @param array $v */
+                    function test($v): void { accept($v); }
+                    PHP,
+                'error_message' => 'MixedArgumentTypeCoercion',
+            ],
+            'mixedIterableReturnToListOrTraversableCoercion' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param iterable<mixed, mixed> $v
+                     * @return list<string>|Traversable<string>
+                     */
+                    function f($v) { return $v; }
+                    PHP,
+                'error_message' => 'MixedReturnTypeCoercion',
+            ],
+            'arrayReturnToIterableMixedCoercion' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array $v
+                     * @return iterable<string>
+                     */
+                    function f($v) { return $v; }
+                    PHP,
+                'error_message' => 'MixedReturnTypeCoercion',
+            ],
+            'iterableParentChildCoercion' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface Item {}
+                    final class ConcreteItem implements Item {}
+                    /** @param iterable<array-key, ConcreteItem> $values */
+                    function accept(iterable $values): void {}
+                    /** @param iterable<array-key, Item> $values */
+                    function test(iterable $values): void { accept($values); }
+                    PHP,
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'mixedIterableArgumentCoercion' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param iterable<array-key, string> $values */
+                    function accept(iterable $values): void {}
+                    /** @param iterable<mixed, mixed> $values */
+                    function test(iterable $values): void { accept($values); }
+                    PHP,
+                'error_message' => 'MixedArgumentTypeCoercion',
+            ],
+            'mixedIterableCannotBeArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string> $values */
+                    function accept(array $values): void {}
+                    /** @param iterable<mixed, mixed> $values */
+                    function test(iterable $values): void { accept($values); }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+            ],
+            'incompatibleIterableArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int>|Traversable<int, int> $x */
+                    function accept($x): void {}
+                    /** @param iterable<string, string> $i */
+                    function test(iterable $i): void { accept($i); }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+            ],
+            'nestedTraversableArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<int, Traversable>|int $x */
+                    function accept($x): void {}
+                    /** @param iterable<string, string> $i */
+                    function test(iterable $i): void { accept($i); }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+            ],
+            'iterableIntersectionPreservesConstraint' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<int, int>|(Traversable<int, int>&Iterator) $value */
+                    function accept($value): void {}
+                    /** @param iterable<int, int>&Countable $value */
+                    function test(iterable $value): void { accept($value); }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+            ],
+            'iterableIntersectionPreservesGenerics' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, string>|Traversable<string, string> $value */
+                    function accept($value): void {}
+                    /** @param iterable<int, int>&Countable $value */
+                    function test(iterable $value): void { accept($value); }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+            ],
+            'hardArrayKeyMismatchArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param iterable<string, int> $v */
+                    function accept(iterable $v): void {}
+                    /** @param array<int, mixed> $v */
+                    function test(array $v): void { accept($v); }
+                    PHP,
+                'error_message' => 'PossiblyInvalidArgument',
+                'ignored_issues' => [],
+            ],
+            'hardArrayKeyMismatchReturn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<int, mixed> $v
+                     * @return iterable<string, int>
+                     */
+                    function test(array $v): iterable { return $v; }
+                    PHP,
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+            ],
+            'hardArrayKeyMismatchArgumentWithMixedSuppressed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param iterable<string, int> $v */
+                    function accept(iterable $v): void {}
+                    /** @param array<int, mixed> $v */
+                    function test(array $v): void { accept($v); }
+                    PHP,
+                'error_message' => 'PossiblyInvalidArgument',
+                'ignored_issues' => ['MixedArgumentTypeCoercion', 'MixedReturnTypeCoercion'],
+            ],
+            'hardArrayKeyMismatchReturnWithMixedSuppressed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<int, mixed> $v
+                     * @return iterable<string, int>
+                     */
+                    function test(array $v): iterable { return $v; }
+                    PHP,
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => ['MixedArgumentTypeCoercion', 'MixedReturnTypeCoercion'],
             ],
         ];
     }

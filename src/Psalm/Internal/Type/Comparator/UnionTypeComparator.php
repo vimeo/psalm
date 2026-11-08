@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
-use Psalm\Internal\Type\ArrayType;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
@@ -71,6 +71,8 @@ final class UnionTypeComparator
 
         $container_has_template = $container_type->hasTemplateOrStatic();
         $container_parts = self::getTypeParts($codebase, $container_type);
+        // Compare iterable and symbolic containers directly; symbolic comparisons
+        // must record constraints on the original input.
         $compare_iterable_directly = false;
         foreach ($container_parts as $container_part) {
             if ($container_part instanceof Atomic\TIterable
@@ -438,8 +440,9 @@ final class UnionTypeComparator
     }
 
     /**
-     * An iterable must fit in both its array and Traversable forms. Compare both
-     * before merging diagnostics: a coercion in one half cannot hide a hard mismatch in the other.
+     * Compare the Traversable form and, unless an object intersection excludes it,
+     * the array form with keys restricted to array-key. Merge diagnostics only after
+     * both comparisons: a coercion cannot hide a hard mismatch in the other half.
      */
     private static function isIterableContainedBy(
         Codebase $codebase,
@@ -460,10 +463,12 @@ final class UnionTypeComparator
             }
         }
         if ($has_array_part) {
-            $parts[] = new Atomic\TArray([
-                ArrayType::refineKeyType($input->type_params[0]),
-                $input->type_params[1],
-            ]);
+            $key = Type::intersectUnionTypes($input->type_params[0], Type::getArrayKey(), $codebase)
+                ?? Type::getNever();
+            // Impossible keys or values permit only the empty array, not arbitrary array keys.
+            $parts[] = $key->isNever() || $input->type_params[1]->isNever()
+                ? Type::getEmptyArray()->getSingleAtomic()
+                : new Atomic\TArray([$key, $input->type_params[1]]);
         }
 
         $all_contained = true;
@@ -504,6 +509,7 @@ final class UnionTypeComparator
             $comparison_result->scalar_type_match_found = false;
             $comparison_result->type_coerced = $all_coercible && $some_coerced;
             $comparison_result->type_coerced_from_mixed = $all_coercible && $some_mixed;
+            // Preserve whether the component coercion came from a template default.
             $comparison_result->type_coerced_from_as_mixed = $all_coercible && $some_as_mixed;
         }
         return $all_contained;
