@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
@@ -28,6 +29,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
@@ -140,15 +142,21 @@ final class ArrayFetchAnalyzer
             $was_inside_isset = $context->inside_isset;
             $context->inside_isset = false;
 
+            $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+            $context->inside_by_ref_offset = false;
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->dim, $context) === false) {
                 $context->inside_isset = $was_inside_isset;
                 $context->inside_unset = $was_inside_unset;
                 $context->inside_general_use = $was_inside_general_use;
+                $context->inside_by_ref_offset = $was_inside_by_ref_offset;
 
                 return false;
             }
 
             $context->inside_isset = $was_inside_isset;
+
+            $context->inside_by_ref_offset = $was_inside_by_ref_offset;
 
             $context->inside_unset = $was_inside_unset;
 
@@ -176,11 +184,20 @@ final class ArrayFetchAnalyzer
             $used_key_type = Type::getInt();
         }
 
-        if (ExpressionAnalyzer::analyze(
+        // PHP creates the offsets passed by reference along the arrays only, not inside what the root is fetched from
+        $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+        $context->inside_by_ref_offset = $was_inside_by_ref_offset
+            && $stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch;
+
+        $analyzed_var = ExpressionAnalyzer::analyze(
             $statements_analyzer,
             $stmt->var,
             $context,
-        ) === false) {
+        );
+
+        $context->inside_by_ref_offset = $was_inside_by_ref_offset;
+
+        if ($analyzed_var === false) {
             return false;
         }
 
@@ -785,6 +802,7 @@ final class ArrayFetchAnalyzer
     /**
      * @psalm-suppress ComplexMethod to be refactored.
      * Good type/bad type behaviour could be mutualised with ArrayAnalyzer
+     * @param bool $by_reference whether the item is written by a call it is passed to by reference
      */
     public static function getArrayAccessTypeGivenOffset(
         StatementsAnalyzer $statements_analyzer,
@@ -796,6 +814,7 @@ final class ArrayFetchAnalyzer
         Context $context,
         ?PhpParser\Node\Expr $assign_value = null,
         ?Union $replacement_type = null,
+        bool $by_reference = false,
     ): Union {
         $offset_type = $offset_type_original->getBuilder();
 
@@ -952,6 +971,7 @@ final class ArrayFetchAnalyzer
                         $stmt,
                         $array_access_type,
                         $type,
+                        $by_reference,
                     );
 
                     $has_valid_expected_offset = true;
@@ -1075,6 +1095,8 @@ final class ArrayFetchAnalyzer
                     $assign_value,
                     $array_access_type,
                     $has_array_access,
+                    // nothing replaces an item an assignment writes into, which is modified in place as well
+                    $by_reference || $replacement_type === null,
                 );
             } elseif (!$array_type->hasMixed()) {
                 $non_array_types[] = (string)$type;
@@ -1207,7 +1229,8 @@ final class ArrayFetchAnalyzer
                                 $good_types[] = new TLiteralInt(0);
                                 $good_types[] = new TLiteralInt(1);
                             } elseif ($atomic_key_type instanceof TLiteralFloat) {
-                                $good_types[] = new TLiteralInt((int)$atomic_key_type->value);
+                                $int = LiteralCast::toInt($atomic_key_type->value);
+                                $good_types[] = $int === null ? new TInt : new TLiteralInt($int);
                             } elseif ($atomic_key_type instanceof TFloat) {
                                 $good_types[] = new TInt;
                             } else {
@@ -1405,6 +1428,7 @@ final class ArrayFetchAnalyzer
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         ?Union $array_access_type,
         Atomic $type,
+        bool $by_reference = false,
     ): Union {
         if (!$context->collect_initializations
             && !$context->collect_mutations
@@ -1416,7 +1440,8 @@ final class ArrayFetchAnalyzer
             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
         }
 
-        if (!$context->inside_isset) {
+        // an item passed by reference was reported as accessed when the argument was read
+        if (!$context->inside_isset && !$by_reference) {
             if ($in_assignment) {
                 IssueBuffer::maybeAdd(
                     new MixedArrayAssignment(
@@ -1630,7 +1655,7 @@ final class ArrayFetchAnalyzer
         if ($in_assignment) {
             if ($type->isEmptyArray()) {
                 $type = $type->setTypeParams([
-                    $offset_type->isMixed()
+                    $offset_type->hasMixed()
                         ? Type::getArrayKey()
                         : $offset_type->freeze(),
                     $type->type_params[1],
@@ -2079,7 +2104,7 @@ final class ArrayFetchAnalyzer
 
                     $new_key_type = Type::combineUnionTypes(
                         $generic_key_type,
-                        $offset_type->isMixed() ? Type::getArrayKey() : $offset_type->freeze(),
+                        $offset_type->hasMixed() ? Type::getArrayKey() : $offset_type->freeze(),
                     );
 
                     if (!$stmt->dim) {
@@ -2189,6 +2214,7 @@ final class ArrayFetchAnalyzer
         ?PhpParser\Node\Expr $assign_value,
         ?Union &$array_access_type,
         bool &$has_array_access,
+        bool $in_place,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         if (strtolower($type->value) === 'simplexmlelement'
@@ -2255,6 +2281,10 @@ final class ArrayFetchAnalyzer
             }
 
             if ($in_assignment) {
+                // PHP does not call offsetSet() for an item modified in place, passed by reference or written into:
+                // the call is analysed for what calling the method implies, but has no arguments to check
+                $arg_attributes = $in_place ? [ArgumentAnalyzer::NOT_PASSED => true] : [];
+
                 $old_node_data = $statements_analyzer->node_data;
 
                 $statements_analyzer->node_data = clone $statements_analyzer->node_data;
@@ -2269,12 +2299,14 @@ final class ArrayFetchAnalyzer
                                     new VirtualName('null'),
                                     $stmt->var->getAttributes(),
                                 ),
+                            attributes: $arg_attributes,
                         ),
                         new VirtualArg(
                             $assign_value ?? new VirtualConstFetch(
                                 new VirtualName('null'),
                                 $stmt->var->getAttributes(),
                             ),
+                            attributes: $arg_attributes,
                         ),
                     ],
                 );
