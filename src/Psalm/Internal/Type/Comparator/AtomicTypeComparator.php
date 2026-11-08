@@ -956,7 +956,50 @@ final class AtomicTypeComparator
             && !$second_comparison_result->to_string_cast
         ) || ($first_comparison_result->type_coerced
             && $second_comparison_result->type_coerced
+        ) || ($type1_part instanceof TKeyedArray
+            && $type2_part instanceof TKeyedArray
+            && self::keyedArraysCanBeIdentical($codebase, $type1_part, $type2_part)
         );
+    }
+
+    /**
+     * Two shapes can hold the same array if every key required by one is there in the other with a value that can be
+     * the same, the optional ones being absent from both otherwise
+     */
+    private static function keyedArraysCanBeIdentical(
+        Codebase $codebase,
+        TKeyedArray $first,
+        TKeyedArray $second,
+    ): bool {
+        foreach ($first->properties + $second->properties as $key => $_) {
+            $first_property = $first->properties[$key] ?? null;
+            $second_property = $second->properties[$key] ?? null;
+
+            if ($first_property !== null && $second_property !== null) {
+                if (!($first_property->possibly_undefined && $second_property->possibly_undefined)
+                    && !UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $first_property, $second_property)
+                ) {
+                    return false;
+                }
+
+                continue;
+            }
+
+            $property = $first_property ?? $second_property;
+            $other = $first_property !== null ? $second : $first;
+
+            if ($property === null || $property->possibly_undefined) {
+                continue;
+            }
+
+            if ($other->fallback_params === null
+                || !UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $property, $other->fallback_params[1])
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

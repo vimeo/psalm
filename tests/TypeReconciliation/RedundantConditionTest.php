@@ -23,6 +23,26 @@ final class RedundantConditionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'shapesWithOptionalKeysOfOtherValuesCanBeIdentical' => [
+                'code' => '<?php
+                    /**
+                     * @param array{foo: 1, bar?: 2} $a
+                     * @param array{foo: 1, bar?: 3} $b
+                     */
+                    function f(array $a, array $b): bool {
+                        return $a === $b;
+                    }',
+            ],
+            'shapeWithAnOptionalKeyCanBeIdenticalToOneWithoutIt' => [
+                'code' => '<?php
+                    /**
+                     * @param array{foo: 1, bar?: 2} $a
+                     * @param array{foo: 1} $b
+                     */
+                    function f(array $a, array $b): bool {
+                        return $a === $b;
+                    }',
+            ],
             'negatedInstanceofOfAGenericSubclassOnAnInterfaceWithTemplateArguments' => [
                 'code' => '<?php
                     /**
@@ -1074,6 +1094,28 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'shapesWithRequiredKeysOfOtherValuesCannotBeIdentical' => [
+                'code' => '<?php
+                    /**
+                     * @param array{foo: 1, bar: 2} $a
+                     * @param array{foo: 1, bar: 3} $b
+                     */
+                    function f(array $a, array $b): bool {
+                        return $a === $b;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'shapeWithARequiredKeyCannotBeIdenticalToOneWithoutIt' => [
+                'code' => '<?php
+                    /**
+                     * @param array{foo: 1, bar: 2} $a
+                     * @param array{foo: 1} $b
+                     */
+                    function f(array $a, array $b): bool {
+                        return $a === $b;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'negatedTypeCheckOfAKnownTypeExplainsThatItCanNeverBeTrue' => [
                 'code' => '<?php
                     $a = "some";
