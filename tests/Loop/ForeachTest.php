@@ -23,6 +23,36 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachOverAClassStringMapReturnedByAMethodWithATemplateOfTheSameName' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface MappingAttribute {}
+
+                    /** @template T of MappingAttribute */
+                    final class RepeatableAttributeCollection {}
+
+                    final class AttributeReader {
+                        /**
+                         * @return class-string-map<T, T|RepeatableAttributeCollection<T>>
+                         *
+                         * @template T of MappingAttribute
+                         */
+                        public function read(): array {
+                            return [];
+                        }
+                    }
+
+                    function iterate(AttributeReader $reader): void {
+                        foreach ($reader->read() as $class => $attribute) {
+                            /** @psalm-check-type-exact $class = class-string<MappingAttribute> */
+                            /** @psalm-check-type-exact $attribute = MappingAttribute|RepeatableAttributeCollection<MappingAttribute> */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'foreachOverAClassStringMap' => [
                 'code' => <<<'PHP'
                     <?php
