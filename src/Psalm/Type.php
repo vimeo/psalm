@@ -966,7 +966,7 @@ abstract class Type
                     && !self::hasIntersection($type_2_atomic)
                 ) {
                     if ($intersection_atomic instanceof TArray && $wider_type instanceof TArray) {
-                        // Keep the narrower array's structure, intersecting its generic parameters too.
+                        // Containment can leave wider generic parameters; intersect keys and values too.
                         $key_type = self::intersectUnionTypes(
                             $intersection_atomic->type_params[0],
                             $wider_type->type_params[0],

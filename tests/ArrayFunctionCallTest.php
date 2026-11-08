@@ -3279,6 +3279,90 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+
+            'arrayValuesPreservesGenericElement' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param array<array-key, T> $elements
+                     * @return T|null
+                     */
+                    function firstValue(array $elements) {
+                        $values = array_values($elements);
+                        /** @psalm-check-type-exact $values = list<T> */
+                        $first = $values[0] ?? null;
+                        /** @psalm-check-type-exact $first = T|null */
+                        return $first;
+                    }
+                    PHP,
+            ],
+            'arrayValuesPreservesGenericElementInLoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param array<array-key, T> $elements
+                     * @param list<int> $items
+                     * @return list<T>
+                     */
+                    function zip(array $elements, array $items): array {
+                        $elements = array_values($elements);
+                        $result = [];
+                        foreach ($items as $_) {
+                            $u = $elements[0] ?? null;
+                            if (null === $u) {
+                                break;
+                            }
+                            $elements = array_slice($elements, 1);
+                            $result[] = $u;
+                        }
+                        return $result;
+                    }
+                    PHP,
+            ],
+            'arrayKeysMixedInputProvidesUsableOffsets' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function test(mixed $source, array $target): void {
+                        $result = array_keys($source);
+                        /** @psalm-check-type-exact $result = list<array-key> */
+                        foreach ($result as $key) { $target[$key] = true; }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.2',
+            ],
+            'arrayValuesMixedInputResolvesBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function test(mixed $source, array $target): void {
+                        $result = array_values($source);
+                        /** @psalm-check-type-exact $result = list<mixed> */
+
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.2',
+            ],
+            'arrayKeysNestedMixedInputProvidesUsableOffsets' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function test(array $extensions, array $target): void {
+                        if (!empty($extensions['module'])) {
+                            foreach (array_keys($extensions['module']) as $key) {
+                                if (isset($target[$key])) {
+                                    $target[$key] = true;
+                                }
+                            }
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+            ],
         ];
     }
 
@@ -3830,6 +3914,24 @@ final class ArrayFunctionCallTest extends TestCase
                         return array_pop($a[0]);
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'arrayFirstRejectsIterableUnion' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int>|iterable<string> $v */
+                    function test(iterable $v): void { array_first($v); }
+                    PHP,
+                'error_message' => 'PossiblyInvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayKeysMixedInputStillReportsMixedArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param mixed $source */
+                    function test($source): void { array_keys($source); }
+                    PHP,
+                'error_message' => 'MixedArgument',
             ],
         ];
     }
