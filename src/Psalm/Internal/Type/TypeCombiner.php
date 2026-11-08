@@ -276,16 +276,17 @@ final class TypeCombiner
             $generic_type = substr($generic_type, 0, strcspn($generic_type, '<['));
 
             /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
-            $generic_object = new TGenericObject(
+            $new_types[] = (new TGenericObject(
                 $generic_type,
                 $generic_type_params,
                 false,
-                $combination->object_static[$generic_type] ?? false,
+                false,
                 $combination->extra_types,
                 $from_docblock,
+            ))->setIsStatic(
+                $combination->object_static[$generic_type] ?? false,
+                $combination->object_static_resolved[$generic_type] ?? false,
             );
-
-            $new_types[] = $generic_object;
         }
 
         if ($combination->class_string_types) {
@@ -604,6 +605,10 @@ final class TypeCombiner
             } else {
                 $combination->object_static[$type->value] = $type->is_static;
             }
+
+            // a static already bound to its receiver stays bound, or the next method call binds it again
+            $combination->object_static_resolved[$type->value] = $type->is_static_resolved
+                && ($combination->object_static_resolved[$type->value] ?? true);
         }
 
         if ($type instanceof TKeyedArray && $type->is_callable) {
