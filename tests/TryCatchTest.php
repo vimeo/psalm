@@ -20,6 +20,59 @@ final class TryCatchTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'loopVariableStaysDefinedInCatchOfTryNestedInTheBodyOfATryWithFinally' => [
+                'code' => '<?php
+                    /** @param list<string> $stores */
+                    function returning(array $stores): string {
+                        try {
+                            foreach ($stores as $store) {
+                                try {
+                                    return strtoupper($store);
+                                } catch (Throwable $e) {
+                                    echo $store;
+                                }
+                            }
+                        } finally {
+                            echo "done";
+                        }
+
+                        throw new RuntimeException("failed");
+                    }
+
+                    /** @param list<string> $stores */
+                    function throwing(array $stores): void {
+                        try {
+                            foreach ($stores as $key => $store) {
+                                try {
+                                    throw new RuntimeException($store);
+                                } catch (Throwable $e) {
+                                    echo $store, $key;
+                                }
+                            }
+                        } finally {
+                            echo "done";
+                        }
+                    }
+
+                    /** @param list<string> $stores */
+                    function leaving(array $stores): void {
+                        try {
+                            foreach ($stores as $key => $store) {
+                                try {
+                                    if ($key === 0) {
+                                        continue;
+                                    }
+
+                                    break;
+                                } catch (Throwable $e) {
+                                    echo $store, $key;
+                                }
+                            }
+                        } finally {
+                            echo "done";
+                        }
+                    }',
+            ],
             'finallySeesVariableSetInCatchOfNestedTryThatRethrows' => [
                 'code' => '<?php
                     function g2(): void {}
