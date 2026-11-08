@@ -445,7 +445,7 @@ final class PartialFunctionApplicationTest extends TestCase
                         $named = P::create(?);
                     PHP,
                 'assertions' => [
-                    '$method===' => 'Closure[impure](int):P&static',
+                    '$method===' => 'Closure[impure](int):P',
                     '$named===' => 'Closure[impure](int):P',
                 ],
                 'ignored_issues' => ['UnsafeInstantiation'],

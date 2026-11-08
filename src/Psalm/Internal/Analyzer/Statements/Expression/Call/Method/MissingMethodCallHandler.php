@@ -199,19 +199,33 @@ final class MissingMethodCallHandler
             );
 
             if ($pseudo_method_storage->return_type) {
-                $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
+                // `static` of the signature is bound before the templates bring in the caller's types (see
+                // MethodCallReturnTypeFetcher::fetch())
+                $return_type_candidate = TypeExpander::expandUnion(
+                    $codebase,
                     $pseudo_method_storage->return_type,
+                    $defining_class_storage->name,
+                    $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $fq_class_name,
+                    $defining_class_storage->parent_class,
+                    true,
+                    false,
+                    MethodCallReturnTypeFetcher::bindsStaticToReceiverClass($codebase, $lhs_type_part),
+                );
+
+                $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
+                    $return_type_candidate,
                     $template_result,
                     $method_id,
                     count($stmt->getArgs()),
                     $codebase,
+                    $pseudo_method_storage->return_type,
                 );
 
                 $return_type_candidate = TypeExpander::expandUnion(
                     $codebase,
                     $return_type_candidate,
                     $defining_class_storage->name,
-                    $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $fq_class_name,
+                    null,
                     $defining_class_storage->parent_class,
                 );
 
@@ -446,12 +460,25 @@ final class MissingMethodCallHandler
             }
 
             if ($pseudo_method_storage->return_type) {
-                $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
+                $return_type_candidate = TypeExpander::expandUnion(
+                    $codebase,
                     $pseudo_method_storage->return_type,
+                    $defining_class_storage->name,
+                    $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $fq_class_name,
+                    $defining_class_storage->parent_class,
+                    true,
+                    false,
+                    $class_storage->final
+                        || MethodCallReturnTypeFetcher::bindsStaticToReceiverClass($codebase, $lhs_type_part),
+                );
+
+                $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
+                    $return_type_candidate,
                     $template_result,
                     $method_id,
                     count($stmt->getArgs()),
                     $codebase,
+                    $pseudo_method_storage->return_type,
                 );
 
                 if ($all_intersection_return_type) {
@@ -466,11 +493,8 @@ final class MissingMethodCallHandler
                     $codebase,
                     $return_type_candidate,
                     $defining_class_storage->name,
-                    $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $fq_class_name,
+                    null,
                     $defining_class_storage->parent_class,
-                    true,
-                    false,
-                    $class_storage->final,
                 );
 
                 $result->return_type = Type::combineUnionTypes($return_type_candidate, $result->return_type);
@@ -560,6 +584,8 @@ final class MissingMethodCallHandler
             $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $method_id->fq_class_name,
             $defining_class_storage->parent_class,
             $class_storage->final,
+            false,
+            $class_storage->final || MethodCallReturnTypeFetcher::bindsStaticToReceiverClass($codebase, $lhs_type_part),
         );
     }
 

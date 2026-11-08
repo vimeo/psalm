@@ -1168,8 +1168,8 @@ final class MagicMethodAnnotationTest extends TestCase
                     /** @var I<B> $i */
                     $c = $i->foo();',
                 'assertions' => [
-                    '$b' => 'A<B>&static',
-                    '$c' => 'I<B>&static',
+                    '$b' => 'A<B>',
+                    '$c' => 'I<B>',
                 ],
             ],
             'genericsOfInheritedMethodsShouldBeResolved' => [
@@ -1400,6 +1400,25 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticPseudoMethodReturnOfAnotherInstanceIsNotTheCallersStatic' => [
+                'code' => '<?php
+                    /**
+                     * @method static fluent()
+                     */
+                    class Bag {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed {
+                            return $this;
+                        }
+
+                        public function copyOf(self $other): static {
+                            return $other->fluent();
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'wildcardPurityPropagatesImpureClosure' => [
                 'code' => '<?php
                     /**

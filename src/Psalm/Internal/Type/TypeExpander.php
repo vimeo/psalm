@@ -848,10 +848,6 @@ final class TypeExpander
         ) {
             $return_type_types = $return_type->getIntersectionTypes();
             $cloned_static = $static_class_type->setIntersectionTypes([]);
-            if ($cloned_static instanceof TNamedObject) {
-                // bound to this receiver: the next call must not bind it again
-                $cloned_static = $cloned_static->setIsStatic($cloned_static->is_static, true);
-            }
             $extra_static = $static_class_type->extra_types;
 
             if ($cloned_static->getKey(false) !== $return_type->getKey(false)) {

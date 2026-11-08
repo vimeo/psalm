@@ -95,6 +95,7 @@ final class MethodCallReturnTypeFetcher
                     $static_type instanceof TNamedObject
                     && $codebase->classlike_storage_provider->get($static_type->value)->final,
                     true,
+                    self::bindsStaticToReceiverClass($codebase, $static_type),
                 );
             }
 
@@ -210,19 +211,20 @@ final class MethodCallReturnTypeFetcher
             );
 
             if ($return_type_candidate) {
-                if ($template_result->lower_bounds) {
-                    $return_type_candidate = TypeExpander::expandUnion(
-                        $codebase,
-                        $return_type_candidate,
-                        $fq_class_name,
-                        null,
-                        $class_storage->parent_class,
-                        true,
-                        false,
-                        self::bindsStaticToReceiverClass($codebase, $static_type),
-                        true,
-                    );
-                }
+                // `static` of the signature is bound to the receiver before the templates bring in the caller's types,
+                // whose own late static (`static::class`, `$this`) the receiver must not bind
+                $signature_type = $return_type_candidate;
+                $return_type_candidate = TypeExpander::expandUnion(
+                    $codebase,
+                    $return_type_candidate,
+                    $self_fq_class_name,
+                    $static_type,
+                    $class_storage->parent_class,
+                    true,
+                    false,
+                    self::bindsStaticToReceiverClass($codebase, $static_type),
+                    true,
+                );
 
                 $return_type_candidate = self::replaceTemplateTypes(
                     $return_type_candidate,
@@ -230,13 +232,14 @@ final class MethodCallReturnTypeFetcher
                     $method_id,
                     count($stmt->getArgs()),
                     $codebase,
+                    $signature_type,
                 );
 
                 $return_type_candidate = TypeExpander::expandUnion(
                     $codebase,
                     $return_type_candidate,
                     $self_fq_class_name,
-                    $static_type,
+                    null,
                     $class_storage->parent_class,
                     true,
                     false,
@@ -877,6 +880,8 @@ final class MethodCallReturnTypeFetcher
      * The closure of a first-class callable of a method, typed as a call of the method on the same receiver: with its
      * template bounds (those of the class, from the receiver) and `static`. The method's own templates left unbound
      * stand for their bounds, as a function's do in its closure, unless the call it is an argument of may bind them.
+     * As in a call, `static` of a parameter stays late static unless `$final`, and that of the return type unless
+     * `$return_final` (defaults to `$final`).
      *
      * @param array<string, non-empty-array<string, Union>> $method_template_types
      */
@@ -891,6 +896,7 @@ final class MethodCallReturnTypeFetcher
         ?string $parent_class,
         bool $final,
         bool $expand_generic = false,
+        ?bool $return_final = null,
     ): Union {
         $keep_method_templates = $stmt->getAttribute(self::CALL_ARGUMENT_ATTRIBUTE) === true;
         $bounds_result = new TemplateResult([], []);
@@ -913,6 +919,34 @@ final class MethodCallReturnTypeFetcher
                         : $bound,
                 )];
             }
+        }
+
+        // `static` of the signature is bound before the templates bring in the caller's types (see fetch())
+        $return_type = $closure->return_type;
+        $closure = TypeExpander::expandUnion(
+            $codebase,
+            new Union([$closure]),
+            $self_class,
+            $static_class_type,
+            $parent_class,
+            true,
+            false,
+            $final,
+            $expand_generic,
+        )->getSingleAtomic();
+
+        if ($return_type && $return_final !== null && $return_final !== $final && $closure instanceof TClosure) {
+            $closure = $closure->replace($closure->params, TypeExpander::expandUnion(
+                $codebase,
+                $return_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                true,
+                false,
+                $return_final,
+                $expand_generic,
+            ));
         }
 
         $closure_type = new Union([$closure]);
@@ -940,24 +974,29 @@ final class MethodCallReturnTypeFetcher
             $codebase,
             $closure_type,
             $self_class,
-            $static_class_type,
+            null,
             $parent_class,
             true,
             false,
-            $final,
+            $return_final ?? $final,
             $expand_generic,
         );
     }
 
+    /**
+     * @param ?Union $signature_type the declared type, when `$return_type_candidate` has `static` bound to the receiver
+     *                               already: the receiver's templates are the caller's, which the call doesn't bind
+     */
     public static function replaceTemplateTypes(
         Union $return_type_candidate,
         TemplateResult $template_result,
         MethodIdentifier $method_id,
         int $arg_count,
         Codebase $codebase,
+        ?Union $signature_type = null,
     ): Union {
         if ($template_result->template_types) {
-            $bindable_template_types = $return_type_candidate->getTemplateTypes();
+            $bindable_template_types = ($signature_type ?? $return_type_candidate)->getTemplateTypes();
 
             foreach ($bindable_template_types as $template_type) {
                 if ($template_type->defining_class !== $method_id->fq_class_name

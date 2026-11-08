@@ -279,6 +279,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                             $static_type instanceof TNamedObject
                             && $codebase->classlike_storage_provider->get($static_type->value)->final,
                             true,
+                            MethodCallReturnTypeFetcher::bindsStaticToReceiverClass($codebase, $static_type),
                         );
                     }
                 }

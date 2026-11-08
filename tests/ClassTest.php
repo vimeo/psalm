@@ -1085,6 +1085,107 @@ final class ClassTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'firstClassCallableOfANonStaticReceiverBindsTheStaticOfItsReturnType' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Bag {
+                        /** @return static<int> */
+                        public function map(): static {
+                            throw new RuntimeException();
+                        }
+
+                        /** @param static $other */
+                        public function merge($other): static {
+                            return $this;
+                        }
+                    }
+
+                    /** @var Bag<string> $bag */
+                    $bag = new Bag();
+                    $map = $bag->map(...);
+                    $merge = $bag->merge(...);',
+                'assertions' => [
+                    '$map===' => 'Closure[impure]():Bag<int>',
+                    '$merge===' => 'Closure[impure](Bag<string>&static):Bag<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'callersLateStaticIsNotBoundToTheReceiverOfTheCall' => [
+                'code' => '<?php
+                    final class Container {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $abstract
+                         * @return T
+                         */
+                        public function make(string $abstract): object {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @template-covariant TValue
+                     */
+                    final class Coll {
+                        /**
+                         * @template U
+                         * @param callable(TValue): U $f
+                         * @return Coll<U>
+                         */
+                        public function map(callable $f): Coll {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    class Component {
+                        public function make(Container $container): static {
+                            $made = $container->make(static::class);
+                            /** @psalm-check-type-exact $made = Component&static */;
+                            return $made;
+                        }
+
+                        /**
+                         * @param Coll<int> $ids
+                         * @return Coll<static>
+                         */
+                        public function copies(Coll $ids): Coll {
+                            $copies = $ids->map(fn (int $_id): static => clone $this);
+                            /** @psalm-check-type-exact $copies = Coll<Component&static> */;
+                            return $copies;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticReturnOnATemplatedReceiverKeepsTheCallersTemplate' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Bag {
+                        /**
+                         * @param T $value
+                         * @return static
+                         */
+                        public function with($value): static {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @template TBag of Bag<int>
+                     * @param TBag $bag
+                     * @return TBag
+                     */
+                    function withOne(Bag $bag): Bag {
+                        $with = $bag->with(1);
+                        /** @psalm-check-type-exact $with = TBag */;
+                        return $with;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'allowTraversableImplementationAlongWithIteratorAggregate' => [
                 'code' => '<?php
                     /**
