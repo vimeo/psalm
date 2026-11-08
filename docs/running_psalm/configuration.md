@@ -222,7 +222,7 @@ When `true`, disables wildcard suppression of all issues with `@psalm-suppress a
   memoizeMethodCallResults="[bool]"
 >
 ```
-When `true`, the results of method calls without arguments passed are remembered between repeated calls of that method on a given object. Defaults to `false`.
+When `true`, the results of method calls without arguments passed are [memoized](https://en.wikipedia.org/wiki/Memoization) between repeated calls of that method on a given object. Defaults to `false`.
 
 #### hoistConstants
 
@@ -802,6 +802,16 @@ or interfaces defined in a stub file, this stub should be configured with attrib
 <stubs>
   <file name="path/to/file.php" />
   <file name="path/to/abstract-class.php" preloadClasses="true" />
+</stubs>
+```
+
+A `<directory name="path/to/stubs" />` adds every `.php` and `.phpstub` file below it, in alphabetical order, and takes
+the same `preloadClasses` attribute:
+
+```xml
+<stubs>
+  <directory name="path/to/stubs" />
+  <directory name="path/to/base-classes" preloadClasses="true" />
 </stubs>
 ```
 
