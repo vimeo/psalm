@@ -205,6 +205,25 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'privateConstructorOfAParentWithCallStaticStillInitializesTheProperties' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): ?string {
+                            return null;
+                        }
+
+                        protected string $name;
+
+                        private function __construct(string $name) {
+                            $this->name = $name;
+                        }
+                    }
+
+                    final class Child extends Base {}',
+                'assertions' => [],
+                'ignored_issues' => ['ClassMustBeFinal'],
+            ],
             'inaccessibleStaticMethodForwardedToCallStaticHasItsReturnType' => [
                 'code' => '<?php
                     final class Factory {
@@ -220,7 +239,47 @@ final class MethodCallTest extends TestCase
 
                     $made = Factory::make();',
                 'assertions' => ['$made' => 'string'],
-                'ignored_issues' => ['InaccessibleMethod'],
+            ],
+            'inaccessibleStaticMethodForwardedToAnInheritedCallStaticResolvesSelfToItsClass' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): self {
+                            return new self();
+                        }
+                    }
+
+                    final class Child extends Base {
+                        private static function make(): int {
+                            return 1;
+                        }
+                    }
+
+                    $made = Child::make();',
+                'assertions' => ['$made===' => 'Base'],
+                'ignored_issues' => ['ClassMustBeFinal'],
+            ],
+            'inaccessibleStaticMethodForwardedToAnInheritedCallStaticResolvesStaticToTheCalledClass' => [
+                'code' => '<?php
+                    class Base {
+                        /**
+                         * @param list<mixed> $_arguments
+                         * @return static
+                         */
+                        public static function __callStatic(string $name, array $_arguments) {
+                            throw new Exception($name);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        private static function make(): int {
+                            return 1;
+                        }
+                    }
+
+                    $made = Child::make();',
+                'assertions' => ['$made===' => 'Child&static'],
+                'ignored_issues' => ['ClassMustBeFinal'],
             ],
             'staticCallOfInaccessibleMethodGoesToCallStatic' => [
                 'code' => <<<'PHP'

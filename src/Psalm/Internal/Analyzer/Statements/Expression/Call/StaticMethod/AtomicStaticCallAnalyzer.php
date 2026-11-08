@@ -9,6 +9,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
@@ -655,6 +656,7 @@ final class AtomicStaticCallAnalyzer
         // PHP doesn't call a method the caller can't access, but __callStatic()
         $forwarded_to_callstatic = $naive_method_exists
             && $callstatic_method_exists
+            && $stmt->getAttribute(ClassAnalyzer::FAKE_CONSTRUCTOR_CALL_ATTRIBUTE) !== true
             && !MethodAnalyzer::isMethodVisible(
                 $method_id,
                 $context,
@@ -702,11 +704,9 @@ final class AtomicStaticCallAnalyzer
                 $callstatic_declaring_id = $codebase->methods->getDeclaringMethodId($callstatic_id);
                 assert($callstatic_declaring_id !== null);
                 $callstatic_mutations = Capabilities::ALL;
-                $callstatic_return_type = null;
                 if ($codebase->methods->hasStorage($callstatic_declaring_id)) {
                     $callstatic_storage = $codebase->methods->getStorage($callstatic_declaring_id);
                     $callstatic_mutations = $callstatic_storage->capabilities;
-                    $callstatic_return_type = $callstatic_storage->return_type;
                 }
                 if ($codebase->methods->return_type_provider->has($fq_class_name)) {
                     $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
@@ -780,19 +780,28 @@ final class AtomicStaticCallAnalyzer
                 }
 
                 // the call of a method the caller can't access is the call of __callStatic()
-                if ($forwarded_to_callstatic && $callstatic_return_type !== null) {
-                    $statements_analyzer->node_data->setType(
-                        $stmt,
-                        TypeExpander::expandUnion(
-                            $codebase,
-                            $callstatic_return_type,
-                            $fq_class_name,
-                            $fq_class_name,
-                            $class_storage->parent_class,
-                        ),
+                if ($forwarded_to_callstatic) {
+                    $callstatic_self_class = null;
+                    $callstatic_return_type = $codebase->methods->getMethodReturnType(
+                        $codebase,
+                        $callstatic_id,
+                        $callstatic_self_class,
                     );
 
-                    return true;
+                    if ($callstatic_return_type !== null) {
+                        $statements_analyzer->node_data->setType(
+                            $stmt,
+                            TypeExpander::expandUnion(
+                                $codebase,
+                                $callstatic_return_type,
+                                $callstatic_self_class ?? $fq_class_name,
+                                $fq_class_name,
+                                $class_storage->parent_class,
+                            ),
+                        );
+
+                        return true;
+                    }
                 }
             } elseif ($found_method_and_class_storage && ($naive_method_exists || $with_pseudo)) {
                 [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
