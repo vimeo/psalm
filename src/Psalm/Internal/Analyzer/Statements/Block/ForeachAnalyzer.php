@@ -354,14 +354,14 @@ final class ForeachAnalyzer
             $foreach_context->references_to_external_scope['$' . $stmt->valueVar->name] = true;
         }
 
-        // PHP assigns the value first, so a key of the same name wins
+        // PHP evaluates the iterated expression once, before it assigns the value and then a key of the same name
         if ($stmt->keyVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->keyVar->name)) {
             $key_type ??= Type::getMixed();
 
             AssignmentAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->keyVar,
-                $stmt->expr,
+                null,
                 $key_type,
                 $foreach_context,
                 $doc_comment,

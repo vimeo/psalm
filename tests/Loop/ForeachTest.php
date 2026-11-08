@@ -23,6 +23,27 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachSourceIsEvaluatedBeforeTheValueIsAssigned' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, list<int>> $rows */
+                    function values(array $rows, string $row): void {
+                        foreach ($rows[$row] as $key => $row) {
+                            echo $key, $row;
+                        }
+                    }
+
+                    /** @param array<string, array<string, int>> $data */
+                    function keys(array $data, string $name): void {
+                        foreach ($data[$name] as $name => $value) {
+                            echo $name, $value;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'foreachKeyOverwritesTheValueOfTheSameName' => [
                 'code' => <<<'PHP'
                     <?php
