@@ -304,6 +304,46 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * json_encode() escapes every control character, so its output can't split a header, unless it pretty prints.
+     */
+    public function testJsonEncodeRemovesTheHeaderTaintUnlessItPrettyPrints(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            function f(int $flags): void {
+                header("A: " . json_encode($_GET["a"]));
+                header("A: " . json_encode($_GET["b"], JSON_THROW_ON_ERROR));
+                header("A: " . json_encode($_GET["c"], JSON_PRETTY_PRINT));
+                header("A: " . json_encode($_GET["d"], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+                header("A: " . json_encode($_GET["e"], $flags));
+                $args = [$_GET["f"], JSON_THROW_ON_ERROR];
+                header("A: " . json_encode(...$args));
+                header("A: " . json_encode(flags: JSON_UNESCAPED_UNICODE, value: $_GET["g"]));
+            }
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [5, 'TaintedHeader'],
+                [6, 'TaintedHeader'],
+                [7, 'TaintedHeader'],
+                [9, 'TaintedHeader'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
+    /**
      * What a plugin removes from one returned expression is not removed from the other returns of the function, nor
      * from what its calls give.
      */
@@ -845,6 +885,25 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'conditionallyEscapedTaintPassedTrueInstanceMethod' => [
+                'code' => '<?php
+                    class U {
+                        /**
+                         * @psalm-taint-escape ($escape is true ? "html"|"has_quotes" : null)
+                         */
+                        public function foo(string $string, bool $escape = true): string {
+                            if ($escape) {
+                                $string = htmlspecialchars($string);
+                            }
+
+                            return $string;
+                        }
+                    }
+
+                    $u = new U();
+                    echo $u->foo($_GET["foo"], true);
+                    echo $u->foo($_GET["foo"]);',
+            ],
             'dontTaintTheOffsetSetOfAnItemPassedByReference' => [
                 'code' => '<?php // --taint-analysis
                     /** @implements ArrayAccess<string, list<int>> */
@@ -5500,6 +5559,60 @@ final class TaintTest extends TestCase
 
                     (new H())->f();',
                 'error_message' => 'TaintedHtml',
+            ],
+            'conditionallyEscapedTaintPassedFalseInstanceMethod' => [
+                'code' => '<?php
+                    class U {
+                        /**
+                         * @psalm-taint-escape ($escape is true ? "html" : null)
+                         */
+                        public function foo(string $string, bool $escape = true): string {
+                            return $string;
+                        }
+                    }
+
+                    echo (new U())->foo($_GET["foo"], false);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionallyEscapedTaintPassedTrueToAnInstanceMethodKeepsTheOtherTaints' => [
+                'code' => '<?php
+                    class U {
+                        /** @psalm-taint-escape ($escape is true ? "html" : null) */
+                        public function escape(string $s, bool $escape = true): string {
+                            return $s;
+                        }
+                    }
+
+                    shell_exec((new U())->escape((string) $_GET["x"], true));',
+                'error_message' => 'TaintedShell',
+            ],
+            'conditionallyEscapedTaintOfAnUndecidedConditionToAStaticCall' => [
+                'code' => '<?php
+                    class U {
+                        /** @psalm-taint-escape ($type is "expression" ? null : "shell") */
+                        public static function escape(string $s, string $type): string {
+                            return $s;
+                        }
+                    }
+
+                    function run(string $type): void {
+                        shell_exec(U::escape((string) $_GET["x"], $type));
+                    }',
+                'error_message' => 'TaintedShell',
+            ],
+            'conditionallyEscapedTaintOfAnUndecidedConditionToAnInstanceMethod' => [
+                'code' => '<?php
+                    class U {
+                        /** @psalm-taint-escape ($type is "expression" ? null : "shell") */
+                        public function escape(string $s, string $type): string {
+                            return $s;
+                        }
+                    }
+
+                    function run(U $u, string $type): void {
+                        shell_exec($u->escape((string) $_GET["x"], $type));
+                    }',
+                'error_message' => 'TaintedShell',
             ],
             'taintAnItemOfAMixedValuePassedByReference' => [
                 'code' => '<?php // --taint-analysis
