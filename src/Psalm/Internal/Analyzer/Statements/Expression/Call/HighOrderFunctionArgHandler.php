@@ -30,6 +30,9 @@ use function strtolower;
  */
 final class HighOrderFunctionArgHandler
 {
+    /** The type an argument had before enhanceCallableArgType() replaced it with its callable form */
+    public const ORIGINAL_ARG_TYPE_ATTRIBUTE = 'high_order_original_arg_type';
+
     /**
      * Compiles TemplateResult for high-order function
      * by previous template args ($inferred_template_result).
@@ -158,6 +161,13 @@ final class HighOrderFunctionArgHandler
             false,
             true,
         );
+
+        // the callable form drives the template inference, but only the argument as written can be a string param's
+        $original_type = $statements_analyzer->node_data->getType($arg_expr);
+
+        if ($original_type) {
+            $arg_expr->setAttribute(self::ORIGINAL_ARG_TYPE_ATTRIBUTE, $original_type);
+        }
 
         $statements_analyzer->node_data->setType($arg_expr, $expanded);
     }
@@ -310,8 +320,7 @@ final class HighOrderFunctionArgHandler
                 return false;
             }
 
-            // a string naming a function is accepted as the string it is
-            if ($a instanceof Type\Atomic\TString ||
+            if ($a instanceof Type\Atomic\TCallableString ||
                 ($a instanceof Type\Atomic\TKeyedArray && $a->is_callable)
             ) {
                 return false;
