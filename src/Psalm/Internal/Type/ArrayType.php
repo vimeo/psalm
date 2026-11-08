@@ -72,6 +72,7 @@ final class ArrayType
         return null;
     }
 
+    // Reconciliation widens unsupported keys; containment must intersect with array-key instead.
     public static function refineKeyType(Union $key_type): Union
     {
         return self::refineKeyTypeInner($key_type) ?? $key_type;
