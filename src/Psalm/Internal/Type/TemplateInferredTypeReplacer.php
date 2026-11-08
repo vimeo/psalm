@@ -684,25 +684,27 @@ final class TemplateInferredTypeReplacer
      */
     private static function isDisjoint(Codebase $codebase, Atomic $candidate, Union $conditional_type): bool
     {
-        foreach ($conditional_type->getAtomicTypes() as $conditional_atomic_type) {
-            // the empty array is never a non-empty one, nor the reverse
-            if ((self::isEmptyArray($candidate) && self::isNonEmptyArray($conditional_atomic_type))
-                || (self::isNonEmptyArray($candidate) && self::isEmptyArray($conditional_atomic_type))
-            ) {
-                continue;
-            }
+        // the empty array is never a non-empty one, nor the reverse
+        $overlapping_atomic_types = [];
 
-            if (UnionTypeComparator::canExpressionTypesBeIdentical(
-                $codebase,
-                new Union([$candidate]),
-                new Union([$conditional_atomic_type]),
-                false,
-            )) {
-                return false;
+        foreach ($conditional_type->getAtomicTypes() as $conditional_atomic_type) {
+            if (!(self::isEmptyArray($candidate) && self::isNonEmptyArray($conditional_atomic_type))
+                && !(self::isNonEmptyArray($candidate) && self::isEmptyArray($conditional_atomic_type))
+            ) {
+                $overlapping_atomic_types[] = $conditional_atomic_type;
             }
         }
 
-        return true;
+        if (!$overlapping_atomic_types) {
+            return true;
+        }
+
+        return !UnionTypeComparator::canExpressionTypesBeIdentical(
+            $codebase,
+            new Union([$candidate]),
+            new Union($overlapping_atomic_types),
+            false,
+        );
     }
 
     /**

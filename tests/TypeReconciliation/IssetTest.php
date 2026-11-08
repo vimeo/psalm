@@ -21,6 +21,54 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssertedNotSetAndThenDefinedStaysDefined' => [
+                'code' => '<?php
+                    if (random_int(0, 1)) {
+                        $foo = 1;
+                    }
+
+                    if (!isset($foo)) {
+                        $foo = 2;
+                    }
+
+                    $bar = $foo;
+
+                    foreach ([1, 2] as $subject) {
+                        if (preg_match("/a/", (string) $subject, $matches)) {
+                            $first = $matches[0];
+                            echo $first;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'variableIsSetAfterCoalesceThrowStatement' => [
+                'code' => '<?php
+                    class H {
+                        public ?string $p = null;
+
+                        public function a(?string $html): string {
+                            $html ?? throw new Exception();
+
+                            return $html;
+                        }
+
+                        public function b(?string $html): string {
+                            $x = $html ?? throw new Exception();
+
+                            return $html . $x;
+                        }
+
+                        public function c(): string {
+                            $this->p ?? throw new Exception();
+
+                            return $this->p;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'ternaryAfterIssetAndTypeCheckOfAnOffsetOfMixed' => [
                 'code' => '<?php
                     /** @var mixed $array */
@@ -1037,7 +1085,6 @@ final class IssetTest extends TestCase
                         }
                         /**
                          * @psalm-suppress PossiblyUndefinedVariable
-                         * @psalm-suppress MixedArgument
                          */
                         assert($dt);
                     }',
@@ -1105,6 +1152,45 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableNotSetByTheEmptyBranchOfAnIssetCheckIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+
+                    if (random_int(0, 1)) {
+                        $foo = 1;
+                    }
+
+                    if (!isset($foo)) {
+                    }
+
+                    $bar = $foo;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'variableNotSetByTheEmptyBranchOfAnIssetCheckIsPossiblyUndefinedAfterItInAFunction' => [
+                'code' => '<?php
+
+                    function f(): void {
+                        if (random_int(0, 1)) {
+                            $foo = 1;
+                        }
+
+                        if (!isset($foo)) {
+                        }
+
+                        echo $foo;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableStaysNullableAfterCoalesceWithDefault' => [
+                'code' => '<?php
+                    function a(?string $html): string {
+                        $html ?? "default";
+
+                        return $html;
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'complainAboutBadCallInIsset' => [
                 'code' => '<?php
                     class A {}
