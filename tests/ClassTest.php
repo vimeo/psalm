@@ -1186,6 +1186,50 @@ final class ClassTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'staticOfTheCalleesTemplateArgumentsIsBoundToTheReceiver' => [
+                'code' => '<?php
+                    /** @template TModel of object */
+                    class Factory {
+                        public static function new(): static {
+                            return new static();
+                        }
+
+                        public function count(int $count): static {
+                            return $this;
+                        }
+
+                        public static function times(int $count): static {
+                            $factory = static::new()->count($count);
+                            /** @psalm-check-type-exact $factory = Factory&static */;
+                            return $factory;
+                        }
+                    }
+
+                    /** @template-covariant TValue */
+                    final class Coll {}
+
+                    /** @template TColl of Coll */
+                    trait HasColl {
+                        /** @return TColl */
+                        public function newCollection(): Coll {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    abstract class Model {
+                        /** @use HasColl<Coll<static>> */
+                        use HasColl;
+                    }
+
+                    final class User extends Model {}
+
+                    $users = (new User())->newCollection();',
+                'assertions' => [
+                    '$users===' => 'Coll<User>',
+                ],
+                'ignored_issues' => ['UnsafeInstantiation'],
+                'php_version' => '8.0',
+            ],
             'allowTraversableImplementationAlongWithIteratorAggregate' => [
                 'code' => '<?php
                     /**

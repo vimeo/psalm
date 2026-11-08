@@ -754,11 +754,11 @@ final class TypeExpander
         bool $final = false,
         bool &$expand_generic = false,
     ): TNamedObject|TTemplateParam {
-        // a static type is resolved to the called class below, with its own type arguments
+        // a static type has the type arguments of the called class it is bound to, below or by an earlier expansion
         if ($expand_generic
             && $return_type::class === TNamedObject::class
             && !$return_type->extra_types
-            && !($return_type->is_static && !$return_type->is_static_resolved)
+            && !$return_type->is_static
             && $codebase->classOrInterfaceExists($return_type->value)
         ) {
             $value = $codebase->classlikes->getUnAliasedName($return_type->value);

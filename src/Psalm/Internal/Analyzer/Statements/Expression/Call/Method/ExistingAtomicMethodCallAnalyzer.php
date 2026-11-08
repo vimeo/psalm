@@ -365,18 +365,19 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             if ($method_storage->self_out_type && $lhs_var_id) {
                 $self_out_candidate = $method_storage->self_out_type;
 
-                // as for the return type: the receiver binds `static` of the signature, not that of the caller's types
-                $self_out_candidate = TypeExpander::expandUnion(
-                    $codebase,
-                    $self_out_candidate,
-                    $fq_class_name,
-                    $static_type,
-                    $class_storage->parent_class,
-                    true,
-                    false,
-                    MethodCallReturnTypeFetcher::bindsStaticToReceiverClass($codebase, $static_type),
-                    true,
-                );
+                if ($template_result->lower_bounds) {
+                    $self_out_candidate = TypeExpander::expandUnion(
+                        $codebase,
+                        $self_out_candidate,
+                        $fq_class_name,
+                        null,
+                        $class_storage->parent_class,
+                        true,
+                        false,
+                        MethodCallReturnTypeFetcher::bindsStaticToReceiverClass($codebase, $static_type),
+                        true,
+                    );
+                }
 
                 $self_out_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
                     $self_out_candidate,
@@ -384,14 +385,13 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $method_id,
                     count($args),
                     $codebase,
-                    $method_storage->self_out_type,
                 );
 
                 $self_out_candidate = TypeExpander::expandUnion(
                     $codebase,
                     $self_out_candidate,
                     $fq_class_name,
-                    null,
+                    $static_type,
                     $class_storage->parent_class,
                     true,
                     false,

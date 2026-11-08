@@ -29,6 +29,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Internal\TypeVisitor\BoundStaticMarker;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -42,6 +43,7 @@ use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
 
+use function array_map;
 use function count;
 use function strtolower;
 
@@ -211,20 +213,19 @@ final class MethodCallReturnTypeFetcher
             );
 
             if ($return_type_candidate) {
-                // `static` of the signature is bound to the receiver before the templates bring in the caller's types,
-                // whose own late static (`static::class`, `$this`) the receiver must not bind
-                $signature_type = $return_type_candidate;
-                $return_type_candidate = TypeExpander::expandUnion(
-                    $codebase,
-                    $return_type_candidate,
-                    $self_fq_class_name,
-                    $static_type,
-                    $class_storage->parent_class,
-                    true,
-                    false,
-                    self::bindsStaticToReceiverClass($codebase, $static_type),
-                    true,
-                );
+                if ($template_result->lower_bounds) {
+                    $return_type_candidate = TypeExpander::expandUnion(
+                        $codebase,
+                        $return_type_candidate,
+                        $fq_class_name,
+                        null,
+                        $class_storage->parent_class,
+                        true,
+                        false,
+                        self::bindsStaticToReceiverClass($codebase, $static_type),
+                        true,
+                    );
+                }
 
                 $return_type_candidate = self::replaceTemplateTypes(
                     $return_type_candidate,
@@ -232,14 +233,13 @@ final class MethodCallReturnTypeFetcher
                     $method_id,
                     count($stmt->getArgs()),
                     $codebase,
-                    $signature_type,
                 );
 
                 $return_type_candidate = TypeExpander::expandUnion(
                     $codebase,
                     $return_type_candidate,
                     $self_fq_class_name,
-                    null,
+                    $static_type,
                     $class_storage->parent_class,
                     true,
                     false,
@@ -921,37 +921,10 @@ final class MethodCallReturnTypeFetcher
             }
         }
 
-        // `static` of the signature is bound before the templates bring in the caller's types (see fetch())
-        $return_type = $closure->return_type;
-        $closure = TypeExpander::expandUnion(
-            $codebase,
-            new Union([$closure]),
-            $self_class,
-            $static_class_type,
-            $parent_class,
-            true,
-            false,
-            $final,
-            $expand_generic,
-        )->getSingleAtomic();
-
-        if ($return_type && $return_final !== null && $return_final !== $final && $closure instanceof TClosure) {
-            $closure = $closure->replace($closure->params, TypeExpander::expandUnion(
-                $codebase,
-                $return_type,
-                $self_class,
-                $static_class_type,
-                $parent_class,
-                true,
-                false,
-                $return_final,
-                $expand_generic,
-            ));
-        }
-
         $closure_type = new Union([$closure]);
 
         if ($bounds_result->lower_bounds) {
+            $bounds_result = self::withCallerStaticsBound($bounds_result);
             $closure_type = TemplateInferredTypeReplacer::replace(
                 TypeExpander::expandUnion($codebase, $closure_type, null, null, null),
                 $bounds_result,
@@ -970,33 +943,52 @@ final class MethodCallReturnTypeFetcher
             }
         }
 
-        return TypeExpander::expandUnion(
+        $expanded_type = TypeExpander::expandUnion(
             $codebase,
             $closure_type,
             $self_class,
-            null,
+            $static_class_type,
             $parent_class,
             true,
             false,
-            $return_final ?? $final,
+            $final,
             $expand_generic,
         );
+
+        $closure = $closure_type->getSingleAtomic();
+        $expanded_closure = $expanded_type->getSingleAtomic();
+
+        if ($return_final === null
+            || $return_final === $final
+            || !$closure instanceof TClosure
+            || !$expanded_closure instanceof TClosure
+            || !$closure->return_type
+        ) {
+            return $expanded_type;
+        }
+
+        return new Union([$expanded_closure->replace($expanded_closure->params, TypeExpander::expandUnion(
+            $codebase,
+            $closure->return_type,
+            $self_class,
+            $static_class_type,
+            $parent_class,
+            true,
+            false,
+            $return_final,
+            $expand_generic,
+        ))]);
     }
 
-    /**
-     * @param ?Union $signature_type the declared type, when `$return_type_candidate` has `static` bound to the receiver
-     *                               already: the receiver's templates are the caller's, which the call doesn't bind
-     */
     public static function replaceTemplateTypes(
         Union $return_type_candidate,
         TemplateResult $template_result,
         MethodIdentifier $method_id,
         int $arg_count,
         Codebase $codebase,
-        ?Union $signature_type = null,
     ): Union {
         if ($template_result->template_types) {
-            $bindable_template_types = ($signature_type ?? $return_type_candidate)->getTemplateTypes();
+            $bindable_template_types = $return_type_candidate->getTemplateTypes();
 
             foreach ($bindable_template_types as $template_type) {
                 if ($template_type->defining_class !== $method_id->fq_class_name
@@ -1055,11 +1047,55 @@ final class MethodCallReturnTypeFetcher
 
             $return_type_candidate = TemplateInferredTypeReplacer::replace(
                 $return_type_candidate,
-                $template_result,
+                self::withCallerStaticsBound($template_result),
                 $codebase,
             );
         }
 
         return $return_type_candidate;
+    }
+
+    /**
+     * The template result with the late static types of the caller in its bounds marked as bound
+     * ({@see BoundStaticMarker}): the receiver of the call must not bind them again.
+     */
+    public static function withCallerStaticsBound(TemplateResult $template_result): TemplateResult
+    {
+        $marker = new BoundStaticMarker();
+        $lower_bounds = $template_result->lower_bounds;
+
+        foreach ($template_result->lower_bounds as $template_name => $bounds_by_class) {
+            foreach ($bounds_by_class as $defining_class => $bounds) {
+                $marked_bounds = array_map(
+                    static function (TemplateBound $bound) use ($marker): TemplateBound {
+                        $type = $bound->type;
+                        $marker->traverse($type);
+
+                        if ($type === $bound->type) {
+                            return $bound;
+                        }
+
+                        $bound = clone $bound;
+                        $bound->type = $type;
+
+                        return $bound;
+                    },
+                    $bounds,
+                );
+
+                if ($marked_bounds !== $bounds) {
+                    $lower_bounds[$template_name][$defining_class] = $marked_bounds;
+                }
+            }
+        }
+
+        if ($lower_bounds === $template_result->lower_bounds) {
+            return $template_result;
+        }
+
+        $template_result = clone $template_result;
+        $template_result->lower_bounds = $lower_bounds;
+
+        return $template_result;
     }
 }
