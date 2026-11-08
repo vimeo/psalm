@@ -26,7 +26,7 @@ jobs:
   laravel: [laravel]
   symfony: [symfony]
   orm-psl: [doctrine-orm, psl]
-  phpunit-parser: [phpunit, php-parser]
+  phpunit-parser-tempest: [phpunit, php-parser, tempest]
   small: [amphp-amp, webmozarts-assert, guzzle-promises, monolog]
   drupal: [drupal]
 
@@ -45,7 +45,7 @@ projects:
     ref: "34a08ab1b25dac1ebbdca78927f27cf353993625"
     tag: v8.1.10
     timeout: 400
-    exercises: very wide codebase (about 4400 files), PHP 8.4+ features (property hooks, asymmetric visibility), many small independent components, polyfills, heavy interface graphs
+    exercises: very wide codebase (about 4400 files), many small independent components, polyfills, heavy interface graphs
     psalm:
       dirs: [src]
       ignore:
@@ -110,6 +110,18 @@ projects:
     psalm:
       dirs: [lib]
       attributes: {phpVersion: "7.4"}
+
+  # The only corpus project written in PHP 8.4/8.5 style: the others barely use hooks or asymmetric
+  # visibility (symfony 8.1: 9 hooked properties in 1.6M lines) and no PHP 8.5 features.
+  tempest:
+    repo: https://github.com/tempestphp/tempest-framework
+    ref: "8fe1705c919fd032498f3f6d6853c046294b9615"
+    tag: v3.21.0
+    timeout: 120
+    exercises: PHP 8.5 framework (about 1600 files), 260 hooked properties, 95 of them on interfaces, 240 asymmetric visibility properties, Uri extension, clone with, array_first/array_last, readonly classes
+    psalm:
+      dirs: [packages/*/src]
+      attributes: {phpVersion: "8.5"}
 
   amphp-amp:
     repo: https://github.com/amphp/amp
