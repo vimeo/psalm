@@ -310,6 +310,87 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'negatedMethodExistsOfABuiltinClassKeepsTheBranchPossible' => [
+                'code' => '<?php
+                    function f(DateTime $date): string {
+                        if (!method_exists($date, "format")) {
+                            return "no format";
+                        }
+
+                        return $date->format("c");
+                    }',
+                'assertions' => [],
+            ],
+            'negatedMethodExistsOfAClassInheritingTheMethodFromABuiltinClassKeepsTheBranchPossible' => [
+                'code' => '<?php
+                    final class MyDate extends DateTime {}
+
+                    function f(MyDate $date): string {
+                        if (!method_exists($date, "format")) {
+                            return "no format";
+                        }
+
+                        return $date->format("c");
+                    }',
+                'assertions' => [],
+            ],
+            'negatedMethodExistsOfAnObjectWithTheMethodKeepsItsType' => [
+                'code' => '<?php
+                    abstract class Platform {
+                        public function fold(): int {
+                            return 1;
+                        }
+                    }
+
+                    function getPlatform(): Platform {
+                        throw new Exception();
+                    }
+
+                    $platform = getPlatform();
+
+                    if (method_exists($platform, "fold")) {
+                        throw new Exception();
+                    }
+
+                    $after = $platform;',
+                'assertions' => ['$after' => 'Platform'],
+                'ignored_issues' => ['RedundantCondition'],
+            ],
+            'negatedMethodExistsOfAnObjectWithoutTheMethodNarrowsNothing' => [
+                'code' => '<?php
+                    class A {}
+
+                    function f(A $a): void {
+                        if (!method_exists($a, "bar")) {
+                            echo "no bar";
+                        }
+                    }',
+            ],
+            'negatedMethodExistsOfAnObjectOrAnotherType' => [
+                'code' => '<?php
+                    class A {
+                        public function bar(): void {}
+                    }
+
+                    class B {}
+
+                    function f(A|B $a): void {
+                        if (!method_exists($a, "bar")) {
+                            /** @psalm-check-type-exact $a = B */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'negatedMethodExistsOfAnObjectType' => [
+                'code' => '<?php
+                    function f(object $a): void {
+                        if (!method_exists($a, "bar")) {
+                            echo "no bar";
+                        }
+                    }',
+            ],
             'parentCallOfAStaticReturnTypeInAChildOfAGenericClass' => [
                 'code' => '<?php
                     /** @template T */
@@ -1826,6 +1907,19 @@ final class MethodCallTest extends TestCase
                 'error_message' => 'InvalidStaticInvocation',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'negatedMethodExistsOfAnObjectWithTheMethod' => [
+                'code' => '<?php
+                    class A {
+                        public function bar(): void {}
+                    }
+
+                    function f(A $a): void {
+                        if (!method_exists($a, "bar")) {
+                            echo "no bar";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'methodMissingFromALaterTypeOfAUnionTemplateBound' => [
                 'code' => '<?php
