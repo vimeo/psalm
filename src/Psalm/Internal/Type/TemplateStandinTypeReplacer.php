@@ -128,30 +128,36 @@ final class TemplateStandinTypeReplacer
         if ($input_type && !$input_type->isSingle()) {
             $new_input_type = $input_type->getBuilder();
 
-            foreach ($original_atomic_types as $key => $original_atomic_type) {
+            foreach ($original_atomic_types as $key => $_) {
                 if ($new_input_type->hasType($key)) {
                     $new_input_type->removeType($key);
                 }
+            }
 
-                // a literal or a more specific type of one the union has, `'a'` for `string`, is not the template's
+            if ($new_input_type->isUnionEmpty()) {
+                return $union_type;
+            }
+
+            // a literal or a more specific type of one the union has, `'a'` for `string`, is not the template's
+            // either, unless it is all that is left
+            $template_free_input_type = $new_input_type->getBuilder();
+
+            foreach ($original_atomic_types as $original_atomic_type) {
                 if ($original_atomic_type instanceof TTemplateParam
                     || (new Union([$original_atomic_type]))->hasTemplate()
                 ) {
                     continue;
                 }
 
-                foreach ($new_input_type->getAtomicTypes() as $input_key => $input_atomic_type) {
+                foreach ($template_free_input_type->getAtomicTypes() as $input_key => $input_atomic_type) {
                     if (AtomicTypeComparator::isContainedBy($codebase, $input_atomic_type, $original_atomic_type)) {
-                        $new_input_type->removeType($input_key);
+                        $template_free_input_type->removeType($input_key);
                     }
                 }
             }
 
-            if (!$new_input_type->isUnionEmpty()) {
-                $input_type = $new_input_type->freeze();
-            } else {
-                return $union_type;
-            }
+            $input_type = ($template_free_input_type->isUnionEmpty() ? $new_input_type : $template_free_input_type)
+                ->freeze();
         }
 
         $had_template = false;
