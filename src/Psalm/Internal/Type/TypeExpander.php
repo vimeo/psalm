@@ -50,8 +50,10 @@ use ReflectionProperty;
 use function array_all;
 use function array_any;
 use function array_filter;
+use function array_keys;
 use function array_map;
 use function array_merge;
+use function array_shift;
 use function array_values;
 use function count;
 use function is_string;
@@ -556,13 +558,20 @@ final class TypeExpander
                 $type_params[0] = ArrayAnalyzer::castArrayKeyType($type_params[0]);
             }
 
-            // `Foo[pure]` for a class with type templates
+            // `Foo<A>` leaving out trailing templates with a default, `Foo[pure]` for a class with type templates
             if ($return_type instanceof TGenericObject
                 && $codebase->classlike_storage_provider->has($return_type->value)
             ) {
+                $class_storage = $codebase->classlike_storage_provider->get($return_type->value);
+
                 $type_params = PurityArguments::align(
-                    $type_params,
-                    $codebase->classlike_storage_provider->get($return_type->value),
+                    TemplateDefaults::fillAndExpandTypeArguments(
+                        $type_params,
+                        $class_storage,
+                        $codebase,
+                        $return_type->from_docblock,
+                    ),
+                    $class_storage,
                 );
             }
 
@@ -635,13 +644,16 @@ final class TypeExpander
                 unset($property_type);
             }
             if ($changed) {
-                $return_type = TKeyedArray::make(
+                $expanded = TKeyedArray::make(
                     $properties,
                     $return_type->class_strings,
                     $fallback_params,
                     $return_type->is_list,
                     $return_type->from_docblock,
                 );
+                $return_type = $expanded instanceof TKeyedArray
+                    ? $expanded->setIsCallable($return_type->is_callable)
+                    : $expanded;
             }
         }
 
@@ -1216,7 +1228,29 @@ final class TypeExpander
             if (!$storage->final) {
                 $all_sealed = false;
             }
-            foreach ($storage->properties as $key => $property) {
+
+            // the properties a class declares come before those of the traits it uses
+            $property_sources = [$storage];
+            $traits_to_visit = array_keys($storage->used_traits);
+            $visited_traits = [];
+            while ($traits_to_visit) {
+                $used_trait = array_shift($traits_to_visit);
+                if (isset($visited_traits[$used_trait]) || !$codebase->classlike_storage_provider->has($used_trait)) {
+                    continue;
+                }
+
+                $visited_traits[$used_trait] = true;
+                $trait_storage = $codebase->classlike_storage_provider->get($used_trait);
+                $property_sources[] = $trait_storage;
+                $traits_to_visit = [...$traits_to_visit, ...array_keys($trait_storage->used_traits)];
+            }
+
+            $source_properties = [];
+            foreach ($property_sources as $property_source) {
+                $source_properties += $property_source->properties;
+            }
+
+            foreach ($source_properties as $key => $property) {
                 if (isset($properties[$key])) {
                     continue;
                 }
