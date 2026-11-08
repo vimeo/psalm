@@ -1101,29 +1101,7 @@ final class AssertionFinder
             foreach ($if_true_assertions as $assertion) {
                 $if_types = [];
 
-                $newRules = [];
-
-                foreach ($assertion->rule as $rule) {
-                    $rule_type = $rule->getAtomicType();
-
-                    if ($rule_type instanceof TClassConstant) {
-                        $codebase = $source->getCodebase();
-
-                        $newRules[] = $rule->setAtomicType(
-                            TypeExpander::expandAtomic(
-                                $codebase,
-                                $rule_type,
-                                null,
-                                null,
-                                null,
-                            )[0],
-                        );
-                    } else {
-                        $newRules []= $rule;
-                    }
-                }
-
-                $assertion = new Possibilities($assertion->var_id, $newRules);
+                $assertion = self::expandClassConstantsOfRules($assertion, $source->getCodebase());
 
                 if (is_int($assertion->var_id) && isset($expr->getArgs()[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
@@ -1251,29 +1229,7 @@ final class AssertionFinder
             foreach ($if_false_assertions as $assertion) {
                 $if_types = [];
 
-                $newRules = [];
-
-                foreach ($assertion->rule as $rule) {
-                    $rule_type = $rule->getAtomicType();
-
-                    if ($rule_type instanceof TClassConstant) {
-                        $codebase = $source->getCodebase();
-
-                        $newRules []= $rule->setAtomicType(
-                            TypeExpander::expandAtomic(
-                                $codebase,
-                                $rule_type,
-                                null,
-                                null,
-                                null,
-                            )[0],
-                        );
-                    } else {
-                        $newRules []= $rule;
-                    }
-                }
-
-                $assertion = new Possibilities($assertion->var_id, $newRules);
+                $assertion = self::expandClassConstantsOfRules($assertion, $source->getCodebase());
 
                 if (is_int($assertion->var_id) && isset($expr->getArgs()[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
@@ -1389,6 +1345,21 @@ final class AssertionFinder
         }
 
         return $anded_types;
+    }
+
+    private static function expandClassConstantsOfRules(Possibilities $assertion, Codebase $codebase): Possibilities
+    {
+        $rules = [];
+
+        foreach ($assertion->rule as $rule) {
+            $rule_type = $rule->getAtomicType();
+
+            $rules[] = $rule_type instanceof TClassConstant
+                ? $rule->setAtomicType(TypeExpander::expandAtomic($codebase, $rule_type, null, null, null)[0])
+                : $rule;
+        }
+
+        return new Possibilities($assertion->var_id, $rules);
     }
 
     /**
