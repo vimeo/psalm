@@ -29,6 +29,11 @@ class TNamedObject extends Atomic
 
     public string $value;
 
+    /**
+     * Whether this static is already bound to the class it is called on: by an expansion with a called class, or
+     * because it is the late static binding of the analysed code (`$this`, `new static`, ...). An expansion with
+     * another called object binds no static in it, its type arguments included; a final called class name still does.
+     */
     public bool $is_static_resolved = false;
 
     /**

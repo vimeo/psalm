@@ -309,7 +309,8 @@ final class NewAnalyzer extends CallAnalyzer
             } else {
                 //if the class is a Name, it can't represent a child
                 $definite_class = $stmt->class instanceof PhpParser\Node\Name;
-                $result_atomic_type = new TNamedObject($fq_class_name, $from_static, $definite_class);
+                $result_atomic_type = (new TNamedObject($fq_class_name, $from_static, $definite_class))
+                    ->setIsStatic($from_static, $from_static);
             }
 
             $statements_analyzer->node_data->setType(
@@ -645,12 +646,12 @@ final class NewAnalyzer extends CallAnalyzer
 
             // XXX: what if we need both?
             if ($generic_param_types !== null && $generic_param_types !== [] && !$self_out_candidate) {
-                $result_atomic_type = new TGenericObject(
+                $result_atomic_type = (new TGenericObject(
                     $fq_class_name,
                     $generic_param_types,
                     false,
                     $from_static,
-                );
+                ))->setIsStatic($from_static, $from_static);
 
                 $statements_analyzer->node_data->setType(
                     $stmt,
@@ -667,7 +668,8 @@ final class NewAnalyzer extends CallAnalyzer
                 $statements_analyzer->getSuppressedIssues(),
             );
         } elseif (($type_params = array_values(TemplateDefaults::bindOmitted($storage, [], true, false))) !== []) {
-            $result_atomic_type = new TGenericObject($fq_class_name, $type_params, false, $from_static);
+            $result_atomic_type = (new TGenericObject($fq_class_name, $type_params, false, $from_static))
+                ->setIsStatic($from_static, $from_static);
 
             $statements_analyzer->node_data->setType(
                 $stmt,

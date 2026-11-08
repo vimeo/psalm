@@ -1376,7 +1376,7 @@ final class AssertionFinder
             if ($this_class_name !== null
                 && (in_array(strtolower($stmt->class->getFirst()), ['self', 'static'], true))) {
                 $is_static = $stmt->class->getFirst() === 'static';
-                $named_object = new TNamedObject($this_class_name, $is_static);
+                $named_object = (new TNamedObject($this_class_name, $is_static))->setIsStatic($is_static, $is_static);
 
                 if ($is_static) {
                     return [new IsIdentical($named_object)];
@@ -1386,7 +1386,7 @@ final class AssertionFinder
             }
         } elseif ($stmt->class instanceof PhpParser\Node\Expr\Variable && $stmt->class->name === 'this') {
             if ($this_class_name !== null) {
-                $named_object = new TNamedObject($this_class_name, true);
+                $named_object = (new TNamedObject($this_class_name, true))->setIsStatic(true, true);
 
                 return [new IsIdentical($named_object)];
             }
@@ -3750,7 +3750,7 @@ final class AssertionFinder
 
                     if ($class_node->getParts() === ['static']) {
                         if ($this_class_name !== null) {
-                            $object = new TNamedObject($this_class_name, true);
+                            $object = (new TNamedObject($this_class_name, true))->setIsStatic(true, true);
 
                             $if_types[$first_var_name] = [[new IsAClass($object, $third_arg_value === 'true')]];
                         }

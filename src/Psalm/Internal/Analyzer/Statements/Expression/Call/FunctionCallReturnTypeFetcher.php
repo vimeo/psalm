@@ -414,7 +414,7 @@ final class FunctionCallReturnTypeFetcher
                     return new Union([
                         new TClassString(
                             $context->self ?: 'object',
-                            $context->self ? new TNamedObject($context->self, true) : null,
+                            $context->self ? (new TNamedObject($context->self, true))->setIsStatic(true, true) : null,
                         ),
                     ]);
 

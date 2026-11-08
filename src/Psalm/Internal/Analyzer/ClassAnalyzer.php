@@ -1355,6 +1355,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $this_atomic_object_type = new TNamedObject($fq_class_name, !$storage->final);
             }
 
+            $this_atomic_object_type = $this_atomic_object_type->setIsStatic(!$storage->final, !$storage->final);
+
             $method_context->vars_in_scope['$this'] = new Union([$this_atomic_object_type]);
             $method_context->vars_possibly_in_scope['$this'] = true;
             $method_context->calling_method_id = strtolower($fq_class_name) . '::__construct';

@@ -197,6 +197,14 @@ final class TypeExpander
         if ($return_type instanceof TNamedObject
             || $return_type instanceof TTemplateParam
         ) {
+            // see TNamedObject::$is_static_resolved
+            if ($return_type instanceof TNamedObject
+                && $return_type->is_static_resolved
+                && !is_string($static_class_type)
+            ) {
+                $static_class_type = null;
+            }
+
             if ($return_type->extra_types) {
                 $new_intersection_types = [];
 

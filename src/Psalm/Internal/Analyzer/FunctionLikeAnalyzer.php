@@ -2775,6 +2775,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     );
                 }
 
+                $this_object_type = $this_object_type->setIsStatic(!$storage->final, !$storage->final);
+
                 $props = [];
                 if ($storage->isMutationFree()
                     && !$storage->mutation_free_assumed

@@ -162,7 +162,7 @@ final class ClassConstAnalyzer
                 }
 
                 if ($first_part_lc === 'static') {
-                    $static_named_object = new TNamedObject($fq_class_name, true);
+                    $static_named_object = (new TNamedObject($fq_class_name, true))->setIsStatic(true, true);
 
                     $statements_analyzer->node_data->setType(
                         $stmt,
