@@ -105,6 +105,9 @@ use const SORT_STRING;
  */
 final class Scanner
 {
+    /** A round of at most this many files is scanned in this process */
+    private const MAX_FILES_WITHOUT_FORKING = 512;
+
     /**
      * @var array<string, string>
      */
@@ -464,7 +467,7 @@ final class Scanner
      */
     public static function getScanPoolSize(int $max_pool_size, int $file_count, int $uncached_count): int
     {
-        if ($file_count <= 512 || $uncached_count * 8 <= $file_count - $uncached_count) {
+        if ($file_count <= self::MAX_FILES_WITHOUT_FORKING || $uncached_count * 8 <= $file_count - $uncached_count) {
             return 1;
         }
 
@@ -510,11 +513,12 @@ final class Scanner
             ksort($files_to_scan, SORT_STRING);
         }
 
-        $pool_size = !$this->is_forked && $pool_size > 1
-            ? self::getScanPoolSize($pool_size, count($files_to_scan), $this->countUncachedFiles($files_to_scan))
+        $file_count = count($files_to_scan);
+        $pool_size = !$this->is_forked && $pool_size > 1 && $file_count > self::MAX_FILES_WITHOUT_FORKING
+            ? self::getScanPoolSize($pool_size, $file_count, $this->countUncachedFiles($files_to_scan))
             : 1;
 
-        $this->progress->expand(count($files_to_scan));
+        $this->progress->expand($file_count);
         if ($pool_size > 1) {
             $this->progress->debug('Forking process for scanning' . PHP_EOL);
 
