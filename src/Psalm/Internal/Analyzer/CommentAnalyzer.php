@@ -39,6 +39,7 @@ use function rtrim;
 use function str_replace;
 use function strlen;
 use function strpos;
+use function strspn;
 use function substr;
 use function substr_count;
 use function trim;
@@ -131,7 +132,7 @@ final class CommentAnalyzer
 
                     if ($line_parts[0] === ''
                         || ($line_parts[0][0] === '$'
-                            && !preg_match('/^\$this(\||$)/', $line_parts[0]))
+                            && !preg_match('/^\$this *(\||$)/', $line_parts[0]))
                     ) {
                         throw new IncorrectDocblockException('Misplaced variable');
                     }
@@ -154,9 +155,9 @@ final class CommentAnalyzer
                     if (count($line_parts) > 1) {
                         if ($line_parts[1][0] === '$') {
                             $var_id = $line_parts[1];
-                            $description = trim(substr($var_line, strlen($line_parts[0]) + strlen($line_parts[1]) + 2));
+                            $description = trim(substr($var_line, $type_end - $type_start + strlen($var_id) + 2));
                         } else {
-                            $description = trim(substr($var_line, strlen($line_parts[0]) + 1));
+                            $description = trim(substr($var_line, $type_end - $type_start + 1));
                         }
                         $description = (string) preg_replace('/\\n \\*\\s+/um', ' ', $description);
                     }
@@ -375,6 +376,16 @@ final class CommentAnalyzer
                 ) {
                     throw new DocblockParseException('Invalid string ' . $return_block);
                 }
+            } elseif ($char === ' '
+                && !$brackets
+                && ($whitespace = self::getWhitespaceNextToTypeOperator($return_block, $i)) !== ''
+            ) {
+                // the whitespace before and after a union or intersection operator is part of the type, kept as
+                // it is, so that the type is the text it spans and splits into itself again: `A |null`
+                $type .= $whitespace;
+                $i += strlen($whitespace) - 1;
+
+                continue;
             } elseif ($char === ' ') {
                 if ($brackets) {
                     $expects_callable_return = false;
@@ -383,21 +394,6 @@ final class CommentAnalyzer
                 }
 
                 if ($next_char === '{' && !self::isHashNotation($return_block, $i + 1)) {
-                    $type .= ' ';
-                    continue;
-                }
-
-                if ($next_char === '|' || $next_char === '&') {
-                    $nexter_char = $i < $l - 2 ? $return_block[$i + 2] : null;
-
-                    if ($nexter_char === ' ') {
-                        ++$i;
-                        $type .= $next_char . ' ';
-                        continue;
-                    }
-                }
-
-                if ($last_char === '|' || $last_char === '&') {
                     $type .= ' ';
                     continue;
                 }
@@ -418,6 +414,9 @@ final class CommentAnalyzer
                 $remaining = trim((string) preg_replace('@^[ \t]*\* *@m', ' ', substr($return_block, $i + 1)));
 
                 if ($remaining) {
+                    // the by-reference marker that the type stopped at stays with its parameter: `A & $x`
+                    $remaining = (string) preg_replace('/^&\s+/', '&', $remaining);
+
                     return [rtrim($type), ...preg_split('/\s+/', $remaining) ?: []];
                 }
 
@@ -430,6 +429,40 @@ final class CommentAnalyzer
         }
 
         return [$type];
+    }
+
+    /**
+     * The run of spaces at $offset if a union or intersection operator is next to it, or ''
+     *
+     * @psalm-pure
+     */
+    private static function getWhitespaceNextToTypeOperator(string $doc_line, int $offset): string
+    {
+        $whitespace = substr($doc_line, $offset, strspn($doc_line, ' ', $offset));
+
+        return self::isTypeOperator($doc_line, $offset - 1)
+            || self::isTypeOperator($doc_line, $offset + strlen($whitespace))
+            ? $whitespace
+            : '';
+    }
+
+    /**
+     * Whether the character at $offset is a union `|` or an intersection `&`, rather than the by-reference
+     * marker of the parameter whose name follows it (`A &$x`, `A & ...$x`)
+     *
+     * @psalm-pure
+     */
+    private static function isTypeOperator(string $doc_line, int $offset): bool
+    {
+        $char = $offset >= 0 ? $doc_line[$offset] ?? '' : '';
+
+        if ($char === '&') {
+            $operand = $doc_line[$offset + 1 + strspn($doc_line, ' ', $offset + 1)] ?? '';
+
+            return $operand !== '$' && $operand !== '.';
+        }
+
+        return $char === '|';
     }
 
     /**

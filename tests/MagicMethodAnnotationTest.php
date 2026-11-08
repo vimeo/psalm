@@ -1390,6 +1390,53 @@ final class MagicMethodAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'methodTypesWithSpacesAroundPipeAndAmpersand' => [
+                'code' => '<?php
+                    final class A {}
+                    interface I1 {}
+                    interface I2 {}
+
+                    class ParentClass {
+                        public function __call(string $name, array $args) {}
+                        public static function __callStatic(string $name, array $args) {}
+                    }
+
+                    /**
+                     * @method static A | null a()
+                     * @method static A |null b()
+                     * @method static A  |  null c()
+                     * @method A |null d()
+                     * @method static e(): A |null
+                     * @method f(): A  |  null
+                     * @method I1 & I2 h()
+                     * @method I1 &I2 i()
+                     * @method void j(A |null $x, A | null $y)
+                     * @method static k(): I1 &I2
+                     */
+                    class Child extends ParentClass {}
+
+                    $a = Child::a();
+                    $b = Child::b();
+                    $c = Child::c();
+                    $d = (new Child)->d();
+                    $e = Child::e();
+                    $f = (new Child)->f();
+                    $h = (new Child)->h();
+                    $i = (new Child)->i();
+                    (new Child)->j(null, null);
+                    $k = Child::k();',
+                'assertions' => [
+                    '$a' => 'A|null',
+                    '$b' => 'A|null',
+                    '$c' => 'A|null',
+                    '$d' => 'A|null',
+                    '$e' => 'A|null',
+                    '$f' => 'A|null',
+                    '$h' => 'I1&I2',
+                    '$i' => 'I1&I2',
+                    '$k' => 'I1&I2',
+                ],
+            ],
         ];
     }
 

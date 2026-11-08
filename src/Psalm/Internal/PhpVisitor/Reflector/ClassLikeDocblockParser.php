@@ -653,7 +653,7 @@ final class ClassLikeDocblockParser
 
                     if ($line_parts[0] === ''
                         || ($line_parts[0][0] === '$'
-                            && !preg_match('/^\$this(\||$)/', $line_parts[0]))
+                            && !preg_match('/^\$this *(\||$)/', $line_parts[0]))
                     ) {
                         throw new IncorrectDocblockException('Misplaced variable');
                     }
