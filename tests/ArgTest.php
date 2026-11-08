@@ -386,6 +386,16 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'iterableInUnionPassedToArrayParam' => [
+                'code' => '<?php
+                    function takesArray(array $a): void {}
+
+                    /** @param list<int>|iterable<string> $values */
+                    function f(iterable $values): void {
+                        takesArray($values);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
             'arrayPushArgumentUnpackingWithBadArg' => [
                 'code' => '<?php
                     $a = [];

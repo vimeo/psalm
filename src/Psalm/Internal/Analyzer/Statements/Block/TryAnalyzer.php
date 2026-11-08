@@ -79,9 +79,16 @@ final class TryAnalyzer
 
         $was_inside_try = $context->inside_try;
         $context->inside_try = true;
+
+        // a try nested in the body leaves through the finally of this one too
+        $outer_finally_scope = $context->finally_scope;
+        $context->finally_scope = $try_context->finally_scope;
+
         if ($statements_analyzer->analyze($stmt->stmts, $context) === false) {
             return false;
         }
+
+        $context->finally_scope = $outer_finally_scope;
         $context->inside_try = $was_inside_try;
 
         $context->has_returned = false;
