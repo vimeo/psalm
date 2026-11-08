@@ -94,6 +94,37 @@ final class ReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'generatorReturnTypeAllowsAnImplicitReturnOfNull' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, mixed, string|null> */
+                    function nullable(bool $r): Generator {
+                        if ($r) {
+                            return "string";
+                        }
+
+                        yield 1;
+                    }
+
+                    /** @return Generator<int, int, mixed, mixed> */
+                    function untyped(bool $r): Generator {
+                        if ($r) {
+                            return "string";
+                        }
+
+                        yield 1;
+                    }
+
+                    /** @return Generator<int, int, mixed, string> */
+                    function everyPathReturns(bool $r): Generator {
+                        yield 1;
+
+                        if ($r) {
+                            return "a";
+                        }
+
+                        return "b";
+                    }',
+            ],
             'generatorMethodThatThrowsInInfiniteLoop' => [
                 'code' => '<?php
                     class A {
@@ -2185,6 +2216,18 @@ final class ReturnTypeTest extends TestCase
                 'error_message' => 'ImplementedReturnTypeMismatch',
                 'error_levels' => [],
                 'php_version' => '8.3',
+            ],
+            'generatorReturnsImplicitlyOnAPath' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, mixed, string> */
+                    function foo(bool $r): Generator {
+                        if ($r) {
+                            return "string";
+                        }
+
+                        yield 1;
+                    }',
+                'error_message' => 'InvalidReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33 - Not all code paths of foo end in a return statement, the generator return type string expected',
             ],
             'voidNeverDeclaredWithOnlyAnImplicitReturn' => [
                 'code' => '<?php
