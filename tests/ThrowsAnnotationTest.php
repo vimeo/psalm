@@ -191,6 +191,161 @@ final class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
+    public function testUndocumentedCallInForeachLoop(): void
+    {
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @throws Exception */
+                function documented(): void {}
+
+                function foo(): void {
+                        foreach ([1, 2] as $value) {
+                            documented();
+                        }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testUndocumentedThrowInForeachLoop(): void
+    {
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @throws Exception */
+                function documented(): void {}
+
+                function foo(): void {
+                        foreach ([1, 2] as $value) {
+                            throw new Exception();
+                        }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testUndocumentedCallInForLoop(): void
+    {
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @throws Exception */
+                function documented(): void {}
+
+                function foo(): void {
+                        for ($i = 0; $i < 3; $i++) {
+                            documented();
+                        }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testUndocumentedThrowInForLoop(): void
+    {
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @throws Exception */
+                function documented(): void {}
+
+                function foo(): void {
+                        for ($i = 0; $i < 3; $i++) {
+                            throw new Exception();
+                        }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testUndocumentedCallInWhileLoop(): void
+    {
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @throws Exception */
+                function documented(): void {}
+
+                function foo(): void {
+                        while (rand(0, 1)) {
+                            documented();
+                        }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testUndocumentedThrowInWhileLoop(): void
+    {
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @throws Exception */
+                function documented(): void {}
+
+                function foo(): void {
+                        while (rand(0, 1)) {
+                            throw new Exception();
+                        }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testCaughtThrowInLoopIsNotReported(): void
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @throws Exception */
+                function documented(): void {}
+
+                function foo(): void {
+                    foreach ([1, 2] as $value) {
+                        try {
+                            documented();
+                        } catch (Exception) {
+                        }
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testUndocumentedThrow(): void
     {
         $this->expectExceptionMessage('MissingThrowsDocblock');
