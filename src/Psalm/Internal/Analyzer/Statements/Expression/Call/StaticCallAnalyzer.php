@@ -10,6 +10,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod\AtomicStaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
@@ -22,9 +23,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\ParentNotFound;
 use Psalm\IssueBuffer;
@@ -52,6 +51,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
         ?TemplateResult $template_result = null,
     ): bool {
         NullsafeChainState::reset($stmt);
+        MethodCallPurityAnalyzer::resetReturnsThis($stmt);
 
         $method_id = null;
 
@@ -292,6 +292,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
         $has_mock = false;
         $moved_call = false;
         $has_existing_method = false;
+        $args_analyzed = false;
 
         // `$a?->b()::c()` short-circuits the whole chain: null is not a class to call, it is the result
         $class_state = $stmt->class instanceof PhpParser\Node\Expr && $lhs_type->isNullable()
@@ -308,6 +309,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $moved_call,
                 $has_mock,
                 $has_existing_method,
+                $args_analyzed,
                 $template_result,
             );
         }
@@ -326,7 +328,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
         }
 
         if (!$stmt->isFirstClassCallable() && !$has_existing_method) {
-            return self::checkMethodArgs(
+            return $args_analyzed || self::checkMethodArgs(
                 $method_id,
                 $stmt->getArgs(),
                 new TemplateResult([], []),
@@ -410,34 +412,13 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        $conditionally_removed_taints = 0;
-
-        if ($method_storage && $template_result) {
-            foreach ($method_storage->conditionally_removed_taints as $conditionally_removed_taint) {
-                $conditionally_removed_taint = TemplateInferredTypeReplacer::replace(
-                    $conditionally_removed_taint,
-                    $template_result,
-                    $codebase,
-                );
-
-                $expanded_type = TypeExpander::expandUnion(
-                    $statements_analyzer->getCodebase(),
-                    $conditionally_removed_taint,
-                    null,
-                    null,
-                    null,
-                    true,
-                    true,
-                );
-
-                foreach ($expanded_type->getLiteralStrings() as $literal_string) {
-                    $taint = $codebase->getOrRegisterTaint($literal_string->value, $method_storage->location);
-                    if ($taint !== null) {
-                        $conditionally_removed_taints |= $taint;
-                    }
-                }
-            }
-        }
+        $conditionally_removed_taints = $method_storage && $template_result
+            ? FunctionCallReturnTypeFetcher::getConditionallyRemovedTaints(
+                $codebase,
+                $method_storage,
+                $template_result,
+            )
+            : 0;
 
         $added_taints = 0;
         $removed_taints = 0;

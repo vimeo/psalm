@@ -8,8 +8,16 @@ use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_filter;
+use function array_keys;
+use function array_merge;
+use function array_values;
+use function ksort;
+use function str_contains;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -225,9 +233,9 @@ final class ArrayAccessTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                /** 
+                /**
                  * @psalm-mutation-free
-                 * @param string[][] $arr 
+                 * @param string[][] $arr
                  */
                 function foo(array $arr) : void {
                     if (count($arr) === 1 && count(array_values($arr)[0]) === 1) {}
@@ -543,6 +551,67 @@ final class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testMessagesNameAnArrayWithoutVariable(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return array{11: string} */
+                function shape(): array { return [11 => "foo"]; }
+                /** @return ?array<string, string> */
+                function nullableArr() { return []; }
+                function mixedVal(): mixed { return 1; }
+                function plainInt(): int { return 1; }
+                /** @return array<string, string>|false */
+                function falsable() { return []; }
+                /** @return array{} */
+                function emptyArr(): array { return []; }
+
+                function t(?string $n, mixed $m): void {
+                    shape()[null];
+                    shape()[$n];
+                    shape()["a"];
+                    shape()[$m];
+                    nullableArr()["a"];
+                    mixedVal()["a"];
+                    plainInt()["a"];
+                    falsable()["a"];
+                    emptyArr()["a"];
+                    shape()[1.5];
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $messages = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if (str_contains($issue->message, 'Cannot access')) {
+                $messages[$issue->type][] = $issue->message;
+            }
+        }
+
+        ksort($messages);
+        $this->assertSame([], array_filter(
+            array_merge(...array_values($messages)),
+            static fn(string $message): bool => !str_contains($message, '(expression)'),
+        ));
+        $this->assertSame(
+            [
+                'EmptyArrayAccess',
+                'InvalidArrayAccess',
+                'InvalidArrayOffset',
+                'MixedArrayOffset',
+                'NullArrayOffset',
+                'PossiblyInvalidArrayAccess',
+                'PossiblyNullArrayAccess',
+                'PossiblyNullArrayOffset',
+            ],
+            array_keys($messages),
+        );
+    }
+
     /**
      * @psalm-pure
      */
@@ -550,6 +619,52 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'appendToASplDoublyLinkedList' => [
+                'code' => '<?php
+                    /** @var SplDoublyLinkedList<int> $dll */
+                    $dll = new SplDoublyLinkedList();
+                    $dll[] = 42;
+                    $dll[0] = 43;
+
+                    $queue = new SplQueue();
+                    $queue[] = "a";',
+            ],
+            'coalesceOnOptionalKeysWithComputedOffset' => [
+                'code' => '<?php
+                    /** @return array{a?: int, b?: int} */
+                    function getKeys(): array {
+                        return [];
+                    }
+
+                    /** @return "a"|"b" */
+                    function getKey(): string {
+                        return "a";
+                    }
+
+                    $keys = getKeys();
+                    $call = $keys[getKey()] ?? "none";
+                    $concat = $keys[getKey() . ""] ?? 0;
+                    $nullable = rand(0, 1) ? getKey() : null;
+                    $nested = $keys[$nullable ?? "a"] ?? 0;
+                ',
+                'assertions' => [
+                    '$call===' => "'none'|int",
+                    '$concat' => 'int',
+                    '$nested' => 'int',
+                ],
+            ],
+            'coalesceOffsetAssignmentsStayInContext' => [
+                'code' => '<?php
+                    /** @var array<int, int> $arr */
+                    $arr = [];
+                    $value = $arr[($key = rand(0, 9)) + 1] ?? 1;
+                    $used = $key;
+                ',
+                'assertions' => [
+                    '$value' => 'int',
+                    '$used' => 'int<0, 9>',
+                ],
+            ],
             'missingOffsetPassedByReferenceIsNull' => [
                 'code' => '<?php
                     /**
@@ -635,7 +750,7 @@ final class ArrayAccessTest extends TestCase
                     '$first===' => 'string',
                     '$second===' => 'string',
                 ],
-                'ignored_issues' => ['MissingPureAnnotation', 'MissingImmutableAnnotation', 'MissingOverrideAttribute'],
+                'ignored_issues' => ['MissingOverrideAttribute'],
             ],
             'allowEmptyList' => [
                 'code' => '<?php
@@ -1466,6 +1581,17 @@ final class ArrayAccessTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'coalesceOnArrayFetchWithFunctionCallKeyDropsNullFromValue' => [
+                'code' => '<?php
+                    function bar(string $key): string {
+                        return "aa" . $key;
+                    }
+
+                    /** @param array<string, ?string> $foo */
+                    function foo(array $foo, string $key, string $default): string {
+                        return $foo[bar($key)] ?? $default;
+                    }',
+            ],
         ];
     }
 
@@ -1520,6 +1646,27 @@ final class ArrayAccessTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidArrayOffset',
+            ],
+            'invalidOffsetOfConstantNamesTheConstant' => [
+                'code' => '<?php
+                    const ARR = [11 => "foo"];
+                    echo ARR["a"];',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:26 - Cannot access value on variable ARR using',
+            ],
+            'invalidOffsetOfClassConstantNamesTheConstant' => [
+                'code' => '<?php
+                    class A {
+                        const ARR = [11 => "foo"];
+                    }
+                    echo A::ARR["a"];',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:26 - Cannot access value on variable A::ARR using',
+            ],
+            'invalidOffsetOfCallResultNamesNoVariable' => [
+                'code' => '<?php
+                    /** @return array{11: string} */
+                    function f(): array { return [11 => "foo"]; }
+                    echo f()["a"];',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:26 - Cannot access value on variable (expression) using',
             ],
             'missingOffsetPassedByReferenceToANonNullableParam' => [
                 'code' => '<?php
