@@ -120,11 +120,10 @@ final class OrAnalyzer
             IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->left);
 
             foreach ($left_context->vars_in_scope as $var_id => $type) {
-                if (!isset($context->vars_in_scope[$var_id])) {
-                    if (isset($left_context->assigned_var_ids[$var_id])) {
-                        $context->vars_in_scope[$var_id] = $type;
-                    }
-                } else {
+                if (isset($left_context->assigned_var_ids[$var_id])) {
+                    // the left operand always runs: what it assigns replaces what the variable held before
+                    $context->vars_in_scope[$var_id] = $type;
+                } elseif (isset($context->vars_in_scope[$var_id])) {
                     $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $context->vars_in_scope[$var_id],
                         $type,
@@ -384,7 +383,14 @@ final class OrAnalyzer
             $if_body_context = $context->if_body_context;
 
             foreach ($right_context->vars_in_scope as $var_id => $type) {
-                if (isset($if_body_context->vars_in_scope[$var_id])) {
+                if (isset($left_context->assigned_var_ids[$var_id], $left_context->vars_in_scope[$var_id])) {
+                    // the left operand always runs: the body sees what the operands assigned, not what was before
+                    $if_body_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $type,
+                        $left_context->vars_in_scope[$var_id],
+                        $codebase,
+                    );
+                } elseif (isset($if_body_context->vars_in_scope[$var_id])) {
                     $if_body_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $type,
                         $if_body_context->vars_in_scope[$var_id],

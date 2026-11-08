@@ -205,6 +205,131 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'parentCallOfAStaticReturnTypeInAChildOfAGenericClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Box {
+                        public function same(): static {
+                            return $this;
+                        }
+                    }
+
+                    /** @extends Box<int> */
+                    class IntBox extends Box {
+                        public function same(): static {
+                            return parent::same();
+                        }
+                    }
+
+                    trait Chain {
+                        public function chain(): static {
+                            return parent::same();
+                        }
+                    }
+
+                    /** @extends Box<string> */
+                    class StringBox extends Box {
+                        use Chain;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+            ],
+            'selfStaticAndParentCallsKeepTheTypeArgumentsOfAStaticReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    class Collection {
+                        /**
+                         * @template TMakeKey of array-key
+                         * @template TMakeValue
+                         * @param array<TMakeKey, TMakeValue> $items
+                         * @return static<TMakeKey, TMakeValue>
+                         */
+                        public static function make(array $items = []): static {
+                            /** @psalm-suppress UnsafeInstantiation */
+                            return new static();
+                        }
+
+                        public function check(): void {
+                            $self = self::make(["a" => 1]);
+                            /** @psalm-check-type-exact $self = Collection<\'a\', 1>&static */;
+                            $static = static::make(["a" => 1]);
+                            /** @psalm-check-type-exact $static = Collection<\'a\', 1>&static */;
+                        }
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @extends Collection<TKey, TValue>
+                     */
+                    class SubCollection extends Collection {
+                        public function again(): void {
+                            $parent = parent::make(["a" => 1]);
+                            /** @psalm-check-type-exact $parent = SubCollection<\'a\', 1>&static */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ClassMustBeFinal'],
+            ],
+            'parentSelfAndStaticCallsReturnTheStaticTypeOfTheCallingClass' => [
+                'code' => '<?php
+                    abstract class Core {
+                        public function instance(): static {
+                            return $this;
+                        }
+
+                        public static function make(): static {
+                            /** @psalm-suppress UnsafeInstantiation */
+                            return new static();
+                        }
+                    }
+
+                    class Child extends Core {
+                        public function check(): void {
+                            $this->parentInstance = parent::instance();
+                            $this->parentStatic = parent::make();
+                            $this->selfStatic = self::make();
+                            $this->staticStatic = static::make();
+                        }
+
+                        /** @var mixed */
+                        public $parentInstance;
+                        /** @var mixed */
+                        public $parentStatic;
+                        /** @var mixed */
+                        public $selfStatic;
+                        /** @var mixed */
+                        public $staticStatic;
+
+                        public function parentInstanceReturn(): static {
+                            return parent::instance();
+                        }
+
+                        public static function parentStaticReturn(): static {
+                            return parent::make();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+            ],
+            'mysqliGetWarningsMayReturnFalse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function warnings(mysqli $link): void {
+                        $object = $link->get_warnings();
+                        $procedural = mysqli_get_warnings($link);
+
+                        /** @psalm-check-type-exact $object = false|mysqli_warning */
+                        /** @psalm-check-type-exact $procedural = false|mysqli_warning */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'inheritedThisDocblockKeepsNativeStaticOfSubclass' => [
                 'code' => '<?php
                     class Form {}
@@ -260,6 +385,16 @@ final class MethodCallTest extends TestCase
                 'assertions' => ['$form' => 'Form'],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'dateTimeInterfaceMicrosecond' => [
+                'code' => '<?php
+                    function asInterface(DateTimeInterface $date): DateTimeInterface {
+                        return $date;
+                    }
+                    $result = asInterface(new DateTimeImmutable())->getMicrosecond();',
+                'assertions' => ['$result' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
             ],
             'notInCallMapTest' => [
                 'code' => '<?php
@@ -1551,6 +1686,15 @@ final class MethodCallTest extends TestCase
                         }
                     }',
             ],
+            'pdoSqliteCreateFunctionTakesFlags' => [
+                'code' => '<?php
+                    function register(PDO $pdo): void {
+                        $pdo->sqliteCreateFunction("double", static fn(int $i): int => $i * 2, 1, 2048);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
         ];
     }
 
@@ -1581,6 +1725,25 @@ final class MethodCallTest extends TestCase
                         return $document->reason();
                     }',
                 'error_message' => 'PossiblyUndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:43 - Method Invoice::reason does not exist',
+            ],
+            'mysqliBindResultRequiresOutputVariable' => [
+                'code' => '<?php
+                    function bind(mysqli_stmt $statement): void {
+                        $statement->bind_result();
+                    }',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'dateTimeInterfaceMicrosecondBeforeEightFour' => [
+                'code' => '<?php
+                    function microseconds(DateTimeInterface $date): void {
+                        $date->getMicrosecond();
+                    }',
+                // The runtime determines whether this is an absent interface method or a version-gated method.
+                'error_message' => 'src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - Method DateTimeInterface::getMicrosecond',
+                'error_levels' => [],
+                'php_version' => '8.3',
             ],
             'staticInvocation' => [
                 'code' => '<?php

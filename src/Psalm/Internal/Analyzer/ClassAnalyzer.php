@@ -1008,10 +1008,19 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 if ($property_storage->signature_type) {
                     $union_comparison_result = new TypeComparisonResult();
 
+                    // `self` of a property of a trait is the class that uses it, as in the type compared with
+                    $signature_type = TypeExpander::expandUnion(
+                        $codebase,
+                        $property_storage->signature_type,
+                        $fq_class_name,
+                        $fq_class_name,
+                        $parent_fq_class_name,
+                    );
+
                     if (!UnionTypeComparator::isContainedBy(
                         $codebase,
                         $fleshed_out_type,
-                        $property_storage->signature_type,
+                        $signature_type,
                         false,
                         false,
                         $union_comparison_result,
@@ -1022,7 +1031,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                                 'Parameter '
                                     . $property_class_name . '::$' . $property_name
                                     . ' has wrong type \'' . $fleshed_out_type .
-                                    '\', should be \'' . $property_storage->signature_type . '\'',
+                                    '\', should be \'' . $signature_type->getId() . '\'',
                                 $property_type_location,
                             ),
                         );
@@ -1695,6 +1704,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             && isset($project_analyzer->getIssuesToFix()['MissingPropertyType'])
             && !$codebase->config->suppressesIssueType($this->getSuppressedIssues(), 'MissingPropertyType')
             && $suggested_type
+            // a type can't be added to a single property of `public $a, $b;`
+            && count($stmt->props) === 1
         ) {
             if ($suggested_type->hasMixed() || $suggested_type->isNull()) {
                 return;
@@ -1950,7 +1961,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     /**
      * @psalm-mutation-free
      */
-    private static function getThisObjectType(
+    public static function getThisObjectType(
         ClassLikeStorage $class_storage,
         string $original_fq_classlike_name,
     ): TNamedObject {
