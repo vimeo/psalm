@@ -6,9 +6,11 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -16,11 +18,13 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_filter;
 use function is_string;
 use function str_contains;
 use function strtolower;
@@ -241,19 +245,20 @@ final class HighOrderFunctionArgHandler
                 );
             }
 
-            // a string that names a function is just a string where the parameter also accepts one
-            $accepts_string = $container_param->type?->hasString() ?? false;
-
+            // a string that names a function is just a string where a non-callable type of the parameter accepts it
             if ($input_arg_expr instanceof PhpParser\Node\Scalar\String_) {
-                return $accepts_string
+                $string_type = Type::getString($input_arg_expr->value);
+
+                return self::isAcceptedWithoutBeingCalled($codebase, $string_type, $container_param->type)
                     ? null
-                    : self::fromLiteralString(Type::getString($input_arg_expr->value), $statements_analyzer);
+                    : self::fromLiteralString($string_type, $statements_analyzer);
             }
 
             if ($input_arg_expr instanceof PhpParser\Node\Expr\ConstFetch) {
                 $constant = $context->constants[$input_arg_expr->name->toString()] ?? null;
 
-                return null !== $constant && !$accepts_string
+                return null !== $constant
+                    && !self::isAcceptedWithoutBeingCalled($codebase, $constant, $container_param->type)
                     ? self::fromLiteralString($constant, $statements_analyzer)
                     : null;
             }
@@ -268,7 +273,8 @@ final class HighOrderFunctionArgHandler
                     ? $storage->constants[$input_arg_expr->name->toString()] ?? null
                     : null;
 
-                return null !== $constant && null !== $constant->type && !$accepts_string
+                return null !== $constant && null !== $constant->type
+                    && !self::isAcceptedWithoutBeingCalled($codebase, $constant->type, $container_param->type)
                     ? self::fromLiteralString($constant->type, $statements_analyzer)
                     : null;
             }
@@ -298,6 +304,25 @@ final class HighOrderFunctionArgHandler
         }
 
         return null;
+    }
+
+    /**
+     * Whether the value is accepted by a part of the parameter type that isn't a callable: a string `'asc'` for
+     * `(callable(int): mixed)|'asc'|'desc'`, but not a string `'bad'`, which can only be a callable there
+     */
+    private static function isAcceptedWithoutBeingCalled(Codebase $codebase, Union $value, ?Union $param_type): bool
+    {
+        if ($param_type === null) {
+            return false;
+        }
+
+        $non_callable_types = array_filter(
+            $param_type->getAtomicTypes(),
+            static fn(Atomic $atomic): bool => !$atomic->isCallableType(),
+        );
+
+        return $non_callable_types !== []
+            && UnionTypeComparator::isContainedBy($codebase, $value, new Union($non_callable_types));
     }
 
     /**

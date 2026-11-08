@@ -22,6 +22,18 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'stringAcceptedByALiteralOfACallableOrLiteralsParamIsNotCalled' => [
+                'code' => '<?php
+                    function asc(string $a): string {
+                        return $a;
+                    }
+
+                    /** @param (callable(int): mixed)|\'asc\'|\'desc\' $f */
+                    function sortBy($f): void {}
+
+                    sortBy("asc");
+                    sortBy("desc");',
+            ],
             'stringNamingAFunctionIsAStringWhereTheParameterAcceptsOne' => [
                 'code' => '<?php
                     /** @param string|(\\Closure(string): string) $by */
@@ -2776,6 +2788,18 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'stringNamingAFunctionOfTheWrongSignatureForACallableOrLiteralsParamIsNotACallable' => [
+                'code' => '<?php
+                    function bad(array $a): int {
+                        return count($a);
+                    }
+
+                    /** @param (callable(int): mixed)|\'asc\'|\'desc\' $f */
+                    function sortBy($f): void {}
+
+                    sortBy("bad");',
+                'error_message' => 'InvalidArgument',
+            ],
             'stringNamingAFunctionWithAnotherSignatureIsNotACallable' => [
                 'code' => '<?php
                     /** @param callable(string): string $by */
