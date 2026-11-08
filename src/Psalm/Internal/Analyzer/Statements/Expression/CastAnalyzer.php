@@ -351,7 +351,9 @@ final class CastAnalyzer
 
         IssueBuffer::maybeAdd(
             new UnrecognizedExpression(
-                'Psalm does not understand the cast ' . $stmt::class,
+                $stmt instanceof PhpParser\Node\Expr\Cast\Unset_
+                    ? 'The (unset) cast was removed in PHP 8.0'
+                    : 'Psalm does not understand the cast ' . $stmt::class,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
             ),
             $statements_analyzer->getSuppressedIssues(),
@@ -752,6 +754,7 @@ final class CastAnalyzer
         Union $stmt_type,
         PhpParser\Node\Expr $stmt,
         bool $explicit_cast = false,
+        bool $report_issues = true,
     ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -883,7 +886,7 @@ final class CastAnalyzer
             $invalid_casts[] = $atomic_type->getId();
         }
 
-        if ($invalid_casts) {
+        if ($invalid_casts && $report_issues) {
             if ($valid_strings || $castable_types) {
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidCast(

@@ -22,6 +22,15 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'namedArgumentSelectsCallmapOverloadWithThatParameter' => [
+                'code' => '<?php
+                    setcookie("name", "value", path: "/");
+                    setcookie("name", "value", domain: "example.com");
+                    setcookie("name", "value", 1, path: "/");',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'argumentUnpackingLiteral' => [
                 'code' => '<?php
                     function add(int $a, int $b, int $c) : int {
@@ -386,6 +395,30 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'namedArgumentUnknownToEveryCallmapOverload' => [
+                'code' => '<?php
+                    setcookie("name", "value", nonexistent: "/");',
+                'error_message' => 'InvalidNamedArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'namedArgumentUnknownToEveryCallmapOverloadIsNotTakenByTheVariadicOne' => [
+                'code' => '<?php
+                    max([1, 2], foo: 3);',
+                'error_message' => 'InvalidNamedArgument',
+                'error_levels' => ['TooManyArguments'],
+                'php_version' => '8.0',
+            ],
+            'iterableInUnionPassedToArrayParam' => [
+                'code' => '<?php
+                    function takesArray(array $a): void {}
+
+                    /** @param list<int>|iterable<string> $values */
+                    function f(iterable $values): void {
+                        takesArray($values);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
             'arrayPushArgumentUnpackingWithBadArg' => [
                 'code' => '<?php
                     $a = [];

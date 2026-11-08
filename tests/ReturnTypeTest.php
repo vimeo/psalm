@@ -28,6 +28,297 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'generatorMethodThatThrowsInInfiniteLoop' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @return Generator<int>
+                         */
+                        public function events(): Generator {
+                            while (true) {
+                                if (rand(0, 1)) {
+                                    throw new Exception("failed");
+                                }
+
+                                foreach ([1, 2] as $event) {
+                                    yield $event;
+                                }
+                            }
+                        }
+                    }',
+            ],
+            'generatorThatThrowsInInfiniteLoop' => [
+                'code' => '<?php
+                    /**
+                     * @return Generator<int>
+                     */
+                    function events(): Generator {
+                        while (true) {
+                            if (rand(0, 1)) {
+                                throw new Exception("failed");
+                            }
+
+                            yield 1;
+                        }
+                    }',
+            ],
+            'narrowerNativeReturnTypeWinsOverInheritedDocblockWithStringable' => [
+                'code' => '<?php
+                    abstract class A {
+                        /**
+                         * @return string|Stringable
+                         */
+                        abstract public function render(): string|Stringable;
+                    }
+
+                    final class B extends A {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $s = (new B())->render();',
+                'assertions' => ['$s===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inheritedDocblockStillRefinesNativeReturnType' => [
+                'code' => '<?php
+                    abstract class A {
+                        /**
+                         * @return non-empty-string
+                         */
+                        abstract public function render(): string;
+                    }
+
+                    final class B extends A {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $s = (new B())->render();',
+                'assertions' => ['$s===' => 'non-empty-string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowerNativeReturnTypeWinsOverInheritedDocblockWithStringableOrInt' => [
+                'code' => '<?php
+                    abstract class C {
+                        /** @return Stringable|int */
+                        abstract public function render(): Stringable|int|string;
+                    }
+
+                    final class D extends C {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $t = (new D())->render();',
+                'assertions' => ['$t===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'narrowerNativeReturnTypeWinsOverInheritedStringableDocblock' => [
+                'code' => '<?php
+                    abstract class E {
+                        /** @return Stringable */
+                        abstract public function render(): Stringable|string;
+                    }
+
+                    final class F extends E {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $u = (new F())->render();',
+                'assertions' => ['$u===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nativeStringableReturnTypeKeepsStringableOverInheritedStringOrStringable' => [
+                'code' => '<?php
+                    abstract class A {
+                        /**
+                         * @return string|Stringable
+                         */
+                        abstract public function render(): string|Stringable;
+                    }
+
+                    final class B extends A {
+                        public function render(): Stringable {
+                            return new class implements Stringable {
+                                public function __toString(): string { return "x"; }
+                            };
+                        }
+                    }
+
+                    $s = (new B())->render();',
+                'assertions' => ['$s===' => 'Stringable'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'overriddenInterfaceReturnTypesIgnoreAStringCastAsContainment' => [
+                'code' => '<?php
+                    interface I1 {
+                        /** @return string */
+                        public function render();
+                    }
+                    interface I2 {
+                        /** @return Stringable */
+                        public function render();
+                    }
+                    final class C implements I1, I2 {
+                        public function render() {
+                            return "x";
+                        }
+                    }
+
+                    $x = (new C())->render();',
+                'assertions' => ['$x===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'overriddenInterfaceReturnTypesIgnoreAStringCastAsContainmentInTheOtherOrder' => [
+                'code' => '<?php
+                    interface L1 {
+                        /** @return Stringable */
+                        public function render();
+                    }
+                    interface L2 {
+                        /** @return string */
+                        public function render();
+                    }
+                    final class M implements L1, L2 {
+                        public function render() {
+                            return "x";
+                        }
+                    }
+
+                    $w = (new M())->render();',
+                'assertions' => ['$w===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'overriddenInterfaceReturnTypesKeepContainmentWithoutAStringCast' => [
+                'code' => '<?php
+                    interface J1 {
+                        /** @return non-empty-string */
+                        public function render();
+                    }
+                    interface J2 {
+                        /** @return string */
+                        public function render();
+                    }
+                    final class K implements J1, J2 {
+                        public function render() {
+                            return "x";
+                        }
+                    }
+
+                    $y = (new K())->render();',
+                'assertions' => ['$y===' => 'non-empty-string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowerNativeReturnTypeWinsOverInheritedDocblockWithAClassHavingToString' => [
+                'code' => '<?php
+                    class S {
+                        public function __toString() {
+                            return "s";
+                        }
+                    }
+
+                    abstract class A {
+                        /** @return string|S */
+                        abstract public function render();
+                    }
+
+                    final class B extends A {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $z = (new B())->render();',
+                'assertions' => ['$z===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'voidNeverDeclaredWithAThrowingPathAndAnImplicitReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        if (rand(0, 10) > 5) {
+                            throw new Exception();
+                        }
+                    }',
+            ],
+            'voidNeverDeclaredWithANeverReturningCallPathAndAnImplicitReturn' => [
+                'code' => '<?php
+                    function stop(): never {
+                        exit;
+                    }
+
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        if (rand(0, 10) > 5) {
+                            stop();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nullableDocblockReturnWithoutReturnStatements' => [
+                'code' => '<?php
+                    /**
+                     * @return int|null
+                     */
+                    function foo() {
+                        if (rand(0, 10) > 5) {
+                            echo "hello";
+                        }
+                    }',
+            ],
+            'nativeArrayReturnTypeTakesTheInheritedIterableDocblock' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @return iterable<int, stdClass> */
+                        abstract public function items(): iterable;
+                    }
+
+                    final class Child extends Base {
+                        public function items(): array {
+                            return [new stdClass()];
+                        }
+                    }
+
+                    $items = (new Child())->items();',
+                'assertions' => ['$items===' => 'array<int, stdClass>'],
+            ],
+            'iterableDocblockReturnTypeOfNativeArrayOrObject' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     */
+                    interface FooInterface {
+                        /**
+                         * @return T|iterable<T>|null
+                         */
+                        public function foo(): object|array|null;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nativeNullReturnTypeOfAnInterfaceMethodWithADocblock' => [
                 'code' => '<?php
                     interface I {
@@ -1769,6 +2060,21 @@ final class ReturnTypeTest extends TestCase
                     '$b===' => "''",
                 ],
             ],
+            'objectShapePropertyNarrowedByIdenticalCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param object{n: string} $s
+                     * @return non-empty-string
+                     */
+                    function f(object $s): string {
+                        if ($s->n === "") {
+                            throw new RuntimeException("empty-string");
+                        }
+                        return $s->n;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingThrowsDocblock'],
+            ],
         ];
     }
 
@@ -1779,6 +2085,73 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'voidNeverDeclaredWithOnlyAnImplicitReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        if (rand(0, 10) > 5) {
+                            echo "hello";
+                        }
+                    }',
+                'error_message' => 'MoreSpecificReturnType',
+            ],
+            'voidNeverDeclaredWithOnlyAnImplicitReturnInAMethod' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @return void|never
+                         */
+                        public function foo() {
+                            echo "hello";
+                        }
+                    }',
+                'error_message' => 'MoreSpecificReturnType',
+            ],
+            'nativeArrayReturnTypeMustRespectTheInheritedIterableDocblock' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @return iterable<int, stdClass> */
+                        abstract public function items(): iterable;
+                    }
+
+                    final class Child extends Base {
+                        public function items(): array {
+                            return [3, 4];
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'iterableDocblockReturnTypeOfNativeObjectRejectsANonIterableObject' => [
+                'code' => '<?php
+                    interface FooInterface {
+                        /**
+                         * @return iterable
+                         */
+                        public function foo(): object|array {
+                            return new A();
+                        }
+                    }
+
+                    final class A {}',
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'objectIsNotAcceptedWhereAnIterableIsExpected' => [
+                'code' => '<?php
+                    function takesIterable(iterable $items): void {
+                        foreach ($items as $_) {
+                            echo 1;
+                        }
+                    }
+
+                    function test(object $object): void {
+                        takesIterable($object);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'unrepresentableScalarIntersection' => [
                 'code' => '<?php
                     /** @return literal-string&non-falsy-string */

@@ -26,15 +26,15 @@ jobs:
   laravel: [laravel]
   symfony: [symfony]
   orm-psl: [doctrine-orm, psl]
-  phpunit-parser: [phpunit, php-parser]
-  small: [amphp-amp, webmozarts-assert]
+  phpunit-parser-tempest: [phpunit, php-parser, tempest]
+  small: [amphp-amp, webmozarts-assert, guzzle-promises, monolog]
   drupal: [drupal]
 
 projects:
   laravel:
     repo: https://github.com/laravel/framework
-    ref: "d52c3b3129e4c8e213c97cdc68f94b0b7d27f181"
-    tag: v13.39.0
+    ref: "1449bf241017087fbd38c118ecaabef3f6797fdc"
+    tag: v13.40.0
     timeout: 300
     exercises: magic __call/macros, Eloquent generics and template inference, large Collection/Support type surface, facades, container resolution
     psalm:
@@ -42,10 +42,10 @@ projects:
 
   symfony:
     repo: https://github.com/symfony/symfony
-    ref: "34a08ab1b25dac1ebbdca78927f27cf353993625"
-    tag: v8.1.10
+    ref: "4ac528bb8ca9b549af38e2ea8050fd144821516e"
+    tag: v8.2.0-BETA1
     timeout: 400
-    exercises: very wide codebase (about 4400 files), PHP 8.4+ features (property hooks, asymmetric visibility), many small independent components, polyfills, heavy interface graphs
+    exercises: very wide codebase (about 5100 files), many small independent components, polyfills, heavy interface graphs
     psalm:
       dirs: [src]
       ignore:
@@ -60,8 +60,8 @@ projects:
 
   drupal:
     repo: https://github.com/drupal/drupal
-    ref: "76deda03b09b57d76941e2d30e6dade35e92a14a"
-    tag: 11.4.11
+    ref: "aa556ff13046baca57d5f69fac25c96fc30b4f43"
+    tag: 11.4.12
     timeout: 600
     exercises: custom file extensions (.module/.inc/.install), procedural hooks plus OOP services, plugin/annotation/attribute discovery, dynamic entity APIs, large taint graph
     psalm:
@@ -93,8 +93,8 @@ projects:
 
   phpunit:
     repo: https://github.com/sebastianbergmann/phpunit
-    ref: "941457a4f147a60fe2074d40e1fce0d08ea8d930"
-    tag: 13.4.5
+    ref: "4821376960d0e1e5a7b7b700955ebcab33ecd71b"
+    tag: 13.4.6
     timeout: 120
     exercises: large final-class codebase, readonly/immutable value objects, modern PHP 8.4 syntax, event system
     psalm:
@@ -110,6 +110,18 @@ projects:
     psalm:
       dirs: [lib]
       attributes: {phpVersion: "7.4"}
+
+  # The only corpus project written in PHP 8.4/8.5 style: the others barely use hooks or asymmetric
+  # visibility (symfony 8.2: 12 hooked properties in about 5100 files) and no PHP 8.5 features.
+  tempest:
+    repo: https://github.com/tempestphp/tempest-framework
+    ref: "8fe1705c919fd032498f3f6d6853c046294b9615"
+    tag: v3.21.0
+    timeout: 120
+    exercises: PHP 8.5 framework (about 1600 files), 260 hooked properties, 95 of them on interfaces, 240 asymmetric visibility properties, Uri extension, clone with, array_first/array_last, readonly classes
+    psalm:
+      dirs: [packages/*/src]
+      attributes: {phpVersion: "8.5"}
 
   amphp-amp:
     repo: https://github.com/amphp/amp
@@ -130,3 +142,23 @@ projects:
     psalm:
       dirs: [src, tests/static-analysis]
       attributes: {phpVersion: "8.2"}
+
+  guzzle-promises:
+    repo: https://github.com/guzzle/promises
+    ref: "094d0ec418eb3b1411ea271a180ec95cae6ae933"
+    tag: 3.1.0
+    timeout: 60
+    exercises: template defaults (@template T = mixed), conditional return types over templates and nullable callables, PromiseInterface<TValue, TReason> generics through then/otherwise chains, small and fast
+    psalm:
+      dirs: [src]
+      attributes: {phpVersion: "7.4"}
+
+  monolog:
+    repo: https://github.com/Seldaek/monolog
+    ref: "d7059e4c691d05ea1222b5124bed0f961be46e15"
+    tag: 3.12.1
+    timeout: 60
+    exercises: Psalm's bundled Monolog library stub (taints and capabilities) on the library's own subclasses, handler and formatter hierarchies, PSR-3 logger implementation, small and fast
+    psalm:
+      dirs: [src]
+      attributes: {phpVersion: "8.1"}

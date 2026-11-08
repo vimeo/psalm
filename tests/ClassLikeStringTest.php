@@ -221,6 +221,32 @@ final class ClassLikeStringTest extends TestCase
                         return is_object($callable) && get_class($callable) === "Closure";
                     }',
             ],
+            'interfaceAndEnumLiteralsForInterfaceAndEnumStrings' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Invoice {}
+                    interface Payable {}
+                    enum Status {}
+
+                    /** @param interface-string $interface */
+                    function takesInterface(string $interface): void {}
+
+                    /** @param enum-string $enum */
+                    function takesEnum(string $enum): void {}
+
+                    /** @param class-string $class */
+                    function takesClass(string $class): void {}
+
+                    takesInterface(Payable::class);
+                    takesEnum(Status::class);
+                    takesClass(Invoice::class);
+                    takesClass(Payable::class);
+                    takesClass(Status::class);
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'arrayOfClassConstants' => [
                 'code' => '<?php
                     /**
@@ -1114,6 +1140,70 @@ final class ClassLikeStringTest extends TestCase
                         return $class === "Missing";
                     }',
                 'error_message' => 'DocblockTypeContradiction',
+            ],
+            'classLiteralForInterfaceString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Invoice {}
+                    interface Payable {}
+                    enum Status {}
+
+                    /** @param interface-string $name */
+                    function takes(string $name): void {}
+
+                    takes(Invoice::class);
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'enumLiteralForInterfaceString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Invoice {}
+                    interface Payable {}
+                    enum Status {}
+
+                    /** @param interface-string $name */
+                    function takes(string $name): void {}
+
+                    takes(Status::class);
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'classLiteralForEnumString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Invoice {}
+                    interface Payable {}
+                    enum Status {}
+
+                    /** @param enum-string $name */
+                    function takes(string $name): void {}
+
+                    takes(Invoice::class);
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'interfaceLiteralForEnumString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Invoice {}
+                    interface Payable {}
+                    enum Status {}
+
+                    /** @param enum-string $name */
+                    function takes(string $name): void {}
+
+                    takes(Payable::class);
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'arrayOfStringClasses' => [
                 'code' => '<?php
