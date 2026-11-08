@@ -20,6 +20,74 @@ final class TryCatchTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedByEveryCaseOfASwitchInTry' => [
+                'code' => '<?php
+                    function inTryAndCatch(string $s): int {
+                        try {
+                            switch ($s) {
+                                case "S":
+                                    $x = 1;
+                                    break;
+                                default:
+                                    $x = 3;
+                                    break;
+                            }
+                        } catch (Throwable $e) {
+                            $x = 0;
+                        }
+
+                        return $x;
+                    }
+
+                    function catchLeaves(string $s): int {
+                        try {
+                            switch ($s) {
+                                case "S":
+                                    $x = 1;
+                                    break;
+                                default:
+                                    $x = 3;
+                                    break;
+                            }
+                        } catch (Throwable $e) {
+                            return 0;
+                        }
+
+                        return $x;
+                    }',
+            ],
+            'variableAssignedInFinallyReplacesTheTypesOfTheTryAndTheCatch' => [
+                'code' => '<?php
+                    function test(int $a, int $b): int {
+                        try {
+                            $c = intdiv($a, $b);
+                        } catch (Throwable) {
+                            $c = null;
+                        } finally {
+                            $c = 1;
+                        }
+
+                        return $c;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'variableAssignedInFinallyHasThatType' => [
+                'code' => '<?php
+                    try {
+                        $value = 1;
+                    } catch (Throwable) {
+                        $value = "a";
+                    } finally {
+                        $value = 2.5;
+                    }',
+                'assertions' => [
+                    '$value' => 'float',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'loopVariableStaysDefinedInCatchOfTryNestedInTheBodyOfATryWithFinally' => [
                 'code' => '<?php
                     /** @param list<string> $stores */
@@ -649,6 +717,23 @@ final class TryCatchTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableNotAssignedByEveryCaseOfASwitchInTry' => [
+                'code' => '<?php
+                    function f(string $s): int {
+                        try {
+                            switch ($s) {
+                                case "S":
+                                    $x = 1;
+                                    break;
+                            }
+                        } catch (Throwable $e) {
+                            return 0;
+                        }
+
+                        return $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'finallyStillKnowsVariableNotSetByNestedTryThatRethrows' => [
                 'code' => '<?php
                     function g2(): void {}
