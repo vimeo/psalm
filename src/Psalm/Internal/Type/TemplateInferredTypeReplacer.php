@@ -496,7 +496,9 @@ final class TemplateInferredTypeReplacer
                             $matching_if_types[] = $intersection_type;
                         }
                     }
-                    // Keep template information when the candidate already satisfies its bound.
+                    // Refine against the declared bound, not the condition's complement.
+                    // For example, mixed must become array before resolving key-of/value-of.
+                    // Keep candidates already within the bound to preserve template information.
                     $else_candidate = UnionTypeComparator::isContainedBy($codebase, $candidate, $as_type)
                         ? $candidate
                         : Type::intersectUnionTypes($candidate, $as_type, $codebase);
