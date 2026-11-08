@@ -315,11 +315,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $codebase = $this->codebase;
         $project_analyzer = $this->getProjectAnalyzer();
 
-        if ($codebase->track_unused_suppressions && !isset($storage->suppressed_issues[0])) {
-            if (count($storage->suppressed_issues) === 1 // UnusedPsalmSuppress by itself should be marked as unused
-                || !$codebase->config->suppressesIssueType($storage->suppressed_issues, 'UnusedPsalmSuppress')
+        $docblock_suppressed_issues = $storage->docblock_suppressed_issues;
+
+        if ($codebase->track_unused_suppressions && $docblock_suppressed_issues !== []) {
+            if (count($docblock_suppressed_issues) === 1 // UnusedPsalmSuppress by itself should be marked as unused
+                || !$codebase->config->suppressesIssueType($docblock_suppressed_issues, 'UnusedPsalmSuppress')
             ) {
-                foreach ($storage->suppressed_issues as $offset => $issue_name) {
+                foreach ($docblock_suppressed_issues as $offset => $issue_name) {
                     IssueBuffer::addUnusedSuppression(
                         $storage->location !== null
                             ? $storage->location->file_path
@@ -527,6 +529,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $context,
             (bool) $template_types,
         );
+
+        if (!$this->checkGlobalTypes($storage, $context)) {
+            $check_stmts = false;
+        }
 
         $this->taintPromotedProperties($statements_analyzer, $context);
         // the context of an arrow function is that of the function-like it is in
@@ -1561,6 +1567,35 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         return ($capabilities & Capabilities::WRITE_GLOBALS) !== 0
             ? $capabilities & (Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS)
             : Capabilities::NONE;
+    }
+
+    /**
+     * Checks the classes of the `@global` types, like those of the `@param` types
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function checkGlobalTypes(FunctionLikeStorage $storage, Context $context): bool
+    {
+        $is_valid = true;
+
+        foreach ($storage->global_types as $var_name => $global_type) {
+            if (isset($storage->global_type_locations[$var_name])
+                && $global_type->check(
+                    $this,
+                    $storage->global_type_locations[$var_name],
+                    $storage->suppressed_issues,
+                    [],
+                    false,
+                    false,
+                    false,
+                    $context,
+                ) === false
+            ) {
+                $is_valid = false;
+            }
+        }
+
+        return $is_valid;
     }
 
     /**
