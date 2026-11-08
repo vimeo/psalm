@@ -422,6 +422,29 @@ final class MethodSignatureTest extends TestCase
                         public function foo(Closure $c): void {}
                     }',
             ],
+            'overrideOfAMethodDocumentedByTheInterfaceKeepsTheParamOfItsParent' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @no-named-arguments
+                         * @param Closure $c
+                         * @psalm-param Closure():string $c
+                         */
+                        public function foo(Closure $c, array &$a): void;
+                    }
+
+                    class A implements I {
+                        public function foo(Closure $d, array &$a): void {}
+                    }
+
+                    class B extends A {
+                        /**
+                         * @param Closure $d
+                         * @psalm-param Closure():string $d
+                         */
+                        public function foo(Closure $d, array &$a): void {}
+                    }',
+            ],
             'abstractConstructorCompatibleChild' => [
                 'code' => '<?php
                     abstract class A {

@@ -763,7 +763,7 @@ final class MethodComparator
 
     /**
      * A method with no docblock of its own is documented by the one it inherits it from (see Populator), and a
-     * method overriding it is compared with that
+     * method overriding it is compared with the param type of that docblock
      *
      * @psalm-capabilities read-props
      */
@@ -798,7 +798,7 @@ final class MethodComparator
             return $guide_param;
         }
 
-        return $documenting_param;
+        return $guide_param->setType($documenting_param->type);
     }
 
     /**
