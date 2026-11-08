@@ -1126,7 +1126,7 @@ final class IntRangeTest extends TestCase
                             echo $value;
                         }
                     }',
-                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - Docblock-defined type int<1, 7> for $value is never >= 9223372036854775807',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - Docblock-defined type int<1, 7> for $value is never > 9223372036854775807',
             ],
             'lessThanPhpIntMinIsImpossibleForInt' => [
                 'code' => '<?php
@@ -1145,7 +1145,7 @@ final class IntRangeTest extends TestCase
                             echo $value;
                         }
                     }',
-                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - Docblock-defined type int<-5, 7> for $value is never <= -9223372036854775808',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - Docblock-defined type int<-5, 7> for $value is never < -9223372036854775808',
             ],
             'notGreaterThanPhpIntMaxIsRedundantForInt' => [
                 'code' => '<?php
@@ -1156,7 +1156,7 @@ final class IntRangeTest extends TestCase
                             echo $value;
                         }
                     }',
-                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:35 - Type int<min, -1> for $value is never >= 9223372036854775807',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:35 - Type int<min, -1> for $value is always <= 9223372036854775807',
             ],
             'intRangeNotContained' => [
                 'code' => '<?php
