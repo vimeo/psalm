@@ -71,6 +71,7 @@
     },
     "suggest": {
         "ext-igbinary": "^2.0.5 is required, used to serialize caching data",
+        "ext-zstd": ">=0.15.0 is required, used to compress caching data",
         "ext-curl": "In order to send data to shepherd"
     },
     "config": {

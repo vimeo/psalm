@@ -34,6 +34,7 @@ abstract class FileManipulationTestCase extends TestCase
 
     /**
      * @param string[] $issues_to_fix
+     * @param array<string, string> $other_files the contents of the files analysed along with somefile.php
      */
     #[DataProvider('providerValidCodeParse')]
     public function testValidCode(
@@ -43,6 +44,7 @@ abstract class FileManipulationTestCase extends TestCase
         array $issues_to_fix,
         bool $safe_types,
         bool $allow_backwards_incompatible_changes = true,
+        array $other_files = [],
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -73,6 +75,10 @@ abstract class FileManipulationTestCase extends TestCase
             $input,
         );
 
+        foreach ($other_files as $other_file_name => $other_file_contents) {
+            $this->addFile(self::$src_dir_path . $other_file_name, $other_file_contents);
+        }
+
         $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
         $keyed_issues_to_fix = [];
@@ -102,7 +108,7 @@ abstract class FileManipulationTestCase extends TestCase
     }
 
     /**
-     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:array<string>,safe_types:bool,allow_backwards_incompatible_changes?:bool}>
+     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:array<string>,safe_types:bool,allow_backwards_incompatible_changes?:bool,other_files?:array<string, string>}>
      */
     abstract public static function providerValidCodeParse(): array;
 }

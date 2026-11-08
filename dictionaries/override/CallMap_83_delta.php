@@ -28,28 +28,6 @@ return array (
         'timezone' => 'DateTimeZone|IntlTimeZone|null|string',
       ),
     ),
-    'eventhttprequest::gethost' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-      ),
-    ),
-    'eventhttprequest::geturi' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-      ),
-    ),
     'gc_status' => 
     array (
       'old' => 
@@ -496,6 +474,19 @@ return array (
         'create_sid=' => 'callable[impure]():string|null',
         'validate_sid=' => 'callable[impure](string):bool|null',
         'update_timestamp=' => 'callable[impure](string):bool|null',
+      ),
+    ),
+    'snmp_set_quick_print' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'enable' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'enable' => 'bool',
       ),
     ),
     'srand' => 

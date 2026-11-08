@@ -976,6 +976,7 @@ final class ClassLikeNodeScanner
             $storage->override_method_visibility = $docblock_info->override_method_visibility;
 
             $storage->suppressed_issues = $docblock_info->suppressed_issues;
+            $storage->docblock_suppressed_issues = $docblock_info->suppressed_issues;
 
             if ($docblock_info->description) {
                 $storage->description = $docblock_info->description;
@@ -1738,7 +1739,10 @@ final class ClassLikeNodeScanner
                     new CodeLocation($this->file_scanner, $const),
                 );
 
-                if (!IssueBuffer::isSuppressedInList($missing_type_issue, $suppressed_issues)) {
+                if (!IssueBuffer::isSuppressedInList(
+                    $missing_type_issue,
+                    $suppressed_issues + $storage->suppressed_issues,
+                )) {
                     $this->file_storage->scan_issues[] = $missing_type_issue;
                 }
             }

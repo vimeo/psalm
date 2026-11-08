@@ -80,6 +80,96 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'usortClosureWithoutParamTypesTakesTheElementType' => [
+                'code' => '<?php
+                    /** @param list<array{foo: int}> $list */
+                    function sortByFoo(array $list): void {
+                        usort($list, static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = array{foo: int} */
+                            /** @psalm-check-type-exact $b = array{foo: int} */
+                            return $a["foo"] <=> $b["foo"];
+                        });
+                    }',
+                'assertions' => [],
+            ],
+            'usortClosureWithANativeArrayParamTakesTheElementType' => [
+                'code' => '<?php
+                    /** @param list<array{foo: int}> $list */
+                    function sortByFoo(array $list): void {
+                        usort($list, static function (array $a, array $b): int {
+                            /** @psalm-check-type-exact $a = array{foo: int} */
+                            return $a["foo"] <=> $b["foo"];
+                        });
+                    }',
+                'assertions' => [],
+            ],
+            'uasortAndUksortClosuresTakeTheValuesAndTheKeys' => [
+                'code' => '<?php
+                    /** @param array<string, array{foo: int}> $map */
+                    function sortMap(array $map): void {
+                        uasort($map, static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = array{foo: int} */
+                            return $a["foo"] <=> $b["foo"];
+                        });
+                        uksort($map, static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = string */
+                            return $a <=> $b;
+                        });
+                    }',
+                'assertions' => [],
+            ],
+            'closureTakesTheTemplateBoundsOfTheByRefArgWhateverTheOrderOfNamedArgs' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template TArray as array<T>
+                     * @param TArray $items
+                     * @param list<string> $other
+                     * @param callable(T, T): int $cmp
+                     * @param-out (TArray is non-empty-array ? non-empty-list<T> : list<T>) $items
+                     */
+                    function sortBoth(array &$items, array $other, callable $cmp): void {
+                        usort($items, $cmp);
+                    }
+
+                    /**
+                     * @param list<int> $ints
+                     * @param list<string> $strings
+                     */
+                    function run(array $ints, array $strings): void {
+                        sortBoth($ints, $strings, static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = int */
+                            return $a <=> $b;
+                        });
+                        sortBoth(other: $strings, items: $ints, cmp: static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = int */
+                            return $a <=> $b;
+                        });
+                        sortBoth(items: $ints, other: $strings, cmp: static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = int */
+                            return $a <=> $b;
+                        });
+                    }',
+                'assertions' => [],
+            ],
+            'usortClosureKeepsItsDocblockParamTypes' => [
+                'code' => '<?php
+                    /** @param list<array{foo: int, bar: string}> $list */
+                    function sortByFoo(array $list): void {
+                        usort(
+                            $list,
+                            /**
+                             * @param array<string, int|string> $a
+                             * @param array<string, int|string> $b
+                             */
+                            static function (array $a, array $b): int {
+                                /** @psalm-check-type-exact $a = array<string, int|string> */
+                                return 0;
+                            },
+                        );
+                    }',
+                'assertions' => [],
+            ],
             'arraySpliceWithALengthOutsideTheRangeOfAnInt' => [
                 'code' => '<?php
                     $big = [1, 2, 3];
@@ -2117,6 +2207,13 @@ final class ArrayFunctionCallTest extends TestCase
                     '$passed_closure_result' => 'int',
                     '$function_call_result' => 'int',
                 ],
+            ],
+            'arrayReduceInternalSignatureReturn' => [
+                'code' => '<?php
+                    $result = array_reduce([2, 2], "intdiv", 16);',
+                'assertions' => ['$result' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'arrayReduceStaticMethods' => [
                 'code' => '<?php
