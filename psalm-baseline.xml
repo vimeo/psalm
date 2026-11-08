@@ -385,8 +385,6 @@
       <code><![CDATA[$implementer_param_signature_type]]></code>
       <code><![CDATA[$implementer_param_type]]></code>
       <code><![CDATA[$implementer_param_type]]></code>
-      <code><![CDATA[$implementer_signature_return_type]]></code>
-      <code><![CDATA[$implementer_signature_return_type]]></code>
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$guide_classlike_storage->template_types]]></code>
@@ -1399,15 +1397,6 @@
     </MixedAssignment>
   </file>
   <file src="src/Psalm/Internal/Cli/LanguageServer.php">
-    <InvalidArgument>
-      <code><![CDATA[$autoloaders]]></code>
-    </InvalidArgument>
-    <InvalidReturnStatement>
-      <code><![CDATA[CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)]]></code>
-    </InvalidReturnStatement>
-    <InvalidReturnType>
-      <code><![CDATA[list<ClassLoader>]]></code>
-    </InvalidReturnType>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$options['verbose']]]></code>
     </RiskyTruthyFalsyComparison>
