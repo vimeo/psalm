@@ -71,6 +71,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_shift;
 use function count;
 use function explode;
 use function implode;
@@ -528,8 +529,21 @@ final class ArgumentAnalyzer
                 $unpacked_atomic_array = $arg_value_type->getArray();
                 $arg_key_allowed = true;
 
-                foreach ($arg_value_type->getAtomicTypes() as $unpacked_atomic_type) {
+                // a template param is as iterable as its bound
+                $unpacked_atomic_types = $arg_value_type->getAtomicTypes();
+
+                while ($unpacked_atomic_type = array_shift($unpacked_atomic_types)) {
+                    if ($unpacked_atomic_type instanceof TTemplateParam) {
+                        $unpacked_atomic_types = [
+                            ...$unpacked_atomic_types,
+                            ...$unpacked_atomic_type->as->getAtomicTypes(),
+                        ];
+
+                        continue;
+                    }
+
                     if (!$unpacked_atomic_type instanceof TClassStringMap
+                        && !$unpacked_atomic_type instanceof TMixed
                         && !$unpacked_atomic_type->isIterable($codebase)
                     ) {
                         IssueBuffer::maybeAdd(

@@ -22,6 +22,18 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'unpackArrayOrTemplateBoundToTraversable' => [
+                'code' => '<?php
+                    function foo(int $a, int $b): void {}
+
+                    /**
+                     * @template T of Traversable<int, int>
+                     * @param array<int, int>|T $test
+                     */
+                    function bar($test): void {
+                        foo(...$test);
+                    }',
+            ],
             'unpackArrayOrTraversable' => [
                 'code' => '<?php
                     function foo(int $a, int $b): void {}
@@ -433,6 +445,20 @@ final class ArgTest extends TestCase
                     $arr = [];
                     var_dump(...$arr);',
                 'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33 - Tried to unpack non-iterable',
+            ],
+            'unpackArrayOrTemplateBoundToInt' => [
+                'code' => '<?php
+                    /** @psalm-suppress UnusedParam */
+                    function foo(int $a, int $b): void {}
+
+                    /**
+                     * @template T of int
+                     * @param array<int, int>|T $test
+                     */
+                    function bar($test): void {
+                        foo(...$test);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
             ],
             'unpackArrayOrObject' => [
                 'code' => '<?php
