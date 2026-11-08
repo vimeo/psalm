@@ -22,6 +22,152 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'insteadofPicksTheTraitListedSecond' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait A { public function items(): int { return 1; } }
+                    trait B { public function items(): string { return "b"; } }
+
+                    final class Post {
+                        use A, B {
+                            B::items insteadof A;
+                            A::items as oldItems;
+                        }
+                    }
+
+                    $items = (new Post())->items();
+                    $old = (new Post())->oldItems();
+
+                    /** @psalm-check-type-exact $items = string */
+                    /** @psalm-check-type-exact $old = int */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'insteadofPicksTheTraitListedFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait A { public function items(): int { return 1; } }
+                    trait B { public function items(): string { return "b"; } }
+
+                    final class Post {
+                        use A, B {
+                            A::items insteadof B;
+                            B::items as oldItems;
+                        }
+                    }
+
+                    $items = (new Post())->items();
+                    $old = (new Post())->oldItems();
+
+                    /** @psalm-check-type-exact $items = int */
+                    /** @psalm-check-type-exact $old = string */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'insteadofAndAliasWithTheTraitsReversed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait A { public function items(): int { return 1; } }
+                    trait B { public function items(): string { return "b"; } }
+
+                    final class Post {
+                        use B, A {
+                            B::items insteadof A;
+                            A::items as oldItems;
+                        }
+                    }
+
+                    $items = (new Post())->items();
+                    $old = (new Post())->oldItems();
+
+                    /** @psalm-check-type-exact $items = string */
+                    /** @psalm-check-type-exact $old = int */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'insteadofPicksTheTraitListedFirstWithTheTraitsReversed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait A { public function items(): int { return 1; } }
+                    trait B { public function items(): string { return "b"; } }
+
+                    final class Post {
+                        use B, A {
+                            A::items insteadof B;
+                            B::items as oldItems;
+                        }
+                    }
+
+                    $items = (new Post())->items();
+                    $old = (new Post())->oldItems();
+
+                    /** @psalm-check-type-exact $items = int */
+                    /** @psalm-check-type-exact $old = string */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'insteadofExcludesEveryListedTraitOfAnImportedNamespace' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace Lib {
+                        trait A { public function items(): int { return 1; } }
+                        trait B { public function items(): string { return "b"; } }
+                        trait C { public function items(): float { return 1.5; } }
+                    }
+
+                    namespace App {
+                        use Lib\A;
+                        use Lib\B as Renamed;
+                        use Lib\C;
+
+                        final class Post {
+                            use A, Renamed, C {
+                                C::items insteadof A, Renamed;
+                            }
+                        }
+
+                        $items = (new Post())->items();
+                    }
+
+                    /** @psalm-check-type-exact $items = float */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'constructorCallsATraitMethodThatChecksInstanceofThis' => [
+                'code' => '<?php
+                    interface MyInterface {}
+
+                    trait MyTrait {
+                        public function doSomething(): void {
+                            if ($this instanceof MyInterface) {
+                                return;
+                            }
+                        }
+                    }
+
+                    class MyClass implements MyInterface {
+                        use MyTrait;
+
+                        protected string $foo;
+                        protected string $bar;
+
+                        public function __construct() {
+                            $this->foo = "cow";
+                            $this->doSomething();
+                            $this->bar = "cow";
+                        }
+                    }',
+            ],
             'traitPropertiesTypedSelf' => [
                 'code' => '<?php
                     trait MyTrait {

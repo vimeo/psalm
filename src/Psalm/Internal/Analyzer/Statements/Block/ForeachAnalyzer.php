@@ -60,6 +60,8 @@ use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCapabilities;
+use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
@@ -316,22 +318,6 @@ final class ForeachAnalyzer
             $foreach_context->branch_point = (int) $stmt->getAttribute('startFilePos');
         }
 
-        if ($stmt->keyVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->keyVar->name)) {
-            $key_type ??= Type::getMixed();
-
-            AssignmentAnalyzer::analyze(
-                $statements_analyzer,
-                $stmt->keyVar,
-                $stmt->expr,
-                $key_type,
-                $foreach_context,
-                $doc_comment,
-                ['$' . $stmt->keyVar->name => true],
-                null,
-                true,
-            );
-        }
-
         if ($value_type !== null) {
             $value_type = $value_type->setProperties(['by_ref' => $stmt->byRef]);
         } else {
@@ -370,6 +356,21 @@ final class ForeachAnalyzer
         ) {
             // TODO support references with destructuring
             $foreach_context->references_to_external_scope['$' . $stmt->valueVar->name] = true;
+        }
+
+        // PHP evaluates the iterated expression once, before it assigns the value and then a key of the same name
+        if ($stmt->keyVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->keyVar->name)) {
+            $key_type ??= Type::getMixed();
+
+            AssignmentAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt->keyVar,
+                null,
+                $key_type,
+                $foreach_context,
+                $doc_comment,
+                ['$' . $stmt->keyVar->name => true],
+            );
         }
 
         foreach ($var_comments as $var_comment) {
@@ -490,6 +491,7 @@ final class ForeachAnalyzer
 
         if ($context->collect_exceptions) {
             $context->mergeExceptions($foreach_context);
+            $context->mergeExceptions($inner_loop_context);
         }
 
         return null;
@@ -892,7 +894,26 @@ final class ForeachAnalyzer
 
             $always_non_empty_array = false;
 
-            if ($iterator_atomic_type instanceof Scalar || $iterator_atomic_type instanceof TVoid) {
+            if ($iterator_atomic_type instanceof TClassStringMap) {
+                // the key is a class of the bound, and what is stored under it an object of that class
+                $bound = new Union([$iterator_atomic_type->as_type ?? new TObject()]);
+
+                $key_type = Type::combineUnionTypes(
+                    $key_type,
+                    new Union([new TClassString($bound->getId(), $iterator_atomic_type->as_type)]),
+                );
+
+                $value_type = Type::combineUnionTypes(
+                    $value_type,
+                    TemplateInferredTypeReplacer::replace(
+                        $iterator_atomic_type->value_param,
+                        new TemplateResult([], [$iterator_atomic_type->param_name => ['class-string-map' => $bound]]),
+                        $codebase,
+                    ),
+                );
+
+                $has_valid_iterator = true;
+            } elseif ($iterator_atomic_type instanceof Scalar || $iterator_atomic_type instanceof TVoid) {
                 $invalid_iterator_types[] = $iterator_atomic_type->getKey();
 
                 $value_type = Type::getMixed();
