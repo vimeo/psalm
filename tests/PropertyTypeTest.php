@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Countable;
 use DateTime;
 use Override;
 use Psalm\Config;
@@ -512,6 +513,113 @@ final class PropertyTypeTest extends TestCase
 
                 // sets are fine
                 $f->buzz = false;
+        ',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testUniversalObjectCratesOfAnInterface(): void
+    {
+        Config::getInstance()->addUniversalObjectCrate(Countable::class);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                interface Sized extends \\Countable {}
+
+                class A implements \\Countable {
+                    public function count(): int {
+                        return 0;
+                    }
+                }
+
+                class B implements Sized {
+                    public function count(): int {
+                        return 0;
+                    }
+                }
+
+                function reads(\\Countable $c, A $a, B $b, Sized $s): void {
+                    $c->foo;
+                    $a->foo;
+                    $b->foo;
+                    $s->foo;
+                }
+
+                function sets(\\Countable $c, A $a, B $b, Sized $s): void {
+                    $c->foo = 1;
+                    $a->foo = 2;
+                    $b->foo = 3;
+                    $s->foo = 4;
+                }
+        ',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testUniversalObjectCratesOfAParentClass(): void
+    {
+        Config::getInstance()->addUniversalObjectCrate(DateTime::class);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class MyDate extends \\DateTime {}
+                class MyOtherDate extends MyDate {}
+
+                function reads(MyDate $a, MyOtherDate $b): void {
+                    $a->foo;
+                    $b->foo;
+                }
+
+                function sets(MyDate $a, MyOtherDate $b): void {
+                    $a->foo = 1;
+                    $b->foo = 2;
+                }
+        ',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testUniversalObjectCratesDoNotMatchOtherClassesOnFetch(): void
+    {
+        Config::getInstance()->addUniversalObjectCrate(Countable::class);
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UndefinedPropertyFetch');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Plain {}
+
+                function read(Plain $p): void {
+                    $p->foo;
+                }
+        ',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testUniversalObjectCratesDoNotMatchOtherClassesOnAssignment(): void
+    {
+        Config::getInstance()->addUniversalObjectCrate(Countable::class);
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UndefinedPropertyAssignment');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Plain {}
+
+                function set(Plain $p): void {
+                    $p->foo = 1;
+                }
         ',
         );
 
