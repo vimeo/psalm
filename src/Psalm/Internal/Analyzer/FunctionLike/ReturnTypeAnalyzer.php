@@ -51,6 +51,7 @@ use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
@@ -209,6 +210,30 @@ final class ReturnTypeAnalyzer
                 new InvalidReturnType(
                     'Not all code paths of ' . $cased_method_id . ' end in a return statement, return type '
                         . $return_type . ' expected',
+                    $return_type_location,
+                ),
+                $suppressed_issues,
+            )) {
+                return false;
+            }
+
+            return null;
+        }
+
+        if ($return_type
+            && $function_like_storage?->has_yield
+            && $inferred_return_type_parts !== []
+            && $function_returns_implicitly
+            && ($generator_return_type = self::getGeneratorReturnType($return_type))
+            && !$generator_return_type->isVoid()
+            && !$generator_return_type->isNever()
+            && !$generator_return_type->isNullable()
+            && !$generator_return_type->hasMixed()
+        ) {
+            if (IssueBuffer::accepts(
+                new InvalidReturnType(
+                    'Not all code paths of ' . $cased_method_id . ' end in a return statement, the generator '
+                        . 'return type ' . $generator_return_type->getId() . ' expected',
                     $return_type_location,
                 ),
                 $suppressed_issues,
@@ -543,6 +568,8 @@ final class ReturnTypeAnalyzer
 
             if (!$declared_return_type->isNever()
                 && $function_always_exits
+                // a generator function returns its Generator even if its body never ends
+                && !$function_like_storage?->has_yield
                 // never return type only available from PHP 8.1 in non-docblock
                 && ($declared_return_type->from_docblock || $codebase->analysis_php_version_id >= 8_10_00)
                 // no error for single throw, as extending a class might not work without errors
@@ -1125,5 +1152,28 @@ final class ReturnTypeAnalyzer
         $type->checked = true;
 
         return !$checker->hasErrors();
+    }
+
+    /**
+     * The type `Generator<TKey, TValue, TSend, TReturn>` says the generator returns
+     *
+     * @psalm-pure
+     */
+    private static function getGeneratorReturnType(Union $return_type): ?Union
+    {
+        if (!$return_type->isSingle()) {
+            return null;
+        }
+
+        $atomic = $return_type->getSingleAtomic();
+
+        if ($atomic instanceof TGenericObject
+            && strtolower($atomic->value) === 'generator'
+            && count($atomic->type_params) === 4
+        ) {
+            return $atomic->type_params[3];
+        }
+
+        return null;
     }
 }
