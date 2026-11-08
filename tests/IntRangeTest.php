@@ -11,6 +11,8 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralInt;
 
+use const DIRECTORY_SEPARATOR;
+
 final class IntRangeTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -57,6 +59,17 @@ final class IntRangeTest extends TestCase
                         if ($e > 1 && $e < 4) {
                             /** @psalm-check-type-exact $e = int<2, 3> */;
                         }
+                    }',
+            ],
+            'comparisonWithPhpIntMaxAndMinKeepsTheNonIntTypes' => [
+                'code' => '<?php
+                    /** @param int|string $value */
+                    function f($value): string {
+                        if ($value > 9223372036854775807 || $value < -9223372036854775807 - 1) {
+                            return $value;
+                        }
+
+                        return "";
                     }',
             ],
             'randOfUnboundedIntsIsInt' => [
@@ -378,7 +391,7 @@ final class IntRangeTest extends TestCase
                     '$h===' => '0|1|float',
                     '$i===' => 'int',
                     '$j===' => 'float',
-                    '$k===' => '-1',
+                    '$k===' => '1',
                     '$l===' => 'float|int',
                     '$m===' => 'int<1, max>',
                     '$n===' => 'float',
@@ -387,7 +400,7 @@ final class IntRangeTest extends TestCase
                     '$q===' => '1',
                     '$r===' => 'int<1, max>',
                     '$s===' => 'float',
-                    '$t===' => '-1',
+                    '$t===' => '1',
                     '$u===' => 'int<1, max>',
                     '$v===' => 'float',
                     '$w===' => '1',
@@ -1083,6 +1096,55 @@ final class IntRangeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'greaterThanPhpIntMaxIsImpossibleForInt' => [
+                'code' => '<?php
+                    function f(int $value): void {
+                        if ($value > 9223372036854775807) {
+                            echo $value;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29 - Type int for $value is never >9223372036854775807',
+            ],
+            'greaterThanPhpIntMaxIsImpossibleForIntRangeAndLiteral' => [
+                'code' => '<?php
+                    /** @param int<1, 5>|7 $value */
+                    function f(int $value): void {
+                        if ($value > 9223372036854775807) {
+                            echo $value;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - Docblock-defined type int<1, 7> for $value is never >= 9223372036854775807',
+            ],
+            'lessThanPhpIntMinIsImpossibleForInt' => [
+                'code' => '<?php
+                    function f(int $value): void {
+                        if ($value < -9223372036854775807 - 1) {
+                            echo $value;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29 - Type int for $value is never <-9223372036854775808',
+            ],
+            'lessThanPhpIntMinIsImpossibleForIntRangeAndLiteral' => [
+                'code' => '<?php
+                    /** @param int<-5, 5>|7 $value */
+                    function f(int $value): void {
+                        if ($value < -9223372036854775807 - 1) {
+                            echo $value;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - Docblock-defined type int<-5, 7> for $value is never <= -9223372036854775808',
+            ],
+            'notGreaterThanPhpIntMaxIsRedundantForInt' => [
+                'code' => '<?php
+                    function f(int $value): void {
+                        if ($value >= 0) {
+                            echo $value;
+                        } elseif ($value <= 9223372036854775807) {
+                            echo $value;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:35 - Type int<min, -1> for $value is never >= 9223372036854775807',
+            ],
             'intRangeNotContained' => [
                 'code' => '<?php
                     /**
