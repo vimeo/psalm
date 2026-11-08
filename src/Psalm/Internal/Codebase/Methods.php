@@ -280,6 +280,7 @@ final class Methods
         ?StatementsSource $source = null,
         ?array $args = null,
         ?Context $context = null,
+        ?CodeLocation $code_location = null,
     ): array {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -291,6 +292,7 @@ final class Methods
                 $args,
                 $source,
                 $context,
+                $code_location,
             );
 
             if ($method_params !== null) {
