@@ -21,6 +21,7 @@ use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Class_;
+use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\Return_;
 use PhpParser\Node\Stmt\Trait_;
 use PhpParser\NodeFinder;
@@ -116,26 +117,20 @@ function table(array $header, array $rows): string
     return implode("\n", $lines) . "\n";
 }
 
-/**
- * @param list<string> $lines
- * @return ?string the reason of the guard marker above the 1-based line, looking over a docblock if asked to
- */
-function guardAbove(array $lines, int $line, bool $skip_docblock): ?string
+/** @return ?string the reason of the `// guard:` comment directly above the node, looking over other comments such as a docblock */
+function guardOf(Node $node): ?string
 {
-    $candidates = [$line - 2];
-    if ($skip_docblock && $line >= 2 && str_ends_with(rtrim($lines[$line - 2]), '*/')) {
-        $i = $line - 2;
-        while ($i > 0 && !str_contains($lines[$i], '/*')) {
-            $i--;
+    $next = $node->getStartLine();
+    foreach (array_reverse($node->getComments()) as $comment) {
+        if ($comment->getEndLine() < $next - 1) {
+            break;
         }
 
-        $candidates[] = $i - 1;
-    }
-
-    foreach ($candidates as $i) {
-        if ($i >= 0 && preg_match('~^\s*//\s*guard:\s*(\S.*?)\s*$~', $lines[$i], $matches) === 1) {
+        if (preg_match('~^//\s*guard:\s*(\S.*?)\s*$~', $comment->getText(), $matches) === 1) {
             return $matches[1];
         }
+
+        $next = $comment->getStartLine();
     }
 
     return null;
@@ -144,12 +139,12 @@ function guardAbove(array $lines, int $line, bool $skip_docblock): ?string
 /**
  * The string-keyed items of the arrays a provider returns or yields from, and its `yield 'name' => [...]`.
  *
- * @return list<array{Node, Node}> key and value nodes
+ * @return list<array{Node, Node, Node}> key and value nodes, and the node that carries the comments above the item
  */
 function providerItems(ClassMethod $method): array
 {
     $visitor = new class extends NodeVisitorAbstract {
-        /** @var list<array{Node, Node}> */
+        /** @var list<array{Node, Node, Node}> */
         public array $items = [];
 
         public function enterNode(Node $node): ?int
@@ -161,13 +156,14 @@ function providerItems(ClassMethod $method): array
 
             $pairs = match (true) {
                 ($node instanceof Return_ || $node instanceof YieldFrom) && $node->expr instanceof Array_
-                    => array_map(static fn($item): array => [$item->key, $item->value], $node->expr->items),
-                $node instanceof Yield_ => [[$node->key, $node->value]],
+                    => array_map(static fn($item): array => [$item->key, $item->value, $item], $node->expr->items),
+                $node instanceof Expression && $node->expr instanceof Yield_
+                    => [[$node->expr->key, $node->expr->value, $node]],
                 default => [],
             };
-            foreach ($pairs as [$key, $value]) {
+            foreach ($pairs as [$key, $value, $carrier]) {
                 if ($key instanceof String_ && $value !== null) {
-                    $this->items[] = [$key, $value];
+                    $this->items[] = [$key, $value, $carrier];
                 }
             }
 
@@ -193,7 +189,6 @@ function analyse(string $code): array
 {
     $parser = (new ParserFactory())->createForNewestSupportedVersion();
     $stmts = (new NodeTraverser(new NameResolver()))->traverse($parser->parse($code) ?? []);
-    $lines = explode("\n", $code);
 
     $types = [];
     $named_providers = [];
@@ -235,9 +230,9 @@ function analyse(string $code): array
     }
 
     $items = [];
-    $add = static function (string $kind, Node $node, string $name, string $text, string $value, string $class, ?string $provider, bool $parameterized) use (&$items, $lines): void {
+    $add = static function (string $kind, Node $node, Node $carrier, string $name, string $text, string $value, string $class, ?string $provider, bool $parameterized) use (&$items): void {
         $items[] = [
-            'id' => "$kind:$name",
+            'id' => "$kind:$class:$provider:$name",
             'name' => $name,
             'text' => $text,
             'value' => $kind . $value,
@@ -245,21 +240,21 @@ function analyse(string $code): array
             'class' => $class,
             'provider' => $provider,
             'parameterized' => $parameterized,
-            'guard' => guardAbove($lines, $node->getStartLine(), $node instanceof ClassMethod),
+            'guard' => guardOf($carrier),
         ];
     };
     foreach ($declared as [$class, $method, $is_test, $parameterized]) {
         $name = $method->name->toString();
         $is_provider = str_starts_with($name, 'provide') || isset($named_providers[$name]);
-        foreach ($is_provider ? providerItems($method) : [] as [$key, $value]) {
-            $add('e', $key, $key->value, slice($code, $key, $value), slice($code, $value, $value), $class, $name, false);
+        foreach ($is_provider ? providerItems($method) : [] as [$key, $value, $carrier]) {
+            $add('e', $key, $carrier, $key->value, slice($code, $key, $value), slice($code, $value, $value), $class, $name, false);
         }
 
         if ($is_test) {
             $text = slice($code, $method, $method);
             $name_at = $method->name->getStartFilePos() - $method->getStartFilePos();
             $value = substr($text, 0, $name_at) . substr($text, $name_at + strlen($name));
-            $add('m', $method, $name, $text, $value, $class, null, $parameterized);
+            $add('m', $method, $method, $name, $text, $value, $class, null, $parameterized);
         }
     }
 
@@ -313,19 +308,22 @@ function caseOf(array $item, string $path, array $types, string $head): array
         return $case + ['case' => $item['name'] . '$', 'regex' => '/^' . quote($item['class']) . '::' . quote($item['name']) . '$/'];
     }
 
-    $data_set = ' with data set "' . quote($item['name']) . '"$/';
+    // PHP turns a numeric string key into an int, and PHPUnit names such a data set by its index
+    $int_key = (string) (int) $item['name'] === $item['name'];
+    $data_set = ' with data set ' . ($int_key ? "#{$item['name']}" : '"' . quote($item['name']) . '"') . '$/';
     if ($path === 'tests/TaintTest.php' && in_array($item['provider'], TAINT_PROVIDERS, true)) {
         return [
             'case' => 'tests/Taint @' . $item['name'],
             'dir' => 'tests/Taint',
-            'regex' => '/^Psalm\\\\Tests\\\\Taint\\\\TaintCases\d+Test::test(?:Valid|Invalid)Code(?:TrackingUnusedVariables)?' . $data_set,
+            'regex' => '/^Psalm\\\\Tests\\\\Taint\\\\TaintCases\d+Test::test' . ($item['provider'] === 'providerValidCodeParse' ? 'Valid' : 'Invalid')
+                . 'Code(?:TrackingUnusedVariables)?' . $data_set,
         ] + $case;
     }
 
     $consumers = consumersOf($item['class'], $item['provider'], $types, $head);
 
     return $case + [
-        'case' => (count($consumers) > 1 ? '(' . implode('|', $consumers) . ')' : ($consumers[0] ?? '\w+')) . '@' . $item['name'],
+        'case' => (count($consumers) > 1 ? '(' . implode('|', $consumers) . ')' : ($consumers[0] ?? '\w+')) . ($int_key ? '#' : '@') . $item['name'],
         'regex' => '/^' . quote($item['class']) . '::(' . ($consumers === [] ? '\w+' : implode('|', array_map('quote', $consumers))) . ')' . $data_set,
     ];
 }
@@ -353,11 +351,11 @@ function statusOf(string $dir, string $path, string $regex, float $timeout): str
             return 'ERROR';
         }
 
-        if ((int) $suite['failures'] + (int) $suite['errors'] > 0 || $process->getExitCode() !== 0) {
-            return 'FAIL';
+        if ((int) $suite['skipped'] === $tests) {
+            return 'SKIPPED';
         }
 
-        return (int) $suite['skipped'] === $tests ? 'SKIPPED' : 'PASS';
+        return (int) $suite['failures'] + (int) $suite['errors'] > 0 || $process->getExitCode() !== 0 ? 'FAIL' : 'PASS';
     } catch (ProcessTimedOutException) {
         // the process is killed by then, and no shell stands in between that could outlive it
         return 'TIMEOUT';
