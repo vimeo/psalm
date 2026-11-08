@@ -772,7 +772,7 @@ final class TypeExpander
                     static fn($type_map): bool => !reset($type_map)->hasMixed(),
                 )
             ) {
-                $return_type = new TGenericObject(
+                $return_type = (new TGenericObject(
                     $return_type->value,
                     array_values(
                         array_map(
@@ -780,7 +780,7 @@ final class TypeExpander
                             $container_class_storage->template_types,
                         ),
                     ),
-                );
+                ))->setIsStatic($return_type->is_static, $return_type->is_static_resolved);
 
                 // we don't want to expand generic types recursively
                 $expand_generic = false;

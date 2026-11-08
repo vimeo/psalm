@@ -1074,6 +1074,32 @@ final class ClassTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'staticOfABoundedGenericClassKeepsItsTypeArgumentsAndStaticInATemplateArgument' => [
+                'code' => '<?php
+                    /** @template T of int */
+                    class Foo {
+                        /** @param static $foo */
+                        public function test($foo): void {
+                            $a = box($foo);
+                            /** @psalm-check-type-exact $a = Box<Foo<int>&static> */;
+                        }
+                    }
+
+                    /** @template T */
+                    final class Box {}
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'allowTraversableImplementationAlongWithIteratorAggregate' => [
                 'code' => '<?php
                     /**
