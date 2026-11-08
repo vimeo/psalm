@@ -315,11 +315,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $codebase = $this->codebase;
         $project_analyzer = $this->getProjectAnalyzer();
 
-        if ($codebase->track_unused_suppressions && !isset($storage->suppressed_issues[0])) {
-            if (count($storage->suppressed_issues) === 1 // UnusedPsalmSuppress by itself should be marked as unused
-                || !$codebase->config->suppressesIssueType($storage->suppressed_issues, 'UnusedPsalmSuppress')
+        $docblock_suppressed_issues = $storage->docblock_suppressed_issues;
+
+        if ($codebase->track_unused_suppressions && $docblock_suppressed_issues !== []) {
+            if (count($docblock_suppressed_issues) === 1 // UnusedPsalmSuppress by itself should be marked as unused
+                || !$codebase->config->suppressesIssueType($docblock_suppressed_issues, 'UnusedPsalmSuppress')
             ) {
-                foreach ($storage->suppressed_issues as $offset => $issue_name) {
+                foreach ($docblock_suppressed_issues as $offset => $issue_name) {
                     IssueBuffer::addUnusedSuppression(
                         $storage->location !== null
                             ? $storage->location->file_path
