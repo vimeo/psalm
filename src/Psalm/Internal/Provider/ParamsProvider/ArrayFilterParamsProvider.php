@@ -129,7 +129,11 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
                 : $fallback;
         }
 
-        if ($first_arg_array instanceof TArray) {
+        if ($first_arg_array === $fallback) {
+            // the array type is unknown, so its keys are as unknown as its values
+            $inner_type = Type::getMixed();
+            $key_type = Type::getMixed();
+        } elseif ($first_arg_array instanceof TArray) {
             $inner_type = $first_arg_array->type_params[1];
             $key_type = $first_arg_array->type_params[0];
         } else {
