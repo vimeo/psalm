@@ -2593,7 +2593,7 @@ return array (
   'assert' => 
   array (
     -1 => 'bool',
-    'assertion' => 'bool|int|string',
+    'assertion' => 'mixed',
     'description=' => 'Throwable|null|string',
   ),
   'assert_options' => 
@@ -54465,7 +54465,6 @@ return array (
   ),
   'mysqli::get_warnings' => 
   array (
-    0 => 'mysqli_warning',
     -1 => 'false|mysqli_warning',
     -2 => 'tentative',
   ),
@@ -54950,7 +54949,6 @@ return array (
   ),
   'mysqli_get_warnings' => 
   array (
-    0 => 'mysqli_warning',
     -1 => 'false|mysqli_warning',
     'mysql' => 'mysqli',
   ),
