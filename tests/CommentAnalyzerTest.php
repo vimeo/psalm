@@ -296,6 +296,14 @@ final class CommentAnalyzerTest extends BaseTestCase
                 'doc_line' => 'A  |  null get()',
                 'expected' => ['A  |  null', 'get()'],
             ],
+            'unionContinuedOnTheNextLine' => [
+                'doc_line' => "A\n     *     |null \$x",
+                'expected' => ["A\n     *     |null", '$x'],
+            ],
+            'unionWithPipeEndingTheLine' => [
+                'doc_line' => "A|\n     *     null \$x",
+                'expected' => ["A|\n     *     null", '$x'],
+            ],
             'unionWithSpaceInCallableReturnType' => [
                 'doc_line' => 'callable(): A |null $x',
                 'expected' => ['callable(): A |null', '$x'],
@@ -323,6 +331,10 @@ final class CommentAnalyzerTest extends BaseTestCase
             'byReferenceVariadicParamWithSpaceAfterAmpersand' => [
                 'doc_line' => 'A & ...$x',
                 'expected' => ['A', '&...$x'],
+            ],
+            'byReferenceParamOnTheNextLine' => [
+                'doc_line' => "A &\n     *     \$x",
+                'expected' => ['A', '&$x'],
             ],
             'byReferenceParamWithAmpersandAfterType' => [
                 'doc_line' => 'A& $x',

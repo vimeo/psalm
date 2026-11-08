@@ -182,7 +182,9 @@ final class FunctionLikeDocblockParser
                             $line_parts[1] = substr($line_parts[1], 1);
                         }
 
-                        if ($line_parts[0][0] === '$' && !preg_match('/^\$this *(\||$)/', $line_parts[0])) {
+                        if ($line_parts[0][0] === '$'
+                            && !preg_match('/^\$this *(\||$)/', CommentAnalyzer::sanitizeDocblockType($line_parts[0]))
+                        ) {
                             throw new IncorrectDocblockException('Misplaced variable');
                         }
 
@@ -190,7 +192,7 @@ final class FunctionLikeDocblockParser
 
                         $info->globals[] = [
                             'name' => $line_parts[1],
-                            'type' => $line_parts[0],
+                            'type' => CommentAnalyzer::sanitizeDocblockType($line_parts[0]),
                             'line_number' => $comment->getStartLine() + substr_count(
                                 $comment_text,
                                 "\n",
@@ -766,7 +768,9 @@ final class FunctionLikeDocblockParser
             $line_parts = CommentAnalyzer::splitDocLine($return_block);
 
             if ($line_parts[0][0] !== '{') {
-                if ($line_parts[0][0] === '$' && !preg_match('/^\$this *(\||$)/', $line_parts[0])) {
+                if ($line_parts[0][0] === '$'
+                    && !preg_match('/^\$this *(\||$)/', CommentAnalyzer::sanitizeDocblockType($line_parts[0]))
+                ) {
                     throw new IncorrectDocblockException('Misplaced variable');
                 }
 

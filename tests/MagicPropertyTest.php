@@ -1008,6 +1008,8 @@ final class MagicPropertyTest extends TestCase
                      * @property B |null $a
                      * @property-read B | null $b
                      * @psalm-property B  |  null $c
+                     * @property B
+                     *     |null $d
                      */
                     class A {
                         public function __get(string $name) {
@@ -1020,11 +1022,13 @@ final class MagicPropertyTest extends TestCase
 
                     $a = (new A)->a;
                     $b = (new A)->b;
-                    $c = (new A)->c;',
+                    $c = (new A)->c;
+                    $d = (new A)->d;',
                 'assertions' => [
                     '$a' => 'B|null',
                     '$b' => 'B|null',
                     '$c' => 'B|null',
+                    '$d' => 'B|null',
                 ],
             ],
         ];

@@ -39,7 +39,6 @@ use function rtrim;
 use function str_replace;
 use function strlen;
 use function strpos;
-use function strspn;
 use function substr;
 use function substr_count;
 use function trim;
@@ -376,7 +375,7 @@ final class CommentAnalyzer
                 ) {
                     throw new DocblockParseException('Invalid string ' . $return_block);
                 }
-            } elseif ($char === ' '
+            } elseif (($char === ' ' || $char === "\n")
                 && !$brackets
                 && ($whitespace = self::getWhitespaceNextToTypeOperator($return_block, $i)) !== ''
             ) {
@@ -432,18 +431,31 @@ final class CommentAnalyzer
     }
 
     /**
-     * The run of spaces at $offset if a union or intersection operator is next to it, or ''
+     * The whitespace at $offset if a union or intersection operator is next to it, or ''
      *
      * @psalm-pure
      */
     private static function getWhitespaceNextToTypeOperator(string $doc_line, int $offset): string
     {
-        $whitespace = substr($doc_line, $offset, strspn($doc_line, ' ', $offset));
+        $whitespace = self::getWhitespace($doc_line, $offset);
 
         return self::isTypeOperator($doc_line, $offset - 1)
             || self::isTypeOperator($doc_line, $offset + strlen($whitespace))
             ? $whitespace
             : '';
+    }
+
+    /**
+     * The whitespace at $offset: spaces, and line breaks with the `*` margin of the next docblock line
+     * (`A\n *     |null`)
+     *
+     * @psalm-pure
+     */
+    private static function getWhitespace(string $doc_line, int $offset): string
+    {
+        preg_match('/(?: |\n *\*?)*/A', $doc_line, $matches, 0, $offset);
+
+        return $matches[0] ?? '';
     }
 
     /**
@@ -457,7 +469,7 @@ final class CommentAnalyzer
         $char = $offset >= 0 ? $doc_line[$offset] ?? '' : '';
 
         if ($char === '&') {
-            $operand = $doc_line[$offset + 1 + strspn($doc_line, ' ', $offset + 1)] ?? '';
+            $operand = $doc_line[$offset + 1 + strlen(self::getWhitespace($doc_line, $offset + 1))] ?? '';
 
             return $operand !== '$' && $operand !== '.';
         }

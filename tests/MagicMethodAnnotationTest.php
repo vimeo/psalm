@@ -1408,10 +1408,16 @@ final class MagicMethodAnnotationTest extends TestCase
                      * @method A |null d()
                      * @method static e(): A |null
                      * @method f(): A  |  null
+                     * @method A
+                     *     |null g()
                      * @method I1 & I2 h()
                      * @method I1 &I2 i()
                      * @method void j(A |null $x, A | null $y)
                      * @method static k(): I1 &I2
+                     * @method l(): A
+                     *     |null
+                     * @method m(): A |
+                     *     null
                      */
                     class Child extends ParentClass {}
 
@@ -1421,10 +1427,13 @@ final class MagicMethodAnnotationTest extends TestCase
                     $d = (new Child)->d();
                     $e = Child::e();
                     $f = (new Child)->f();
+                    $g = (new Child)->g();
                     $h = (new Child)->h();
                     $i = (new Child)->i();
                     (new Child)->j(null, null);
-                    $k = Child::k();',
+                    $k = Child::k();
+                    $l = (new Child)->l();
+                    $m = (new Child)->m();',
                 'assertions' => [
                     '$a' => 'A|null',
                     '$b' => 'A|null',
@@ -1432,9 +1441,12 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$d' => 'A|null',
                     '$e' => 'A|null',
                     '$f' => 'A|null',
+                    '$g' => 'A|null',
                     '$h' => 'I1&I2',
                     '$i' => 'I1&I2',
                     '$k' => 'I1&I2',
+                    '$l' => 'A|null',
+                    '$m' => 'A|null',
                 ],
             ],
         ];

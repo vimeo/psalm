@@ -185,7 +185,8 @@ final class ClassMoveTest extends TestCase
                     /**
                      * @param A |null $a the a
                      * @param A  |  null $b
-                     * @return A | null
+                     * @return A
+                     *     |null
                      */
                     function foo($a, $b) {
                         return $a ?? $b;

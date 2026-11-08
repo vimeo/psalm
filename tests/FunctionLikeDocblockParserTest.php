@@ -107,6 +107,8 @@ final class FunctionLikeDocblockParserTest extends BaseTestCase
         $doc = '/**
  * @param string  |  null $bli The BLI | or not.
  * @param string & $out The out.
+ * @param string &
+ *     $next The next.
  * @return string |null The result.
  */
 ';
@@ -122,6 +124,8 @@ final class FunctionLikeDocblockParserTest extends BaseTestCase
         $this->assertSame('The BLI | or not.', $function_docblock->params[0]['description'] ?? null);
         $this->assertSame('$out', $function_docblock->params[1]['name'] ?? null);
         $this->assertSame('The out.', $function_docblock->params[1]['description'] ?? null);
+        $this->assertSame('$next', $function_docblock->params[2]['name'] ?? null);
+        $this->assertSame('The next.', $function_docblock->params[2]['description'] ?? null);
         $this->assertSame('string |null', $function_docblock->return_type);
         $this->assertSame('The result.', $function_docblock->return_type_description);
     }

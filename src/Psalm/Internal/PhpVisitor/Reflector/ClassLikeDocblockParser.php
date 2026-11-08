@@ -182,7 +182,7 @@ final class ClassLikeDocblockParser
             foreach ($parsed_docblock->tags['mixin'] as $rawMixin) {
                 $mixin = trim($rawMixin);
                 $doc_line_parts = CommentAnalyzer::splitDocLine($mixin);
-                $mixin = $doc_line_parts[0];
+                $mixin = CommentAnalyzer::sanitizeDocblockType($doc_line_parts[0]);
 
                 if ($mixin) {
                     $info->mixins[] = $mixin;
@@ -392,7 +392,9 @@ final class ClassLikeDocblockParser
                         if (preg_match('/^ ?: ?(\S.*)$/s', $after_paren, $return_matches)
                             && isset($return_matches[1])
                         ) {
-                            $method_entry .= ':' . CommentAnalyzer::splitDocLine($return_matches[1])[0];
+                            $method_entry .= ':' . CommentAnalyzer::sanitizeDocblockType(
+                                CommentAnalyzer::splitDocLine($return_matches[1])[0],
+                            );
                         }
                     }
                 }

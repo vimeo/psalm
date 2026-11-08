@@ -1670,6 +1670,74 @@ final class AnnotationTest extends TestCase
                     '$_c' => 'T|null',
                 ],
             ],
+            'typesContinuedOnTheNextLine' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    /**
+                     * @mixin A
+                     *     |B
+                     */
+                    class T {
+                        /**
+                         * @return $this
+                         *     |null
+                         */
+                        public function a() { return null; }
+                    }
+
+                    /**
+                     * @return A
+                     *     |null
+                     */
+                    function r() { return null; }
+
+                    /**
+                     * @param A|
+                     *     null $x
+                     * @return A|null
+                     */
+                    function p($x) { return $x; }
+
+                    /**
+                     * @global A
+                     *     |null $_g
+                     */
+                    function g(): ?A { global $_g; return $_g; }
+
+                    /**
+                     * @global $this
+                     *     |null $_h
+                     */
+                    function h(): void {}
+
+                    /**
+                     * @param A &
+                     *     $x
+                     */
+                    function pr(&$x): A { return $x; }
+
+                    /**
+                     * @psalm-type Foo = A
+                     *     |null
+                     */
+                    final class F {
+                        /** @return Foo */
+                        public static function f() { return null; }
+                    }
+
+                    $_a = (new T)->a();
+                    $_r = r();
+                    $_p = p(null);
+                    $_f = F::f();',
+                'assertions' => [
+                    '$_a' => 'T|null',
+                    '$_r' => 'A|null',
+                    '$_p' => 'A|null',
+                    '$_f' => 'A|null',
+                ],
+            ],
         ];
     }
 
