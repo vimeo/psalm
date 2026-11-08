@@ -7,6 +7,7 @@ namespace Psalm\Internal\Type;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\RedundantPropertyInitializationCheck;
@@ -16,6 +17,7 @@ use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\ArrayKeyDoesNotExist;
 use Psalm\Storage\Assertion\DoesNotHaveAtLeastCount;
 use Psalm\Storage\Assertion\DoesNotHaveExactCount;
+use Psalm\Storage\Assertion\DoesNotHaveMethod;
 use Psalm\Storage\Assertion\Empty_;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsGreaterThanOrEqualTo;
@@ -67,6 +69,7 @@ use Psalm\Type\Union;
 use function assert;
 use function max;
 use function str_contains;
+use function strtolower;
 
 /**
  * @internal
@@ -152,6 +155,19 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
 
         if ($assertion instanceof ArrayKeyDoesNotExist) {
             return Type::getNever();
+        }
+
+        if ($assertion instanceof DoesNotHaveMethod) {
+            return self::reconcileDoesNotHaveMethod(
+                $assertion,
+                $codebase,
+                $existing_var_type,
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+            );
         }
 
         if ($assertion instanceof NotInArray) {
@@ -2056,5 +2072,81 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         return $existing_var_type->freeze();
+    }
+
+    /**
+     * Only code that is analysed guarantees a method: the methods of builtin classes can depend on how the extension
+     * was compiled, and a method existence provider can report methods that don't exist at runtime
+     */
+    private static function isMethodAlwaysDeclared(Codebase $codebase, string $fq_class_name, string $method_name): bool
+    {
+        $method_id = new MethodIdentifier($fq_class_name, strtolower($method_name));
+
+        if (!$codebase->methodExists($method_id, null, null, null, null, false)) {
+            return false;
+        }
+
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+        return $declaring_method_id !== null
+            && $codebase->classlike_storage_provider->get($declaring_method_id->fq_class_name)->user_defined;
+    }
+
+    /**
+     * An object whose class has the method can't be one for which method_exists() is false
+     *
+     * @param string[] $suppressed_issues
+     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileDoesNotHaveMethod(
+        DoesNotHaveMethod $assertion,
+        Codebase $codebase,
+        Union $existing_var_type,
+        ?string $key,
+        bool $negated,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+    ): ?Union {
+        $remaining_types = [];
+        $found_class_with_method = false;
+
+        foreach ($existing_var_type->getAtomicTypes() as $type) {
+            if ($type instanceof TNamedObject
+                && $codebase->classOrInterfaceExists($type->value)
+                && self::isMethodAlwaysDeclared($codebase, $type->value, $assertion->method)
+            ) {
+                $found_class_with_method = true;
+
+                continue;
+            }
+
+            $remaining_types[] = $type;
+        }
+
+        if (!$found_class_with_method) {
+            return null;
+        }
+
+        if ($remaining_types) {
+            return new Union($remaining_types);
+        }
+
+        if ($key !== null && $code_location) {
+            self::triggerIssueForImpossible(
+                $existing_var_type,
+                $existing_var_type->getId(),
+                $key,
+                $assertion,
+                false,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+            );
+        }
+
+        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
+
+        return $existing_var_type;
     }
 }
