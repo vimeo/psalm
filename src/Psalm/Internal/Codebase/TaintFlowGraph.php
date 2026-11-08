@@ -61,6 +61,23 @@ use function substr;
 use const SORT_STRING;
 
 /**
+ * @psalm-type SerializedGraph = array{
+ *     forward_edges: array<string, array<string, Path>>,
+ *     sources: array<string, DataFlowNode>,
+ *     nodes: array<string, DataFlowNode>,
+ *     sinks: array<string, DataFlowNode>,
+ *     specializations: array<string, array<string, string>>,
+ *     specialized_calls: array<string, true>,
+ *     generator_sent_nodes: array<string, DataFlowNode>,
+ *     generator_sends: array<string, array<string, true>>,
+ *     output_streams: array<string, true>,
+ *     shared_state: array<string, true>,
+ *     string_starts: array<string, string>,
+ *     empty_arrays: array<string, true>,
+ *     empty_dispatches: array<string, true>,
+ *     speculative_calls: array<string, array<string, true>>,
+ *     despecialized_calls: array<string, true>,
+ * }
  * @internal
  */
 final class TaintFlowGraph extends DataFlowGraph
@@ -187,28 +204,12 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $despecialized_calls = [];
 
     /**
-     * What a forked worker sends the parent (see ShutdownAnalyzerTask), which decodes the graphs of all the workers
-     * one after the other: edges of the same type, length and taints share one Path, because a Path is immutable and
-     * only a few thousand of the hundreds of thousands the graph holds differ. The serializer writes a shared object
-     * once and the parent builds it once.
+     * What a forked worker sends the parent (see ShutdownScannerTask and ShutdownAnalyzerTask), which decodes the
+     * graphs of all the workers one after the other: edges of the same type, length and taints share one Path,
+     * because a Path is immutable and few of them differ. The serializer writes a shared object once and the parent
+     * builds it once.
      *
-     * @return array{
-     *     forward_edges: array<string, array<string, Path>>,
-     *     sources: array<string, DataFlowNode>,
-     *     nodes: array<string, DataFlowNode>,
-     *     sinks: array<string, DataFlowNode>,
-     *     specializations: array<string, array<string, string>>,
-     *     specialized_calls: array<string, true>,
-     *     generator_sent_nodes: array<string, DataFlowNode>,
-     *     generator_sends: array<string, array<string, true>>,
-     *     output_streams: array<string, true>,
-     *     shared_state: array<string, true>,
-     *     string_starts: array<string, string>,
-     *     empty_arrays: array<string, true>,
-     *     empty_dispatches: array<string, true>,
-     *     speculative_calls: array<string, array<string, true>>,
-     *     despecialized_calls: array<string, true>,
-     * }
+     * @return SerializedGraph
      * @psalm-mutation-free
      */
     public function __serialize(): array
@@ -245,23 +246,7 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
-     * @param array{
-     *     forward_edges: array<string, array<string, Path>>,
-     *     sources: array<string, DataFlowNode>,
-     *     nodes: array<string, DataFlowNode>,
-     *     sinks: array<string, DataFlowNode>,
-     *     specializations: array<string, array<string, string>>,
-     *     specialized_calls: array<string, true>,
-     *     generator_sent_nodes: array<string, DataFlowNode>,
-     *     generator_sends: array<string, array<string, true>>,
-     *     output_streams: array<string, true>,
-     *     shared_state: array<string, true>,
-     *     string_starts: array<string, string>,
-     *     empty_arrays: array<string, true>,
-     *     empty_dispatches: array<string, true>,
-     *     speculative_calls: array<string, array<string, true>>,
-     *     despecialized_calls: array<string, true>,
-     * } $properties
+     * @param SerializedGraph $properties
      * @psalm-external-mutation-free
      */
     public function __unserialize(array $properties): void

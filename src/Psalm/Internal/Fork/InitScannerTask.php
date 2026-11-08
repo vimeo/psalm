@@ -26,8 +26,9 @@ final class InitScannerTask implements Task
 {
     /**
      * The global functions, constants and unresolved constants the worker inherited when it was forked. The parent
-     * process has them already (and keeps its own when merging, see Functions::addGlobalFunctions()), so the worker
-     * reports only the ones it added: ShutdownScannerTask would otherwise send every stub back once per worker.
+     * process has them already and keeps its own when merging (see Functions::addGlobalFunctions(),
+     * Codebase::addGlobalConstantTypes() and Codebase::addUnresolvedGlobalConstants()), so the worker reports only the
+     * ones it added: ShutdownScannerTask would otherwise send every stub back once per worker.
      *
      * @var array{
      *     functions: array<string, true>,

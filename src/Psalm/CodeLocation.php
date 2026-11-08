@@ -31,6 +31,24 @@ use function trim;
 use const PREG_OFFSET_CAPTURE;
 
 /**
+ * @psalm-type SerializedLocation = array{
+ *     0: string,
+ *     1: string,
+ *     2: int,
+ *     3: int,
+ *     4: int,
+ *     5: int,
+ *     6: int,
+ *     7: bool,
+ *     8: int,
+ *     9: ?int,
+ *     10: ?int,
+ *     11: ?int,
+ *     12: ?int,
+ *     13: ?string,
+ *     14: ?CodeLocation,
+ *     15?: array{int, int, int, int, int, int, string},
+ * }
  * @psalm-immutable
  * @api
  */
@@ -130,24 +148,7 @@ class CodeLocation
     }
 
     /**
-     * @return array{
-     *     0: string,
-     *     1: string,
-     *     2: int,
-     *     3: int,
-     *     4: int,
-     *     5: int,
-     *     6: int,
-     *     7: bool,
-     *     8: int,
-     *     9: ?int,
-     *     10: ?int,
-     *     11: ?int,
-     *     12: ?int,
-     *     13: ?string,
-     *     14: ?CodeLocation,
-     *     15?: array{int, int, int, int, int, int, string},
-     * }
+     * @return SerializedLocation
      * @psalm-mutation-free
      */
     public function __serialize(): array
@@ -170,7 +171,7 @@ class CodeLocation
             $this->previous_location,
         ];
 
-        // Only a location asked for its snippet, selection or columns has the computed ones set (see
+        // Only a location asked for its end line, snippet, selection or columns has the computed ones set (see
         // calculateRealLocation()). Most are not, so they stay out: forked workers send many of these locations.
         if ($this->have_recalculated) {
             $properties[] = [
@@ -188,27 +189,9 @@ class CodeLocation
     }
 
     /**
-     * Suppresses memory usage when unserializing objects.
+     * Mirrors __serialize().
      *
-     * @see \Psalm\Storage\UnserializeMemoryUsageSuppressionTrait
-     * @param array{
-     *     0: string,
-     *     1: string,
-     *     2: int,
-     *     3: int,
-     *     4: int,
-     *     5: int,
-     *     6: int,
-     *     7: bool,
-     *     8: int,
-     *     9: ?int,
-     *     10: ?int,
-     *     11: ?int,
-     *     12: ?int,
-     *     13: ?string,
-     *     14: ?CodeLocation,
-     *     15?: array{int, int, int, int, int, int, string},
-     * } $properties
+     * @param SerializedLocation $properties
      * @psalm-external-mutation-free
      */
     public function __unserialize(array $properties): void
