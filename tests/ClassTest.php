@@ -54,6 +54,25 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'consistentConstructorClassUsingATraitConstructorKeepsTheOneOfTheTrait' => [
+                'code' => '<?php
+                    trait HasName {
+                        public function __construct(public string $name, public int $age) {}
+                    }
+
+                    class Base {
+                        public function __construct(bool $flag) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        use HasName;
+                    }
+
+                    $child = new Child("name", 5);',
+            ],
             'consistentConstructorClassKeepsTheConstructorOfItsParent' => [
                 'code' => '<?php
                     class Base {
@@ -1185,6 +1204,26 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'consistentConstructorClassUsingATraitConstructorDoesNotTakeTheOneOfTheParent' => [
+                'code' => '<?php
+                    trait HasName {
+                        public function __construct(public string $name, public int $age) {}
+                    }
+
+                    class Base {
+                        public function __construct(bool $flag) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        use HasName;
+                    }
+
+                    $child = new Child(true);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
             'consistentConstructorClassWithoutAParentConstructorTakesNoArguments' => [
                 'code' => '<?php
                     class Base {}
