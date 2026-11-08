@@ -42,10 +42,10 @@ projects:
 
   symfony:
     repo: https://github.com/symfony/symfony
-    ref: "eca3b7b6bd3af91752b3f4b36959520d409ee279"
-    tag: v8.1.11
+    ref: "4ac528bb8ca9b549af38e2ea8050fd144821516e"
+    tag: v8.2.0-BETA1
     timeout: 400
-    exercises: very wide codebase (about 4400 files), many small independent components, polyfills, heavy interface graphs
+    exercises: very wide codebase (about 5100 files), many small independent components, polyfills, heavy interface graphs
     psalm:
       dirs: [src]
       ignore:
@@ -112,7 +112,7 @@ projects:
       attributes: {phpVersion: "7.4"}
 
   # The only corpus project written in PHP 8.4/8.5 style: the others barely use hooks or asymmetric
-  # visibility (symfony 8.1: 9 hooked properties in 1.6M lines) and no PHP 8.5 features.
+  # visibility (symfony 8.2: 12 hooked properties in about 5100 files) and no PHP 8.5 features.
   tempest:
     repo: https://github.com/tempestphp/tempest-framework
     ref: "8fe1705c919fd032498f3f6d6853c046294b9615"
