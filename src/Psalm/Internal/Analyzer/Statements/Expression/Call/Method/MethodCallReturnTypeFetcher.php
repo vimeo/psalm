@@ -29,6 +29,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Internal\TypeVisitor\StaticResolver;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -210,15 +211,12 @@ final class MethodCallReturnTypeFetcher
             );
 
             if ($return_type_candidate) {
-                // the `static` of the declared type is the receiver's, not that of what the templates are bound to
-                $expand_static_first = $template_result->lower_bounds && !$static_type instanceof TTemplateParam;
-
                 if ($template_result->lower_bounds) {
                     $return_type_candidate = TypeExpander::expandUnion(
                         $codebase,
                         $return_type_candidate,
                         $fq_class_name,
-                        $expand_static_first ? $static_type : null,
+                        null,
                         $class_storage->parent_class,
                         true,
                         false,
@@ -240,7 +238,7 @@ final class MethodCallReturnTypeFetcher
                     $codebase,
                     $return_type_candidate,
                     $self_fq_class_name,
-                    $expand_static_first ? null : $static_type,
+                    $static_type,
                     $class_storage->parent_class,
                     true,
                     false,
@@ -1006,9 +1004,25 @@ final class MethodCallReturnTypeFetcher
                 null,
             );
 
+            // the `static` of what a template is bound to is the caller's: it is not resolved to the receiver's
+            $bounds_result = new TemplateResult($template_result->template_types, []);
+
+            foreach ($template_result->lower_bounds as $template_name => $type_map) {
+                foreach ($type_map as $defining_class => $bounds) {
+                    foreach ($bounds as $bound) {
+                        $bound_type = $bound->type;
+                        (new StaticResolver())->traverse($bound_type);
+
+                        $resolved_bound = clone $bound;
+                        $resolved_bound->type = $bound_type;
+                        $bounds_result->lower_bounds[$template_name][$defining_class][] = $resolved_bound;
+                    }
+                }
+            }
+
             $return_type_candidate = TemplateInferredTypeReplacer::replace(
                 $return_type_candidate,
-                $template_result,
+                $bounds_result,
                 $codebase,
             );
         }
