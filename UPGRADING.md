@@ -122,6 +122,8 @@
 
 ## Removed
 
+- Psalm no longer requires `psalm/plugin-sabre-event` nor enables it for projects requiring `sabre/event`: sabre/event 5.1.1 and later declare the same generic types. A config listing `Psalm\SabreEventPlugin\Plugin` needs the plugin installed (`composer require --dev psalm/plugin-sabre-event`), or the entry removed.
+
 - [BC] Constant Psalm\Type\Atomic\TKeyedArray::NAME_ARRAY was removed
 
 - [BC] Constant Psalm\Type\Atomic\TKeyedArray::NAME_LIST was removed
