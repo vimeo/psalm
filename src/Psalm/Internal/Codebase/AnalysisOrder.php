@@ -17,6 +17,7 @@ use function uksort;
  * files estimated to be the most expensive start first.
  *
  * @internal
+ * @psalm-immutable
  */
 final class AnalysisOrder
 {
