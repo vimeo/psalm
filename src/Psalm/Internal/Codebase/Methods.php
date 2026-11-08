@@ -807,7 +807,30 @@ final class Methods
             return null;
         }
 
-        foreach ($class_storage->overridden_method_ids[$appearing_method_name] as $overridden_method_id) {
+        return $this->getInheritedReturnType(
+            $codebase,
+            $class_storage,
+            $appearing_method_name,
+            $source_analyzer !== null,
+            $self_class,
+        );
+    }
+
+    /**
+     * The return type a method without its own inherits from the methods it overrides
+     *
+     * @param lowercase-string $method_name
+     */
+    private function getInheritedReturnType(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        string $method_name,
+        bool $intersect,
+        ?string &$self_class,
+    ): ?Union {
+        $candidate_type = null;
+
+        foreach ($class_storage->overridden_method_ids[$method_name] ?? [] as $overridden_method_id) {
             $overridden_storage = $this->getStorage($overridden_method_id);
 
             if ($overridden_storage->return_type) {
@@ -831,7 +854,7 @@ final class Methods
 
                 $self_class = $overridden_class_storage->name;
 
-                if ($candidate_type && $source_analyzer && !$candidate_type->isMixed()) {
+                if ($candidate_type && $intersect && !$candidate_type->isMixed()) {
                     $candidate_to_overridden_result = new TypeComparisonResult();
                     $old_contained_by_new = UnionTypeComparator::isContainedBy(
                         $codebase,
