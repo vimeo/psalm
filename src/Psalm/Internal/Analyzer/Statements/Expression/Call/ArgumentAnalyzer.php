@@ -169,6 +169,7 @@ final class ArgumentAnalyzer
         ?TemplateResult $template_result,
         bool $specialize_taint,
         bool $in_call_map,
+        bool $static_is_called_class = false,
     ): ?bool {
         if ($arg->getAttribute(self::NOT_PASSED) === true) {
             return null;
@@ -282,6 +283,7 @@ final class ArgumentAnalyzer
             $template_result,
             $specialize_taint,
             $in_call_map,
+            $static_is_called_class,
         ) === false) {
             return false;
         }
@@ -313,6 +315,7 @@ final class ArgumentAnalyzer
         ?TemplateResult $template_result,
         bool $specialize_taint,
         bool $in_call_map,
+        bool $static_is_called_class,
     ): ?bool {
         if (!$function_param->type) {
             if (!$codebase->infer_types_from_usage && !$statements_analyzer->data_flow_graph) {
@@ -353,7 +356,7 @@ final class ArgumentAnalyzer
             $parent_class,
             true,
             false,
-            $static_classlike_storage->final ?? false,
+            ($static_classlike_storage->final ?? false) || $static_is_called_class,
             true,
         );
 
@@ -463,7 +466,7 @@ final class ArgumentAnalyzer
                 $parent_class,
                 true,
                 false,
-                $static_classlike_storage->final ?? false,
+                ($static_classlike_storage->final ?? false) || $static_is_called_class,
                 true,
             );
         }
