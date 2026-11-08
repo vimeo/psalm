@@ -57,6 +57,24 @@ final class TypeAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'typeAliasOfAClassWithATemplateNamedLikeTheOneOfAClassStringMap' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-type Maps = list<class-string-map<T as Exception, T>>
+                     */
+                    final class Registry {
+                        /**
+                         * @var Maps
+                         */
+                        public array $maps = [];
+                    }
+
+                    $maps = (new Registry())->maps;',
+                'assertions' => [
+                    '$maps===' => 'list<class-string-map<T as Exception, T:class-string-map as Exception>>',
+                ],
+            ],
             'atInArrayKey' => [
                 'code' => '<?php
 
@@ -1202,6 +1220,21 @@ final class TypeAnnotationTest extends TestCase
                          * @var Shape
                          */
                         public array $shape = [];
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:6:21 - Type alias Shape cannot use the template T of its class',
+            ],
+            'typeAliasUsingTheTemplateOfItsClassAfterAClassStringMapBindingTheSameName' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-type Shape = array{map: class-string-map<T as Exception, T>, other: T}
+                     */
+                    final class Box {
+                        /**
+                         * @var Shape
+                         */
+                        public array $shape;
                     }',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:6:21 - Type alias Shape cannot use the template T of its class',

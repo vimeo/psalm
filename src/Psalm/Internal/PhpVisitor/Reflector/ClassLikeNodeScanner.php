@@ -77,6 +77,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_column;
 use function array_diff_key;
 use function array_fill_keys;
 use function array_merge;
@@ -85,6 +86,7 @@ use function array_shift;
 use function array_values;
 use function assert;
 use function count;
+use function end;
 use function implode;
 use function in_array;
 use function is_array;
@@ -2458,9 +2460,36 @@ final class ClassLikeNodeScanner
                 throw new DocblockParseException($type_string . ' is not a valid type: '.$e->getMessage());
             }
 
+            // the template a class-string-map binds (class-string-map<T as object, T>) is its own inside its brackets
+            $bound_templates = [];
+            $depth = 0;
+
             // an alias can be imported into classes that don't have the template
             foreach ($type_tokens as $i => $type_token) {
+                if ($type_token[0] === '<') {
+                    $depth++;
+                    continue;
+                }
+
+                if ($type_token[0] === '>') {
+                    $depth--;
+
+                    while ($bound_templates !== [] && end($bound_templates)[1] > $depth) {
+                        array_pop($bound_templates);
+                    }
+
+                    continue;
+                }
+
+                if (strtolower($type_token[0]) === 'class-string-map'
+                    && ($type_tokens[$i + 1][0] ?? null) === '<'
+                    && isset($type_tokens[$i + 2])
+                ) {
+                    $bound_templates[] = [$type_tokens[$i + 2][0], $depth + 1];
+                }
+
                 if (isset($template_names[$type_token[0]])
+                    && !in_array($type_token[0], array_column($bound_templates, 0), true)
                     && !self::isShapeKey($type_tokens, $i)
                 ) {
                     throw new DocblockParseException(
