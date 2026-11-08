@@ -1389,10 +1389,10 @@ final class ClassLikeNodeScanner
             $existing_constant = $storage->constants[$const->name->name] ?? null;
 
             // a stub constant refines the one from the real class file, as stub methods do
-            $is_stub_override = $existing_constant !== null
-                && $this->codebase->register_stub_files
-                && $existing_constant->location !== null
-                && $existing_constant->location->file_path !== $this->file_path;
+            $existing_file_path = $existing_constant?->location?->file_path;
+            $is_stub_override = $this->codebase->register_stub_files
+                && $existing_file_path !== null
+                && $existing_file_path !== $this->file_path;
 
             if (($existing_constant !== null && !$is_stub_override)
                 || isset($storage->enum_cases[$const->name->name])

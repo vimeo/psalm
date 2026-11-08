@@ -15,6 +15,9 @@ class Factory
 
 class Foo
 {
+    /** @var positive-int */
+    public const VALUE = 1;
+
     /** @return positive-int */
     public function stubbed(): int
     {
@@ -36,10 +39,4 @@ if (true) {
         {
         }
     }
-}
-
-class ConstHolder
-{
-    /** @var positive-int */
-    public const VALUE = 1;
 }

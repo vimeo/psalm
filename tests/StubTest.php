@@ -1444,7 +1444,7 @@ final class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
 
         $constant = $this->project_analyzer->getCodebase()->classlike_storage_provider
-            ->get('autoloadablestubmerge\\constholder')->constants['VALUE'];
+            ->get('autoloadablestubmerge\\foo')->constants['VALUE'];
         $this->assertSame('int<1, max>', $constant->type?->getId());
     }
 
