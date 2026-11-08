@@ -799,9 +799,11 @@ final class AtomicStaticCallAnalyzer
                 // In case of parent::xxx() call on instance method context (i.e. not static context)
                 // with nonexistent method, we try to forward to instance method call for resolve pseudo method.
 
-                // Use parent type as static type for the method call
+                // Use parent type as static type for the method call, late static as `$this` it is called on
                 $tmp_context = clone $context;
-                $tmp_context->vars_in_scope['$__tmp_parent_var__'] = new Union([$lhs_type_part]);
+                $tmp_context->vars_in_scope['$__tmp_parent_var__'] = new Union([
+                    $lhs_type_part instanceof TNamedObject ? $lhs_type_part->setIsStatic(true) : $lhs_type_part,
+                ]);
 
                 if (self::forwardCallToInstanceMethod(
                     $statements_analyzer,
