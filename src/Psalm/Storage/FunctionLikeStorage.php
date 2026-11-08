@@ -6,6 +6,7 @@ namespace Psalm\Storage;
 
 use Override;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Issue\CodeIssue;
 use Psalm\Type\Union;
@@ -66,6 +67,15 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      */
     public array $suppressed_issues = [];
 
+    /**
+     * The subset of $suppressed_issues written in this function-like's own docblock, keyed by the
+     * char offset of the issue name. Plugins append to $suppressed_issues, never to this, so only
+     * these entries have a source location to report as unused.
+     *
+     * @var array<int, string>
+     */
+    public array $docblock_suppressed_issues = [];
+
     public ?bool $deprecated = null;
 
     /**
@@ -103,6 +113,11 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * @var array<string, Union>
      */
     public array $global_types = [];
+
+    /**
+     * @var array<string, DocblockTypeLocation>
+     */
+    public array $global_type_locations = [];
 
     /**
      * An array holding the class template "as" types.
