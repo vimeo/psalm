@@ -243,6 +243,38 @@ final class TernaryAnalyzer
             return false;
         }
 
+        // a branch that never finishes (throw, exit) leaves the other one as the only way past the ternary
+        $if_type = $stmt->if ? $statements_analyzer->node_data->getType($stmt->if) : null;
+        $else_type = $statements_analyzer->node_data->getType($stmt->else);
+        $if_exits = $if_type !== null && $if_type->isNever();
+        $else_exits = $else_type !== null && $else_type->isNever();
+
+        if ($if_exits !== $else_exits) {
+            $completing_context = $if_exits ? $t_else_context : $if_context;
+
+            foreach ($completing_context->getRedefinedVars($context->vars_in_scope) as $var_id => $type) {
+                $context->vars_in_scope[$var_id] = $type;
+            }
+
+            foreach ($completing_context->assigned_var_ids as $var_id => $_) {
+                if (isset($completing_context->vars_in_scope[$var_id])) {
+                    $context->vars_in_scope[$var_id] = $completing_context->vars_in_scope[$var_id];
+                }
+            }
+
+            $context->vars_possibly_in_scope = [
+                ...$context->vars_possibly_in_scope,
+                ...$completing_context->vars_possibly_in_scope,
+            ];
+
+            $context->cond_referenced_var_ids = [
+                ...$context->cond_referenced_var_ids,
+                ...$completing_context->cond_referenced_var_ids,
+            ];
+
+            return self::setResultType($statements_analyzer, $stmt, $context);
+        }
+
         $assign_var_ifs = $if_context->assigned_var_ids;
         $assign_var_else = $t_else_context->assigned_var_ids;
         $assign_all = array_intersect_key($assign_var_ifs, $assign_var_else);
@@ -300,6 +332,14 @@ final class TernaryAnalyzer
             ...$t_else_context->cond_referenced_var_ids,
         ];
 
+        return self::setResultType($statements_analyzer, $stmt, $context);
+    }
+
+    private static function setResultType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\Ternary $stmt,
+        Context $context,
+    ): bool {
         $lhs_type = null;
         $stmt_cond_type = $statements_analyzer->node_data->getType($stmt->cond);
         if ($stmt->if) {
