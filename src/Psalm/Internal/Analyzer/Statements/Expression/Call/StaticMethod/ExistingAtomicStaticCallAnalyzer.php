@@ -11,10 +11,12 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\FileManipulation;
+use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
@@ -79,7 +81,6 @@ final class ExistingAtomicStaticCallAnalyzer
         ?TemplateResult $inferred_template_result = null,
     ): void {
         $fq_class_name = $method_id->fq_class_name;
-        $method_name_lc = $method_id->method_name;
 
         $codebase = $statements_analyzer->getCodebase();
         $config = $codebase->config;
@@ -152,44 +153,16 @@ final class ExistingAtomicStaticCallAnalyzer
             }
         }
 
-        $found_generic_params = ClassTemplateParamCollector::collect(
+        $found_generic_params = self::collectClassTemplateParams(
+            $statements_analyzer,
             $codebase,
-            $class_storage,
-            $class_storage,
-            $method_name_lc,
+            $stmt,
+            $context,
             $lhs_type_part,
-            !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
+            $method_id,
+            $class_storage,
+            $class_storage,
         );
-
-        if ($found_generic_params
-            && $stmt->class instanceof PhpParser\Node\Name
-            && $stmt->class->getParts() === ['parent']
-            && $context->self
-            && ($self_class_storage = $codebase->classlike_storage_provider->get($context->self))
-            && $self_class_storage->template_extended_params
-        ) {
-            foreach ($self_class_storage->template_extended_params as $template_fq_class_name => $extended_types) {
-                foreach ($extended_types as $type_key => $extended_type) {
-                    if (isset($found_generic_params[$type_key][$template_fq_class_name])) {
-                        $found_generic_params[$type_key][$template_fq_class_name] = $extended_type;
-                        continue;
-                    }
-
-                    foreach ($extended_type->getAtomicTypes() as $t) {
-                        if ($t instanceof TTemplateParam
-                            && isset($found_generic_params[$t->param_name][$t->defining_class])
-                        ) {
-                            $found_generic_params[$type_key][$template_fq_class_name]
-                                = $found_generic_params[$t->param_name][$t->defining_class];
-                        } else {
-                            $found_generic_params[$type_key][$template_fq_class_name]
-                                = $extended_type;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
 
         $template_result = new TemplateResult([], $found_generic_params ?: []);
 
@@ -353,6 +326,41 @@ final class ExistingAtomicStaticCallAnalyzer
                 'method ' . $cased_method_id,
             );
 
+            $declared_return_type = $method_storage->return_type;
+            $signature_return_type = $method_storage->signature_return_type;
+
+            if ($codebase->find_unused_variables
+                && !$stmt->isFirstClassCallable()
+                && !$context->inside_conditional
+                && !$context->inside_general_use
+                && !$context->inside_throw
+                && !$context->inside_assignment
+                && !$context->inside_call
+                && !$context->inside_return
+                && !$context->inside_unset
+                && $method_storage->is_static
+                && $method_storage->isMutationFree()
+                && ($declared_return_type === null
+                    || !($declared_return_type->isVoid() || $declared_return_type->isNever()))
+                && ($signature_return_type === null
+                    || !($signature_return_type->isVoid() || $signature_return_type->isNever()))
+                && Capabilities::allowsAnyOf(Capabilities::MUTATION_FREE, $call_capabilities)
+                && !$method_storage->assertions
+                && !$method_storage->if_true_assertions
+                && !$method_storage->if_false_assertions
+                && !$method_storage->throws
+                && !MethodCallPurityAnalyzer::isCalledForItsTemplatesEffects($method_storage)
+            ) {
+                IssueBuffer::maybeAdd(
+                    new UnusedMethodCall(
+                        'The call to ' . $cased_method_id . ' is not used',
+                        new CodeLocation($statements_analyzer, $stmt_name),
+                        (string) $method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
             if (NoDiscardAnalyzer::isDiscardReported(
                 $context,
                 $method_storage,
@@ -379,7 +387,7 @@ final class ExistingAtomicStaticCallAnalyzer
                 CallAnalyzer::applyAssertionsToContext(
                     $stmt_name,
                     null,
-                    $assertions,
+                    CallAnalyzer::getAssertionsOnArgs($assertions, $method_storage, $stmt->getArgs()),
                     $stmt->getArgs(),
                     $template_result,
                     $context,
@@ -393,7 +401,11 @@ final class ExistingAtomicStaticCallAnalyzer
                     array_map(
                         static fn(Possibilities $assertion): Possibilities =>
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                        $method_storage->if_true_assertions,
+                        CallAnalyzer::getAssertionsOnArgs(
+                            $method_storage->if_true_assertions,
+                            $method_storage,
+                            $stmt->getArgs(),
+                        ),
                     ),
                 );
             }
@@ -404,7 +416,11 @@ final class ExistingAtomicStaticCallAnalyzer
                     array_map(
                         static fn(Possibilities $assertion): Possibilities =>
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                        $method_storage->if_false_assertions,
+                        CallAnalyzer::getAssertionsOnArgs(
+                            $method_storage->if_false_assertions,
+                            $method_storage,
+                            $stmt->getArgs(),
+                        ),
                     ),
                 );
             }
@@ -604,37 +620,15 @@ final class ExistingAtomicStaticCallAnalyzer
                 }
             }
 
-            $context_final = false;
-
-            if ($lhs_type_part instanceof TTemplateParam) {
-                $static_type = $lhs_type_part;
-            } elseif ($lhs_type_part instanceof TTemplateParamClass) {
-                $static_type = new TTemplateParam(
-                    $lhs_type_part->param_name,
-                    $lhs_type_part->as_type
-                        ? new Union([$lhs_type_part->as_type])
-                        : Type::getObject(),
-                    $lhs_type_part->defining_class,
-                );
-            } elseif ($stmt->class instanceof PhpParser\Node\Name
-                && count($stmt->class->getParts()) === 1
-                && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
-                && $lhs_type_part instanceof TNamedObject
-                && $context->self
-            ) {
-                $static_type = $context->self;
-                $context_final = $codebase->classlike_storage_provider->get($context->self)->final;
-            } elseif ($context->calling_method_id !== null) {
-                // differentiate between these cases:
-                //   1. "static" comes from the CALLED static method - use $fq_class_name.
-                //   2. "static" in return type comes from return type of the
-                //   method CALLING the currently analyzed static method - use $context->self.
-                $static_type = self::hasStaticInType($return_type_candidate)
-                    ? $fq_class_name
-                    : $context->self;
-            } else {
-                $static_type = $fq_class_name;
-            }
+            [$static_type, $final] = self::getStaticClassType(
+                $codebase,
+                $stmt,
+                $lhs_type_part,
+                $context,
+                $fq_class_name,
+                $class_storage,
+                $return_type_candidate,
+            );
 
             if ($template_result->lower_bounds) {
                 $return_type_candidate = TypeExpander::expandUnion(
@@ -660,10 +654,7 @@ final class ExistingAtomicStaticCallAnalyzer
                 $class_storage->parent_class,
                 true,
                 false,
-                is_string($static_type)
-                && ($static_type !== $context->self
-                    || $class_storage->final
-                    || $context_final),
+                $final,
             );
 
             $secondary_return_type_location = null;
@@ -694,6 +685,123 @@ final class ExistingAtomicStaticCallAnalyzer
         }
 
         return $return_type_candidate;
+    }
+
+    /**
+     * What `static` stands for in the signature of the method $stmt calls on $fq_class_name, and whether it is that
+     * class exactly
+     *
+     * @return array{string|TNamedObject|TTemplateParam|null, bool}
+     */
+    public static function getStaticClassType(
+        Codebase $codebase,
+        StaticCall $stmt,
+        Atomic $lhs_type_part,
+        Context $context,
+        string $fq_class_name,
+        ClassLikeStorage $class_storage,
+        Type\TypeNode $signature_type,
+    ): array {
+        $context_final = false;
+
+        if ($lhs_type_part instanceof TTemplateParam) {
+            $static_type = $lhs_type_part;
+        } elseif ($lhs_type_part instanceof TTemplateParamClass) {
+            $static_type = new TTemplateParam(
+                $lhs_type_part->param_name,
+                $lhs_type_part->as_type
+                    ? new Union([$lhs_type_part->as_type])
+                    : Type::getObject(),
+                $lhs_type_part->defining_class,
+            );
+        } elseif ($stmt->class instanceof PhpParser\Node\Name
+            && count($stmt->class->getParts()) === 1
+            && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
+            && $lhs_type_part instanceof TNamedObject
+            && $context->self
+        ) {
+            $self_storage = $codebase->classlike_storage_provider->get($context->self);
+            $static_type = ClassAnalyzer::getThisObjectType($self_storage, $context->self);
+            $context_final = $self_storage->final;
+        } elseif ($context->calling_method_id !== null) {
+            // differentiate between these cases:
+            //   1. "static" comes from the CALLED static method - use $fq_class_name.
+            //   2. "static" in return type comes from return type of the
+            //   method CALLING the currently analyzed static method - use $context->self.
+            $static_type = self::hasStaticInType($signature_type)
+                ? $fq_class_name
+                : $context->self;
+        } else {
+            $static_type = $fq_class_name;
+        }
+
+        return [
+            $static_type,
+            $static_type instanceof TNamedObject
+                ? $class_storage->final || $context_final
+                : is_string($static_type)
+                    && ($static_type !== $context->self
+                        || $class_storage->final
+                        || $context_final),
+        ];
+    }
+
+    /**
+     * The class templates of the method $stmt calls, bound to what the class it is called on and, for `parent::`,
+     * the class it is called from extend them with
+     *
+     * @return array<string, non-empty-array<string, Union>>|null
+     */
+    public static function collectClassTemplateParams(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        StaticCall $stmt,
+        Context $context,
+        Atomic $lhs_type_part,
+        MethodIdentifier $method_id,
+        ClassLikeStorage $declaring_class_storage,
+        ClassLikeStorage $class_storage,
+    ): ?array {
+        $found_generic_params = ClassTemplateParamCollector::collect(
+            $codebase,
+            $declaring_class_storage,
+            $class_storage,
+            $method_id->method_name,
+            $lhs_type_part,
+            !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
+        );
+
+        if ($found_generic_params
+            && $stmt->class instanceof PhpParser\Node\Name
+            && $stmt->class->getParts() === ['parent']
+            && $context->self
+            && ($self_class_storage = $codebase->classlike_storage_provider->get($context->self))
+            && $self_class_storage->template_extended_params
+        ) {
+            foreach ($self_class_storage->template_extended_params as $template_fq_class_name => $extended_types) {
+                foreach ($extended_types as $type_key => $extended_type) {
+                    if (isset($found_generic_params[$type_key][$template_fq_class_name])) {
+                        $found_generic_params[$type_key][$template_fq_class_name] = $extended_type;
+                        continue;
+                    }
+
+                    foreach ($extended_type->getAtomicTypes() as $t) {
+                        if ($t instanceof TTemplateParam
+                            && isset($found_generic_params[$t->param_name][$t->defining_class])
+                        ) {
+                            $found_generic_params[$type_key][$template_fq_class_name]
+                                = $found_generic_params[$t->param_name][$t->defining_class];
+                        } else {
+                            $found_generic_params[$type_key][$template_fq_class_name]
+                                = $extended_type;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $found_generic_params;
     }
 
     /**
