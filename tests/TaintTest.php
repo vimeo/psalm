@@ -885,6 +885,25 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'conditionallyEscapedTaintPassedTrueInstanceMethod' => [
+                'code' => '<?php
+                    class U {
+                        /**
+                         * @psalm-taint-escape ($escape is true ? "html"|"has_quotes" : null)
+                         */
+                        public function foo(string $string, bool $escape = true): string {
+                            if ($escape) {
+                                $string = htmlspecialchars($string);
+                            }
+
+                            return $string;
+                        }
+                    }
+
+                    $u = new U();
+                    echo $u->foo($_GET["foo"], true);
+                    echo $u->foo($_GET["foo"]);',
+            ],
             'dontTaintTheOffsetSetOfAnItemPassedByReference' => [
                 'code' => '<?php // --taint-analysis
                     /** @implements ArrayAccess<string, list<int>> */
@@ -5513,6 +5532,60 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'conditionallyEscapedTaintPassedFalseInstanceMethod' => [
+                'code' => '<?php
+                    class U {
+                        /**
+                         * @psalm-taint-escape ($escape is true ? "html" : null)
+                         */
+                        public function foo(string $string, bool $escape = true): string {
+                            return $string;
+                        }
+                    }
+
+                    echo (new U())->foo($_GET["foo"], false);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionallyEscapedTaintPassedTrueToAnInstanceMethodKeepsTheOtherTaints' => [
+                'code' => '<?php
+                    class U {
+                        /** @psalm-taint-escape ($escape is true ? "html" : null) */
+                        public function escape(string $s, bool $escape = true): string {
+                            return $s;
+                        }
+                    }
+
+                    shell_exec((new U())->escape((string) $_GET["x"], true));',
+                'error_message' => 'TaintedShell',
+            ],
+            'conditionallyEscapedTaintOfAnUndecidedConditionToAStaticCall' => [
+                'code' => '<?php
+                    class U {
+                        /** @psalm-taint-escape ($type is "expression" ? null : "shell") */
+                        public static function escape(string $s, string $type): string {
+                            return $s;
+                        }
+                    }
+
+                    function run(string $type): void {
+                        shell_exec(U::escape((string) $_GET["x"], $type));
+                    }',
+                'error_message' => 'TaintedShell',
+            ],
+            'conditionallyEscapedTaintOfAnUndecidedConditionToAnInstanceMethod' => [
+                'code' => '<?php
+                    class U {
+                        /** @psalm-taint-escape ($type is "expression" ? null : "shell") */
+                        public function escape(string $s, string $type): string {
+                            return $s;
+                        }
+                    }
+
+                    function run(U $u, string $type): void {
+                        shell_exec($u->escape((string) $_GET["x"], $type));
+                    }',
+                'error_message' => 'TaintedShell',
+            ],
             'taintAnItemOfAMixedValuePassedByReference' => [
                 'code' => '<?php // --taint-analysis
                     /** @param mixed $m */
