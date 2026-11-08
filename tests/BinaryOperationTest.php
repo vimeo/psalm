@@ -1857,6 +1857,34 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'bcMathNumberPlusNonNumericString' => [
+                'code' => '<?php
+                    namespace BcMath {
+                        final class Number {
+                            public function __construct(string $number) {}
+                        }
+                    }
+
+                    namespace {
+                        $a = new \\BcMath\\Number("2");
+                        $b = $a + "abc";
+                    }',
+                'error_message' => 'InvalidOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - Cannot add BcMath\\Number to',
+            ],
+            'bcMathNumberPlusFloat' => [
+                'code' => '<?php
+                    namespace BcMath {
+                        final class Number {
+                            public function __construct(string $number) {}
+                        }
+                    }
+
+                    namespace {
+                        $a = new \\BcMath\\Number("2");
+                        $b = $a + 0.5;
+                    }',
+                'error_message' => 'InvalidOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - Cannot add BcMath\\Number to float',
+            ],
             'shiftLeftByANegativeNumber' => [
                 'code' => '<?php
                     $a = 1 << -1;
@@ -2030,5 +2058,44 @@ final class BinaryOperationTest extends TestCase
                 'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
+    }
+
+    public function testBcMathNumberOperations(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace BcMath {
+                    final class Number {
+                        public function __construct(string $number) {}
+                    }
+                }
+
+                namespace {
+                    $a = new \BcMath\Number("2");
+                    $b = new \BcMath\Number("4");
+                    $c = $a + $b;
+                    $d = $a - 1;
+                    $e = 2 * $b;
+                    $f = $a / "3";
+                    $g = $a % $b;
+                    $h = $a ** 2;
+                }',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+
+        $actual_vars = [];
+        foreach (['$c', '$d', '$e', '$f', '$g', '$h'] as $var) {
+            $actual_vars[$var] = (string) $context->vars_in_scope[$var];
+        }
+
+        $this->assertSame(
+            ['$c' => 'BcMath\\Number', '$d' => 'BcMath\\Number', '$e' => 'BcMath\\Number',
+                '$f' => 'BcMath\\Number', '$g' => 'BcMath\\Number', '$h' => 'BcMath\\Number'],
+            $actual_vars,
+        );
     }
 }
