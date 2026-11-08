@@ -11,6 +11,10 @@ are relative to this skill's directory.
 
 ## Workflow
 
+When `composer.json` has a script running Psalm (its config outside the root, e.g. `tools/psalm/psalm.xml`
+of a bamarni-bin tool), use it wherever this skill says `vendor/bin/psalm`, with arguments after `--`:
+`composer psalm -- --output-format=compact src/Foo.php`.
+
 1. **Baseline.** Run the whole project once, with the report in the directory
    `php -r "echo sys_get_temp_dir();"` prints:
 
@@ -38,15 +42,16 @@ vendor/bin/psalm --no-progress --output-format=compact src/Foo.php src/Bar.php
   `PossiblyUnusedMethod`, …) and taint paths that cross files.
 - Exit code `0`: no issues. `2`: issues found. `1`: Psalm itself failed (bad config, crash): read the
   message, it says nothing about the code. Judge a run by its exit code, read straight after the command:
-  `compact` prints nothing both on success and when PHP crashes, and a pipe such as `| tail` reports its
-  own exit code instead.
+  `compact` and `count` print nothing both on success and when PHP crashes, and a pipe such as `| tail`
+  reports its own exit code instead.
 - Many issues: `--report=psalm.json` writes a JSON report next to the normal output, then
   `php scripts/summary.php psalm.json` prints counts per type and file; `--type=…`, `--file=…`,
   `--changed` narrow it down (see `--help`).
 - `php scripts/explain.php IssueType` prints the issue's documentation: what it means and how to fix it.
 - `SECURITY` lines are taint findings, reported in the same run as type errors. Reading their source → sink
   path: [references/taint.md](references/taint.md).
-- After changing `psalm.xml`, stubs or `composer.json`, add `--no-cache` once.- Other output formats (`count`, `json-summary`, `by-issue-level`), cache and threads, `--stats`,
+- After changing `psalm.xml`, stubs or `composer.json`, add `--no-cache` once.
+- Other output formats (`count`, `json-summary`, `by-issue-level`), cache and threads, `--stats`,
   `--show-info`, `--find-references-to`: [references/cli.md](references/cli.md).
 
 ## Fixing issues

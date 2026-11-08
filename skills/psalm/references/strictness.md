@@ -1,9 +1,24 @@
 # Raising strictness
 
-Lowering `errorLevel` by one, or turning on a stricter option (`ensureOverrideAttribute`, `findUnusedCode`).
+Lowering `errorLevel` by one, or turning on a stricter option ([Stricter options](#stricter-options)).
 Which issue types each level adds: `docs/running_psalm/error_levels.md`. Go one level at a time; each level
 is its own pass through the phases below. Tightening the types of code that already passes, with the level
 unchanged: [Tightening passing types](#tightening-passing-types).
+
+## Stricter options
+
+`psalm.xml` attributes beyond `errorLevel` and their defaults. An option on by default is off only where
+`psalm.xml` sets it to `"false"`; every option: `docs/running_psalm/configuration.md`.
+
+| Attribute | Default |
+|---|---|
+| `strictBinaryOperands`, `disableSuppressAll`, `ensureOverrideAttribute`, `sealAllMethods`, `sealAllProperties`, `findUnusedCode`, `findUnusedBaselineEntry`, `findUnusedIssueHandlerSuppression` | on |
+| `findUnusedPsalmSuppress`, `ensureArrayStringOffsetsExist`, `ensureArrayIntOffsetsExist`, `strictNullableComparison`, `restrictReturnTypes`, `disallowLiteralKeysOnUnshapedArrays`, `checkForThrowsDocblock` | off |
+| `reportMixedIssues` | on at `errorLevel` 1 and 2 |
+| `findUnusedVariablesAndParams` | copies `findUnusedCode` when that is set; otherwise on at `errorLevel="1"` unless `reportMixedIssues="false"` |
+
+The last row is the trap: `findUnusedCode="false"`, common in libraries, also turns unused variables and
+parameters off at every level — set `findUnusedVariablesAndParams="true"` to keep them.
 
 ## Phase 0 — Facts
 
