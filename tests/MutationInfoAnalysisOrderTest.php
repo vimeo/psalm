@@ -41,6 +41,7 @@ final class MutationInfoAnalysisOrderTest extends TestCase
         $this->project_analyzer->trackTaintedInputs();
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
+        $config->suggest_purity_annotations = true;
         $config->setCustomErrorLevel('MissingPureAnnotation', Config::REPORT_INFO);
 
         $files = [
@@ -94,7 +95,7 @@ final class MutationInfoAnalysisOrderTest extends TestCase
         // Base::run() and Base::value() call, or are called by, what any child may override: nothing to annotate
         self::assertSame(
             [
-                'MissingPureAnnotation - src' . DIRECTORY_SEPARATOR . 'Child.php - value must be marked @psalm-pure'
+                'MissingPureAnnotation - src' . DIRECTORY_SEPARATOR . 'Child.php - value could be marked @psalm-pure'
                     . ' to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this',
             ],
             $messages,
