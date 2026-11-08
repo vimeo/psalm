@@ -359,28 +359,6 @@ return array (
         'flags=' => 'int|null',
       ),
     ),
-    'eventhttprequest::gethost' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-      ),
-    ),
-    'eventhttprequest::geturi' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-      ),
-    ),
     'iterator_count' => 
     array (
       'old' => 
