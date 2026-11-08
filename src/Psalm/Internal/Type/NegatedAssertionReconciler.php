@@ -232,8 +232,10 @@ final class NegatedAssertionReconciler extends Reconciler
         } elseif (!$is_equality) {
             $assertion_type = $assertion->getAtomicType();
 
-            // if there wasn't a direct hit, go deeper, eliminating subtypes
-            if ($assertion_type && !$existing_var_type->removeType($assertion_type->getKey())) {
+            // go deeper than the direct hit, eliminating subtypes
+            if ($assertion_type) {
+                $removed_directly = $existing_var_type->removeType($assertion_type->getKey());
+
                 if ($assertion_type instanceof TNamedObject) {
                     foreach ($existing_var_type->getAtomicTypes() as $part_name => $existing_var_type_part) {
                         if (!$existing_var_type_part->isObjectType()) {
@@ -261,14 +263,16 @@ final class NegatedAssertionReconciler extends Reconciler
                             ) {
                                 $existing_var_type->removeType($part_name);
                             }
-                        } elseif (AtomicTypeComparator::isContainedBy(
-                            $codebase,
-                            $assertion_type,
-                            $existing_var_type_part,
-                            false,
-                            false,
-                            $reverse_comparison_result,
-                        )) {
+                        } elseif (!$removed_directly
+                            && AtomicTypeComparator::isContainedBy(
+                                $codebase,
+                                $assertion_type,
+                                $existing_var_type_part,
+                                false,
+                                false,
+                                $reverse_comparison_result,
+                            )
+                        ) {
                             if (!$reverse_comparison_result->type_variable_lower_bounds
                                 && !$reverse_comparison_result->type_variable_upper_bounds
                             ) {

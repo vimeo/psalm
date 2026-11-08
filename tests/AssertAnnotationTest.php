@@ -3258,6 +3258,22 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'negatedInstanceofOfAClosedClassEliminatesItsInheritors' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-inheritors FooClass|BarClass
+                     */
+                    class BaseClass {}
+                    class FooClass extends BaseClass {}
+                    class BarClass extends BaseClass {}
+
+                    function f(BaseClass $v): void {
+                        if (!$v instanceof BaseClass) {
+                            echo "impossible";
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'assertInstanceOfMultipleInterfaces' => [
                 'code' => '<?php
                     class A {
