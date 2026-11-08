@@ -400,6 +400,52 @@ final class MethodSignatureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'abstractConstructorCompatibleChild' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    class B extends A {
+                        public function __construct(int $a, int $b = 0) {}
+                    }
+                    new B(1);',
+            ],
+            'nonAbstractConstructorMayDiffer' => [
+                'code' => '<?php
+                    abstract class A {
+                        public function __construct(int $a) {}
+                    }
+                    class B extends A {
+                        public function __construct(string $a) {}
+                    }
+                    new B("a");',
+            ],
+            'staticReturnOfAnInheritedMethodSatisfiesAnInterface' => [
+                'code' => '<?php
+                    interface ModelInterface {
+                        public function setId(?string $value): static;
+                    }
+
+                    abstract class BaseModel {
+                        public function setId(?string $value): static {
+                            return $this;
+                        }
+                    }
+
+                    class ConcreteModel extends BaseModel implements ModelInterface {}
+
+                    interface SelfInterface {
+                        public function make(): self;
+                    }
+
+                    class Maker implements SelfInterface {
+                        public function make(): static {
+                            return $this;
+                        }
+                    }
+
+                    class ConcreteMaker extends Maker implements SelfInterface {}',
+            ],
             'overrideDateTimeDiffWithTheNativeParameterName' => [
                 'code' => '<?php
                     class Date extends DateTime {
@@ -1403,6 +1449,23 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticReturnOfAnInheritedMethodDoesNotSatisfyAnUnrelatedInterface' => [
+                'code' => '<?php
+                    interface OtherInterface {
+                        public function make(): Other;
+                    }
+
+                    class Other {}
+
+                    class Maker {
+                        public function make(): static {
+                            return $this;
+                        }
+                    }
+
+                    class ConcreteMaker extends Maker implements OtherInterface {}',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
             'returnTypeWillChangeDoesNotSuppressNativeContract' => [
                 'code' => '<?php
                     final class Connection extends mysqli {
@@ -2023,6 +2086,37 @@ final class MethodSignatureTest extends TestCase
 
                     class BadAChild extends A {
                         public function __construct(string $s) {}
+                    }',
+                'error_message' => 'ConstructorSignatureMismatch',
+            ],
+            'abstractConstructorParamTypeMismatch' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    class B extends A {
+                        public function __construct(string $a) {}
+                    }',
+                'error_message' => 'ConstructorSignatureMismatch',
+            ],
+            'abstractConstructorMoreRequiredParams' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    class B extends A {
+                        public function __construct(int $a, int $b) {}
+                    }',
+                'error_message' => 'ConstructorSignatureMismatch',
+            ],
+            'abstractConstructorInGrandparent' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    abstract class B extends A {}
+                    class C extends B {
+                        public function __construct(string $a) {}
                     }',
                 'error_message' => 'ConstructorSignatureMismatch',
             ],
