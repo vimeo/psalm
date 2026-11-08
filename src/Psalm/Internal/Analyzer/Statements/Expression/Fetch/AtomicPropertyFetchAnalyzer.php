@@ -198,6 +198,7 @@ final class AtomicPropertyFetchAnalyzer
                 $codebase,
                 $stmt,
                 $lhs_type_part,
+                $prop_name,
                 $intersection_types,
                 $class_exists,
                 $interface_exists,
@@ -1363,6 +1364,7 @@ final class AtomicPropertyFetchAnalyzer
         Codebase $codebase,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         TNamedObject $lhs_type_part,
+        string $prop_name,
         array $intersection_types,
         bool &$class_exists,
         bool &$interface_exists,
@@ -1423,8 +1425,7 @@ final class AtomicPropertyFetchAnalyzer
                 || in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name))
                 || $intersects_with_enum;
 
-            $has_get_hook = $stmt->name instanceof PhpParser\Node\Identifier
-                && self::interfaceDeclaresPropertyHook($codebase, $lhs_type_part, $stmt->name->name, false);
+            $has_get_hook = self::interfaceDeclaresPropertyHook($codebase, $lhs_type_part, $prop_name, false);
 
             if (!$class_exists && !$is_enum_interface && !$has_get_hook && !$intersects_with_shape_property) {
                 if (IssueBuffer::accepts(
@@ -1468,8 +1469,7 @@ final class AtomicPropertyFetchAnalyzer
     }
 
     /**
-     * Since PHP 8.4 interfaces can declare hooked properties. Every interface of an intersection is checked,
-     * as narrowing puts the declaring interface after the original type (FieldInterface&LabelableInterface).
+     * Since PHP 8.4 interfaces can declare hooked properties; checks every interface of an intersection.
      */
     public static function interfaceDeclaresPropertyHook(
         Codebase $codebase,

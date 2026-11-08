@@ -857,6 +857,19 @@ final class InterfaceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'interfacePropertyWithGetHookFetchedByLiteralName' => [
+                'code' => '<?php
+                    interface I {
+                        public string $value { get; }
+                    }
+
+                    function test(I $r): string {
+                        return $r->{"value"};
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
