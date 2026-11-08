@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\FileManipulation;
+use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
@@ -675,8 +676,9 @@ final class ExistingAtomicStaticCallAnalyzer
             && $lhs_type_part instanceof TNamedObject
             && $context->self
         ) {
-            $static_type = new TNamedObject($context->self);
-            $context_final = $codebase->classlike_storage_provider->get($context->self)->final;
+            $self_storage = $codebase->classlike_storage_provider->get($context->self);
+            $static_type = ClassAnalyzer::getThisObjectType($self_storage, $context->self);
+            $context_final = $self_storage->final;
         } elseif ($context->calling_method_id !== null) {
             // differentiate between these cases:
             //   1. "static" comes from the CALLED static method - use $fq_class_name.

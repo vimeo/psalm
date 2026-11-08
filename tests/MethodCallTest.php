@@ -234,6 +234,46 @@ final class MethodCallTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MissingOverrideAttribute'],
             ],
+            'selfStaticAndParentCallsKeepTheTypeArgumentsOfAStaticReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    class Collection {
+                        /**
+                         * @template TMakeKey of array-key
+                         * @template TMakeValue
+                         * @param array<TMakeKey, TMakeValue> $items
+                         * @return static<TMakeKey, TMakeValue>
+                         */
+                        public static function make(array $items = []): static {
+                            /** @psalm-suppress UnsafeInstantiation */
+                            return new static();
+                        }
+
+                        public function check(): void {
+                            $self = self::make(["a" => 1]);
+                            /** @psalm-check-type-exact $self = Collection<\'a\', 1>&static */;
+                            $static = static::make(["a" => 1]);
+                            /** @psalm-check-type-exact $static = Collection<\'a\', 1>&static */;
+                        }
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @extends Collection<TKey, TValue>
+                     */
+                    class SubCollection extends Collection {
+                        public function again(): void {
+                            $parent = parent::make(["a" => 1]);
+                            /** @psalm-check-type-exact $parent = SubCollection<\'a\', 1>&static */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ClassMustBeFinal'],
+            ],
             'parentSelfAndStaticCallsReturnTheStaticTypeOfTheCallingClass' => [
                 'code' => '<?php
                     abstract class Core {
