@@ -823,6 +823,23 @@ final class InterfaceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'interfaceExtendsUndefinedInterface' => [
+                'code' => '<?php
+                    interface Foo extends Bar {}',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:43',
+            ],
+            'interfaceExtendsUndefinedInterfaceAfterDefinedOne' => [
+                'code' => '<?php
+                    interface Ok {}
+                    interface Foo extends Ok, Missing {}',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:47',
+            ],
+            'interfaceExtendsUndefinedInterfaceBeforeDefinedOne' => [
+                'code' => '<?php
+                    interface Ok {}
+                    interface Foo extends Missing, Ok {}',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:43',
+            ],
             'invalidInterface' => [
                 'code' => '<?php
                     class C2 implements A { }',
