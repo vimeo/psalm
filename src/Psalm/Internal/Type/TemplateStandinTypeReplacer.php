@@ -140,7 +140,7 @@ final class TemplateStandinTypeReplacer
 
             // a literal or a more specific type of one the union has, `'a'` for `string`, is not the template's
             // either, unless it is all that is left
-            $template_free_input_type = $new_input_type->getBuilder();
+            $template_free_input_type = $new_input_type->freeze()->getBuilder();
 
             foreach ($original_atomic_types as $original_atomic_type) {
                 if ($original_atomic_type instanceof TTemplateParam
