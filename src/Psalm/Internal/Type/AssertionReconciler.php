@@ -739,6 +739,27 @@ final class AssertionReconciler extends Reconciler
         );
     }
 
+    /**
+     * The object half of an iterable is a Traversable, which can be narrowed to any of its subclasses
+     *
+     * @return array{Atomic, Atomic}
+     */
+    private static function narrowIterableToItsTraversableHalf(
+        Codebase $codebase,
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+    ): array {
+        if ($type_1_atomic instanceof TIterable && $type_2_atomic instanceof TNamedObject) {
+            $type_1_atomic = AtomicTypeComparator::getTraversableHalf($codebase, $type_1_atomic, $type_2_atomic)
+                ?? $type_1_atomic;
+        } elseif ($type_2_atomic instanceof TIterable && $type_1_atomic instanceof TNamedObject) {
+            $type_2_atomic = AtomicTypeComparator::getTraversableHalf($codebase, $type_2_atomic, $type_1_atomic)
+                ?? $type_2_atomic;
+        }
+
+        return [$type_1_atomic, $type_2_atomic];
+    }
+
     private static function filterAtomicWithAnother(
         Atomic &$type_1_atomic,
         Atomic $type_2_atomic,
@@ -751,6 +772,12 @@ final class AssertionReconciler extends Reconciler
             $any_scalar_type_match_found = true;
             return $type_2_atomic;
         }
+
+        [$type_1_atomic, $type_2_atomic] = self::narrowIterableToItsTraversableHalf(
+            $codebase,
+            $type_1_atomic,
+            $type_2_atomic,
+        );
 
         if ($type_1_atomic instanceof TNamedObject) {
             $type_1_atomic = $type_1_atomic->setIsStatic(false);
