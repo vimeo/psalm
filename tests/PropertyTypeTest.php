@@ -669,6 +669,42 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticCallOfAnInterfaceMethodInAConstructorHasItsReturnType' => [
+                'code' => '<?php
+                    interface Limits {
+                        public static function minimum(): int;
+                    }
+
+                    abstract class Value implements Limits {
+                        public int $value;
+
+                        public function __construct(int $value) {
+                            $minimum = self::minimum();
+                            $static_minimum = static::minimum();
+
+                            if ($value < $minimum || $value < $static_minimum) {
+                                throw new InvalidArgumentException((string) $minimum);
+                            }
+
+                            $this->value = $value;
+                        }
+                    }',
+            ],
+            'staticMethodWithABodyCalledInAConstructorKeepsItsReturnType' => [
+                'code' => '<?php
+                    class Value {
+                        public int $value;
+
+                        public function __construct() {
+                            $default = self::defaultValue();
+                            $this->value = $default;
+                        }
+
+                        public static function defaultValue(): int {
+                            return 1;
+                        }
+                    }',
+            ],
             'assignPrivatePropertyOfCurrentClassOnChildInstance' => [
                 'code' => '<?php
                     class A {
@@ -3121,6 +3157,21 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'propertyNotInitializedByAnInterfaceStaticMethodCalledInTheConstructor' => [
+                'code' => '<?php
+                    interface Limits {
+                        public static function minimum(): int;
+                    }
+
+                    abstract class Value implements Limits {
+                        public int $value;
+
+                        public function __construct() {
+                            echo self::minimum();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
             'assignPrivatePropertyOfCurrentClassOnChildInstanceChecksItsType' => [
                 'code' => '<?php
                     class A {
