@@ -124,6 +124,75 @@ final class Pool
         ?Closure $task_done_closure = null,
         ?Closure $message_handler = null,
     ): void {
+        await($this->dispatch($process_task_data_iterator, $main_task, $task_done_closure, $message_handler));
+    }
+
+    /**
+     * Like {@see run()} followed by {@see runAllThenKill()}, except that each worker is given $final_task as soon as
+     * it has nothing left to do, instead of once the slowest worker is done. The idle workers therefore build and
+     * write their results while the others are still busy. This returns only once every main task and final task has
+     * finished and the workers are killed, so unpacking and merging the results starts after the slowest worker is
+     * done. The pool cannot be used again afterwards.
+     *
+     * @template TResult
+     * @template TReceive
+     * @template TSend
+     * @template TFinal
+     * @param array<string> $process_task_data_iterator
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint
+     * @param class-string<Task<TResult, TReceive, TSend>> $main_task
+     * @param Task<TFinal, void, void> $final_task
+     * @param null|Closure(TResult $data):void $task_done_closure
+     * @return Generator<int, TFinal, mixed, void> The results of the final task, one per worker
+     */
+    public function runThenAllThenKill(
+        array $process_task_data_iterator,
+        string $main_task,
+        Task $final_task,
+        ?Closure $task_done_closure = null,
+    ): Generator {
+        $results = $this->dispatch($process_task_data_iterator, $main_task, $task_done_closure, null);
+
+        // Every task has been handed out, so a worker only becomes available once it has finished its last one.
+        $results []= $submitted = async(function () use ($final_task): array {
+            gc_collect_cycles();
+            // A pooled worker returns to the pool as soon as it is released and its final task is quick to finish,
+            // so every worker is kept until all of them have been given theirs.
+            $workers = [];
+            $final_futures = [];
+            $file_result_task = new FileResultTask($final_task);
+            for ($x = 0; $x < $this->threads; $x++) {
+                $workers []= $worker = $this->pool->getWorker();
+                $final_futures []= $worker->submit($file_result_task)->getFuture();
+            }
+
+            return [$workers, $final_futures];
+        });
+
+        await($results);
+
+        return $this->unpackAfterKill($submitted->await()[1]);
+    }
+
+    /**
+     * Hands every task data item to the next idle worker, blocking while all workers are busy.
+     *
+     * @template TResult
+     * @template TReceive
+     * @template TSend
+     * @param array<string> $process_task_data_iterator
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint
+     * @param class-string<Task<TResult, TReceive, TSend>> $main_task
+     * @param null|Closure(TResult $data):void $task_done_closure
+     * @param null|Closure(TSend):TReceive $message_handler
+     * @return list<Future<mixed>> The futures of the tasks (and message pumps) still to be awaited
+     */
+    private function dispatch(
+        array $process_task_data_iterator,
+        string $main_task,
+        ?Closure $task_done_closure,
+        ?Closure $message_handler,
+    ): array {
         $total = count($process_task_data_iterator);
         $this->progress->debug("Processing ".$total." tasks...".PHP_EOL);
 
@@ -157,7 +226,8 @@ final class Pool
                 }
             });
         }
-        await($results);
+
+        return $results;
     }
 
     /**
@@ -238,7 +308,20 @@ final class Pool
      */
     public function runAllThenKill(Task $task): Generator
     {
-        [$errors, $paths] = awaitAll($this->runAll(new FileResultTask($task)));
+        return $this->unpackAfterKill($this->runAll(new FileResultTask($task)));
+    }
+
+    /**
+     * Waits for the workers to finish writing their result files, kills them, then hands the results back one at a
+     * time.
+     *
+     * @template T
+     * @param array<int, Future<string>> $futures The path of each worker's result file
+     * @return Generator<int, T, mixed, void>
+     */
+    private function unpackAfterKill(array $futures): Generator
+    {
+        [$errors, $paths] = awaitAll($futures);
         $this->pool->kill();
         ksort($paths);
 

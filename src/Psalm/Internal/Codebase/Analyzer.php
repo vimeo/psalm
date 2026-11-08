@@ -316,12 +316,17 @@ final class Analyzer
 
             // Wait for all tasks to complete and collect the results.
             await($pool->runAll(new InitAnalyzerTask));
-            $pool->run($this->files_to_analyze, AnalyzerTask::class, $task_done_closure);
+            $forked_pool_data = $pool->runThenAllThenKill(
+                $this->files_to_analyze,
+                AnalyzerTask::class,
+                new ShutdownAnalyzerTask,
+                $task_done_closure,
+            );
             $this->progress->debug('Collecting forked analysis results' . "\n");
             $this->progress->startPhase(Phase::MERGING_THREAD_RESULTS);
             $this->progress->expand($pool->threads);
 
-            foreach ($pool->runAllThenKill(new ShutdownAnalyzerTask) as $pool_data) {
+            foreach ($forked_pool_data as $pool_data) {
                 IssueBuffer::addIssues($pool_data['issues']);
                 IssueBuffer::addFixableIssues($pool_data['fixable_issue_counts']);
 
