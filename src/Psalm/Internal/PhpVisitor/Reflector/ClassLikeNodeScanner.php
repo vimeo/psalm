@@ -2244,6 +2244,24 @@ final class ClassLikeNodeScanner
                             true,
                         ),
                     );
+                    $hook_param_type = $hook->params[0]->type ?? null;
+                    if (!$hook_storage->is_get
+                        && ($hook_param_type instanceof PhpParser\Node\Identifier
+                            || $hook_param_type instanceof PhpParser\Node\Name
+                            || $hook_param_type instanceof PhpParser\Node\NullableType
+                            || $hook_param_type instanceof PhpParser\Node\UnionType
+                            || $hook_param_type instanceof PhpParser\Node\IntersectionType)
+                    ) {
+                        $hook_storage->param_type = TypeHintResolver::resolve(
+                            $hook_param_type,
+                            new CodeLocation($this->file_scanner, $hook_param_type),
+                            $this->codebase,
+                            $this->file_storage,
+                            $this->storage,
+                            $this->aliases,
+                            $this->codebase->analysis_php_version_id,
+                        );
+                    }
                     if ($hook_storage->is_get) {
                         $property_storage->hook_get = $hook_storage;
                     } else {

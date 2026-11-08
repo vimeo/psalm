@@ -266,6 +266,10 @@ final class Properties
                 if (isset($class_storage->pseudo_property_set_types['$'.$property_name])) {
                     return $class_storage->pseudo_property_set_types['$'.$property_name];
                 }
+                $setter_param_type = $storage->hook_set?->param_type;
+                if ($declaring_class_storage->is_interface && $setter_param_type !== null) {
+                    return $setter_param_type;
+                }
             } else {
                 if (isset($class_storage->pseudo_property_get_types['$'.$property_name])) {
                     return $class_storage->pseudo_property_get_types['$'.$property_name];

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
+use Psalm\Type\Union;
 
 /**
  * Storage for property hooks ('get' & 'set') introduced in PHP 8.4
@@ -16,6 +17,8 @@ final class PropertyHookStorage
 {
     use UnserializeMemoryUsageSuppressionTrait;
 
+    public ?Union $param_type = null;
+
     /**
      * @psalm-mutation-free
      */
@@ -24,6 +27,8 @@ final class PropertyHookStorage
         public bool $is_final,
         public bool $by_ref,
         public ?CodeLocation $location,
+        ?Union $param_type = null,
     ) {
+        $this->param_type = $param_type;
     }
 }
