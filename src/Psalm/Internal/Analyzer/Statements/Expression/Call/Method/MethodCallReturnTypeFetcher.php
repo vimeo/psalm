@@ -29,7 +29,6 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
-use Psalm\Internal\TypeVisitor\BoundStaticMarker;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -43,7 +42,6 @@ use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
 
-use function array_map;
 use function count;
 use function strtolower;
 
@@ -924,7 +922,6 @@ final class MethodCallReturnTypeFetcher
         $closure_type = new Union([$closure]);
 
         if ($bounds_result->lower_bounds) {
-            $bounds_result = self::withCallerStaticsBound($bounds_result);
             $closure_type = TemplateInferredTypeReplacer::replace(
                 TypeExpander::expandUnion($codebase, $closure_type, null, null, null),
                 $bounds_result,
@@ -1047,55 +1044,11 @@ final class MethodCallReturnTypeFetcher
 
             $return_type_candidate = TemplateInferredTypeReplacer::replace(
                 $return_type_candidate,
-                self::withCallerStaticsBound($template_result),
+                $template_result,
                 $codebase,
             );
         }
 
         return $return_type_candidate;
-    }
-
-    /**
-     * The template result with the late static types of the caller in its bounds marked as bound
-     * ({@see BoundStaticMarker}): the receiver of the call must not bind them again.
-     */
-    public static function withCallerStaticsBound(TemplateResult $template_result): TemplateResult
-    {
-        $marker = new BoundStaticMarker();
-        $lower_bounds = $template_result->lower_bounds;
-
-        foreach ($template_result->lower_bounds as $template_name => $bounds_by_class) {
-            foreach ($bounds_by_class as $defining_class => $bounds) {
-                $marked_bounds = array_map(
-                    static function (TemplateBound $bound) use ($marker): TemplateBound {
-                        $type = $bound->type;
-                        $marker->traverse($type);
-
-                        if ($type === $bound->type) {
-                            return $bound;
-                        }
-
-                        $bound = clone $bound;
-                        $bound->type = $type;
-
-                        return $bound;
-                    },
-                    $bounds,
-                );
-
-                if ($marked_bounds !== $bounds) {
-                    $lower_bounds[$template_name][$defining_class] = $marked_bounds;
-                }
-            }
-        }
-
-        if ($lower_bounds === $template_result->lower_bounds) {
-            return $template_result;
-        }
-
-        $template_result = clone $template_result;
-        $template_result->lower_bounds = $lower_bounds;
-
-        return $template_result;
     }
 }

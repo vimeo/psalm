@@ -802,7 +802,7 @@ final class AtomicStaticCallAnalyzer
                 // Use parent type as static type for the method call, late static as `$this` it is called on
                 $tmp_context = clone $context;
                 $tmp_context->vars_in_scope['$__tmp_parent_var__'] = new Union([
-                    $lhs_type_part instanceof TNamedObject ? $lhs_type_part->setIsStatic(true) : $lhs_type_part,
+                    $lhs_type_part instanceof TNamedObject ? $lhs_type_part->setIsStatic(true, true) : $lhs_type_part,
                 ]);
 
                 if (self::forwardCallToInstanceMethod(

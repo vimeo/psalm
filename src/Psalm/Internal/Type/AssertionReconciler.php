@@ -735,7 +735,7 @@ final class AssertionReconciler extends Reconciler
                 $atomic_comparison_results->type_coerced ?? false,
             );
 
-            return $type_1_is_static && $refined instanceof TNamedObject ? $refined->setIsStatic(true) : $refined;
+            return $type_1_is_static && $refined instanceof TNamedObject ? $refined->setIsStatic(true, true) : $refined;
         }
 
         $atomic_comparison_results = new TypeComparisonResult();
@@ -757,7 +757,7 @@ final class AssertionReconciler extends Reconciler
                 $atomic_comparison_results->type_coerced ?? false,
             );
 
-            return $type_1_is_static && $refined instanceof TNamedObject ? $refined->setIsStatic(true) : $refined;
+            return $type_1_is_static && $refined instanceof TNamedObject ? $refined->setIsStatic(true, true) : $refined;
         }
 
         $matching_atomic_type = null;
@@ -781,7 +781,7 @@ final class AssertionReconciler extends Reconciler
             && $codebase->classExists($type_2_atomic->value)
             && $codebase->classlikes->classExtends($type_2_atomic->value, $type_1_atomic->value)
         ) {
-            return $type_2_atomic->setIsStatic(true);
+            return $type_2_atomic->setIsStatic(true, true);
         }
 
         /*if ($type_2_atomic instanceof TKeyedArray

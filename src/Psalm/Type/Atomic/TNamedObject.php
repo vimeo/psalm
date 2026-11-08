@@ -29,6 +29,10 @@ class TNamedObject extends Atomic
 
     public string $value;
 
+    /**
+     * Whether a late static type is bound to its class already. Only `X&static` in a signature isn't: the receiver of
+     * a call binds it. One built in analysis (`$this`, `static::class`) is the caller's, bound from the start.
+     */
     public bool $is_static_resolved = false;
 
     /**
@@ -50,6 +54,7 @@ class TNamedObject extends Atomic
         }
 
         $this->value = $value;
+        $this->is_static_resolved = $is_static;
         $this->extra_types = $extra_types;
         parent::__construct($from_docblock);
     }

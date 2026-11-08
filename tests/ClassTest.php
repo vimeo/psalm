@@ -1217,7 +1217,7 @@ final class ClassTest extends TestCase
                     }
 
                     abstract class Model {
-                        /** @use HasColl<Coll<static>> */
+                        /** @use HasColl<Coll<static & self>> */
                         use HasColl;
                     }
 
