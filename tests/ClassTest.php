@@ -5,8 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_filter;
+use function array_values;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -14,6 +20,40 @@ final class ClassTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testAnUndefinedClassOfTheSameNativeAndDocblockTypeIsReportedOnce(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @param UndefinedClass $a
+                 */
+                function foo(UndefinedClass $a): void {
+                    echo 1;
+                }
+
+                final class A {
+                    /** @var UndefinedClass */
+                    public UndefinedClass $a;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => $issue->type === 'UndefinedClass',
+        ));
+
+        // once for the parameter, and once for the property: at its docblock or at its native type
+        self::assertCount(2, $issues);
+        self::assertSame(3, $issues[0]->line_from);
+        self::assertContains($issues[1]->line_from, [10, 11]);
+    }
 
     /**
      * @psalm-capabilities read-props|write-this-props|write-props
@@ -979,6 +1019,138 @@ final class ClassTest extends TestCase
                     '$a===' => 'iter<int, a&static>',
                 ],
             ],
+            'preventDoubleStaticResolutionAfterUnionWithNull' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+                    }
+
+                    /** @template T */
+                    interface Bag {
+                        /** @return static<int> */
+                        public function map(): static;
+                    }
+
+                    /** @return Bag<string> */
+                    function bag(): Bag {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T|null>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }
+
+                    $bag = bag();
+                    $a = box($bag->map());
+                    $b = $a->same();
+                    $c = $b->same();',
+                'assertions' => [
+                    '$a===' => 'Box<Bag<int>&static|null>',
+                    '$b===' => 'Box<Bag<int>&static|null>',
+                    '$c===' => 'Box<Bag<int>&static|null>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'preventDoubleStaticResolutionAfterUnionOfStatics' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+                    }
+
+                    /** @template T */
+                    interface Bag {
+                        /** @return static<int> */
+                        public function toInt(): static;
+
+                        /** @return static<float> */
+                        public function toFloat(): static;
+                    }
+
+                    /** @return Bag<string> */
+                    function bag(): Bag {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }
+
+                    $bag = bag();
+                    $a = box(rand(0, 1) ? $bag->toInt() : $bag->toFloat());
+                    $b = $a->same();',
+                'assertions' => [
+                    '$b===' => 'Box<Bag<float>&static|Bag<int>&static>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'preventDoubleStaticResolutionAfterClosureInference' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+
+                        /**
+                         * @template U
+                         * @param Closure(T): U $f
+                         * @return Box<U>
+                         */
+                        public function apply(Closure $f): self {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @template T */
+                    interface Bag {
+                        /** @return static<int> */
+                        public function map(): static;
+                    }
+
+                    /** @return Bag<string> */
+                    function bag(): Bag {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }
+
+                    $a = box(bag()->map())->apply(fn($x) => $x);
+                    $b = $a->same();',
+                'assertions' => [
+                    '$a===' => 'Box<Bag<int>&static>',
+                    '$b===' => 'Box<Bag<int>&static>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'allowTraversableImplementationAlongWithIteratorAggregate' => [
                 'code' => '<?php
                     /**
@@ -1231,6 +1403,46 @@ final class ClassTest extends TestCase
                         return new $class("x");
                     }',
                 'error_message' => 'InvalidScalarArgument',
+            ],
+            'undefinedClassParamWithTemplateDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $a
+                     */
+                    function foo(UndefinedClass $a): void {
+                        echo 1;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'undefinedClassParamWithMixedDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $a
+                     */
+                    function foo(UndefinedClass $a): void {
+                        echo 1;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'undefinedClassPropertyWithMixedDocblock' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var mixed */
+                        public UndefinedClass $a;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'undefinedClassPropertyWithTemplateDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class A {
+                        /** @var T */
+                        public UndefinedClass $a;
+                    }',
+                'error_message' => 'UndefinedClass',
             ],
             'elseOfAKnownTrueAndIsNotDeclared' => [
                 'code' => '<?php
