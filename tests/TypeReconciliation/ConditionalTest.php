@@ -113,6 +113,22 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'pureIterableInstanceOfArrayIteratorKeepsTheStoragePurityOfTheClass' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param iterable[pure]<int, string> $t */
+                    function f(iterable $t): void {
+                        if (!$t instanceof ArrayIterator) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $t = ArrayIterator[write-props]<int, string> */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'iterableInstanceOfGeneratorKeepsItsParams' => [
                 'code' => <<<'PHP'
                     <?php

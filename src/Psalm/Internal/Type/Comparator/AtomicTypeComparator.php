@@ -944,7 +944,18 @@ final class AtomicTypeComparator
                         }
                     }
 
-                    $class_params[] = Capabilities::isPurityArgument($class_param) ? $iterable->purity : $class_param;
+                    // only the purity template that stands for the one of Traversable is the iterable's
+                    $purity_standing_for = $extended_params['TPurity'] ?? null;
+
+                    if ($purity_standing_for !== null
+                        && $purity_standing_for->isSingle()
+                        && $purity_standing_for->getSingleAtomic() instanceof TTemplateParam
+                        && $purity_standing_for->getSingleAtomic()->param_name === $template_name
+                    ) {
+                        $class_param = $iterable->purity;
+                    }
+
+                    $class_params[] = $class_param;
                 }
 
                 if ($class_params !== [] && count($found) === 2) {
