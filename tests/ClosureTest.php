@@ -1468,9 +1468,9 @@ final class ClosureTest extends TestCase
                     class Ints extends Collection {
                         public function test(): void {
                             $static_make = static::make(...);
-                            /** @psalm-check-type-exact $static_make = Closure():(Collection&static) */;
+                            /** @psalm-check-type-exact $static_make = Closure():(Ints&static) */;
                             $self_make = self::make(...);
-                            /** @psalm-check-type-exact $self_make = Closure():(Collection&static) */;
+                            /** @psalm-check-type-exact $self_make = Closure():(Ints&static) */;
                             $parent_one = parent::one(...);
                             /** @psalm-check-type-exact $parent_one = Closure():int */;
                         }
