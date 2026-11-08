@@ -699,6 +699,42 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'staticCallOfAnInterfaceMethodInAConstructorHasItsReturnType' => [
+                'code' => '<?php
+                    interface Limits {
+                        public static function minimum(): int;
+                    }
+
+                    abstract class Value implements Limits {
+                        public int $value;
+
+                        public function __construct(int $value) {
+                            $minimum = self::minimum();
+                            $static_minimum = static::minimum();
+
+                            if ($value < $minimum || $value < $static_minimum) {
+                                throw new InvalidArgumentException((string) $minimum);
+                            }
+
+                            $this->value = $value;
+                        }
+                    }',
+            ],
+            'staticMethodWithABodyCalledInAConstructorKeepsItsReturnType' => [
+                'code' => '<?php
+                    class Value {
+                        public int $value;
+
+                        public function __construct() {
+                            $default = self::defaultValue();
+                            $this->value = $default;
+                        }
+
+                        public static function defaultValue(): int {
+                            return 1;
+                        }
+                    }',
+            ],
             'assignPrivatePropertyOfCurrentClassOnChildInstance' => [
                 'code' => '<?php
                     class A {
@@ -2761,6 +2797,41 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'issetOfUninitializedPropertyInConstructor' => [
+                'code' => '<?php
+                    class X {
+                        private string $x;
+
+                        /** @param string[] $a */
+                        public function __construct(array $a) {
+                            foreach ($a as $key => $val) {
+                                if ($key === "x") {
+                                    $this->x = $val;
+                                }
+                            }
+
+                            $this->x ??= "";
+                        }
+                    }
+
+                    class Y {
+                        private string $y;
+
+                        public function __construct() {
+                            $this->y ??= "";
+                        }
+                    }
+
+                    class Z {
+                        private string $z;
+
+                        public function __construct() {
+                            if (!isset($this->z)) {
+                                $this->z = "";
+                            }
+                        }
+                    }',
+            ],
             'memoizePropertyAfterSetting' => [
                 'code' => '<?php
                     class A {
@@ -3135,6 +3206,21 @@ final class PropertyTypeTest extends TestCase
                     }
 
                     class Article extends Entity {}',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'propertyNotInitializedByAnInterfaceStaticMethodCalledInTheConstructor' => [
+                'code' => '<?php
+                    interface Limits {
+                        public static function minimum(): int;
+                    }
+
+                    abstract class Value implements Limits {
+                        public int $value;
+
+                        public function __construct() {
+                            echo self::minimum();
+                        }
+                    }',
                 'error_message' => 'PropertyNotSetInConstructor',
             ],
             'assignPrivatePropertyOfCurrentClassOnChildInstanceChecksItsType' => [
