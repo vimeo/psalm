@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\Capabilities;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -733,6 +736,24 @@ final class AtomicTypeComparator
                     ) {
                         $self_class = $input_type_part->value;
                         $return_type = $codebase->getMethodReturnType($to_string_method_id, $self_class);
+
+                        if ($return_type !== null && $input_type_part instanceof TGenericObject) {
+                            $class_template_params = ClassTemplateParamCollector::collect(
+                                $codebase,
+                                $codebase->methods->getClassLikeStorageForMethod($to_string_method_id),
+                                $codebase->classlike_storage_provider->get($input_type_part->value),
+                                $to_string_method_id->method_name,
+                                $input_type_part,
+                            );
+
+                            if ($class_template_params !== null) {
+                                $return_type = TemplateInferredTypeReplacer::replace(
+                                    $return_type,
+                                    new TemplateResult([], $class_template_params),
+                                    $codebase,
+                                );
+                            }
+                        }
 
                         if ($return_type === null
                             || !UnionTypeComparator::isContainedBy(

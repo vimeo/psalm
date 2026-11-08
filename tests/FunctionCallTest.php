@@ -2651,6 +2651,51 @@ final class FunctionCallTest extends TestCase
                     acceptsLowercase(new LowercaseText());',
                 'php_version' => '8.1',
             ],
+            'genericObjectWithRefinedToStringReturnMatchesStringParameter' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private string $value) {}
+
+                        /** @return T */
+                        public function __toString(): string {
+                            return $this->value;
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @var Box<lowercase-string> $box */
+                    $box = new Box("lowercase");
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase($box);',
+                'php_version' => '8.1',
+            ],
+            'stringConditionOnObjectPreservesObjectType' => [
+                'code' => '<?php
+                    final class Path {
+                        public function __toString(): string {
+                            return "path";
+                        }
+
+                        public function getElement(): string {
+                            return "element";
+                        }
+                    }
+
+                    function getElement(Path $path): string {
+                        if (str_starts_with($path, "p")) {
+                            return $path->getElement();
+                        }
+
+                        return "";
+                    }',
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
+            ],
             'strReplaceWithAsManyReplacementsAsSearches' => [
                 'code' => '<?php
                     /** @var string $subject */
