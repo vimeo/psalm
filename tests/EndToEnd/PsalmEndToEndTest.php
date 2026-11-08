@@ -307,6 +307,8 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertStringContainsString('TaintedHtml', $result['STDOUT']);
         $this->assertStringContainsString('TaintedTextWithQuotes', $result['STDOUT']);
         $this->assertStringContainsString('4 errors', $result['STDOUT']);
+        $this->assertStringContainsString('Psalm can automatically fix', $result['STDOUT']);
+        $this->assertStringContainsString('--alter --issues=InvalidReturnType', $result['STDOUT']);
         $this->assertSame(2, $result['CODE']);
     }
 
