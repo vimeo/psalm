@@ -119,6 +119,7 @@ final class ConstantTest extends TestCase
                     define("NOW", time());
                     define("TIME_OF_DAY", gettimeofday(true));
                     define("HOME", getenv("HOME"));
+                    define("RELATIVE_TRUE", microtime(namespace\\true));
                 }
             ',
         );
@@ -145,6 +146,12 @@ final class ConstantTest extends TestCase
                 function home(): void {
                     /** @psalm-suppress MixedAssignment */
                     $x = HOME;
+                    /** @psalm-check-type-exact $x = mixed */;
+                }
+
+                function relativeTrue(): void {
+                    /** @psalm-suppress MixedAssignment */
+                    $x = RELATIVE_TRUE;
                     /** @psalm-check-type-exact $x = mixed */;
                 }
 

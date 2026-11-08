@@ -538,9 +538,14 @@ final class SimpleTypeInferer
             && $stmt instanceof PhpParser\Node\Expr\FuncCall
             && $stmt->name instanceof PhpParser\Node\Name
             && !$stmt->isFirstClassCallable()
-            && strtolower($aliases->functions[$name = strtolower($stmt->name->toString())] ?? $name) === $name
-            && ($callables = InternalCallMapHandler::getCallablesFromCallMap($name))
         ) {
+            $name = strtolower($stmt->name->toString());
+            $callables = strtolower($aliases->functions[$name] ?? $name) === $name
+                ? InternalCallMapHandler::getCallablesFromCallMap($name)
+                : null;
+            if (!$callables) {
+                return null;
+            }
             if (count($callables) === 1) {
                 return $callables[0]->return_type;
             }
@@ -548,12 +553,13 @@ final class SimpleTypeInferer
             $arg_types = [];
             foreach ($stmt->getArgs() as $arg) {
                 $value = $arg->value;
-                $arg_types[] = !$arg->unpack && !$arg->name
-                    && ($value instanceof PhpParser\Node\Scalar\Int_ || $value instanceof PhpParser\Node\Scalar\Float_
+                $is_literal = !$arg->unpack && !$arg->name
+                    && ($value instanceof PhpParser\Node\Scalar\Int_
+                        || $value instanceof PhpParser\Node\Scalar\Float_
                         || ($value instanceof PhpParser\Node\Expr\ConstFetch
-                            && in_array(strtolower($value->name->toString()), ['true', 'false', 'null'], true)))
-                    ? self::infer($codebase, $nodes, $value, $aliases)
-                    : null;
+                            && !$value->name->isRelative()
+                            && in_array(strtolower($value->name->toString()), ['true', 'false'], true)));
+                $arg_types[] = $is_literal ? self::infer($codebase, $nodes, $value, $aliases) : null;
             }
 
             // Unique match only: the first compatible variant is wrong for `bool` params (e.g. gettimeofday).
