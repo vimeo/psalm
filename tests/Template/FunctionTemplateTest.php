@@ -23,6 +23,25 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodClassStringTemplateTakesAClassOfItsBound' => [
+                'code' => '<?php
+                    interface Vehicle {}
+                    class Car implements Vehicle {}
+
+                    class Garage {
+                        /**
+                         * @template U of Vehicle
+                         * @param class-string<U> $class
+                         * @return list<U>
+                         */
+                        public function find(string $class): array { return []; }
+                    }
+
+                    $cars = (new Garage)->find(Car::class);',
+                'assertions' => [
+                    '$cars===' => 'list<Car>',
+                ],
+            ],
             'negatedInstanceofNarrowsTheBoundOfATemplateParam' => [
                 'code' => '<?php
                     class File {
@@ -2489,6 +2508,39 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'methodClassStringTemplateRejectsAClassOutsideItsBound' => [
+                'code' => '<?php
+                    interface Vehicle {}
+
+                    class Garage {
+                        /**
+                         * @template U of Vehicle
+                         * @param class-string<U> $class
+                         * @return list<U>
+                         */
+                        public function find(string $class): array { return []; }
+                    }
+
+                    (new Garage)->find(Countable::class);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'methodOfAGenericClassClassStringTemplateRejectsAClassOutsideItsBound' => [
+                'code' => '<?php
+                    interface Vehicle {}
+
+                    /** @template T */
+                    class Garage {
+                        /**
+                         * @template U of Vehicle
+                         * @param class-string<U> $class
+                         * @return list<U>
+                         */
+                        public function find(string $class): array { return []; }
+                    }
+
+                    (new Garage)->find(Countable::class);',
+                'error_message' => 'InvalidArgument',
+            ],
             'templateBoundedByMixedIsBoundedByMixedAgainAfterABranchNarrowingIt' => [
                 'code' => '<?php
                     function takesInt(int $i): void {}
