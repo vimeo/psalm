@@ -422,6 +422,27 @@ final class MagicMethodAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'methodNamedLikeATypeKeyword' => [
+                'code' => '<?php
+                    /**
+                     * @method static string callable(int $a)
+                     * @method int Closure()
+                     * @method float pure(string $s): float
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments) { return null; }
+                        public static function __callStatic(string $name, array $arguments) { return null; }
+                    }
+
+                    $a = Foo::callable(1);
+                    $b = (new Foo)->Closure();
+                    $c = (new Foo)->pure("x");',
+                'assertions' => [
+                    '$a===' => 'string',
+                    '$b===' => 'int',
+                    '$c===' => 'float',
+                ],
+            ],
             'trailingReturnTypes' => [
                 'code' => '<?php
                     class ParentClass {
@@ -1627,6 +1648,14 @@ final class MagicMethodAnnotationTest extends TestCase
                     . 'Argument 1 of Repository::load expects bool, but float(1.5) provided',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'invalidMagicMethodKeepsItsNameInTheMessage' => [
+                'code' => '<?php
+                    /**
+                     * @method callable(int)
+                     */
+                    class Foo {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:27 - callable(int) is not a valid method',
             ],
             'wildcardPurityPropagatesImpureClosure' => [
                 'code' => '<?php
