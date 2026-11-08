@@ -170,6 +170,12 @@ workaround explicitly in the report.
     `php_version`/missing extension making the code path not run;
   - harness differences: e.g. TaintTest provider cases don't initialize plugins (skill
     `taint-analysis`).
+- CI job `Changed tests fail on base` (`bin/ci/check-tests-fail-on-base.php`) runs every
+  provider entry and `test*` method a PR adds or changes on the merge base with the PR's
+  `tests/`, and fails when one passes there. A case that must pass on the base needs a
+  `// guard: <reason>` comment directly above its entry (or above the method's
+  docblock). The labels `release:internal`, `release:typo` and `release:docs` skip the
+  job. Run it locally: `php bin/ci/check-tests-fail-on-base.php --base=master [--list]`.
 - Data-provider entries are passed **by position**; string keys are ignored. To pin a PHP
   version write `'assertions' => [], 'ignored_issues' => [], 'php_version' => '8.1'`
   (valid) or `'error_levels' => [], 'php_version' => ...` (invalid). `'php_version'`

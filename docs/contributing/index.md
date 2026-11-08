@@ -39,3 +39,15 @@ Before you send a pull request, make sure you follow these guidelines:
 Run integration checks locally: `composer tests`
 
 If you're adding new features or fixing bugs, don’t forget to add tests!
+
+The "Changed tests fail on base" check runs every test case your pull request adds or changes against the code of the branch it targets, and fails when a case passes there: such a case doesn't check the change. Make the case fail without your fix, or, when it is only an edge case that must keep passing, put a `// guard: <reason>` comment directly above its entry in the data provider (or above the test method):
+
+```php
+// guard: the same code was accepted before, this pins that it still is
+'staticOfAPlainReceiverStaysAccepted' => [
+    'code' => '<?php ...',
+    'assertions' => [],
+],
+```
+
+A pull request that only refactors, fixes a typo or changes docs skips the check with the `release:internal`, `release:typo` or `release:docs` label. Run it locally with `php bin/ci/check-tests-fail-on-base.php --base=master`, add `--list` to see the selected cases without running them.
