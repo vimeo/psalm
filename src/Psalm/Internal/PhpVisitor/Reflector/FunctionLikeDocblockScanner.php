@@ -230,7 +230,8 @@ final class FunctionLikeDocblockScanner
 
             // Template parameters are not tracked for thrown exceptions,
             // so `@throws Foo<Bar>` is treated like `@throws Foo`
-            $throw_classes = preg_replace('/<(?:[^<>]++|(?R))*+>/', '', $throw) ?? $throw;
+            $throw_classes = CommentAnalyzer::sanitizeDocblockType($throw);
+            $throw_classes = preg_replace('/<(?:[^<>]++|(?R))*+>/', '', $throw_classes) ?? $throw_classes;
 
             foreach (explode('|', $throw_classes) as $throw_class) {
                 $throw_class = trim($throw_class);

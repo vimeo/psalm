@@ -251,6 +251,99 @@ final class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
+    public function testDocumentedThrowUnionWithSpacesAroundPipe(): void
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @throws RangeException | InvalidArgumentException
+                 * @psalm-pure
+                 */
+                function foo(int $x, int $y) : int {
+                    if ($y === 0) {
+                        throw new \RangeException("Cannot divide by zero");
+                    }
+
+                    if ($y < 0) {
+                        throw new \InvalidArgumentException("This is also bad");
+                    }
+
+                    return intdiv($x, $y);
+                }
+
+                /**
+                 * @throws RangeException
+                 *     |InvalidArgumentException
+                 * @psalm-pure
+                 */
+                function bar(int $x, int $y) : int {
+                    if ($y === 0) {
+                        throw new \RangeException("Cannot divide by zero");
+                    }
+
+                    if ($y < 0) {
+                        throw new \InvalidArgumentException("This is also bad");
+                    }
+
+                    return intdiv($x, $y);
+                }
+
+                /**
+                 * @throws RangeException |InvalidArgumentException when $y is not positive
+                 * @psalm-pure
+                 */
+                function baz(int $x, int $y) : int {
+                    if ($y === 0) {
+                        throw new \RangeException("Cannot divide by zero");
+                    }
+
+                    if ($y < 0) {
+                        throw new \InvalidArgumentException("This is also bad");
+                    }
+
+                    return intdiv($x, $y);
+                }',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    public function testThrowsTypeFollowedByDescription(): void
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class T1 {
+                    public static function t1(): void {}
+                }
+
+                /**
+                 * @throws RangeException {@see T1::t1()}
+                 */
+                function foo(): void {
+                    throw new \RangeException();
+                }
+
+                /**
+                 * @throws RangeException : when the moon is full
+                 */
+                function bar(): void {
+                    throw new \RangeException();
+                }',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
     public function testDocumentedParentThrow(): void
     {
         Config::getInstance()->check_for_throws_docblock = true;
