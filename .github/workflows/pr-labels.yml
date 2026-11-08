@@ -2,6 +2,11 @@ name: Pull Request Labels (to be added by maintainers)
 on:
   pull_request:
     types: [opened, reopened, labeled, unlabeled, synchronize]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+permissions:
+  pull-requests: read
 jobs:
   label:
     runs-on: ubuntu-latest

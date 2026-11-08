@@ -33,8 +33,8 @@ jobs:
       - id: chunk-matrix
         name: Generates the Chunk Matrix
         run: |
-          echo "count=$(php -r 'echo json_encode([ ${{ env.CHUNK_COUNT }} ]);')" >> $GITHUB_OUTPUT
-          echo "chunks=$(php -r 'echo json_encode(range(1, ${{ env.CHUNK_COUNT }} ));')" >> $GITHUB_OUTPUT
+          echo "count=$(php -r 'echo json_encode([ ${{ env.CHUNK_COUNT }} ]);')" >> "$GITHUB_OUTPUT"
+          echo "chunks=$(php -r 'echo json_encode(range(1, ${{ env.CHUNK_COUNT }} ));')" >> "$GITHUB_OUTPUT"
         shell: bash
 
   tests:
@@ -84,8 +84,8 @@ jobs:
       - name: Get Composer Cache Directories
         id: composer-cache
         run: |
-          echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-          echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
+          echo "files_cache=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+          echo "vcs_cache=$(composer config cache-vcs-dir)" >> "$GITHUB_OUTPUT"
         shell: bash
 
       - name: Generate composer.lock
