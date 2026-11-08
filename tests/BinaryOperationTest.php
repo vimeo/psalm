@@ -1886,6 +1886,16 @@ final class BinaryOperationTest extends TestCase
                     $a = "b" + 5;',
                 'error_message' => 'InvalidOperand',
             ],
+            'shiftLeftByANegativeLiteralThrows' => [
+                'code' => '<?php
+                    $a = 1 << -1;',
+                'error_message' => 'NoValue',
+            ],
+            'shiftRightByANegativeLiteralThrows' => [
+                'code' => '<?php
+                    $a = 8 >> -2;',
+                'error_message' => 'NoValue',
+            ],
             'addArrayToNumber' => [
                 'code' => '<?php
                     $a = [1] + 1;',
