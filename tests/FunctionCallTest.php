@@ -2635,6 +2635,22 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => ['ImplicitToStringCast'],
                 'php_version' => '8.1',
             ],
+            'objectWithRefinedToStringReturnMatchesStringParameter' => [
+                'code' => '<?php
+                    final class LowercaseText {
+                        /** @return lowercase-string */
+                        public function __toString(): string {
+                            return "lowercase";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase(new LowercaseText());',
+                'php_version' => '8.1',
+            ],
             'strReplaceWithAsManyReplacementsAsSearches' => [
                 'code' => '<?php
                     /** @var string $subject */
@@ -3281,6 +3297,60 @@ final class FunctionCallTest extends TestCase
                     'MixedArrayAccess',
                     'RedundantConditionGivenDocblockType',
                 ],
+            ],
+            'objectToStringReturnDoesNotMatchLowercaseStringParameter' => [
+                'code' => '<?php
+                    final class UppercaseText {
+                        /** @return "AAA" */
+                        public function __toString(): string {
+                            return "AAA";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase(new UppercaseText());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnDoesNotMatchLiteralStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        /** @return "AAA" */
+                        public function __toString(): string {
+                            return "AAA";
+                        }
+                    }
+
+                    /** @param "BBB"|"CCC" $value */
+                    function acceptsOtherLiterals(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsOtherLiterals(new Text());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnDoesNotMatchNonEmptyStringParameter' => [
+                'code' => '<?php
+                    final class EmptyText {
+                        /** @return "" */
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /** @param non-empty-string $value */
+                    function acceptsNonEmpty(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsNonEmpty(new EmptyText());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'clampIsUndefinedBeforePhp86' => [
                 'code' => '<?php
