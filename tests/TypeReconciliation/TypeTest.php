@@ -23,6 +23,22 @@ final class TypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'instanceofAnInterfaceKeepsOnlyTheClassesThatMayImplementIt' => [
+                'code' => '<?php
+                    interface Marker {}
+                    final class Implementing implements Marker {}
+                    final class Unrelated {}
+                    class Open {}
+
+                    function check(Implementing|Unrelated|Open $x): void {
+                        if ($x instanceof Marker) {
+                            /** @psalm-check-type-exact $x = Implementing|Marker&Open */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ClassMustBeFinal'],
+                'php_version' => '8.0',
+            ],
             'closedResourceIsTruthyLikeAnyResource' => [
                 'code' => '<?php
                     /** @param resource|closed-resource|null $stream */
