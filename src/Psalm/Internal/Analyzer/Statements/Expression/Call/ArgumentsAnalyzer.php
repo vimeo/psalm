@@ -64,7 +64,6 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_filter;
 use function array_reduce;
 use function array_reverse;
 use function array_slice;
@@ -2173,7 +2172,7 @@ final class ArgumentsAnalyzer
                 // defines is possibly undefined), but it did evaluate the keys that change something: not again
                 $node_data = $statements_analyzer->node_data;
                 $evaluated = $analyzed_for_assignment && $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
-                    ? self::getOperandsWithEffects($arg->value)
+                    ? ArrayAssignmentAnalyzer::getSideEffects($arg->value)
                     : [];
                 $node_data->markEvaluated($evaluated);
 
@@ -2190,33 +2189,6 @@ final class ArgumentsAnalyzer
         } finally {
             $context->inside_by_ref_offset = $was_inside_by_ref_offset;
         }
-    }
-
-    /**
-     * The operands of an array item that analysing them again could change something in, as the increment of
-     * a key does: all but plain reads
-     *
-     * @return list<PhpParser\Node\Expr>
-     */
-    private static function getOperandsWithEffects(PhpParser\Node\Expr\ArrayDimFetch $stmt): array
-    {
-        $node_finder = new PhpParser\NodeFinder();
-
-        return array_values(array_filter(
-            ArrayAssignmentAnalyzer::getOperands($stmt),
-            static fn(PhpParser\Node\Expr $operand): bool => $node_finder->findFirst(
-                $operand,
-                static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr
-                    && !$node instanceof PhpParser\Node\Expr\Variable
-                    && !$node instanceof PhpParser\Node\Scalar
-                    && !$node instanceof PhpParser\Node\Expr\ConstFetch
-                    && !$node instanceof PhpParser\Node\Expr\ClassConstFetch
-                    && !$node instanceof PhpParser\Node\Expr\PropertyFetch
-                    && !$node instanceof PhpParser\Node\Expr\StaticPropertyFetch
-                    && !$node instanceof PhpParser\Node\Expr\ArrayDimFetch
-                    && !$node instanceof PhpParser\Node\Expr\BinaryOp,
-            ) !== null,
-        ));
     }
 
     /**
