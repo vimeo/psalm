@@ -205,6 +205,30 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedMethodExistsOfABuiltinClassKeepsTheBranchPossible' => [
+                'code' => '<?php
+                    function f(DateTime $date): string {
+                        if (!method_exists($date, "format")) {
+                            return "no format";
+                        }
+
+                        return $date->format("c");
+                    }',
+                'assertions' => [],
+            ],
+            'negatedMethodExistsOfAClassInheritingTheMethodFromABuiltinClassKeepsTheBranchPossible' => [
+                'code' => '<?php
+                    final class MyDate extends DateTime {}
+
+                    function f(MyDate $date): string {
+                        if (!method_exists($date, "format")) {
+                            return "no format";
+                        }
+
+                        return $date->format("c");
+                    }',
+                'assertions' => [],
+            ],
             'negatedMethodExistsOfAnObjectWithTheMethodKeepsItsType' => [
                 'code' => '<?php
                     abstract class Platform {

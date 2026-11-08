@@ -7,6 +7,7 @@ namespace Psalm\Internal\Type;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\RedundantPropertyInitializationCheck;
@@ -68,6 +69,7 @@ use Psalm\Type\Union;
 use function assert;
 use function max;
 use function str_contains;
+use function strtolower;
 
 /**
  * @internal
@@ -2073,6 +2075,24 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
     }
 
     /**
+     * Only code that is analysed guarantees a method: the methods of builtin classes can depend on how the extension
+     * was compiled, and a method existence provider can report methods that don't exist at runtime
+     */
+    private static function isMethodAlwaysDeclared(Codebase $codebase, string $fq_class_name, string $method_name): bool
+    {
+        $method_id = new MethodIdentifier($fq_class_name, strtolower($method_name));
+
+        if (!$codebase->methodExists($method_id, null, null, null, null, false)) {
+            return false;
+        }
+
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+        return $declaring_method_id !== null
+            && $codebase->classlike_storage_provider->get($declaring_method_id->fq_class_name)->user_defined;
+    }
+
+    /**
      * An object whose class has the method can't be one for which method_exists() is false
      *
      * @param string[] $suppressed_issues
@@ -2094,7 +2114,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TNamedObject
                 && $codebase->classOrInterfaceExists($type->value)
-                && $codebase->methodExists($type->value . '::' . $assertion->method)
+                && self::isMethodAlwaysDeclared($codebase, $type->value, $assertion->method)
             ) {
                 $found_class_with_method = true;
 
