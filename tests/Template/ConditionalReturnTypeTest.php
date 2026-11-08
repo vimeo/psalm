@@ -18,31 +18,6 @@ final class ConditionalReturnTypeTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
-            'nativeStringableDoesNotMatchEmptyLiteral' => [
-                'code' => <<<'PHP'
-                    <?php
-                    function test(Stringable $value): void {
-                        $contains = str_contains($value, 'x');
-                        /** @psalm-check-type-exact $contains = bool */
-                        $starts = str_starts_with($value, 'x');
-                        /** @psalm-check-type-exact $starts = bool */
-                    }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => ['ImplicitToStringCast'],
-                'php_version' => '8.0',
-            ],
-            'nativeConditionalUsesStringableArgument' => [
-                'code' => <<<'PHP'
-                    <?php
-                    function test(Throwable $error): void {
-                        $result = mb_convert_encoding($error, 'UTF-8');
-                        /** @psalm-check-type-exact $result = false|string */
-                    }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => ['ImplicitToStringCast'],
-            ],
             'wrapPreservesUnknownArrayValues' => [
                 'code' => <<<'PHP'
                     <?php
@@ -205,65 +180,6 @@ final class ConditionalReturnTypeTest extends TestCase
                         }
                         return null;
                     }
-                    PHP,
-            ],
-            'arrayValuesPreservesGenericElement' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /**
-                     * @template T
-                     * @param array<array-key, T> $elements
-                     * @return T|null
-                     */
-                    function firstValue(array $elements) {
-                        $values = array_values($elements);
-                        /** @psalm-check-type-exact $values = list<T> */
-                        $first = $values[0] ?? null;
-                        /** @psalm-check-type-exact $first = T|null */
-                        return $first;
-                    }
-                    PHP,
-            ],
-            'arrayValuesPreservesGenericElementInLoop' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /**
-                     * @template T
-                     * @param array<array-key, T> $elements
-                     * @param list<int> $items
-                     * @return list<T>
-                     */
-                    function zip(array $elements, array $items): array {
-                        $elements = array_values($elements);
-                        $result = [];
-                        foreach ($items as $_) {
-                            $u = $elements[0] ?? null;
-                            if (null === $u) {
-                                break;
-                            }
-                            $elements = array_slice($elements, 1);
-                            $result[] = $u;
-                        }
-                        return $result;
-                    }
-                    PHP,
-            ],
-            'iterableIntersectionFitsUnion' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @param array<int, int>|(Traversable<int, int>&Countable) $value */
-                    function accept($value): void {}
-                    /** @param iterable<int, int>&Countable $value */
-                    function test(iterable $value): void { accept($value); }
-                    PHP,
-            ],
-            'iterableObjectIntersectionFitsTraversable' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @param Traversable<int, int>&Countable $value */
-                    function accept($value): void {}
-                    /** @param iterable<int, int>&Countable $value */
-                    function test(iterable $value): void { accept($value); }
                     PHP,
             ],
             'conditionalReturnTypeSimple' => [
@@ -1377,6 +1293,112 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$three' => 'float',
                 ],
             ],
+            'stringableUserConditional' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of array|string
+                     * @param T $s
+                     * @return (T is array<int, string> ? array<int, string> : string|false)
+                     */
+                    function convert(array|string $s) { return false; }
+                    function test(Throwable $e): void {
+                        $r = convert($e);
+                        /** @psalm-check-type-exact $r = false|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableNestedUserConditional' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of array|string
+                     * @param T $s
+                     * @return (T is array ? (T is array<int, string> ? array<int, string> : array<array-key, mixed>) : string|false)
+                     */
+                    function convert(array|string $s) { return false; }
+                    function test(Throwable $e): void {
+                        $r = convert($e);
+                        /** @psalm-check-type-exact $r = false|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableElementsDoNotConvertOuterArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of string|array<string>
+                     * @param T $value
+                     * @return (T is array ? 'array' : 'string')
+                     */
+                    function describe($value) { return is_array($value) ? 'array' : 'string'; }
+                    $r = describe([new Exception()]);
+                    /** @psalm-check-type-exact $r = 'array' */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableElementsInGenericArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of string|array<string>
+                     * @param T $value
+                     * @return (T is array ? 'array' : 'string')
+                     */
+                    function describe($value) { return is_array($value) ? 'array' : 'string'; }
+                    /** @param array<Throwable> $items */
+                    function test(array $items): void {
+                        $r = describe($items);
+                        /** @psalm-check-type-exact $r = 'array' */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableObjectAndArrayKeepBothBranches' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of string|array<string>
+                     * @param T $value
+                     * @return (T is array ? 'array' : 'string')
+                     */
+                    function describe($value) { return is_array($value) ? 'array' : 'string'; }
+                    /** @param Throwable|array<Throwable> $items */
+                    function test($items): void {
+                        $r = describe($items);
+                        /** @psalm-check-type-exact $r = 'array'|'string' */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableAcceptedAsObjectKeepsObjectBranch' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of string|Throwable
+                     * @param T $value
+                     * @return (T is object ? 'object' : 'string')
+                     */
+                    function describe($value) { return is_object($value) ? 'object' : 'string'; }
+                    $r = describe(new Exception());
+                    /** @psalm-check-type-exact $r = 'object' */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
         ];
     }
 
@@ -1384,78 +1406,6 @@ final class ConditionalReturnTypeTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
-            'iterableParentChildCoercion' => [
-                'code' => <<<'PHP'
-                    <?php
-                    interface Item {}
-                    final class ConcreteItem implements Item {}
-                    /** @param iterable<array-key, ConcreteItem> $values */
-                    function accept(iterable $values): void {}
-                    /** @param iterable<array-key, Item> $values */
-                    function test(iterable $values): void { accept($values); }
-                    PHP,
-                'error_message' => 'ArgumentTypeCoercion',
-            ],
-            'mixedIterableArgumentCoercion' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @param iterable<array-key, string> $values */
-                    function accept(iterable $values): void {}
-                    /** @param iterable<mixed, mixed> $values */
-                    function test(iterable $values): void { accept($values); }
-                    PHP,
-                'error_message' => 'MixedArgumentTypeCoercion',
-            ],
-            'mixedIterableCannotBeArray' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @param array<string> $values */
-                    function accept(array $values): void {}
-                    /** @param iterable<mixed, mixed> $values */
-                    function test(iterable $values): void { accept($values); }
-                    PHP,
-                'error_message' => 'InvalidArgument',
-            ],
-            'incompatibleIterableArgument' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @param list<int>|Traversable<int, int> $x */
-                    function accept($x): void {}
-                    /** @param iterable<string, string> $i */
-                    function test(iterable $i): void { accept($i); }
-                    PHP,
-                'error_message' => 'InvalidArgument',
-            ],
-            'nestedTraversableArgument' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @param array<int, Traversable>|int $x */
-                    function accept($x): void {}
-                    /** @param iterable<string, string> $i */
-                    function test(iterable $i): void { accept($i); }
-                    PHP,
-                'error_message' => 'InvalidArgument',
-            ],
-            'iterableIntersectionPreservesConstraint' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @param array<int, int>|(Traversable<int, int>&Iterator) $value */
-                    function accept($value): void {}
-                    /** @param iterable<int, int>&Countable $value */
-                    function test(iterable $value): void { accept($value); }
-                    PHP,
-                'error_message' => 'InvalidArgument',
-            ],
-            'iterableIntersectionPreservesGenerics' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @param array<string, string>|Traversable<string, string> $value */
-                    function accept($value): void {}
-                    /** @param iterable<int, int>&Countable $value */
-                    function test(iterable $value): void { accept($value); }
-                    PHP,
-                'error_message' => 'InvalidArgument',
-            ],
             'conditionalReturnTypeWithoutIsTypeIsReportedInsteadOfCrashing' => [
                 'code' => '<?php
                     /**

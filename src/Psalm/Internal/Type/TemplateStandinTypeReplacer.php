@@ -7,7 +7,6 @@ namespace Psalm\Internal\Type;
 use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\KeyedArrayComparator;
@@ -636,39 +635,50 @@ final class TemplateStandinTypeReplacer
         return array_values($matching_atomic_types);
     }
 
-    private static function normalizeNativeStringInput(
+    private static function normalizeStringInput(
         ?Union $input_type,
         Union $as,
-        string $defining_class,
         Codebase $codebase,
     ): ?Union {
         if ($input_type === null) {
             return null;
         }
-        if (!$as->hasString()
-            || !str_starts_with($defining_class, 'fn-')
-            || !InternalCallMapHandler::inCallMap(substr($defining_class, 3))
-        ) {
+        if (!$as->hasString()) {
             return $input_type;
         }
 
-        // Infer native string parameters from their converted value, not the
-        // Stringable object (which could otherwise appear to match a literal string).
+        $non_string_types = [];
+        foreach ($as->getAtomicTypes() as $bound_type) {
+            if (!$bound_type instanceof Atomic\TString) {
+                $non_string_types[] = $bound_type;
+            }
+        }
+        $non_string_bound = $non_string_types ? new Union($non_string_types) : null;
+
+        // A nested cast does not convert the argument itself. Check conversion to
+        // string directly, and keep inputs accepted by a non-string alternative.
         $converted_input = null;
         foreach ($input_type->getAtomicTypes() as $input_key => $input_atomic) {
+            $candidate = new Union([$input_atomic]);
             $comparison = new TypeComparisonResult();
-            if (UnionTypeComparator::isContainedBy(
+            if (!UnionTypeComparator::isContainedBy(
                 $codebase,
-                new Union([$input_atomic]),
-                $as,
+                $candidate,
+                Type::getString(),
                 false,
                 false,
                 $comparison,
-            ) && $comparison->to_string_cast) {
-                $converted_input ??= $input_type->getBuilder();
-                $converted_input->removeType($input_key);
-                $converted_input->addType(new Atomic\TString());
+            ) || !$comparison->to_string_cast) {
+                continue;
             }
+            if ($non_string_bound
+                && UnionTypeComparator::isContainedBy($codebase, $candidate, $non_string_bound)
+            ) {
+                continue;
+            }
+            $converted_input ??= $input_type->getBuilder();
+            $converted_input->removeType($input_key);
+            $converted_input->addType(new Atomic\TString());
         }
         return $converted_input?->freeze() ?? $input_type;
     }
@@ -869,10 +879,9 @@ final class TemplateStandinTypeReplacer
 
             $atomic_type = $atomic_type->replaceAs($as);
 
-            $input_type = self::normalizeNativeStringInput(
+            $input_type = self::normalizeStringInput(
                 $input_type,
                 $as,
-                $atomic_type->defining_class,
                 $codebase,
             );
 
