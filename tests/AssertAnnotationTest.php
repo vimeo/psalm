@@ -183,6 +183,62 @@ final class AssertAnnotationTest extends TestCase
                     '$ifFalse===' => "'a'|'b'|null",
                 ],
             ],
+            'assertIfTrueUnionDoesNotIntersectUnrelatedFinalClasses' => [
+                'code' => '<?php
+                    interface ToOneAssociation {}
+                    interface OneToOneAssociation extends ToOneAssociation {}
+
+                    abstract class Association {
+                        /**
+                         * @psalm-assert-if-true OwningSide $this
+                         * @psalm-assert-if-false InverseSide $this
+                         */
+                        final public function isOwningSide(): bool {
+                            return $this instanceof OwningSide;
+                        }
+
+                        /** @psalm-assert-if-true ToOneAssociation $this */
+                        final public function isToOne(): bool {
+                            return $this instanceof ToOneAssociation;
+                        }
+
+                        /** @psalm-assert-if-true OneToOneOwningSide|ManyToOneAssociation $this */
+                        final public function isToOneOwningSide(): bool {
+                            return $this->isToOne() && $this->isOwningSide();
+                        }
+
+                        /** @psalm-assert-if-true OneToOneAssociation $this */
+                        final public function isOneToOne(): bool {
+                            return $this instanceof OneToOneAssociation;
+                        }
+                    }
+
+                    abstract class OwningSide extends Association {}
+                    abstract class InverseSide extends Association {}
+                    abstract class ToOneOwningSide extends OwningSide implements ToOneAssociation {}
+                    final class ManyToOneAssociation extends ToOneOwningSide {}
+                    final class OneToOneOwningSide extends ToOneOwningSide implements OneToOneAssociation {}
+                    final class OneToOneInverseSide extends InverseSide implements OneToOneAssociation {}
+                    final class ManyToManyOwningSide extends OwningSide {}
+
+                    /** @var ManyToOneAssociation|OneToOneOwningSide|OneToOneInverseSide|ManyToManyOwningSide $assoc */
+                    $assoc = null;
+
+                    if ($assoc->isToOne()) {
+                        /** @psalm-check-type-exact $assoc = ManyToOneAssociation|OneToOneInverseSide|OneToOneOwningSide */;
+
+                        if ($assoc->isOwningSide()) {
+                            assert($assoc->isToOneOwningSide());
+                            /** @psalm-check-type-exact $assoc = ManyToOneAssociation|OneToOneOwningSide */;
+
+                            if ($assoc->isOneToOne()) {
+                                /** @psalm-check-type-exact $assoc = OneToOneOwningSide */;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+            ],
             'assertIfTrueAndFalseKeepEveryAlternativeOfAUnionOnAProperty' => [
                 'code' => '<?php
                     final class Foo {
