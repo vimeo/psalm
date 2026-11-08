@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\OverloadSelector;
@@ -341,6 +342,41 @@ final class ExistingAtomicStaticCallAnalyzer
                 ImpureMethodCall::class,
                 'method ' . $cased_method_id,
             );
+
+            $declared_return_type = $method_storage->return_type;
+            $signature_return_type = $method_storage->signature_return_type;
+
+            if ($codebase->find_unused_variables
+                && !$stmt->isFirstClassCallable()
+                && !$context->inside_conditional
+                && !$context->inside_general_use
+                && !$context->inside_throw
+                && !$context->inside_assignment
+                && !$context->inside_call
+                && !$context->inside_return
+                && !$context->inside_unset
+                && $method_storage->is_static
+                && $method_storage->isMutationFree()
+                && ($declared_return_type === null
+                    || !($declared_return_type->isVoid() || $declared_return_type->isNever()))
+                && ($signature_return_type === null
+                    || !($signature_return_type->isVoid() || $signature_return_type->isNever()))
+                && Capabilities::allowsAnyOf(Capabilities::MUTATION_FREE, $call_capabilities)
+                && !$method_storage->assertions
+                && !$method_storage->if_true_assertions
+                && !$method_storage->if_false_assertions
+                && !$method_storage->throws
+                && !MethodCallPurityAnalyzer::isCalledForItsTemplatesEffects($method_storage)
+            ) {
+                IssueBuffer::maybeAdd(
+                    new UnusedMethodCall(
+                        'The call to ' . $cased_method_id . ' is not used',
+                        new CodeLocation($statements_analyzer, $stmt_name),
+                        (string) $method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
 
             if (NoDiscardAnalyzer::isDiscardReported(
                 $context,
