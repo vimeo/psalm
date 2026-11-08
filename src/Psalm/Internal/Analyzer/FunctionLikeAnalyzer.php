@@ -9,6 +9,7 @@ use Override;
 use PhpParser;
 use PhpParser\Node\Expr\ArrowFunction;
 use PhpParser\Node\Expr\Closure;
+use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
@@ -529,6 +530,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $context,
             (bool) $template_types,
         );
+
+        if (!$this->checkGlobalTypes($storage, $context)) {
+            $check_stmts = false;
+        }
 
         $this->taintPromotedProperties($statements_analyzer, $context);
         // the context of an arrow function is that of the function-like it is in
@@ -1564,6 +1569,35 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * Checks the classes of the `@global` types, like those of the `@param` types
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function checkGlobalTypes(FunctionLikeStorage $storage, Context $context): bool
+    {
+        $is_valid = true;
+
+        foreach ($storage->global_types as $var_name => $global_type) {
+            if (isset($storage->global_type_locations[$var_name])
+                && $global_type->check(
+                    $this,
+                    $storage->global_type_locations[$var_name],
+                    $storage->suppressed_issues,
+                    [],
+                    false,
+                    false,
+                    false,
+                    $context,
+                ) === false
+            ) {
+                $is_valid = false;
+            }
+        }
+
+        return $is_valid;
+    }
+
+    /**
      * A promoted constructor parameter is assigned to its property: what the constructor is given flows into it,
      * as with `$this->name = $name`.
      */
@@ -1714,7 +1748,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $context->self,
                         $this->getParentFQCLN(),
                         true,
-                        false,
+                        $param_type->hasConditional(),
                         false,
                         true,
                         false,
@@ -1862,7 +1896,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         false,
                         false,
                         null,
-                        true,
+                        !$parser_param->default instanceof New_,
                     )
                 ) {
                     IssueBuffer::maybeAdd(

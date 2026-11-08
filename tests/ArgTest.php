@@ -76,6 +76,15 @@ final class ArgTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'namedArgumentSelectsCallmapOverloadWithThatParameter' => [
+                'code' => '<?php
+                    setcookie("name", "value", path: "/");
+                    setcookie("name", "value", domain: "example.com");
+                    setcookie("name", "value", 1, path: "/");',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'argumentUnpackingLiteral' => [
                 'code' => '<?php
                     function add(int $a, int $b, int $c) : int {
@@ -493,6 +502,20 @@ final class ArgTest extends TestCase
                     echo f(...$args, c: 3);',
                 'error_message' => 'InvalidScalarArgument',
                 'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'namedArgumentUnknownToEveryCallmapOverload' => [
+                'code' => '<?php
+                    setcookie("name", "value", nonexistent: "/");',
+                'error_message' => 'InvalidNamedArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'namedArgumentUnknownToEveryCallmapOverloadIsNotTakenByTheVariadicOne' => [
+                'code' => '<?php
+                    max([1, 2], foo: 3);',
+                'error_message' => 'InvalidNamedArgument',
+                'error_levels' => ['TooManyArguments'],
                 'php_version' => '8.0',
             ],
             'iterableInUnionPassedToArrayParam' => [
