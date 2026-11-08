@@ -254,6 +254,27 @@ final class IntersectionTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
             ],
+            'objectShapePropertyOnInterfaceIntersection' => [
+                'code' => '<?php
+                    interface Foo {}
+
+                    /** @var Foo&object{id: int} $x */
+                    $id = $x->id;',
+                'assertions' => [
+                    '$id===' => 'int',
+                ],
+            ],
+            'objectShapePropertyOnTwoInterfacesIntersection' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {}
+
+                    /** @var Foo&Bar&object{id: int} $x */
+                    $id = $x->id;',
+                'assertions' => [
+                    '$id===' => 'int',
+                ],
+            ],
             'objectShapePropertyOnFinalClassWithMagicGetter' => [
                 'code' => '<?php
                     final class Row {
@@ -417,6 +438,14 @@ final class IntersectionTypeTest extends TestCase
                 'error_message' => 'UndefinedPropertyAssignment',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'interfaceIntersectedWithShapeRejectsOtherProperty' => [
+                'code' => '<?php
+                    interface Foo {}
+
+                    /** @var Foo&object{id: int} $x */
+                    $other = $x->other;',
+                'error_message' => 'NoInterfaceProperties',
             ],
             'callableObjectWithMissingStringArgument' => [
                 'code' => '<?php
