@@ -297,6 +297,23 @@ final class AtomicPropertyFetchAnalyzer
                         $is_static_access,
                     );
 
+                    // the shape only narrows the type: taint flows through the class's own property
+                    $shape_type = $statements_analyzer->node_data->getType($stmt);
+
+                    if ($shape_type) {
+                        self::processTaints(
+                            $statements_analyzer,
+                            $stmt,
+                            $shape_type,
+                            $property_id,
+                            $class_storage,
+                            $in_assignment,
+                            $context,
+                        );
+
+                        $statements_analyzer->node_data->setType($stmt, $shape_type);
+                    }
+
                     return;
                 }
             }
@@ -1301,8 +1318,16 @@ final class AtomicPropertyFetchAnalyzer
             $override_property_visibility = $interface_storage->override_property_visibility;
 
             $intersects_with_enum = false;
+            $intersects_with_shape_property = false;
 
             foreach ($intersection_types as $intersection_type) {
+                if ($intersection_type instanceof TObjectWithProperties
+                    && $stmt->name instanceof PhpParser\Node\Identifier
+                    && isset($intersection_type->properties[$stmt->name->name])
+                ) {
+                    $intersects_with_shape_property = true;
+                }
+
                 if ($intersection_type instanceof TNamedObject
                     && $codebase->classExists($intersection_type->value)
                 ) {
@@ -1330,7 +1355,7 @@ final class AtomicPropertyFetchAnalyzer
             $has_get_hook = $codebase->analysis_php_version_id >= 8_04_00 &&
                 $interface_property?->hook_get !== null;
 
-            if (!$class_exists && !$is_enum_interface && !$has_get_hook) {
+            if (!$class_exists && !$is_enum_interface && !$has_get_hook && !$intersects_with_shape_property) {
                 if (IssueBuffer::accepts(
                     new NoInterfaceProperties(
                         'Interfaces cannot have properties',
