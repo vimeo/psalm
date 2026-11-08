@@ -48,6 +48,7 @@ use function array_merge;
 use function array_values;
 use function assert;
 use function count;
+use function reset;
 use function strtolower;
 
 /**
@@ -903,11 +904,53 @@ final class AtomicTypeComparator
     ): ?TGenericObject {
         if ($other instanceof TGenericObject
             || $iterable->extra_types
-            || ($codebase->classExists($other->value)
+            || (($codebase->classExists($other->value) || $codebase->classlikes->enumExists($other->value))
                 && !$codebase->classImplements($other->value, 'Traversable')
-                && $codebase->classlike_storage_provider->get($other->value)->final)
+                && ($codebase->classlike_storage_provider->get($other->value)->final
+                    || $codebase->classlike_storage_provider->get($other->value)->is_enum))
         ) {
             return null;
+        }
+
+        // a generic class takes the key and the value of the iterable for the templates that stand for its own
+        if ($codebase->classExists($other->value)) {
+            $other_storage = $codebase->classlike_storage_provider->get($other->value);
+            $extended_params = $other_storage->template_extended_params['Traversable'] ?? null;
+
+            if ($other_storage->template_types !== null
+                && $extended_params !== null
+                && isset($extended_params['TKey'], $extended_params['TValue'])
+                && isset($iterable->type_params[1])
+            ) {
+                $iterable_params = [
+                    'TKey' => $iterable->type_params[0],
+                    'TValue' => $iterable->type_params[1],
+                ];
+                $class_params = [];
+                $found = [];
+
+                foreach ($other_storage->template_types as $template_name => $bounds) {
+                    $class_param = reset($bounds);
+
+                    foreach ($iterable_params as $traversable_template => $iterable_param) {
+                        $standing_for = $extended_params[$traversable_template];
+
+                        if ($standing_for->isSingle()
+                            && $standing_for->getSingleAtomic() instanceof TTemplateParam
+                            && $standing_for->getSingleAtomic()->param_name === $template_name
+                        ) {
+                            $class_param = $iterable_param;
+                            $found[$traversable_template] = true;
+                        }
+                    }
+
+                    $class_params[] = Capabilities::isPurityArgument($class_param) ? $iterable->purity : $class_param;
+                }
+
+                if ($class_params !== [] && count($found) === 2) {
+                    return new TGenericObject($other->value, $class_params);
+                }
+            }
         }
 
         // the purity of the iterable is the last template of Traversable

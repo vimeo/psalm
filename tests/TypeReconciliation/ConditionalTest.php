@@ -70,7 +70,43 @@ final class ConditionalTest extends TestCase
                             return;
                         }
 
-                        /** @psalm-check-type-exact $t = Generator&Traversable[pure]<int, string> */
+                        /** @psalm-check-type-exact $t = Generator[pure]<int, string, mixed, mixed> */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'iterableInstanceOfGeneratorKeepsTheTypeOfWhatIsIteratedOver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class RawMessage {
+                        /** @param iterable<string>|string|resource $message */
+                        public function __construct(private $message) {}
+
+                        public function toIterable(): iterable {
+                            if (\is_string($this->message)) {
+                                yield $this->message;
+
+                                return;
+                            }
+
+                            if (\is_resource($this->message)) {
+                                return;
+                            }
+
+                            if ($this->message instanceof \Generator) {
+                                $copy = fopen('php://temp', 'w+');
+                                if ($copy === false) {
+                                    return;
+                                }
+
+                                foreach ($this->message as $chunk) {
+                                    fwrite($copy, $chunk);
+                                    yield $chunk;
+                                }
+                            }
+                        }
                     }
                     PHP,
                 'assertions' => [],
@@ -97,7 +133,7 @@ final class ConditionalTest extends TestCase
                             return;
                         }
 
-                        /** @psalm-check-type-exact $positive = Generator&Traversable<int, string> */
+                        /** @psalm-check-type-exact $positive = Generator[impure]<int, string, mixed, mixed> */
                         /** @psalm-check-type-exact $negative = array<int, string>|Traversable<int, string> */
                     }
                     PHP,
@@ -3609,6 +3645,24 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'iterableIsNotInstanceOfAnEnum' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Suit {
+                        case Hearts;
+                    }
+
+                    /** @param iterable<int, string> $t */
+                    function f(iterable $t): void {
+                        if ($t instanceof Suit) {
+                            echo "never a Traversable";
+                        }
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'iterableIsNotInstanceOfFinalClassThatIsNotTraversable' => [
                 'code' => <<<'PHP'
                     <?php
