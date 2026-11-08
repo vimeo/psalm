@@ -22,6 +22,19 @@ final class TypeAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'typeAliasOfAClassWithATemplateNamedLikeAShapeKey' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-type Shape = array{T: int, U?: string}
+                     */
+                    final class Box {
+                        /**
+                         * @var Shape
+                         */
+                        public array $shape = ["T" => 1];
+                    }',
+            ],
             'typeAliasOfAClassWithATemplateThatDoesNotUseIt' => [
                 'code' => '<?php
                     namespace Some\\Ns;
@@ -1177,6 +1190,21 @@ final class TypeAnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:11:21 - Type alias DataType cannot use the template T of its class',
+            ],
+            'typeAliasUsingTheTemplateOfItsClassAsTheValueOfAShapeKeyOfTheSameName' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-type Shape = array{T: T}
+                     */
+                    final class Box {
+                        /**
+                         * @var Shape
+                         */
+                        public array $shape = [];
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:6:21 - Type alias Shape cannot use the template T of its class',
             ],
             'typeAliasUsingTheTemplateOfItsClassWithoutANamespace' => [
                 'code' => '<?php

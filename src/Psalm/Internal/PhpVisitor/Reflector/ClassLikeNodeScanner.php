@@ -2459,8 +2459,10 @@ final class ClassLikeNodeScanner
             }
 
             // an alias can be imported into classes that don't have the template
-            foreach ($type_tokens as $type_token) {
-                if (isset($template_names[$type_token[0]])) {
+            foreach ($type_tokens as $i => $type_token) {
+                if (isset($template_names[$type_token[0]])
+                    && !self::isShapeKey($type_tokens, $i)
+                ) {
                     throw new DocblockParseException(
                         'Type alias ' . $type_alias . ' cannot use the template ' . $type_token[0] . ' of its class',
                     );
@@ -2471,6 +2473,25 @@ final class ClassLikeNodeScanner
         }
 
         return $type_alias_tokens;
+    }
+
+    /**
+     * Whether the token at $i names a key of an array or object shape (`array{T: int}`), not a type
+     *
+     * @param list<array{0: string, 1: int, 2?: string}> $type_tokens
+     * @psalm-pure
+     */
+    private static function isShapeKey(array $type_tokens, int $i): bool
+    {
+        $previous = $type_tokens[$i - 1][0] ?? null;
+
+        if ($previous !== '{' && $previous !== ',') {
+            return false;
+        }
+
+        $next = $type_tokens[$i + 1][0] ?? null;
+
+        return $next === ':' || ($next === '?' && ($type_tokens[$i + 2][0] ?? null) === ':');
     }
 
     /**
