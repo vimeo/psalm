@@ -6,9 +6,12 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Issue\InvalidArgument;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Union;
 
 use function call_user_func;
@@ -45,6 +48,26 @@ final class StrReplaceReturnTypeProvider implements FunctionReturnTypeProviderIn
             return null;
         }
 
+        foreach ([$call_args[0], $call_args[1], $call_args[2]] as $call_arg) {
+            if ($call_arg->unpack || $call_arg->name !== null) {
+                return null;
+            }
+        }
+
+        $search_count = self::getElementCount($statements_source->node_data->getType($call_args[0]->value));
+        $replace_count = self::getElementCount($statements_source->node_data->getType($call_args[1]->value));
+        if ($search_count !== null && $replace_count !== null && $replace_count < $search_count) {
+            IssueBuffer::maybeAdd(
+                new InvalidArgument(
+                    'The replace array has fewer elements than the search array, the remaining searches '
+                        . 'are replaced with an empty string',
+                    $event->getCodeLocation(),
+                    $function_id,
+                ),
+                $statements_source->getSuppressedIssues(),
+            );
+        }
+
         if ($subject_type = $statements_source->node_data->getType($call_args[2]->value)) {
             if (!$subject_type->isSingleStringLiteral()) {
                 return null;
@@ -70,5 +93,30 @@ final class StrReplaceReturnTypeProvider implements FunctionReturnTypeProviderIn
         }
 
         return null;
+    }
+
+    /**
+     * The number of elements of an array with a known size, if it has some
+     *
+     * @psalm-mutation-free
+     */
+    private static function getElementCount(?Union $type): ?int
+    {
+        if (!$type || !$type->isArray()) {
+            return null;
+        }
+
+        $array = $type->getArray();
+        if (!$array instanceof TKeyedArray || $array->fallback_params) {
+            return null;
+        }
+
+        foreach ($array->properties as $property) {
+            if ($property->possibly_undefined) {
+                return null;
+            }
+        }
+
+        return count($array->properties);
     }
 }
