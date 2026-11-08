@@ -44,6 +44,9 @@ final class TypeCombination
     /** @var array<string, bool> */
     public array $object_static = [];
 
+    /** @var array<string, bool> */
+    public array $object_static_resolved = [];
+
     /** @var array<int, bool>|null */
     public ?array $array_counts = [];
 
