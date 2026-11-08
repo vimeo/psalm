@@ -56,6 +56,98 @@ final class AssertAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testArrayKeyExistsAssertionOfAnArgumentOffset(): void
+    {
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @psalm-assert array-key-exists $c[$key] */
+                function check(int $key, array $c): void {
+                    if (!array_key_exists($key, $c)) {
+                        throw new RuntimeException();
+                    }
+                }
+
+                function f(array $c, int $key): void {
+                    check(0, $c);
+                    echo (string) $c[0];
+                    check($key, $c);
+                    echo (string) $c[$key];
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testArrayKeyExistsAssertionDoesNotCoverOtherOffsets(): void
+    {
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @psalm-assert array-key-exists $c[$key] */
+                function check(int $key, array $c): void {}
+
+                function f(array $c): void {
+                    check(0, $c);
+                    echo (string) $c[1];
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testArrayKeyExistsAssertionOfNamedArguments(): void
+    {
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @psalm-assert array-key-exists $target[$key] */
+                function check(string $key, array $target, array $other): void {}
+
+                function f(array $a, array $b, array $c): void {
+                    check(key: "k", other: $b, target: $a);
+                    echo (string) $a["k"];
+
+                    check("m", other: $c, target: $b);
+                    echo (string) $b["m"];
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testArrayKeyExistsAssertionOfNamedArgumentsDoesNotCoverTheOtherArray(): void
+    {
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedStringArrayOffset - somefile.php:8');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @psalm-assert array-key-exists $target[$key] */
+                function check(string $key, array $target, array $other): void {}
+
+                function f(array $a, array $b): void {
+                    check(key: "k", other: $b, target: $a);
+
+                    echo (string) $b["k"];
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testForgetAssertionAfterNonMutationFreeCall(): void
     {
         $this->expectExceptionMessage('PossiblyNullArgument');
@@ -159,6 +251,367 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertIfTrueAndFalseKeepEveryAlternativeOfAUnion' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true \'a\'|\'b\' $x */
+                    function isAOrB(string $x): bool {
+                        return $x === "a" || $x === "b";
+                    }
+
+                    /** @psalm-assert-if-false \'a\'|\'b\' $x */
+                    function isNotAOrB(string $x): bool {
+                        return $x !== "a" && $x !== "b";
+                    }
+
+                    /** @var string $s */
+                    $s = "";
+                    /** @var string $t */
+                    $t = "";
+
+                    $ifTrue = isAOrB($s) ? $s : null;
+                    $ifFalse = isNotAOrB($t) ? null : $t;',
+                'assertions' => [
+                    '$ifTrue===' => "'a'|'b'|null",
+                    '$ifFalse===' => "'a'|'b'|null",
+                ],
+            ],
+            'assertIfTrueUnionDoesNotIntersectUnrelatedFinalClasses' => [
+                'code' => '<?php
+                    interface ToOneAssociation {}
+                    interface OneToOneAssociation extends ToOneAssociation {}
+
+                    abstract class Association {
+                        /**
+                         * @psalm-assert-if-true OwningSide $this
+                         * @psalm-assert-if-false InverseSide $this
+                         */
+                        final public function isOwningSide(): bool {
+                            return $this instanceof OwningSide;
+                        }
+
+                        /** @psalm-assert-if-true ToOneAssociation $this */
+                        final public function isToOne(): bool {
+                            return $this instanceof ToOneAssociation;
+                        }
+
+                        /** @psalm-assert-if-true OneToOneOwningSide|ManyToOneAssociation $this */
+                        final public function isToOneOwningSide(): bool {
+                            return $this->isToOne() && $this->isOwningSide();
+                        }
+
+                        /** @psalm-assert-if-true OneToOneAssociation $this */
+                        final public function isOneToOne(): bool {
+                            return $this instanceof OneToOneAssociation;
+                        }
+                    }
+
+                    abstract class OwningSide extends Association {}
+                    abstract class InverseSide extends Association {}
+                    abstract class ToOneOwningSide extends OwningSide implements ToOneAssociation {}
+                    final class ManyToOneAssociation extends ToOneOwningSide {}
+                    final class OneToOneOwningSide extends ToOneOwningSide implements OneToOneAssociation {}
+                    final class OneToOneInverseSide extends InverseSide implements OneToOneAssociation {}
+                    final class ManyToManyOwningSide extends OwningSide {}
+
+                    /** @var ManyToOneAssociation|OneToOneOwningSide|OneToOneInverseSide|ManyToManyOwningSide $assoc */
+                    $assoc = null;
+
+                    if ($assoc->isToOne()) {
+                        /** @psalm-check-type-exact $assoc = ManyToOneAssociation|OneToOneInverseSide|OneToOneOwningSide */;
+
+                        if ($assoc->isOwningSide()) {
+                            assert($assoc->isToOneOwningSide());
+                            /** @psalm-check-type-exact $assoc = ManyToOneAssociation|OneToOneOwningSide */;
+
+                            if ($assoc->isOneToOne()) {
+                                /** @psalm-check-type-exact $assoc = OneToOneOwningSide */;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+            ],
+            'assertIfTrueAndFalseKeepEveryAlternativeOfAUnionOnAProperty' => [
+                'code' => '<?php
+                    final class Foo {
+                        public string $bar = "";
+
+                        /** @psalm-assert-if-true \'a\'|\'b\' $this->bar */
+                        public function hasAOrB(): bool {
+                            return $this->bar === "a" || $this->bar === "b";
+                        }
+
+                        /** @psalm-assert-if-false \'a\'|\'b\' $this->bar */
+                        public function hasNotAOrB(): bool {
+                            return $this->bar !== "a" && $this->bar !== "b";
+                        }
+                    }
+
+                    /** @psalm-assert-if-true \'a\'|\'b\' $foo->bar */
+                    function fooHasAOrB(Foo $foo): bool {
+                        return $foo->hasAOrB();
+                    }
+
+                    /** @psalm-assert-if-false \'a\'|\'b\' $foo->bar */
+                    function fooHasNotAOrB(Foo $foo): bool {
+                        return $foo->hasNotAOrB();
+                    }
+
+                    $one = new Foo();
+                    $two = new Foo();
+                    $three = new Foo();
+                    $four = new Foo();
+
+                    $viaThisTrue = $one->hasAOrB() ? $one->bar : null;
+                    $viaThisFalse = $two->hasNotAOrB() ? null : $two->bar;
+                    $viaArgumentTrue = fooHasAOrB($three) ? $three->bar : null;
+                    $viaArgumentFalse = fooHasNotAOrB($four) ? null : $four->bar;',
+                'assertions' => [
+                    '$viaThisTrue===' => "'a'|'b'|null",
+                    '$viaThisFalse===' => "'a'|'b'|null",
+                    '$viaArgumentTrue===' => "'a'|'b'|null",
+                    '$viaArgumentFalse===' => "'a'|'b'|null",
+                ],
+            ],
+            'reflectionNamedTypeNameOfANonBuiltinTypeMaybeSelfStaticOrParent' => [
+                'code' => '<?php
+                    /** @var ReflectionNamedType $type */
+                    $type = null;
+
+                    $name = $type->isBuiltin() ? null : $type->getName();',
+                'assertions' => [
+                    '$name===' => "'parent'|'self'|'static'|class-string|null",
+                ],
+            ],
+            'assertArrayKeyExistsWithNamedArgumentsNarrowsTheArrayOfItsParameter' => [
+                'code' => '<?php
+                    /**
+                     * @param array{k?: int} $target
+                     * @param array{k?: int} $other
+                     * @psalm-assert array-key-exists $target[$key]
+                     */
+                    function check(string $key, array $target, array $other): void {}
+
+                    /**
+                     * @param array{k?: int} $target
+                     * @param array{k?: int} $other
+                     * @psalm-assert-if-true array-key-exists $target[$key]
+                     */
+                    function has(string $key, array $target, array $other): bool {
+                        return array_key_exists($key, $target);
+                    }
+
+                    /**
+                     * @param array{k?: int} $a
+                     * @param array{k?: int} $b
+                     */
+                    function viaAssert(array $a, array $b): void {
+                        check(key: "k", other: $b, target: $a);
+                        /** @psalm-check-type-exact $a = array{k: int} */
+                        /** @psalm-check-type-exact $b = array{k?: int} */
+                    }
+
+                    /**
+                     * @param array{k?: int} $a
+                     * @param array{k?: int} $b
+                     */
+                    function viaAssertIfTrue(array $a, array $b): void {
+                        if (has(key: "k", other: $b, target: $a)) {
+                            /** @psalm-check-type-exact $a = array{k: int} */
+                            /** @psalm-check-type-exact $b = array{k?: int} */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertionsWithNamedArgumentsAreAboutTheArgumentOfTheirParameter' => [
+                'code' => '<?php
+                    /** @psalm-assert int $target */
+                    function assertInt(mixed $other, mixed $target): void {}
+
+                    /** @psalm-assert-if-true int $target */
+                    function isInt(mixed $other, mixed $target): bool {
+                        return is_int($target);
+                    }
+
+                    /** @psalm-assert-if-false int $target */
+                    function isNotInt(mixed $other, mixed $target): bool {
+                        return !is_int($target);
+                    }
+
+                    final class Asserts {
+                        /** @psalm-assert int $target */
+                        public function assertInt(mixed $other, mixed $target): void {}
+
+                        /** @psalm-assert int $target */
+                        public static function assertIntStatic(mixed $other, mixed $target): void {}
+                    }
+
+                    final class AssertingConstructor {
+                        /** @psalm-assert int $target */
+                        public function __construct(mixed $other, mixed $target) {}
+                    }
+
+                    function viaFunction(mixed $a, mixed $b): void {
+                        assertInt(target: $a, other: $b);
+                        /** @psalm-check-type-exact $a = int */
+                        /** @psalm-check-type-exact $b = mixed */
+                    }
+
+                    function viaIfTrue(mixed $a, mixed $b): void {
+                        if (isInt(target: $a, other: $b)) {
+                            /** @psalm-check-type-exact $a = int */
+                            /** @psalm-check-type-exact $b = mixed */
+                        }
+                    }
+
+                    function viaIfFalse(mixed $a, mixed $b): void {
+                        if (!isNotInt(target: $a, other: $b)) {
+                            /** @psalm-check-type-exact $a = int */
+                            /** @psalm-check-type-exact $b = mixed */
+                        }
+                    }
+
+                    function viaMethod(Asserts $asserts, mixed $a, mixed $b): void {
+                        $asserts->assertInt(target: $a, other: $b);
+                        /** @psalm-check-type-exact $a = int */
+                        /** @psalm-check-type-exact $b = mixed */
+                    }
+
+                    function viaStaticMethod(mixed $a, mixed $b): void {
+                        Asserts::assertIntStatic(target: $a, other: $b);
+                        /** @psalm-check-type-exact $a = int */
+                        /** @psalm-check-type-exact $b = mixed */
+                    }
+
+                    function viaConstructor(mixed $a, mixed $b): void {
+                        new AssertingConstructor(target: $a, other: $b);
+                        /** @psalm-check-type-exact $a = int */
+                        /** @psalm-check-type-exact $b = mixed */
+                    }
+
+                    function positionalAfterNamed(mixed $a, mixed $b): void {
+                        assertInt($b, target: $a);
+                        /** @psalm-check-type-exact $a = int */
+                        /** @psalm-check-type-exact $b = mixed */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertionOnAParameterANamedArgumentSkipsIsNotApplied' => [
+                'code' => '<?php
+                    /** @psalm-assert int $first */
+                    function assertFirst(mixed $first = 0, mixed $second = null): void {}
+
+                    function skipped(mixed $b): void {
+                        assertFirst(second: $b);
+                        /** @psalm-check-type-exact $b = mixed */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertArrayKeyExistsOfAnArgumentOffsetNarrowsTheArray' => [
+                'code' => '<?php
+                    /** @psalm-assert array-key-exists $array[$key] */
+                    function check(string $key, array $array): void {}
+
+                    /** @psalm-assert-if-true array-key-exists $array[$key] */
+                    function has(string $key, array $array): bool {
+                        return array_key_exists($key, $array);
+                    }
+
+                    /** @psalm-assert-if-false array-key-exists $array[$key] */
+                    function missing(string $key, array $array): bool {
+                        return !array_key_exists($key, $array);
+                    }
+
+                    /** @var array<array-key, mixed> $a */
+                    $a = [];
+                    /** @var array<array-key, mixed> $b */
+                    $b = [];
+                    /** @var array<array-key, mixed> $c */
+                    $c = [];
+                    /** @var array<array-key, mixed> $d */
+                    $d = [];
+
+                    check("k", $a);
+                    $afterCheck = $a;
+                    $ifTrue = has("k", $b) ? $b : null;
+                    $ifFalse = missing("k", $c) ? null : $c;
+                    check(strtoupper("k"), $d);
+                    $unknownKey = $d;',
+                'assertions' => [
+                    '$afterCheck' => 'array{k: mixed, ...<array-key, mixed>}',
+                    '$ifTrue' => 'array{k: mixed, ...<array-key, mixed>}|null',
+                    '$ifFalse' => 'array{k: mixed, ...<array-key, mixed>}|null',
+                    '$unknownKey' => 'array<array-key, mixed>',
+                ],
+            ],
+            'assertArrayKeyExistsOfAMethodArgumentOffset' => [
+                'code' => '<?php
+                    final class Asserter {
+                        /** @psalm-assert array-key-exists $array[$key] */
+                        public function check(array $array, string $key): void {}
+
+                        /** @psalm-assert array-key-exists $array[$key] */
+                        public static function checkStatic(string $key, array $array): void {}
+                    }
+
+                    /** @var array<array-key, mixed> $a */
+                    $a = [];
+                    /** @var array<array-key, mixed> $b */
+                    $b = [];
+
+                    (new Asserter())->check($a, "k");
+                    Asserter::checkStatic("j", $b);
+                    $first = $a;
+                    $second = $b;',
+                'assertions' => [
+                    '$first' => 'array{k: mixed, ...<array-key, mixed>}',
+                    '$second' => 'array{j: mixed, ...<array-key, mixed>}',
+                ],
+            ],
+            'negatedAssertIfTrueOfALiteralStringKeepsTheString' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true literal-string $s */
+                    function isKnown(mixed $s): bool {
+                        return in_array($s, ["a", "b"], true);
+                    }
+
+                    function check(string $s): void {
+                        if (isKnown($s)) {
+                            /** @psalm-check-type-exact $s = literal-string */
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $s = string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'negatedAssertIfTrueOfALowercaseStringKeepsTheString' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true lowercase-string $s */
+                    function isLower(mixed $s): bool {
+                        return is_string($s) && $s === strtolower($s);
+                    }
+
+                    function check(string $s): void {
+                        if (isLower($s)) {
+                            /** @psalm-check-type-exact $s = lowercase-string */
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $s = string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'assertKeyOfAClassConstantNarrowsToItsKeys' => [
                 'code' => '<?php
                     final class OwnerTypes {
@@ -1675,7 +2128,7 @@ final class AssertAnnotationTest extends TestCase
             ],
             'reflectionNameTypeClassStringIfNotBuiltin' => [
                 'code' => '<?php
-                    /** @return class-string|null */
+                    /** @return class-string|\'self\'|\'static\'|\'parent\'|null */
                     function getPropertyType(\ReflectionProperty $reflectionItem): ?string {
                         $type = $reflectionItem->getType();
                         return ($type instanceof \ReflectionNamedType) && !$type->isBuiltin() ? $type->getName() : null;
@@ -1683,6 +2136,37 @@ final class AssertAnnotationTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '7.4',
+            ],
+            'reflectionNameTypeClassStringCanDifferFromAClass' => [
+                'code' => '<?php
+                    final class Envelope {}
+
+                    function check(\ReflectionNamedType $type): bool {
+                        if ($type->isBuiltin()) {
+                            return false;
+                        }
+
+                        $class = $type->getName();
+
+                        return Envelope::class !== $class && $class != Envelope::class;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classStringNextToLiteralStringCanDifferFromAClass' => [
+                'code' => '<?php
+                    class Envelope {}
+
+                    /** @param \'self\'|class-string<Envelope> $name */
+                    function check(string $name): void {
+                        if ($name !== Envelope::class) {
+                            echo $name;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ClassMustBeFinal'],
+                'php_version' => '8.0',
             ],
             'withHasTypeCall' => [
                 'code' => '<?php
@@ -1794,6 +2278,163 @@ final class AssertAnnotationTest extends TestCase
 
                         return "empty";
                     }',
+            ],
+            'memoizedCallWithUnboundMethodTemplateResolvesClassTemplate' => [
+                'code' => '<?php
+                    final class Item {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template T
+                     */
+                    class Box {
+                        /**
+                         * @template U
+                         * @return T|null
+                         */
+                        public function first() { throw new LogicException(); }
+
+                        /** @return T */
+                        public function firstOrFail() {
+                            if ($this->first() === null) {
+                                throw new LogicException();
+                            }
+                            $x = $this->first();
+                            /** @psalm-check-type-exact $x = T */;
+                            return $x;
+                        }
+
+                        /** @psalm-assert-if-false null $this->first() */
+                        public function isNotEmpty(): bool { return true; }
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     * @template V
+                     * @extends Box<list<V>>
+                     */
+                    final class ListBox extends Box {}
+
+                    /** @param Box<Item> $box */
+                    function check(Box $box): void {
+                        if ($box->first() === null) {
+                            throw new LogicException();
+                        }
+                        $x = $box->first();
+                        /** @psalm-check-type-exact $x = Item */;
+                    }
+
+                    /** @param ListBox<Item> $box */
+                    function checkInherited(ListBox $box): void {
+                        if ($box->first() === null) {
+                            throw new LogicException();
+                        }
+                        $x = $box->first();
+                        /** @psalm-check-type-exact $x = list<Item> */;
+                    }
+
+                    /** @param Box<Item> $box */
+                    function checkAsserted(Box $box): void {
+                        if ($box->isNotEmpty()) {
+                            $x = $box->first();
+                            /** @psalm-check-type-exact $x = Item */;
+                        }
+                    }',
+            ],
+            'memoizedCallWithUnboundMethodTemplateResolvesDefaultedOne' => [
+                'code' => '<?php
+                    final class Item {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template T
+                     */
+                    final class Box {
+                        /**
+                         * @template D
+                         * @template U
+                         * @param D $default
+                         * @return T|D
+                         */
+                        public function first($default = null) { throw new LogicException(); }
+                    }
+
+                    /** @param Box<Item> $box */
+                    function check(Box $box): void {
+                        if ($box->first() === null) {
+                            throw new LogicException();
+                        }
+                        $x = $box->first();
+                        /** @psalm-check-type-exact $x = Item */;
+                    }',
+            ],
+            'memoizedCallBindsUnboundMethodTemplateToNever' => [
+                'code' => '<?php
+                    final class Item {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template T
+                     */
+                    final class Box {
+                        /** @param T $item */
+                        public function __construct(public mixed $item) {}
+
+                        /**
+                         * @template U
+                         * @return T|U|null
+                         */
+                        public function first() { throw new LogicException(); }
+                    }
+
+                    $box = new Box(new Item());
+                    if ($box->first() === null) {
+                        throw new LogicException();
+                    }
+                    $x = $box->first();',
+                'assertions' => [
+                    '$x===' => 'Item',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'memoizedCallKeepsUnboundMethodTemplateThatWouldMakeItNever' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T
+                     */
+                    final class Box {
+                        /** @param T $item */
+                        public function __construct(public mixed $item) {}
+
+                        /**
+                         * @template U
+                         * @return U
+                         */
+                        public function only() { throw new LogicException(); }
+
+                        /** @psalm-assert !null $this->only() */
+                        public function assertNotEmpty(): void {}
+
+                        /** @psalm-assert-if-true !null $this->only() */
+                        public function isNotEmpty(): bool { return true; }
+                    }
+
+                    $box = new Box(1);
+                    if (!$box->isNotEmpty()) {
+                        throw new LogicException();
+                    }
+                    $x = $box->only();
+                    $box = new Box(1);
+                    $box->assertNotEmpty();
+                    $y = $box->only();',
+                'assertions' => [
+                    '$x===' => 'U:fn-box::only as mixed',
+                    '$y===' => 'U:fn-box::only as mixed',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'assertTemplatedIterable' => [
                 'code' => '<?php
@@ -3248,6 +3889,48 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'assertionAboutAPropertyOfAPropertyArgument' => [
+                'code' => '<?php
+                    final class HasP {
+                        public ?string $p = null;
+                    }
+
+                    final class Holder {
+                        public function __construct(public HasP $h) {}
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $h->p
+                     */
+                    function hasP(HasP $h): bool { return $h->p !== null; }
+
+                    /**
+                     * @psalm-assert-if-false !null $h->p
+                     */
+                    function lacksP(HasP $h): bool { return $h->p === null; }
+
+                    /**
+                     * @psalm-assert !null $h->p
+                     */
+                    function assertHasP(HasP $h): void { if ($h->p === null) { throw new Exception(); } }
+
+                    function ifTrue(Holder $hd): string {
+                        return hasP($hd->h) ? $hd->h->p : "";
+                    }
+
+                    function ifFalse(Holder $hd): string {
+                        return lacksP($hd->h) ? "" : $hd->h->p;
+                    }
+
+                    function asserted(Holder $hd): string {
+                        assertHasP($hd->h);
+
+                        return $hd->h->p;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -3273,6 +3956,12 @@ final class AssertAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'DocblockTypeContradiction',
+            ],
+            'assertArrayKeyExistsNeedsParametersForBothVariables' => [
+                'code' => '<?php
+                    /** @psalm-assert array-key-exists $array[$missing] */
+                    function check(string $key, array $array): void {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Assertion on array[$missing] needs both of its variables to be parameters',
             ],
             'assertInstanceOfMultipleInterfaces' => [
                 'code' => '<?php
@@ -3682,6 +4371,38 @@ final class AssertAnnotationTest extends TestCase
                     function takesOne(int $_arg): void {}
                 ',
                 'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:40',
+            ],
+            'assertionAboutAPropertyOfANonVariableArgument' => [
+                'code' => '<?php
+                    final class HasP {
+                        public ?string $p = null;
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $h->p
+                     */
+                    function hasP(HasP $h): bool { return $h->p !== null; }
+
+                    if (hasP(new HasP())) {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:25 - Variable being asserted',
+            ],
+            'assertionAboutAPropertyOfANullableStaticPropertyArgument' => [
+                'code' => '<?php
+                    final class HasP {
+                        public ?string $p = null;
+                    }
+
+                    final class Holder {
+                        public static ?HasP $sh = null;
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $h->p
+                     */
+                    function hasP(?HasP $h): bool { return $h !== null && $h->p !== null; }
+
+                    if (hasP(Holder::$sh)) {}',
+                'error_message' => 'Variable Holder::$sh is not an object so the assertion cannot be applied',
             ],
         ];
     }

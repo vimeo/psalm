@@ -935,7 +935,7 @@ abstract class Atomic implements TypeNode, Stringable
             return true;
         }
 
-        if ($this instanceof TResource) {
+        if ($this instanceof TResource || $this instanceof TClosedResource) {
             return true;
         }
 

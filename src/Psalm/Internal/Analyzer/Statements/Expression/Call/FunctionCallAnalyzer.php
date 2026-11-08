@@ -401,18 +401,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $context->vars_in_scope[$const_name] = $const_type;
         }
 
-        foreach ($function_call_info->global_variables as $var_id => $_) {
-            $context->vars_in_scope[$var_id] = GlobalAnalyzer::taintGlobalRead(
-                $statements_analyzer,
-                $context,
-                $var_id,
-                Type::getMixed(),
-            );
-            $context->vars_possibly_in_scope[$var_id] = true;
-        }
-
         if ($function_call_info->function_storage) {
-            // and those the functions it calls write
             GlobalAnalyzer::readGlobalsWrittenBy($statements_analyzer, $context, $function_call_info->function_storage);
         }
 
@@ -460,11 +449,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         );
 
         if ($function_call_info->function_storage) {
-            if ($function_call_info->function_storage->assertions && $function_name instanceof PhpParser\Node\Name) {
+            $function_storage = $function_call_info->function_storage;
+
+            if ($function_storage->assertions && $function_name instanceof PhpParser\Node\Name) {
                 self::applyAssertionsToContext(
                     $function_name,
                     null,
-                    $function_call_info->function_storage->assertions,
+                    self::getAssertionsOnArgs($function_storage->assertions, $function_storage, $stmt->getArgs()),
                     $stmt->getArgs(),
                     $template_result,
                     $context,
@@ -472,24 +463,32 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 );
             }
 
-            if ($function_call_info->function_storage->if_true_assertions) {
+            if ($function_storage->if_true_assertions) {
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
                         static fn(Possibilities $assertion): Possibilities =>
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                        $function_call_info->function_storage->if_true_assertions,
+                        self::getAssertionsOnArgs(
+                            $function_storage->if_true_assertions,
+                            $function_storage,
+                            $stmt->getArgs(),
+                        ),
                     ),
                 );
             }
 
-            if ($function_call_info->function_storage->if_false_assertions) {
+            if ($function_storage->if_false_assertions) {
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
                         static fn(Possibilities $assertion): Possibilities =>
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                        $function_call_info->function_storage->if_false_assertions,
+                        self::getAssertionsOnArgs(
+                            $function_storage->if_false_assertions,
+                            $function_storage,
+                            $stmt->getArgs(),
+                        ),
                     ),
                 );
             }
@@ -800,7 +799,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $function_call_info->function_params = null;
         $function_call_info->defined_constants = [];
-        $function_call_info->global_variables = [];
         $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
         $dynamic_function_storage = null;
 
@@ -820,7 +818,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $function_call_info->function_params = $dynamic_function_storage->params;
                 $function_call_info->allow_named_args = $dynamic_function_storage->allow_named_arg_calls;
                 $function_call_info->defined_constants = $dynamic_function_storage->defined_constants;
-                $function_call_info->global_variables = $dynamic_function_storage->global_variables;
             } elseif (!$function_call_info->in_call_map || $function_call_info->is_stubbed) {
                 try {
                     $function_call_info->function_storage = $function_storage = $codebase_functions->getStorage(
@@ -836,7 +833,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
                     if (!$is_predefined) {
                         $function_call_info->defined_constants = $function_storage->defined_constants;
-                        $function_call_info->global_variables = $function_storage->global_variables;
                     }
                 } catch (UnexpectedValueException) {
                     $function_call_info->function_params = [
@@ -1520,7 +1516,12 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 ) {
                     IssueBuffer::maybeAdd(
                         new UnusedFunctionCall(
-                            'The call to ' . $function_call_info->function_id . ' is not used',
+                            'The call to ' . $function_call_info->function_id . (
+                                // the #[NoDiscard] check reports the same text, so that both reports are one
+                                $function_call_info->function_storage?->no_discard
+                                    ? ' is not used'
+                                    : ' seems to have no effect, its result is not used'
+                            ),
                             new CodeLocation($statements_analyzer, $function_name),
                             $function_call_info->function_id,
                         ),

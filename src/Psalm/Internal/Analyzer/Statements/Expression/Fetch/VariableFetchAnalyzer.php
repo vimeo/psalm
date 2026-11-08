@@ -41,7 +41,6 @@ use Psalm\Type\Union;
 
 use function in_array;
 use function is_string;
-use function time;
 
 /**
  * @internal
@@ -179,7 +178,11 @@ final class VariableFetchAnalyzer
                 $context->vars_in_scope[$var_name] = $type;
                 $statements_analyzer->node_data->setType(
                     $stmt,
-                    self::taintGlobals($statements_analyzer, $var_name, $type, $array_assignment),
+                    self::getReadSuperGlobalType(
+                        self::taintGlobals($statements_analyzer, $var_name, $type, $array_assignment),
+                        $var_name,
+                        $context,
+                    ),
                 );
 
                 return true;
@@ -191,7 +194,11 @@ final class VariableFetchAnalyzer
 
             $statements_analyzer->node_data->setType(
                 $stmt,
-                self::taintGlobals($statements_analyzer, $var_name, $type, $array_assignment),
+                self::getReadSuperGlobalType(
+                    self::taintGlobals($statements_analyzer, $var_name, $type, $array_assignment),
+                    $var_name,
+                    $context,
+                ),
             );
             $context->vars_in_scope[$var_name] = $type;
             $context->vars_possibly_in_scope[$var_name] = true;
@@ -310,42 +317,34 @@ final class VariableFetchAnalyzer
             if ($first_appearance && !$context->inside_isset && !$context->inside_unset) {
                 if ($context->is_global) {
                     if ($codebase->alter_code) {
-                        if (!isset($project_analyzer->getIssuesToFix()['PossiblyUndefinedGlobalVariable'])) {
-                            return true;
+                        if (isset($project_analyzer->getIssuesToFix()['PossiblyUndefinedGlobalVariable'])) {
+                            $branch_point = $statements_analyzer->getBranchPoint($var_name);
+
+                            if ($branch_point) {
+                                $statements_analyzer->addVariableInitialization($var_name, $branch_point);
+                            }
                         }
-
-                        $branch_point = $statements_analyzer->getBranchPoint($var_name);
-
-                        if ($branch_point) {
-                            $statements_analyzer->addVariableInitialization($var_name, $branch_point);
-                        }
-
-                        return true;
+                    } else {
+                        IssueBuffer::maybeAdd(
+                            new PossiblyUndefinedGlobalVariable(
+                                'Possibly undefined global variable ' . $var_name . ', first seen on line ' .
+                                    $first_appearance->getLineNumber(),
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $var_name,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                            (bool) $statements_analyzer->getBranchPoint($var_name),
+                        );
                     }
+                } elseif ($codebase->alter_code
+                    && isset($project_analyzer->getIssuesToFix()['PossiblyUndefinedVariable'])
+                ) {
+                    $branch_point = $statements_analyzer->getBranchPoint($var_name);
 
-                    IssueBuffer::maybeAdd(
-                        new PossiblyUndefinedGlobalVariable(
-                            'Possibly undefined global variable ' . $var_name . ', first seen on line ' .
-                                $first_appearance->getLineNumber(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $var_name,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                        (bool) $statements_analyzer->getBranchPoint($var_name),
-                    );
+                    if ($branch_point) {
+                        $statements_analyzer->addVariableInitialization($var_name, $branch_point);
+                    }
                 } else {
-                    if ($codebase->alter_code
-                        && isset($project_analyzer->getIssuesToFix()['PossiblyUndefinedVariable'])
-                    ) {
-                        $branch_point = $statements_analyzer->getBranchPoint($var_name);
-
-                        if ($branch_point) {
-                            $statements_analyzer->addVariableInitialization($var_name, $branch_point);
-                        }
-
-                        return true;
-                    }
-
                     IssueBuffer::maybeAdd(
                         new PossiblyUndefinedVariable(
                             'Possibly undefined variable ' . $var_name . ', first seen on line ' .
@@ -421,7 +420,11 @@ final class VariableFetchAnalyzer
             self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
 
             $context->vars_in_scope[$var_name] = $stmt_type;
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+            // the value that is read is defined, whatever the variable is (an isset() asks about the variable)
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                $context->inside_isset ? $stmt_type : $stmt_type->setPossiblyUndefined(false),
+            );
 
             // a variable a loop defines, where an iteration starts (see LoopAnalyzer)
             if ($stmt_type->possibly_undefined
@@ -696,6 +699,19 @@ final class VariableFetchAnalyzer
     }
 
     /**
+     * The value that is read from a superglobal is defined, whatever the superglobal is (an isset() asks about it),
+     * but $http_response_header, which only exists after a network request, may not be
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getReadSuperGlobalType(Union $type, string $var_name, Context $context): Union
+    {
+        return $context->inside_isset || $var_name === '$http_response_header'
+            ? $type
+            : $type->setPossiblyUndefined(false);
+    }
+
+    /**
      * @psalm-pure
      */
     public static function isSuperGlobal(string $var_id): bool
@@ -787,7 +803,7 @@ final class VariableFetchAnalyzer
         if ($var_id === '$_COOKIE') {
             $type = new TArray(
                 [
-                    Type::getNonEmptyString(),
+                    new Union([new TNonEmptyString(), new TInt()]),
                     Type::getString(),
                 ],
             );
@@ -828,12 +844,8 @@ final class VariableFetchAnalyzer
                 Type::getNonEmptyListAtomic(Type::getString()),
             ], ['possibly_undefined' => true]);
 
-            $argc_helper = new Union([
+            $positive_int_helper = new Union([
                 new TIntRange(1, null),
-            ], ['possibly_undefined' => true]);
-
-            $request_time_helper = new Union([
-                new TIntRange(time(), null),
             ], ['possibly_undefined' => true]);
 
             $request_time_float_helper = new Union([
@@ -851,7 +863,7 @@ final class VariableFetchAnalyzer
                 'SERVER_SOFTWARE'      => $non_empty_string_helper,
                 'SERVER_PROTOCOL'      => $non_empty_string_helper,
                 'REQUEST_METHOD'       => $non_empty_string_helper,
-                'REQUEST_TIME'         => $request_time_helper,
+                'REQUEST_TIME'         => $positive_int_helper,
                 'REQUEST_TIME_FLOAT'   => $request_time_float_helper,
                 'QUERY_STRING'         => $string_helper,
                 'DOCUMENT_ROOT'        => $non_empty_string_helper,
@@ -921,7 +933,7 @@ final class VariableFetchAnalyzer
 
             if ($var_id === '$_SERVER') {
                 $arr['argv'] = $argv_helper;
-                $arr['argc'] = $argc_helper;
+                $arr['argc'] = $positive_int_helper;
             }
 
             $detailed_type = TKeyedArray::make(
