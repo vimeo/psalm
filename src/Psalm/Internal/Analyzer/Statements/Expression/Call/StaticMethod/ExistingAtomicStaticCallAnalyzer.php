@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\FileManipulation;
+use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
@@ -682,7 +683,7 @@ final class ExistingAtomicStaticCallAnalyzer
      * What `static` stands for in the signature of the method $stmt calls on $fq_class_name, and whether it is that
      * class exactly
      *
-     * @return array{string|TTemplateParam|null, bool}
+     * @return array{string|TNamedObject|TTemplateParam|null, bool}
      */
     public static function getStaticClassType(
         Codebase $codebase,
@@ -711,8 +712,9 @@ final class ExistingAtomicStaticCallAnalyzer
             && $lhs_type_part instanceof TNamedObject
             && $context->self
         ) {
-            $static_type = $context->self;
-            $context_final = $codebase->classlike_storage_provider->get($context->self)->final;
+            $self_storage = $codebase->classlike_storage_provider->get($context->self);
+            $static_type = ClassAnalyzer::getThisObjectType($self_storage, $context->self);
+            $context_final = $self_storage->final;
         } elseif ($context->calling_method_id !== null) {
             // differentiate between these cases:
             //   1. "static" comes from the CALLED static method - use $fq_class_name.
@@ -727,13 +729,15 @@ final class ExistingAtomicStaticCallAnalyzer
 
         return [
             $static_type,
-            is_string($static_type)
-            && ($static_type !== $context->self
-                || $class_storage->final
-                || $context_final
-                // `$other::create()`: `static` is the class of $other, late static only if $other is
-                || ($stmt->class instanceof PhpParser\Node\Expr
-                    && !($lhs_type_part instanceof TNamedObject && $lhs_type_part->is_static))),
+            $static_type instanceof TNamedObject
+                ? $class_storage->final || $context_final
+                : is_string($static_type)
+                    && ($static_type !== $context->self
+                        || $class_storage->final
+                        || $context_final
+                        // `$other::create()`: `static` is the class of $other, late static only if $other is
+                        || ($stmt->class instanceof PhpParser\Node\Expr
+                            && !($lhs_type_part instanceof TNamedObject && $lhs_type_part->is_static))),
         ];
     }
 

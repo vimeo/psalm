@@ -1379,7 +1379,7 @@ final class ClassTest extends TestCase
 
                         public static function times(int $count): static {
                             $factory = static::new()->count($count);
-                            /** @psalm-check-type-exact $factory = Factory&static */;
+                            /** @psalm-check-type-exact $factory = Factory<TModel>&static */;
                             return $factory;
                         }
                     }
