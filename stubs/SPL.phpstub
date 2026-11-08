@@ -159,7 +159,7 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * Sets the value at the specified $offset to $value
      * @link https://php.net/manual/en/spldoublylinkedlist.offsetset.php
      *
-     * @param int $offset The index being set.
+     * @param int|null $offset The index being set, null to append.
      * @param TValue $value The new value for the index.
      * @return void
      *
