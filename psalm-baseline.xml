@@ -82,7 +82,6 @@
     </ComplexMethod>
     <ImplicitToStringCast>
       <code><![CDATA[$config_xml['errorLevel']]]></code>
-      <code><![CDATA[$stub_file['name']]]></code>
     </ImplicitToStringCast>
     <ImpureStaticProperty>
       <code><![CDATA[self::$instance]]></code>
@@ -585,13 +584,6 @@
       <code><![CDATA[$var_id+1]]></code>
     </InvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[$assertion->rule[0]]]></code>
-      <code><![CDATA[$assertion->rule[0]]]></code>
-      <code><![CDATA[$assertion->rule[0]]]></code>
-      <code><![CDATA[$assertion->rule[0]]]></code>
-      <code><![CDATA[$assertion->rule[0]]]></code>
-      <code><![CDATA[$assertion->rule[0]]]></code>
-      <code><![CDATA[$assertion->rule[0]]]></code>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
@@ -1410,15 +1402,6 @@
     </MixedAssignment>
   </file>
   <file src="src/Psalm/Internal/Cli/LanguageServer.php">
-    <InvalidArgument>
-      <code><![CDATA[$autoloaders]]></code>
-    </InvalidArgument>
-    <InvalidReturnStatement>
-      <code><![CDATA[CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)]]></code>
-    </InvalidReturnStatement>
-    <InvalidReturnType>
-      <code><![CDATA[list<ClassLoader>]]></code>
-    </InvalidReturnType>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$options['verbose']]]></code>
     </RiskyTruthyFalsyComparison>

@@ -488,6 +488,7 @@ final class ForeachAnalyzer
 
         if ($context->collect_exceptions) {
             $context->mergeExceptions($foreach_context);
+            $context->mergeExceptions($inner_loop_context);
         }
 
         return null;
