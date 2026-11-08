@@ -116,10 +116,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
      * unused-suppression check, so redundant ones are reported (UnusedPsalmSuppress)
      * like member-level suppressions already are.
      *
-     * Uses the suppressed_issues already parsed from the docblock during scanning;
-     * these are keyed by the char offset of the issue name, unlike suppressions
-     * added programmatically by plugins (which are appended as a plain list and,
-     * having no source location, must not be reported).
+     * Uses the docblock suppressions recorded during scanning, keyed by the char offset of
+     * the issue name. Suppressions added programmatically by plugins land only in
+     * $storage->suppressed_issues and, having no source location, must not be reported.
      *
      * @psalm-external-mutation-free
      */
@@ -128,14 +127,15 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         string $file_path,
         Codebase $codebase,
     ): void {
-        // isset($suppressed_issues[0]) => the list was appended to programmatically
-        if (!$codebase->track_unused_suppressions || isset($storage->suppressed_issues[0])) {
+        $suppressed_issues = $storage->docblock_suppressed_issues;
+
+        if (!$codebase->track_unused_suppressions || $suppressed_issues === []) {
             return;
         }
 
         // a lone UnusedPsalmSuppress should still be reported as unused
-        if (count($storage->suppressed_issues) > 1
-            && $codebase->config->suppressesIssueType($storage->suppressed_issues, 'UnusedPsalmSuppress')
+        if (count($suppressed_issues) > 1
+            && $codebase->config->suppressesIssueType($suppressed_issues, 'UnusedPsalmSuppress')
         ) {
             return;
         }
@@ -143,7 +143,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         $file_path = $storage->location !== null ? $storage->location->file_path : $file_path;
         $taint_analysis = $codebase->taint_flow_graph !== null;
 
-        foreach ($storage->suppressed_issues as $offset => $issue_type) {
+        foreach ($suppressed_issues as $offset => $issue_type) {
             IssueBuffer::addUnusedSuppression($file_path, $offset, $issue_type, $taint_analysis);
         }
     }
@@ -754,6 +754,22 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
                 if ($codebase->classExtends($appearing_property_class, $context->self)) {
                     return $emit_issues ? null : true;
+                }
+
+                // a property redeclared by a subclass or its trait is the one of the class that declared it first
+                $appearing_class_storage = $codebase->classlike_storage_provider->get($appearing_property_class);
+
+                foreach ($appearing_class_storage->parent_classes as $parent_class_name) {
+                    $parent_property = $codebase->classlike_storage_provider->get($parent_class_name)
+                        ->properties[$property_name] ?? null;
+
+                    if ($parent_property !== null
+                        && $parent_property->visibility !== self::VISIBILITY_PRIVATE
+                        && (strtolower($context->self) === strtolower($parent_class_name)
+                            || $codebase->classExtends($context->self, $parent_class_name))
+                    ) {
+                        return $emit_issues ? null : true;
+                    }
                 }
 
                 if (!$codebase->classExtends($context->self, $appearing_property_class)) {
