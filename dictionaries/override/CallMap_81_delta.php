@@ -283,6 +283,23 @@ return array (
         'pattern=' => 'null|string',
       ),
     ),
+    'define' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'constant_name' => 'string',
+        'value' => 'array<array-key, mixed>|null|scalar',
+        'case_insensitive=' => 'false',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'constant_name' => 'string',
+        'value' => 'mixed',
+        'case_insensitive=' => 'false',
+      ),
+    ),
     'domdocument::createcomment' => 
     array (
       'old' => 

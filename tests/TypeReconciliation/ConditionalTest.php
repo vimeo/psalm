@@ -21,6 +21,42 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedInstanceofRemovesTheClassFromTheBoundOfATemplateParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T of DateTimeInterface|string
+                     * @param T $value
+                     */
+                    function takeString($value): string {
+                        if ($value instanceof DateTimeInterface) {
+                            return "";
+                        }
+
+                        return strtoupper($value);
+                    }',
+            ],
+            'negatedInstanceofRemovesTheClassFromTheBoundOfAConditionalReturnTypeParam' => [
+                'code' => '<?php
+                    /**
+                     * @return ($value is null ? null : DateTimeImmutable)
+                     */
+                    function convert(null|DateTimeInterface|string $value): ?DateTimeImmutable {
+                        if (null === $value || $value instanceof DateTimeImmutable) {
+                            return $value;
+                        }
+
+                        if ($value instanceof DateTimeInterface) {
+                            return DateTimeImmutable::createFromInterface($value);
+                        }
+
+                        $result = DateTimeImmutable::createFromFormat(DATE_ATOM, $value);
+
+                        return $result === false ? null : $result;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'orredClausesOfOneVariableAreAllKept' => [
                 'code' => '<?php
                     interface I1 {}
@@ -3525,6 +3561,36 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'negatedInstanceofOfTheWholeBoundOfATemplateParamLeavesNoType' => [
+                'code' => '<?php
+                    interface Foo {}
+
+                    /**
+                     * @template T of Foo
+                     * @param T $value
+                     */
+                    function takeFoo($value): void {
+                        if (!$value instanceof Foo) {
+                            echo "impossible";
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'negatedInstanceofKeepsAnUnrelatedClassInTheBoundOfATemplateParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T of DateTimeInterface|string
+                     * @param T $value
+                     */
+                    function takeString($value): string {
+                        if ($value instanceof Countable) {
+                            return "";
+                        }
+
+                        return strtoupper($value);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
             'makeNonNullableNull' => [
                 'code' => '<?php
                     class A { }
