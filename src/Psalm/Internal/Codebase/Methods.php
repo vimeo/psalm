@@ -830,17 +830,37 @@ final class Methods
                 $self_class = $overridden_class_storage->name;
 
                 if ($candidate_type && $source_analyzer && !$candidate_type->isMixed()) {
+                    $candidate_to_overridden_result = new TypeComparisonResult();
                     $old_contained_by_new = UnionTypeComparator::isContainedBy(
                         $codebase,
                         $candidate_type,
                         $overridden_return_type,
-                    );
+                        false,
+                        false,
+                        $candidate_to_overridden_result,
+                    ) && !$candidate_to_overridden_result->to_string_cast;
 
+                    $overridden_to_candidate_result = new TypeComparisonResult();
                     $new_contained_by_old = UnionTypeComparator::isContainedBy(
                         $codebase,
                         $overridden_return_type,
                         $candidate_type,
-                    );
+                        false,
+                        false,
+                        $overridden_to_candidate_result,
+                    ) && !$overridden_to_candidate_result->to_string_cast;
+
+                    // a type that is only castable to the other one doesn't win over it
+                    if (!$old_contained_by_new && !$new_contained_by_old) {
+                        if ($overridden_to_candidate_result->to_string_cast) {
+                            continue;
+                        }
+
+                        if ($candidate_to_overridden_result->to_string_cast) {
+                            $candidate_type = $overridden_return_type;
+                            continue;
+                        }
+                    }
 
                     if ((!$old_contained_by_new && !$new_contained_by_old)
                         || ($old_contained_by_new && $new_contained_by_old)

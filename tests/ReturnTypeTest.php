@@ -126,6 +126,93 @@ final class ReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'overriddenInterfaceReturnTypesIgnoreAStringCastAsContainment' => [
+                'code' => '<?php
+                    interface I1 {
+                        /** @return string */
+                        public function render();
+                    }
+                    interface I2 {
+                        /** @return Stringable */
+                        public function render();
+                    }
+                    final class C implements I1, I2 {
+                        public function render() {
+                            return "x";
+                        }
+                    }
+
+                    $x = (new C())->render();',
+                'assertions' => ['$x===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'overriddenInterfaceReturnTypesIgnoreAStringCastAsContainmentInTheOtherOrder' => [
+                'code' => '<?php
+                    interface L1 {
+                        /** @return Stringable */
+                        public function render();
+                    }
+                    interface L2 {
+                        /** @return string */
+                        public function render();
+                    }
+                    final class M implements L1, L2 {
+                        public function render() {
+                            return "x";
+                        }
+                    }
+
+                    $w = (new M())->render();',
+                'assertions' => ['$w===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'overriddenInterfaceReturnTypesKeepContainmentWithoutAStringCast' => [
+                'code' => '<?php
+                    interface J1 {
+                        /** @return non-empty-string */
+                        public function render();
+                    }
+                    interface J2 {
+                        /** @return string */
+                        public function render();
+                    }
+                    final class K implements J1, J2 {
+                        public function render() {
+                            return "x";
+                        }
+                    }
+
+                    $y = (new K())->render();',
+                'assertions' => ['$y===' => 'non-empty-string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowerNativeReturnTypeWinsOverInheritedDocblockWithAClassHavingToString' => [
+                'code' => '<?php
+                    class S {
+                        public function __toString() {
+                            return "s";
+                        }
+                    }
+
+                    abstract class A {
+                        /** @return string|S */
+                        abstract public function render();
+                    }
+
+                    final class B extends A {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $z = (new B())->render();',
+                'assertions' => ['$z===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
             'voidNeverDeclaredWithAThrowingPathAndAnImplicitReturn' => [
                 'code' => '<?php
                     /**
