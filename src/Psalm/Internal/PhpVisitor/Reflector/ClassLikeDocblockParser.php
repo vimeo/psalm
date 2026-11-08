@@ -37,17 +37,13 @@ use function array_shift;
 use function count;
 use function explode;
 use function implode;
-use function in_array;
-use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
-use function preg_split;
 use function reset;
 use function str_contains;
 use function str_replace;
 use function strlen;
 use function strpos;
-use function strtolower;
 use function substr;
 use function substr_count;
 use function trim;
@@ -96,100 +92,12 @@ final class ClassLikeDocblockParser
             }
         }
 
-        if (isset($parsed_docblock->combined_tags['template'])) {
-            foreach ($parsed_docblock->combined_tags['template'] as $offset => $template_line) {
-                $template_type = preg_split('/[\s]+/', CommentAnalyzer::sanitizeDocblockType($template_line));
-                if ($template_type === false) {
-                    throw new IncorrectDocblockException('Invalid @template tag: '.preg_last_error_msg());
-                }
-
-                $template_name = array_shift($template_type);
-
-                if (!$template_name) {
-                    throw new IncorrectDocblockException('Empty @template tag');
-                }
-
-                $source_prefix = 'none';
-                if (isset($parsed_docblock->tags['psalm-template'][$offset])) {
-                    $source_prefix = 'psalm';
-                } elseif (isset($parsed_docblock->tags['phpstan-template'][$offset])) {
-                    $source_prefix = 'phpstan';
-                }
-
-                if (count($template_type) > 1
-                    && in_array(strtolower($template_type[0]), ['as', 'super', 'of'], true)
-                ) {
-                    $template_modifier = strtolower(array_shift($template_type));
-                    $templates[$template_name][$source_prefix] = [
-                        $template_name,
-                        $template_modifier,
-                        implode(' ', $template_type),
-                        false,
-                        $offset - $comment->getStartFilePos(),
-                    ];
-                } else {
-                    $templates[$template_name][$source_prefix] = [
-                        $template_name,
-                        null,
-                        null,
-                        false,
-                        $offset - $comment->getStartFilePos(),
-                    ];
-                }
-            }
-        }
-
-        if (isset($parsed_docblock->combined_tags['template-covariant'])) {
-            foreach ($parsed_docblock->combined_tags['template-covariant'] as $offset => $template_line) {
-                $template_type = preg_split('/[\s]+/', CommentAnalyzer::sanitizeDocblockType($template_line));
-                if ($template_type === false) {
-                    throw new IncorrectDocblockException('Invalid @template-covariant tag: '.preg_last_error_msg());
-                }
-
-                $template_name = array_shift($template_type);
-
-                if (!$template_name) {
-                    throw new IncorrectDocblockException('Empty @template-covariant tag');
-                }
-
-                $source_prefix = 'none';
-                if (isset($parsed_docblock->tags['psalm-template-covariant'][$offset])) {
-                    $source_prefix = 'psalm';
-                } elseif (isset($parsed_docblock->tags['phpstan-template-covariant'][$offset])) {
-                    $source_prefix = 'phpstan';
-                }
-
-                if (count($template_type) > 1
-                    && in_array(strtolower($template_type[0]), ['as', 'super', 'of'], true)
-                ) {
-                    $template_modifier = strtolower(array_shift($template_type));
-                    $templates[$template_name][$source_prefix] = [
-                        $template_name,
-                        $template_modifier,
-                        implode(' ', $template_type),
-                        true,
-                        $offset - $comment->getStartFilePos(),
-                    ];
-                } else {
-                    $templates[$template_name][$source_prefix] = [
-                        $template_name,
-                        null,
-                        null,
-                        true,
-                        $offset - $comment->getStartFilePos(),
-                    ];
-                }
-            }
-        }
-
-        foreach ($templates as $template_entries) {
-            foreach (['psalm', 'phpstan', 'none'] as $source_prefix) {
-                if (isset($template_entries[$source_prefix])) {
-                    $info->templates[] = $template_entries[$source_prefix];
-                    break;
-                }
-            }
-        }
+        [$info->templates, $info->template_defaults] = TemplateTagParser::parseTags(
+            $parsed_docblock,
+            $comment,
+            ['template' => false, 'template-covariant' => true],
+            $templates,
+        );
 
         if (isset($parsed_docblock->combined_tags['extends'])) {
             foreach ($parsed_docblock->combined_tags['extends'] as $template_line) {
@@ -503,9 +411,20 @@ final class ClassLikeDocblockParser
                     throw new DocblockParseException('No @method entry specified');
                 }
 
+                // the name of the method isn't a type, even when it reads like one (`callable()`)
+                $method_name = null;
+                $tokenized_entry = $method_entry;
+
+                if (preg_match('/^([a-zA-Z_]\w*)(?= ?\()/', $method_entry, $name_matches)
+                    && isset($name_matches[1])
+                ) {
+                    $method_name = $name_matches[1];
+                    $tokenized_entry = 'psalm_method_name' . substr($method_entry, strlen($method_name));
+                }
+
                 try {
                     $method_tokens = TypeTokenizer::getFullyQualifiedTokens(
-                        $method_entry,
+                        $tokenized_entry,
                         $aliases,
                         $purity_template_map,
                     );
@@ -513,7 +432,7 @@ final class ClassLikeDocblockParser
                     if ($param_template_map !== $purity_template_map) {
                         $method_tokens = self::keepTemplatesInParamTypes(
                             $method_tokens,
-                            TypeTokenizer::getFullyQualifiedTokens($method_entry, $aliases, $param_template_map),
+                            TypeTokenizer::getFullyQualifiedTokens($tokenized_entry, $aliases, $param_template_map),
                         );
                     }
 
@@ -602,7 +521,8 @@ final class ClassLikeDocblockParser
                     }
                 }
 
-                $function_string = 'function ' . $method_tree->value . '(' . implode(', ', $args) . ')';
+                $function_string = 'function ' . ($method_name ?? $method_tree->value)
+                    . '(' . implode(', ', $args) . ')';
 
                 if ($is_static) {
                     $function_string = 'static ' . $function_string;
@@ -613,12 +533,9 @@ final class ClassLikeDocblockParser
                 $php_string = '<?php class A { ' . $function_docblock . ' public ' . $function_string . '{} }';
 
                 try {
-                    $has_errors = false;
-
                     $statements = StatementsProvider::parseStatements(
                         $php_string,
                         $codebase->analysis_php_version_id,
-                        $has_errors,
                     );
                 } catch (Exception) {
                     throw new DocblockParseException('Badly-formatted @method string ' . $method_entry);
@@ -746,7 +663,7 @@ final class ClassLikeDocblockParser
             }
 
             if (count($line_parts) > 1) {
-                if (preg_match('/^&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
+                if (preg_match('/^&?\$[A-Za-z0-9_\x80-\xff]+,?$/', $line_parts[1])
                     && $line_parts[0][0] !== '{'
                 ) {
                     $line_parts[1] = str_replace('&', '', $line_parts[1]);
