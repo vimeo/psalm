@@ -7,9 +7,11 @@ namespace Psalm\Tests;
 use Countable;
 use DateTime;
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -660,6 +662,73 @@ final class PropertyTypeTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * The properties a constructor sets are initialised, whichever files were analysed before: a parameter type
+     * naming a missing class makes the regular analysis skip the constructor's body, but not the collection of what
+     * it initialises.
+     *
+     * @param list<string> $analysed_before
+     */
+    #[DataProvider('providerFilesAnalysedBeforeTheSubclass')]
+    public function testInheritedConstructorInitialisesPropertiesWhateverWasAnalysedBefore(
+        array $analysed_before,
+    ): void {
+        $this->testConfig->throw_exception = false;
+
+        $parent_file = self::$src_dir_path . 'parent.php';
+        $child_file = self::$src_dir_path . 'child.php';
+
+        $this->addFile($parent_file, '<?php
+            namespace Fixture;
+
+            class ParentClass {
+                protected string $name;
+
+                /** @param MissingClass $finder */
+                public function __construct($finder = null) {
+                    $this->name = "name";
+                }
+            }
+        ');
+        $this->addFile($child_file, '<?php
+            namespace Fixture;
+
+            class InheritingChild extends ParentClass {}
+
+            class CallingChild extends ParentClass {
+                public function __construct() {
+                    parent::__construct();
+                }
+            }
+        ');
+
+        foreach ($analysed_before as $file) {
+            $this->analyzeFile($file === 'parent' ? $parent_file : $child_file, new Context());
+        }
+
+        $this->analyzeFile($child_file, new Context());
+
+        $issues = [];
+
+        foreach ([$parent_file, $child_file] as $file) {
+            foreach (IssueBuffer::getIssuesDataForFile($file) as $issue) {
+                $issues[] = $issue->type . ' ' . $issue->file_name . ':' . $issue->line_from;
+            }
+        }
+
+        self::assertSame(['UndefinedDocblockClass src/parent.php:7'], $issues);
+    }
+
+    /**
+     * @return iterable<string, array{list<string>}>
+     * @psalm-pure
+     */
+    public static function providerFilesAnalysedBeforeTheSubclass(): iterable
+    {
+        yield 'nothing before' => [[]];
+        yield 'the parent file before' => [['parent']];
     }
 
     /**
