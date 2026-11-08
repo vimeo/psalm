@@ -28,6 +28,37 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'generatorReturnTypeAllowsAnImplicitReturnOfNull' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, mixed, string|null> */
+                    function nullable(bool $r): Generator {
+                        if ($r) {
+                            return "string";
+                        }
+
+                        yield 1;
+                    }
+
+                    /** @return Generator<int, int, mixed, mixed> */
+                    function untyped(bool $r): Generator {
+                        if ($r) {
+                            return "string";
+                        }
+
+                        yield 1;
+                    }
+
+                    /** @return Generator<int, int, mixed, string> */
+                    function everyPathReturns(bool $r): Generator {
+                        yield 1;
+
+                        if ($r) {
+                            return "a";
+                        }
+
+                        return "b";
+                    }',
+            ],
             'generatorMethodThatThrowsInInfiniteLoop' => [
                 'code' => '<?php
                     class A {
@@ -2085,6 +2116,18 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'generatorReturnsImplicitlyOnAPath' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, mixed, string> */
+                    function foo(bool $r): Generator {
+                        if ($r) {
+                            return "string";
+                        }
+
+                        yield 1;
+                    }',
+                'error_message' => 'InvalidReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33 - Not all code paths of foo end in a return statement, the generator return type string expected',
+            ],
             'voidNeverDeclaredWithOnlyAnImplicitReturn' => [
                 'code' => '<?php
                     /**
@@ -2538,7 +2581,7 @@ final class ReturnTypeTest extends TestCase
 
                 $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:43 - Unable to determine the type that $key is being assigned to',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:51 - Unable to determine the type that $value is being assigned to',
             ],
             'cannotInferReturnClosureWithMoreSpecificTypes' => [
                 'code' => '<?php
