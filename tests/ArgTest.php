@@ -419,6 +419,16 @@ final class ArgTest extends TestCase
                     f(...$x, ...$y);',
                 'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33',
             ],
+            'iterableInUnionPassedToArrayParam' => [
+                'code' => '<?php
+                    function takesArray(array $a): void {}
+
+                    /** @param list<int>|iterable<string> $values */
+                    function f(iterable $values): void {
+                        takesArray($values);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
             'arrayPushArgumentUnpackingWithBadArg' => [
                 'code' => '<?php
                     $a = [];
