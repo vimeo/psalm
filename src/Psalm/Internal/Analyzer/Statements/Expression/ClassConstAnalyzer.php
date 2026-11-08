@@ -142,13 +142,11 @@ final class ClassConstAnalyzer
                 );
             }
 
-            if ($codebase->classlikes->classExists($fq_class_name, null, $context)) {
-                $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
-            }
-
             if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
                 if ($codebase->classlikes->classExists($fq_class_name, null, $context)) {
-                    $const_class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+                    $const_class_storage = $codebase->classlike_storage_provider->get(
+                        $codebase->classlikes->getUnAliasedName($fq_class_name),
+                    );
                     $fq_class_name = $const_class_storage->name;
 
                     if ($const_class_storage->deprecated && $fq_class_name !== $context->self) {
@@ -189,6 +187,8 @@ final class ClassConstAnalyzer
 
                 return true;
             }
+
+            $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
 
             // if we're ignoring that the class doesn't exist, exit anyway
             if (!$codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name, null, $context)) {
@@ -511,9 +511,7 @@ final class ClassConstAnalyzer
                 return true;
             }
 
-            if ($codebase->classlikes->classExists($fq_class_name, null, $context)) {
-                $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
-            }
+            $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
 
             $moved_class = false;
 
@@ -864,9 +862,9 @@ final class ClassConstAnalyzer
         $parent_classlike_storage = $interface_const_storage = $parent_const_storage = null;
         $interface_overrides = [];
         foreach ($class_storage->class_implements ?: $class_storage->direct_interface_parents as $interface) {
-            $interface_storage = $codebase->classlike_storage_provider->get($interface);
+            $interface_storage = $codebase->classlikes->getStorageFor($interface);
             $parent_const_storage = $interface_storage->constants[$const_name] ?? null;
-            if ($parent_const_storage !== null) {
+            if ($interface_storage !== null && $parent_const_storage !== null) {
                 if ($const_storage->location
                     && $const_storage !== $parent_const_storage
                     && $codebase->analysis_php_version_id < 8_01_00
@@ -900,9 +898,9 @@ final class ClassConstAnalyzer
         }
 
         foreach ($class_storage->parent_classes as $parent_class) {
-            $parent_class_storage = $codebase->classlike_storage_provider->get($parent_class);
+            $parent_class_storage = $codebase->classlikes->getStorageFor($parent_class);
             $parent_const_storage = $parent_class_storage->constants[$const_name] ?? null;
-            if ($parent_const_storage !== null) {
+            if ($parent_class_storage !== null && $parent_const_storage !== null) {
                 if ($const_storage->location !== null && $interface_const_storage !== null) {
                     assert($parent_classlike_storage !== null);
                     if (!isset($parent_class_storage->class_implements[strtolower($parent_classlike_storage->name)])) {
