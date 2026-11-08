@@ -59029,7 +59029,6 @@ return array (
   ),
   'mysqli::get_warnings' => 
   array (
-    0 => 'mysqli_warning',
     -1 => 'false|mysqli_warning',
     -2 => 'tentative',
   ),
@@ -59519,7 +59518,6 @@ return array (
   ),
   'mysqli_get_warnings' => 
   array (
-    0 => 'mysqli_warning',
     -1 => 'false|mysqli_warning',
     'mysql' => 'mysqli',
   ),
@@ -102438,7 +102436,7 @@ return array (
   array (
     -1 => 'bool',
     'signal_no' => 'int',
-    'callback=' => 'callable[impure]|null',
+    'callback=' => 'callable[impure]|int|null',
   ),
   'swoole\\process::start' => 
   array (
