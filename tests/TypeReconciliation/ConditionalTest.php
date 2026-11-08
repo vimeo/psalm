@@ -21,6 +21,68 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedInstanceofRemovesTheClassFromTheBoundOfATemplateParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T of DateTimeInterface|string
+                     * @param T $value
+                     */
+                    function takeString($value): string {
+                        if ($value instanceof DateTimeInterface) {
+                            return "";
+                        }
+
+                        return strtoupper($value);
+                    }',
+            ],
+            'negatedInstanceofRemovesTheClassFromTheBoundOfAConditionalReturnTypeParam' => [
+                'code' => '<?php
+                    /**
+                     * @return ($value is null ? null : DateTimeImmutable)
+                     */
+                    function convert(null|DateTimeInterface|string $value): ?DateTimeImmutable {
+                        if (null === $value || $value instanceof DateTimeImmutable) {
+                            return $value;
+                        }
+
+                        if ($value instanceof DateTimeInterface) {
+                            return DateTimeImmutable::createFromInterface($value);
+                        }
+
+                        $result = DateTimeImmutable::createFromFormat(DATE_ATOM, $value);
+
+                        return $result === false ? null : $result;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'orredClausesOfOneVariableAreAllKept' => [
+                'code' => '<?php
+                    interface I1 {}
+                    interface I2 {}
+
+                    /** @param mixed $d */
+                    function f($d): string {
+                        if (!is_array($d) && (!$d instanceof I1 || !$d instanceof I2)) {
+                            throw new Exception("array or I1&I2");
+                        }
+
+                        return is_array($d) ? "array" : get_class($d);
+                    }
+
+                    /** @var mixed $x */
+                    $x = null;
+
+                    if (is_string($x) || ($x instanceof I1 && $x instanceof I2)) {
+                        $result = $x;
+                    } else {
+                        $result = "";
+                    }',
+                'assertions' => [
+                    '$result' => 'I1&I2|string',
+                ],
+            ],
             'nonStrictConditionOnMixedOrNull' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $owners */
@@ -3465,6 +3527,30 @@ final class ConditionalTest extends TestCase
                     '$after' => 'Countable|string',
                 ],
             ],
+            'isArrayOrNegatedIssetGuardNarrowsAfterReturn' => [
+                'code' => '<?php
+                    function f(string|int|array $t, array $map): string {
+                        if (is_array($t) || !isset($map[(string) $t])) {
+                            return "";
+                        }
+
+                        return (string) $t;
+                    }
+
+                    /** @var string|int|array $t */
+                    $t = $_GET["t"];
+                    /** @var array $map */
+                    $map = [];
+                    if (is_array($t) || !isset($map[(string) $t])) {
+                        return;
+                    }
+                    $s = $t;',
+                'assertions' => [
+                    '$s' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -3475,6 +3561,36 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'negatedInstanceofOfTheWholeBoundOfATemplateParamLeavesNoType' => [
+                'code' => '<?php
+                    interface Foo {}
+
+                    /**
+                     * @template T of Foo
+                     * @param T $value
+                     */
+                    function takeFoo($value): void {
+                        if (!$value instanceof Foo) {
+                            echo "impossible";
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'negatedInstanceofKeepsAnUnrelatedClassInTheBoundOfATemplateParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T of DateTimeInterface|string
+                     * @param T $value
+                     */
+                    function takeString($value): string {
+                        if ($value instanceof Countable) {
+                            return "";
+                        }
+
+                        return strtoupper($value);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
             'makeNonNullableNull' => [
                 'code' => '<?php
                     class A { }
