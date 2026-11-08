@@ -5,8 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_filter;
+use function count;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -14,6 +20,45 @@ final class ClosureTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testACapturedByReferenceVariableLeftAsItWasOnAReturnPathStaysMixedAfterTheClosure(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function g(string $style, string $string): string {
+                    static $labels = [];
+
+                    $style = preg_replace_callback("/x/", function (array $m) use ($string, &$labels) {
+                        if (trim($m[0]) === "a") {
+                            if (!isset($labels[$string])) {
+                                $labels[$string] = "c" . count($labels);
+                            }
+
+                            return $labels[$string];
+                        }
+
+                        return $m[0];
+                    }, $style);
+
+                    return (string) $style;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        // the closure is analysed again with the type it leaves behind: one report for the mixed `$labels`
+        self::assertSame(
+            1,
+            count(array_filter(
+                IssueBuffer::getIssuesDataForFile($file_path),
+                static fn(IssueData $issue): bool => $issue->type === 'MixedArgument' && $issue->line_from === 8,
+            )),
+        );
+    }
 
     /**
      * @psalm-pure
