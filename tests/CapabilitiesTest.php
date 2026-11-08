@@ -48,8 +48,9 @@ final class CapabilitiesTest extends TestCase
                     }
 
                     class SecondBase {
+                        /** @return $this */
                         public function f(): static {
-                            return clone $this;
+                            return $this;
                         }
                     }
 
