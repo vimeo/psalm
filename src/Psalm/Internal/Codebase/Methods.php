@@ -21,6 +21,7 @@ use Psalm\Internal\Provider\MethodExistenceProvider;
 use Psalm\Internal\Provider\MethodParamsProvider;
 use Psalm\Internal\Provider\MethodReturnTypeProvider;
 use Psalm\Internal\Provider\MethodVisibilityProvider;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -279,6 +280,7 @@ final class Methods
         ?StatementsSource $source = null,
         ?array $args = null,
         ?Context $context = null,
+        ?CodeLocation $code_location = null,
     ): array {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -290,6 +292,7 @@ final class Methods
                 $args,
                 $source,
                 $context,
+                $code_location,
             );
 
             if ($method_params !== null) {
@@ -668,7 +671,10 @@ final class Methods
             $overridden_storage = $this->getStorage($overridden_method_id);
 
             if ($overridden_storage->return_type) {
-                if ($overridden_storage->return_type->isNull()) {
+                // a docblock `@return null` stands for void, a native `null` return type is a type of its own
+                if ($overridden_storage->return_type->isNull()
+                    && !$overridden_storage->signature_return_type?->isNull()
+                ) {
                     return Type::getVoid();
                 }
 
@@ -704,11 +710,15 @@ final class Methods
                     $overridden_storage_return_type,
                 );
 
+                $overridden_to_candidate_result = new TypeComparisonResult();
                 $new_contained_by_old = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $overridden_storage_return_type,
                     $candidate_type,
-                );
+                    false,
+                    false,
+                    $overridden_to_candidate_result,
+                ) && !$overridden_to_candidate_result->to_string_cast;
 
                 if ((!$old_contained_by_new && !$new_contained_by_old)
                     || ($old_contained_by_new && $new_contained_by_old)
@@ -737,6 +747,12 @@ final class Methods
                             $template_result,
                             $codebase,
                         );
+                    }
+
+                    if ($candidate_type->getId() === $overridden_storage_return_type->getId()) {
+                        $self_class = $appearing_fq_class_storage->name;
+
+                        return $candidate_type;
                     }
 
                     $attempted_intersection = null;
@@ -795,7 +811,9 @@ final class Methods
             $overridden_storage = $this->getStorage($overridden_method_id);
 
             if ($overridden_storage->return_type) {
-                if ($overridden_storage->return_type->isNull()) {
+                if ($overridden_storage->return_type->isNull()
+                    && !$overridden_storage->signature_return_type?->isNull()
+                ) {
                     if ($candidate_type && !$candidate_type->isVoid()) {
                         return null;
                     }
@@ -814,17 +832,37 @@ final class Methods
                 $self_class = $overridden_class_storage->name;
 
                 if ($candidate_type && $source_analyzer && !$candidate_type->isMixed()) {
+                    $candidate_to_overridden_result = new TypeComparisonResult();
                     $old_contained_by_new = UnionTypeComparator::isContainedBy(
                         $codebase,
                         $candidate_type,
                         $overridden_return_type,
-                    );
+                        false,
+                        false,
+                        $candidate_to_overridden_result,
+                    ) && !$candidate_to_overridden_result->to_string_cast;
 
+                    $overridden_to_candidate_result = new TypeComparisonResult();
                     $new_contained_by_old = UnionTypeComparator::isContainedBy(
                         $codebase,
                         $overridden_return_type,
                         $candidate_type,
-                    );
+                        false,
+                        false,
+                        $overridden_to_candidate_result,
+                    ) && !$overridden_to_candidate_result->to_string_cast;
+
+                    // a type that is only castable to the other one doesn't win over it
+                    if (!$old_contained_by_new && !$new_contained_by_old) {
+                        if ($overridden_to_candidate_result->to_string_cast) {
+                            continue;
+                        }
+
+                        if ($candidate_to_overridden_result->to_string_cast) {
+                            $candidate_type = $overridden_return_type;
+                            continue;
+                        }
+                    }
 
                     if ((!$old_contained_by_new && !$new_contained_by_old)
                         || ($old_contained_by_new && $new_contained_by_old)

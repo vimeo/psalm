@@ -9,6 +9,7 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\Variable;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
@@ -25,6 +26,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
@@ -36,6 +38,8 @@ use function array_slice;
 use function assert;
 use function count;
 use function end;
+use function ltrim;
+use function strpos;
 use function strtolower;
 use function substr;
 
@@ -301,6 +305,105 @@ final class CallableTypeComparator
         return true;
     }
 
+    private static function getCallableFromMethodId(
+        Codebase $codebase,
+        MethodIdentifier $method_id,
+        ?TCallable $container_type_part,
+        ?Atomic $callable_object = null,
+    ): ?TCallable {
+        if (!$codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
+            return null;
+        }
+
+        try {
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
+            $method_storage = $codebase->methods->getStorage($declaring_method_id);
+            $method_fqcln = $method_id->fq_class_name;
+
+            $converted_return_type = null;
+
+            if ($method_storage->return_type) {
+                $converted_return_type = TypeExpander::expandUnion(
+                    $codebase,
+                    $method_storage->return_type,
+                    // `self` is the class the method appears in: the one using the trait, for a trait method
+                    ($codebase->methods->getAppearingMethodId($method_id) ?? $declaring_method_id)->fq_class_name,
+                    $method_fqcln,
+                    null,
+                    true,
+                    false,
+                    $codebase->classlike_storage_provider->get($method_fqcln)->final,
+                );
+            }
+
+            $class_template_types = $codebase->methods->getClassLikeStorageForMethod($declaring_method_id)
+                ->template_types ?? [];
+
+            $callable = self::withoutPurityTemplates(
+                new TCallable(
+                    $method_storage->params,
+                    $converted_return_type,
+                    self::getCallableCapabilities($method_storage, $class_template_types),
+                ),
+                ($method_storage->template_types ?? []) + $class_template_types,
+                $codebase,
+            );
+
+            // the templates of the class are what the generic object has for them
+            if ($callable_object instanceof TGenericObject
+                && $codebase->classOrInterfaceExists($callable_object->value)
+            ) {
+                $class_template_params = ClassTemplateParamCollector::collect(
+                    $codebase,
+                    $codebase->methods->getClassLikeStorageForMethod($method_id),
+                    $codebase->classlike_storage_provider->get($callable_object->value),
+                    $method_id->method_name,
+                    $callable_object,
+                );
+
+                if ($class_template_params !== null) {
+                    $replaced = TemplateInferredTypeReplacer::replace(
+                        new Union([$callable]),
+                        new TemplateResult([], $class_template_params),
+                        $codebase,
+                    )->getSingleAtomic();
+
+                    if ($replaced instanceof TCallable) {
+                        $callable = $replaced;
+                    }
+                }
+            }
+
+            // Resolve method-level templates against the expected callable shape, so
+            // `[Id::class, 'id']` with `@template B` matches `callable(int): int` etc.
+            if ($method_storage->template_types !== null && $container_type_part !== null) {
+                $template_result = new TemplateResult($method_storage->template_types, []);
+
+                TemplateStandinTypeReplacer::fillTemplateResult(
+                    new Union([$callable]),
+                    $template_result,
+                    $codebase,
+                    null,
+                    new Union([$container_type_part]),
+                );
+
+                $replaced = TemplateInferredTypeReplacer::replace(
+                    new Union([$callable]),
+                    $template_result,
+                    $codebase,
+                )->getSingleAtomic();
+
+                if ($replaced instanceof TCallable) {
+                    $callable = $replaced;
+                }
+            }
+
+            return $callable;
+        } catch (UnexpectedValueException) {
+            return null;
+        }
+    }
+
     /**
      * @return TCallable|TClosure|null
      */
@@ -318,6 +421,25 @@ final class CallableTypeComparator
         }
 
         if ($input_type_part instanceof TLiteralString && $input_type_part->value) {
+            $method_separator = strpos($input_type_part->value, '::');
+
+            if ($method_separator !== false) {
+                $callable = self::getCallableFromMethodId(
+                    $codebase,
+                    new MethodIdentifier(
+                        $codebase->classlikes->getUnAliasedName(
+                            ltrim(substr($input_type_part->value, 0, $method_separator), '\\'),
+                        ),
+                        strtolower(substr($input_type_part->value, $method_separator + 2)),
+                    ),
+                    $container_type_part,
+                );
+
+                if ($callable) {
+                    return $callable;
+                }
+            }
+
             try {
                 $function_storage = $codebase->functions->getStorage(
                     $statements_analyzer,
@@ -436,62 +558,20 @@ final class CallableTypeComparator
         } elseif ($input_type_part instanceof TKeyedArray) {
             $method_id = self::getCallableMethodIdFromTKeyedArray($input_type_part, $codebase);
             if ($method_id && $method_id !== 'not-callable') {
-                try {
-                    $method_storage = $codebase->methods->getStorage($method_id);
-                    $method_fqcln = $method_id->fq_class_name;
+                $callable_object = isset($input_type_part->properties[0])
+                    && $input_type_part->properties[0]->isSingle()
+                    ? $input_type_part->properties[0]->getSingleAtomic()
+                    : null;
 
-                    $converted_return_type = null;
+                $callable = self::getCallableFromMethodId(
+                    $codebase,
+                    $method_id,
+                    $container_type_part,
+                    $callable_object,
+                );
 
-                    if ($method_storage->return_type) {
-                        $converted_return_type = TypeExpander::expandUnion(
-                            $codebase,
-                            $method_storage->return_type,
-                            $method_fqcln,
-                            $method_fqcln,
-                            null,
-                        );
-                    }
-
-                    $class_template_types = $codebase->methods->getClassLikeStorageForMethod($method_id)
-                        ->template_types ?? [];
-
-                    $callable = self::withoutPurityTemplates(
-                        new TCallable(
-                            $method_storage->params,
-                            $converted_return_type,
-                            self::getCallableCapabilities($method_storage, $class_template_types),
-                        ),
-                        ($method_storage->template_types ?? []) + $class_template_types,
-                        $codebase,
-                    );
-
-                    // Resolve method-level templates against the expected callable shape, so
-                    // `[Id::class, 'id']` with `@template B` matches `callable(int): int` etc.
-                    if ($method_storage->template_types !== null && $container_type_part !== null) {
-                        $template_result = new TemplateResult($method_storage->template_types, []);
-
-                        TemplateStandinTypeReplacer::fillTemplateResult(
-                            new Union([$callable]),
-                            $template_result,
-                            $codebase,
-                            null,
-                            new Union([$container_type_part]),
-                        );
-
-                        $replaced = TemplateInferredTypeReplacer::replace(
-                            new Union([$callable]),
-                            $template_result,
-                            $codebase,
-                        )->getSingleAtomic();
-
-                        if ($replaced instanceof TCallable) {
-                            $callable = $replaced;
-                        }
-                    }
-
+                if ($callable) {
                     return $callable;
-                } catch (UnexpectedValueException) {
-                    // do nothing
                 }
             }
         } elseif ($input_type_part instanceof TNamedObject
