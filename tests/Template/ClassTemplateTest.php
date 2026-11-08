@@ -57,6 +57,40 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'iteratorWrappersTakeTheKeyAndTheValueTypeOnly' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @implements IteratorAggregate<array-key, T>
+                     */
+                    final class Cached implements IteratorAggregate
+                    {
+                        /** @var CachingIterator<array-key, T> */
+                        private CachingIterator $caching;
+
+                        /** @var LimitIterator<array-key, T> */
+                        private LimitIterator $limited;
+
+                        /** @var NoRewindIterator<array-key, T> */
+                        private NoRewindIterator $noRewind;
+
+                        /** @param Iterator<array-key, T> $iterator */
+                        public function __construct(Iterator $iterator)
+                        {
+                            $this->caching = new CachingIterator($iterator);
+                            $this->limited = new LimitIterator($iterator, 0, 1);
+                            $this->noRewind = new NoRewindIterator($iterator);
+                        }
+
+                        public function getIterator(): Iterator
+                        {
+                            return $this->caching;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedProperty'],
+                'php_version' => '8.0',
+            ],
             'staticReturnKeepsTheTypeArgumentsOfTheCalledClass' => [
                 'code' => '<?php
                     /** @template T of object */
