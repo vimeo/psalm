@@ -54,6 +54,50 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'classesOfBothBranchesOfAnUnknownAnd' => [
+                'code' => '<?php
+                    if (rand(0, 1) && rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();
+                    new Second();',
+            ],
+            'classesOfBothBranchesOfAnUnknownLogicalAnd' => [
+                'code' => '<?php
+                    if (rand(0, 1) and rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();
+                    new Second();',
+            ],
+            'classesOfBothBranchesOfAnUnknownOr' => [
+                'code' => '<?php
+                    if (rand(0, 1) || rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();
+                    new Second();',
+            ],
+            'classesOfBothBranchesOfAnUnknownLogicalOr' => [
+                'code' => '<?php
+                    if (rand(0, 1) or rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();
+                    new Second();',
+            ],
             'overrideProtectedAccessLevelToPublic' => [
                 'code' => '<?php
                     class A {
@@ -898,6 +942,138 @@ final class ClassTest extends TestCase
                     '$a===' => 'iter<int, a&static>',
                 ],
             ],
+            'preventDoubleStaticResolutionAfterUnionWithNull' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+                    }
+
+                    /** @template T */
+                    interface Bag {
+                        /** @return static<int> */
+                        public function map(): static;
+                    }
+
+                    /** @return Bag<string> */
+                    function bag(): Bag {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T|null>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }
+
+                    $bag = bag();
+                    $a = box($bag->map());
+                    $b = $a->same();
+                    $c = $b->same();',
+                'assertions' => [
+                    '$a===' => 'Box<Bag<int>&static|null>',
+                    '$b===' => 'Box<Bag<int>&static|null>',
+                    '$c===' => 'Box<Bag<int>&static|null>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'preventDoubleStaticResolutionAfterUnionOfStatics' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+                    }
+
+                    /** @template T */
+                    interface Bag {
+                        /** @return static<int> */
+                        public function toInt(): static;
+
+                        /** @return static<float> */
+                        public function toFloat(): static;
+                    }
+
+                    /** @return Bag<string> */
+                    function bag(): Bag {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }
+
+                    $bag = bag();
+                    $a = box(rand(0, 1) ? $bag->toInt() : $bag->toFloat());
+                    $b = $a->same();',
+                'assertions' => [
+                    '$b===' => 'Box<Bag<float>&static|Bag<int>&static>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'preventDoubleStaticResolutionAfterClosureInference' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+
+                        /**
+                         * @template U
+                         * @param Closure(T): U $f
+                         * @return Box<U>
+                         */
+                        public function apply(Closure $f): self {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @template T */
+                    interface Bag {
+                        /** @return static<int> */
+                        public function map(): static;
+                    }
+
+                    /** @return Bag<string> */
+                    function bag(): Bag {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }
+
+                    $a = box(bag()->map())->apply(fn($x) => $x);
+                    $b = $a->same();',
+                'assertions' => [
+                    '$a===' => 'Box<Bag<int>&static>',
+                    '$b===' => 'Box<Bag<int>&static>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'allowTraversableImplementationAlongWithIteratorAggregate' => [
                 'code' => '<?php
                     /**
@@ -1100,6 +1276,94 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'elseOfAKnownTrueAndIsNotDeclared' => [
+                'code' => '<?php
+                    if (function_exists("strlen") && function_exists("strpos")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new Second();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'elseOfAKnownTrueLogicalAndIsNotDeclared' => [
+                'code' => '<?php
+                    if (function_exists("strlen") and function_exists("strpos")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new Second();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'elseOfAKnownTrueOrIsNotDeclared' => [
+                'code' => '<?php
+                    if (function_exists("strlen") || rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new Second();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'elseOfAKnownTrueLogicalOrIsNotDeclared' => [
+                'code' => '<?php
+                    if (rand(0, 1) or function_exists("strlen")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new Second();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'ifOfAKnownFalseAndIsNotDeclared' => [
+                'code' => '<?php
+                    if (!function_exists("strlen") && rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'ifOfAKnownFalseLogicalAndIsNotDeclared' => [
+                'code' => '<?php
+                    if (rand(0, 1) and !function_exists("strlen")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'ifOfAKnownFalseOrIsNotDeclared' => [
+                'code' => '<?php
+                    if (!function_exists("strlen") || !function_exists("strpos")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'ifOfAKnownFalseLogicalOrIsNotDeclared' => [
+                'code' => '<?php
+                    if (!function_exists("strlen") or !function_exists("strpos")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();',
+                'error_message' => 'UndefinedClass',
+            ],
             'undefinedClass' => [
                 'code' => '<?php
                     (new Foo());',

@@ -240,6 +240,32 @@ final class ClassLikeStringTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
             ],
+            'interfaceAndEnumLiteralsForInterfaceAndEnumStrings' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Invoice {}
+                    interface Payable {}
+                    enum Status {}
+
+                    /** @param interface-string $interface */
+                    function takesInterface(string $interface): void {}
+
+                    /** @param enum-string $enum */
+                    function takesEnum(string $enum): void {}
+
+                    /** @param class-string $class */
+                    function takesClass(string $class): void {}
+
+                    takesInterface(Payable::class);
+                    takesEnum(Status::class);
+                    takesClass(Invoice::class);
+                    takesClass(Payable::class);
+                    takesClass(Status::class);
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'arrayOfClassConstants' => [
                 'code' => '<?php
                     /**
@@ -1186,6 +1212,70 @@ final class ClassLikeStringTest extends TestCase
 
                     (new Foo)->object(new Foo);',
                 'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:39 - Argument 1 of Foo::object expects Foo&static, but parent type Foo provided',
+            ],
+            'classLiteralForInterfaceString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Invoice {}
+                    interface Payable {}
+                    enum Status {}
+
+                    /** @param interface-string $name */
+                    function takes(string $name): void {}
+
+                    takes(Invoice::class);
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'enumLiteralForInterfaceString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Invoice {}
+                    interface Payable {}
+                    enum Status {}
+
+                    /** @param interface-string $name */
+                    function takes(string $name): void {}
+
+                    takes(Status::class);
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'classLiteralForEnumString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Invoice {}
+                    interface Payable {}
+                    enum Status {}
+
+                    /** @param enum-string $name */
+                    function takes(string $name): void {}
+
+                    takes(Invoice::class);
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'interfaceLiteralForEnumString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Invoice {}
+                    interface Payable {}
+                    enum Status {}
+
+                    /** @param enum-string $name */
+                    function takes(string $name): void {}
+
+                    takes(Payable::class);
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'arrayOfStringClasses' => [
                 'code' => '<?php

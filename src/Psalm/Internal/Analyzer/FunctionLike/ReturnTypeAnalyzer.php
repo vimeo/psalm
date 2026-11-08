@@ -60,6 +60,7 @@ use function array_filter;
 use function array_values;
 use function count;
 use function implode;
+use function in_array;
 use function str_starts_with;
 use function strtolower;
 
@@ -494,6 +495,19 @@ final class ReturnTypeAnalyzer
                 )) {
                     return false;
                 }
+            } elseif ($declared_return_type->explicit_never
+                && !in_array(ScopeAnalyzer::ACTION_END, $control_actions, true)
+                && IssueBuffer::accepts(
+                    new MoreSpecificReturnType(
+                        'The declared return type \'' . $declared_return_type->getId() . '|never\' for '
+                        . $cased_method_id . ' is more specific than the inferred return type '
+                        . '\'' . $inferred_return_type->getId() . '\'',
+                        $return_type_location,
+                    ),
+                    $suppressed_issues,
+                )
+            ) {
+                return false;
             }
 
             return null;
@@ -529,6 +543,8 @@ final class ReturnTypeAnalyzer
 
             if (!$declared_return_type->isNever()
                 && $function_always_exits
+                // a generator function returns its Generator even if its body never ends
+                && !$function_like_storage?->has_yield
                 // never return type only available from PHP 8.1 in non-docblock
                 && ($declared_return_type->from_docblock || $codebase->analysis_php_version_id >= 8_10_00)
                 // no error for single throw, as extending a class might not work without errors

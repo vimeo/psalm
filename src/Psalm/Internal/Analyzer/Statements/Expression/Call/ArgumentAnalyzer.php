@@ -94,6 +94,9 @@ use const PREG_SPLIT_NO_EMPTY;
  */
 final class ArgumentAnalyzer
 {
+    /** Set on an argument PHP never passes, whose type isn't checked against its parameter */
+    public const NOT_PASSED = 'not_passed';
+
     // callable $this
     // some PHP-internal functions (e.g. array_filter) will call the callback within the current context
     // unlike user-defined functions which call the callback in their context
@@ -167,6 +170,10 @@ final class ArgumentAnalyzer
         bool $in_call_map,
         bool $static_is_called_class = false,
     ): ?bool {
+        if ($arg->getAttribute(self::NOT_PASSED) === true) {
+            return null;
+        }
+
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$arg_value_type) {
@@ -1777,6 +1784,7 @@ final class ArgumentAnalyzer
                                     $function_id,
                                     $arg_location,
                                     false,
+                                    $context,
                                 ) === false
                             ) {
                                 return;
@@ -1877,6 +1885,14 @@ final class ArgumentAnalyzer
                 'parent_nodes' => $parent_nodes,
                 'by_ref' => $by_ref,
             ]);
+        }
+
+        if (!$was_cloned
+            && !$input_type_changed
+            && !$unpack
+            && ($context->vars_in_scope[$var_id] ?? null) === $input_type
+        ) {
+            return;
         }
 
         if ($context->inside_conditional && !isset($context->assigned_var_ids[$var_id])) {
