@@ -79,9 +79,16 @@ final class TryAnalyzer
 
         $was_inside_try = $context->inside_try;
         $context->inside_try = true;
+
+        // a try nested in the body leaves through the finally of this one too
+        $outer_finally_scope = $context->finally_scope;
+        $context->finally_scope = $try_context->finally_scope;
+
         if ($statements_analyzer->analyze($stmt->stmts, $context) === false) {
             return false;
         }
+
+        $context->finally_scope = $outer_finally_scope;
         $context->inside_try = $was_inside_try;
 
         $context->has_returned = false;
@@ -366,9 +373,7 @@ final class TryAnalyzer
                 $context->mergeExceptions($catch_context);
             }
 
-            $catch_doesnt_leave_parent_scope = $catch_actions[$i] !== [ScopeAnalyzer::ACTION_END]
-                && $catch_actions[$i] !== [ScopeAnalyzer::ACTION_CONTINUE]
-                && $catch_actions[$i] !== [ScopeAnalyzer::ACTION_BREAK];
+            $catch_doesnt_leave_parent_scope = in_array(ScopeAnalyzer::ACTION_NONE, $catch_actions[$i], true);
 
             if ($catch_doesnt_leave_parent_scope) {
                 $definitely_newly_assigned_var_ids = array_intersect_key(
