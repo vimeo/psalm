@@ -1781,6 +1781,7 @@ final class ArgumentAnalyzer
                                     $function_id,
                                     $arg_location,
                                     false,
+                                    $context,
                                 ) === false
                             ) {
                                 return;
@@ -1881,6 +1882,14 @@ final class ArgumentAnalyzer
                 'parent_nodes' => $parent_nodes,
                 'by_ref' => $by_ref,
             ]);
+        }
+
+        if (!$was_cloned
+            && !$input_type_changed
+            && !$unpack
+            && ($context->vars_in_scope[$var_id] ?? null) === $input_type
+        ) {
+            return;
         }
 
         if ($context->inside_conditional && !isset($context->assigned_var_ids[$var_id])) {
