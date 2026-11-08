@@ -204,13 +204,13 @@ final class TGenericObject extends TNamedObject
         if (!$types && !$intersection) {
             return $this;
         }
-        return new static(
+        return (new static(
             $this->value,
             $types ?? $this->type_params,
             $this->remapped_params,
             $this->is_static,
             $intersection ?? $this->extra_types,
-        );
+        ))->setIsStatic($this->is_static, $this->is_static_resolved);
     }
 
     /**
@@ -230,12 +230,12 @@ final class TGenericObject extends TNamedObject
         if (!$type_params && !$intersection) {
             return $this;
         }
-        return new static(
+        return (new static(
             $this->value,
             $type_params ?? $this->type_params,
             true,
             $this->is_static,
             $intersection ?? $this->extra_types,
-        );
+        ))->setIsStatic($this->is_static, $this->is_static_resolved);
     }
 }
