@@ -669,6 +669,44 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyInitialisedByFinallyOfConstructorThatReturns' => [
+                'code' => '<?php
+                    final class A {
+                        private string $value;
+
+                        public function __construct() {
+                            try {
+                                return;
+                            } finally {
+                                $this->value = "ok";
+                            }
+                        }
+                    }',
+            ],
+            'propertyCheckedWithIssetMayBeLeftUninitialisedByAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {}
+
+                    final class Response {
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function cancel(): void {
+                            if (isset($this->canary)) {
+                                echo "cancelled";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantPropertyInitializationCheck'],
+            ],
             'propertyInitialisedBeforeEveryReturnOfConstructor' => [
                 'code' => '<?php
                     final class A {
