@@ -975,7 +975,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
 
             $has_docblock_over_signature = $property_storage->signature_type
-                && $property_storage->type !== $property_storage->signature_type;
+                && $property_storage->type?->getId() !== $property_storage->signature_type->getId();
 
             if ($property_type_location && (!$fleshed_out_type->isMixed() || $has_docblock_over_signature)) {
                 $stmt = array_filter(

@@ -1936,6 +1936,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             if ($function_param->type_location !== $function_param->signature_type_location
                 && $function_param->signature_type_location
                 && $function_param->signature_type
+                && $function_param->type?->getId() !== $function_param->signature_type->getId()
             ) {
                 // only the classes: the docblock type replaces the native one everywhere else
                 $signature_classes = array_filter(
