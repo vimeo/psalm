@@ -47,6 +47,31 @@ final class TraitTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'constructorCallsATraitMethodThatChecksInstanceofThis' => [
+                'code' => '<?php
+                    interface MyInterface {}
+
+                    trait MyTrait {
+                        public function doSomething(): void {
+                            if ($this instanceof MyInterface) {
+                                return;
+                            }
+                        }
+                    }
+
+                    class MyClass implements MyInterface {
+                        use MyTrait;
+
+                        protected string $foo;
+                        protected string $bar;
+
+                        public function __construct() {
+                            $this->foo = "cow";
+                            $this->doSomething();
+                            $this->bar = "cow";
+                        }
+                    }',
+            ],
             'traitPropertiesTypedSelf' => [
                 'code' => '<?php
                     trait MyTrait {
