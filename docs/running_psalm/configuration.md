@@ -222,7 +222,7 @@ When `true`, disables wildcard suppression of all issues with `@psalm-suppress a
   memoizeMethodCallResults="[bool]"
 >
 ```
-When `true`, the results of method calls without arguments passed are remembered between repeated calls of that method on a given object. Defaults to `false`.
+When `true`, the results of method calls without arguments passed are [memoized](https://en.wikipedia.org/wiki/Memoization) between repeated calls of that method on a given object. Defaults to `false`.
 
 #### hoistConstants
 
