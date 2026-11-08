@@ -612,7 +612,11 @@ final class UnionTypeComparator
                     $atomic_comparison_result,
                 );
 
-                if (($is_atomic_contained_by && !$atomic_comparison_result->to_string_cast)
+                // Element conversions do not change the outer array or object type.
+                $outer_string_cast = $atomic_comparison_result->to_string_cast
+                    && ($container_type_part instanceof Atomic\TString
+                        || $container_type_part instanceof Atomic\TScalar);
+                if (($is_atomic_contained_by && !$outer_string_cast)
                     || $atomic_comparison_result->type_coerced_from_mixed
                 ) {
                     $matching_input_keys[$input_type_part->getKey()] = true;
