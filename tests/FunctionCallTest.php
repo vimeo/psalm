@@ -24,6 +24,12 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'fcloseTakesTheStandardStreamConstants' => [
+                'code' => '<?php
+                    fclose(STDIN);
+                    fclose(STDOUT);
+                    fclose(STDERR);',
+            ],
             'domXPathEvaluateReturnsATypedResult' => [
                 'code' => '<?php
                     $xpath = new DOMXPath(new DOMDocument());
@@ -2840,6 +2846,12 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'builtInByReferenceParameterRejectsAConstant' => [
+                'code' => '<?php
+                    const NUMBERS = [3, 1, 2];
+                    sort(NUMBERS);',
+                'error_message' => 'InvalidPassByReference - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:26 - Parameter 1 of sort expects a variable',
+            ],
             'mysqliBindResultRequiresOutputVariable' => [
                 'code' => '<?php
                     function bind(mysqli_stmt $statement): void {
