@@ -248,6 +248,13 @@ final class Context
     public array $phantom_classes = [];
 
     /**
+     * A list of functions checked with function_exists
+     *
+     * @var array<lowercase-string,true>
+     */
+    public array $phantom_functions = [];
+
+    /**
      * A list of files checked with file_exists
      *
      * @var array<string,bool>
