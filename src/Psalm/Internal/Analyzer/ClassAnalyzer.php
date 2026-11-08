@@ -116,6 +116,9 @@ use function substr;
  */
 final class ClassAnalyzer extends ClassLikeAnalyzer
 {
+    /** Set on the call of the constructor that stands for it when the initialization of properties is checked */
+    public const FAKE_CONSTRUCTOR_CALL_ATTRIBUTE = 'fake_constructor_call';
+
     /**
      * @var array<string, Union>
      */
@@ -1275,6 +1278,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
                 $fake_call_attributes = $fake_constructor_attributes
                     + [
+                        self::FAKE_CONSTRUCTOR_CALL_ATTRIBUTE => true,
                         'comments' => [new PhpParser\Comment\Doc(
                             '/** @psalm-suppress InaccessibleMethod */',
                             $class->extends->getLine(),
