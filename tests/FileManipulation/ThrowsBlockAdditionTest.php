@@ -18,6 +18,66 @@ final class ThrowsBlockAdditionTest extends FileManipulationTestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'inheritedConstructorOfAnotherFileDoesNotCrashTheManipulation' => [
+                'input' => '<?php
+                    class Child extends Base {
+                        private float $start;
+
+                        public function start(): void {
+                            $this->start = microtime(true);
+                        }
+                    }',
+                'output' => '<?php
+                    class Child extends Base {
+                        private float $start;
+
+                        public function start(): void {
+                            $this->start = microtime(true);
+                        }
+                    }',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['MissingThrowsDocblock'],
+                'safe_types' => true,
+                'allow_backwards_incompatible_changes' => true,
+                'other_files' => [
+                    'base.php' => '<?php
+                    class Base {
+                        // padding 0
+                        // padding 1
+                        // padding 2
+                        // padding 3
+                        // padding 4
+                        // padding 5
+                        // padding 6
+                        // padding 7
+                        // padding 8
+                        // padding 9
+                        // padding 10
+                        // padding 11
+                        // padding 12
+                        // padding 13
+                        // padding 14
+                        // padding 15
+                        // padding 16
+                        // padding 17
+                        // padding 18
+                        // padding 19
+                        // padding 20
+                        // padding 21
+                        // padding 22
+                        // padding 23
+                        // padding 24
+                        // padding 25
+                        // padding 26
+                        // padding 27
+                        // padding 28
+                        // padding 29
+                        public function __construct($config = []) {
+                            echo json_encode($config);
+                        }
+                    }',
+                ],
+            ],
             'addThrowsAnnotationToFunction' => [
                 'input' => '<?php
                     function foo(string $s): string {
