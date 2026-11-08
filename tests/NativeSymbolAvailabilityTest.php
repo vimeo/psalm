@@ -1115,7 +1115,7 @@ final class NativeSymbolAvailabilityTest extends TestCase
             ',
             'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:22 - Const'
                 . ' ARRAY_FILTER_USE_VALUE is not defined for the analysed PHP version 8.5'
-                . ' (it was introduced in PHP 8.6); install symfony/polyfill-php86',
+                . ' (it was introduced in PHP 8.6); define a polyfill',
             'error_levels' => [],
             'php_version' => '8.5',
         ];
