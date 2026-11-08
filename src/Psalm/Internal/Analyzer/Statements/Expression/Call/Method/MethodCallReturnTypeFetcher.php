@@ -17,11 +17,13 @@ use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
@@ -79,11 +81,23 @@ final class MethodCallReturnTypeFetcher
 
         if ($stmt->isFirstClassCallable()) {
             if ($method_storage) {
-                return new Union([new TClosure(
-                    $method_storage->params,
-                    $method_storage->return_type,
-                    $method_storage->capabilities,
-                )]);
+                return self::getFirstClassCallableType(
+                    $codebase,
+                    $stmt,
+                    new TClosure(
+                        $method_storage->params,
+                        $method_storage->return_type,
+                        $method_storage->capabilities,
+                    ),
+                    $template_result,
+                    $method_storage->template_types ?? [],
+                    $fq_class_name,
+                    $static_type,
+                    $class_storage->parent_class,
+                    $static_type instanceof TNamedObject
+                    && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                    true,
+                );
             }
 
             return Type::getClosure();
@@ -140,7 +154,11 @@ final class MethodCallReturnTypeFetcher
             }
         }
 
-        if (InternalCallMapHandler::inCallMap((string) $call_map_id)) {
+        // Enum factories and cases() need value-dependent resolution, not the interface's generic static type.
+        if (InternalCallMapHandler::inCallMap((string) $call_map_id)
+            && !(($method_name === 'cases' || $method_name === 'from' || $method_name === 'tryfrom')
+                && $codebase->classlike_storage_provider->get($fq_class_name)->is_enum)
+        ) {
             if (($template_result->lower_bounds || $class_storage->stubbed)
                 && ($method_storage = ($class_storage->methods[$method_id->method_name] ?? null))
                 && $method_storage->return_type
@@ -278,6 +296,7 @@ final class MethodCallReturnTypeFetcher
             $declaring_method_id,
             $cased_method_id,
             $context,
+            $template_result,
         );
 
         // what is sent to a generator becomes the value of its yield expressions (what it gives back, see
@@ -315,6 +334,40 @@ final class MethodCallReturnTypeFetcher
     }
 
     /**
+     * What the method removes from its return depends on the arguments of this call: its result has a node of its own,
+     * as $method_call_node may be shared with the other calls, the last call deciding for all
+     */
+    private static function escapeReturnByArguments(
+        Codebase $codebase,
+        TaintFlowGraph|CombinedFlowGraph|VariableUseGraph $graph,
+        MethodStorage $method_storage,
+        ?TemplateResult $template_result,
+        MethodIdentifier $method_id,
+        CodeLocation $node_location,
+        DataFlowNode $method_call_node,
+        Union &$return_type_candidate,
+    ): void {
+        $removed_taints = $template_result
+            ? FunctionCallReturnTypeFetcher::getConditionallyRemovedTaints(
+                $codebase,
+                $method_storage,
+                $template_result,
+            )
+            : 0;
+
+        if (!$removed_taints) {
+            return;
+        }
+
+        $escaped_node = DataFlowNode::getForAssignment((string) $method_id . '-escaped', $node_location);
+
+        $graph->addNode($escaped_node);
+        $graph->addPath($method_call_node, $escaped_node, 'conditionally-escaped', 0, $removed_taints);
+
+        $return_type_candidate = $return_type_candidate->setParentNodes([$escaped_node->id => $escaped_node]);
+    }
+
+    /**
      * @param list<PhpParser\Node\Arg> $args
      */
     public static function taintMethodCallResult(
@@ -327,6 +380,7 @@ final class MethodCallReturnTypeFetcher
         ?MethodIdentifier $declaring_method_id,
         string $cased_method_id,
         Context $context,
+        ?TemplateResult $template_result = null,
     ): void {
         if (!($graph = $statements_analyzer->getDataFlowGraphWithSuppressed())
             || !$declaring_method_id
@@ -580,6 +634,17 @@ final class MethodCallReturnTypeFetcher
                 $method_call_node->id => $method_call_node,
             ]);
         }
+
+        self::escapeReturnByArguments(
+            $codebase,
+            $graph,
+            $method_storage,
+            $template_result,
+            $method_id,
+            $node_location,
+            $method_call_node,
+            $return_type_candidate,
+        );
 
         if (!$taint_flow_graph) {
             return;
@@ -838,6 +903,88 @@ final class MethodCallReturnTypeFetcher
         }
 
         return $call_node;
+    }
+
+    /**
+     * The node attribute set on a first-class callable given as the callback of array_map(), which binds the templates
+     * of its method itself: they then stay in its closure. Other calls bind them through the inferred template result.
+     */
+    public const CALL_ARGUMENT_ATTRIBUTE = 'first_class_callable_argument';
+
+    /**
+     * The closure of a first-class callable of a method, typed as a call of the method on the same receiver: with its
+     * template bounds (those of the class, from the receiver) and `static`. The method's own templates left unbound
+     * stand for their bounds, as a function's do in its closure, unless the call it is an argument of may bind them.
+     *
+     * @param array<string, non-empty-array<string, Union>> $method_template_types
+     */
+    public static function getFirstClassCallableType(
+        Codebase $codebase,
+        PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt,
+        TClosure $closure,
+        TemplateResult $template_result,
+        array $method_template_types,
+        ?string $self_class,
+        string|TNamedObject|TTemplateParam|null $static_class_type,
+        ?string $parent_class,
+        bool $final,
+        bool $expand_generic = false,
+    ): Union {
+        $keep_method_templates = $stmt->getAttribute(self::CALL_ARGUMENT_ATTRIBUTE) === true;
+        $bounds_result = new TemplateResult([], []);
+        $bounds_result->lower_bounds = $template_result->lower_bounds;
+
+        // in the order they are declared in, as a bound may be another template of the method (`@template B of A`)
+        foreach ($method_template_types as $template_name => $bounds) {
+            foreach ($bounds as $defining_class => $bound) {
+                if (isset($template_result->lower_bounds[$template_name][$defining_class])) {
+                    continue;
+                }
+
+                if ($bounds_result->lower_bounds) {
+                    $bound = TemplateInferredTypeReplacer::replace($bound, $bounds_result, $codebase);
+                }
+
+                $bounds_result->lower_bounds[$template_name][$defining_class] = [new TemplateBound(
+                    $keep_method_templates
+                        ? new Union([new TTemplateParam($template_name, $bound, $defining_class)])
+                        : $bound,
+                )];
+            }
+        }
+
+        $closure_type = new Union([$closure]);
+
+        if ($bounds_result->lower_bounds) {
+            $closure_type = TemplateInferredTypeReplacer::replace(
+                TypeExpander::expandUnion($codebase, $closure_type, null, null, null),
+                $bounds_result,
+                $codebase,
+            );
+
+            // a template bound to mixed gives way to its as-type, which may be another template of the method
+            for ($i = $keep_method_templates ? 0 : count($method_template_types); $i > 0; $i--) {
+                $replaced = TemplateInferredTypeReplacer::replace($closure_type, $bounds_result, $codebase);
+
+                if ($replaced->getId() === $closure_type->getId()) {
+                    break;
+                }
+
+                $closure_type = $replaced;
+            }
+        }
+
+        return TypeExpander::expandUnion(
+            $codebase,
+            $closure_type,
+            $self_class,
+            $static_class_type,
+            $parent_class,
+            true,
+            false,
+            $final,
+            $expand_generic,
+        );
     }
 
     public static function replaceTemplateTypes(

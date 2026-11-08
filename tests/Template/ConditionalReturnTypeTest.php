@@ -64,6 +64,17 @@ final class ConditionalReturnTypeTest extends TestCase
                 ],
                 'ignored_issues' => [],
             ],
+            'arrayAccessOnAParamWithAConditionalType' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string|null
+                     * @param T $str
+                     * @param (T is null ? non-empty-list<string> : list<string>) $items
+                     */
+                    function test(array $items, ?string $str = null): string {
+                        return $str ?? $items[0] ?? "";
+                    }',
+            ],
             'conditionalReturnTypeSimple' => [
                 'code' => '<?php
 
@@ -269,6 +280,28 @@ final class ConditionalReturnTypeTest extends TestCase
                         /** @psalm-check-type-exact $c = "e"|"ne" */
                         $d = emptiness(["a" => 1]);
                         /** @psalm-check-type-exact $d = "ne" */
+                    }',
+            ],
+            'conditionalReturnTypeOnUnionSubjectWithNonEmptyArray' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $value
+                     * @return ($value is (bool|non-empty-array) ? false : ($value is array<never, never> ? true : bool))
+                     */
+                    function isBlank($value): bool {
+                        return $value === [];
+                    }
+
+                    /** @param array<string, int> $array */
+                    function f(array $array): void {
+                        $empty = isBlank([]);
+                        /** @psalm-check-type-exact $empty = true */
+                        $nonEmpty = isBlank([1]);
+                        /** @psalm-check-type-exact $nonEmpty = false */
+                        $bool = isBlank(true);
+                        /** @psalm-check-type-exact $bool = false */
+                        $any = isBlank($array);
+                        /** @psalm-check-type-exact $any = bool */
                     }',
             ],
             'conditionalReturnTypeOnIterableThatMayBeAnArray' => [
@@ -1371,6 +1404,265 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$two' => 'int',
                     '$three' => 'float',
                 ],
+            ],
+            'conditionalReturnNeverOnListWithIterableArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param iterable<mixed, T> $iterable
+                     * @return ($iterable is list ? never : list<T>)
+                     */
+                    function iterableToList(iterable $iterable): array
+                    {
+                        return array_values(iterator_to_array($iterable));
+                    }
+
+                    /** @param iterable<int, string> $iterable */
+                    function f(iterable $iterable): void {
+                        $list = iterableToList($iterable);
+                        /** @psalm-check-type-exact $list = list<string> */
+                        echo count($list);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'emptyConditionalSubjectMatchesFalsyValues' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is empty ? "falsy" : "truthy")
+                     */
+                    function check(mixed $value): string {
+                        return $value ? "truthy" : "falsy";
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is empty ? T : never)
+                     */
+                    function onlyFalsy(mixed $value): mixed {
+                        return $value;
+                    }
+
+                    function getBool(): bool { return (bool) rand(0, 1); }
+                    function getString(): string { return (string) rand(0, 1); }
+                    function getInt(): int { return rand(0, 1); }
+                    function getFloat(): float { return rand(0, 1) / 2; }
+                    function getMixed(): mixed { return rand(0, 1); }
+                    function getNullableObject(): ?object { return null; }
+                    function getObject(): object { return new stdClass(); }
+                    function getArray(): array { return []; }
+                    /** @return non-falsy-string */
+                    function getNonFalsyString(): string { return "a"; }
+
+                    $bool = check(getBool());
+                    $false = check(false);
+                    $true = check(true);
+                    $null = check(null);
+                    $zero = check(0);
+                    $one = check(1);
+                    $emptyString = check("");
+                    $zeroString = check("0");
+                    $string = check(getString());
+                    $int = check(getInt());
+                    $float = check(getFloat());
+                    $mixed = check(getMixed());
+                    $nullableObject = check(getNullableObject());
+                    $object = check(getObject());
+                    $emptyArray = check([]);
+                    $array = check(getArray());
+                    $nonFalsyString = check(getNonFalsyString());
+
+                    // the else branch is never, so the code after the call is reachable only for falsy arguments
+                    $onlyFalsyBool = onlyFalsy(getBool());
+                    $onlyFalsyNull = onlyFalsy(null);
+                    $onlyFalsyNullableObject = onlyFalsy(getNullableObject());',
+                'assertions' => [
+                    '$bool===' => "'falsy'|'truthy'",
+                    '$false===' => "'falsy'",
+                    '$true===' => "'truthy'",
+                    '$null===' => "'falsy'",
+                    '$zero===' => "'falsy'",
+                    '$one===' => "'truthy'",
+                    '$emptyString===' => "'falsy'",
+                    '$zeroString===' => "'falsy'",
+                    '$string===' => "'falsy'|'truthy'",
+                    '$int===' => "'falsy'|'truthy'",
+                    '$float===' => "'falsy'|'truthy'",
+                    '$mixed===' => "'falsy'|'truthy'",
+                    '$nullableObject===' => "'falsy'|'truthy'",
+                    '$object===' => "'truthy'",
+                    '$emptyArray===' => "'falsy'",
+                    '$array===' => "'falsy'|'truthy'",
+                    '$nonFalsyString===' => "'truthy'",
+                    '$onlyFalsyBool===' => 'false',
+                    '$onlyFalsyNull===' => 'null',
+                    '$onlyFalsyNullableObject===' => 'null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'falsyConditionalInNamespaceAndNegated' => [
+                'code' => '<?php
+                    namespace App;
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is falsy ? "falsy" : "truthy")
+                     */
+                    function check(mixed $value): string {
+                        return $value ? "truthy" : "falsy";
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is not empty ? "truthy" : "falsy")
+                     */
+                    function checkNegated(mixed $value): string {
+                        return $value ? "truthy" : "falsy";
+                    }
+
+                    $zero = check(0);
+                    $one = check(1);
+                    $zeroNegated = checkNegated(0);
+                    $oneNegated = checkNegated(1);',
+                'assertions' => [
+                    '$zero===' => "'falsy'",
+                    '$one===' => "'truthy'",
+                    '$zeroNegated===' => "'falsy'",
+                    '$oneNegated===' => "'truthy'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'conditionalOnAClassNamedFalsyIsNotTheFalsyKeyword' => [
+                'code' => '<?php
+                    final class falsy {}
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is \\falsy ? "class" : "other")
+                     */
+                    function check(mixed $value): string {
+                        return $value instanceof falsy ? "class" : "other";
+                    }
+
+                    $object = check(new falsy());
+                    $zero = check(0);',
+                'assertions' => [
+                    '$object===' => "'class'",
+                    '$zero===' => "'other'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'conditionalOnAConstantOfAClassNamedFalsy' => [
+                'code' => '<?php
+                    final class falsy {
+                        public const VALUE = 1;
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is falsy::VALUE ? "match" : "other")
+                     */
+                    function check(mixed $value): string {
+                        return $value === falsy::VALUE ? "match" : "other";
+                    }
+
+                    $one = check(1);
+                    $zero = check(0);',
+                'assertions' => [
+                    '$one===' => "'match'",
+                    '$zero===' => "'other'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'falsyConditionalSubjectMatchesFalsyValues' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is falsy ? "falsy" : "truthy")
+                     */
+                    function check(mixed $value): string {
+                        return $value ? "truthy" : "falsy";
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is falsy ? T : never)
+                     */
+                    function onlyFalsy(mixed $value): mixed {
+                        return $value;
+                    }
+
+                    function getBool(): bool { return (bool) rand(0, 1); }
+                    function getString(): string { return (string) rand(0, 1); }
+                    function getInt(): int { return rand(0, 1); }
+                    function getFloat(): float { return rand(0, 1) / 2; }
+                    function getMixed(): mixed { return rand(0, 1); }
+                    function getNullableObject(): ?object { return null; }
+                    function getObject(): object { return new stdClass(); }
+                    function getArray(): array { return []; }
+                    /** @return non-falsy-string */
+                    function getNonFalsyString(): string { return "a"; }
+
+                    $bool = check(getBool());
+                    $false = check(false);
+                    $true = check(true);
+                    $null = check(null);
+                    $zero = check(0);
+                    $one = check(1);
+                    $emptyString = check("");
+                    $zeroString = check("0");
+                    $string = check(getString());
+                    $int = check(getInt());
+                    $float = check(getFloat());
+                    $mixed = check(getMixed());
+                    $nullableObject = check(getNullableObject());
+                    $object = check(getObject());
+                    $emptyArray = check([]);
+                    $array = check(getArray());
+                    $nonFalsyString = check(getNonFalsyString());
+
+                    // the else branch is never, so the code after the call is reachable only for falsy arguments
+                    $onlyFalsyBool = onlyFalsy(getBool());
+                    $onlyFalsyNull = onlyFalsy(null);
+                    $onlyFalsyNullableObject = onlyFalsy(getNullableObject());',
+                'assertions' => [
+                    '$bool===' => "'falsy'|'truthy'",
+                    '$false===' => "'falsy'",
+                    '$true===' => "'truthy'",
+                    '$null===' => "'falsy'",
+                    '$zero===' => "'falsy'",
+                    '$one===' => "'truthy'",
+                    '$emptyString===' => "'falsy'",
+                    '$zeroString===' => "'falsy'",
+                    '$string===' => "'falsy'|'truthy'",
+                    '$int===' => "'falsy'|'truthy'",
+                    '$float===' => "'falsy'|'truthy'",
+                    '$mixed===' => "'falsy'|'truthy'",
+                    '$nullableObject===' => "'falsy'|'truthy'",
+                    '$object===' => "'truthy'",
+                    '$emptyArray===' => "'falsy'",
+                    '$array===' => "'falsy'|'truthy'",
+                    '$nonFalsyString===' => "'truthy'",
+                    '$onlyFalsyBool===' => 'false',
+                    '$onlyFalsyNull===' => 'null',
+                    '$onlyFalsyNullableObject===' => 'null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
             ],
         ];
     }
