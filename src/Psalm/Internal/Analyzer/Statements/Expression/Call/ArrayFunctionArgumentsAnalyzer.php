@@ -160,40 +160,53 @@ final class ArrayFunctionArgumentsAnalyzer
         );
 
         if ($method_id === 'array_push' && !$unpacked_args) {
-            for ($i = 1; $i < $nb_args; $i++) {
-                $was_inside_assignment = $context->inside_assignment;
+            $node_data = $statements_analyzer->node_data;
+            // the keys of an item pushed to are evaluated with its first value only
+            $evaluated_operands = [];
 
-                $context->inside_assignment = true;
+            try {
+                for ($i = 1; $i < $nb_args; $i++) {
+                    $was_inside_assignment = $context->inside_assignment;
 
-                if (ExpressionAnalyzer::analyze(
-                    $statements_analyzer,
-                    $args[$i]->value,
-                    $context,
-                ) === false) {
+                    $context->inside_assignment = true;
+
+                    if (ExpressionAnalyzer::analyze(
+                        $statements_analyzer,
+                        $args[$i]->value,
+                        $context,
+                    ) === false) {
+                        $context->inside_assignment = $was_inside_assignment;
+
+                        return false;
+                    }
+
                     $context->inside_assignment = $was_inside_assignment;
 
-                    return false;
+                    $old_node_data = $statements_analyzer->node_data;
+
+                    $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+                    ArrayAssignmentAnalyzer::analyze(
+                        $statements_analyzer,
+                        new VirtualArrayDimFetch(
+                            $array_arg,
+                            null,
+                            $args[$i]->value->getAttributes(),
+                        ),
+                        $context,
+                        $args[$i]->value,
+                        $statements_analyzer->node_data->getType($args[$i]->value) ?? Type::getMixed(),
+                    );
+
+                    $statements_analyzer->node_data = $old_node_data;
+
+                    if ($i === 1 && $array_arg instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                        $evaluated_operands = ArrayAssignmentAnalyzer::getOperands($array_arg);
+                        $node_data->markEvaluated($evaluated_operands);
+                    }
                 }
-
-                $context->inside_assignment = $was_inside_assignment;
-
-                $old_node_data = $statements_analyzer->node_data;
-
-                $statements_analyzer->node_data = clone $statements_analyzer->node_data;
-
-                ArrayAssignmentAnalyzer::analyze(
-                    $statements_analyzer,
-                    new VirtualArrayDimFetch(
-                        $args[0]->value,
-                        null,
-                        $args[$i]->value->getAttributes(),
-                    ),
-                    $context,
-                    $args[$i]->value,
-                    $statements_analyzer->node_data->getType($args[$i]->value) ?? Type::getMixed(),
-                );
-
-                $statements_analyzer->node_data = $old_node_data;
+            } finally {
+                $node_data->unmarkEvaluated($evaluated_operands);
             }
 
             return null;
