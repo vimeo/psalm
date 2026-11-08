@@ -110,15 +110,19 @@ final class ClassLikeStringTest extends TestCase
             'ClassBehindEnumGuard' => ['final class', 'enum_exists'],
             'EnumBehindClassGuard' => ['enum', 'class_exists'],
             'ClassBehindClassGuard' => ['abstract class', 'class_exists'],
+            'AttributedInterfaceBehindClassGuard' => ['#[Attribute] interface', 'class_exists'],
+            'ClassBehindLeadingBackslashGuard' => ['class', 'class_exists', '\\'],
         ];
         $class_map = [];
         $code = '<?php namespace Mapped;';
 
-        foreach ($declarations as $name => [$keyword, $guard]) {
+        foreach ($declarations as $name => $declaration) {
+            [$keyword, $guard] = $declaration;
             $file = $dir . DIRECTORY_SEPARATOR . $name . '.php';
             $class_map['Mapped\\' . $name] = $file;
             file_put_contents($file, "<?php\nnamespace Mapped;\n" . $keyword . ' ' . $name . ' {}');
-            $code .= "\n" . 'if (!' . $guard . '("Mapped\\' . $name . '")) { class ' . $name . ' {} }';
+            $code .= "\n" . 'if (!' . $guard . '("' . ($declaration[2] ?? '') . 'Mapped\\' . $name . '")) { class '
+                . $name . ' {} }';
         }
 
         $config = Config::getInstance();
@@ -145,6 +149,8 @@ final class ClassLikeStringTest extends TestCase
                     'ClassBehindEnumGuard' => true,
                     'EnumBehindClassGuard' => false,
                     'ClassBehindClassGuard' => false,
+                    'AttributedInterfaceBehindClassGuard' => true,
+                    'ClassBehindLeadingBackslashGuard' => false,
                 ],
                 $declared_in_file,
             );

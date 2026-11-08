@@ -39,17 +39,30 @@ use function array_merge;
 use function array_values;
 use function assert;
 use function class_exists;
+use function constant;
+use function defined;
 use function enum_exists;
 use function file_get_contents;
 use function function_exists;
 use function get_defined_constants;
 use function in_array;
 use function interface_exists;
-use function preg_match;
-use function preg_quote;
+use function is_array;
+use function ltrim;
 use function strrpos;
 use function strtolower;
 use function substr;
+use function token_get_all;
+
+use const T_CLASS;
+use const T_COMMENT;
+use const T_DOC_COMMENT;
+use const T_DOUBLE_COLON;
+use const T_INTERFACE;
+use const T_NEW;
+use const T_STRING;
+use const T_TRAIT;
+use const T_WHITESPACE;
 
 /**
  * @internal
@@ -515,7 +528,9 @@ final class ExpressionResolver
         string $file_path,
         string $kind,
     ): bool {
-        if ($name === null || $name === '') {
+        $name = $name === null ? '' : ltrim($name, '\\');
+
+        if ($name === '') {
             return false;
         }
 
@@ -557,20 +572,46 @@ final class ExpressionResolver
             return true;
         }
 
-        $short_name = ($pos = strrpos($name, '\\')) === false ? $name : substr($name, $pos + 1);
+        $short_name = strtolower(($pos = strrpos($name, '\\')) === false ? $name : substr($name, $pos + 1));
 
-        $matched = preg_match(
-            '/^[ \t]*(?:(?:final|abstract|readonly)\s+)*(class|interface|trait|enum)\s+' . preg_quote($short_name, '/')
-                . '\b/mi',
-            $contents,
-            $matches,
-        );
+        $declaration_tokens = [T_CLASS => 'class', T_INTERFACE => 'interface', T_TRAIT => 'trait'];
 
-        if ($matched !== 1 || !isset($matches[1])) {
-            return true;
+        if (defined('T_ENUM')) {
+            $declaration_tokens[constant('T_ENUM')] = 'enum';
         }
 
-        $declared = strtolower($matches[1]);
+        $declared = null;
+        $previous = null;
+        $keyword = null;
+
+        foreach (token_get_all($contents) as $token) {
+            if (is_array($token) && in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+
+            if ($keyword !== null) {
+                if (is_array($token) && $token[0] === T_STRING && strtolower($token[1]) === $short_name) {
+                    $declared = $keyword;
+                    break;
+                }
+
+                $keyword = null;
+            }
+
+            // `Foo::class` and `new class` are not declarations
+            if (is_array($token)
+                && isset($declaration_tokens[$token[0]])
+                && !($previous !== null && ($previous === T_DOUBLE_COLON || $previous === T_NEW))
+            ) {
+                $keyword = $declaration_tokens[$token[0]];
+            }
+
+            $previous = is_array($token) ? $token[0] : null;
+        }
+
+        if ($declared === null) {
+            return true;
+        }
 
         return $kind === 'class' ? ($declared === 'class' || $declared === 'enum') : $declared === $kind;
     }
