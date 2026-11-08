@@ -18536,12 +18536,12 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'mysqli_warning',
+        0 => 'false|mysqli_warning',
         'link' => 'mysqli',
       ),
       'new' => 
       array (
-        0 => 'mysqli_warning',
+        0 => 'false|mysqli_warning',
         'mysql' => 'mysqli',
       ),
     ),
