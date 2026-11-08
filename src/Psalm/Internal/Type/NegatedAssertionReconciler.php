@@ -38,6 +38,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function array_filter;
 use function array_merge;
 use function array_values;
 use function count;
@@ -232,10 +233,46 @@ final class NegatedAssertionReconciler extends Reconciler
         } elseif (!$is_equality) {
             $assertion_type = $assertion->getAtomicType();
 
-            // if there wasn't a direct hit, go deeper, eliminating subtypes
-            if ($assertion_type && !$existing_var_type->removeType($assertion_type->getKey())) {
+            // a wider type of the same key is no direct hit: `string` stays where `lowercase-string` is negated
+            $same_key_type = $assertion_type
+                ? $existing_var_type->getAtomicTypes()[$assertion_type->getKey()] ?? null
+                : null;
+
+            $is_direct_hit = $assertion_type
+                && (!$same_key_type
+                    || $same_key_type::class === $assertion_type::class
+                    || AtomicTypeComparator::isContainedBy($codebase, $same_key_type, $assertion_type))
+                && $existing_var_type->removeType($assertion_type->getKey());
+
+            // go deeper than the direct hit, eliminating subtypes
+            if ($assertion_type) {
                 if ($assertion_type instanceof TNamedObject) {
                     foreach ($existing_var_type->getAtomicTypes() as $part_name => $existing_var_type_part) {
+                        if ($existing_var_type_part instanceof TTemplateParam) {
+                            // the objects the assertion excludes can't be what the template is bound to either
+                            $remaining_as_types = array_filter(
+                                $existing_var_type_part->as->getAtomicTypes(),
+                                static fn(Atomic $as_part): bool => !($as_part instanceof TNamedObject
+                                    && AtomicTypeComparator::isContainedBy(
+                                        $codebase,
+                                        $as_part,
+                                        $assertion_type,
+                                    )),
+                            );
+
+                            if (count($remaining_as_types) !== count($existing_var_type_part->as->getAtomicTypes())) {
+                                $existing_var_type->removeType($part_name);
+
+                                if ($remaining_as_types) {
+                                    $existing_var_type->addType(
+                                        $existing_var_type_part->replaceAs(new Union($remaining_as_types)),
+                                    );
+                                }
+
+                                continue;
+                            }
+                        }
+
                         if (!$existing_var_type_part->isObjectType()) {
                             continue;
                         }
@@ -261,14 +298,16 @@ final class NegatedAssertionReconciler extends Reconciler
                             ) {
                                 $existing_var_type->removeType($part_name);
                             }
-                        } elseif (AtomicTypeComparator::isContainedBy(
-                            $codebase,
-                            $assertion_type,
-                            $existing_var_type_part,
-                            false,
-                            false,
-                            $reverse_comparison_result,
-                        )) {
+                        } elseif (!$is_direct_hit
+                            && AtomicTypeComparator::isContainedBy(
+                                $codebase,
+                                $assertion_type,
+                                $existing_var_type_part,
+                                false,
+                                false,
+                                $reverse_comparison_result,
+                            )
+                        ) {
                             if (!$reverse_comparison_result->type_variable_lower_bounds
                                 && !$reverse_comparison_result->type_variable_upper_bounds
                             ) {
@@ -413,10 +452,16 @@ final class NegatedAssertionReconciler extends Reconciler
                 if ($existing_var_type->getLiteralStrings()) {
                     $did_match_literal_type = true;
 
-                    if ($existing_var_type->removeType($assertion_type->getKey())) {
+                    if ($existing_var_type->removeType($assertion_type->getKey())
+                        || UnionTypeComparator::canExpressionTypesBeIdentical(
+                            $statements_analyzer->getCodebase(),
+                            $existing_var_type->freeze(),
+                            new Union([$assertion_type]),
+                        )
+                    ) {
                         $redundant = false;
                     }
-                } elseif ($assertion_type->value === "" && $existing_var_type->hasType('string')) {
+                } elseif ($assertion_type->value === ""&& $existing_var_type->hasType('string')) {
                     $string_type = $existing_var_type->getAtomicTypes()['string'];
                     if ($string_type::class === TString::class) {
                         $existing_var_type->addType(new TNonEmptyString());
