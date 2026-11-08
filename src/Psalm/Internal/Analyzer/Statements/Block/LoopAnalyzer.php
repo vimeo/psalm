@@ -34,6 +34,7 @@ use function array_unique;
 use function array_values;
 use function count;
 use function in_array;
+use function is_numeric;
 use function is_string;
 use function max;
 use function min;
@@ -221,6 +222,7 @@ final class LoopAnalyzer
 
             // the types the variables the loop defines start an iteration with
             $loop_var_types_at_start = [];
+            $unset_in_loop_vars = [];
 
             for ($i = 0; $i < $assignment_depth; ++$i) {
                 $vars_to_remove = [];
@@ -295,6 +297,25 @@ final class LoopAnalyzer
                     }
                 }
 
+                // a variable the body unset is gone where the next iteration starts only if the body ran:
+                // it's possibly undefined there
+                foreach ($original_parent_context->vars_in_scope as $var_id => $_) {
+                    if (!isset($continue_context->vars_in_scope[$var_id])
+                        && !isset($unset_in_loop_vars[$var_id])
+                        && self::isLoopVar($var_id)
+                    ) {
+                        $unset_in_loop_vars[$var_id] = true;
+                        $has_changes = true;
+                    }
+                }
+
+                foreach ($unset_in_loop_vars as $var_id => $_) {
+                    if (!isset($continue_context->vars_in_scope[$var_id])) {
+                        $continue_context->vars_in_scope[$var_id]
+                            = $original_parent_context->vars_in_scope[$var_id]->setPossiblyUndefined(true);
+                    }
+                }
+
                 $continue_context->has_returned = false;
 
                 $loop_parent_context->vars_possibly_in_scope += $continue_context->vars_possibly_in_scope;
@@ -357,6 +378,9 @@ final class LoopAnalyzer
                                 !== $pre_loop_context->vars_in_scope[$var_id]->getId()
                             || $continue_context->vars_in_scope[$var_id]->from_docblock
                                 !== $pre_loop_context->vars_in_scope[$var_id]->from_docblock
+                            // the value of an iteration is not the one the last one ended with
+                            || array_keys($continue_context->vars_in_scope[$var_id]->parent_nodes)
+                                !== array_keys($pre_loop_context->vars_in_scope[$var_id]->parent_nodes)
                         )
                     ) {
                         if (isset($pre_loop_context->vars_in_scope[$var_id])) {
@@ -723,6 +747,7 @@ final class LoopAnalyzer
 
         if ($context->collect_exceptions) {
             $context->mergeExceptions($for_context);
+            $context->mergeExceptions($inner_loop_context);
         }
 
         return null;
@@ -775,49 +800,80 @@ final class LoopAnalyzer
             if ($cond_type = $statements_analyzer->node_data->getType($stmt->cond)) {
                 $always_enters_loop = $cond_type->isAlwaysTruthy();
             }
-        } else {
-            foreach ($stmt->cond as $cond) {
-                if ($cond_type = $statements_analyzer->node_data->getType($cond)) {
-                    $always_enters_loop = $cond_type->isAlwaysTruthy();
-                }
 
-                if (count($stmt->init) === 1
-                    && count($stmt->cond) === 1
-                    && $cond instanceof PhpParser\Node\Expr\BinaryOp
-                    && ($cond_value = $statements_analyzer->node_data->getType($cond->right))
-                    && ($cond_value->isSingleIntLiteral() || $cond_value->isSingleStringLiteral())
-                    && $cond->left instanceof PhpParser\Node\Expr\Variable
-                    && is_string($cond->left->name)
-                    && isset($init_var_types[$cond->left->name])
-                    && $init_var_types[$cond->left->name]->isSingleIntLiteral()
-                ) {
-                    $init_value = $init_var_types[$cond->left->name]->getSingleLiteral()->value;
-                    $cond_value = $cond_value->getSingleLiteral()->value;
+            return $always_enters_loop || (
+                $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp
+                && self::isConditionTrueForInitValue($statements_analyzer, $stmt->cond, $init_var_types)
+            );
+        }
 
-                    if ($cond instanceof PhpParser\Node\Expr\BinaryOp\Smaller && $init_value < $cond_value) {
-                        $always_enters_loop = true;
-                        break;
-                    }
+        foreach ($stmt->cond as $cond) {
+            if ($cond_type = $statements_analyzer->node_data->getType($cond)) {
+                $always_enters_loop = $cond_type->isAlwaysTruthy();
+            }
 
-                    if ($cond instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual && $init_value <= $cond_value) {
-                        $always_enters_loop = true;
-                        break;
-                    }
-
-                    if ($cond instanceof PhpParser\Node\Expr\BinaryOp\Greater && $init_value > $cond_value) {
-                        $always_enters_loop = true;
-                        break;
-                    }
-
-                    if ($cond instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual && $init_value >= $cond_value) {
-                        $always_enters_loop = true;
-                        break;
-                    }
-                }
+            if (count($stmt->init) === 1
+                && count($stmt->cond) === 1
+                && $cond instanceof PhpParser\Node\Expr\BinaryOp
+                && self::isConditionTrueForInitValue($statements_analyzer, $cond, $init_var_types)
+            ) {
+                $always_enters_loop = true;
+                break;
             }
         }
 
         return $always_enters_loop;
+    }
+
+    /**
+     * Whether `$i < 10`, `++$i <= 10`, `--$i > 0` ... holds the first time it is evaluated, as `$i` is a literal int
+     * before the loop and the other side is a literal
+     *
+     * @param array<string, Union> $init_var_types
+     * @psalm-capabilities read-props
+     */
+    private static function isConditionTrueForInitValue(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\BinaryOp $cond,
+        array $init_var_types,
+    ): bool {
+        $cond_value = $statements_analyzer->node_data->getType($cond->right);
+        // a non-numeric string is compared as a string since PHP 8, and as 0 before
+        if (!$cond_value
+            || !($cond_value->isSingleIntLiteral()
+                || ($cond_value->isSingleStringLiteral() && is_numeric($cond_value->getSingleStringLiteral()->value)))
+        ) {
+            return false;
+        }
+
+        $variable = $cond->left;
+        $adjustment = 0;
+        if ($variable instanceof PhpParser\Node\Expr\PreInc) {
+            $variable = $variable->var;
+            $adjustment = 1;
+        } elseif ($variable instanceof PhpParser\Node\Expr\PreDec) {
+            $variable = $variable->var;
+            $adjustment = -1;
+        }
+
+        if (!$variable instanceof PhpParser\Node\Expr\Variable
+            || !is_string($variable->name)
+            || !isset($init_var_types[$variable->name])
+            || !$init_var_types[$variable->name]->isSingleIntLiteral()
+        ) {
+            return false;
+        }
+
+        $init_value = $init_var_types[$variable->name]->getSingleIntLiteral()->value + $adjustment;
+        $cond_value = $cond_value->getSingleLiteral()->value;
+
+        return match (true) {
+            $cond instanceof PhpParser\Node\Expr\BinaryOp\Smaller => $init_value < $cond_value,
+            $cond instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual => $init_value <= $cond_value,
+            $cond instanceof PhpParser\Node\Expr\BinaryOp\Greater => $init_value > $cond_value,
+            $cond instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual => $init_value >= $cond_value,
+            default => false,
+        };
     }
 
     /**
@@ -861,6 +917,16 @@ final class LoopAnalyzer
                         $continue_context->vars_in_scope[$var] =
                             $continue_context->vars_in_scope[$var]->addParentNodes($type->parent_nodes);
                     }
+                }
+            }
+
+            // variables defined in the loop body keep what a `continue` assigned them too
+            foreach ($loop_scope->possibly_defined_loop_vars as $var => $type) {
+                if ($continue_context->hasVariable($var)) {
+                    $continue_context->vars_in_scope[$var] = Type::combineUnionTypes(
+                        $continue_context->vars_in_scope[$var],
+                        $type,
+                    );
                 }
             }
         }

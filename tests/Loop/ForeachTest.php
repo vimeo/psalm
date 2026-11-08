@@ -83,6 +83,46 @@ final class ForeachTest extends TestCase
                     '$limit===' => 'int<4, max>',
                 ],
             ],
+            'foreachSourceIsEvaluatedBeforeTheValueIsAssigned' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, list<int>> $rows */
+                    function values(array $rows, string $row): void {
+                        foreach ($rows[$row] as $key => $row) {
+                            echo $key, $row;
+                        }
+                    }
+
+                    /** @param array<string, array<string, int>> $data */
+                    function keys(array $data, string $name): void {
+                        foreach ($data[$name] as $name => $value) {
+                            echo $name, $value;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'foreachKeyOverwritesTheValueOfTheSameName' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, list<int>> $devices */
+                    function keys(array $devices): array {
+                        $result = [];
+
+                        foreach ($devices as $device => $device) {
+                            /** @psalm-check-type-exact $device = string */
+                            $result[$device] = 'hello world';
+                        }
+
+                        return $result;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'iteratorCurrentNullIsNotPartOfTheForeachValueType' => [
                 'code' => '<?php
                     class Foo {
@@ -470,6 +510,22 @@ final class ForeachTest extends TestCase
                         }
 
                         $a = $i;
+                    }',
+            ],
+            'issetOfVariableUnsetInPreviousForeachIteration' => [
+                'code' => '<?php
+                    class A {
+                        public function noop(): void {
+                            echo 1;
+                        }
+                    }
+
+                    $a = new A();
+                    foreach ([1, 2] as $_) {
+                        if (isset($a)) {
+                            $a->noop();
+                        }
+                        unset($a);
                     }',
             ],
             'unsetInLoop' => [
