@@ -548,7 +548,7 @@ final class CodeUseGraphTest extends TestCase
             'b',
         ];
 
-        yield 'greater intrinsic level among analyses of one root' => [
+        yield 'intrinsic level among analyses of one root' => [
             [
                 self::mutationInfo('low', '/src/Root.php', true, Capabilities::READ_PROPS, ['z' => false]),
                 self::mutationInfo('high', '/src/Root.php', true, Capabilities::IO, ['a' => false]),
@@ -644,6 +644,24 @@ final class CodeUseGraphTest extends TestCase
                 self::mutationInfo('b', '/src/Root.php', true, Capabilities::IO, [], true, 0, [], ['b' => ['$b']]),
             ],
             'b',
+        ];
+
+        yield 'wildcards of a parameter name that is not UTF-8' => [
+            [
+                self::mutationInfo('ascii', '/src/Root.php', true, Capabilities::IO, [], true, 0, [], ['a' => ['$a']]),
+                self::mutationInfo(
+                    'binary',
+                    '/src/Root.php',
+                    true,
+                    Capabilities::IO,
+                    [],
+                    true,
+                    0,
+                    [],
+                    ["\xff" => ['$x']],
+                ),
+            ],
+            'binary',
         ];
     }
 
