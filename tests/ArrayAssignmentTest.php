@@ -2378,6 +2378,22 @@ final class ArrayAssignmentTest extends TestCase
                         return $list;
                     }',
             ],
+            'assignWithStaticClassOffsetKeepsTheKeyTypeOfTheProperty' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    abstract class Singleton {
+                        /** @var array<class-string<static>, static> */
+                        private static array $instances = [];
+
+                        protected function __construct() {}
+
+                        public static function getInstance(): static {
+                            return self::$instances[static::class] ??= new static();
+                        }
+                    }',
+            ],
             'assignToListWithForeachKey' => [
                 'code' => '<?php
                     /**
