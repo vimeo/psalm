@@ -80,6 +80,23 @@ final class ForTest extends TestCase
                         return $result;
                     }',
             ],
+            'narrowedPropertyOfLoopVariableIsKeptWhenTheVariableIsReassigned' => [
+                'code' => '<?php
+                    final class Node {
+                        public ?Node $next = null;
+                    }
+
+                    function f(Node $node): void {
+                        if ($node->next !== null) {
+                            for ($i = 0; $i < 2; $i++) {
+                                $node = $node->next ?? new Node();
+                            }
+                            if ($node->next === null) {
+                                echo "end";
+                            }
+                        }
+                    }',
+            ],
             'forTrue' => [
                 'code' => '<?php
                     function ret(): int {
