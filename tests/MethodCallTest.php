@@ -205,6 +205,111 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'privateConstructorOfAParentWithCallStaticStillInitializesTheProperties' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): ?string {
+                            return null;
+                        }
+
+                        protected string $name;
+
+                        private function __construct(string $name) {
+                            $this->name = $name;
+                        }
+                    }
+
+                    final class Child extends Base {}',
+                'assertions' => [],
+                'ignored_issues' => ['ClassMustBeFinal'],
+            ],
+            'inaccessibleStaticMethodForwardedToCallStaticHasItsReturnType' => [
+                'code' => '<?php
+                    final class Factory {
+                        private static function make(): int {
+                            return 1;
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return $name;
+                        }
+                    }
+
+                    $made = Factory::make();',
+                'assertions' => ['$made' => 'string'],
+            ],
+            'inaccessibleStaticMethodForwardedToAnInheritedCallStaticResolvesSelfToItsClass' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): self {
+                            return new self();
+                        }
+                    }
+
+                    final class Child extends Base {
+                        private static function make(): int {
+                            return 1;
+                        }
+                    }
+
+                    $made = Child::make();',
+                'assertions' => ['$made===' => 'Base'],
+                'ignored_issues' => ['ClassMustBeFinal'],
+            ],
+            'inaccessibleStaticMethodForwardedToAnInheritedCallStaticResolvesStaticToTheCalledClass' => [
+                'code' => '<?php
+                    class Base {
+                        /**
+                         * @param list<mixed> $_arguments
+                         * @return static
+                         */
+                        public static function __callStatic(string $name, array $_arguments) {
+                            throw new Exception($name);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        private static function make(): int {
+                            return 1;
+                        }
+                    }
+
+                    $made = Child::make();',
+                'assertions' => ['$made===' => 'Child&static'],
+                'ignored_issues' => ['ClassMustBeFinal'],
+            ],
+            'staticCallOfInaccessibleMethodGoesToCallStatic' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Repository
+                    {
+                        /** @param array<mixed> $args */
+                        public static function __callStatic(string $name, array $args): string
+                        {
+                            return $name;
+                        }
+
+                        protected function find(int $id): int
+                        {
+                            return $id;
+                        }
+
+                        private static function secret(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    Repository::find(1);
+                    Repository::secret();
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'negatedMethodExistsOfABuiltinClassKeepsTheBranchPossible' => [
                 'code' => '<?php
                     function f(DateTime $date): string {
@@ -1767,6 +1872,59 @@ final class MethodCallTest extends TestCase
                         }
                     }',
             ],
+            'parentCallOfStaticReturnKeepsCallingClass' => [
+                'code' => '<?php
+                    abstract class P {
+                        public function copy(): static {
+                            return clone $this;
+                        }
+
+                        final public function __construct() {}
+
+                        public static function make(): static {
+                            return new static();
+                        }
+                    }
+
+                    class C extends P {
+                        public ?string $extra = null;
+
+                        public function copy(): static {
+                            $new = parent::copy();
+                            $new->extra = "a";
+
+                            return $new;
+                        }
+
+                        public static function make(): static {
+                            $new = parent::make();
+                            $new->extra = "b";
+
+                            return $new;
+                        }
+                    }',
+            ],
+            'parentCallOfStaticReturnInNonFinalSubclass' => [
+                'code' => '<?php
+                    interface I {}
+
+                    abstract class P implements I {
+                        public function copy(): static {
+                            return clone $this;
+                        }
+                    }
+
+                    class F extends P {
+                        public int $n = 0;
+
+                        public function copy(): static {
+                            $new = parent::copy();
+                            $new->n = 1;
+
+                            return $new;
+                        }
+                    }',
+            ],
             'pdoSqliteCreateFunctionTakesFlags' => [
                 'code' => '<?php
                     function register(PDO $pdo): void {
@@ -1786,6 +1944,23 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticCallOfInaccessibleMethodWithoutCallStatic' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Repository
+                    {
+                        protected function find(int $id): int
+                        {
+                            return $id;
+                        }
+                    }
+
+                    Repository::find(1);
+                    PHP,
+                'error_message' => 'InvalidStaticInvocation',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'negatedMethodExistsOfAnObjectWithTheMethod' => [
                 'code' => '<?php
                     class A {

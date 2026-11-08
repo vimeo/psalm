@@ -53,6 +53,27 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'foreachSourceIsEvaluatedBeforeTheValueIsAssigned' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, list<int>> $rows */
+                    function values(array $rows, string $row): void {
+                        foreach ($rows[$row] as $key => $row) {
+                            echo $key, $row;
+                        }
+                    }
+
+                    /** @param array<string, array<string, int>> $data */
+                    function keys(array $data, string $name): void {
+                        foreach ($data[$name] as $name => $value) {
+                            echo $name, $value;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'foreachOverAClassStringMap' => [
                 'code' => <<<'PHP'
                     <?php
@@ -77,6 +98,25 @@ final class ForeachTest extends TestCase
                         foreach ($lists as $list) {
                             /** @psalm-check-type-exact $list = list<Foo> */
                         }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'foreachKeyOverwritesTheValueOfTheSameName' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, list<int>> $devices */
+                    function keys(array $devices): array {
+                        $result = [];
+
+                        foreach ($devices as $device => $device) {
+                            /** @psalm-check-type-exact $device = string */
+                            $result[$device] = 'hello world';
+                        }
+
+                        return $result;
                     }
                     PHP,
                 'assertions' => [],
