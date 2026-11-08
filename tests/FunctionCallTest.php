@@ -2460,6 +2460,7 @@ final class FunctionCallTest extends TestCase
                     '$c===' => '\'  abc\'',
                     '$d===' => '\'abc\'',
                 ],
+                'ignored_issues' => ['WrongCaseFunction'],
             ],
             'trimThatIsNotOfOneLiteralKeepsTheStubType' => [
                 'code' => '<?php
