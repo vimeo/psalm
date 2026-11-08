@@ -55,6 +55,7 @@ use function extension_loaded;
 use function in_array;
 use function is_numeric;
 use function is_string;
+use function ltrim;
 use function preg_match;
 use function str_starts_with;
 use function strpos;
@@ -225,7 +226,12 @@ final class NamedFunctionCallHandler
         }
 
         if ($function_id === 'function_exists') {
-            $context->check_functions = false;
+            if ($first_arg && $first_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                $context->phantom_functions[strtolower(ltrim($first_arg->value->value, '\\'))] = true;
+            } else {
+                $context->check_functions = false;
+            }
+
             return;
         }
 
