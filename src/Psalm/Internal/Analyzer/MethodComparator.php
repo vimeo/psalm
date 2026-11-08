@@ -1248,6 +1248,14 @@ final class MethodComparator
                     $codebase,
                 );
 
+                // the guide's templates may be the ones of the class declaring the method by now
+                self::transformTemplates(
+                    $implementer_called_class_storage->template_extended_params,
+                    $implementer_method_storage->defining_fqcln,
+                    $guide_method_storage_return_type,
+                    $codebase,
+                );
+
                 self::transformTemplates(
                     $implementer_called_class_storage->template_extended_params,
                     $implementer_method_storage->defining_fqcln,
