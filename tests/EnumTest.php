@@ -5,13 +5,59 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 final class EnumTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function testAMixedPartOfTheReceiverDoesNotMakeTheValueOfTheEnumPartMixed(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                enum Suit: string {
+                    case Hearts = "h";
+                    case Spades = "s";
+                }
+
+                function collect(array $items, mixed $first): array {
+                    $keys = [];
+                    $suit = $first;
+
+                    foreach ($items as $_) {
+                        $keys[$suit->value] = true;
+                        $suit = Suit::Spades;
+                    }
+
+                    return $keys;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                [9, 'MixedAssignment'],
+                [12, 'MixedPropertyFetch'],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->type],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
 
     /**
      * @psalm-pure

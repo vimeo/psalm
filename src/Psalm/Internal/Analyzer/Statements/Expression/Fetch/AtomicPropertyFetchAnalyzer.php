@@ -223,12 +223,13 @@ final class AtomicPropertyFetchAnalyzer
                 $has_valid_fetch_type = true;
                 $statements_analyzer->node_data->setType(
                     $stmt,
-                    Type::combineUnionTypes(
+                    self::combineWithTypeOfEarlierParts(
+                        $statements_analyzer,
+                        $stmt,
                         new Union([
                             new TString(),
                             new TInt(),
                         ]),
-                        $statements_analyzer->node_data->getType($stmt),
                     ),
                 );
             } elseif ($prop_name === 'value' && $class_storage->enum_type !== null && $class_storage->enum_cases) {
@@ -1155,14 +1156,15 @@ final class AtomicPropertyFetchAnalyzer
 
         $statements_analyzer->node_data->setType(
             $stmt,
-            Type::combineUnionTypes(
+            self::combineWithTypeOfEarlierParts(
+                $statements_analyzer,
+                $stmt,
                 $relevant_enum_case_names === []
                     ? Type::getNonEmptyString()
                     : new Union(array_map(
                         static fn(string $name): TString => Type::getAtomicStringFromLiteral($name),
                         $relevant_enum_case_names,
                     )),
-                $statements_analyzer->node_data->getType($stmt),
             ),
         );
     }
@@ -1194,11 +1196,28 @@ final class AtomicPropertyFetchAnalyzer
         /** @psalm-suppress ArgumentTypeCoercion */
         $statements_analyzer->node_data->setType(
             $stmt,
-            Type::combineUnionTypes(
-                new Union($case_values),
-                $statements_analyzer->node_data->getType($stmt),
-            ),
+            self::combineWithTypeOfEarlierParts($statements_analyzer, $stmt, new Union($case_values)),
         );
+    }
+
+    /**
+     * The type of an enum's `value` or `name` fetch is that of every part of the receiver together. A part that is
+     * mixed already has its own fetch reported, and its type must not make the enum's value mixed too.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function combineWithTypeOfEarlierParts(
+        StatementsAnalyzer $statements_analyzer,
+        PropertyFetch $stmt,
+        Union $type,
+    ): Union {
+        $earlier_parts = $statements_analyzer->node_data->getType($stmt);
+
+        if ($earlier_parts === null || $earlier_parts->hasMixed()) {
+            return $type;
+        }
+
+        return Type::combineUnionTypes($type, $earlier_parts);
     }
 
     /**
