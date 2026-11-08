@@ -603,7 +603,7 @@ final class NewAnalyzer extends CallAnalyzer
                     self::applyAssertionsToContext(
                         $stmt->class,
                         null,
-                        $method_storage->assertions,
+                        self::getAssertionsOnArgs($method_storage->assertions, $method_storage, $stmt->getArgs()),
                         $stmt->getArgs(),
                         $template_result,
                         $context,
@@ -617,7 +617,11 @@ final class NewAnalyzer extends CallAnalyzer
                         array_map(
                             static fn(Possibilities $assertion): Possibilities
                                 => $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                            $method_storage->if_true_assertions,
+                            self::getAssertionsOnArgs(
+                                $method_storage->if_true_assertions,
+                                $method_storage,
+                                $stmt->getArgs(),
+                            ),
                         ),
                     );
                 }
@@ -628,7 +632,11 @@ final class NewAnalyzer extends CallAnalyzer
                         array_map(
                             static fn(Possibilities $assertion): Possibilities
                                 => $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                            $method_storage->if_false_assertions,
+                            self::getAssertionsOnArgs(
+                                $method_storage->if_false_assertions,
+                                $method_storage,
+                                $stmt->getArgs(),
+                            ),
                         ),
                     );
                 }
