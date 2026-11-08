@@ -1250,7 +1250,7 @@ abstract class RecursiveFilterIterator extends FilterIterator implements Recursi
      *
      * @psalm-pure
      * @psalm-purity-from-template TPurity
-     * @return TIterator
+     * @return RecursiveFilterIterator[TPurity]<TKey, TValue>
      */
     public function getChildren() {}
 
@@ -1414,7 +1414,7 @@ class RecursiveCachingIterator extends CachingIterator implements RecursiveItera
     /**
      * @psalm-pure
      * @psalm-purity-from-template TPurity
-     * @return RecursiveCachingIterator[TPurity]<TKey,TValue, TIterator>
+     * @return RecursiveCachingIterator[TPurity]<TKey, TValue>
      */
     public function getChildren() {}
 
@@ -1448,7 +1448,7 @@ class RecursiveCallbackFilterIterator extends CallbackFilterIterator implements 
     /**
      * @psalm-pure
      * @psalm-purity-from-template TPurity
-     * @return RecursiveCallbackFilterIterator[TPurity]<TKey, TValue, TIterator>
+     * @return RecursiveCallbackFilterIterator[TPurity]<TKey, TValue>
      */
     public function getChildren() {}
 
