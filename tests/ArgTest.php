@@ -30,6 +30,15 @@ final class ArgTest extends TestCase
                     $test = [1, 2];
                     foo(...$test);',
             ],
+            'namedArgumentSelectsCallmapOverloadWithThatParameter' => [
+                'code' => '<?php
+                    setcookie("name", "value", path: "/");
+                    setcookie("name", "value", domain: "example.com");
+                    setcookie("name", "value", 1, path: "/");',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'argumentUnpackingLiteral' => [
                 'code' => '<?php
                     function add(int $a, int $b, int $c) : int {
@@ -432,6 +441,20 @@ final class ArgTest extends TestCase
                     $test = [1, 2];
                     foo(...$test);',
                 'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:28 - Tried to unpack non-iterable array<int, int>|null',
+            ],
+            'namedArgumentUnknownToEveryCallmapOverload' => [
+                'code' => '<?php
+                    setcookie("name", "value", nonexistent: "/");',
+                'error_message' => 'InvalidNamedArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'namedArgumentUnknownToEveryCallmapOverloadIsNotTakenByTheVariadicOne' => [
+                'code' => '<?php
+                    max([1, 2], foo: 3);',
+                'error_message' => 'InvalidNamedArgument',
+                'error_levels' => ['TooManyArguments'],
+                'php_version' => '8.0',
             ],
             'iterableInUnionPassedToArrayParam' => [
                 'code' => '<?php

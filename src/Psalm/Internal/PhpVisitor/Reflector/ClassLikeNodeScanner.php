@@ -1176,7 +1176,14 @@ final class ClassLikeNodeScanner
         }
 
         foreach ($node->adaptations as $adaptation) {
-            if ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Alias) {
+            if ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Precedence) {
+                $method_name = strtolower($adaptation->method->name);
+
+                foreach ($adaptation->insteadof as $excluded_trait) {
+                    $excluded_fqcln = ClassLikeAnalyzer::getFQCLNFromNameObject($excluded_trait, $this->aliases);
+                    $storage->trait_excluded_methods[$method_name][strtolower($excluded_fqcln)] = true;
+                }
+            } elseif ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Alias) {
                 $old_name = strtolower($adaptation->method->name);
                 $new_name = $old_name;
 
@@ -1186,6 +1193,12 @@ final class ClassLikeNodeScanner
                     if ($new_name !== $old_name) {
                         $storage->trait_alias_map[$new_name] = $old_name;
                         $storage->trait_alias_map_cased[$adaptation->newName->name] = $adaptation->method->name;
+
+                        if ($adaptation->trait) {
+                            $storage->trait_alias_trait_map[$new_name] = strtolower(
+                                ClassLikeAnalyzer::getFQCLNFromNameObject($adaptation->trait, $this->aliases),
+                            );
+                        }
                     }
                 }
 
@@ -1739,7 +1752,10 @@ final class ClassLikeNodeScanner
                     new CodeLocation($this->file_scanner, $const),
                 );
 
-                if (!IssueBuffer::isSuppressedInList($missing_type_issue, $suppressed_issues)) {
+                if (!IssueBuffer::isSuppressedInList(
+                    $missing_type_issue,
+                    $suppressed_issues + $storage->suppressed_issues,
+                )) {
                     $this->file_storage->scan_issues[] = $missing_type_issue;
                 }
             }
@@ -2059,6 +2075,8 @@ final class ClassLikeNodeScanner
                 }
 
                 if ($property_storage->signature_type) {
+                    $property_storage->type_location = $doc_var_location ?? $property_storage->type_location;
+
                     $all_typehint_types_match = true;
                     $signature_atomic_types = $property_storage->signature_type->getAtomicTypes();
 
