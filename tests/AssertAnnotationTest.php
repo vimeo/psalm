@@ -251,6 +251,136 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertArrayKeyExistsWithNamedArgumentsNarrowsTheArrayOfItsParameter' => [
+                'code' => '<?php
+                    /**
+                     * @param array{k?: int} $target
+                     * @param array{k?: int} $other
+                     * @psalm-assert array-key-exists $target[$key]
+                     */
+                    function check(string $key, array $target, array $other): void {}
+
+                    /**
+                     * @param array{k?: int} $target
+                     * @param array{k?: int} $other
+                     * @psalm-assert-if-true array-key-exists $target[$key]
+                     */
+                    function has(string $key, array $target, array $other): bool {
+                        return array_key_exists($key, $target);
+                    }
+
+                    /**
+                     * @param array{k?: int} $a
+                     * @param array{k?: int} $b
+                     */
+                    function viaAssert(array $a, array $b): void {
+                        check(key: "k", other: $b, target: $a);
+                        /** @psalm-check-type-exact $a = array{k: int} */
+                        /** @psalm-check-type-exact $b = array{k?: int} */
+                    }
+
+                    /**
+                     * @param array{k?: int} $a
+                     * @param array{k?: int} $b
+                     */
+                    function viaAssertIfTrue(array $a, array $b): void {
+                        if (has(key: "k", other: $b, target: $a)) {
+                            /** @psalm-check-type-exact $a = array{k: int} */
+                            /** @psalm-check-type-exact $b = array{k?: int} */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertionsWithNamedArgumentsAreAboutTheArgumentOfTheirParameter' => [
+                'code' => '<?php
+                    /** @psalm-assert int $target */
+                    function assertInt(mixed $other, mixed $target): void {}
+
+                    /** @psalm-assert-if-true int $target */
+                    function isInt(mixed $other, mixed $target): bool {
+                        return is_int($target);
+                    }
+
+                    /** @psalm-assert-if-false int $target */
+                    function isNotInt(mixed $other, mixed $target): bool {
+                        return !is_int($target);
+                    }
+
+                    final class Asserts {
+                        /** @psalm-assert int $target */
+                        public function assertInt(mixed $other, mixed $target): void {}
+
+                        /** @psalm-assert int $target */
+                        public static function assertIntStatic(mixed $other, mixed $target): void {}
+                    }
+
+                    final class AssertingConstructor {
+                        /** @psalm-assert int $target */
+                        public function __construct(mixed $other, mixed $target) {}
+                    }
+
+                    function viaFunction(mixed $a, mixed $b): void {
+                        assertInt(target: $a, other: $b);
+                        /** @psalm-check-type-exact $a = int */
+                        /** @psalm-check-type-exact $b = mixed */
+                    }
+
+                    function viaIfTrue(mixed $a, mixed $b): void {
+                        if (isInt(target: $a, other: $b)) {
+                            /** @psalm-check-type-exact $a = int */
+                            /** @psalm-check-type-exact $b = mixed */
+                        }
+                    }
+
+                    function viaIfFalse(mixed $a, mixed $b): void {
+                        if (!isNotInt(target: $a, other: $b)) {
+                            /** @psalm-check-type-exact $a = int */
+                            /** @psalm-check-type-exact $b = mixed */
+                        }
+                    }
+
+                    function viaMethod(Asserts $asserts, mixed $a, mixed $b): void {
+                        $asserts->assertInt(target: $a, other: $b);
+                        /** @psalm-check-type-exact $a = int */
+                        /** @psalm-check-type-exact $b = mixed */
+                    }
+
+                    function viaStaticMethod(mixed $a, mixed $b): void {
+                        Asserts::assertIntStatic(target: $a, other: $b);
+                        /** @psalm-check-type-exact $a = int */
+                        /** @psalm-check-type-exact $b = mixed */
+                    }
+
+                    function viaConstructor(mixed $a, mixed $b): void {
+                        new AssertingConstructor(target: $a, other: $b);
+                        /** @psalm-check-type-exact $a = int */
+                        /** @psalm-check-type-exact $b = mixed */
+                    }
+
+                    function positionalAfterNamed(mixed $a, mixed $b): void {
+                        assertInt($b, target: $a);
+                        /** @psalm-check-type-exact $a = int */
+                        /** @psalm-check-type-exact $b = mixed */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertionOnAParameterANamedArgumentSkipsIsNotApplied' => [
+                'code' => '<?php
+                    /** @psalm-assert int $first */
+                    function assertFirst(mixed $first = 0, mixed $second = null): void {}
+
+                    function skipped(mixed $b): void {
+                        assertFirst(second: $b);
+                        /** @psalm-check-type-exact $b = mixed */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assertArrayKeyExistsOfAnArgumentOffsetNarrowsTheArray' => [
                 'code' => '<?php
                     /** @psalm-assert array-key-exists $array[$key] */

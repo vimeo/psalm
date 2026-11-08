@@ -386,7 +386,7 @@ final class ExistingAtomicStaticCallAnalyzer
                 CallAnalyzer::applyAssertionsToContext(
                     $stmt_name,
                     null,
-                    $assertions,
+                    CallAnalyzer::getAssertionsOnArgs($assertions, $method_storage, $stmt->getArgs()),
                     $stmt->getArgs(),
                     $template_result,
                     $context,
@@ -400,7 +400,11 @@ final class ExistingAtomicStaticCallAnalyzer
                     array_map(
                         static fn(Possibilities $assertion): Possibilities =>
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                        $method_storage->if_true_assertions,
+                        CallAnalyzer::getAssertionsOnArgs(
+                            $method_storage->if_true_assertions,
+                            $method_storage,
+                            $stmt->getArgs(),
+                        ),
                     ),
                 );
             }
@@ -411,7 +415,11 @@ final class ExistingAtomicStaticCallAnalyzer
                     array_map(
                         static fn(Possibilities $assertion): Possibilities =>
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                        $method_storage->if_false_assertions,
+                        CallAnalyzer::getAssertionsOnArgs(
+                            $method_storage->if_false_assertions,
+                            $method_storage,
+                            $stmt->getArgs(),
+                        ),
                     ),
                 );
             }
