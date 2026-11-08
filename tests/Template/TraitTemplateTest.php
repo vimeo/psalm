@@ -21,6 +21,35 @@ final class TraitTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'traitMethodWithoutDocblockInheritsTheDocblockOfTheParent' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class A
+                    {
+                        /**
+                         * @param T $s
+                         * @return T
+                         */
+                        abstract public function someMethod(mixed $s): mixed;
+                    }
+
+                    trait LetsTrait
+                    {
+                        public function someMethod(mixed $s): mixed
+                        {
+                            return $s;
+                        }
+                    }
+
+                    /** @extends A<string> */
+                    class C extends A
+                    {
+                        use LetsTrait;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'traitUseNotExtended' => [
                 'code' => '<?php
                     /**
@@ -553,6 +582,39 @@ final class TraitTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'traitMethodWithItsOwnDocblockIsComparedWithTheParent' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class A
+                    {
+                        /**
+                         * @param T $s
+                         * @return T
+                         */
+                        abstract public function someMethod(mixed $s): mixed;
+                    }
+
+                    trait LetsTrait
+                    {
+                        /**
+                         * @param mixed $s
+                         * @return mixed
+                         */
+                        public function someMethod(mixed $s): mixed
+                        {
+                            return $s;
+                        }
+                    }
+
+                    /** @extends A<string> */
+                    class C extends A
+                    {
+                        use LetsTrait;
+                    }',
+                'error_message' => 'LessSpecificImplementedReturnType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'badTemplateUse' => [
                 'code' => '<?php
                     /**

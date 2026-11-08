@@ -179,9 +179,16 @@ final class MethodComparator
             );
         }
 
+        // the method of a trait, which is no part of the class the docblock of the parent's is inherited by
+        $trait_method_inherits_docblock = $implementer_classlike_storage->is_trait
+            && !$implementer_method_storage->has_docblock_param_types
+            && !$implementer_method_storage->has_docblock_return_type
+            && ($guide_method_storage->has_docblock_param_types || $guide_method_storage->has_docblock_return_type);
+
         if ($guide_method_storage->return_type
             && $implementer_method_storage->return_type
             && !$implementer_method_storage->inherited_return_type
+            && !$trait_method_inherits_docblock
             && ($guide_method_storage->signature_return_type !== $guide_method_storage->return_type
                 || $implementer_method_storage->signature_return_type !== $implementer_method_storage->return_type)
             && $implementer_classlike_storage->user_defined
