@@ -17,6 +17,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\ImplicitToStringCast;
@@ -29,6 +30,7 @@ use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\Issue\PossiblyNullOperand;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -281,6 +283,9 @@ final class ConcatAnalyzer
                     );
                 }
 
+                $result_type = self::getResultTypeFromKnownOperand($left_type->hasMixed() ? $right_type : $left_type)
+                    ?? $result_type;
+
                 return;
             }
 
@@ -310,7 +315,8 @@ final class ConcatAnalyzer
 
                     foreach ($left_type->getAtomicTypes() as $left_type_part) {
                         foreach ($right_type->getAtomicTypes() as $right_type_part) {
-                            $literal = $left_type_part->value . $right_type_part->value;
+                            $literal = LiteralCast::toString($left_type_part->value)
+                                . LiteralCast::toString($right_type_part->value);
                             if (strlen($literal) >= $config->max_string_length) {
                                 // Literal too long, use non-literal type instead
                                 $literal_concat = false;
@@ -439,26 +445,41 @@ final class ConcatAnalyzer
              */
             $known_operand = $right_type ?? $left_type;
 
-            if ($known_operand->isSingle()) {
-                $known_operands_atomic = $known_operand->getSingleAtomic();
+            $result_type = self::getResultTypeFromKnownOperand($known_operand) ?? $result_type;
+        }
+    }
 
-                if ($known_operand->isNonEmptyString()) {
-                    $result_type = Type::getNonEmptyString();
-                }
+    /**
+     * The type of a concatenation with an operand of unknown type: it is no emptier than the known operand
+     *
+     * @psalm-pure
+     */
+    private static function getResultTypeFromKnownOperand(Union $known_operand): ?Union
+    {
+        if (!$known_operand->isSingle()) {
+            return null;
+        }
 
-                if ($known_operands_atomic instanceof TNonFalsyString) {
-                    $result_type = Type::getNonFalsyString();
-                }
+        $known_operands_atomic = $known_operand->getSingleAtomic();
+        $result_type = null;
 
-                if ($known_operands_atomic instanceof TLiteralString) {
-                    if ($known_operands_atomic->value) {
-                        $result_type = Type::getNonFalsyString();
-                    } elseif ($known_operands_atomic->value !== '') {
-                        $result_type = Type::getNonEmptyString();
-                    }
-                }
+        if ($known_operand->isNonEmptyString()) {
+            $result_type = Type::getNonEmptyString();
+        }
+
+        if ($known_operands_atomic instanceof TNonFalsyString) {
+            $result_type = Type::getNonFalsyString();
+        }
+
+        if ($known_operands_atomic instanceof TLiteralString) {
+            if ($known_operands_atomic->value) {
+                $result_type = Type::getNonFalsyString();
+            } elseif ($known_operands_atomic->value !== '') {
+                $result_type = Type::getNonEmptyString();
             }
         }
+
+        return $result_type;
     }
 
     private static function analyzeOperand(
@@ -516,6 +537,7 @@ final class ConcatAnalyzer
         }
 
         $operand_type_match = true;
+        $operand_concat_safe = true;
         $has_valid_operand = false;
         $comparison_result = new TypeComparisonResult();
 
@@ -559,6 +581,13 @@ final class ConcatAnalyzer
             );
 
             $operand_type_match = $operand_type_match && $operand_type_part_match;
+
+            if (!($operand_type_part instanceof TInt
+                || $operand_type_part instanceof TString
+                || $operand_type_part instanceof TArrayKey)
+            ) {
+                $operand_concat_safe = false;
+            }
 
             $has_valid_operand = $has_valid_operand || $operand_type_part_match;
 
@@ -620,7 +649,7 @@ final class ConcatAnalyzer
 
         if (!$operand_type_match
             && (!$comparison_result->scalar_type_match_found
-                || (!$operand_type->isConcatSafe() && $config->strict_binary_operands)
+                || (!$operand_concat_safe && $config->strict_binary_operands)
             )
         ) {
             if ($has_valid_operand) {
