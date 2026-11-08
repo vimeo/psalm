@@ -30,8 +30,10 @@ class TNamedObject extends Atomic
     public string $value;
 
     /**
-     * Whether a late static type is bound to its class already. Only `X&static` in a signature isn't: the receiver of
-     * a call binds it. One built in analysis (`$this`, `static::class`) is the caller's, bound from the start.
+     * Whether a late static type ($is_static) is bound already, so that the receiver of a call doesn't bind it again.
+     * `X&static` parsed from a signature is unbound until a call binds it. A type constructed with $is_static is the
+     * late static of the analysed code (`$this`, `new static`, `static::class`), bound from the start. A bare `static`
+     * is an object named `static` instead, which TypeExpander replaces.
      */
     public bool $is_static_resolved = false;
 
@@ -41,6 +43,10 @@ class TNamedObject extends Atomic
      */
     public function __construct(
         string $value,
+        /**
+         * Whether this is a late static type (`X&static`), bound ({@see $is_static_resolved}) unless changed with
+         * setIsStatic()
+         */
         public bool $is_static = false,
         /**
          * Whether or not this type can represent a child of the class named in $value
@@ -107,7 +113,7 @@ class TNamedObject extends Atomic
         $cloned = clone $this;
         $cloned->value = $value;
         $cloned->is_static = $is_static;
-        $cloned->is_static_resolved = $is_static;
+        $cloned->is_static_resolved = $is_static_resolved;
         return $cloned;
     }
 

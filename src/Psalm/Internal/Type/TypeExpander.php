@@ -197,7 +197,8 @@ final class TypeExpander
         if ($return_type instanceof TNamedObject
             || $return_type instanceof TTemplateParam
         ) {
-            // a bound late static is the caller's: another called object binds no static in it or its type arguments
+            // a bound late static is the caller's: another called object binds no static in it or its type arguments.
+            // A called class given by name (`Child::make()`, a string) is exact, and still binds it
             if ($return_type instanceof TNamedObject
                 && $return_type->is_static_resolved
                 && !is_string($static_class_type)
@@ -541,8 +542,12 @@ final class TypeExpander
             || $return_type instanceof TGenericObject
             || $return_type instanceof TIterable
         ) {
+            $template_covariants = $return_type instanceof TGenericObject
+                && $codebase->classlike_storage_provider->has($return_type->value)
+                ? $codebase->classlike_storage_provider->get($return_type->value)->template_covariants ?? []
+                : null;
             $type_params = $return_type->type_params;
-            foreach ($type_params as &$type_param) {
+            foreach ($type_params as $offset => &$type_param) {
                 $type_param = self::expandUnion(
                     $codebase,
                     $type_param,
@@ -551,7 +556,9 @@ final class TypeExpander
                     $parent_class,
                     $evaluate_class_constants,
                     $evaluate_conditional_types,
-                    $final,
+                    $template_covariants === null || ($template_covariants[$offset] ?? false)
+                        ? $final
+                        : self::isFinalWhereNotCovariant($codebase, $static_class_type, $final),
                     $expand_generic,
                     $expand_templates,
                     $throw_on_unresolvable_constant,
@@ -673,7 +680,7 @@ final class TypeExpander
                     $parent_class,
                     $evaluate_class_constants,
                     $evaluate_conditional_types,
-                    $final,
+                    self::isFinalWhereNotCovariant($codebase, $static_class_type, $final),
                     $expand_generic,
                     $expand_templates,
                     $throw_on_unresolvable_constant,
@@ -698,7 +705,7 @@ final class TypeExpander
                             $parent_class,
                             $evaluate_class_constants,
                             $evaluate_conditional_types,
-                            $final,
+                            self::isFinalWhereNotCovariant($codebase, $static_class_type, $final),
                             $expand_generic,
                             $expand_templates,
                             $throw_on_unresolvable_constant,
@@ -751,6 +758,24 @@ final class TypeExpander
     }
 
     /**
+     * `$final` binds `static` to the class of a receiver that isn't late static, which is sound only where the type is
+     * covariant: where it isn't (an invariant template, a callable's parameter), a `Base` receiver that is a `Child` at
+     * runtime keeps `static` late, unless its class is final.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isFinalWhereNotCovariant(
+        Codebase $codebase,
+        string|TNamedObject|TTemplateParam|null $static_class_type,
+        bool $final,
+    ): bool {
+        return $final
+            && (!$static_class_type instanceof TNamedObject
+                || ($codebase->classlike_storage_provider->has($static_class_type->value)
+                    && $codebase->classlike_storage_provider->get($static_class_type->value)->final));
+    }
+
+    /**
      * @param-out TNamedObject|TTemplateParam $return_type
      */
     private static function expandNamedObject(
@@ -762,11 +787,11 @@ final class TypeExpander
         bool $final = false,
         bool &$expand_generic = false,
     ): TNamedObject|TTemplateParam {
-        // a static type has the type arguments of the called class it is bound to, below or by an earlier expansion
+        // a static type is resolved to the called class below, with its own type arguments
         if ($expand_generic
             && $return_type::class === TNamedObject::class
             && !$return_type->extra_types
-            && !$return_type->is_static
+            && !($return_type->is_static && !$return_type->is_static_resolved)
             && $codebase->classOrInterfaceExists($return_type->value)
         ) {
             $value = $codebase->classlikes->getUnAliasedName($return_type->value);
@@ -780,7 +805,7 @@ final class TypeExpander
                     static fn($type_map): bool => !reset($type_map)->hasMixed(),
                 )
             ) {
-                $return_type = new TGenericObject(
+                $return_type = (new TGenericObject(
                     $return_type->value,
                     array_values(
                         array_map(
@@ -788,7 +813,7 @@ final class TypeExpander
                             $container_class_storage->template_types,
                         ),
                     ),
-                );
+                ))->setIsStatic($return_type->is_static, $return_type->is_static_resolved);
 
                 // we don't want to expand generic types recursively
                 $expand_generic = false;

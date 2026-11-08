@@ -205,6 +205,65 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticReturnInheritedOrFromTheCallMapIsBoundToAPlainReceiver' => [
+                'code' => '<?php
+                    interface WithX {
+                        /** @return static */
+                        public function withX(int $x): static;
+                    }
+
+                    class Bag implements WithX {
+                        public function withX(int $x): static {
+                            return clone $this;
+                        }
+                    }
+
+                    interface WithY {
+                        /** @return static */
+                        public function withY(int $y);
+                    }
+
+                    class Message implements WithY {
+                        public function withY(int $y): self {
+                            return clone $this;
+                        }
+                    }
+
+                    class MyDate extends DateTime {}
+
+                    function test(Bag $bag, Message $message, DateTime $date, MyDate $my_date): void {
+                        $x = $bag->withX(1);
+                        /** @psalm-check-type-exact $x = Bag */;
+                        $y = $message->withY(1);
+                        /** @psalm-check-type-exact $y = Message */;
+                        $time = $date->setTime(1, 2);
+                        /** @psalm-check-type-exact $time = DateTime */;
+                        $zone = $my_date->setTimezone(new DateTimeZone("UTC"));
+                        /** @psalm-check-type-exact $zone = MyDate */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingReturnType'],
+                'php_version' => '8.0',
+            ],
+            'parentMagicMethodCallReturnsTheLateStaticOfThis' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    class Model {
+                        /** @return static */
+                        public function __call(string $method, array $args) {
+                            return new static();
+                        }
+                    }
+
+                    class Post extends Model {
+                        public function create(): static {
+                            return parent::create([]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnsafeInstantiation'],
+                'php_version' => '8.0',
+            ],
             'mysqliGetWarningsMayReturnFalse' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1632,6 +1691,22 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticCallOnAnotherInstanceIsNotTheCallersStatic' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class Bag {
+                        public static function create(): static {
+                            return new static();
+                        }
+
+                        public function make(self $other): static {
+                            return $other::create();
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'staticReturnOfAnotherInstanceIsNotTheCallersStatic' => [
                 'code' => '<?php
                     class Bag {

@@ -563,8 +563,6 @@ final class MissingMethodCallHandler
             $defining_class_storage->name,
             $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $method_id->fq_class_name,
             $defining_class_storage->parent_class,
-            $class_storage->final,
-            false,
             $class_storage->final || MethodCallReturnTypeFetcher::bindsStaticToReceiverClass($codebase, $lhs_type_part),
         );
     }

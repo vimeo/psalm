@@ -3571,6 +3571,22 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'lateStaticNarrowedToAChildWithOtherTypeArgumentsIsAContradiction' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Bag {
+                        /** @param static<int> $other */
+                        public function test($other): void {
+                            if ($other instanceof Child) {}
+                        }
+                    }
+
+                    /** @extends Bag<string> */
+                    class Child extends Bag {}',
+                'error_message' => 'DocblockTypeContradiction',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'makeNonNullableNull' => [
                 'code' => '<?php
                     class A { }

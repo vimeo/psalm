@@ -730,7 +730,10 @@ final class ExistingAtomicStaticCallAnalyzer
             is_string($static_type)
             && ($static_type !== $context->self
                 || $class_storage->final
-                || $context_final),
+                || $context_final
+                // `$other::create()`: `static` is the class of $other, late static only if $other is
+                || ($stmt->class instanceof PhpParser\Node\Expr
+                    && !($lhs_type_part instanceof TNamedObject && $lhs_type_part->is_static))),
         ];
     }
 

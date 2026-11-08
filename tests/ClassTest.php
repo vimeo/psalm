@@ -54,6 +54,185 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'preventDoubleStaticResolutionOnAPlainReceiver1' => [
+                'code' => '<?php
+
+                    /**
+                     * @template TTKey of array-key
+                     * @template TTValue
+                     *
+                     * @extends ArrayObject<TTKey, TTValue>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    class iter extends ArrayObject {
+                        /**
+                         * @return self<TTKey, TTValue>
+                         */
+                        public function stabilize(): self {
+                            return $this;
+                        }
+                    }
+
+                    class a {
+                        /**
+                         * @return iter<int, static>
+                         */
+                        public function ret(): iter {
+                            return new iter([$this]);
+                        }
+                    }
+                    class b extends a {
+                    }
+
+                    $a = new b;
+                    $a = $a->ret();
+                    $a = $a->stabilize();',
+                'assertions' => [
+                    '$a===' => 'iter<int, b&static>',
+                ],
+            ],
+            'preventDoubleStaticResolutionOnAPlainReceiver2' => [
+                'code' => '<?php
+                    /**
+                     * @template TTKey of array-key
+                     * @template TTValue
+                     *
+                     * @extends ArrayObject<TTKey, TTValue>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    class iter extends ArrayObject {
+                        /**
+                         * @return self<TTKey, TTValue>
+                         */
+                        public function stabilize(): self {
+                            return $this;
+                        }
+                    }
+
+                    interface a {
+                        /**
+                         * @return iter<int, static>
+                         */
+                        public function ret(): iter;
+                    }
+                    class b implements a {
+                        public function ret(): iter {
+                            return new iter([$this]);
+                        }
+                    }
+
+                    /** @var a */
+                    $a = new b;
+                    $a = $a->ret();
+                    $a = $a->stabilize();',
+                'assertions' => [
+                    '$a===' => 'iter<int, a&static>',
+                ],
+            ],
+            'preventDoubleStaticResolutionOnAPlainReceiver3' => [
+                'code' => '<?php
+                    /**
+                     * @template TTKey of array-key
+                     * @template TTValue
+                     *
+                     * @extends ArrayObject<TTKey, TTValue>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    class iter extends ArrayObject {
+                        /**
+                         * @return self<TTKey, TTValue>
+                         */
+                        public function stabilize(): self {
+                            return $this;
+                        }
+                    }
+
+                    interface a {
+                        /**
+                         * @return iter<int, a&static>
+                         */
+                        public function ret(): iter;
+                    }
+                    class b implements a {
+                        public function ret(): iter {
+                            return new iter([$this]);
+                        }
+                    }
+
+                    /** @var a */
+                    $a = new b;
+                    $a = $a->ret();
+                    $a = $a->stabilize();',
+                'assertions' => [
+                    '$a===' => 'iter<int, a&static>',
+                ],
+            ],
+            'staticOfAPlainReceiverIsBoundOnlyWhereTheTypeIsCovariant' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param static $other */
+                        public function consume(self $other): void {}
+
+                        /** @return Closure(static):void */
+                        public function callback(): Closure {
+                            return $this->consume(...);
+                        }
+
+                        /** @return Box<static> */
+                        public function boxed(): Box {
+                            throw new RuntimeException();
+                        }
+
+                        /** @return CovariantBox<static> */
+                        public function covariantBoxed(): CovariantBox {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @template T */
+                    final class Box {}
+
+                    /** @template-covariant T */
+                    final class CovariantBox {}
+
+                    function test(Base $receiver): void {
+                        $callback = $receiver->callback();
+                        /** @psalm-check-type-exact $callback = Closure(Base&static):void */;
+                        $boxed = $receiver->boxed();
+                        /** @psalm-check-type-exact $boxed = Box<Base&static> */;
+                        $covariant = $receiver->covariantBoxed();
+                        /** @psalm-check-type-exact $covariant = CovariantBox<Base> */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'lateStaticOfAGenericClassKeepsItsTypeArgumentsInATemplateArgument' => [
+                'code' => '<?php
+                    /** @template T of int */
+                    class GenInt {
+                        /** @param static $other */
+                        public function test($other): void {
+                            $boxed = box($other);
+                            /** @psalm-check-type-exact $boxed = Box<GenInt<int>&static> */;
+                        }
+                    }
+
+                    /** @template T */
+                    final class Box {}
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'classesOfBothBranchesOfAnUnknownAnd' => [
                 'code' => '<?php
                     if (rand(0, 1) && rand(0, 1)) {
@@ -1518,7 +1697,7 @@ final class ClassTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'staticOfAMethodOverriddenWithSelfIsBoundToTheFinalCalledClass' => [
+            'staticOfAMethodOverriddenWithSelfIsBoundToTheCalledClass' => [
                 'code' => '<?php
                     abstract class Factory {
                         /** @return static */
@@ -1636,7 +1815,7 @@ final class ClassTest extends TestCase
                     '$post===' => 'Post',
                     '$draft===' => 'Draft',
                     '$users===' => 'Collection<array-key, User>',
-                    '$posts===' => 'Collection<array-key, Post>',
+                    '$posts===' => 'Collection<array-key, Post&static>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
@@ -1874,6 +2053,58 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constructorDoesNotBindTheLateStaticOfItsArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Base {
+                        /** @var T */
+                        public mixed $value;
+
+                        /**
+                         * @param T $value
+                         * @psalm-self-out static<T>
+                         */
+                        public function __construct(mixed $value) {
+                            $this->value = $value;
+                        }
+
+                        public function test(): void {
+                            $box = new Child($this);
+                            $box->value->childOnly();
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @extends Base<T>
+                     */
+                    class Child extends Base {
+                        public function childOnly(): void {}
+                    }',
+                'error_message' => 'UndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:42 - Method Base::childOnly',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'callbackOfAPlainReceiverKeepsTheLateStaticOfItsParameter' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param static $other */
+                        public function consume(self $other): void {}
+
+                        /** @return Closure(static):void */
+                        public function callback(): Closure {
+                            return $this->consume(...);
+                        }
+                    }
+
+                    function test(Base $receiver): void {
+                        $callback = $receiver->callback();
+                        $callback(new Base());
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'elseOfAKnownTrueAndIsNotDeclared' => [
                 'code' => '<?php
                     if (function_exists("strlen") && function_exists("strpos")) {

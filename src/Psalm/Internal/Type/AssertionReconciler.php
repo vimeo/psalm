@@ -692,6 +692,37 @@ final class AssertionReconciler extends Reconciler
         ))->setIsStatic($child->is_static, $child->is_static_resolved);
     }
 
+    /**
+     * Whether the type arguments `$child` gives its ancestor (`@extends Bag<string>`) may be those of `$ancestor`
+     */
+    private static function childMayHaveTypeArguments(
+        Codebase $codebase,
+        TNamedObject $child,
+        TNamedObject $ancestor,
+    ): bool {
+        if (!$ancestor instanceof TGenericObject) {
+            return true;
+        }
+
+        $ancestor_storage = $codebase->classlike_storage_provider->get($ancestor->value);
+        $extended_params = $codebase->classlike_storage_provider->get($child->value)
+            ->template_extended_params[$ancestor_storage->name] ?? [];
+
+        foreach (array_keys($ancestor_storage->template_types ?? []) as $offset => $template_name) {
+            if (isset($extended_params[$template_name], $ancestor->type_params[$offset])
+                && !UnionTypeComparator::canExpressionTypesBeIdentical(
+                    $codebase,
+                    $extended_params[$template_name],
+                    $ancestor->type_params[$offset],
+                )
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private static function filterAtomicWithAnother(
         Atomic &$type_1_atomic,
         Atomic $type_2_atomic,
@@ -780,6 +811,7 @@ final class AssertionReconciler extends Reconciler
             && $type_2_atomic instanceof TNamedObject
             && $codebase->classExists($type_2_atomic->value)
             && $codebase->classlikes->classExtends($type_2_atomic->value, $type_1_atomic->value)
+            && self::childMayHaveTypeArguments($codebase, $type_2_atomic, $type_1_atomic)
         ) {
             return $type_2_atomic->setIsStatic(true, true);
         }

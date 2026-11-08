@@ -260,6 +260,38 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticPseudoMethodOfAPlainOrFinalReceiverIsItsClass' => [
+                'code' => '<?php
+                    /**
+                     * @method static fluent()
+                     */
+                    final class FinalMagic {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @method static fluent()
+                     */
+                    class Magic {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed {
+                            return $this;
+                        }
+                    }
+
+                    function test(FinalMagic $final_magic, Magic $magic): void {
+                        $final_fluent = $final_magic->fluent();
+                        /** @psalm-check-type-exact $final_fluent = FinalMagic */;
+                        $closure = $magic->fluent(...);
+                        /** @psalm-check-type-exact $closure = Closure():Magic */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'trailingReturnTypes' => [
                 'code' => '<?php
                     class ParentClass {

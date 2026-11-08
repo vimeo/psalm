@@ -2813,7 +2813,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         }
                     }
 
+                    // still the late static `$this`, narrowed
+                    $this_types = [];
+                    foreach ($this->storage->if_this_is_type->getAtomicTypes() as $this_type) {
+                        $this_types[] = $this_type instanceof TNamedObject
+                            ? $this_type->setIsStatic(!$storage->final, true)
+                            : $this_type;
+                    }
+
                     $context->vars_in_scope['$this'] = $this->storage->if_this_is_type
+                        ->setTypes($this_types)
                         ->setProperties($props);
                 } else {
                     $context->vars_in_scope['$this'] = new Union([$this_object_type], $props);

@@ -204,8 +204,8 @@ final class ThisOutTest extends TestCase
                     $k2 = new K(5);
                 ',
                 'assertions' => [
-                    '$k1===' => 'K<int>',
-                    '$k2===' => 'K<string>',
+                    '$k1===' => 'K<int>&static',
+                    '$k2===' => 'K<string>&static',
                 ],
             ],
             'selfOutOfALateStaticReceiverStaysLateStatic' => [
