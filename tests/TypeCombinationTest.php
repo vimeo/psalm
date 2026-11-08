@@ -194,11 +194,25 @@ final class TypeCombinationTest extends TestCase
     public static function providerTestValidTypeCombination(): iterable
     {
         return [
-            'objectShapesWithAnExtraPropertyMakeItOptional' => [
-                'object{a:string, b?:int}',
+            'objectShapesWithAnExtraPropertyKeepOnlyTheCommonOnes' => [
+                'object{a:string}',
                 [
                     'object{a: string}',
                     'object{a: string, b: int}',
+                ],
+            ],
+            'objectShapesKeepAnOptionalPropertyBothDeclare' => [
+                'object{a:string, b?:int}',
+                [
+                    'object{a: string, b?: int}',
+                    'object{a: string, b: int}',
+                ],
+            ],
+            'objectShapesWithDisjointPropertiesShareNone' => [
+                'object{}',
+                [
+                    'object{a: string}',
+                    'object{b: int}',
                 ],
             ],
             'objectShapesWithTheSameProperty' => [
@@ -209,7 +223,7 @@ final class TypeCombinationTest extends TestCase
                 ],
             ],
             'objectShapesKeepTheirCommonIntersection' => [
-                'object{a:string, b?:int}&Iterator',
+                'object{a:string}&Iterator',
                 [
                     'object{a: string}&Iterator',
                     'object{a: string, b: int}&Iterator&Countable',

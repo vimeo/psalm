@@ -442,8 +442,8 @@ final class TypeCombiner
     }
 
     /**
-     * `object` is every object, shapes included; two shapes are the objects having the properties of one of them,
-     * the ones of only one being optional
+     * `object` is every object, shapes included. Shapes are open, so an object matching one shape may have any
+     * additional property: two shapes are only known to share the properties both declare
      *
      * @return ?TObject the type to hold, null if $existing is that already
      * @psalm-capabilities read-props|write-this-props|write-refs
@@ -460,10 +460,8 @@ final class TypeCombiner
 
         $properties = [];
 
-        foreach ($existing->properties + $type->properties as $name => $_) {
-            $properties[$name] = isset($existing->properties[$name], $type->properties[$name])
-                ? Type::combineUnionTypes($existing->properties[$name], $type->properties[$name], $codebase)
-                : ($existing->properties[$name] ?? $type->properties[$name])->setPossiblyUndefined(true);
+        foreach (array_intersect_key($existing->properties, $type->properties) as $name => $property) {
+            $properties[$name] = Type::combineUnionTypes($property, $type->properties[$name], $codebase);
         }
 
         $extra_types = array_filter(
