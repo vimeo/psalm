@@ -140,6 +140,25 @@ final class ArrayAssignmentTest extends TestCase
                     $nested = ["a" => [9223372036854775807 => 1]];
                     $nested["b"][] = 2;',
             ],
+            'arrayKeyOfAnIgnoredNullableReturnIsNotNullable' => [
+                'code' => '<?php
+                    class TestModel
+                    {
+                        /** @psalm-ignore-nullable-return */
+                        public function getName(): ?string
+                        {
+                            return mt_rand(1, 100) > 1 ? "foo" : null;
+                        }
+                    }
+
+                    $model = new TestModel();
+                    $a = [$model->getName() => ["bar" => "baz"]];
+                    $b = [$model->getName() => 1, "x" => 2];',
+                'assertions' => [
+                    '$a===' => 'non-empty-array<string, array{bar: \'baz\'}>',
+                    '$b===' => 'array{x: 2, ...<string, 1>}',
+                ],
+            ],
             'keyedArrayWithKeysThatAreTypeOperators' => [
                 'code' => '<?php
                     /**
@@ -2747,6 +2766,37 @@ final class ArrayAssignmentTest extends TestCase
                     $array = [9223372036854775807 => "last"];
                     $array[] = "one more";',
                 'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Cannot add an element to the array as the next element is already occupied',
+            ],
+            'arrayKeyOfAnIgnoredNullableReturnDoesNotHideAnotherNullableKey' => [
+                'code' => '<?php
+                    class TestModel
+                    {
+                        /** @psalm-ignore-nullable-return */
+                        public function getName(): ?string
+                        {
+                            return mt_rand(1, 100) > 1 ? "foo" : null;
+                        }
+                    }
+
+                    function f(TestModel $model, ?string $key): array
+                    {
+                        return [$model->getName() => 1, $key => 2];
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+            ],
+            'arrayKeyOfANullableReturnIsInvalid' => [
+                'code' => '<?php
+                    class TestModel
+                    {
+                        public function getName(): ?string
+                        {
+                            return mt_rand(1, 100) > 1 ? "foo" : null;
+                        }
+                    }
+
+                    $model = new TestModel();
+                    $a = [$model->getName() => 1];',
+                'error_message' => 'InvalidArrayOffset',
             ],
             'templateBoundedByDecimalIntStringIsNotItsKeyType' => [
                 'code' => '<?php
