@@ -148,6 +148,25 @@ final class ArrayAssignmentTest extends TestCase
                         return 0;
                     }',
             ],
+            'arrayKeyOfAnIgnoredNullableReturnIsNotNullable' => [
+                'code' => '<?php
+                    class TestModel
+                    {
+                        /** @psalm-ignore-nullable-return */
+                        public function getName(): ?string
+                        {
+                            return mt_rand(1, 100) > 1 ? "foo" : null;
+                        }
+                    }
+
+                    $model = new TestModel();
+                    $a = [$model->getName() => ["bar" => "baz"]];
+                    $b = [$model->getName() => 1, "x" => 2];',
+                'assertions' => [
+                    '$a===' => 'non-empty-array<string, array{bar: \'baz\'}>',
+                    '$b===' => 'array{x: 2, ...<string, 1>}',
+                ],
+            ],
             'keyedArrayWithKeysThatAreTypeOperators' => [
                 'code' => '<?php
                     /**
@@ -2750,6 +2769,37 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayKeyOfAnIgnoredNullableReturnDoesNotHideAnotherNullableKey' => [
+                'code' => '<?php
+                    class TestModel
+                    {
+                        /** @psalm-ignore-nullable-return */
+                        public function getName(): ?string
+                        {
+                            return mt_rand(1, 100) > 1 ? "foo" : null;
+                        }
+                    }
+
+                    function f(TestModel $model, ?string $key): array
+                    {
+                        return [$model->getName() => 1, $key => 2];
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+            ],
+            'arrayKeyOfANullableReturnIsInvalid' => [
+                'code' => '<?php
+                    class TestModel
+                    {
+                        public function getName(): ?string
+                        {
+                            return mt_rand(1, 100) > 1 ? "foo" : null;
+                        }
+                    }
+
+                    $model = new TestModel();
+                    $a = [$model->getName() => 1];',
+                'error_message' => 'InvalidArrayOffset',
+            ],
             'templateBoundedByDecimalIntStringIsNotItsKeyType' => [
                 'code' => '<?php
                     /**
