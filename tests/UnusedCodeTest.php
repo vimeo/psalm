@@ -530,6 +530,74 @@ final class UnusedCodeTest extends TestCase
                     $test->other = 1;',
                 'ignored_issues' => ['UndefinedMagicPropertyFetch', 'UndefinedMagicPropertyAssignment', 'MixedArgument'],
             ],
+            'unusedVariableSuppressedOnItsStatement' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): void {
+                        /**
+                         * @psalm-suppress UnusedVariable
+                         */
+                        $a = 1;
+
+                        /** @psalm-suppress UnusedVariable */
+                        $b = 2;
+
+                        /** @psalm-suppress UnusedVariable */
+                        [$d, $e] = [1, 2];
+                    }
+
+                    /**
+                     * @psalm-suppress UnusedVariable
+                     */
+                    $global = 1;',
+            ],
+            'unusedVariableSuppressedOnABlockStatement' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(bool $b): void {
+                        /** @psalm-suppress UnusedVariable */
+                        if ($b) {
+                            $a = 1;
+                            $c = 2;
+                        }
+                    }',
+            ],
+            'unusedForeachValueSuppressedOnItsForeach' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-api
+                     * @param list<int> $values
+                     */
+                    function f(array $values): void {
+                        /** @psalm-suppress UnusedForeachValue */
+                        foreach ($values as $value) {
+                        }
+                    }',
+            ],
+            'unusedVariableSuppressionAlsoCoversTheForeachValue' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-api
+                     * @param list<int> $values
+                     */
+                    function f(array $values): void {
+                        /** @psalm-suppress UnusedVariable */
+                        foreach ($values as $value) {
+                        }
+                    }',
+            ],
+            'unusedVariableSuppressedInAClosure' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): Closure {
+                        return function (): int {
+                            /** @psalm-suppress UnusedVariable */
+                            $a = 1;
+
+                            return 2;
+                        };
+                    }',
+            ],
             'usedResultOfAPureStaticMethodCall' => [
                 'code' => '<?php
                     final class Math
@@ -2298,6 +2366,36 @@ final class UnusedCodeTest extends TestCase
 
                     echo (new Reader())->read("x", "y");',
                 'error_message' => 'UnusedParam',
+            ],
+            'unusedVariableSuppressionDoesNotReachOtherStatements' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): void {
+                        /** @psalm-suppress UnusedVariable */
+                        $a = 1;
+                        $b = 2;
+                    }',
+                'error_message' => 'b is never referenced',
+            ],
+            'unusedVariableIsNotSuppressedByAnotherIssueType' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): void {
+                        /** @psalm-suppress UnusedForeachValue */
+                        $a = 1;
+                    }',
+                'error_message' => 'a is never referenced',
+            ],
+            'unusedVariableSuppressionOfAnUsedVariableIsUnused' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): int {
+                        /** @psalm-suppress UnusedVariable */
+                        $a = 1;
+
+                        return $a;
+                    }',
+                'error_message' => 'UnusedPsalmSuppress',
             ],
             'unusedResultOfAPureStaticMethodCall' => [
                 'code' => '<?php
