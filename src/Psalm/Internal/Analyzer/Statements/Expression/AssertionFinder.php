@@ -1086,33 +1086,11 @@ final class AssertionFinder
             foreach ($if_true_assertions as $assertion) {
                 $if_types = [];
 
-                $newRules = [];
+                $assertion = self::expandClassConstantsOfRules($assertion, $source->getCodebase());
 
-                foreach ($assertion->rule as $rule) {
-                    $rule_type = $rule->getAtomicType();
-
-                    if ($rule_type instanceof TClassConstant) {
-                        $codebase = $source->getCodebase();
-
-                        $newRules[] = $rule->setAtomicType(
-                            TypeExpander::expandAtomic(
-                                $codebase,
-                                $rule_type,
-                                null,
-                                null,
-                                null,
-                            )[0],
-                        );
-                    } else {
-                        $newRules []= $rule;
-                    }
-                }
-
-                if ($newRules === []) {
+                if ($assertion->rule === []) {
                     continue;
                 }
-
-                $assertion = new Possibilities($assertion->var_id, $newRules);
 
                 if (is_int($assertion->var_id) && isset($expr->getArgs()[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
@@ -1126,7 +1104,7 @@ final class AssertionFinder
                     }
 
                     if ($var_name) {
-                        $if_types[$var_name] = [$newRules];
+                        $if_types[$var_name] = [$assertion->rule];
                     }
                 } elseif ($assertion->var_id === '$this') {
                     if (!$expr instanceof PhpParser\Node\Expr\MethodCall) {
@@ -1146,7 +1124,7 @@ final class AssertionFinder
                     );
 
                     if ($var_id) {
-                        $if_types[$var_id] = [$newRules];
+                        $if_types[$var_id] = [$assertion->rule];
                     }
                 } elseif (is_string($assertion->var_id) && self::isArrayOffsetAssertionId($assertion->var_id)) {
                     $offset_var_id = self::getArrayOffsetVarId(
@@ -1156,7 +1134,7 @@ final class AssertionFinder
                         $source,
                     );
 
-                    if ($offset_var_id !== null && $assertion->rule !== []) {
+                    if ($offset_var_id !== null) {
                         $if_types[$offset_var_id] = [$assertion->rule];
                     }
                 } elseif (is_string($assertion->var_id)) {
@@ -1227,7 +1205,7 @@ final class AssertionFinder
                         );
                         continue;
                     }
-                    $if_types[$assertion_var_id] = [$newRules];
+                    $if_types[$assertion_var_id] = [$assertion->rule];
                 }
 
                 if ($if_types) {
@@ -1240,33 +1218,11 @@ final class AssertionFinder
             foreach ($if_false_assertions as $assertion) {
                 $if_types = [];
 
-                $newRules = [];
+                $assertion = self::expandClassConstantsOfRules($assertion, $source->getCodebase());
 
-                foreach ($assertion->rule as $rule) {
-                    $rule_type = $rule->getAtomicType();
-
-                    if ($rule_type instanceof TClassConstant) {
-                        $codebase = $source->getCodebase();
-
-                        $newRules []= $rule->setAtomicType(
-                            TypeExpander::expandAtomic(
-                                $codebase,
-                                $rule_type,
-                                null,
-                                null,
-                                null,
-                            )[0],
-                        );
-                    } else {
-                        $newRules []= $rule;
-                    }
-                }
-
-                if ($newRules === []) {
+                if ($assertion->rule === []) {
                     continue;
                 }
-
-                $assertion = new Possibilities($assertion->var_id, $newRules);
 
                 if (is_int($assertion->var_id) && isset($expr->getArgs()[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
@@ -1280,7 +1236,7 @@ final class AssertionFinder
                     }
 
                     if ($var_name) {
-                        $if_types[$var_name] = self::negateAlternatives($newRules);
+                        $if_types[$var_name] = self::negateAlternatives($assertion->rule);
                     }
                 } elseif ($assertion->var_id === '$this' && $expr instanceof PhpParser\Node\Expr\MethodCall) {
                     $var_id = ExpressionIdentifier::getExtendedVarId(
@@ -1290,7 +1246,7 @@ final class AssertionFinder
                     );
 
                     if ($var_id) {
-                        $if_types[$var_id] = self::negateAlternatives($newRules);
+                        $if_types[$var_id] = self::negateAlternatives($assertion->rule);
                     }
                 } elseif (is_string($assertion->var_id) && self::isArrayOffsetAssertionId($assertion->var_id)) {
                     $offset_var_id = self::getArrayOffsetVarId(
@@ -1300,7 +1256,7 @@ final class AssertionFinder
                         $source,
                     );
 
-                    if ($offset_var_id !== null && $assertion->rule !== []) {
+                    if ($offset_var_id !== null) {
                         $if_types[$offset_var_id] = [array_map(
                             static fn(Assertion $rule): Assertion => $rule->getNegation(),
                             $assertion->rule,
@@ -1358,13 +1314,13 @@ final class AssertionFinder
 
                         $assertion_var_id = str_replace($var_id, $arg_var_id, $assertion->var_id);
 
-                        $if_types[$assertion_var_id] = self::negateAlternatives($newRules);
+                        $if_types[$assertion_var_id] = self::negateAlternatives($assertion->rule);
                     } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
                         $var_id = $assertion->var_id;
                         if (str_starts_with($var_id, 'self::')) {
                             $var_id = $this_class_name.'::'.substr($var_id, 6);
                         }
-                        $if_types[$var_id] = self::negateAlternatives($newRules);
+                        $if_types[$var_id] = self::negateAlternatives($assertion->rule);
                     } else {
                         IssueBuffer::maybeAdd(
                             new InvalidDocblock(
@@ -1382,6 +1338,21 @@ final class AssertionFinder
         }
 
         return $anded_types;
+    }
+
+    private static function expandClassConstantsOfRules(Possibilities $assertion, Codebase $codebase): Possibilities
+    {
+        $rules = [];
+
+        foreach ($assertion->rule as $rule) {
+            $rule_type = $rule->getAtomicType();
+
+            $rules[] = $rule_type instanceof TClassConstant
+                ? $rule->setAtomicType(TypeExpander::expandAtomic($codebase, $rule_type, null, null, null)[0])
+                : $rule;
+        }
+
+        return new Possibilities($assertion->var_id, $rules);
     }
 
     /**
