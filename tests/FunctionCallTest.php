@@ -831,6 +831,62 @@ final class FunctionCallTest extends TestCase
 
                     a(["a" => "hello"]);',
             ],
+            'functionExistsGuardsTheRightOperandInsideAnotherNarrowingCondition' => [
+                'code' => '<?php
+                    function a(int $arg): void {
+                        if ($arg) {
+                            if (function_exists("do_something_a") && rand(0, 1)) {
+                                do_something_a("hello");
+                            }
+                        }
+                    }
+
+                    function b(int $arg): void {
+                        if (!empty($arg)) {
+                            if (function_exists("do_something_b") && do_something_b("hello")) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function c(int $arg): void {
+                        if ($arg) {
+                            if (defined("SOME_MISSING_CONSTANT") && SOME_MISSING_CONSTANT) {
+                                echo 1;
+                            }
+                        }
+                    }',
+            ],
+            'functionExistsGuardsOnlyTheFunctionsItNames' => [
+                'code' => '<?php
+                    function callable_string(int $arg): void {
+                        if (function_exists("guarded_callback")) {
+                            array_map("guarded_callback", [1]);
+                        }
+                    }
+
+                    function namespaced_name(int $arg): void {
+                        if ($arg) {
+                            if (function_exists("\\guarded_root") && \guarded_root()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function guarded_class(int $arg): void {
+                        if ($arg) {
+                            if (class_exists("GuardedClass") && GuardedClass::run()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function guarded_class_body(): void {
+                        if (class_exists("GuardedBodyClass") && rand(0, 1)) {
+                            GuardedBodyClass::run();
+                        }
+                    }',
+            ],
             'getenv' => [
                 'code' => '<?php
                     $a = getenv();
@@ -2913,6 +2969,45 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'functionExistsDoesNotGuardAnotherFunctionInsideAnotherNarrowingCondition' => [
+                'code' => '<?php
+                    function run(int $arg): void {
+                        if ($arg) {
+                            if (function_exists("strlen") && unknown_function()) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:62 - Function unknown_function does not exist',
+            ],
+            'functionExistsDoesNotGuardAnotherFunctionInTheSameCondition' => [
+                'code' => '<?php
+                    function run(): void {
+                        if (function_exists("strlen") && unknown_function()) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:58 - Function unknown_function does not exist',
+            ],
+            'functionExistsDoesNotGuardAnotherFunctionInItsBody' => [
+                'code' => '<?php
+                    function run(): void {
+                        if (function_exists("guarded_function")) {
+                            guarded_function();
+                            unknown_function();
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29 - Function unknown_function does not exist',
+            ],
+            'functionExistsDoesNotGuardAnotherCallableString' => [
+                'code' => '<?php
+                    function run(): void {
+                        if (function_exists("guarded_callback")) {
+                            array_map("unknown_callback", [1]);
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction',
+            ],
             'builtInByReferenceParameterRejectsAConstant' => [
                 'code' => '<?php
                     const NUMBERS = [3, 1, 2];
