@@ -276,20 +276,17 @@ final class TypeCombiner
             $generic_type = substr($generic_type, 0, strcspn($generic_type, '<['));
 
             /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
-            $generic_object = new TGenericObject(
+            $new_types[] = (new TGenericObject(
                 $generic_type,
                 $generic_type_params,
                 false,
-                $combination->object_static[$generic_type] ?? false,
+                false,
                 $combination->extra_types,
                 $from_docblock,
+            ))->setIsStatic(
+                $combination->object_static[$generic_type] ?? false,
+                $combination->object_static_resolved[$generic_type] ?? false,
             );
-
-            if ($combination->object_static_resolved[$generic_type] ?? false) {
-                $generic_object = $generic_object->setIsStatic($generic_object->is_static, true);
-            }
-
-            $new_types[] = $generic_object;
         }
 
         if ($combination->class_string_types) {

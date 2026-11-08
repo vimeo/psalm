@@ -1026,6 +1026,54 @@ final class ClassTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'preventDoubleStaticResolutionAfterClosureInference' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+
+                        /**
+                         * @template U
+                         * @param Closure(T): U $f
+                         * @return Box<U>
+                         */
+                        public function apply(Closure $f): self {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @template T */
+                    interface Bag {
+                        /** @return static<int> */
+                        public function map(): static;
+                    }
+
+                    /** @return Bag<string> */
+                    function bag(): Bag {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }
+
+                    $a = box(bag()->map())->apply(fn($x) => $x);
+                    $b = $a->same();',
+                'assertions' => [
+                    '$a===' => 'Box<Bag<int>&static>',
+                    '$b===' => 'Box<Bag<int>&static>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'allowTraversableImplementationAlongWithIteratorAggregate' => [
                 'code' => '<?php
                     /**
