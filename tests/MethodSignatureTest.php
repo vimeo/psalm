@@ -1441,7 +1441,7 @@ final class MethodSignatureTest extends TestCase
                         }
                     }',
                 'error_message' => "MethodSignatureMismatch - src" . DIRECTORY_SEPARATOR . "somefile.php:7:25 - Method B::run"
-                    . " with return type 'int' is different to return type 'string'",
+                    . " with return type 'int' is different to return type 'string' of inherited method A::run",
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
