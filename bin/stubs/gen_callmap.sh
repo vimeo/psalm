@@ -16,8 +16,9 @@ VERSIONS="$(php bin/stubs/build_docker.php --versions-plain)"
 
 pids=()
 for f in $VERSIONS; do
+    extensions="$(php bin/stubs/build_docker.php --extensions-plain "$f")"
     # Git Bash must pass /app and the volume mount unchanged instead of converting them to Windows paths.
-    MSYS_NO_PATHCONV=1 docker run --pull always --platform linux/amd64 --rm -v "$PWD:/app" "ghcr.io/$OWNER/psalm:internal_stubs_$f${SUFFIX:+-$SUFFIX}" php /app/bin/stubs/gen_base_callmap.php "$f" &
+    MSYS_NO_PATHCONV=1 docker run --pull always --platform linux/amd64 --rm -v "$PWD:/app" "ghcr.io/$OWNER/psalm:internal_stubs_$f${SUFFIX:+-$SUFFIX}" php /app/bin/stubs/gen_base_callmap.php "$f" "$extensions" &
     pids+=("$!")
 done
 
