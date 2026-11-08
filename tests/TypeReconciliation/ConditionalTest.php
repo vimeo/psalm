@@ -81,6 +81,142 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'nonFinalClassCanBeIdenticalToIterable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+
+                    function f(Foo $x, iterable $i): bool {
+                        return $x === $i;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'iterableTemplateInstanceOfGeneratorIsReturned' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template TK
+                     * @template TV
+                     * @param callable(): iterable<TK, TV> $callback
+                     * @return Generator<TK, TV>
+                     */
+                    function asGenerator(callable $callback): Generator {
+                        $iter = $callback();
+
+                        if ($iter instanceof Generator) {
+                            return $iter;
+                        }
+
+                        return (function () use ($iter): Generator {
+                            foreach ($iter as $key => $value) {
+                                yield $key => $value;
+                            }
+                        })();
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'pureIterableInstanceOfGeneratorKeepsItsPurity' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param iterable[pure]<int, string> $t */
+                    function f(iterable $t): void {
+                        if (!$t instanceof Generator) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $t = Generator[pure]<int, string, mixed, mixed> */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'iterableInstanceOfGeneratorKeepsTheTypeOfWhatIsIteratedOver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class RawMessage {
+                        /** @param iterable<string>|string|resource $message */
+                        public function __construct(private $message) {}
+
+                        public function toIterable(): iterable {
+                            if (\is_string($this->message)) {
+                                yield $this->message;
+
+                                return;
+                            }
+
+                            if (\is_resource($this->message)) {
+                                return;
+                            }
+
+                            if ($this->message instanceof \Generator) {
+                                $copy = fopen('php://temp', 'w+');
+                                if ($copy === false) {
+                                    return;
+                                }
+
+                                foreach ($this->message as $chunk) {
+                                    fwrite($copy, $chunk);
+                                    yield $chunk;
+                                }
+                            }
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'pureIterableInstanceOfArrayIteratorKeepsTheStoragePurityOfTheClass' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param iterable[pure]<int, string> $t */
+                    function f(iterable $t): void {
+                        if (!$t instanceof ArrayIterator) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $t = ArrayIterator[write-props]<int, string> */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'iterableInstanceOfGeneratorKeepsItsParams' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return iterable<int, string> */
+                    function getIterable(): iterable {
+                        return [];
+                    }
+
+                    function narrow(): void {
+                        $positive = getIterable();
+                        $negative = getIterable();
+
+                        if (!$positive instanceof Generator) {
+                            return;
+                        }
+
+                        if ($negative instanceof Generator) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $positive = Generator[impure]<int, string, mixed, mixed> */
+                        /** @psalm-check-type-exact $negative = array<int, string>|Traversable<int, string> */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'negatedInstanceofRemovesTheClassFromTheBoundOfATemplateParam' => [
                 'code' => '<?php
                     /**
@@ -3621,6 +3757,53 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'iterableIsNotInstanceOfAnEnum' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Suit {
+                        case Hearts;
+                    }
+
+                    /** @param iterable<int, string> $t */
+                    function f(iterable $t): void {
+                        if ($t instanceof Suit) {
+                            echo "never a Traversable";
+                        }
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'iterableIsNotInstanceOfFinalClassThatIsNotTraversable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Fin {}
+
+                    /** @param iterable<int, string> $i */
+                    function f(iterable $i): void {
+                        if ($i instanceof Fin) {
+                            echo "never";
+                        }
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'finalClassCannotBeIdenticalToIterable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Fin {}
+
+                    function f(Fin $x, iterable $i): bool {
+                        return $x === $i;
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'negatedInstanceofOfTheWholeBoundOfATemplateParamLeavesNoType' => [
                 'code' => '<?php
                     interface Foo {}
