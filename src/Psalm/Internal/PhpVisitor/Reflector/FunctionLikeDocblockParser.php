@@ -120,19 +120,17 @@ final class FunctionLikeDocblockParser
                 foreach ($parsed_docblock->tags[$alias] as $offset => $param) {
                     $line_parts = CommentAnalyzer::splitDocLine($param);
 
-                    if (count($line_parts) > 0) {
-                        $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
+                    $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
 
-                        $info->self_out = [
-                            'type' => $line_parts[0],
-                            'line_number' => $comment->getStartLine() + substr_count(
-                                $comment_text,
-                                "\n",
-                                0,
-                                $offset - $comment->getStartFilePos(),
-                            ),
-                        ];
-                    }
+                    $info->self_out = [
+                        'type' => $line_parts[0],
+                        'line_number' => $comment->getStartLine() + substr_count(
+                            $comment_text,
+                            "\n",
+                            0,
+                            $offset - $comment->getStartFilePos(),
+                        ),
+                    ];
                 }
                 break;
             }
@@ -177,7 +175,7 @@ final class FunctionLikeDocblockParser
                 }
 
                 if (count($line_parts) > 1) {
-                    if (preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
+                    if (preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+,?$/', $line_parts[1])
                         && $line_parts[0][0] !== '{'
                     ) {
                         if ($line_parts[1][0] === '&') {
@@ -199,6 +197,8 @@ final class FunctionLikeDocblockParser
                                 0,
                                 $offset - $comment->getStartFilePos(),
                             ),
+                            'start' => $offset,
+                            'end' => $offset + strlen($line_parts[0]),
                         ];
                     }
                 } else {
@@ -632,7 +632,7 @@ final class FunctionLikeDocblockParser
             }
 
             if (count($line_parts) > 1) {
-                if (preg_match('/^&?(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
+                if (preg_match('/^&?(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+,?$/', $line_parts[1])
                     && ($line_parts[0] === '' || $line_parts[0][0] !== '{')
                 ) {
                     $line_parts[1] = str_replace('&', '', $line_parts[1]);
@@ -937,7 +937,7 @@ final class FunctionLikeDocblockParser
             return null;
         }
 
-        if (!preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
+        if (!preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+,?$/', $line_parts[1])
             || $line_parts[0][0] === '{'
         ) {
             return null;
