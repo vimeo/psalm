@@ -43,6 +43,7 @@ use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallableObject;
@@ -58,6 +59,7 @@ use function array_filter;
 use function array_map;
 use function array_merge;
 use function array_unique;
+use function array_values;
 use function assert;
 use function count;
 use function explode;
@@ -634,6 +636,11 @@ abstract class CallAnalyzer
                 && $codebase->functions->functionExists($statements_analyzer, $root_function_id)
             ) {
                 $function_id = $root_function_id;
+            } elseif ($context !== null
+                && (isset($context->phantom_functions[$function_id])
+                    || ($can_be_in_root_scope && isset($context->phantom_functions[$root_function_id])))
+            ) {
+                return false;
             } else {
                 IssueBuffer::maybeAdd(
                     new UndefinedFunction(
@@ -691,6 +698,52 @@ abstract class CallAnalyzer
     }
 
     /**
+     * The assertions on a parameter with its offset replaced by the offset of the argument given for it, which differs
+     * when arguments are named. Assertions on a parameter no argument is given for are dropped.
+     *
+     * @param array<Possibilities> $assertions
+     * @param list<PhpParser\Node\Arg> $args
+     * @return list<Possibilities>
+     * @psalm-capabilities read-props
+     */
+    public static function getAssertionsOnArgs(array $assertions, FunctionLikeStorage $storage, array $args): array
+    {
+        $arg_offsets = [];
+        $has_named_arg = false;
+
+        foreach ($args as $arg_offset => $arg) {
+            if ($arg->name === null) {
+                $arg_offsets[$arg_offset] ??= $arg_offset;
+                continue;
+            }
+
+            $has_named_arg = true;
+
+            foreach ($storage->params as $param_offset => $param) {
+                if ($param->name === $arg->name->name) {
+                    $arg_offsets[$param_offset] ??= $arg_offset;
+                }
+            }
+        }
+
+        if (!$has_named_arg) {
+            return array_values($assertions);
+        }
+
+        $assertions_on_args = [];
+
+        foreach ($assertions as $assertion) {
+            if (!is_int($assertion->var_id)) {
+                $assertions_on_args[] = $assertion;
+            } elseif (isset($arg_offsets[$assertion->var_id])) {
+                $assertions_on_args[] = new Possibilities($arg_offsets[$assertion->var_id], $assertion->rule);
+            }
+        }
+
+        return $assertions_on_args;
+    }
+
+    /**
      * @param Identifier|Name $expr
      * @param  Possibilities[] $var_assertions
      * @param  list<PhpParser\Node\Arg> $args
@@ -734,6 +787,13 @@ abstract class CallAnalyzer
             } elseif (str_contains($var_possibilities->var_id, '::$')) {
                 // allow assertions to bring external static props into scope
                 $assertion_var_id = $var_possibilities->var_id;
+            } elseif (AssertionFinder::isArrayOffsetAssertionId($var_possibilities->var_id)) {
+                $assertion_var_id = AssertionFinder::getArrayOffsetVarId(
+                    $var_possibilities->var_id,
+                    $args,
+                    null,
+                    $statements_analyzer,
+                );
             } elseif (isset($context->vars_in_scope[$var_possibilities->var_id])) {
                 $assertion_var_id = $var_possibilities->var_id;
             } elseif (str_contains($var_possibilities->var_id, '->')) {
