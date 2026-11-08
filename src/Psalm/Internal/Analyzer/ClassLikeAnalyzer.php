@@ -15,6 +15,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityArguments;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
@@ -115,10 +116,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
      * unused-suppression check, so redundant ones are reported (UnusedPsalmSuppress)
      * like member-level suppressions already are.
      *
-     * Uses the suppressed_issues already parsed from the docblock during scanning;
-     * these are keyed by the char offset of the issue name, unlike suppressions
-     * added programmatically by plugins (which are appended as a plain list and,
-     * having no source location, must not be reported).
+     * Uses the docblock suppressions recorded during scanning, keyed by the char offset of
+     * the issue name. Suppressions added programmatically by plugins land only in
+     * $storage->suppressed_issues and, having no source location, must not be reported.
      *
      * @psalm-external-mutation-free
      */
@@ -127,14 +127,15 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         string $file_path,
         Codebase $codebase,
     ): void {
-        // isset($suppressed_issues[0]) => the list was appended to programmatically
-        if (!$codebase->track_unused_suppressions || isset($storage->suppressed_issues[0])) {
+        $suppressed_issues = $storage->docblock_suppressed_issues;
+
+        if (!$codebase->track_unused_suppressions || $suppressed_issues === []) {
             return;
         }
 
         // a lone UnusedPsalmSuppress should still be reported as unused
-        if (count($storage->suppressed_issues) > 1
-            && $codebase->config->suppressesIssueType($storage->suppressed_issues, 'UnusedPsalmSuppress')
+        if (count($suppressed_issues) > 1
+            && $codebase->config->suppressesIssueType($suppressed_issues, 'UnusedPsalmSuppress')
         ) {
             return;
         }
@@ -142,7 +143,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         $file_path = $storage->location !== null ? $storage->location->file_path : $file_path;
         $taint_analysis = $codebase->taint_flow_graph !== null;
 
-        foreach ($storage->suppressed_issues as $offset => $issue_type) {
+        foreach ($suppressed_issues as $offset => $issue_type) {
             IssueBuffer::addUnusedSuppression($file_path, $offset, $issue_type, $taint_analysis);
         }
     }
@@ -741,6 +742,22 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     return $emit_issues ? null : true;
                 }
 
+                // a property redeclared by a subclass or its trait is the one of the class that declared it first
+                $appearing_class_storage = $codebase->classlike_storage_provider->get($appearing_property_class);
+
+                foreach ($appearing_class_storage->parent_classes as $parent_class_name) {
+                    $parent_property = $codebase->classlike_storage_provider->get($parent_class_name)
+                        ->properties[$property_name] ?? null;
+
+                    if ($parent_property !== null
+                        && $parent_property->visibility !== self::VISIBILITY_PRIVATE
+                        && (strtolower($context->self) === strtolower($parent_class_name)
+                            || $codebase->classExtends($context->self, $parent_class_name))
+                    ) {
+                        return $emit_issues ? null : true;
+                    }
+                }
+
                 if (!$codebase->classExtends($context->self, $appearing_property_class)) {
                     if ($emit_issues) {
                         IssueBuffer::maybeAdd(
@@ -760,6 +777,33 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         return $emit_issues ? null : true;
     }
 
+    /**
+     * Reports the docblock issues found when the class-like was scanned, and the template defaults naming undefined
+     * classes or outside their bounds, which can only be checked once the codebase is populated.
+     *
+     * @param array<string> $suppressed_issues
+     */
+    protected static function reportDocblockIssues(
+        StatementsSource $source,
+        ClassLikeStorage $storage,
+        array $suppressed_issues,
+    ): void {
+        foreach ($storage->docblock_issues as $docblock_issue) {
+            IssueBuffer::maybeAdd($docblock_issue);
+        }
+
+        TemplateDefaults::checkBounds(
+            $source,
+            $storage->template_types ?? [],
+            $storage->template_defaults,
+            $storage->template_default_locations,
+            $storage->name,
+            $storage->parent_class,
+            $storage->name,
+            $suppressed_issues,
+        );
+    }
+
     protected function checkTemplateParams(
         Codebase $codebase,
         ClassLikeStorage $storage,
@@ -775,7 +819,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             IssueBuffer::maybeAdd(
                 new MissingTemplateParam(
                     $storage->name . ' has missing template params when extending ' . $parent_storage->name
-                        . ', expecting ' . $expected_param_count,
+                        . ', expecting ' . TemplateDefaults::getExpectedParamCount($parent_storage),
                     $code_location,
                 ),
                 $storage->suppressed_issues + $this->getSuppressedIssues(),
@@ -822,6 +866,10 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
         if ($parent_storage->template_types && $storage->template_extended_params) {
             $i = 0;
+
+            // the written arguments, but for the purity arguments, which come last
+            $written_type_arg_count = $given_param_count
+                - count(PurityArguments::split($storage->template_extended_offsets[$parent_storage->name] ?? [])[1]);
 
             // the bounds of type templates may use purity templates, which come after them
             $previous_extended = [];
@@ -915,7 +963,15 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                         }
                     }
 
-                    if (!$template_type->isMixed()) {
+                    // a parent template left to its default is checked where the default is declared: any of them
+                    // when no arguments are written, else a type template past the written type arguments (type
+                    // templates come first, so $i is its position among them)
+                    if (!$template_type->isMixed()
+                        && !(isset($parent_storage->template_defaults[$template_name])
+                            && ($given_param_count === 0
+                                || ($i >= $written_type_arg_count
+                                    && !isset($parent_storage->purity_templates[$template_name]))))
+                    ) {
                         $template_result = new TemplateResult(
                             $previous_extended ?: [],
                             [],

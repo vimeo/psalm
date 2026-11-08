@@ -23,12 +23,16 @@ use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityWildcard;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\PossiblyInvalidDocblockTag;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\ArrayKeyDoesNotExist;
+use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Storage\Assertion\Empty_;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsIdentical;
@@ -57,6 +61,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_any;
+use function array_fill_keys;
 use function array_filter;
 use function array_merge;
 use function array_values;
@@ -64,6 +69,7 @@ use function count;
 use function explode;
 use function in_array;
 use function is_string;
+use function preg_match;
 use function preg_replace;
 use function str_contains;
 use function str_ends_with;
@@ -100,6 +106,7 @@ final class FunctionLikeDocblockScanner
         string $cased_function_id,
     ): void {
         $storage->docblock_issues = [...$storage->docblock_issues, ...$docblock_info->docblock_issues];
+        $file_storage->scan_issues = [...$file_storage->scan_issues, ...$docblock_info->scan_issues];
 
         self::handleUnexpectedTags($docblock_info, $storage, $stmt, $file_scanner, $cased_function_id);
 
@@ -214,6 +221,7 @@ final class FunctionLikeDocblockScanner
         }
 
         $storage->suppressed_issues = $docblock_info->suppressed_issues;
+        $storage->docblock_suppressed_issues = $docblock_info->suppressed_issues;
 
         foreach ($docblock_info->throws as [$throw, $offset, $line]) {
             $throw_location = new DocblockTypeLocation(
@@ -275,6 +283,9 @@ final class FunctionLikeDocblockScanner
                 $file_scanner,
                 $stmt,
                 $cased_function_id,
+                $codebase,
+                $file_storage,
+                $classlike_storage,
             );
 
             foreach ($docblock_info->purity_templates as $purity_template) {
@@ -307,14 +318,31 @@ final class FunctionLikeDocblockScanner
 
         foreach ($docblock_info->globals as $global) {
             try {
-                $storage->global_types[$global['name']] = TypeParser::parseTokens(
+                $global_type = TypeParser::parseTokens(
                     TypeTokenizer::getFullyQualifiedTokens(
                         $global['type'],
                         $aliases,
-                        null,
+                        $function_template_types + $class_template_types,
                         $type_aliases,
+                        $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null,
                     ),
                     null,
+                    $function_template_types + $class_template_types,
+                    $type_aliases,
+                    true,
+                );
+                $storage->global_types[$global['name']] = $global_type;
+                /** @psalm-suppress UnusedMethodCall */
+                $global_type->queueClassLikesForScanning(
+                    $codebase,
+                    $file_storage,
+                    $function_template_types + $class_template_types,
+                );
+                $storage->global_type_locations[$global['name']] = new DocblockTypeLocation(
+                    $file_scanner,
+                    $global['start'],
+                    $global['end'],
+                    $global['line_number'],
                 );
             } catch (TypeParseTreeException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
@@ -405,14 +433,19 @@ final class FunctionLikeDocblockScanner
         $location = new CodeLocation($file_scanner, $stmt, null, true);
 
         foreach ($docblock_info->added_taints as $taint) {
-            $t = $codebase->getOrRegisterTaint($taint, $location);
+            $t = FunctionLikeDocblockParser::registerTaint($codebase, $taint, $location, $file_storage->scan_issues);
             if ($t !== null) {
                 $storage->added_taints |= $t;
             }
         }
 
         foreach ($docblock_info->removed_taints as $removed_taint) {
-            $t = $codebase->getOrRegisterTaint($removed_taint, $location);
+            $t = FunctionLikeDocblockParser::registerTaint(
+                $codebase,
+                $removed_taint,
+                $location,
+                $file_storage->scan_issues,
+            );
             if ($t !== null) {
                 $storage->removed_taints |= $t;
             }
@@ -831,6 +864,10 @@ final class FunctionLikeDocblockScanner
         $class_template_types = !$stmt instanceof PhpParser\Node\Stmt\ClassMethod || !$stmt->isStatic()
             ? $class_template_types
             : [];
+
+        if ($assertion_type === 'array-key-exists') {
+            return [$is_negation ? new ArrayKeyDoesNotExist() : new ArrayKeyExists()];
+        }
 
         if ($assertion_type === 'falsy') {
             return [$is_negation ? new Truthy() : new Falsy()];
@@ -1639,6 +1676,13 @@ final class FunctionLikeDocblockScanner
                     continue;
                 }
 
+                $offset_target = self::getArrayOffsetTarget($storage, $file_scanner, $stmt, $assertion['param_name']);
+
+                if ($offset_target !== null) {
+                    $storage->assertions[] = new Possibilities($offset_target, $assertion_type_parts);
+                    continue;
+                }
+
                 foreach ($storage->params as $i => $param) {
                     if ($param->name === $assertion['param_name']) {
                         $storage->assertions[] = new Possibilities(
@@ -1683,6 +1727,13 @@ final class FunctionLikeDocblockScanner
                 );
 
                 if (!$assertion_type_parts) {
+                    continue;
+                }
+
+                $offset_target = self::getArrayOffsetTarget($storage, $file_scanner, $stmt, $assertion['param_name']);
+
+                if ($offset_target !== null) {
+                    $storage->if_true_assertions[] = new Possibilities($offset_target, $assertion_type_parts);
                     continue;
                 }
 
@@ -1733,6 +1784,13 @@ final class FunctionLikeDocblockScanner
                     continue;
                 }
 
+                $offset_target = self::getArrayOffsetTarget($storage, $file_scanner, $stmt, $assertion['param_name']);
+
+                if ($offset_target !== null) {
+                    $storage->if_false_assertions[] = new Possibilities($offset_target, $assertion_type_parts);
+                    continue;
+                }
+
                 foreach ($storage->params as $i => $param) {
                     if ($param->name === $assertion['param_name']) {
                         $storage->if_false_assertions[] = new Possibilities(
@@ -1757,6 +1815,45 @@ final class FunctionLikeDocblockScanner
                 );
             }
         }
+    }
+
+    /**
+     * The target `$array[$key]` of an assertion on the offset of a parameter that another parameter holds, as
+     * `<index of $array>:<name of $array>[<index of $key>:<name of $key>]`, so a call can pass them by name
+     */
+    private static function getArrayOffsetTarget(
+        FunctionLikeStorage $storage,
+        FileScanner $file_scanner,
+        PhpParser\Node\FunctionLike $stmt,
+        string $param_name,
+    ): ?string {
+        if (preg_match('/^(\w+)\[\$(\w+)\]$/', $param_name, $matches) !== 1 || !isset($matches[1], $matches[2])) {
+            return null;
+        }
+
+        $array_index = null;
+        $key_index = null;
+
+        foreach ($storage->params as $i => $param) {
+            if ($param->name === $matches[1]) {
+                $array_index = $i;
+            }
+
+            if ($param->name === $matches[2]) {
+                $key_index = $i;
+            }
+        }
+
+        if ($array_index === null || $key_index === null) {
+            $storage->docblock_issues[] = new InvalidDocblock(
+                'Assertion on ' . $param_name . ' needs both of its variables to be parameters',
+                new CodeLocation($file_scanner, $stmt, null, true),
+            );
+
+            return null;
+        }
+
+        return $array_index . ':' . $matches[1] . '[' . $key_index . ':' . $matches[2] . ']';
     }
 
     /**
@@ -1965,6 +2062,9 @@ final class FunctionLikeDocblockScanner
         FileScanner $file_scanner,
         PhpParser\Node\FunctionLike $stmt,
         string $cased_function_id,
+        Codebase $codebase,
+        FileStorage $file_storage,
+        ?ClassLikeStorage $classlike_storage,
     ): array {
         $storage->template_types = [];
 
@@ -2024,6 +2124,22 @@ final class FunctionLikeDocblockScanner
                 ];
             }
         }
+
+        [$storage->template_defaults, $storage->template_default_locations, $default_issues]
+            = TemplateDefaults::parseDefaults(
+                $docblock_info->template_defaults,
+                $storage->template_types,
+                $storage->template_types + ($template_types ?? []),
+                array_fill_keys($docblock_info->purity_templates, true),
+                $aliases,
+                $type_aliases,
+                $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null,
+                $classlike_storage?->parent_class,
+                new CodeLocation($file_scanner, $stmt, null, true),
+                $cased_function_id,
+                new TypeScanner($codebase->scanner, $file_storage, $storage->template_types),
+            );
+        $storage->docblock_issues = [...$storage->docblock_issues, ...$default_issues];
 
         return array_merge($template_types ?: [], $storage->template_types);
     }
