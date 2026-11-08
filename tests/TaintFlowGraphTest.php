@@ -15,6 +15,7 @@ use Psalm\Internal\DataFlow\Path;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Type\TaintKind;
+use ReflectionClass;
 use ReflectionProperty;
 
 use function array_diff;
@@ -393,6 +394,9 @@ final class TaintFlowGraphTest extends TestCase
         $variable = DataFlowNode::getForAssignment('$x', $location);
         $other = DataFlowNode::getForAssignment('$y', $location);
         $dead_end = DataFlowNode::getForAssignment('$z', $location);
+        $other_type = DataFlowNode::getForAssignment('$t', $location);
+        $added = DataFlowNode::getForAssignment('$a', $location);
+        $removed = DataFlowNode::getForAssignment('$r', $location);
         $later_line = DataFlowNode::getForAssignment(
             '$w',
             new Raw("<?php\n\necho \$x;", $file_path, 'somefile.php', 8, 16),
@@ -400,20 +404,20 @@ final class TaintFlowGraphTest extends TestCase
         $sink = DataFlowNode::getForTaint('sink', $location, TaintKind::INPUT_HTML);
 
         $graph->addSource($source);
-        $graph->addNode($variable);
-        $graph->addNode($other);
-        $graph->addNode($dead_end);
-        $graph->addNode($later_line);
+        foreach ([$variable, $other, $dead_end, $other_type, $added, $removed, $later_line] as $node) {
+            $graph->addNode($node);
+        }
         $graph->addSink($sink);
         $graph->addPath($source, $variable, '=');
         $graph->addPath($source, $other, '=');
-        $graph->addPath($variable, $sink, 'arrayvalue-fetch', TaintKind::INPUT_SQL);
-        $graph->addPath($other, $dead_end, 'arrayvalue-fetch', TaintKind::INPUT_SQL);
-        // Paths that differ from the shared ones in one thing each: the taints it removes, the taints it adds,
-        // and its length (the lines between the nodes)
-        $graph->addPath($dead_end, $later_line, 'arrayvalue-fetch', TaintKind::INPUT_SQL, TaintKind::INPUT_HTML);
-        $graph->addPath($later_line, $other, 'arrayvalue-fetch', TaintKind::INPUT_HTML);
-        $graph->addPath($source, $later_line, '=');
+        $graph->addPath($variable, $sink, 'arrayvalue-fetch', 0, TaintKind::INPUT_SQL);
+        $graph->addPath($other, $dead_end, 'arrayvalue-fetch', 0, TaintKind::INPUT_SQL);
+        // Paths that differ from the one to the sink in one thing each: the type, the taints added, the taints
+        // removed, and the length (the lines between the nodes)
+        $graph->addPath($dead_end, $other_type, '=', 0, TaintKind::INPUT_SQL);
+        $graph->addPath($dead_end, $added, 'arrayvalue-fetch', TaintKind::INPUT_HTML, TaintKind::INPUT_SQL);
+        $graph->addPath($dead_end, $removed, 'arrayvalue-fetch', 0, TaintKind::INPUT_HTML);
+        $graph->addPath($dead_end, $later_line, 'arrayvalue-fetch', 0, TaintKind::INPUT_SQL);
 
         $serialized = $igbinary ? igbinary_serialize($graph) : serialize($graph);
         $this->assertIsString($serialized);
@@ -424,12 +428,13 @@ final class TaintFlowGraphTest extends TestCase
 
         /** @var array<string, array<string, Path>> $edges */
         $edges = (new ReflectionProperty(DataFlowGraph::class, 'forward_edges'))->getValue($copy);
+        $to_sink = $edges[$variable->id][$sink->id];
         $this->assertSame($edges[$source->id][$variable->id], $edges[$source->id][$other->id]);
-        $this->assertSame($edges[$variable->id][$sink->id], $edges[$other->id][$dead_end->id]);
-        $this->assertNotSame($edges[$source->id][$variable->id], $edges[$variable->id][$sink->id]);
-        $this->assertNotSame($edges[$variable->id][$sink->id], $edges[$dead_end->id][$later_line->id]);
-        $this->assertNotSame($edges[$variable->id][$sink->id], $edges[$later_line->id][$other->id]);
-        $this->assertNotSame($edges[$source->id][$variable->id], $edges[$source->id][$later_line->id]);
+        $this->assertSame($to_sink, $edges[$other->id][$dead_end->id]);
+        $this->assertNotSame($to_sink, $edges[$dead_end->id][$other_type->id]);
+        $this->assertNotSame($to_sink, $edges[$dead_end->id][$added->id]);
+        $this->assertNotSame($to_sink, $edges[$dead_end->id][$removed->id]);
+        $this->assertNotSame($to_sink, $edges[$dead_end->id][$later_line->id]);
 
         $merged = new TaintFlowGraph();
         $merged->addGraph($copy);
@@ -445,6 +450,35 @@ final class TaintFlowGraphTest extends TestCase
         }
 
         $this->assertSame(['TaintedHtml'], $issue_types);
+    }
+
+    /**
+     * Each property of the graph, including any added later, gets a value of its own that the parent must get back.
+     */
+    #[DataProvider('provideSerializers')]
+    public function testEveryPropertySurvivesEncodingAndDecoding(bool $igbinary): void
+    {
+        if ($igbinary && !extension_loaded('igbinary')) {
+            $this->markTestSkipped('igbinary is not loaded');
+        }
+
+        $graph = new TaintFlowGraph();
+
+        foreach ((new ReflectionClass($graph))->getProperties() as $property) {
+            if ($property->isStatic()) {
+                continue;
+            }
+
+            $name = $property->getName();
+            $property->setValue($graph, $name === 'forward_edges'
+                ? ['from' => ['to' => new Path('=', 1)]]
+                : [$name => $name]);
+        }
+
+        $serialized = $igbinary ? igbinary_serialize($graph) : serialize($graph);
+        $this->assertIsString($serialized);
+
+        $this->assertEquals($graph, $igbinary ? igbinary_unserialize($serialized) : unserialize($serialized));
     }
 
     /**

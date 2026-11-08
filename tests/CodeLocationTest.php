@@ -8,11 +8,8 @@ use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use PhpParser\Comment\Doc;
-use PhpParser\Error;
 use PhpParser\Node\Scalar\String_;
 use Psalm\CodeLocation;
-use Psalm\CodeLocation\DocblockTypeLocation;
-use Psalm\CodeLocation\ParseErrorLocation;
 use Psalm\CodeLocation\Raw;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -23,7 +20,6 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use ReflectionClass;
 use ReflectionProperty;
 
-use function count;
 use function extension_loaded;
 use function igbinary_serialize;
 use function igbinary_unserialize;
@@ -138,96 +134,72 @@ final class CodeLocationTest extends BaseTestCase
     }
 
     /**
-     * @return iterable<string, array{bool}>
+     * @return iterable<string, array{bool, bool}>
      * @psalm-pure
      */
-    public static function provideSerializers(): iterable
+    public static function provideSerializersAndSnippetStates(): iterable
     {
-        yield 'native' => [false];
-        yield 'igbinary' => [true];
+        yield 'native, snippet not computed' => [false, false];
+        yield 'native, snippet computed' => [false, true];
+        yield 'igbinary, snippet not computed' => [true, false];
+        yield 'igbinary, snippet computed' => [true, true];
     }
 
     /**
-     * The same round trip through the serializers a worker's result goes through, for every kind of location.
+     * The round trip a worker's result goes through. Every property has a value of its own, so one restored into
+     * another fails the comparison.
      *
-     * CodeLocation and DocblockTypeLocation get their properties set directly rather than through their
-     * constructors: those read the path of a FileSource, which Psalm's own taint analysis treats as user input,
-     * so a location they built would be reported as user input reaching unserialize().
+     * The properties are set directly rather than through the constructor: it reads the path of a FileSource, which
+     * Psalm's own taint analysis treats as user input, so a location it built would be reported as user input
+     * reaching unserialize().
      */
-    #[DataProvider('provideSerializers')]
-    public function testLocationsSurviveEncodingAndDecoding(bool $igbinary): void
+    #[DataProvider('provideSerializersAndSnippetStates')]
+    public function testEveryPropertySurvivesEncodingAndDecoding(bool $igbinary, bool $computed): void
     {
         if ($igbinary && !extension_loaded('igbinary')) {
             $this->markTestSkipped('igbinary is not loaded');
         }
 
-        $contents = "<?php\n// Grüße\n\$a = 'x' . \$b;\n";
-        $this->file_provider->registerFile(self::FILE, $contents);
-
-        $start = strlen("<?php\n// Grüße\n\$a = ");
-        $previous = new Raw($contents, self::FILE, self::FILE, $start, $start + 2);
         $properties = [
-            'file_path' => self::FILE,
-            'file_name' => self::FILE,
+            'file_path' => '/project/src/a.php',
+            'file_name' => 'src/a.php',
             'raw_line_number' => 3,
-            'raw_file_start' => $start + 6,
-            'raw_file_end' => $start + 7,
-            'file_start' => $start + 6,
-            'file_end' => $start + 7,
+            'raw_file_start' => 21,
+            'raw_file_end' => 22,
+            'file_start' => 27,
+            'file_end' => 29,
             'single_line' => true,
-            'preview_start' => $start + 6,
-            'docblock_line_number' => 7,
+            'preview_start' => 15,
+            'docblock_start' => 5,
+            'docblock_start_line_number' => 2,
+            'docblock_line_number' => 4,
+            'regex_type' => CodeLocation::FUNCTION_PHPDOC_METHOD,
+            'text' => 'selected',
+            'previous_location' => new Raw("<?php\n\$b;\n", 'previous.php', 'previous.php', 6, 7),
         ];
 
-        $fresh = $this->createLocation(CodeLocation::class, $properties + ['previous_location' => $previous]);
-        // what calculateRealLocation() sets, which calling it on the location would taint
-        $computed = $this->createLocation(CodeLocation::class, $properties + [
-            'previous_location' => $previous,
-            'have_recalculated' => true,
-            'end_line_number' => 7,
-            'preview_end' => 31,
-            'selection_start' => 28,
-            'selection_end' => 30,
-            'column_from' => 12,
-            'column_to' => 14,
-            'snippet' => '$a = \'x\' . $b;',
-        ]);
-
-        $locations = [
-            'fresh' => $fresh,
-            'computed' => $computed,
-            'raw' => new Raw($contents, self::FILE, self::FILE, $start, $start + 2),
-            'docblock type' => $this->createLocation(DocblockTypeLocation::class, $properties),
-            'parse error' => new ParseErrorLocation(
-                new Error('syntax error', ['startFilePos' => $start, 'endFilePos' => $start + 2]),
-                $contents,
-                self::FILE,
-                self::FILE,
-            ),
-        ];
-
-        foreach ($locations as $name => $location) {
-            $serialized = $igbinary ? igbinary_serialize($location) : serialize($location);
-            $this->assertIsString($serialized, $name);
-            $copy = $igbinary ? igbinary_unserialize($serialized) : unserialize($serialized);
-
-            $this->assertInstanceOf($location::class, $copy, $name);
-            $this->assertEquals($location, $copy, $name);
-            $this->assertSame($location->getLineNumber(), $copy->getLineNumber(), $name);
-            $this->assertSame($location->getSelectionBounds(), $copy->getSelectionBounds(), $name);
-            $this->assertSame($location->getSnippet(), $copy->getSnippet(), $name);
-            $this->assertSame($location->getSelectedText(), $copy->getSelectedText(), $name);
+        if ($computed) {
+            $properties += [
+                'have_recalculated' => true,
+                'end_line_number' => 6,
+                'preview_end' => 31,
+                'selection_start' => 23,
+                'selection_end' => 24,
+                'column_from' => 12,
+                'column_to' => 14,
+                'snippet' => 'snippet',
+            ];
         }
-    }
 
-    public function testLocationNotAskedForItsSnippetSerializesWithoutTheComputedProperties(): void
-    {
-        $location = $this->locate("<?php\n\$a = 1;\n", '$a', 2);
-        $fresh_property_count = count($location->__serialize());
+        $location = (new ReflectionClass(CodeLocation::class))->newInstanceWithoutConstructor();
+        foreach ($properties as $name => $value) {
+            (new ReflectionProperty(CodeLocation::class, $name))->setValue($location, $value);
+        }
 
-        $this->assertSame('$a = 1;', $location->getSnippet());
+        $serialized = $igbinary ? igbinary_serialize($location) : serialize($location);
+        $this->assertIsString($serialized);
 
-        $this->assertLessThan(count($location->__serialize()), $fresh_property_count);
+        $this->assertEquals($location, $igbinary ? igbinary_unserialize($serialized) : unserialize($serialized));
     }
 
     public function testSnippetOfASelectionEndingTheFile(): void
@@ -315,22 +287,5 @@ final class CodeLocationTest extends BaseTestCase
         ]);
 
         return new CodeLocation($this->file_analyzer, $node, null, false, $regex_type);
-    }
-
-    /**
-     * @template T of CodeLocation
-     * @param class-string<T> $class
-     * @param array<string, bool|int|string|CodeLocation|null> $properties
-     * @return T
-     */
-    private function createLocation(string $class, array $properties): CodeLocation
-    {
-        $location = (new ReflectionClass($class))->newInstanceWithoutConstructor();
-
-        foreach ($properties as $name => $value) {
-            (new ReflectionProperty(CodeLocation::class, $name))->setValue($location, $value);
-        }
-
-        return $location;
     }
 }

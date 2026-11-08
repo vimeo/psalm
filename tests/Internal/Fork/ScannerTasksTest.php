@@ -6,10 +6,13 @@ namespace Psalm\Tests\Internal\Fork;
 
 use Amp\NullCancellation;
 use Amp\Sync\Channel;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Fork\InitScannerTask;
 use Psalm\Internal\Fork\ShutdownScannerTask;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Scanner\UnresolvedConstant\ScalarValue;
 use Psalm\Storage\FunctionStorage;
+use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Type;
 
@@ -65,20 +68,29 @@ final class ScannerTasksTest extends TestCase
         $added = new FunctionStorage();
         $codebase->functions->addGlobalFunction('inherited_function', new FunctionStorage());
         $codebase->functions->addGlobalFunction('added_function', $added);
+        $added_constant = Type::getString();
         $codebase->addGlobalConstantType('INHERITED_CONSTANT', Type::getString());
+        $codebase->addGlobalConstantType('ADDED_CONSTANT', $added_constant);
 
         $result = (new ShutdownScannerTask())->run($channel, new NullCancellation());
 
-        // The parent still has what it had before the fork
-        $codebase->functions->addGlobalFunction('inherited_function', $inherited);
-        $codebase->addGlobalConstantType('INHERITED_CONSTANT', $inherited_constant);
-        $codebase->functions->addGlobalFunctions($result['global_functions']);
-        $codebase->addGlobalConstantTypes($result['global_constants']);
+        // The stubs are static, so the parent is a new codebase with only what it had before the fork
+        $parent = (new ProjectAnalyzer(
+            $this->testConfig,
+            new Providers($this->file_provider, new FakeParserCacheProvider()),
+        ))->getCodebase();
+        $parent->functions->addGlobalFunction('inherited_function', $inherited);
+        $parent->addGlobalConstantType('INHERITED_CONSTANT', $inherited_constant);
+        $parent->functions->addGlobalFunctions($result['global_functions']);
+        $parent->addGlobalConstantTypes($result['global_constants']);
 
         $this->assertSame(
             ['inherited_function' => $inherited, 'added_function' => $added],
-            $codebase->functions->getAllStubbedFunctions(),
+            $parent->functions->getAllStubbedFunctions(),
         );
-        $this->assertSame(['INHERITED_CONSTANT' => $inherited_constant], $codebase->getAllStubbedConstants());
+        $this->assertSame(
+            ['INHERITED_CONSTANT' => $inherited_constant, 'ADDED_CONSTANT' => $added_constant],
+            $parent->getAllStubbedConstants(),
+        );
     }
 }
