@@ -222,7 +222,7 @@ When `true`, disables wildcard suppression of all issues with `@psalm-suppress a
   memoizeMethodCallResults="[bool]"
 >
 ```
-When `true`, the results of method calls without arguments passed are remembered between repeated calls of that method on a given object. Defaults to `false`.
+When `true`, the results of method calls without arguments passed are [memoized](https://en.wikipedia.org/wiki/Memoization) between repeated calls of that method on a given object. Defaults to `false`.
 
 #### hoistConstants
 
@@ -590,15 +590,17 @@ Defaults to `false`.
   serializer="['igbinary'|'default']"
 >
 ```
-Allows you to hard-code a serializer for Psalm to use when caching data. By default, Psalm uses `ext-igbinary` *if* the version is greater than or equal to 2.0.5, otherwise it defaults to PHP's built-in serializer.
+Allows you to hard-code a serializer for Psalm to use when caching data. By default, Psalm uses `ext-igbinary` *if* the version is greater than or equal to 2.0.5, otherwise it defaults to PHP's built-in serializer. The value `default` means PHP's built-in serializer, not the automatic choice.
 
 #### compressor
 ```xml
 <psalm
-  compressor="['lz4'|'deflate'|'off']"
+  compressor="['auto'|'zstd'|'lz4'|'deflate'|'off']"
 >
 ```
-Allows you to hard-code a compressor for Psalm's cache. By default, Psalm uses `ext-zlib` deflate, if it's enabled.
+Allows you to hard-code a compressor for Psalm's cache. The default is `auto`: `ext-zstd` (version 0.15.0 or later) if it's enabled, otherwise `ext-zlib` deflate if it's enabled, otherwise no compression.
+If the extension of the compressor you ask for is missing, Psalm warns and uses `auto`.
+Caches are stored per compressor, so to restore a cache built on another machine (for example on CI), set the compressor explicitly.
 
 #### threads
 ```xml
@@ -800,6 +802,16 @@ or interfaces defined in a stub file, this stub should be configured with attrib
 <stubs>
   <file name="path/to/file.php" />
   <file name="path/to/abstract-class.php" preloadClasses="true" />
+</stubs>
+```
+
+A `<directory name="path/to/stubs" />` adds every `.php` and `.phpstub` file below it, in alphabetical order, and takes
+the same `preloadClasses` attribute:
+
+```xml
+<stubs>
+  <directory name="path/to/stubs" />
+  <directory name="path/to/base-classes" preloadClasses="true" />
 </stubs>
 ```
 
