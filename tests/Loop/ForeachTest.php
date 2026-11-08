@@ -37,6 +37,36 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'foreachOverAClassStringMapReturnedByAMethodWithATemplateOfTheSameName' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface MappingAttribute {}
+
+                    /** @template T of MappingAttribute */
+                    final class RepeatableAttributeCollection {}
+
+                    final class AttributeReader {
+                        /**
+                         * @return class-string-map<T, T|RepeatableAttributeCollection<T>>
+                         *
+                         * @template T of MappingAttribute
+                         */
+                        public function read(): array {
+                            return [];
+                        }
+                    }
+
+                    function iterate(AttributeReader $reader): void {
+                        foreach ($reader->read() as $class => $attribute) {
+                            /** @psalm-check-type-exact $class = class-string<MappingAttribute> */
+                            /** @psalm-check-type-exact $attribute = MappingAttribute|RepeatableAttributeCollection<MappingAttribute> */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'foreachSourceIsEvaluatedBeforeTheValueIsAssigned' => [
                 'code' => <<<'PHP'
                     <?php
@@ -51,6 +81,36 @@ final class ForeachTest extends TestCase
                     function keys(array $data, string $name): void {
                         foreach ($data[$name] as $name => $value) {
                             echo $name, $value;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'foreachOverAClassStringMap' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+
+                    /**
+                     * @param class-string-map<T of Foo, T> $map
+                     * @param class-string-map<U, U> $unbounded
+                     * @param class-string-map<V of Foo, list<V>> $lists
+                     */
+                    function iterate(array $map, array $unbounded, array $lists): void {
+                        foreach ($map as $class => $instance) {
+                            /** @psalm-check-type-exact $class = class-string<Foo> */
+                            /** @psalm-check-type-exact $instance = Foo */
+                        }
+
+                        foreach ($unbounded as $class => $instance) {
+                            /** @psalm-check-type-exact $class = class-string */
+                            /** @psalm-check-type-exact $instance = object */
+                        }
+
+                        foreach ($lists as $list) {
+                            /** @psalm-check-type-exact $list = list<Foo> */
                         }
                     }
                     PHP,
