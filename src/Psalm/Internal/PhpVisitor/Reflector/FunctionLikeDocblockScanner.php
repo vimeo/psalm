@@ -1801,7 +1801,7 @@ final class FunctionLikeDocblockScanner
 
     /**
      * The target `$array[$key]` of an assertion on the offset of a parameter that another parameter holds, as
-     * `<index of $array>[<index of $key>]`
+     * `<index of $array>:<name of $array>[<index of $key>:<name of $key>]`, so a call can pass them by name
      */
     private static function getArrayOffsetTarget(
         FunctionLikeStorage $storage,
@@ -1835,7 +1835,7 @@ final class FunctionLikeDocblockScanner
             return null;
         }
 
-        return $array_index . '[' . $key_index . ']';
+        return $array_index . ':' . $matches[1] . '[' . $key_index . ':' . $matches[2] . ']';
     }
 
     /**

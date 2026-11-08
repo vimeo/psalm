@@ -103,6 +103,51 @@ final class AssertAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testArrayKeyExistsAssertionOfNamedArguments(): void
+    {
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @psalm-assert array-key-exists $target[$key] */
+                function check(string $key, array $target, array $other): void {}
+
+                function f(array $a, array $b, array $c): void {
+                    check(key: "k", other: $b, target: $a);
+                    echo (string) $a["k"];
+
+                    check("m", other: $c, target: $b);
+                    echo (string) $b["m"];
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testArrayKeyExistsAssertionOfNamedArgumentsDoesNotCoverTheOtherArray(): void
+    {
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedStringArrayOffset - somefile.php:8');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @psalm-assert array-key-exists $target[$key] */
+                function check(string $key, array $target, array $other): void {}
+
+                function f(array $a, array $b): void {
+                    check(key: "k", other: $b, target: $a);
+
+                    echo (string) $b["k"];
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testForgetAssertionAfterNonMutationFreeCall(): void
     {
         $this->expectExceptionMessage('PossiblyNullArgument');

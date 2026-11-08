@@ -4437,12 +4437,12 @@ final class AssertionFinder
      */
     public static function isArrayOffsetAssertionId(string $var_id): bool
     {
-        return preg_match('/^\d+\[\d+]$/', $var_id) === 1;
+        return preg_match('/^\d+:\w+\[\d+:\w+]$/', $var_id) === 1;
     }
 
     /**
-     * The id of the offset of the argument that an assertion on `<array index>[<key index>]` is about, such as
-     * `$c[0]` or `$c[$key]`: null if the arguments don't name one
+     * The id of the offset of the argument that an assertion on `<array index>:<array name>[<key index>:<key name>]`
+     * is about, such as `$c[0]` or `$c[$key]`: null if the arguments don't name one
      *
      * @param list<PhpParser\Node\Arg> $args
      */
@@ -4452,25 +4452,45 @@ final class AssertionFinder
         ?string $this_class_name,
         FileSource $source,
     ): ?string {
-        if (preg_match('/^(\d+)\[(\d+)]$/', $var_id, $matches) !== 1 || !isset($matches[1], $matches[2])) {
-            return null;
-        }
-
-        $array_index = (int) $matches[1];
-        $key_index = (int) $matches[2];
-
-        if (!isset($args[$array_index], $args[$key_index])
-            || $args[$array_index]->unpack
-            || $args[$key_index]->unpack
+        if (preg_match('/^(\d+):(\w+)\[(\d+):(\w+)]$/', $var_id, $matches) !== 1
+            || !isset($matches[1], $matches[2], $matches[3], $matches[4])
         ) {
             return null;
         }
 
+        $array_arg = self::getArgumentOfParameter($args, (int) $matches[1], $matches[2]);
+        $key_arg = self::getArgumentOfParameter($args, (int) $matches[3], $matches[4]);
+
+        if ($array_arg === null || $key_arg === null) {
+            return null;
+        }
+
         return ExpressionIdentifier::getExtendedVarId(
-            new VirtualArrayDimFetch($args[$array_index]->value, $args[$key_index]->value),
+            new VirtualArrayDimFetch($array_arg->value, $key_arg->value),
             $this_class_name,
             $source,
         );
+    }
+
+    /**
+     * The argument passed for the parameter at $index called $name: by its name, or by its position if it isn't named
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     * @psalm-capabilities read-props
+     */
+    private static function getArgumentOfParameter(array $args, int $index, string $name): ?PhpParser\Node\Arg
+    {
+        foreach ($args as $position => $arg) {
+            if ($arg->unpack) {
+                return null;
+            }
+
+            if ($arg->name !== null ? $arg->name->name === $name : $position === $index) {
+                return $arg;
+            }
+        }
+
+        return null;
     }
 
     /**
