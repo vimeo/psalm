@@ -71,6 +71,13 @@ final class FileStorage
 
     public bool $deep_scan = false;
 
+    /**
+     * Branching nodes (conditions, loops, boolean operators, ...) in the function-like with the most of them, or in
+     * the file's global code if that has more; counted only by a deep scan. Used to estimate how long the file takes
+     * to analyse.
+     */
+    public int $max_function_branches = 0;
+
     public bool $has_extra_statements = false;
 
     public bool $has_visitor_issues = false;

@@ -316,7 +316,7 @@ final class Analyzer
 
             // Wait for all tasks to complete and collect the results.
             await($pool->runAll(new InitAnalyzerTask));
-            $pool->run($this->files_to_analyze, AnalyzerTask::class, $task_done_closure);
+            $pool->run($this->getFilesInPoolOrder($pool_size), AnalyzerTask::class, $task_done_closure);
             $this->progress->debug('Collecting forked analysis results' . "\n");
             $this->progress->startPhase(Phase::MERGING_THREAD_RESULTS);
             $this->progress->expand($pool->threads);
@@ -401,6 +401,24 @@ final class Analyzer
                 $task_done_closure(self::analysisWorker($this->config, $this->progress, $file_path));
             }
         }
+    }
+
+    /**
+     * The order in which the analysis pool receives the files: the 2 × $pool_size files with the most complex
+     * function first, so that none of them is picked up last and becomes the tail of the phase, then the rest in
+     * path order. Analysis without a pool keeps path order.
+     *
+     * @return array<string, string>
+     */
+    public function getFilesInPoolOrder(int $pool_size): array
+    {
+        return AnalysisOrder::mostExpensiveFirst(
+            $this->files_to_analyze,
+            2 * $pool_size,
+            fn(string $file_path): int => $this->file_storage_provider->has($file_path)
+                ? $this->file_storage_provider->get($file_path)->max_function_branches
+                : 0,
+        );
     }
 
     public function loadCachedResults(ProjectAnalyzer $project_analyzer): void

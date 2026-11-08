@@ -763,6 +763,7 @@ final class PreloaderList {
         \Psalm\Internal\Cli\Psalter::class,
         \Psalm\Internal\Cli\Refactor::class,
         \Psalm\Internal\Cli\Review::class,
+        \Psalm\Internal\Codebase\AnalysisOrder::class,
         \Psalm\Internal\Codebase\Analyzer::class,
         \Psalm\Internal\Codebase\AssertionsFromInheritanceResolver::class,
         \Psalm\Internal\Codebase\ClassConstantByWildcardResolver::class,
