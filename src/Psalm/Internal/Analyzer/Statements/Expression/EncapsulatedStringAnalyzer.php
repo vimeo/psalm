@@ -166,6 +166,15 @@ final class EncapsulatedStringAnalyzer
         if (count($stmt->parts) === 1 && $single_part_type !== null) {
             // e.g. "$int" is the same string as (string) $int
             $stmt_type = $single_part_type->setParentNodes($parent_nodes);
+        } elseif ($literal_prefixes_extendable && count($literal_prefixes) > 1) {
+            // every part is a known literal string, so all of the string is
+            $literal_types = [];
+
+            foreach ($literal_prefixes as $literal_value) {
+                $literal_types[] = Type::getAtomicStringFromLiteral($literal_value);
+            }
+
+            $stmt_type = new Union($literal_types, ['parent_nodes' => $parent_nodes]);
         } elseif ($non_empty) {
             if ($literal_string !== null) {
                 $stmt_type = new Union(
