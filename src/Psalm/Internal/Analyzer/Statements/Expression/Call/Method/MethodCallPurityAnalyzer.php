@@ -291,6 +291,16 @@ final class MethodCallPurityAnalyzer
     }
 
     /**
+     * The nodes of a trait are analyzed once per class that uses it: forget what an earlier analysis recorded
+     */
+    public static function resetReturnsThis(Expr\StaticCall $stmt): void
+    {
+        $attributes = $stmt->getAttributes();
+        unset($attributes[self::RETURNS_THIS]);
+        $stmt->setAttributes($attributes);
+    }
+
+    /**
      * A static call forwarded to a call of the method on `$this` returns what that call does
      */
     public static function forwardReturnsThis(Expr\MethodCall $forwarded_call, Expr\StaticCall $stmt): void

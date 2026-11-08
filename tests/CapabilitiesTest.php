@@ -37,6 +37,52 @@ final class CapabilitiesTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'parentCallOfATraitMethodReturnsThisInEveryClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class FirstBase {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    class SecondBase {
+                        public function f(): static {
+                            return clone $this;
+                        }
+                    }
+
+                    class ThirdBase {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    trait ForwardsToParent {
+                        /** @return $this */
+                        public function f(): static {
+                            return parent::f();
+                        }
+                    }
+
+                    final class First extends FirstBase {
+                        use ForwardsToParent;
+                    }
+
+                    final class Second extends SecondBase {
+                        use ForwardsToParent;
+                    }
+
+                    final class Third extends ThirdBase {
+                        use ForwardsToParent;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'parentSelfAndStaticCallsOfMethodReturningThisReturnThis' => [
                 'code' => <<<'PHP'
                     <?php
