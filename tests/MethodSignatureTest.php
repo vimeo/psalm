@@ -1429,6 +1429,22 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'returnTypeMessageOfAMethodWithOneKeepsItsType' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function run(): string;
+                    }
+
+                    class B extends A {
+                        public function run(): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => "MethodSignatureMismatch - src" . DIRECTORY_SEPARATOR . "somefile.php:7:25 - Method B::run"
+                    . " with return type 'int' is different to return type 'string'",
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'returnTypeMessageOfAMethodWithoutOneIsMixed' => [
                 'code' => '<?php
                     abstract class A {

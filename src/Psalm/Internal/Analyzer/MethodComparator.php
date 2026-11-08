@@ -1148,7 +1148,9 @@ final class MethodComparator
                 IssueBuffer::maybeAdd(
                     new MethodSignatureMismatch(
                         'Method ' . $cased_implementer_method_id . ' with return type \''
-                            . ($implementer_signature_return_type?->getId() ?? 'mixed')
+                            . ($implementer_signature_return_type === null
+                                ? 'mixed'
+                                : (string) $implementer_signature_return_type)
                             . '\' is different to return type \'' . $guide_signature_return_type
                             . '\' of inherited method ' . $cased_guide_method_id,
                         $code_location,
@@ -1159,7 +1161,9 @@ final class MethodComparator
                 IssueBuffer::maybeAdd(
                     new TraitMethodSignatureMismatch(
                         'Method ' . $cased_implementer_method_id . ' with return type \''
-                            . ($implementer_signature_return_type?->getId() ?? 'mixed')
+                            . ($implementer_signature_return_type === null
+                                ? 'mixed'
+                                : (string) $implementer_signature_return_type)
                             . '\' is different to return type \'' . $guide_signature_return_type
                             . '\' of inherited method ' . $cased_guide_method_id,
                         $code_location,
