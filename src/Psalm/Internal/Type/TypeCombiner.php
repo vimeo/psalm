@@ -77,6 +77,8 @@ use function strcspn;
 use function strtolower;
 use function substr;
 
+use const ARRAY_FILTER_USE_BOTH;
+
 /**
  * @internal
  */
@@ -464,10 +466,17 @@ final class TypeCombiner
                 : ($existing->properties[$name] ?? $type->properties[$name])->setPossiblyUndefined(true);
         }
 
+        $extra_types = array_filter(
+            array_intersect_key($existing->extra_types, $type->extra_types),
+            static fn(Atomic $extra_type, string $key): bool
+                => $extra_type->getId() === $type->extra_types[$key]->getId(),
+            ARRAY_FILTER_USE_BOTH,
+        );
+
         return new TObjectWithProperties(
             $properties,
             array_intersect_assoc($existing->methods, $type->methods),
-            [],
+            $extra_types,
             $existing->from_docblock && $type->from_docblock,
         );
     }
