@@ -2889,6 +2889,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 && !$context->collect_initializations
                 && !$context->collect_mutations
             ) {
+                MethodAnalyzer::checkInheritedReturnTypes(
+                    $codebase,
+                    $storage,
+                    $appearing_class_storage,
+                    $cased_method_id,
+                    $codeLocation,
+                    $storage->suppressed_issues + $this->getSuppressedIssues(),
+                );
+
                 foreach ($overridden_method_ids as $overridden_method_id) {
                     $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
 
