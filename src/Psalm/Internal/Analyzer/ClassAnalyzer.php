@@ -122,7 +122,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     public array $inferred_property_types = [];
 
     /** @var array<string, true>|null */
-    private ?array $properties_checked_with_isset = null;
+    private ?array $properties_only_read_under_isset = null;
 
     /**
      * @param PhpParser\Node\Stmt\Class_|PhpParser\Node\Stmt\Enum_ $class
@@ -1077,30 +1077,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     /**
      * @return array<string, true>
      */
-    private function getPropertiesCheckedWithIsset(): array
+    private function getPropertiesOnlyReadUnderIsset(): array
     {
-        if ($this->properties_checked_with_isset !== null) {
-            return $this->properties_checked_with_isset;
-        }
-
-        $properties = [];
-
-        foreach ((new PhpParser\NodeFinder())->findInstanceOf(
-            $this->class->stmts,
-            PhpParser\Node\Expr\Isset_::class,
-        ) as $isset) {
-            foreach ($isset->vars as $var) {
-                if ($var instanceof PhpParser\Node\Expr\PropertyFetch
-                    && $var->var instanceof PhpParser\Node\Expr\Variable
-                    && $var->var->name === 'this'
-                    && $var->name instanceof PhpParser\Node\Identifier
-                ) {
-                    $properties[$var->name->name] = true;
-                }
-            }
-        }
-
-        return $this->properties_checked_with_isset = $properties;
+        return $this->properties_only_read_under_isset
+            ??= IssetGuardedProperties::find($this->class->stmts);
     }
 
     private function checkPropertyInitialization(
@@ -1418,9 +1398,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 // the property has to be initialised wherever the constructor returns, and at its end if reachable
                 $exit_types = [];
 
-                // a property that the class checks with isset() may be left uninitialised on purpose, so only the
-                // end of the constructor decides
-                if (!isset($this->getPropertiesCheckedWithIsset()[$property_name])) {
+                // a private property that the class only reads where isset() holds may be left uninitialised on
+                // purpose, so only the end of the constructor decides
+                if ($property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                    || !isset($this->getPropertiesOnlyReadUnderIsset()[$property_name])
+                ) {
                     foreach ($method_context->constructor_exits->states as $exit_state) {
                         $exit_types[] = $exit_state['$this->' . $property_name]
                             ?? new Union([new TVoid()], ['initialized' => false]);
