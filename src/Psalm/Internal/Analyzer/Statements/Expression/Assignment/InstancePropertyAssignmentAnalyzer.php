@@ -1272,14 +1272,18 @@ final class InstancePropertyAssignmentAnalyzer
                     }
                 }
 
-                $has_set_hook = AtomicPropertyFetchAnalyzer::interfaceDeclaresPropertyHook(
-                    $codebase,
-                    $lhs_type_part,
-                    $prop_name,
-                    true,
-                );
+                $hook_interface = $class_exists
+                    ? null
+                    : AtomicPropertyFetchAnalyzer::findInterfaceWithPropertyHook(
+                        $codebase,
+                        $lhs_type_part,
+                        $prop_name,
+                        true,
+                    );
 
-                if (!$class_exists && !$has_set_hook) {
+                if ($hook_interface !== null) {
+                    $fq_class_name = $hook_interface;
+                } elseif (!$class_exists) {
                     if (IssueBuffer::accepts(
                         new NoInterfaceProperties(
                             'Interfaces cannot have properties',
