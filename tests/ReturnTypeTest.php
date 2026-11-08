@@ -67,6 +67,40 @@ final class ReturnTypeTest extends TestCase
                         return (object) ["string" => "string"];
                     }',
             ],
+            'generatorMethodThatThrowsInInfiniteLoop' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @return Generator<int>
+                         */
+                        public function events(): Generator {
+                            while (true) {
+                                if (rand(0, 1)) {
+                                    throw new Exception("failed");
+                                }
+
+                                foreach ([1, 2] as $event) {
+                                    yield $event;
+                                }
+                            }
+                        }
+                    }',
+            ],
+            'generatorThatThrowsInInfiniteLoop' => [
+                'code' => '<?php
+                    /**
+                     * @return Generator<int>
+                     */
+                    function events(): Generator {
+                        while (true) {
+                            if (rand(0, 1)) {
+                                throw new Exception("failed");
+                            }
+
+                            yield 1;
+                        }
+                    }',
+            ],
             'narrowerNativeReturnTypeWinsOverInheritedDocblockWithStringable' => [
                 'code' => '<?php
                     abstract class A {
