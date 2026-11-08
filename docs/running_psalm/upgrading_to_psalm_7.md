@@ -14,6 +14,7 @@ The rest of this page covers what some projects will notice. The complete list o
 
 ## What you may notice
 
+- **Callmap return types distinguish documentation from signatures.** Implementations of internal interfaces with only a documentary return type no longer need a native declaration. Native and PHP 8.1+ tentative signatures still require compatible returns, with `#[ReturnTypeWillChange]` applying only to tentative signatures. Tools reading the dictionary files must support their [compact format](../contributing/editing_callmaps.md#full-callmap-format).
 - **Taint analysis runs by default**, in the same run as type checking, and is faster than a separate `--taint-analysis` run (see the [release notes](https://github.com/vimeo/psalm/releases/tag/7.0.0)). To run type checking only, set `runTaintAnalysis="false"`.
 - **New security findings.** If taint analysis reports more than you want to deal with at once, you have these tools ([docs](https://psalm.dev/docs/security_analysis/avoiding_false_positives/)):
     - `@psalm-cli-only` on a function, method or class: what its code prints is not reported as `TaintedHtml`;
