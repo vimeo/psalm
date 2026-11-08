@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\BinaryOp\BooleanAnd;
 use PhpParser\Node\Expr\BinaryOp\Coalesce;
 use PhpParser\Node\Expr\Isset_;
+use PhpParser\Node\Expr\NullsafePropertyFetch;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\Ternary;
 use PhpParser\Node\Expr\Variable;
@@ -76,15 +78,15 @@ final class IssetGuardedProperties
                 if ($property !== null) {
                     $this->checked[$property] = true;
                 }
-            }
 
-            $this->walkChildren($node, $guarded, true);
+                $this->walkChecked($var, $guarded, $everything_guarded);
+            }
 
             return;
         }
 
         if ($node instanceof Coalesce) {
-            $this->walk($node->left, $guarded, true);
+            $this->walkChecked($node->left, $guarded, $everything_guarded);
             $this->walk($node->right, $guarded, $everything_guarded);
 
             return;
@@ -161,6 +163,41 @@ final class IssetGuardedProperties
         }
 
         $this->walkChildren($node, $guarded, $everything_guarded);
+    }
+
+    /**
+     * An operand of `isset()` or `??`: only the fetches along it (`$this->p`, `$this->p->q`, `$this->p['k']`) are
+     * checked, whatever else it is made of (an index, a call) is read as usual
+     *
+     * @param array<string, true> $guarded
+     */
+    private function walkChecked(Node $node, array $guarded, bool $everything_guarded): void
+    {
+        if (self::getThisProperty($node) !== null) {
+            return;
+        }
+
+        if ($node instanceof PropertyFetch || $node instanceof NullsafePropertyFetch) {
+            $this->walkChecked($node->var, $guarded, $everything_guarded);
+
+            if (!$node->name instanceof Identifier) {
+                $this->walk($node->name, $guarded, $everything_guarded);
+            }
+
+            return;
+        }
+
+        if ($node instanceof ArrayDimFetch) {
+            $this->walkChecked($node->var, $guarded, $everything_guarded);
+
+            if ($node->dim !== null) {
+                $this->walk($node->dim, $guarded, $everything_guarded);
+            }
+
+            return;
+        }
+
+        $this->walk($node, $guarded, $everything_guarded);
     }
 
     /**

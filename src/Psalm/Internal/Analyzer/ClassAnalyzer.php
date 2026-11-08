@@ -98,6 +98,7 @@ use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_pop;
+use function array_shift;
 use function array_values;
 use function assert;
 use function count;
@@ -1079,8 +1080,39 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
      */
     private function getPropertiesOnlyReadUnderIsset(): array
     {
-        return $this->properties_only_read_under_isset
-            ??= IssetGuardedProperties::find($this->class->stmts);
+        if ($this->properties_only_read_under_isset !== null) {
+            return $this->properties_only_read_under_isset;
+        }
+
+        $codebase = $this->getCodebase();
+        $stmts = $this->class->stmts;
+        $traits_to_read = array_keys(
+            $codebase->classlike_storage_provider->get($this->fq_class_name)->used_traits,
+        );
+        $read_traits = [];
+
+        // what the methods of the traits do with the property counts too
+        while ($trait_name = array_shift($traits_to_read)) {
+            if (isset($read_traits[$trait_name])) {
+                continue;
+            }
+
+            $read_traits[$trait_name] = true;
+
+            try {
+                $trait_node = $codebase->classlikes->getTraitNode($trait_name);
+            } catch (UnexpectedValueException) {
+                continue;
+            }
+
+            $stmts = [...$stmts, ...$trait_node->stmts];
+            $traits_to_read = [
+                ...$traits_to_read,
+                ...array_keys($codebase->classlike_storage_provider->get($trait_name)->used_traits),
+            ];
+        }
+
+        return $this->properties_only_read_under_isset = IssetGuardedProperties::find($stmts);
     }
 
     private function checkPropertyInitialization(
