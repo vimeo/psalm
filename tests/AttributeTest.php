@@ -92,6 +92,20 @@ final class AttributeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'attributeOfTheClassConstantTargetOnClassConstants' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_CLASS_CONSTANT)]
+                    final class OnConst {}
+
+                    final class K {
+                        #[OnConst]
+                        public const C = 1;
+
+                        #[OnConst]
+                        public const D = 2, E = 3;
+                    }
+                    echo K::C . K::D . K::E;',
+            ],
             'classAndPropertyAttributesExists' => [
                 'code' => '<?php
                     namespace Foo;
@@ -305,32 +319,6 @@ final class AttributeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
-            'returnTypeWillChangeNoSignatureType' => [
-                'code' => '<?php
-                    class Foo {
-                        /**
-                         * @param array<string> $arg
-                         * @return string
-                         */
-                        public function run($arg) : string {
-                            return implode("s", $arg);
-                        }
-                    }
-
-                    class Bar extends Foo {
-                        /**
-                         * @param array<string> $arg
-                         * @return string
-                         */
-                        #[ReturnTypeWillChange]
-                        public function run($arg) {
-                            return implode(" ", $arg);
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
             'allowDynamicProperties' => [
                 'code' => '<?php
 
@@ -413,6 +401,38 @@ final class AttributeTest extends TestCase
                             #[\Override] protected int $foo = 2
                         ) {}
                     }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'delayedTargetValidationDefersInternalAttributeTarget' => [
+                'code' => '<?php
+                    #[\DelayedTargetValidation]
+                    #[\Override]
+                    final class Delayed {}
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'delayedTargetValidationInSeparateGroupAfterInternalAttribute' => [
+                'code' => '<?php
+                    class A {
+                        #[\NoDiscard]
+                        #[\DelayedTargetValidation]
+                        public int $foo = 1;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'delayedTargetValidationDefersAttributeAttributeTarget' => [
+                'code' => '<?php
+                    #[\DelayedTargetValidation]
+                    #[\Attribute]
+                    function f(): void {}
                 ',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -580,6 +600,52 @@ final class AttributeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'missingAttributeOnClassConstant' => [
+                'code' => '<?php
+                    final class K {
+                        #[\Nope]
+                        public const C = 1;
+                    }',
+                'error_message' => 'UndefinedAttributeClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27',
+            ],
+            'attributeOfAnotherTargetOnClassConstant' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_METHOD)]
+                    final class OnlyMethod {}
+
+                    final class K {
+                        #[OnlyMethod]
+                        public const C = 1;
+                    }',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:27',
+            ],
+            'returnTypeWillChangeDoesNotSuppressUserDefinedNativeSignature' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @param array<string> $arg
+                         * @return string
+                         */
+                        public function run($arg) : string {
+                            return implode("s", $arg);
+                        }
+                    }
+
+                    class Bar extends Foo {
+                        /**
+                         * @param array<string> $arg
+                         * @return string
+                         */
+                        #[ReturnTypeWillChange]
+                        public function run($arg) {
+                            return implode(" ", $arg);
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:17:25 - Method Bar::run',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'attributeClassHasNoAttributeAnnotation' => [
                 'code' => '<?php
                     class A {}
@@ -995,6 +1061,41 @@ final class AttributeTest extends TestCase
                 'error_message' => 'Attribute SensitiveParameter cannot be used on a method',
                 'error_levels' => [],
                 'php_version' => '8.2',
+            ],
+            'delayedTargetValidationKeepsUserAttributeTargetCheck' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_METHOD)]
+                    class MethodOnly {}
+
+                    #[\DelayedTargetValidation]
+                    #[MethodOnly]
+                    class Foo {}
+                ',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:23 - Attribute MethodOnly cannot be used on a class',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'delayedTargetValidationUndefinedBelowPhp85' => [
+                'code' => '<?php
+                    #[\DelayedTargetValidation]
+                    class Foo {}
+                ',
+                'error_message' => 'UndefinedAttributeClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:23',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'delayedTargetValidationPolyfillBelowPhp85' => [
+                'code' => '<?php
+                    #[Attribute]
+                    final class DelayedTargetValidation {}
+
+                    #[\DelayedTargetValidation]
+                    #[\Override]
+                    final class Delayed {}
+                ',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:23 - Attribute Override cannot be used on a class',
+                'error_levels' => [],
+                'php_version' => '8.4',
             ],
             'deprecatedAttributeOnTraitBeforePhp85' => [
                 'code' => '<?php

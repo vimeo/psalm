@@ -2,7 +2,7 @@
 
 Psalm can attempt to find connections between user-controlled input (like `$_GET['name']`) and places that we don’t want unescaped user-controlled input to end up (like `echo "<h1>$name</h1>"` by looking at the ways that data flows through your application (via assignments, function/method calls and array/property access).
 
-You can enable this mode with the `--taint-analysis` command line flag.  
+Taint analysis runs by default, in the same run as type checking. To turn it off, set [`runTaintAnalysis="false"`](../running_psalm/configuration.md#runtaintanalysis) in `psalm.xml`; the `--taint-analysis` command line flag still turns it on for a single run.
 
 Tainted input is anything that can be controlled, wholly or in part, by a user of your application. In taint analysis, tainted input is called a _taint source_.
 
@@ -128,7 +128,7 @@ Psalm supports the [SARIF](http://docs.oasis-open.org/sarif/sarif/v2.0/csprd01/s
 
 ### GitHub Code Scanning
 
-[GitHub code scanning](https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/about-code-scanning) can be set up by using the [Psalm GitHub Action](https://github.com/marketplace/actions/psalm-static-analysis-for-php).
+[GitHub code scanning](https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/about-code-scanning) can be set up by using the [Psalm Security Scan](https://github.com/psalm/psalm-github-security-scan) action, or the [Psalm GitHub Action](https://github.com/psalm/psalm-github-actions) with `report_file: results.sarif` (see [GitHub Actions](../running_psalm/installation.md#github-actions)).
 
 Alternatively, the generated SARIF file can be manually uploaded as described in [the GitHub documentation](https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/uploading-a-sarif-file-to-github).
 
