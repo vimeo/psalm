@@ -1517,6 +1517,38 @@ final class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'MoreSpecificImplementedParamType',
             ],
+            'returnTypeMessageOfAMethodWithOneKeepsItsType' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function run(): string;
+                    }
+
+                    class B extends A {
+                        public function run(): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => "MethodSignatureMismatch - src" . DIRECTORY_SEPARATOR . "somefile.php:7:25 - Method B::run"
+                    . " with return type 'int' is different to return type 'string' of inherited method A::run",
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'returnTypeMessageOfAMethodWithoutOneIsMixed' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function run(): array|false;
+                    }
+
+                    class B extends A {
+                        public function run() {
+                            return false;
+                        }
+                    }',
+                'error_message' => "MethodSignatureMismatch - src" . DIRECTORY_SEPARATOR . "somefile.php:7:25 - Method B::run"
+                    . " with return type 'mixed' is different to return type",
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'staticReturnOfAnInheritedMethodDoesNotSatisfyAnUnrelatedInterface' => [
                 'code' => '<?php
                     interface OtherInterface {
