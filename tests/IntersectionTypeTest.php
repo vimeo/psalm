@@ -20,6 +20,70 @@ final class IntersectionTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodOfAnIntersectionReturnsAnArrayOfStringCastableItems' => [
+                'code' => '<?php
+                    interface A {
+                        /** @return array<int, Stringable|int> */
+                        public function get(): array;
+                        /** @return list<Stringable|int> */
+                        public function getList(): array;
+                        /** @return array<int, Stringable> */
+                        public function getIterable(): iterable;
+                    }
+
+                    interface B {
+                        /** @return array<int, string|int> */
+                        public function get(): array;
+                        /** @return list<string|int> */
+                        public function getList(): array;
+                        /** @return iterable<int, string> */
+                        public function getIterable(): iterable;
+                    }
+
+                    function make(): A&B {
+                        throw new RuntimeException();
+                    }
+
+                    $o = make();
+                    $array = $o->get();
+                    $list = $o->getList();
+                    $iterable = $o->getIterable();',
+                'assertions' => [
+                    '$array===' => 'array<int, Stringable|int>',
+                    '$list===' => 'list<Stringable|int>',
+                    '$iterable===' => 'array<int, Stringable>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'shapeIntersectionWithArraysOfStringCastableItems' => [
+                'code' => '<?php
+                    /** @return array{v: array<int, Stringable|int>}&array{v: array<int, int|string>} */
+                    function f(): array {
+                        return ["v" => [1]];
+                    }
+
+                    $x = f();',
+                'assertions' => [
+                    '$x===' => 'array{v: array<int, Stringable|int>}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'shapeIntersectionWithAnOptionalKeyOfStringableAndString' => [
+                'code' => '<?php
+                    /** @return array{a: int, b?: Stringable}&array{b?: string} */
+                    function f(): array {
+                        return ["a" => 1];
+                    }
+
+                    $x = f();',
+                'assertions' => [
+                    '$x===' => 'array{a: int, b?: never}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'methodOfTheSecondInterfaceOfAnIntersectionBoundOfATemplate' => [
                 'code' => '<?php
                     interface HasName {}

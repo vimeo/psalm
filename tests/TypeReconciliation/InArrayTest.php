@@ -242,6 +242,22 @@ final class InArrayTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'inArrayKeepsAnArrayOfStringablesFoundInAHaystackOfArraysOfStrings' => [
+                'code' => '<?php
+                    /**
+                     * @param array<array-key, Stringable>|int $x
+                     * @param list<array<array-key, string>|int> $haystack
+                     */
+                    function f(array|int $x, array $haystack): int {
+                        if (in_array($x, $haystack, true)) {
+                            return $x;
+                        }
+                        return 0;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'typeNotChangedAfterNegatedAssertionAgainstUnsealedArrayOfMixed' => [
                 'code' => '<?php
                     /**
