@@ -269,6 +269,13 @@ final class ExistingAtomicStaticCallAnalyzer
 
             $call_args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
+            MethodCallPurityAnalyzer::markStaticCallReturningThis(
+                $statements_analyzer,
+                $stmt,
+                $method_id,
+                $method_storage,
+            );
+
             // what the purity templates of the method are bound to here
             $template_capabilities = CallPurityResolver::getCallCapabilities(
                 $statements_analyzer,
