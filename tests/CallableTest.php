@@ -46,6 +46,54 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'arrayCallableOfAnIntersectionWithTheMethodInTheFirstPart' => [
+                'code' => '<?php
+                    interface A
+                    {
+                        public function doSomething(mixed $value): void;
+                    }
+
+                    interface B {}
+
+                    final class MyClass
+                    {
+                        public function __construct(private readonly A&B $ab)
+                        {
+                        }
+
+                        public function run(array $values): void
+                        {
+                            array_walk($values, [$this->ab, "doSomething"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayCallableOfAnIntersectionWithTheMethodInAnyPart' => [
+                'code' => '<?php
+                    interface A {}
+
+                    interface B
+                    {
+                        public function doSomething(mixed $value): void;
+                    }
+
+                    final class MyClass
+                    {
+                        public function __construct(private readonly A&B $ab)
+                        {
+                        }
+
+                        public function run(array $values): void
+                        {
+                            array_walk($values, [$this->ab, "doSomething"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'callableArrayToTraitMethodResolvesReturnType' => [
                 'code' => '<?php
                     /**
@@ -2757,6 +2805,30 @@ final class CallableTest extends TestCase
                 'error_message' => 'InvalidArgument',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'arrayCallableOfAnIntersectionWithoutTheMethod' => [
+                'code' => '<?php
+                    interface A {}
+
+                    interface B
+                    {
+                        public function doSomething(mixed $value): void;
+                    }
+
+                    final class MyClass
+                    {
+                        public function __construct(private readonly A&B $ab)
+                        {
+                        }
+
+                        public function run(array $values): void
+                        {
+                            array_walk($values, [$this->ab, "nope"]);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'undefinedCallableClass' => [
                 'code' => '<?php
