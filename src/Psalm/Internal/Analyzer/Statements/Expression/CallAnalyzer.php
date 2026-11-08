@@ -629,6 +629,11 @@ abstract class CallAnalyzer
                 && $codebase->functions->functionExists($statements_analyzer, $root_function_id)
             ) {
                 $function_id = $root_function_id;
+            } elseif ($context !== null
+                && (isset($context->phantom_functions[$function_id])
+                    || ($can_be_in_root_scope && isset($context->phantom_functions[$root_function_id])))
+            ) {
+                return false;
             } else {
                 IssueBuffer::maybeAdd(
                     new UndefinedFunction(

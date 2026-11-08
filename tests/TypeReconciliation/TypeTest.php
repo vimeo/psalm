@@ -39,6 +39,16 @@ final class TypeTest extends TestCase
                 'ignored_issues' => ['ClassMustBeFinal'],
                 'php_version' => '8.0',
             ],
+            'closedResourceIsTruthyLikeAnyResource' => [
+                'code' => '<?php
+                    /** @param resource|closed-resource|null $stream */
+                    function check($stream): bool {
+                        return $stream ? true : false;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'sealArray' => [
                 'code' => '<?php
                     /** @var array */
