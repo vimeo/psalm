@@ -374,6 +374,26 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'paramDefaultNewObjectImplementingInterface' => [
+                'code' => '<?php
+                    function f(Traversable $p = new ArrayObject()): void {}
+                    function g(Countable&Traversable $p = new ArrayObject()): void {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'paramDefaultNonFinalClassMayImplementInterface' => [
+                'code' => '<?php
+                    interface I {}
+                    class Foo {}
+                    class Impl extends Foo implements I {}
+                    /** @var Foo */
+                    const C = new Impl();
+                    function f(I $p = C): void {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'inferTypeFromAnonymousObjectWithTemplatedPropertyFromTemplatedAncestor' => [
                 'code' => '<?php
                     /** @template T */
@@ -1005,6 +1025,28 @@ final class FunctionCallTest extends TestCase
                     function exploder(string $d, string $s) : array {
                         return explode($d, $s);
                     }',
+            ],
+            'assertAcceptsObjectAndNarrowsIt' => [
+                'code' => '<?php
+                    function f(?DateTime $d): DateTime {
+                        assert($d);
+                        return $d;
+                    }
+                    /** @var DateTime|null $foo */
+                    $foo = null;
+                    assert($foo);',
+                'assertions' => [
+                    '$foo===' => 'DateTime',
+                ],
+            ],
+            'assertAcceptsArrayAndFloat' => [
+                'code' => '<?php
+                    function f(array $a, float $f): void {
+                        assert($a);
+                        assert($f);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
             ],
             'allowPossiblyUndefinedClassInClassExists' => [
                 'code' => <<<'PHP'
@@ -2524,6 +2566,31 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => ['ImplicitToStringCast'],
                 'php_version' => '8.1',
             ],
+            'strReplaceWithAsManyReplacementsAsSearches' => [
+                'code' => '<?php
+                    /** @var string $subject */
+                    $subject = getenv("X");
+                    /** @var list<string> $searches */
+                    $searches = [];
+                    /** @var list<string> $replacements */
+                    $replacements = [];
+                    /** @var list{0?: string, 1?: string} $optional */
+                    $optional = [];
+
+                    $a = str_replace(["a", "b"], ["x", "y"], $subject);
+                    $b = str_replace(["a", "b"], ["x", "y", "z"], $subject);
+                    $c = str_replace(["a", "b"], "x", $subject);
+                    $d = str_replace(["a", "b"], [], $subject);
+                    $e = str_replace($searches, ["x"], $subject);
+                    $f = str_replace(["a", "b"], $replacements, $subject);
+                    $g = str_replace(["a", "b"], $optional, $subject);
+                    $h = str_replace("a", "x", $subject);
+                    $i = str_replace(...["a", "x", $subject]);
+                    $j = str_replace(subject: $subject, replace: ["x"], search: ["a", "b"]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'array_is_list_on_empty_array' => [
                 'code' => '<?php
                     $a = [];
@@ -3053,6 +3120,20 @@ final class FunctionCallTest extends TestCase
                     function f(int $p = false) {}',
                 'error_message' => 'InvalidParamDefault',
             ],
+            'invalidParamDefaultNewObjectNotImplementingInterface' => [
+                'code' => '<?php
+                    function f(Traversable $p = new stdClass()): void {}',
+                'error_message' => 'InvalidParamDefault',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'invalidParamDefaultNewObjectNotInUnion' => [
+                'code' => '<?php
+                    function f(Countable|int $p = new stdClass()): void {}',
+                'error_message' => 'InvalidParamDefault',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'invalidDocblockParamDefault' => [
                 'code' => '<?php
                     /**
@@ -3507,6 +3588,19 @@ final class FunctionCallTest extends TestCase
                         return file_exists($path);
                     }',
                 'error_message' => 'ImpureFunctionCall',
+            ],
+            'strReplaceWithFewerReplacementsThanSearches' => [
+                'code' => '<?php
+                    $subject = "Hello";
+                    $search = ["a", "b", "c"];
+                    $replace = ["x", "y"];
+                    echo str_replace($search, $replace, $subject);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'strIreplaceWithFewerReplacementsThanSearches' => [
+                'code' => '<?php
+                    echo str_ireplace(["a", "b"], ["x"], "Hello");',
+                'error_message' => 'InvalidArgument',
             ],
             'array_is_list_literal_array' => [
                 'code' => '<?php
