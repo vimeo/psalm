@@ -82,6 +82,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -117,6 +118,9 @@ use function substr;
  */
 final class ClassAnalyzer extends ClassLikeAnalyzer
 {
+    /** Set on the call of the constructor that stands for it when the initialization of properties is checked */
+    public const FAKE_CONSTRUCTOR_CALL_ATTRIBUTE = 'fake_constructor_call';
+
     /**
      * @var array<string, Union>
      */
@@ -981,7 +985,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if ($property_type_location && !$fleshed_out_type->isMixed()) {
+            $has_docblock_over_signature = $property_storage->signature_type
+                && $property_storage->type?->getId() !== $property_storage->signature_type->getId();
+
+            if ($property_type_location && (!$fleshed_out_type->isMixed() || $has_docblock_over_signature)) {
                 $stmt = array_filter(
                     $stmts,
                     static fn($stmt): bool => $stmt instanceof PhpParser\Node\Stmt\Property
@@ -1043,6 +1050,26 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                                 $property_type_location,
                             ),
                         );
+                    }
+
+                    if ($property_storage->signature_type_location && $has_docblock_over_signature) {
+                        // only the classes: the docblock type replaces the native one everywhere else
+                        $signature_classes = array_filter(
+                            $property_storage->signature_type->getAtomicTypes(),
+                            static fn(Atomic $atomic): bool => $atomic instanceof TNamedObject
+                                && !self::isReservedClassName($atomic->value),
+                        );
+
+                        if ($signature_classes) {
+                            /** @psalm-suppress UnusedMethodCall This call has the side effect of creating issues */
+                            (new Union($signature_classes))->check(
+                                $statements_source,
+                                $property_storage->signature_type_location,
+                                $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
+                                [],
+                                false,
+                            );
+                        }
                     }
                 }
             }
@@ -1319,6 +1346,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
                 $fake_call_attributes = $fake_constructor_attributes
                     + [
+                        self::FAKE_CONSTRUCTOR_CALL_ATTRIBUTE => true,
                         'comments' => [new PhpParser\Comment\Doc(
                             '/** @psalm-suppress InaccessibleMethod */',
                             $class->extends->getLine(),
