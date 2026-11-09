@@ -40,6 +40,7 @@ use function assert;
 use function count;
 use function end;
 use function ltrim;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -401,6 +402,27 @@ final class CallableTypeComparator
             }
 
             if ($expand_callable) {
+                // the templates generated for the parameters are resolved, those of the caller are not the method's
+                $generated_templates = [];
+
+                foreach ($method_storage->template_types ?? [] as $template_name => $defining_types) {
+                    if (str_starts_with($template_name, 'TGeneratedFromParam')) {
+                        $generated_templates[$template_name] = $defining_types;
+                    }
+                }
+
+                if ($generated_templates !== []) {
+                    $replaced = TemplateInferredTypeReplacer::replace(
+                        new Union([$callable]),
+                        new TemplateResult([], $generated_templates),
+                        $codebase,
+                    )->getSingleAtomic();
+
+                    if ($replaced instanceof TCallable) {
+                        $callable = $replaced;
+                    }
+                }
+
                 $closure = self::getClosureOfMethod(
                     $codebase,
                     $callable->params ?? [],
@@ -506,7 +528,7 @@ final class CallableTypeComparator
             true,
             $exact_static,
             false,
-            true,
+            false,
         );
     }
 
