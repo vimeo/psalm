@@ -807,10 +807,13 @@ final class AtomicPropertyFetchAnalyzer
                 new VirtualIdentifier('__get', $stmt->name->getAttributes()),
                 [
                     new VirtualArg(
-                        new VirtualString(
-                            $prop_name,
-                            $stmt->name->getAttributes(),
-                        ),
+                        // the name as written keeps its type (`A::class` is a class-string)
+                        $stmt->name instanceof PhpParser\Node\Expr
+                            ? $stmt->name
+                            : new VirtualString(
+                                $prop_name,
+                                $stmt->name->getAttributes(),
+                            ),
                     ),
                 ],
             );
