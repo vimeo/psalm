@@ -419,9 +419,8 @@ final class FormulaGenerator
             );
         }
 
-        /** @psalm-suppress MixedOperand */
-        $conditional_ref = '*' . $conditional->getAttribute('startFilePos')
-            . ':' . $conditional->getAttribute('endFilePos');
+        $conditional_ref = '*' . (int) $conditional->getAttribute('startFilePos')
+            . ':' . (int) $conditional->getAttribute('endFilePos');
 
         $nullsafe_call = $conditional instanceof PhpParser\Node\Expr\Assign ? $conditional->expr : $conditional;
 
