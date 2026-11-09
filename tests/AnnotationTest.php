@@ -212,6 +212,37 @@ final class AnnotationTest extends TestCase
 
                     takesMask(E_ERROR);',
             ],
+            'psalmVarOverridesPhpstanVarOnProperty' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    class Bar {
+                        /**
+                         * @phpstan-var Foo<string>|null
+                         * @psalm-var Foo|null
+                         */
+                        private ?Foo $foo = null;
+
+                        public function get(): ?Foo {
+                            return $this->foo;
+                        }
+                    }',
+            ],
+            'psalmVarOverridesVarOnConstant' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    class Bar {
+                        /**
+                         * @var Foo<string>|null
+                         * @psalm-var Foo|null
+                         */
+                        public const ?Foo FOO = null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'varCommentDropsKnownElementsOfPreviousType' => [
                 'code' => '<?php
                     function getNullableInt(): ?int {
@@ -1719,6 +1750,31 @@ final class AnnotationTest extends TestCase
                         echo $y;
                     }',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'psalmVarWithTooManyTemplateParamsOnProperty' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    class Bar {
+                        /**
+                         * @var Foo|null
+                         * @psalm-var Foo<string>|null
+                         */
+                        private ?Foo $foo = null;
+                    }',
+                'error_message' => 'TooManyTemplateParams',
+            ],
+            'varWithTooManyTemplateParamsOnConstant' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    class Bar {
+                        /** @var Foo<string>|null */
+                        public const ?Foo FOO = null;
+                    }',
+                'error_message' => 'TooManyTemplateParams',
+                'error_levels' => [],
+                'php_version' => '8.3',
             ],
             'invalidParamDefaultStillReportedForAnotherFunction' => [
                 'code' => '<?php
