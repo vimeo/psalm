@@ -71,6 +71,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_shift;
 use function count;
 use function explode;
 use function implode;
@@ -168,6 +169,7 @@ final class ArgumentAnalyzer
         ?TemplateResult $template_result,
         bool $specialize_taint,
         bool $in_call_map,
+        bool $static_is_called_class = false,
     ): ?bool {
         if ($arg->getAttribute(self::NOT_PASSED) === true) {
             return null;
@@ -281,6 +283,7 @@ final class ArgumentAnalyzer
             $template_result,
             $specialize_taint,
             $in_call_map,
+            $static_is_called_class,
         ) === false) {
             return false;
         }
@@ -312,6 +315,7 @@ final class ArgumentAnalyzer
         ?TemplateResult $template_result,
         bool $specialize_taint,
         bool $in_call_map,
+        bool $static_is_called_class,
     ): ?bool {
         if (!$function_param->type) {
             if (!$codebase->infer_types_from_usage && !$statements_analyzer->data_flow_graph) {
@@ -352,7 +356,7 @@ final class ArgumentAnalyzer
             $parent_class,
             true,
             false,
-            $static_classlike_storage->final ?? false,
+            ($static_classlike_storage->final ?? false) || $static_is_called_class,
             true,
         );
 
@@ -462,7 +466,7 @@ final class ArgumentAnalyzer
                 $parent_class,
                 true,
                 false,
-                $static_classlike_storage->final ?? false,
+                ($static_classlike_storage->final ?? false) || $static_is_called_class,
                 true,
             );
         }
@@ -527,6 +531,36 @@ final class ArgumentAnalyzer
             if ($arg_value_type->hasArray()) {
                 $unpacked_atomic_array = $arg_value_type->getArray();
                 $arg_key_allowed = true;
+
+                // a template param is as iterable as its bound
+                $unpacked_atomic_types = $arg_value_type->getAtomicTypes();
+
+                while ($unpacked_atomic_type = array_shift($unpacked_atomic_types)) {
+                    if ($unpacked_atomic_type instanceof TTemplateParam) {
+                        $unpacked_atomic_types = [
+                            ...$unpacked_atomic_types,
+                            ...$unpacked_atomic_type->as->getAtomicTypes(),
+                        ];
+
+                        continue;
+                    }
+
+                    if (!$unpacked_atomic_type instanceof TClassStringMap
+                        && !$unpacked_atomic_type instanceof TMixed
+                        && !$unpacked_atomic_type->isIterable($codebase)
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new PossiblyInvalidArgument(
+                                'Tried to unpack non-iterable ' . $arg_value_type->getId(),
+                                new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                                $cased_method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+
+                        break;
+                    }
+                }
 
                 if ($unpacked_atomic_array instanceof TKeyedArray) {
                     if (!$allow_named_args && !$unpacked_atomic_array->getGenericKeyType()->isInt()) {
@@ -1109,6 +1143,32 @@ final class ArgumentAnalyzer
             !isset($param_type->getAtomicTypes()['true']),
             $union_comparison_results,
         );
+
+        // the callable form of a string naming a function doesn't fit, but the string may fit the rest of the param
+        /** @var Union|null $original_input_type set by HighOrderFunctionArgHandler */
+        $original_input_type = $input_expr->getAttribute(HighOrderFunctionArgHandler::ORIGINAL_ARG_TYPE_ATTRIBUTE);
+
+        if ($original_input_type
+            && (!$type_match_found || $union_comparison_results->type_coerced)
+            && $param_type->hasCallableType()
+        ) {
+            $param_types_without_callable = array_filter(
+                $param_type->getAtomicTypes(),
+                static fn(Atomic $atomic) => !$atomic->isCallableType(),
+            );
+
+            if ($param_types_without_callable
+                && UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $original_input_type,
+                    new Union($param_types_without_callable),
+                )
+            ) {
+                $input_type = $original_input_type;
+                $union_comparison_results = new TypeComparisonResult();
+                $type_match_found = true;
+            }
+        }
 
         if ($union_comparison_results->type_variable_lower_bounds
             || $union_comparison_results->type_variable_upper_bounds

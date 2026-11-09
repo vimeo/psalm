@@ -64,6 +64,26 @@ final class ArgTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'unpackArrayOrTemplateBoundToTraversable' => [
+                'code' => '<?php
+                    function foo(int $a, int $b): void {}
+
+                    /**
+                     * @template T of Traversable<int, int>
+                     * @param array<int, int>|T $test
+                     */
+                    function bar($test): void {
+                        foo(...$test);
+                    }',
+            ],
+            'unpackArrayOrTraversable' => [
+                'code' => '<?php
+                    function foo(int $a, int $b): void {}
+
+                    /** @var array<int, int>|Traversable<int, int> $test */
+                    $test = [1, 2];
+                    foo(...$test);',
+            ],
             'namedArgumentWithVariadicParamName' => [
                 'code' => '<?php
                     function write(string $message, string ...$args): void {
@@ -480,6 +500,59 @@ final class ArgTest extends TestCase
                 'error_message' => 'TooFewArguments',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'unpackClassStringMapOrInt' => [
+                'code' => '<?php
+                    class A {}
+
+                    /** @var class-string-map<A, A>|int $arr */
+                    $arr = [];
+                    var_dump(...$arr);',
+                'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33 - Tried to unpack non-iterable',
+            ],
+            'unpackArrayOrTemplateBoundToInt' => [
+                'code' => '<?php
+                    /** @psalm-suppress UnusedParam */
+                    function foo(int $a, int $b): void {}
+
+                    /**
+                     * @template T of int
+                     * @param array<int, int>|T $test
+                     */
+                    function bar($test): void {
+                        foo(...$test);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'unpackArrayOrObject' => [
+                'code' => '<?php
+                    /** @psalm-suppress UnusedParam */
+                    function foo(int $a, int $b): void {}
+
+                    /** @var array<int, int>|object $test */
+                    $test = [1, 2];
+                    foo(...$test);',
+                'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:28 - Tried to unpack non-iterable array<int, int>|object',
+            ],
+            'unpackArrayOrInt' => [
+                'code' => '<?php
+                    /** @psalm-suppress UnusedParam */
+                    function foo(int $a, int $b): void {}
+
+                    /** @var array<int, int>|int $test */
+                    $test = [1, 2];
+                    foo(...$test);',
+                'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:28 - Tried to unpack non-iterable array<int, int>|int',
+            ],
+            'unpackArrayOrNull' => [
+                'code' => '<?php
+                    /** @psalm-suppress UnusedParam */
+                    function foo(int $a, int $b): void {}
+
+                    /** @var array<int, int>|null $test */
+                    $test = [1, 2];
+                    foo(...$test);',
+                'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:28 - Tried to unpack non-iterable array<int, int>|null',
             ],
             'namedArgumentsRepeatingVariadicParamName' => [
                 'code' => '<?php
