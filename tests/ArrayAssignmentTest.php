@@ -159,6 +159,16 @@ final class ArrayAssignmentTest extends TestCase
                     (new Box())->items()["k"] = 1;
                     Box::shared()["k"] = 1;',
             ],
+            'coalesceAssignmentOnTwoOptionalKeysOfAnArrayWithAShapeIntersection' => [
+                'code' => '<?php
+                    /** @var array{name?: string, age?: int}&array $data */
+                    $data = [];
+                    $data["name"] ??= "noname";
+                    $data["age"] ??= 90;',
+                'assertions' => [
+                    '$data' => 'array{age: int, name: string, ...<array-key, mixed>}',
+                ],
+            ],
             'arrayKeyOfAnIgnoredNullableReturnIsNotNullable' => [
                 'code' => '<?php
                     class TestModel
@@ -2382,6 +2392,22 @@ final class ArrayAssignmentTest extends TestCase
                         "9223372036854775809" => 2
                     ];
                 ',
+            ],
+            'assignWithStaticClassOffsetKeepsTheKeyTypeOfTheProperty' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    abstract class Singleton {
+                        /** @var array<class-string<static>, static> */
+                        private static array $instances = [];
+
+                        protected function __construct() {}
+
+                        public static function getInstance(): static {
+                            return self::$instances[static::class] ??= new static();
+                        }
+                    }',
             ],
             'assignToListWithForeachKey' => [
                 'code' => '<?php
