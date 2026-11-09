@@ -49,6 +49,40 @@ final class AssignmentInConditionalTest extends TestCase
                         }
                     }',
             ],
+            'assignmentInTheRightOperandOfAnAndInsideAnOrIsNotNullInTheBody' => [
+                'code' => '<?php
+                    interface Argument {
+                        public function name(): string;
+                    }
+
+                    final class Tagged implements Argument {
+                        public function name(): string {
+                            return "tagged";
+                        }
+                    }
+
+                    final class Locator implements Argument {
+                        public function name(): string {
+                            return "locator";
+                        }
+
+                        public function getTagged(): ?Tagged {
+                            return null;
+                        }
+                    }
+
+                    function dump(Argument $value): string {
+                        $tag = $value;
+
+                        if ($value instanceof Tagged
+                            || ($value instanceof Locator && ($tag = $value->getTagged()))
+                        ) {
+                            return $tag->name();
+                        }
+
+                        return "";
+                    }',
+            ],
             'assignmentInTheRightOperandOfAndInAnIfWithAFloatPreviously' => [
                 'code' => '<?php
                     class Check {
@@ -527,6 +561,29 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assignmentInTheRightOperandOfAndFollowedByAnOrMayBeNullInTheBody' => [
+                'code' => '<?php
+                    final class Tagged {
+                        public function name(): string {
+                            return "tagged";
+                        }
+                    }
+
+                    function getTagged(): ?Tagged {
+                        return null;
+                    }
+
+                    function dump(bool $enabled, bool $fallback): string {
+                        $tag = new Tagged();
+
+                        if (($enabled && ($tag = getTagged())) || $fallback) {
+                            return $tag->name();
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
             'assignmentInBranchOfAnd' => [
                 'code' => '<?php
                     function foo(string $str): ?int {

@@ -23,6 +23,7 @@ use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
+use Psalm\Type\Union;
 
 use function array_diff_key;
 use function array_filter;
@@ -202,32 +203,56 @@ final class IfConditionalAnalyzer
                 $first_cond_assigned_var_ids,
                 $more_cond_assigned_var_ids,
             );
-
-            // an assignment the condition may skip (the right of an `&&`) leaves the earlier type possible
-            foreach (self::getAssignmentsInCondition($cond) as $assign) {
-                $assigned_var_id = ExpressionIdentifier::getExtendedVarId(
-                    $assign->var,
-                    $outer_context->self,
-                    $statements_analyzer,
-                );
-                $assigned_type = $statements_analyzer->node_data->getType($assign);
-
-                if ($assigned_var_id !== null
-                    && $assigned_type !== null
-                    && !isset($first_cond_assigned_var_ids[$assigned_var_id])
-                    && isset($post_if_context->vars_in_scope[$assigned_var_id])
-                ) {
-                    $post_if_context->vars_in_scope[$assigned_var_id] = Type::combineUnionTypes(
-                        $post_if_context->vars_in_scope[$assigned_var_id],
-                        $assigned_type,
-                    );
-                    $outer_context->vars_in_scope[$assigned_var_id] = $post_if_context->vars_in_scope[$assigned_var_id];
-                }
-            }
         } else {
             $cond_referenced_var_ids = $first_cond_referenced_var_ids;
 
             $assigned_in_conditional_var_ids = $first_cond_assigned_var_ids;
+        }
+
+        // an assignment the condition may skip (the right of an `&&`) leaves the earlier type possible
+        foreach (self::getAssignmentsInCondition($cond) as $assign) {
+            $assigned_var_id = ExpressionIdentifier::getExtendedVarId(
+                $assign->var,
+                $outer_context->self,
+                $statements_analyzer,
+            );
+            $assigned_type = $statements_analyzer->node_data->getType($assign);
+
+            if ($assigned_var_id !== null
+                && $assigned_type !== null
+                && isset($post_if_context->vars_in_scope[$assigned_var_id])
+            ) {
+                [$true_states, $false_states] = self::getAssignmentStates(
+                    $statements_analyzer,
+                    $cond,
+                    $assigned_var_id,
+                    $outer_context->self,
+                    ['earlier' => true],
+                );
+
+                if (isset($true_states['earlier']) || isset($false_states['earlier'])) {
+                    $post_if_context->vars_in_scope[$assigned_var_id] = Type::combineUnionTypes(
+                        $post_if_context->vars_in_scope[$assigned_var_id],
+                        $assigned_type,
+                    );
+                    $outer_context->vars_in_scope[$assigned_var_id]
+                        = $post_if_context->vars_in_scope[$assigned_var_id];
+                }
+
+                // the body only runs on the paths that make the condition true
+                $body_type = self::getTypeWhereConditionIsTrue(
+                    $statements_analyzer,
+                    $cond,
+                    $assigned_var_id,
+                    $outer_context->self,
+                    $pre_condition_vars_in_scope[$assigned_var_id] ?? null,
+                    $assigned_type,
+                );
+
+                if ($body_type !== null) {
+                    $if_context->vars_in_scope[$assigned_var_id] = $body_type;
+                }
+            }
         }
 
         $newish_var_ids = [];
@@ -401,6 +426,140 @@ final class IfConditionalAnalyzer
                 ExpressionAnalyzer::checkRiskyTruthyFalsyComparison($type, $statements_analyzer, $stmt);
             }
         }
+    }
+
+    /**
+     * The type a variable the condition may assign has where the whole condition is true: the earlier type where
+     * the assignment is skipped, the assigned type where it runs and nothing after it tests the variable, its
+     * truthy part where the assignment is itself what the condition needs.
+     *
+     * @return ?Union null when the paths can't be told
+     */
+    private static function getTypeWhereConditionIsTrue(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $cond,
+        string $var_id,
+        ?string $self,
+        ?Union $earlier_type,
+        Union $assigned_type,
+    ): ?Union {
+        [$true_states] = self::getAssignmentStates(
+            $statements_analyzer,
+            $cond,
+            $var_id,
+            $self,
+            ['earlier' => true],
+        );
+
+        $types = [];
+
+        if (isset($true_states['earlier'])) {
+            if ($earlier_type === null) {
+                return null;
+            }
+
+            $types[] = $earlier_type;
+        }
+
+        if (isset($true_states['full'])) {
+            $types[] = $assigned_type;
+        }
+
+        if (isset($true_states['truthy'])) {
+            $truthy_builder = $assigned_type->getBuilder();
+            $truthy_builder->removeType('null');
+            $truthy_builder->removeType('false');
+            $truthy_type = $truthy_builder->freeze();
+
+            if (!$truthy_type->isUnionEmpty()) {
+                $types[] = $truthy_type;
+            }
+        }
+
+        return $types === [] ? null : Type::combineUnionTypeArray($types, $statements_analyzer->getCodebase());
+    }
+
+    /**
+     * What the variable is, as the states `earlier` (not assigned yet), `full` (the assigned value) and `truthy` (the
+     * assigned value, known to be truthy), after the expression, where it is true and where it is false.
+     *
+     * @param array<string, true> $incoming
+     * @return array{array<string, true>, array<string, true>}
+     */
+    private static function getAssignmentStates(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $expr,
+        string $var_id,
+        ?string $self,
+        array $incoming,
+    ): array {
+        if ($expr instanceof PhpParser\Node\Expr\Assign
+            && ExpressionIdentifier::getExtendedVarId($expr->var, $self, $statements_analyzer) === $var_id
+        ) {
+            return [['truthy' => true], ['full' => true]];
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\BooleanNot) {
+            [$true_states, $false_states] = self::getAssignmentStates(
+                $statements_analyzer,
+                $expr->expr,
+                $var_id,
+                $self,
+                $incoming,
+            );
+
+            return [$false_states, $true_states];
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+        ) {
+            [$left_true, $left_false] = self::getAssignmentStates(
+                $statements_analyzer,
+                $expr->left,
+                $var_id,
+                $self,
+                $incoming,
+            );
+            [$right_true, $right_false] = self::getAssignmentStates(
+                $statements_analyzer,
+                $expr->right,
+                $var_id,
+                $self,
+                $left_true,
+            );
+
+            return [$right_true, $left_false + $right_false];
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+        ) {
+            [$left_true, $left_false] = self::getAssignmentStates(
+                $statements_analyzer,
+                $expr->left,
+                $var_id,
+                $self,
+                $incoming,
+            );
+            [$right_true, $right_false] = self::getAssignmentStates(
+                $statements_analyzer,
+                $expr->right,
+                $var_id,
+                $self,
+                $left_false,
+            );
+
+            return [$left_true + $right_true, $right_false];
+        }
+
+        foreach (self::getAssignmentsInCondition($expr) as $assign) {
+            if (ExpressionIdentifier::getExtendedVarId($assign->var, $self, $statements_analyzer) === $var_id) {
+                return [['full' => true], ['full' => true]];
+            }
+        }
+
+        return [$incoming, $incoming];
     }
 
     /**
