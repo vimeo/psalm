@@ -720,31 +720,25 @@ final class ClassLikeNodeScanner
             }
 
             if ($docblock_info->extension_requirement !== null) {
-                $storage->extension_requirement = (string) TypeParser::parseTokens(
-                    TypeTokenizer::getFullyQualifiedTokens(
-                        $docblock_info->extension_requirement,
-                        $this->aliases,
-                        $this->class_template_types,
-                        $this->type_aliases,
-                    ),
-                    null,
-                    $this->class_template_types,
-                    $this->type_aliases,
-                );
+                $requirement_type = $this->parseRequirement($docblock_info->extension_requirement);
+                $requirement_atomic = $requirement_type->isSingle() ? $requirement_type->getSingleAtomic() : null;
+
+                $storage->extension_requirement = $this->getRequirementName($docblock_info->extension_requirement);
+                $storage->extension_requirement_type = $requirement_atomic instanceof TGenericObject
+                    ? $requirement_atomic
+                    : null;
             }
 
             foreach ($docblock_info->implementation_requirements as $implementation_requirement) {
-                $storage->implementation_requirements[] = (string) TypeParser::parseTokens(
-                    TypeTokenizer::getFullyQualifiedTokens(
-                        $implementation_requirement,
-                        $this->aliases,
-                        $this->class_template_types,
-                        $this->type_aliases,
-                    ),
-                    null,
-                    $this->class_template_types,
-                    $this->type_aliases,
-                );
+                $requirement_name = $this->getRequirementName($implementation_requirement);
+                $requirement_type = $this->parseRequirement($implementation_requirement);
+                $requirement_atomic = $requirement_type->isSingle() ? $requirement_type->getSingleAtomic() : null;
+
+                $storage->implementation_requirements[] = $requirement_name;
+
+                if ($requirement_atomic instanceof TGenericObject) {
+                    $storage->implementation_requirement_types[$requirement_name] = $requirement_atomic;
+                }
             }
 
             $storage->sealed_properties = $docblock_info->sealed_properties;
@@ -2689,5 +2683,33 @@ final class ClassLikeNodeScanner
         }
 
         return $referenced_names;
+    }
+
+    /**
+     * The class or interface named by a `@psalm-require-extends` or `@psalm-require-implements` type: its type
+     * arguments don't change which class is required
+     */
+    private function getRequirementName(string $docblock_type): string
+    {
+        $type = $this->parseRequirement($docblock_type);
+
+        $atomic_type = $type->isSingle() ? $type->getSingleAtomic() : null;
+
+        return $atomic_type instanceof TNamedObject ? $atomic_type->value : (string) $type;
+    }
+
+    private function parseRequirement(string $docblock_type): Union
+    {
+        return TypeParser::parseTokens(
+            TypeTokenizer::getFullyQualifiedTokens(
+                $docblock_type,
+                $this->aliases,
+                $this->class_template_types,
+                $this->type_aliases,
+            ),
+            null,
+            $this->class_template_types,
+            $this->type_aliases,
+        );
     }
 }

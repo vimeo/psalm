@@ -609,6 +609,7 @@ final class Config
     public array $php_extensions = [
         "amqp" => null,
         "apcu" => null,
+        "curl" => null,
         "decimal" => null,
         "dom" => null,
         "ds" => null,
@@ -617,9 +618,12 @@ final class Config
         "gmp" => null,
         "ibm_db2" => null,
         "imagick" => null,
+        "intl" => null,
+        "ldap" => null,
         "memcached" => null,
         "mongodb" => null,
         "mysqli" => null,
+        "openssl" => null,
         "pdo" => null,
         "random" => null,
         "rdkafka" => null,
@@ -627,6 +631,7 @@ final class Config
         "simplexml" => null,
         "soap" => null,
         "xdebug" => null,
+        "zip" => null,
         "zstd" => null,
     ];
 

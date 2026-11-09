@@ -894,6 +894,20 @@ final class Populator
         $this->inheritMethodsFromParent($storage, $trait_storage);
         $this->inheritPropertiesFromParent($storage, $trait_storage);
 
+        // the visibility a trait gives to the methods it uses from another one, unless the class changes it again,
+        // declares the method itself or uses the one of another trait for it
+        $trait_name_lc = strtolower($trait_storage->name);
+
+        foreach ($trait_storage->trait_visibility_map as $method_name_lc => $visibility) {
+            if (isset($storage->methods[$method_name_lc])
+                || isset($storage->trait_excluded_methods[$method_name_lc][$trait_name_lc])
+            ) {
+                continue;
+            }
+
+            $storage->trait_visibility_map[$method_name_lc] ??= $visibility;
+        }
+
         $this->extendTemplateParams($storage, $trait_storage, false);
 
         $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;

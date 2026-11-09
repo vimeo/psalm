@@ -21,6 +21,84 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'boolVarIdenticalToFalseNarrowsItsConjuncts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class U {
+                        public int $id = 1;
+                    }
+
+                    function f(?U $v, ?U $e): int {
+                        $c = $v !== null && $e === $v;
+                        if ($c === false) {
+                            return 0;
+                        }
+                        return $v->id;
+                    }
+                    PHP,
+            ],
+            'boolVarIdenticalToTrueNarrowsItsConjuncts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class U {
+                        public int $id = 1;
+                    }
+
+                    function f(?U $v, ?U $e): int {
+                        $c = $v !== null && $e === $v;
+                        if ($c === true) {
+                            return $v->id;
+                        }
+                        return 0;
+                    }
+                    PHP,
+            ],
+            'boolVarNotIdenticalToFalseNarrowsItsConjuncts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class U {
+                        public int $id = 1;
+                    }
+
+                    function f(?U $v, ?U $e): int {
+                        $c = $v !== null && $e === $v;
+                        if ($c !== false) {
+                            return $v->id;
+                        }
+                        return 0;
+                    }
+                    PHP,
+            ],
+            'boolVarNotIdenticalToTrueNarrowsItsConjuncts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class U {
+                        public int $id = 1;
+                    }
+
+                    function f(?U $v, ?U $e): int {
+                        $c = $v !== null && $e === $v;
+                        if ($c !== true) {
+                            return 0;
+                        }
+                        return $v->id;
+                    }
+                    PHP,
+            ],
+            'identityWithFalseOfNonBoolVarStillNarrows' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int|false $x): int {
+                        if ($x === false) {
+                            return 0;
+                        }
+                        return $x;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'booleanVariableNarrowingSurvivesOrWithItAsLeftOperand' => [
                 'code' => <<<'PHP'
                     <?php
@@ -68,6 +146,39 @@ final class TypeAlgebraTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'inArrayWithAValueAnEarlierConditionExcludedIsNotParadoxical' => [
+                'code' => '<?php
+                    const A = "a";
+                    const ALL = [A, "b", "c"];
+
+                    function test(string $value): int {
+                        if ($value === A) {
+                            return 1;
+                        }
+
+                        if (in_array($value, ALL, true)) {
+                            return 2;
+                        }
+
+                        return 3;
+                    }',
+                'assertions' => [],
+            ],
+            'orOfAValueAnEarlierConditionExcludedAndAnotherIsNotParadoxical' => [
+                'code' => '<?php
+                    function test(string $value): int {
+                        if ($value === "a") {
+                            return 1;
+                        }
+
+                        if ($value === "a" || $value === "b") {
+                            return 2;
+                        }
+
+                        return 3;
+                    }',
+                'assertions' => [],
             ],
             'twoVarLogicSimple' => [
                 'code' => '<?php
@@ -1448,6 +1559,21 @@ final class TypeAlgebraTest extends TestCase
                 'error_message' => 'PossiblyNullReference',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'conditionOfOnlyValuesAnEarlierConditionExcludedIsParadoxical' => [
+                'code' => '<?php
+                    function test(string $value): int {
+                        if ($value === "a" || $value === "b") {
+                            return 1;
+                        }
+
+                        if ($value === "a" || $value === "b") {
+                            return 2;
+                        }
+
+                        return 3;
+                    }',
+                'error_message' => 'ParadoxicalCondition',
             ],
             'staticPropertyNarrowedToDeclaredTypeAfterEarlyReturn' => [
                 'code' => '<?php

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm;
 
 use InvalidArgumentException;
+use Psalm\Internal\Analyzer\ConstructorExits;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -29,7 +30,6 @@ use function array_shift;
 use function array_values;
 use function assert;
 use function count;
-use function explode;
 use function in_array;
 use function is_int;
 use function json_encode;
@@ -292,6 +292,11 @@ final class Context
      * Whether or not to do a deep analysis and collect initializations from public non-final methods
      */
     public bool $collect_nonprivate_initializations = false;
+
+    /**
+     * @internal
+     */
+    public ?ConstructorExits $constructor_exits = null;
 
     /**
      * Stored to prevent re-analysing methods when checking for initialised properties
@@ -841,7 +846,14 @@ final class Context
         $mutated_classes = [];
 
         foreach ($mutations as $mutation => $_) {
-            [$mutation_class, $property_name] = explode('::$', $mutation, 2);
+            $separator = strpos($mutation, '::$');
+
+            if ($separator === false) {
+                continue;
+            }
+
+            $mutation_class = substr($mutation, 0, $separator);
+            $property_name = substr($mutation, $separator + 3);
 
             if ($mutation_class === '') {
                 $class_names = $self_class_names;
