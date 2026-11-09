@@ -110,6 +110,18 @@ final class ImplementationRequirementTest extends TestCase
                     }
                 ',
             ],
+            'implementsGenericRequirementWithTheSameTypeArgument' => [
+                'code' => '<?php
+                    use ImplementationRequirements\Generic\GenericA;
+                    use ImplementationRequirements\Generic\ImposesGenericImplementationRequirement;
+
+                    /** @implements GenericA<string> */
+                    class Valid implements GenericA {
+                        /** @use ImposesGenericImplementationRequirement<string> */
+                        use ImposesGenericImplementationRequirement;
+                    }
+                ',
+            ],
             'implementsAllRequirementsWithPhpstanTags' => [
                 'code' => '<?php
                     use ImplementationRequirements\Base\A;
@@ -159,6 +171,19 @@ final class ImplementationRequirementTest extends TestCase
                     /** @template T */
                     class Invalid {
                         /** @use ImposesGenericImplementationRequirement<T> */
+                        use ImposesGenericImplementationRequirement;
+                    }
+                ',
+                'error_message' => 'requires using class to implement ImplementationRequirements\Generic\GenericA',
+            ],
+            'implementsGenericRequirementWithAnotherTypeArgument' => [
+                'code' => '<?php
+                    use ImplementationRequirements\Generic\GenericA;
+                    use ImplementationRequirements\Generic\ImposesGenericImplementationRequirement;
+
+                    /** @implements GenericA<string> */
+                    class Invalid implements GenericA {
+                        /** @use ImposesGenericImplementationRequirement<int> */
                         use ImposesGenericImplementationRequirement;
                     }
                 ',

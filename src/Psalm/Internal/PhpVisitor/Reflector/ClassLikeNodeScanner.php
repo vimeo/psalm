@@ -696,11 +696,25 @@ final class ClassLikeNodeScanner
             }
 
             if ($docblock_info->extension_requirement !== null) {
+                $requirement_type = $this->parseRequirement($docblock_info->extension_requirement);
+                $requirement_atomic = $requirement_type->isSingle() ? $requirement_type->getSingleAtomic() : null;
+
                 $storage->extension_requirement = $this->getRequirementName($docblock_info->extension_requirement);
+                $storage->extension_requirement_type = $requirement_atomic instanceof TGenericObject
+                    ? $requirement_atomic
+                    : null;
             }
 
             foreach ($docblock_info->implementation_requirements as $implementation_requirement) {
-                $storage->implementation_requirements[] = $this->getRequirementName($implementation_requirement);
+                $requirement_name = $this->getRequirementName($implementation_requirement);
+                $requirement_type = $this->parseRequirement($implementation_requirement);
+                $requirement_atomic = $requirement_type->isSingle() ? $requirement_type->getSingleAtomic() : null;
+
+                $storage->implementation_requirements[] = $requirement_name;
+
+                if ($requirement_atomic instanceof TGenericObject) {
+                    $storage->implementation_requirement_types[$requirement_name] = $requirement_atomic;
+                }
             }
 
             $storage->sealed_properties = $docblock_info->sealed_properties;
@@ -2561,7 +2575,16 @@ final class ClassLikeNodeScanner
      */
     private function getRequirementName(string $docblock_type): string
     {
-        $type = TypeParser::parseTokens(
+        $type = $this->parseRequirement($docblock_type);
+
+        $atomic_type = $type->isSingle() ? $type->getSingleAtomic() : null;
+
+        return $atomic_type instanceof TNamedObject ? $atomic_type->value : (string) $type;
+    }
+
+    private function parseRequirement(string $docblock_type): Union
+    {
+        return TypeParser::parseTokens(
             TypeTokenizer::getFullyQualifiedTokens(
                 $docblock_type,
                 $this->aliases,
@@ -2572,9 +2595,5 @@ final class ClassLikeNodeScanner
             $this->class_template_types,
             $this->type_aliases,
         );
-
-        $atomic_type = $type->isSingle() ? $type->getSingleAtomic() : null;
-
-        return $atomic_type instanceof TNamedObject ? $atomic_type->value : (string) $type;
     }
 }
