@@ -1657,6 +1657,31 @@ final class TraitTest extends TestCase
                     (new Narrowing)->f();',
                 'error_message' => 'InaccessibleMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:38 - Cannot access protected method Narrowing::f',
             ],
+            'constructorCallsAnAliasOfATraitMethodThatTheClassOverrides' => [
+                'code' => '<?php
+                    trait Setup {
+                        private int $value;
+
+                        public function init(): void {
+                            echo "trait";
+                        }
+                    }
+
+                    final class MyClass {
+                        use Setup {
+                            Setup::init as private initTrait;
+                        }
+
+                        public function __construct() {
+                            $this->initTrait();
+                        }
+
+                        public function init(): void {
+                            $this->value = 1;
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
             'docblockPropertyTypeNotContainedBySignatureTypeSelf' => [
                 'code' => '<?php
                     class Child {}

@@ -203,9 +203,7 @@ abstract class CallAnalyzer
 
             $is_final = $method_storage->final;
 
-            // a trait method can be made private by the alias that is called
-            $visibility = $codebase->classlike_storage_provider->get($fq_class_name)
-                ->trait_visibility_map[$method_name_lc] ?? $method_storage->visibility;
+            $visibility = $method_storage->visibility;
 
             if ($method_name !== $declaring_method_id->method_name) {
                 $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
@@ -218,6 +216,9 @@ abstract class CallAnalyzer
                     if (isset($appearing_class_storage->trait_final_map[$method_name_lc])) {
                         $is_final = true;
                     }
+
+                    // a trait method can be made private by the alias that is called
+                    $visibility = $appearing_class_storage->trait_visibility_map[$method_name_lc] ?? $visibility;
                 }
             }
 
@@ -249,7 +250,7 @@ abstract class CallAnalyzer
                 $old_calling_method_id = $context->calling_method_id;
 
                 if ($fq_class_name === $source->getFQCLN()) {
-                    $class_analyzer->getMethodMutations($declaring_method_id->method_name, $context);
+                    $class_analyzer->getMethodMutations($method_name_lc, $context);
                 } else {
                     $declaring_fq_class_name = $declaring_method_id->fq_class_name;
 
