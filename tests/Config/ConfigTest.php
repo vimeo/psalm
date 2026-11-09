@@ -577,6 +577,83 @@ final class ConfigTest extends TestCase
         $this->assertFalse($config->reportIssueInFile('UndefinedClass', (string) realpath(__FILE__)));
     }
 
+    public function testIssueNamedTwiceInTheIssueHandlersKeepsBothElements(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+
+                    <issueHandlers>
+                        <MissingReturnType>
+                            <errorLevel type="suppress">
+                                <directory name="tests" />
+                            </errorLevel>
+                        </MissingReturnType>
+                        <UndefinedClass errorLevel="suppress" />
+                        <MissingReturnType>
+                            <errorLevel type="info">
+                                <directory name="src/Psalm/Internal/Analyzer" />
+                            </errorLevel>
+                        </MissingReturnType>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertSame(
+            Config::REPORT_SUPPRESS,
+            $config->getReportingLevelForFile('MissingReturnType', (string) realpath(__FILE__)),
+        );
+        $this->assertSame(
+            Config::REPORT_INFO,
+            $config->getReportingLevelForFile(
+                'MissingReturnType',
+                (string) realpath('src/Psalm/Internal/Analyzer/ProjectAnalyzer.php'),
+            ),
+        );
+        $this->assertSame(
+            Config::REPORT_ERROR,
+            $config->getReportingLevelForFile('MissingReturnType', (string) realpath('src/Psalm/Type.php')),
+        );
+        $this->assertFalse($config->reportIssueInFile('UndefinedClass', (string) realpath(__FILE__)));
+    }
+
+    public function testErrorLevelOfALaterElementOfTheSameIssueWins(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <issueHandlers>
+                        <MissingReturnType errorLevel="info" />
+                        <MissingReturnType errorLevel="suppress" />
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $this->assertSame(
+            Config::REPORT_SUPPRESS,
+            $this->project_analyzer->getConfig()->getReportingLevelForFile(
+                'MissingReturnType',
+                (string) realpath('src/Psalm/Type.php'),
+            ),
+        );
+    }
+
     public function testIssueHandlerWithCustomErrorLevels(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

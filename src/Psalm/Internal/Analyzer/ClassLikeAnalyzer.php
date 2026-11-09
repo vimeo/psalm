@@ -12,6 +12,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityArguments;
@@ -175,21 +176,46 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         }
     }
 
+    /**
+     * @param string $method_name the name the method is called by, which can be the alias of a trait method
+     */
     public function getMethodMutations(
         string $method_name,
         Context $context,
     ): void {
+        $project_analyzer = $this->getFileAnalyzer()->project_analyzer;
+        $codebase = $project_analyzer->getCodebase();
+
+        // only the method PHP calls is analyzed: not the one of the class when an alias of a trait method is
+        // called, nor the one of a trait when the class overrides it
+        $called_method_id = $codebase->methods->getDeclaringMethodId(
+            new MethodIdentifier($context->self ?: $this->fq_class_name, strtolower($method_name)),
+        );
+        $actual_method_name = $called_method_id !== null ? $called_method_id->method_name : $method_name;
+
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
-                strtolower($stmt->name->name) === strtolower($method_name)
+                strtolower($stmt->name->name) === strtolower($actual_method_name)
             ) {
+                if ($called_method_id !== null
+                    && strtolower($called_method_id->fq_class_name) !== strtolower($this->fq_class_name)
+                ) {
+                    continue;
+                }
+
                 $method_analyzer = new MethodAnalyzer($stmt, $this);
 
                 $method_analyzer->analyze($context, new NodeDataProvider(), null, true);
 
                 $context->clauses = [];
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
-                $this->getTraitUseMethodMutations($stmt, $this->source->getAliases(), $method_name, $context);
+                $this->getTraitUseMethodMutations(
+                    $stmt,
+                    $this->source->getAliases(),
+                    $actual_method_name,
+                    $called_method_id,
+                    $context,
+                );
             }
         }
     }
@@ -201,6 +227,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         PhpParser\Node\Stmt\TraitUse $stmt,
         Aliases $aliases,
         string $method_name,
+        ?MethodIdentifier $called_method_id,
         Context $context,
     ): void {
         $project_analyzer = $this->getFileAnalyzer()->project_analyzer;
@@ -229,7 +256,13 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
             foreach ($trait_node->stmts as $trait_stmt) {
                 if ($trait_stmt instanceof PhpParser\Node\Stmt\TraitUse) {
-                    $this->getTraitUseMethodMutations($trait_stmt, $trait_aliases, $method_name, $context);
+                    $this->getTraitUseMethodMutations(
+                        $trait_stmt,
+                        $trait_aliases,
+                        $method_name,
+                        $called_method_id,
+                        $context,
+                    );
                 } elseif ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
                     strtolower($trait_stmt->name->name) === strtolower($method_name)
                 ) {
@@ -237,10 +270,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
                     // only the method PHP calls is analyzed: a class that overrides the method of a trait
                     // doesn't run the one of the trait
-                    $analyzed_method_id = $method_analyzer->getMethodId($context->self ?: $this->fq_class_name);
-                    $declaring_method_id = $codebase->methods->getDeclaringMethodId($analyzed_method_id);
-
-                    if ((string) $method_analyzer->getMethodId() !== (string) $declaring_method_id) {
+                    if ($called_method_id !== null
+                        && (string) $method_analyzer->getMethodId() !== (string) $called_method_id
+                    ) {
                         continue;
                     }
 
