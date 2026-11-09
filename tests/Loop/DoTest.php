@@ -43,6 +43,32 @@ final class DoTest extends TestCase
                     '$i===' => 'int<-1, -1>',
                 ],
             ],
+            'doWhileConditionAfterContinueBeforeAssignment' => [
+                'code' => '<?php
+                    do {
+                        $run = false;
+
+                        if (time() % 3 === 0) {
+                            continue;
+                        }
+
+                        $run = true;
+                    } while ($run);',
+            ],
+            'doWhileConditionAfterContinueWithSeveralVars' => [
+                'code' => '<?php
+                    do {
+                        $a = false;
+                        $b = 0;
+
+                        if (time() % 3 === 0) {
+                            continue;
+                        }
+
+                        $a = true;
+                        $b = 1;
+                    } while ($a || $b === 1);',
+            ],
             'doWhileTrue' => [
                 'code' => '<?php
                     function ret(): int {
