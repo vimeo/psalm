@@ -5,8 +5,15 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_filter;
+use function array_map;
+use function array_values;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -61,6 +68,359 @@ final class ReferenceTest extends TestCase
                         }
 
                         proc_close($process);
+                    }',
+            ],
+            'arrayItemPassedByReferenceHasItsKeyEvaluatedOnce' => [
+                'code' => '<?php
+                    $a = [[3, 1], [2, 4]];
+                    $i = 0;
+                    sort($a[$i++]);
+                    $j = $i;',
+                'assertions' => [
+                    '$j===' => '1',
+                    '$a===' => 'list{non-empty-list<1|3>, list{2, 4}}',
+                ],
+            ],
+            'arrayItemPassedByReferenceHasItsNestedKeysEvaluatedOnce' => [
+                'code' => '<?php
+                    $a = [[[3, 1]], [[2, 4]]];
+                    $i = 0;
+                    $j = 0;
+                    sort($a[$i++][$j++]);
+                    $k = $i;
+                    $l = $j;',
+                'assertions' => [
+                    '$k===' => '1',
+                    '$l===' => '1',
+                ],
+            ],
+            'propertyItemPassedByReferenceHasItsKeyEvaluatedOnce' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @var list<list<int>> */
+                        public array $items = [[2, 1]];
+
+                        /** @var list<list<int>> */
+                        public static array $all = [[2, 1]];
+                    }
+
+                    $b = new Box();
+                    $i = 0;
+                    sort($b->items[$i++]);
+                    $j = $i;
+
+                    $k = 0;
+                    sort(Box::$all[$k++]);
+                    $l = $k;',
+                'assertions' => [
+                    '$j===' => '1',
+                    '$l===' => '1',
+                ],
+            ],
+            'keyAssignedInAnArrayItemPassedByReferenceIsAssignedOnce' => [
+                'code' => '<?php
+                    $a = [[3, 1], [2, 4], [6, 5]];
+                    $x = 0;
+                    sort($a[$x = $x + 1]);',
+                'assertions' => [
+                    '$x===' => '1',
+                ],
+            ],
+            'arrayItemPassedByReferenceIsWrittenUnderTheKeyItWasPassedWith' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $value
+                     * @param-out int $value
+                     */
+                    function set_int(&$value, int $next): void {
+                        $value = $next;
+                    }
+
+                    $a = ["a", "b"];
+                    $k = 0;
+                    set_int($a[$k], $k = 1);',
+                'assertions' => [
+                    '$a===' => "list{int, 'b'}",
+                ],
+            ],
+            'arrayItemPushedToHasItsKeyEvaluatedOnce' => [
+                'code' => '<?php
+                    $a = [[1], [2]];
+                    $i = 0;
+                    array_push($a[$i++], 5, 6);
+                    $j = $i;',
+                'assertions' => [
+                    '$j===' => '1',
+                ],
+            ],
+            'arrayItemPassedByReferenceToAnArrayFunctionHasItsKeyEvaluatedOnce' => [
+                'code' => '<?php
+                    $a = [[3, 1], [2, 4]];
+                    $i = 0;
+                    natsort($a[$i++]);
+                    $k = 0;
+                    array_splice($a[$k++], 0, 1);
+                    $m = 0;
+                    usort($a[$m++], fn(int $x, int $y): int => $x <=> $y);',
+                'assertions' => [
+                    '$i===' => '1',
+                    '$k===' => '1',
+                    '$m===' => '1',
+                ],
+            ],
+            'arrayItemPassedByReferenceUnderAnIntOrNumericStringKeyIsReplaced' => [
+                'code' => '<?php
+                    function f(): array {
+                        $a = ["old"];
+                        $k = rand(0, 1) ? 0 : "0";
+                        preg_match("/x/", "x", $a[$k]);
+                        $copy = $a;
+                        return $copy[0];
+                    }',
+            ],
+            'arrayItemAppendedByReference' => [
+                'code' => '<?php
+                    $a = [];
+                    preg_match("/x/", "x", $a[]);
+                    $b = $a;
+
+                    $n = [[]];
+                    preg_match("/x/", "x", $n[0][]);',
+                'assertions' => [
+                    '$a===' => 'list{array<array-key, string>}',
+                    '$b===' => 'list{array<array-key, string>}',
+                    '$n===' => 'list{non-empty-list<array<array-key, string>>}',
+                ],
+            ],
+            'arrayItemsPassedByReferenceToOneCall' => [
+                'code' => '<?php
+                    $o = [];
+                    exec("ls", $o["l"], $o["c"]);',
+                'assertions' => [
+                    '$o===' => 'array{c: int, l: list<string>}',
+                ],
+            ],
+            'listItemPassedByReferenceUnderItsKeyKeepsTheList' => [
+                'code' => '<?php
+                    /** @param list<list<int>> $lists */
+                    function sort_each(array $lists): void {
+                        foreach ($lists as $i => $_) {
+                            sort($lists[$i]);
+                        }
+
+                        takes_lists($lists);
+                    }
+
+                    /** @param list<list<int>> $lists */
+                    function sort_each_counted(array $lists): void {
+                        for ($i = 0; $i < count($lists); $i++) {
+                            sort($lists[$i]);
+                        }
+
+                        takes_lists($lists);
+                    }
+
+                    /** @param list<list<int>> $lists */
+                    function takes_lists(array $lists): void {}',
+            ],
+            'newItemPassedByReferenceKeepsTheOtherItemsDefined' => [
+                'code' => '<?php
+                    function first_match(string $s): string {
+                        $o = ["x" => "y"];
+                        preg_match("/a/", $s, $o["m"]);
+                        return $o["x"];
+                    }
+
+                    function nested_match(string $s): string {
+                        $o = ["x" => ["y" => "z"]];
+                        preg_match("/a/", $s, $o["x"]["m"]);
+                        return $o["x"]["y"];
+                    }',
+            ],
+            'itemsPassedByReferenceInALoopOverTheirKeysAreDefined' => [
+                'code' => '<?php
+                    $m = [];
+                    foreach (["a", "b"] as $k) {
+                        preg_match("/a/", "s", $m[$k]);
+                    }',
+                'assertions' => [
+                    '$m===' => 'array{a: array<array-key, string>, b: array<array-key, string>}',
+                ],
+            ],
+            'itemPassedByReferenceIntoANullableArrayKeepsItsItems' => [
+                'code' => '<?php
+                    /** @param array{y: int}|null $a */
+                    function keyed(?array $a): int {
+                        settype($a["x"], "int");
+                        return $a["y"] ?? 0;
+                    }
+
+                    /** @param array<string, int>|null $a */
+                    function generic(?array $a): int {
+                        settype($a["x"], "int");
+                        return $a["z"] ?? 0;
+                    }',
+            ],
+            'itemOfArrayAccessPassedByReferenceIsNotSet' => [
+                'code' => '<?php
+                    /** @param ArrayObject<int, list<int>> $o */
+                    function sort_first(ArrayObject $o): void {
+                        sort($o[0]);
+                    }',
+            ],
+            'itemAppendedByReferenceToAnArrayObject' => [
+                'code' => '<?php
+                    /** @param ArrayObject<int, string> $o */
+                    function matchInto(ArrayObject $o): void {
+                        preg_match("/x/", "s", $o[]);
+                    }',
+            ],
+            'itemOfAnArrayAccessReadAsMixedPassedByReference' => [
+                'code' => '<?php
+                    final class Box implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        public function offsetGet(mixed $offset): mixed {
+                            return "";
+                        }
+
+                        /** @param string $value */
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function cast(Box $b): void {
+                        settype($b[0], "string");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute', 'MissingTemplateParam'],
+                'php_version' => '8.0',
+            ],
+            'itemOfAUnionOfArrayAccessesPassedByReference' => [
+                'code' => '<?php
+                    /** @param ArrayAccess<int, list<int>|null>|array<int, list<string>> $o */
+                    function sortObjectOrArray($o): void {
+                        sort($o[0]);
+                    }
+
+                    /** @param ArrayObject<int, list<int>>|ArrayIterator<int, list<string>> $o */
+                    function sortEitherObject($o): void {
+                        sort($o[0]);
+                    }',
+            ],
+            'nullItemOfAnArrayAccessPassedByReference' => [
+                'code' => '<?php
+                    /** @param ArrayAccess<int, array<array-key, string>> $o */
+                    function fillMissing(ArrayAccess $o): void {
+                        if ($o[0] !== null) {
+                            return;
+                        }
+
+                        preg_match("/x/", "x", $o[0]);
+                    }',
+            ],
+            'itemOfAMixinArrayObjectPassedByReference' => [
+                'code' => '<?php
+                    /** @mixin ArrayObject<int, list<int>> */
+                    final class Lists {
+                        public function __call(string $name, array $args): mixed {
+                            return [];
+                        }
+                    }
+
+                    function sortFirst(Lists $o): bool {
+                        return sort($o[0]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'itemOfAnArrayObjectOfNeverPassedByReference' => [
+                'code' => '<?php
+                    /** @param ArrayObject<int, never> $o */
+                    function fill(ArrayObject $o): void {
+                        preg_match("/x/", "x", $o[0]);
+                    }',
+            ],
+            'itemOfATemplatedMixinArrayObjectPassedByReference' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @mixin ArrayObject<int, T>
+                     */
+                    final class Lists {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @param Lists<list<int>> $o */
+                    function sortFirst(Lists $o): void {
+                        sort($o[0]);
+                    }
+
+                    /**
+                     * @template T
+                     * @mixin ArrayObject<int, T>
+                     */
+                    abstract class Wrapper {
+                        public function __call(string $name, array $args): mixed {
+                            return [];
+                        }
+                    }
+
+                    /** @param Wrapper<list<int>>&ArrayAccess<int, mixed> $w */
+                    function sortWrapped(Wrapper $w): void {
+                        sort($w[0]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'itemOfAnObjectWithAPseudoOffsetSetPassedByReference' => [
+                'code' => '<?php
+                    /** @method void offsetSet(int $key, list<int> $value) */
+                    final class Box {
+                        /** @return list<int> */
+                        public function offsetGet(int $key): array {
+                            return [];
+                        }
+
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    function sortFirst(Box $b): void {
+                        sort($b[0]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'itemOfAnArrayObjectPushedTo' => [
+                'code' => '<?php
+                    /** @param ArrayObject<int, list<int>> $o */
+                    function push(ArrayObject $o): void {
+                        array_push($o[0], 3);
+                    }',
+            ],
+            'itemOfAnArrayObjectAssignedInto' => [
+                'code' => '<?php
+                    /** @param ArrayObject<int, list<int>> $o */
+                    function append(ArrayObject $o): void {
+                        $o[0][] = 3;
+                    }',
+            ],
+            'itemOfMixedPassedByReferenceIsNotAssigned' => [
+                'code' => '<?php
+                    /** @param mixed $m */
+                    function sort_item($m): void {
+                        /** @psalm-suppress MixedArrayAccess, MixedArgument */
+                        sort($m["k"]);
                     }',
             ],
             'referenceAssignmentToNonReferenceCountsAsUse' => [
@@ -353,6 +713,141 @@ final class ReferenceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'issueInTheKeyOfAnArrayItemPassedByReference' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, list<int>> $a
+                     * @param array{k?: string} $b
+                     */
+                    function f(array $a, array $b): void {
+                        sort($a[$b["k"]]);
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33',
+            ],
+            'emptyArrayAccessInTheKeyOfAnArrayItemPassedByReference' => [
+                'code' => '<?php
+                    /** @param array<string, list<int>> $a */
+                    function f(array $a): void {
+                        $e = [];
+                        sort($a[$e[0]]);
+                    }',
+                'error_message' => 'EmptyArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
+            ],
+            'itemOfAnEmptyArrayPassedToAParameterPhpDoesNotTakeByReference' => [
+                'code' => '<?php
+                    $pipes = [];
+                    fclose($pipes[0]);',
+                'error_message' => 'EmptyArrayAccess',
+            ],
+            'arrayItemPassedByReferenceIntoATemplateParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array{x: int}
+                     * @param T $a
+                     */
+                    function f(array $a): int {
+                        preg_match("/x/", "x", $a["x"]);
+                        $copy = $a;
+                        return $copy["x"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'propertyItemPassedByReferenceIsCheckedAgainstThePropertyType' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @var array{x: int} */
+                        public array $items = ["x" => 1];
+
+                        public function run(): void {
+                            preg_match("/x/", "x", $this->items["x"]);
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'staticPropertyItemPassedByReferenceIsCheckedAgainstThePropertyType' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @var array{x: int} */
+                        public static array $items = ["x" => 1];
+
+                        public static function run(): void {
+                            preg_match("/x/", "x", self::$items["x"]);
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'itemOfAReadonlyPropertyOfACallResultPassedByReference' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @param array{x: list<int>} $items */
+                        public function __construct(public readonly array $items) {}
+                    }
+
+                    /** @psalm-pure */
+                    function same(Box $b): Box {
+                        return $b;
+                    }
+
+                    function change(Box $b): void {
+                        sort(same($b)->items["x"]);
+                    }',
+                'error_message' => 'InaccessibleProperty',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'itemOfReadonlyPropertyPassedByReference' => [
+                'code' => '<?php
+                    final class A {
+                        /** @param array{x: list<int>} $items */
+                        public function __construct(public readonly array $items) {}
+
+                        public function run(): void {
+                            sort($this->items["x"]);
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayCreatedByAnItemPassedByReferenceInALoopIsPossiblyUndefined' => [
+                'code' => '<?php
+                    /** @param list<string> $s */
+                    function f(array $s): string {
+                        foreach ($s as $str) {
+                            /** @psalm-suppress PossiblyUndefinedVariable */
+                            preg_match("/(.*)/", $str, $out["m"]);
+                        }
+                        return $out["m"][1] ?? "";
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:8',
+            ],
+            'arrayCreatedByAnItemPassedByReferenceInAnIfIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(string $s): string {
+                        if (rand(0, 1)) {
+                            /** @psalm-suppress UndefinedVariable, MixedArrayAccess */
+                            preg_match("/(.*)/", $s, $out["m"]);
+                        }
+                        return $out["m"][1] ?? "";
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7',
+            ],
+            'itemOfAnArrayObjectAssignedIsChecked' => [
+                'code' => '<?php
+                    /** @param ArrayObject<int, list<int>> $o */
+                    function set(ArrayObject $o): void {
+                        $o[0] = "x";
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33 - Argument 2 of ArrayObject::offsetSet expects list<int>, but \'x\' provided',
+            ],
+            'itemOfAnArrayObjectInAnArrayObjectAssignedIsChecked' => [
+                'code' => '<?php
+                    /** @param ArrayObject<string, ArrayObject<int, string>> $o */
+                    function set(ArrayObject $o): void {
+                        $o["a"][0] = 5;
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:38 - Argument 2 of ArrayObject::offsetSet expects string, but 5 provided',
+            ],
             'referenceReuseForeachValue' => [
                 'code' => '<?php
                     /** @var array<int> */
@@ -522,5 +1017,64 @@ final class ReferenceTest extends TestCase
                 'error_message' => ' - $bar: string',
             ],
         ];
+    }
+
+    public function testItemOfAnArrayOrArrayAccessPassedByReferenceIsOnlyWrittenToTheArray(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param array{x: int}|ArrayObject<string, int> $a */
+                function f($a): int {
+                    preg_match("/x/", "x", $a["x"]);
+                    $copy = $a;
+                    return $copy["x"];
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                [6, 'InvalidReturnStatement'],
+                [3, 'InvalidReturnType'],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->type],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    public function testIssueInTheKeyOfAnArrayItemPassedByReferenceIsReportedOnce(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param array<string, list<int>> $a */
+                function f(array $a): void {
+                    $n = null;
+                    sort($a[$n["x"]]);
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [[5, 29]],
+            array_values(array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->column_from],
+                array_filter(
+                    IssueBuffer::getIssuesDataForFile($file_path),
+                    static fn(IssueData $issue): bool => $issue->type === 'NullArrayAccess',
+                ),
+            )),
+        );
     }
 }

@@ -49,9 +49,10 @@ To add the types of an extension, add it to `EXTENSIONS` in `bin/stubs/build_doc
 don't build on a PHP version yet.
 
 Every push runs the "Build docker image for stubs" workflow: it builds the images,
-runs `composer build`, and fails when a committed file is out of date, uploading the
-difference as the `composer-build-patch` artifact. `bin/ci/apply-composer-build-patch.sh`
-applies it to your checkout (set `PSALM_REPO=<you>/psalm` for a run on your fork).
+runs `composer build`, and when a committed file is out of date, commits the difference
+to the pushed branch and uploads it as the `composer-build-patch` artifact. Pull before
+pushing again. If the commit can't be pushed, `bin/ci/apply-composer-build-patch.sh`
+applies the artifact to your checkout (set `PSALM_REPO=<you>/psalm` for a run on your fork).
 
 ## Checking a callmap against reflection
 
@@ -70,11 +71,75 @@ InternalCallMapHandlerTest::$ignoredFunctions`.
 
 ## Full callmap format
 
+Each entry keeps its analysis (or "doc") return type at index `0`. The optional
+index `-1` records the native or tentative return type extracted from PHP:
+
+```php
+'strlen' => [
+    0 => 'int<0, max>',
+    -1 => 'int',
+    'string' => 'string',
+],
+'amqpvalue::toamqpvalue' => [
+    0 => 'mixed',
+],
+'jsonserializable::jsonserialize' => [
+    -1 => 'mixed',
+    -2 => 'tentative',
+],
+'limititerator::getposition' => [ // PHP 8.0: no native or tentative return signature
+    0 => 'int',
+    -2 => 'none',
+],
+```
+
+Only the signature return type imposes a native return-type requirement on an
+implementation. `-1 => 'mixed'` is an explicit signature, not an absent type.
+Optional index `-2` records its provenance:
+
+| `-1` | `-2` | Meaning |
+| --- | --- | --- |
+| present | absent | Native return signature |
+| present | `tentative` | Tentative return signature, available since PHP 8.1 |
+| absent | `none` | Reflection confirmed there is no return signature in this PHP version |
+| absent | absent | Not reflected by the generator; the stub or runtime may provide a signature |
+
+`#[ReturnTypeWillChange]` suppresses tentative return-signature checks, including
+an explicitly incompatible return type. It does not suppress a native signature.
+Stubs and index `0` still provide the types used to analyse calls; PHPDoc
+compatibility checks are separate from native signature checks.
+
+Generated files omit index `0` when its type equals index `-1`; the signature then
+also supplies the analysis return type. Read it with `$entry[0] ?? $entry[-1]`;
+`getCallMap()` preserves the compact entries without recreating index `0`.
+
+Edit the analysis return type in the overrides, then regenerate. Signature return
+types come from reflection and are retained independently of overrides and
+alternate signatures; the generator does not copy analysis refinements into them.
+
+### Reflection coverage
+
+Each image must load every extension in the version-specific manifest returned by
+`php bin/stubs/build_docker.php --extensions-plain <version>`. Generation fails
+before writing a callmap if its PHP version or a required extension is wrong.
+`dictionaries/autogen/CallMapExtensions_*.php` records the extension of each
+reflected API. These manifests describe coverage; they do not list every PHP extension.
+For example, the current images do not load `bz2`, `calendar` or `dba`.
+Their handwritten entries can therefore lack reflected signature metadata.
+
+The merger preserves overrides for APIs absent from an image. An untyped downloaded
+PHPStorm stub does not establish that an extension has no native return type.
+For an API without generated metadata, Psalm first uses its stub signature. Runtime
+reflection can supply a missing signature only when the analysed PHP major/minor
+matches the PHP running Psalm; it never imports a newer runtime signature into an
+older target. Results for these uncovered APIs can consequently depend on the
+installed extensions and their versions. A different target version needs a stub
+or generated metadata for that version.
+
 A callmap (`dictionaries/CallMap_*.php`, and `dictionaries/override/CallMap.php`) has function/method
 names as keys and an array representing the corresponding signature as a value.
 
-First element of that value is a return type (it also doesn't have a key), and
-subsequent elements represent function/method parameters. Parameter name for an
+Entries with string keys represent function/method parameters. Parameter name for an
 optional parameter is postfixed with `=`, references with `&`/`&r_`/`&w_`/`&rw_`
 (depending on the read/write meaning of the reference param) and 
 variadic args are prefixed with `...`.
