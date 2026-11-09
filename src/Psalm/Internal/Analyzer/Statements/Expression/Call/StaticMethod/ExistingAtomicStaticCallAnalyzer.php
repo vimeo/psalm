@@ -100,13 +100,13 @@ final class ExistingAtomicStaticCallAnalyzer
         ) {
             $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
 
-            if (!$appearing_method_id) {
-                return;
-            }
+            // a method no class defines (declared by an interface or an abstract class) has no body to collect from
+            $appearing_method_class_name = $appearing_method_id?->fq_class_name;
 
-            $appearing_method_class_name = $appearing_method_id->fq_class_name;
-
-            if ($codebase->classExtends($context->self, $appearing_method_class_name)) {
+            if ($appearing_method_id !== null
+                && $appearing_method_class_name !== null
+                && $codebase->classExtends($context->self, $appearing_method_class_name)
+            ) {
                 $old_context_include_location = $context->include_location;
                 $old_self = $context->self;
                 $context->include_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
@@ -170,6 +170,14 @@ final class ExistingAtomicStaticCallAnalyzer
             $template_result->lower_bounds += $inferred_template_result->lower_bounds;
         }
 
+        // a static call naming a class does not forward the late static binding: `static` is that class
+        $static_is_called_class = $stmt->class instanceof PhpParser\Node\Name
+            && !in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
+            && $codebase->methods->getStorage(
+                $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id,
+                true,
+            )->is_static;
+
         if (CallAnalyzer::checkMethodArgs(
             $method_id,
             $args,
@@ -177,6 +185,7 @@ final class ExistingAtomicStaticCallAnalyzer
             $context,
             new CodeLocation($statements_analyzer->getSource(), $stmt),
             $statements_analyzer,
+            $static_is_called_class,
         ) === false) {
             return;
         }
@@ -268,6 +277,13 @@ final class ExistingAtomicStaticCallAnalyzer
             }
 
             $call_args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
+
+            MethodCallPurityAnalyzer::markStaticCallReturningThis(
+                $statements_analyzer,
+                $stmt,
+                $method_id,
+                $method_storage,
+            );
 
             // what the purity templates of the method are bound to here
             $template_capabilities = CallPurityResolver::getCallCapabilities(

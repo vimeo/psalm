@@ -385,8 +385,6 @@
       <code><![CDATA[$implementer_param_signature_type]]></code>
       <code><![CDATA[$implementer_param_type]]></code>
       <code><![CDATA[$implementer_param_type]]></code>
-      <code><![CDATA[$implementer_signature_return_type]]></code>
-      <code><![CDATA[$implementer_signature_return_type]]></code>
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$guide_classlike_storage->template_types]]></code>
@@ -603,7 +601,6 @@
       <code><![CDATA[$expr->getArgs()[1]]]></code>
       <code><![CDATA[$get_debug_type_expr->getArgs()[0]]]></code>
       <code><![CDATA[$get_debug_type_expr->getArgs()[0]]]></code>
-      <code><![CDATA[$getclass_expr->getArgs()[0]]]></code>
       <code><![CDATA[$gettype_expr->getArgs()[0]]]></code>
       <code><![CDATA[$gettype_expr->getArgs()[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
@@ -823,7 +820,6 @@
     </ImplicitToStringCast>
     <InvalidOperand>
       <code><![CDATA[$operand1 * $operand2]]></code>
-      <code><![CDATA[$operand1 ** $operand2]]></code>
       <code><![CDATA[$operand1 + $operand2]]></code>
       <code><![CDATA[$operand1 - $operand2]]></code>
       <code><![CDATA[$operand1 / $operand2]]></code>
@@ -1402,15 +1398,6 @@
     </MixedAssignment>
   </file>
   <file src="src/Psalm/Internal/Cli/LanguageServer.php">
-    <InvalidArgument>
-      <code><![CDATA[$autoloaders]]></code>
-    </InvalidArgument>
-    <InvalidReturnStatement>
-      <code><![CDATA[CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)]]></code>
-    </InvalidReturnStatement>
-    <InvalidReturnType>
-      <code><![CDATA[list<ClassLoader>]]></code>
-    </InvalidReturnType>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$options['verbose']]]></code>
     </RiskyTruthyFalsyComparison>
@@ -1951,13 +1938,6 @@
       <code><![CDATA[empty($imported_type_data[4])]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Internal/PhpVisitor/Reflector/ExpressionResolver.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$string_value]]></code>
-      <code><![CDATA[$string_value]]></code>
-      <code><![CDATA[$string_value]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ExpressionScanner.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$node->getArgs()[0]]]></code>
@@ -2353,11 +2333,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$call_args]]></code>
     </RiskyTruthyFalsyComparison>
-  </file>
-  <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/PowReturnTypeProvider.php">
-    <InvalidOperand>
-      <code><![CDATA[$first_arg_literal ** $second_arg_literal]]></code>
-    </InvalidOperand>
   </file>
   <file src="src/Psalm/Internal/Provider/StatementsProvider.php">
     <ImpureStaticProperty>

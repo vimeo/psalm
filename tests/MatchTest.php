@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class MatchTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -233,6 +235,37 @@ final class MatchTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'matchTrueArmWithSeveralMethodCalls' => [
+                'code' => '<?php
+                    interface Environment {
+                        public function isProduction(): bool;
+                        public function isBackup(): bool;
+                        public function isAcceptance(): bool;
+                    }
+
+                    function baseUrl(Environment $environment): string {
+                        return match (true) {
+                            $environment->isProduction(),
+                            $environment->isBackup(),
+                            $environment->isAcceptance() => "https://x.example",
+                            default => "https://y.example",
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'firstClassCallableInMatchSubject' => [
+                'code' => <<<'PHP'
+                    <?php
+                    echo match (count(...)) { default => 0 };
+                    echo match (gettype(...)) { default => 0 };
+                    echo match (get_class(...)) { default => 0 };
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -344,6 +377,19 @@ final class MatchTest extends TestCase
                         };
                     };',
                 'error_message' => 'ParadoxicalCondition',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'matchArmConditionIssueIsLocatedAtTheCondition' => [
+                'code' => '<?php
+                    function f(int $i): int {
+                        return match ($i) {
+                            1 => 1,
+                            2, "b" => 2,
+                            default => 3,
+                        };
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],

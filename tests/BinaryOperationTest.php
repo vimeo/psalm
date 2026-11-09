@@ -283,6 +283,81 @@ final class BinaryOperationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testPowOfDifferingNumericLiteralTypesInStrictMode(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    $a = 1.5 ** 10;
+                    $b = 2 ** 0.5;
+                    $c = 2 ** 3;',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPowOfDifferingNumericTypesInStrictMode(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    /**
+                     * @param int|float $number
+                     * @param numeric $numeric
+                     */
+                    function f(int $int, float $float, $number, $numeric): void {
+                        echo $int ** $float;
+                        echo $float ** $int;
+                        echo $number ** $int;
+                        echo $numeric ** $int;
+                        $int **= $float;
+                        $float **= $int;
+                    }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPowOfNonNumericTypesInStrictModeIsStillReported(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    function f(string $s): void {
+                        echo $s ** 2;
+                    }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testDifferingNumericTypesMultiplicationInStrictModeIsStillReported(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    function f(int $int, float $float): void {
+                        echo $int * $float;
+                    }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testConcatenationWithIntInStrictMode(): void
     {
         $config = Config::getInstance();
@@ -1847,6 +1922,14 @@ final class BinaryOperationTest extends TestCase
                 ],
                 'ignored_issues' => ['InvalidOperand'],
             ],
+            'firstClassCallableInSubstrComparison' => [
+                'code' => '<?php
+                    if (substr(...) === "x") {}
+                    if (substr(...) != "x") {}',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType', 'RedundantCondition'],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -1857,6 +1940,34 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'bcMathNumberPlusNonNumericString' => [
+                'code' => '<?php
+                    namespace BcMath {
+                        final class Number {
+                            public function __construct(string $number) {}
+                        }
+                    }
+
+                    namespace {
+                        $a = new \\BcMath\\Number("2");
+                        $b = $a + "abc";
+                    }',
+                'error_message' => 'InvalidOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - Cannot add BcMath\\Number to',
+            ],
+            'bcMathNumberPlusFloat' => [
+                'code' => '<?php
+                    namespace BcMath {
+                        final class Number {
+                            public function __construct(string $number) {}
+                        }
+                    }
+
+                    namespace {
+                        $a = new \\BcMath\\Number("2");
+                        $b = $a + 0.5;
+                    }',
+                'error_message' => 'InvalidOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - Cannot add BcMath\\Number to float',
+            ],
             'shiftLeftByANegativeNumber' => [
                 'code' => '<?php
                     $a = 1 << -1;
@@ -1885,6 +1996,16 @@ final class BinaryOperationTest extends TestCase
                 'code' => '<?php
                     $a = "b" + 5;',
                 'error_message' => 'InvalidOperand',
+            ],
+            'shiftLeftByANegativeLiteralThrows' => [
+                'code' => '<?php
+                    $a = 1 << -1;',
+                'error_message' => 'NoValue',
+            ],
+            'shiftRightByANegativeLiteralThrows' => [
+                'code' => '<?php
+                    $a = 8 >> -2;',
+                'error_message' => 'NoValue',
             ],
             'addArrayToNumber' => [
                 'code' => '<?php
@@ -2020,5 +2141,44 @@ final class BinaryOperationTest extends TestCase
                 'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
+    }
+
+    public function testBcMathNumberOperations(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace BcMath {
+                    final class Number {
+                        public function __construct(string $number) {}
+                    }
+                }
+
+                namespace {
+                    $a = new \BcMath\Number("2");
+                    $b = new \BcMath\Number("4");
+                    $c = $a + $b;
+                    $d = $a - 1;
+                    $e = 2 * $b;
+                    $f = $a / "3";
+                    $g = $a % $b;
+                    $h = $a ** 2;
+                }',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+
+        $actual_vars = [];
+        foreach (['$c', '$d', '$e', '$f', '$g', '$h'] as $var) {
+            $actual_vars[$var] = (string) $context->vars_in_scope[$var];
+        }
+
+        $this->assertSame(
+            ['$c' => 'BcMath\\Number', '$d' => 'BcMath\\Number', '$e' => 'BcMath\\Number',
+                '$f' => 'BcMath\\Number', '$g' => 'BcMath\\Number', '$h' => 'BcMath\\Number'],
+            $actual_vars,
+        );
     }
 }
