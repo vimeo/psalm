@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class CallableTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -20,6 +22,68 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'stringNamingAFunctionForClosureOrStringParam' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function my_url(?string $path = null): string {
+                        return (string) $path;
+                    }
+
+                    /** @param (Closure(int): mixed)|string $column */
+                    function where($column): string {
+                        return is_string($column) ? $column : '';
+                    }
+
+                    echo where('my_url');
+                    echo where('unknown_name');
+                    PHP,
+            ],
+            'stringNamingAFunctionForClosureOrArrayKeyOrScalarParam' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function my_url(?string $path = null): string {
+                        return (string) $path;
+                    }
+
+                    /** @param (Closure(int): mixed)|array-key $key */
+                    function byKey($key): void {}
+
+                    /** @param (Closure(int): mixed)|scalar $value */
+                    function byValue($value): void {}
+
+                    byKey('my_url');
+                    byValue('my_url');
+                    PHP,
+            ],
+            'stringNamingAGenericFunctionKeepsTheTemplatesOfACallableOrStringParam' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template A
+                     * @param A $a
+                     * @return A
+                     */
+                    function identity($a) {
+                        return $a;
+                    }
+
+                    /**
+                     * @template U
+                     * @param (callable(int): U)|string $f
+                     * @return list<U>
+                     */
+                    function apply($f): array {
+                        return [];
+                    }
+
+                    $byName = apply('identity');
+                    $byFirstClassCallable = apply(identity(...));
+                    PHP,
+                'assertions' => [
+                    '$byName===' => 'list<int>',
+                    '$byFirstClassCallable===' => 'list<int>',
+                ],
+            ],
             'arrayCallableOfAnIntersectionWithTheMethodInTheFirstPart' => [
                 'code' => '<?php
                     interface A
@@ -2809,6 +2873,34 @@ final class CallableTest extends TestCase
                         return ["Foo", "nope"];
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'stringNamingAFunctionForClosureParamOnly' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function my_url(?string $path = null): string {
+                        return (string) $path;
+                    }
+
+                    /** @param Closure(int): mixed $column */
+                    function where($column): void {}
+
+                    where('my_url');
+                    PHP,
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:7',
+            ],
+            'stringNamingAFunctionOfTheWrongSignatureForACallableOrLiteralsParam' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function bad(array $a): int {
+                        return count($a);
+                    }
+
+                    /** @param (callable(int): mixed)|'asc'|'desc' $f */
+                    function sortBy($f): void {}
+
+                    sortBy('bad');
+                    PHP,
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:8',
             ],
             'arrayCallableOfAnIntersectionWithoutTheMethod' => [
                 'code' => '<?php

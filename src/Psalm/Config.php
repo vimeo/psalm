@@ -197,7 +197,6 @@ final class Config
         'symfony/framework-bundle' => 'Psalm\SymfonyPsalmPlugin\Plugin',
         'laravel/framework' => 'Psalm\LaravelPlugin\Plugin',
         'orchestra/testbench' => 'Psalm\LaravelPlugin\Plugin',
-        'sabre/event' => 'Psalm\SabreEventPlugin\Plugin',
     ];
 
     /**
