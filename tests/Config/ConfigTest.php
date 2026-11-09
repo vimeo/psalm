@@ -13,6 +13,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\RequiresOperatingSystem;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\Attributes\Test;
+use PhpParser;
 use Psalm\CodeLocation\Raw;
 use Psalm\Config;
 use Psalm\Config\IssueHandler;
@@ -38,14 +39,20 @@ use Psalm\Tests\TestConfig;
 use Throwable;
 use UnexpectedValueException;
 
+use function array_flip;
+use function array_intersect_key;
+use function array_keys;
 use function array_map;
 use function array_pop;
+use function basename;
 use function dirname;
 use function error_get_last;
+use function file_get_contents;
 use function file_put_contents;
 use function function_exists;
 use function get_class;
 use function getcwd;
+use function glob;
 use function implode;
 use function in_array;
 use function is_array;
@@ -60,6 +67,7 @@ use function rmdir;
 use function rsort;
 use function set_error_handler;
 use function set_exception_handler;
+use function sort;
 use function sprintf;
 use function str_replace;
 use function substr;
@@ -567,6 +575,83 @@ final class ConfigTest extends TestCase
 
         $this->assertFalse($config->reportIssueInFile('MissingReturnType', (string) realpath(__FILE__)));
         $this->assertFalse($config->reportIssueInFile('UndefinedClass', (string) realpath(__FILE__)));
+    }
+
+    public function testIssueNamedTwiceInTheIssueHandlersKeepsBothElements(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+
+                    <issueHandlers>
+                        <MissingReturnType>
+                            <errorLevel type="suppress">
+                                <directory name="tests" />
+                            </errorLevel>
+                        </MissingReturnType>
+                        <UndefinedClass errorLevel="suppress" />
+                        <MissingReturnType>
+                            <errorLevel type="info">
+                                <directory name="src/Psalm/Internal/Analyzer" />
+                            </errorLevel>
+                        </MissingReturnType>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertSame(
+            Config::REPORT_SUPPRESS,
+            $config->getReportingLevelForFile('MissingReturnType', (string) realpath(__FILE__)),
+        );
+        $this->assertSame(
+            Config::REPORT_INFO,
+            $config->getReportingLevelForFile(
+                'MissingReturnType',
+                (string) realpath('src/Psalm/Internal/Analyzer/ProjectAnalyzer.php'),
+            ),
+        );
+        $this->assertSame(
+            Config::REPORT_ERROR,
+            $config->getReportingLevelForFile('MissingReturnType', (string) realpath('src/Psalm/Type.php')),
+        );
+        $this->assertFalse($config->reportIssueInFile('UndefinedClass', (string) realpath(__FILE__)));
+    }
+
+    public function testErrorLevelOfALaterElementOfTheSameIssueWins(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <issueHandlers>
+                        <MissingReturnType errorLevel="info" />
+                        <MissingReturnType errorLevel="suppress" />
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $this->assertSame(
+            Config::REPORT_SUPPRESS,
+            $this->project_analyzer->getConfig()->getReportingLevelForFile(
+                'MissingReturnType',
+                (string) realpath('src/Psalm/Type.php'),
+            ),
+        );
     }
 
     public function testIssueHandlerWithCustomErrorLevels(): void
@@ -1302,6 +1387,137 @@ final class ConfigTest extends TestCase
         );
 
         $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, string}>
+     */
+    public static function providerExtensionStubs(): iterable
+    {
+        yield 'curl' => [
+            'curl',
+            '<?php
+                $curl = curl_init();
+                curl_setopt_array($curl, [
+                    CURLOPT_URL => "https://example.com",
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                ]);',
+        ];
+
+        yield 'ldap' => [
+            'ldap',
+            '<?php
+                echo LDAP_OPT_PROTOCOL_VERSION, LDAP_OPT_REFERRALS, LDAP_DEREF_NEVER;',
+        ];
+
+        yield 'openssl' => [
+            'openssl',
+            '<?php
+                echo OPENSSL_ALGO_SHA256, OPENSSL_KEYTYPE_RSA, OPENSSL_VERSION_NUMBER;',
+        ];
+
+        yield 'intl' => [
+            'intl',
+            '<?php
+                echo INTL_MAX_LOCALE_LEN, IDNA_DEFAULT, NumberFormatter::DECIMAL;',
+        ];
+
+        yield 'memcached' => [
+            'memcached',
+            '<?php
+                $memcached = new Memcached();
+                echo $memcached->getResultCode() === Memcached::RES_SUCCESS ? "ok" : "failed";',
+        ];
+
+        yield 'zip' => [
+            'zip',
+            '<?php
+                echo ZipArchive::CREATE, ZipArchive::OVERWRITE;',
+        ];
+    }
+
+    #[DataProvider('providerExtensionStubs')]
+    public function testExtensionStubCanBeEnabled(string $extension, string $code): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <enableExtensions>
+                        <extension name="' . $extension . '"/>
+                    </enableExtensions>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+        $config = $this->project_analyzer->getConfig();
+        $config->visitStubFiles($this->project_analyzer->getCodebase());
+        $this->assertContains((string) realpath('stubs/extensions/' . $extension . '.phpstub'), $config->internal_stubs);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, $code);
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testEveryExtensionStubParses(): void
+    {
+        $paths = glob(dirname(__DIR__, 2) . '/stubs/extensions/*.phpstub');
+        $this->assertIsArray($paths);
+
+        $parser = (new PhpParser\ParserFactory())->createForNewestSupportedVersion();
+
+        foreach ($paths as $path) {
+            $code = file_get_contents($path);
+            $this->assertIsString($code);
+
+            try {
+                $parser->parse($code);
+            } catch (PhpParser\Error $e) {
+                $this->fail(basename($path) . ': ' . $e->getMessage());
+            }
+        }
+
+        $this->assertNotSame([], $paths);
+    }
+
+    public function testEveryExtensionStubHasAConfigurableExtension(): void
+    {
+        $paths = glob(dirname(__DIR__, 2) . '/stubs/extensions/*.phpstub');
+        $this->assertIsArray($paths);
+
+        $stubs = [];
+        foreach ($paths as $path) {
+            $stubs[] = basename($path, '.phpstub');
+        }
+
+        sort($stubs);
+
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+            </psalm>',
+        );
+
+        $configurable = array_keys(array_intersect_key($config->php_extensions, array_flip($stubs)));
+        sort($configurable);
+
+        $this->assertSame($stubs, $configurable);
+
+        $schema = file_get_contents(dirname(__DIR__, 2) . '/config.xsd');
+        foreach ($stubs as $stub) {
+            $this->assertStringContainsString('<xs:enumeration value="' . $stub . '"/>', (string) $schema, $stub);
+        }
     }
 
     public function testValidThrowInvalidCatch(): void
@@ -2113,11 +2329,6 @@ final class ConfigTest extends TestCase
                 '<psalm></psalm>',
                 ['Psalm\LaravelPlugin\Plugin'],
             ],
-            'requiredSabreEvent' => [
-                ['composer.json' => '{"require": {"sabre/event": "^5"}}'],
-                '<psalm></psalm>',
-                ['Psalm\SabreEventPlugin\Plugin'],
-            ],
             'requiredLibrariesOfSeveralPlugins' => [
                 [
                     'composer.json' => '{"require": {"laravel/framework": "^12", "psr/log": "^3"}, '
@@ -2133,9 +2344,12 @@ final class ConfigTest extends TestCase
                 ['Psalm\PhpUnitPlugin\Plugin'],
             ],
             'requiredLibraryInBothSections' => [
-                ['composer.json' => '{"require": {"sabre/event": "^5"}, "require-dev": {"sabre/event": "^5"}}'],
+                [
+                    'composer.json' => '{"require": {"mockery/mockery": "^1"}, '
+                        . '"require-dev": {"mockery/mockery": "^1"}}',
+                ],
                 '<psalm></psalm>',
-                ['Psalm\SabreEventPlugin\Plugin'],
+                ['Psalm\MockeryPlugin\Plugin'],
             ],
             'requiredLibraryOfAnEnabledPlugin' => [
                 ['composer.json' => '{"require-dev": {"phpunit/phpunit": "^12"}}'],
@@ -2237,6 +2451,39 @@ final class ConfigTest extends TestCase
         );
 
         $this->assertContains('datetime', $this->project_analyzer->getConfig()->getUniversalObjectCrates());
+    }
+
+    public function testSetsUniversalObjectCratesOfAnInterface(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <universalObjectCrates>
+                        <class name="Countable" />
+                    </universalObjectCrates>
+                </psalm>',
+            ),
+        );
+
+        $this->assertContains('countable', $this->project_analyzer->getConfig()->getUniversalObjectCrates());
+    }
+
+    public function testRejectsAnUnknownUniversalObjectCrate(): void
+    {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage('NoSuchUniversalObjectCrate is not a known class');
+
+        TestConfig::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <universalObjectCrates>
+                    <class name="NoSuchUniversalObjectCrate" />
+                </universalObjectCrates>
+            </psalm>',
+        );
     }
 
     public function testInferPropertyTypesFromConstructorIsRead(): void

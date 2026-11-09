@@ -474,22 +474,26 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 self::applyAssertionsToContext(
                     $stmt_name,
                     ExpressionIdentifier::getExtendedVarId($stmt->var, null, $statements_analyzer),
-                    $assertions,
+                    self::getAssertionsOnArgs($assertions, $method_storage, $args),
                     $args,
                     $template_result,
                     $context,
                     $statements_analyzer,
+                    $fq_class_name,
                 );
             }
 
-            if ($method_storage->if_true_assertions) {
+            $if_true_assertions = $assertionsResolver->resolveIfTrue($method_storage, $class_storage);
+
+            if ($if_true_assertions) {
                 $possibilities = array_map(
                     static fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
                         $template_result,
                         $lhs_var_id,
                         $codebase,
+                        $static_type,
                     ),
-                    $method_storage->if_true_assertions,
+                    self::getAssertionsOnArgs($if_true_assertions, $method_storage, $args),
                 );
                 if ($lhs_var_id === null) {
                     $possibilities = array_filter(
@@ -505,14 +509,17 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 );
             }
 
-            if ($method_storage->if_false_assertions) {
+            $if_false_assertions = $assertionsResolver->resolveIfFalse($method_storage, $class_storage);
+
+            if ($if_false_assertions) {
                 $possibilities = array_map(
                     static fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
                         $template_result,
                         $lhs_var_id,
                         $codebase,
+                        $static_type,
                     ),
-                    $method_storage->if_false_assertions,
+                    self::getAssertionsOnArgs($if_false_assertions, $method_storage, $args),
                 );
                 if ($lhs_var_id === null) {
                     $possibilities = array_filter(

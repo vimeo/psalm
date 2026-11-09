@@ -318,6 +318,29 @@ final class PluginTest extends TestCase
         );
     }
 
+    public function testFunctionCasingCheckerExpectsTheCasingOfAMethodThatOverridesATraitAlias(): void
+    {
+        self::assertSame(
+            ['Function is incorrectly cased, expecting bar (line 13)'],
+            $this->analyzeWithFunctionCasingChecker(
+                '<?php
+                trait T {
+                    public function foo(): void {}
+                }
+
+                class A {
+                    use T { foo as bAr; }
+
+                    public function bar(): void {}
+                }
+
+                function f(A $a): void {
+                    $a->BAR();
+                }',
+            ),
+        );
+    }
+
     public function testEchoAnalyzerPluginWithJustHtml(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -746,6 +769,48 @@ final class PluginTest extends TestCase
                 $foo2->id();
                 i($foo2);
                 echo $foo2->id();',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testMethodParamsProviderReceivesTheLocationOfTheCall(): void
+    {
+        require_once __DIR__ . '/Plugin/MethodPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                class Foo {
+                    /** @psalm-mutation-free */
+                    public function __call(string $method_name, array $args) {}
+                }
+
+                $foo = new Foo();
+                $foo->magicMethod3("hello");',
         );
 
         $this->analyzeFile($file_path, new Context());
