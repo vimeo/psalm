@@ -94,6 +94,66 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'consistentConstructorClassUsingATraitConstructorKeepsTheOneOfTheTrait' => [
+                'code' => '<?php
+                    trait HasName {
+                        public function __construct(public string $name, public int $age) {}
+                    }
+
+                    class Base {
+                        public function __construct(bool $flag) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        use HasName;
+                    }
+
+                    $child = new Child("name", 5);',
+            ],
+            'consistentConstructorClassKeepsTheConstructorOfItsParent' => [
+                'code' => '<?php
+                    class Base {
+                        public function __construct(string $name) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        public static function create(): static {
+                            return new static("hello");
+                        }
+                    }
+
+                    $direct = new Child("direct");
+                    $created = Child::create();
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Failure extends ErrorException {}
+
+                    $native = new ErrorException("message", 0, E_WARNING, "file.php", 1);
+                    $failure = new Failure("message", 0, E_WARNING, "file.php", 1);',
+            ],
+            'childOfAConsistentConstructorClassMatchesTheConstructorItInherits' => [
+                'code' => '<?php
+                    class Base {
+                        public function __construct(string $name) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {}
+
+                    class GrandChild extends Child {
+                        public function __construct(string $name, int $optional = 0) {}
+                    }',
+            ],
             'classesOfBothBranchesOfAnUnknownAnd' => [
                 'code' => '<?php
                     if (rand(0, 1) && rand(0, 1)) {
@@ -1361,6 +1421,40 @@ final class ClassTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:8',
+            ],
+            'consistentConstructorClassUsingATraitConstructorDoesNotTakeTheOneOfTheParent' => [
+                'code' => '<?php
+                    trait HasName {
+                        public function __construct(public string $name, public int $age) {}
+                    }
+
+                    class Base {
+                        public function __construct(bool $flag) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        use HasName;
+                    }
+
+                    $child = new Child(true);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'consistentConstructorClassWithoutAParentConstructorTakesNoArguments' => [
+                'code' => '<?php
+                    class Base {}
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        public static function create(): static {
+                            return new static("hello");
+                        }
+                    }',
+                'error_message' => 'TooManyArguments',
             ],
             'undefinedClassParamWithTemplateDocblock' => [
                 'code' => '<?php
