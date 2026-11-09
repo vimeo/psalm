@@ -577,6 +577,50 @@ final class IfConditionalAnalyzer
             return [$left_true + $right_true, $right_false];
         }
 
+        if ($expr instanceof PhpParser\Node\Expr\Ternary) {
+            [$cond_true, $cond_false] = self::getAssignmentStates(
+                $statements_analyzer,
+                $expr->cond,
+                $var_id,
+                $self,
+                $incoming,
+            );
+
+            // `$a ?: $b` is the value of `$a` where that is truthy
+            [$if_true, $if_false] = $expr->if !== null
+                ? self::getAssignmentStates($statements_analyzer, $expr->if, $var_id, $self, $cond_true)
+                : [$cond_true, []];
+            [$else_true, $else_false] = self::getAssignmentStates(
+                $statements_analyzer,
+                $expr->else,
+                $var_id,
+                $self,
+                $cond_false,
+            );
+
+            return [$if_true + $else_true, $if_false + $else_false];
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\BinaryOp\Coalesce) {
+            [$left_true, $left_false] = self::getAssignmentStates(
+                $statements_analyzer,
+                $expr->left,
+                $var_id,
+                $self,
+                $incoming,
+            );
+            // the right operand only runs where the left one is null
+            [$right_true, $right_false] = self::getAssignmentStates(
+                $statements_analyzer,
+                $expr->right,
+                $var_id,
+                $self,
+                $left_false + $left_true,
+            );
+
+            return [$left_true + $right_true, $left_false + $right_false];
+        }
+
         $full_states = [];
 
         foreach (self::getAssignmentsInCondition($expr) as $assign) {

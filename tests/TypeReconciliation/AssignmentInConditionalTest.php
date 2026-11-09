@@ -579,6 +579,25 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assignmentInABranchOfATernaryInAnIfMayBeSkipped' => [
+                'code' => '<?php
+                    function label(): string {
+                        return rand(0, 1) ? "a" : "";
+                    }
+
+                    function check(bool $flag, bool $other): int {
+                        $value = new stdClass();
+
+                        if ($flag ? ($value = label()) : $other) {
+                            return strlen($value);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
             'assignmentInTheRightOperandOfAndFollowedByAnOrMayBeNullInTheBody' => [
                 'code' => '<?php
                     final class Tagged {
