@@ -65,6 +65,12 @@ use function strtolower;
  */
 final class ArithmeticOpAnalyzer
 {
+    /** @var array<lowercase-string, string> classes whose instances overload the arithmetic operators */
+    private const OPERATOR_OVERLOADING_CLASSES = [
+        'decimal\\decimal' => 'Decimal\\Decimal',
+        'bcmath\\number' => 'BcMath\\Number',
+    ];
+
     public static function analyze(
         ?StatementsSource $statements_source,
         NodeDataProvider $nodes,
@@ -714,31 +720,37 @@ final class ArithmeticOpAnalyzer
             || $parent instanceof PhpParser\Node\Expr\BinaryOp\Mod
             || $parent instanceof PhpParser\Node\Expr\BinaryOp\Pow
         ) {
-            $non_decimal_type = null;
-            if ($left_type_part instanceof TNamedObject
-                && strtolower($left_type_part->value) === "decimal\\decimal"
-            ) {
-                $non_decimal_type = $right_type_part;
-            } elseif ($right_type_part instanceof TNamedObject
-                && strtolower($right_type_part->value) === "decimal\\decimal"
-            ) {
-                $non_decimal_type = $left_type_part;
+            $overloading_operand = null;
+            foreach (self::OPERATOR_OVERLOADING_CLASSES as $class_lc => $class_name) {
+                if ($left_type_part instanceof TNamedObject && strtolower($left_type_part->value) === $class_lc) {
+                    $overloading_operand = [$class_name, $right_type_part];
+                    break;
+                }
+
+                if ($right_type_part instanceof TNamedObject && strtolower($right_type_part->value) === $class_lc) {
+                    $overloading_operand = [$class_name, $left_type_part];
+                    break;
+                }
             }
-            if ($non_decimal_type !== null) {
-                if ($non_decimal_type instanceof TInt
-                    || $non_decimal_type instanceof TNumericString
-                    || $non_decimal_type instanceof TNamedObject
-                        && strtolower($non_decimal_type->value) === "decimal\\decimal"
+
+            if ($overloading_operand !== null) {
+                [$operator_class, $other_operand_type] = $overloading_operand;
+
+                if ($other_operand_type instanceof TInt
+                    || $other_operand_type instanceof TNumericString
+                    || $other_operand_type instanceof TLiteralString && is_numeric($other_operand_type->value)
+                    || $other_operand_type instanceof TNamedObject
+                        && strtolower($other_operand_type->value) === strtolower($operator_class)
                 ) {
                     $result_type = Type::combineUnionTypes(
-                        new Union([new TNamedObject("Decimal\\Decimal")]),
+                        new Union([new TNamedObject($operator_class)]),
                         $result_type,
                     );
                 } else {
                     if ($statements_source) {
                         IssueBuffer::maybeAdd(
                             new InvalidOperand(
-                                "Cannot add Decimal\\Decimal to {$non_decimal_type->getId()}",
+                                "Cannot add {$operator_class} to {$other_operand_type->getId()}",
                                 new CodeLocation($statements_source, $parent),
                             ),
                             $statements_source->getSuppressedIssues(),
@@ -1030,6 +1042,14 @@ final class ArithmeticOpAnalyzer
                 return Type::getInt();
             }
 
+            // a shift by a negative number always throws
+            if ($int2 < 0
+                && ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+                    || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight)
+            ) {
+                return Type::getNever();
+            }
+
             $result = match (true) {
                 $operation instanceof PhpParser\Node\Expr\BinaryOp\Mod => $int1 % $int2,
                 $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr => $int1 | $int2,
@@ -1045,6 +1065,11 @@ final class ArithmeticOpAnalyzer
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
             $result = $operand1 * $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
+            // zero to a negative power is INF, with a deprecation since PHP 8.4
+            if ($operand1 == 0 && $operand2 < 0) {
+                return Type::getFloat();
+            }
+
             $result = $operand1 ** $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Div) {
             if ($operand2 === 0 || $operand2 === 0.0) {
@@ -1445,7 +1470,7 @@ final class ArithmeticOpAnalyzer
         TIntRange $right_type_part,
     ): void {
         //If Pow first operand is negative, the result could be positive or negative, else it will be positive
-        //If Pow second operand is negative, the result will be float, if it's 0, it will be 1/-1, else positive
+        //If Pow second operand is negative, the result will be float, if it's 0, it will be 1, else positive
         if ($left_type_part->isPositive()) {
             if ($right_type_part->isPositive()) {
                 $new_result_type = Type::getIntRange(1, null);
@@ -1471,7 +1496,7 @@ final class ArithmeticOpAnalyzer
             } elseif ($right_type_part->isNegative()) {
                 $new_result_type = Type::getFloat();
             } elseif ($right_type_part->min_bound === 0 && $right_type_part->max_bound === 0) {
-                $new_result_type = Type::getInt(true, -1);
+                $new_result_type = Type::getInt(true, 1);
             } else {
                 //$right_type_part may be a mix of positive, negative and 0
                 $new_result_type = new Union([new TInt(), new TFloat()]);
