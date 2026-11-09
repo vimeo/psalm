@@ -294,6 +294,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $context,
             new CodeLocation($source, $stmt_name),
             $statements_analyzer,
+            false,
             $overload,
         ) === false) {
             return Type::getMixed();
