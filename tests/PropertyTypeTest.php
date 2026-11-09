@@ -712,6 +712,69 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'staticPropertyAssignedThroughParentIsForgottenInTheNamedClass' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $ready = false;
+                    }
+
+                    final class Child extends Base {
+                        public static function prepare(): void {
+                            parent::$ready = true;
+                        }
+
+                        public static function run(): void {
+                            Base::$ready = false;
+                            self::prepare();
+
+                            if (Base::$ready) {
+                                echo "ready";
+                            }
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedThroughTheNamedClassIsForgottenAsSelf' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $ready = false;
+                    }
+
+                    final class Child extends Base {
+                        public static function prepare(): void {
+                            Base::$ready = true;
+                        }
+
+                        public static function run(): void {
+                            self::$ready = false;
+                            self::prepare();
+
+                            if (self::$ready) {
+                                echo "ready";
+                            }
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedThroughAChildClassIsForgottenInTheParentClass' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $ready = false;
+                    }
+
+                    final class Child extends Base {
+                        public static function prepare(): void {
+                            Child::$ready = true;
+                        }
+
+                        public static function run(): void {
+                            Base::$ready = false;
+                            self::prepare();
+
+                            if (Base::$ready) {
+                                echo "ready";
+                            }
+                        }
+                    }',
+            ],
             'staticArrayPropertyChangedByAMethodIsForgottenAfterTheCall' => [
                 'code' => '<?php
                     final class Queue {

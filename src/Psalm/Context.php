@@ -26,8 +26,10 @@ use RuntimeException;
 use function array_keys;
 use function array_search;
 use function array_shift;
+use function array_values;
 use function assert;
 use function count;
+use function explode;
 use function in_array;
 use function is_int;
 use function json_encode;
@@ -834,17 +836,30 @@ final class Context
      */
     public function resetMutatedStaticProperties(array $mutations, array $self_class_names, Codebase $codebase): void
     {
-        $mutated_ids = [];
+        // the classes a mutated property can belong to, by its name: what `self`, `static` and `parent` stand for in
+        // the callee, or the named class
+        $mutated_classes = [];
 
         foreach ($mutations as $mutation => $_) {
-            if ($mutation[0] !== ':') {
-                $mutated_ids[$mutation] = true;
+            [$mutation_class, $property_name] = explode('::$', $mutation, 2);
 
-                continue;
+            if ($mutation_class === '') {
+                $class_names = $self_class_names;
+            } elseif ($mutation_class === 'parent') {
+                $class_names = [];
+
+                foreach ($self_class_names as $self_class_name) {
+                    if ($codebase->classlike_storage_provider->has($self_class_name)) {
+                        $parent_classes = $codebase->classlike_storage_provider->get($self_class_name)->parent_classes;
+                        $class_names = [...$class_names, ...array_values($parent_classes)];
+                    }
+                }
+            } else {
+                $class_names = [$mutation_class];
             }
 
-            foreach ($self_class_names as $class_name) {
-                $mutated_ids[strtolower($class_name) . $mutation] = true;
+            foreach ($class_names as $class_name) {
+                $mutated_classes[$property_name][strtolower($class_name)] = true;
             }
         }
 
@@ -858,8 +873,11 @@ final class Context
             $root_id = substr($var_id, 0, strcspn($var_id, '[-'));
             $class_length = (int) strpos($root_id, '::');
             $class_name = substr($root_id, 0, $class_length);
+            $property_name = substr($root_id, $class_length + 3);
 
-            if (!isset($mutated_ids[strtolower($class_name) . substr($root_id, $class_length)])) {
+            if (!isset($mutated_classes[$property_name])
+                || !self::isMutatedStaticPropertyClass($codebase, $class_name, $mutated_classes[$property_name])
+            ) {
                 continue;
             }
 
@@ -882,6 +900,39 @@ final class Context
                 $this->vars_in_scope[$var_id] = $declared_type;
             }
         }
+    }
+
+    /**
+     * @param array<string, true> $mutated_class_names lowercased
+     */
+    private static function isMutatedStaticPropertyClass(
+        Codebase $codebase,
+        string $class_name,
+        array $mutated_class_names,
+    ): bool {
+        $class_name_lc = strtolower($class_name);
+
+        // `self::$p`, `static::$p` and `parent::$p` of the caller can be the property of any of them
+        if (in_array($class_name_lc, ['self', 'static', 'parent'], true)
+            || isset($mutated_class_names[$class_name_lc])
+        ) {
+            return true;
+        }
+
+        if (!$codebase->classOrInterfaceExists($class_name)) {
+            return false;
+        }
+
+        foreach ($mutated_class_names as $mutated_class_name => $_) {
+            if ($codebase->classOrInterfaceExists($mutated_class_name)
+                && ($codebase->classExtends($class_name, $mutated_class_name)
+                    || $codebase->classExtends($mutated_class_name, $class_name))
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
