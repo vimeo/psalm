@@ -457,6 +457,11 @@ final class ProjectAnalyzer
 
         $this->full_run = true;
 
+        // only `--diff`, unused code detection and reference lookups read the code use graph edges
+        $this->codebase->code_use_graph->record_edges = $is_diff
+            || $this->codebase->find_unused_code !== null
+            || $this->codebase->collect_locations;
+
         $reference_cache = $this->file_reference_provider->loadReferenceCache(true);
 
         $this->codebase->diff_methods = $is_diff;
@@ -940,10 +945,10 @@ final class ProjectAnalyzer
         $diff_files = [];
 
         foreach ($this->project_files as $file_path) {
-            $hash = $this->parser_cache_provider->getHash($file_path);
-            if ($hash !== null &&
-                $hash !== $this->file_provider->getContents($file_path)
-            ) {
+            if ($this->parser_cache_provider->hasChanged(
+                $file_path,
+                $this->file_provider->getContents($file_path),
+            )) {
                 $diff_files[] = $file_path;
             }
         }
