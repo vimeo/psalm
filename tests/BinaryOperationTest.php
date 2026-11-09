@@ -1847,6 +1847,14 @@ final class BinaryOperationTest extends TestCase
                 ],
                 'ignored_issues' => ['InvalidOperand'],
             ],
+            'firstClassCallableInSubstrComparison' => [
+                'code' => '<?php
+                    if (substr(...) === "x") {}
+                    if (substr(...) != "x") {}',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType', 'RedundantCondition'],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
