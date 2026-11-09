@@ -136,6 +136,13 @@ final class StatementsAnalyzer extends SourceAnalyzer
     private array $unused_var_locations = [];
 
     /**
+     * The issues suppressed where a variable is assigned, as it's only reported once the whole function is analysed
+     *
+     * @var array<string, array<array-key, string>>
+     */
+    private array $unused_var_suppressions = [];
+
+    /**
      * @var array<string, true>
      */
     public array $byref_uses = [];
@@ -513,6 +520,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                     && $stmt->expr instanceof PhpParser\Node\Expr\Assign)
                 && !$stmt instanceof PhpParser\Node\Stmt\Foreach_
                 && !$stmt instanceof PhpParser\Node\Stmt\Return_
+                && !$stmt instanceof PhpParser\Node\Stmt\Property
             ) {
                 $file_path = $statements_analyzer->getRootFilePath();
 
@@ -535,6 +543,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                             $statements_analyzer->getAliases(),
                             $template_type_map,
                             $file_storage->type_aliases,
+                            $stmt instanceof PhpParser\Node\Stmt\ClassConst,
                         );
                 } catch (IncorrectDocblockException $e) {
                     IssueBuffer::maybeAdd(
@@ -1055,11 +1064,13 @@ final class StatementsAnalyzer extends SourceAnalyzer
                     );
                 }
 
+                $suppressed_issues = $this->unused_var_suppressions[$original_location->getHash()];
+
                 if ($codebase->alter_code
                     && $issue instanceof UnusedVariable
                     && !$unused_var_remover->checkIfVarRemoved($var_id, $original_location)
                     && isset($project_analyzer->getIssuesToFix()['UnusedVariable'])
-                    && !IssueBuffer::isSuppressed($issue, $this->getSuppressedIssues())
+                    && !IssueBuffer::isSuppressed($issue, $suppressed_issues)
                 ) {
                     $unused_var_remover->findUnusedAssignment(
                         $this->getCodebase(),
@@ -1072,7 +1083,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
                 IssueBuffer::maybeAdd(
                     $issue,
-                    $this->getSuppressedIssues(),
+                    $suppressed_issues,
                     $issue instanceof UnusedVariable,
                 );
             }
@@ -1137,6 +1148,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
     public function registerVariableAssignment(string $var_id, CodeLocation $location): void
     {
         $this->unused_var_locations[$location->getHash()] = [$var_id, $location];
+        $this->unused_var_suppressions[$location->getHash()] = $this->getSuppressedIssues();
     }
 
     /**
