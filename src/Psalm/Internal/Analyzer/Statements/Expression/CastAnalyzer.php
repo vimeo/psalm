@@ -68,6 +68,7 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_pop;
 use function array_values;
+use function count;
 use function range;
 use function strtolower;
 
@@ -767,6 +768,8 @@ final class CastAnalyzer
         $invalid_casts = [];
         $valid_strings = [];
         $castable_types = [];
+        // what an invalid cast of an array gives, which only matters for the result type
+        $array_strings = [];
 
         // a bare class-template type variable stands for the shape inferred at
         // its construction site; that shape is what is being cast
@@ -890,6 +893,10 @@ final class CastAnalyzer
             }
 
             $invalid_casts[] = $atomic_type->getId();
+
+            if ($atomic_type instanceof TArray || $atomic_type instanceof TKeyedArray) {
+                $array_strings[] = Type::getAtomicStringFromLiteral('Array');
+            }
         }
 
         if ($invalid_casts && $report_issues) {
@@ -914,7 +921,12 @@ final class CastAnalyzer
             // todo: emit error here
         }
 
-        $valid_types = [...$valid_strings, ...$castable_types];
+        $valid_types = [...$valid_strings, ...$castable_types, ...$array_strings];
+
+        // what can't be cast, other than arrays, may still be any string (e.g. an object with a __toString)
+        if (count($array_strings) < count($invalid_casts)) {
+            $valid_types[] = new TString();
+        }
 
         if (!$valid_types) {
             $str_type = Type::getString();
