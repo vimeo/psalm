@@ -22,6 +22,76 @@ final class MatchTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'matchAssignsVarInEveryArm' => [
+                'code' => '<?php
+                    $case = rand(0, 2);
+
+                    match ($case) {
+                        0 => $o = 1,
+                        1 => $o = 2,
+                        default => $o = 3,
+                    };
+
+                    $r = $o;',
+                'assertions' => [
+                    '$r===' => '1|2|3',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'matchAssignsVarWithThrowingDefault' => [
+                'code' => '<?php
+                    $case = rand(0, 2);
+
+                    match ($case) {
+                        0 => $o = 1,
+                        1 => $o = 2,
+                        default => throw new RuntimeException("x"),
+                    };
+
+                    $r = $o;',
+                'assertions' => [
+                    '$r===' => '1|2',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nestedTernaryWithAThrowingBranchAssignsVarInTheParent' => [
+                'code' => '<?php
+                    function pick(bool $a, bool $b): int {
+                        $a ? ($value = 1) : ($b ? ($value = 2) : throw new RuntimeException("none"));
+
+                        return $value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nestedTernaryAssignsVarInEveryBranch' => [
+                'code' => '<?php
+                    $c = (bool) rand(0, 1);
+                    $d = (bool) rand(0, 1);
+
+                    $c ? $o = 1 : ($d ? $o = 2 : $o = 3);
+
+                    $r = $o;',
+                'assertions' => [
+                    '$r===' => '1|2|3',
+                ],
+            ],
+            'ternaryAssignsVarWithThrowingBranch' => [
+                'code' => '<?php
+                    $c = (bool) rand(0, 1);
+
+                    $c ? $o = 1 : throw new RuntimeException("x");
+
+                    $r = $o;',
+                'assertions' => [
+                    '$r===' => '1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'subjectIsOneOfTheArmValuesAfterAMatchWithoutDefault' => [
                 'code' => '<?php
                     function f(string $type): int {
@@ -276,6 +346,31 @@ final class MatchTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nestedTernaryAssignsVarInOnlySomeBranches' => [
+                'code' => '<?php
+                    $c = (bool) rand(0, 1);
+                    $d = (bool) rand(0, 1);
+
+                    $c ? $o = 1 : ($d ? $o = 2 : 3);
+
+                    echo $o;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'matchAssignsVarInOnlySomeArms' => [
+                'code' => '<?php
+                    $case = rand(0, 2);
+
+                    match ($case) {
+                        0 => $o = 1,
+                        1 => 2,
+                        default => $o = 3,
+                    };
+
+                    echo $o;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'getClassArgWrongClass' => [
                 'code' => '<?php
                     class A {}
