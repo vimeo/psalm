@@ -61,7 +61,7 @@ final class MethodStorage extends FunctionLikeStorage
     public ?array $this_property_mutations = null;
 
     /**
-     * The static properties the body assigns directly: `::$name` for `self::$name` and `static::$name`,
+     * The static properties the body assigns directly: `self::$name`, `static::$name` and `parent::$name` as written,
      * `lowercased class::$name` for a named class
      *
      * @var ?array<string, bool>

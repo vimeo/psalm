@@ -200,7 +200,8 @@ final class ExistingAtomicStaticCallAnalyzer
         ) {
             $context->resetMutatedStaticProperties(
                 $static_property_mutations,
-                [$method_id->fq_class_name, $declaring_method_id->fq_class_name],
+                $method_id->fq_class_name,
+                $declaring_method_id->fq_class_name,
                 $codebase,
             );
         }

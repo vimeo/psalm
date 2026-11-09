@@ -837,12 +837,22 @@ final class Context
      * Resets the static properties a callee assigns directly to their declared types
      *
      * @param array<string, bool> $mutations MethodStorage::$static_property_mutations
-     * @param list<string> $self_class_names the classes the callee's `self` and `static` may stand for
+     * @param string $called_class the class the method is called on: what `static` stands for
+     * @param string $declaring_class the class that declares the method: what `self` stands for
      */
-    public function resetMutatedStaticProperties(array $mutations, array $self_class_names, Codebase $codebase): void
-    {
-        // the classes a mutated property can belong to, by its name: what `self`, `static` and `parent` stand for in
-        // the callee, or the named class
+    public function resetMutatedStaticProperties(
+        array $mutations,
+        string $called_class,
+        string $declaring_class,
+        Codebase $codebase,
+    ): void {
+        // a method of a trait runs as a method of the class that uses it
+        $self_class = $codebase->classlike_storage_provider->has($declaring_class)
+            && $codebase->classlike_storage_provider->get($declaring_class)->is_trait
+            ? $called_class
+            : $declaring_class;
+
+        // the classes a mutated property can belong to, by its name
         $mutated_classes = [];
 
         foreach ($mutations as $mutation => $_) {
@@ -855,17 +865,14 @@ final class Context
             $mutation_class = substr($mutation, 0, $separator);
             $property_name = substr($mutation, $separator + 3);
 
-            if ($mutation_class === '') {
-                $class_names = $self_class_names;
+            if ($mutation_class === 'self') {
+                $class_names = [$self_class];
+            } elseif ($mutation_class === 'static') {
+                $class_names = [$called_class];
             } elseif ($mutation_class === 'parent') {
-                $class_names = [];
-
-                foreach ($self_class_names as $self_class_name) {
-                    if ($codebase->classlike_storage_provider->has($self_class_name)) {
-                        $parent_classes = $codebase->classlike_storage_provider->get($self_class_name)->parent_classes;
-                        $class_names = [...$class_names, ...array_values($parent_classes)];
-                    }
-                }
+                $class_names = $codebase->classlike_storage_provider->has($self_class)
+                    ? array_values($codebase->classlike_storage_provider->get($self_class)->parent_classes)
+                    : [];
             } else {
                 $class_names = [$mutation_class];
             }

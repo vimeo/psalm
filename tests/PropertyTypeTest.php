@@ -818,6 +818,56 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'selfInAnInheritedMethodIsTheClassThatDeclaresItNotTheRedeclaringChild' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $flag = false;
+
+                        public static function prepare(): void {
+                            self::$flag = true;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public static bool $flag = false;
+
+                        public static function run(): void {
+                            Child::$flag = false;
+                            Base::$flag = false;
+                            Child::prepare();
+
+                            /** @psalm-check-type-exact $child = false */
+                            $child = Child::$flag;
+                            /** @psalm-check-type-exact $base = bool */
+                            $base = Base::$flag;
+                        }
+                    }',
+            ],
+            'staticInAnInheritedMethodIsTheClassItIsCalledOn' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $flag = false;
+
+                        public static function prepare(): void {
+                            static::$flag = true;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public static bool $flag = false;
+
+                        public static function run(): void {
+                            Child::$flag = false;
+                            Base::$flag = false;
+                            Child::prepare();
+
+                            /** @psalm-check-type-exact $child = bool */
+                            $child = Child::$flag;
+                            /** @psalm-check-type-exact $base = false */
+                            $base = Base::$flag;
+                        }
+                    }',
+            ],
             'staticArrayPropertyChangedByAMethodIsForgottenAfterTheCall' => [
                 'code' => '<?php
                     final class Queue {

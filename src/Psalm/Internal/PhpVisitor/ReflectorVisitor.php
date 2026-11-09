@@ -464,8 +464,8 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     $class_name = $mutated_var->class->getFirst();
 
                     $mutated_class = $mutated_var->class->isUnqualified()
-                        && in_array(strtolower($class_name), ['self', 'static'], true)
-                        ? ''
+                        && in_array(strtolower($class_name), ['self', 'static', 'parent'], true)
+                        ? strtolower($class_name)
                         : strtolower((string) ($mutated_var->class->getAttribute('resolvedName') ?? $class_name));
 
                     $functionlike_storage->static_property_mutations[
