@@ -124,7 +124,7 @@ final class Psalm
         'r:',
     ];
 
-    private const LONG_OPTIONS = [
+    public const LONG_OPTIONS = [
         'clear-cache',
         'consolidate-cache',
         'clear-global-cache',

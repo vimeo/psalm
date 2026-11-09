@@ -22,6 +22,78 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodOfTheClassIsNotMadePrivateByTheVisibilityOfANestedTrait' => [
+                'code' => '<?php
+                    trait Inner {
+                        public function f(): void {}
+                    }
+
+                    trait Outer {
+                        use Inner {
+                            f as private;
+                        }
+                    }
+
+                    class Consumer {
+                        use Outer;
+
+                        public function f(): void {}
+                    }
+
+                    (new Consumer)->f();',
+            ],
+            'methodExcludedByInsteadofIsNotMadePrivateByTheVisibilityOfANestedTrait' => [
+                'code' => '<?php
+                    trait Inner {
+                        public function f(): void {}
+                    }
+
+                    trait Other {
+                        public function f(): void {}
+                    }
+
+                    trait Outer {
+                        use Inner {
+                            f as private;
+                        }
+                    }
+
+                    class Consumer {
+                        use Outer, Other {
+                            Other::f insteadof Outer;
+                        }
+                    }
+
+                    (new Consumer)->f();',
+            ],
+            'visibilityChangedInANestedTraitReachesTheClass' => [
+                'code' => '<?php
+                    trait Inner {
+                        protected function exposed(): void {}
+                        protected function overridden(): void {}
+                    }
+
+                    trait Outer {
+                        use Inner {
+                            exposed as public;
+                            overridden as public;
+                        }
+                    }
+
+                    class Plain {
+                        use Outer;
+                    }
+
+                    class Narrowing {
+                        use Outer {
+                            overridden as protected;
+                        }
+                    }
+
+                    (new Plain)->exposed();
+                    (new Plain)->overridden();
+                    (new Narrowing)->exposed();',
+            ],
             'insteadofPicksTheTraitListedSecond' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1383,6 +1455,46 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'visibilityNarrowedInANestedTraitReachesTheClass' => [
+                'code' => '<?php
+                    trait Inner {
+                        public function hidden(): void {}
+                    }
+
+                    trait Outer {
+                        use Inner {
+                            hidden as private;
+                        }
+                    }
+
+                    class Plain {
+                        use Outer;
+                    }
+
+                    (new Plain)->hidden();',
+                'error_message' => 'InaccessibleMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:34 - Cannot access private method Plain::hidden',
+            ],
+            'classChangesTheVisibilityOfANestedTraitMethodAgain' => [
+                'code' => '<?php
+                    trait Inner {
+                        protected function f(): void {}
+                    }
+
+                    trait Outer {
+                        use Inner {
+                            f as public;
+                        }
+                    }
+
+                    class Narrowing {
+                        use Outer {
+                            f as protected;
+                        }
+                    }
+
+                    (new Narrowing)->f();',
+                'error_message' => 'InaccessibleMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:38 - Cannot access protected method Narrowing::f',
+            ],
             'docblockPropertyTypeNotContainedBySignatureTypeSelf' => [
                 'code' => '<?php
                     class Child {}

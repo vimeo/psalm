@@ -287,6 +287,7 @@ abstract class CallAnalyzer
         Context $context,
         CodeLocation $code_location,
         StatementsAnalyzer $statements_analyzer,
+        bool $static_is_called_class = false,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -372,6 +373,7 @@ abstract class CallAnalyzer
             $template_result,
             $code_location,
             $context,
+            $static_is_called_class,
         ) === false) {
             return false;
         }
@@ -749,6 +751,7 @@ abstract class CallAnalyzer
         TemplateResult $template_result,
         Context $context,
         StatementsAnalyzer $statements_analyzer,
+        ?string $static_class = null,
     ): void {
         $type_assertions = [];
 
@@ -867,7 +870,7 @@ abstract class CallAnalyzer
                                 $codebase,
                             ),
                             null,
-                            null,
+                            $static_class !== null ? new TNamedObject($static_class) : null,
                             null,
                         );
 
