@@ -79,6 +79,36 @@ final class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'valueOfAConstantOfAnEnum' => [
+                'code' => '<?php
+                    enum Level: int {
+                        case Low = 1;
+                        case High = 2;
+
+                        const NAMES = [1 => "low", 2 => "high"];
+
+                        /** @return value-of<self::NAMES> */
+                        public function getName(): string {
+                            return match ($this) {
+                                self::Low => "low",
+                                self::High => "high",
+                            };
+                        }
+                    }
+
+                    /** @param value-of<Level::NAMES> $name */
+                    function f(string $name): void {
+                        $result = $name;
+                    }
+
+                    /** @param value-of<Level> $value */
+                    function g(int $value): void {
+                        $backing = $value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'enumPropertiesOfUnionsOfSeveralEnums' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1028,6 +1058,22 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'Trace - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:29 - $suit: enum(Suit::Hearts)|enum(Suit::Spades',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'valueOfAConstantOfAnEnumRejectsAnotherValue' => [
+                'code' => '<?php
+                    enum Level: int {
+                        case Low = 1;
+
+                        const NAMES = [1 => "low"];
+
+                        /** @return value-of<self::NAMES> */
+                        public function getName(): string {
+                            return "high";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
