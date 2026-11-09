@@ -1590,6 +1590,55 @@ final class AssignmentAnalyzer
     }
 
     /**
+     * @return int the taints removed so far, extended by those of the AddRemoveTaints event
+     */
+    private static function taintUnassignedDestructuredItem(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        string $list_var_id,
+        PhpParser\Node\Expr $var,
+        int $removed_taints,
+    ): int {
+        $var_location = new CodeLocation($statements_analyzer->getSource(), $var);
+
+        if (!$context->vars_in_scope[$list_var_id]->parent_nodes) {
+            $assignment_node = DataFlowNode::getForAssignment(
+                $list_var_id,
+                $var_location,
+            );
+
+            $context->vars_in_scope[$list_var_id] =
+                $context->vars_in_scope[$list_var_id]->setParentNodes([
+                    $assignment_node->id => $assignment_node,
+                ])
+            ;
+        } else {
+            if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
+                $context->vars_in_scope[$list_var_id] =
+                    $context->vars_in_scope[$list_var_id]->setParentNodes([]);
+            } else {
+                $event = new AddRemoveTaintsEvent($var, $context, $statements_analyzer, $codebase);
+
+                $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+                $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+                self::taintAssignment(
+                    $context->vars_in_scope[$list_var_id],
+                    $graph,
+                    $list_var_id,
+                    $var_location,
+                    $removed_taints,
+                    $added_taints,
+                    $codebase->getInputTaints(),
+                );
+            }
+        }
+
+        return $removed_taints;
+    }
+
+    /**
      * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $assign_var
      * @param list<VarDocblockComment> $var_comments
      */
@@ -1938,40 +1987,14 @@ final class AssignmentAnalyzer
                     $context->vars_in_scope[$list_var_id] = $new_assign_type ?: Type::getMixed();
 
                     if ($statements_analyzer->data_flow_graph) {
-                        $var_location = new CodeLocation($statements_analyzer->getSource(), $var);
-
-                        if (!$context->vars_in_scope[$list_var_id]->parent_nodes) {
-                            $assignment_node = DataFlowNode::getForAssignment(
-                                $list_var_id,
-                                $var_location,
-                            );
-
-                            $context->vars_in_scope[$list_var_id] =
-                                $context->vars_in_scope[$list_var_id]->setParentNodes([
-                                    $assignment_node->id => $assignment_node,
-                                ])
-                            ;
-                        } else {
-                            if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
-                                $context->vars_in_scope[$list_var_id] =
-                                    $context->vars_in_scope[$list_var_id]->setParentNodes([]);
-                            } else {
-                                $event = new AddRemoveTaintsEvent($var, $context, $statements_analyzer, $codebase);
-
-                                $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-                                $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
-
-                                self::taintAssignment(
-                                    $context->vars_in_scope[$list_var_id],
-                                    $graph,
-                                    $list_var_id,
-                                    $var_location,
-                                    $removed_taints,
-                                    $added_taints,
-                                    $codebase->getInputTaints(),
-                                );
-                            }
-                        }
+                        $removed_taints = self::taintUnassignedDestructuredItem(
+                            $statements_analyzer,
+                            $codebase,
+                            $context,
+                            $list_var_id,
+                            $var,
+                            $removed_taints,
+                        );
                     }
                 }
             }
