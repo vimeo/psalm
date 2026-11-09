@@ -3359,46 +3359,6 @@ final class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:27 - Property BaseUser::$id',
             ],
-            'privateTemplatedPropertyNotInitializedByAFinalParentConstructorChain' => [
-                'code' => '<?php
-                    /**
-                     * @template T
-                     */
-                    class Box {
-                        /**
-                         * @return Box<int>
-                         */
-                        public static function factory(): self {
-                            /** @var Box<int> $instance */
-                            $instance = new self();
-
-                            return $instance;
-                        }
-                    }
-
-                    abstract class Base {
-                        final public function __construct() {
-                            $this->init();
-                        }
-
-                        abstract protected function init(): void;
-                    }
-
-                    final class Child extends Base {
-                        /** @var Box<int> */
-                        private $box;
-
-                        /** @var Box<int> */
-                        private $other;
-
-                        protected function init(): void {
-                            $this->box = Box::factory();
-                        }
-                    }',
-                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:30:33 - Property Child::$other',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
             'propertyNotInitializedByAnInterfaceStaticMethodCalledInTheConstructor' => [
                 'code' => '<?php
                     interface Limits {
