@@ -186,6 +186,14 @@ final class ExistingAtomicStaticCallAnalyzer
             ) ?? count($overloaded_method_storage->overloads) - 1];
         }
 
+        // a static call naming a class does not forward the late static binding: `static` is that class
+        $static_is_called_class = $stmt->class instanceof PhpParser\Node\Name
+            && !in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
+            && $codebase->methods->getStorage(
+                $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id,
+                true,
+            )->is_static;
+
         if (CallAnalyzer::checkMethodArgs(
             $method_id,
             $args,
@@ -193,6 +201,7 @@ final class ExistingAtomicStaticCallAnalyzer
             $context,
             new CodeLocation($statements_analyzer->getSource(), $stmt),
             $statements_analyzer,
+            $static_is_called_class,
             $overload,
         ) === false) {
             return;
