@@ -1120,6 +1120,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
         // what the methods of the traits do with the property counts too
         while ($trait_name = array_shift($traits_to_read)) {
+            // a trait may be used through a class_alias() name
+            $trait_name = strtolower($codebase->classlikes->getUnAliasedName($trait_name));
+
             if (isset($read_traits[$trait_name])) {
                 continue;
             }

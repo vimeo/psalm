@@ -4059,6 +4059,39 @@ final class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyNotSetInConstructor',
                 'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
+            'propertyReadUnconditionallyInATraitUsedByAnAliasIsReportedAtAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {
+                        public function cancel(): void {}
+                    }
+
+                    trait CancelsTheCanary {
+                        public function cancel(): void {
+                            $this->canary->cancel();
+                        }
+                    }
+                    class_alias(CancelsTheCanary::class, "CancelsTheCanaryAlias");
+
+                    final class Response {
+                        use CancelsTheCanaryAlias;
+
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function isCancellable(): bool {
+                            return isset($this->canary);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+                'error_levels' => ['RedundantPropertyInitializationCheck'],
+            ],
             'propertyReadAsAnArgumentOfACoalesceOperandIsReportedAtAReturnOfConstructor' => [
                 'code' => '<?php
                     final class Canary {
