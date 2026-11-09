@@ -87,6 +87,39 @@ final class ForeachTest extends TestCase
                         /** @psalm-check-type-exact $numbers = list{\'y\'|1, \'y\'|2} */;
                     }',
             ],
+            'foreachOverNullableOrFalsableMayNotRun' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<int>|null $nullable */
+                    $nullable = null;
+                    $nullableEmpty = true;
+                    foreach ($nullable as $_) {
+                        $nullableEmpty = false;
+                    }
+
+                    /** @var array<int>|false $falsable */
+                    $falsable = false;
+                    $falsableEmpty = true;
+                    foreach ($falsable as $_) {
+                        $falsableEmpty = false;
+                    }
+
+                    /** @var non-empty-array<int> $nonEmpty */
+                    $nonEmpty = [1];
+                    $nonEmptyEmpty = true;
+                    foreach ($nonEmpty as $_) {
+                        $nonEmptyEmpty = false;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$nullableEmpty===' => 'bool',
+                    '$falsableEmpty===' => 'bool',
+                    '$nonEmptyEmpty===' => 'false',
+                    '$nullable===' => 'array<array-key, int>|null',
+                    '$falsable===' => 'array<array-key, int>|false',
+                ],
+                'ignored_issues' => ['PossiblyNullIterator', 'PossiblyFalseIterator'],
+            ],
             'foreachOverAClassStringMapReturnedByAMethodWithATemplateOfTheSameName' => [
                 'code' => <<<'PHP'
                     <?php
