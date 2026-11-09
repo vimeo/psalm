@@ -2747,6 +2747,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $actual_params[] = $given_params[$template_name];
         }
 
+        if ($expected_params === [] || $actual_params === []) {
+            return true;
+        }
+
         // as the arguments of a type are compared: by the variance the required class declares for each
         return GenericTypeComparator::isContainedBy(
             $codebase,
