@@ -2360,6 +2360,34 @@ final class ArrayAssignmentTest extends TestCase
                     ];
                 ',
             ],
+            'assignToNestedKeyOfListWithForeachKey' => [
+                'code' => '<?php
+                    /**
+                     * @param list<array{name: string}> $list
+                     * @return list<array{name: string}>
+                     */
+                    function setNames(array $list): array {
+                        foreach ($list as $index => $value) {
+                            if ($value["name"] === "bar") {
+                                $list[$index]["name"] = "baz";
+                            }
+                        }
+
+                        return $list;
+                    }
+
+                    /**
+                     * @param list<list<int>> $list
+                     * @return list<list<int>>
+                     */
+                    function appendToItems(array $list): array {
+                        foreach ($list as $index => $value) {
+                            $list[$index][] = 1;
+                        }
+
+                        return $list;
+                    }',
+            ],
             'assignWithStaticClassOffsetKeepsTheKeyTypeOfTheProperty' => [
                 'code' => '<?php
                     /**
@@ -2773,6 +2801,19 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assignToNestedKeyOfListWithUnrelatedKeyIsNotAList' => [
+                'code' => '<?php
+                    /**
+                     * @param list<array{name: string}> $list
+                     * @return list<array{name: string}>
+                     */
+                    function setName(array $list, int $key): array {
+                        $list[$key]["name"] = "baz";
+
+                        return $list;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
             'arrayKeyOfAnIgnoredNullableReturnDoesNotHideAnotherNullableKey' => [
                 'code' => '<?php
                     class TestModel
