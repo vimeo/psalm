@@ -38,8 +38,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
-use function array_merge;
-use function array_values;
+use function array_filter;
 use function count;
 use function strtolower;
 
@@ -220,15 +219,7 @@ final class NegatedAssertionReconciler extends Reconciler
             && ($assertion->getAtomicType() instanceof TArray
                 || $assertion->getAtomicType() instanceof TKeyedArray)
         ) {
-            //if both types are arrays, try to combine them
-            $combined_type = TypeCombiner::combine(
-                array_merge(array_values($existing_var_type->getAtomicTypes()), [$assertion->getAtomicType()]),
-                $codebase,
-            );
-            $existing_var_type->removeType('array');
-            if ($combined_type->isSingle()) {
-                $existing_var_type->addType($combined_type->getSingleAtomic());
-            }
+            // an array that isn't of the asserted array type is of the existing one
         } elseif (!$is_equality) {
             $assertion_type = $assertion->getAtomicType();
 
@@ -247,29 +238,26 @@ final class NegatedAssertionReconciler extends Reconciler
             if ($assertion_type) {
                 if ($assertion_type instanceof TNamedObject) {
                     foreach ($existing_var_type->getAtomicTypes() as $part_name => $existing_var_type_part) {
-                        if ($existing_var_type_part instanceof TTemplateParam
-                            && !$existing_var_type_part->as->isMixed()
-                        ) {
-                            $bound_failed_reconciliation = 0;
-
-                            $narrowed_as = self::reconcile(
-                                $statements_analyzer,
-                                $assertion,
-                                $existing_var_type_part->as,
-                                $existing_var_type_part->as->getId(),
-                                null,
-                                false,
-                                null,
-                                $suppressed_issues,
-                                $bound_failed_reconciliation,
-                                $inside_loop,
+                        if ($existing_var_type_part instanceof TTemplateParam) {
+                            // the objects the assertion excludes can't be what the template is bound to either
+                            $remaining_as_types = array_filter(
+                                $existing_var_type_part->as->getAtomicTypes(),
+                                static fn(Atomic $as_part): bool => !($as_part instanceof TNamedObject
+                                    && AtomicTypeComparator::isContainedBy(
+                                        $codebase,
+                                        $as_part,
+                                        $assertion_type,
+                                    )),
                             );
 
-                            if (!$bound_failed_reconciliation
-                                && $narrowed_as->getId() !== $existing_var_type_part->as->getId()
-                            ) {
+                            if (count($remaining_as_types) !== count($existing_var_type_part->as->getAtomicTypes())) {
                                 $existing_var_type->removeType($part_name);
-                                $existing_var_type->addType($existing_var_type_part->replaceAs($narrowed_as));
+
+                                if ($remaining_as_types) {
+                                    $existing_var_type->addType(
+                                        $existing_var_type_part->replaceAs(new Union($remaining_as_types)),
+                                    );
+                                }
 
                                 continue;
                             }
