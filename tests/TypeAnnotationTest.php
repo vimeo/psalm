@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class TypeAnnotationTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -42,6 +44,59 @@ final class TypeAnnotationTest extends TestCase
                     $q = (new B())->get();',
                 'assertions' => [
                     '$q===' => 'array{x: int, y: int}',
+                ],
+            ],
+            'typeAliasOfAClassWithATemplateNamedLikeAShapeKey' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-type Shape = array{T: int, U?: string}
+                     */
+                    final class Box {
+                        /**
+                         * @var Shape
+                         */
+                        public array $shape = ["T" => 1];
+                    }',
+            ],
+            'typeAliasOfAClassWithATemplateThatDoesNotUseIt' => [
+                'code' => '<?php
+                    namespace Some\\Ns;
+
+                    /**
+                     * @template T of object
+                     * @psalm-type Items=list<int>
+                     */
+                    final class Box {
+                        /**
+                         * @var Items
+                         */
+                        public array $items = [];
+
+                        /**
+                         * @return T|null
+                         */
+                        public function first(): ?object {
+                            return null;
+                        }
+                    }',
+            ],
+            'typeAliasOfAClassWithATemplateNamedLikeTheOneOfAClassStringMap' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-type Maps = list<class-string-map<T as Exception, T>>
+                     */
+                    final class Registry {
+                        /**
+                         * @var Maps
+                         */
+                        public array $maps = [];
+                    }
+
+                    $maps = (new Registry())->maps;',
+                'assertions' => [
+                    '$maps===' => 'list<class-string-map<T as Exception, T:class-string-map as Exception>>',
                 ],
             ],
             'atInArrayKey' => [
@@ -1171,6 +1226,74 @@ final class TypeAnnotationTest extends TestCase
                      */
                     class B {}',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'typeAliasUsingTheTemplateOfItsClassInANamespace' => [
+                'code' => '<?php
+                    namespace Some\\Ns;
+
+                    interface DataInner {}
+
+                    /**
+                     * @template T of object
+                     *
+                     * @psalm-type DataType=array<class-string<T>, DataInner>
+                     */
+                    final class Data {
+                        /**
+                         * @var DataType
+                         */
+                        private array $inner = [];
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:11:21 - Type alias DataType cannot use the template T of its class',
+            ],
+            'typeAliasUsingTheTemplateOfItsClassAsTheValueOfAShapeKeyOfTheSameName' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-type Shape = array{T: T}
+                     */
+                    final class Box {
+                        /**
+                         * @var Shape
+                         */
+                        public array $shape = [];
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:6:21 - Type alias Shape cannot use the template T of its class',
+            ],
+            'typeAliasUsingTheTemplateOfItsClassAfterAClassStringMapBindingTheSameName' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-type Shape = array{map: class-string-map<T as Exception, T>, other: T}
+                     */
+                    final class Box {
+                        /**
+                         * @var Shape
+                         */
+                        public array $shape;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:6:21 - Type alias Shape cannot use the template T of its class',
+            ],
+            'typeAliasUsingTheTemplateOfItsClassWithoutANamespace' => [
+                'code' => '<?php
+                    interface DataInner {}
+
+                    /**
+                     * @template T of object
+                     *
+                     * @psalm-type DataType=array<class-string<T>, DataInner>
+                     */
+                    final class Data {
+                        /**
+                         * @var DataType
+                         */
+                        private array $inner = [];
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:9:21 - Type alias DataType cannot use the template T of its class',
             ],
             'invalidTypeAlias' => [
                 'code' => '<?php
