@@ -83,6 +83,24 @@ final class AssignmentInConditionalTest extends TestCase
                         return "";
                     }',
             ],
+            'assignmentInBothOperandsOfOrInAnIfIsEitherOfThem' => [
+                'code' => '<?php
+                    function getPath(): ?string {
+                        return rand(0, 1) ? "a" : null;
+                    }
+
+                    function foo(?string $s): string {
+                        if (($path = $s) || ($path = getPath())) {
+                            /** @psalm-check-type-exact $path = non-falsy-string */
+                            return $path;
+                        }
+
+                        return "b";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
             'assignmentInTheRightOperandOfAndInAnIfWithAFloatPreviously' => [
                 'code' => '<?php
                     class Check {

@@ -32,6 +32,8 @@ use function array_key_first;
 use function array_merge;
 use function array_values;
 use function count;
+use function explode;
+use function spl_object_id;
 
 /**
  * @internal
@@ -211,6 +213,8 @@ final class IfConditionalAnalyzer
         }
 
         // an assignment the condition may skip (the right of an `&&`) leaves the earlier type possible
+        $assigns_by_var_id = [];
+
         foreach (self::getAssignmentsInCondition($cond) as $assign) {
             $assigned_var_id = ExpressionIdentifier::getExtendedVarId(
                 $assign->var,
@@ -219,48 +223,50 @@ final class IfConditionalAnalyzer
             );
             $assigned_type = $statements_analyzer->node_data->getType($assign);
 
-            if ($assigned_var_id !== null
-                && $assigned_type !== null
-                && isset($post_if_context->vars_in_scope[$assigned_var_id])
+            if ($assigned_var_id !== null && $assigned_type !== null) {
+                $assigns_by_var_id[$assigned_var_id][spl_object_id($assign)] = $assigned_type;
+            }
+        }
+
+        foreach ($assigns_by_var_id as $assigned_var_id => $assigned_types) {
+            if (!isset($post_if_context->vars_in_scope[$assigned_var_id])) {
+                continue;
+            }
+
+            [$true_states, $false_states] = self::getAssignmentStates(
+                $statements_analyzer,
+                $cond,
+                $assigned_var_id,
+                $outer_context->self,
+                ['earlier' => true],
+            );
+
+            if (isset($true_states['earlier']) || isset($false_states['earlier'])) {
+                $post_if_context->vars_in_scope[$assigned_var_id] = Type::combineUnionTypeArray(
+                    [$post_if_context->vars_in_scope[$assigned_var_id], ...array_values($assigned_types)],
+                    $statements_analyzer->getCodebase(),
+                );
+                $outer_context->vars_in_scope[$assigned_var_id] = $post_if_context->vars_in_scope[$assigned_var_id];
+            }
+
+            // the body only runs on the paths that make the condition true
+            $body_type = self::getTypeWhereConditionIsTrue(
+                $statements_analyzer,
+                $true_states,
+                $pre_condition_vars_in_scope[$assigned_var_id] ?? null,
+                $assigned_types,
+            );
+
+            // only to narrow what the analysis of the condition already left for the body
+            if ($body_type !== null
+                && isset($if_context->vars_in_scope[$assigned_var_id])
+                && UnionTypeComparator::isContainedBy(
+                    $statements_analyzer->getCodebase(),
+                    $body_type,
+                    $if_context->vars_in_scope[$assigned_var_id],
+                )
             ) {
-                [$true_states, $false_states] = self::getAssignmentStates(
-                    $statements_analyzer,
-                    $cond,
-                    $assigned_var_id,
-                    $outer_context->self,
-                    ['earlier' => true],
-                );
-
-                if (isset($true_states['earlier']) || isset($false_states['earlier'])) {
-                    $post_if_context->vars_in_scope[$assigned_var_id] = Type::combineUnionTypes(
-                        $post_if_context->vars_in_scope[$assigned_var_id],
-                        $assigned_type,
-                    );
-                    $outer_context->vars_in_scope[$assigned_var_id]
-                        = $post_if_context->vars_in_scope[$assigned_var_id];
-                }
-
-                // the body only runs on the paths that make the condition true
-                $body_type = self::getTypeWhereConditionIsTrue(
-                    $statements_analyzer,
-                    $cond,
-                    $assigned_var_id,
-                    $outer_context->self,
-                    $pre_condition_vars_in_scope[$assigned_var_id] ?? null,
-                    $assigned_type,
-                );
-
-                // only to narrow what the analysis of the condition already left for the body
-                if ($body_type !== null
-                    && isset($if_context->vars_in_scope[$assigned_var_id])
-                    && UnionTypeComparator::isContainedBy(
-                        $statements_analyzer->getCodebase(),
-                        $body_type,
-                        $if_context->vars_in_scope[$assigned_var_id],
-                    )
-                ) {
-                    $if_context->vars_in_scope[$assigned_var_id] = $body_type;
-                }
+                $if_context->vars_in_scope[$assigned_var_id] = $body_type;
             }
         }
 
@@ -442,39 +448,48 @@ final class IfConditionalAnalyzer
      * the assignment is skipped, the assigned type where it runs and nothing after it tests the variable, its
      * truthy part where the assignment is itself what the condition needs.
      *
+     * @param array<string, true> $true_states see getAssignmentStates()
+     * @param array<int, Union> $assigned_types the type of each assignment, by the id of its node
      * @return ?Union null when the paths can't be told
      */
     private static function getTypeWhereConditionIsTrue(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr $cond,
-        string $var_id,
-        ?string $self,
+        array $true_states,
         ?Union $earlier_type,
-        Union $assigned_type,
+        array $assigned_types,
     ): ?Union {
-        [$true_states] = self::getAssignmentStates(
-            $statements_analyzer,
-            $cond,
-            $var_id,
-            $self,
-            ['earlier' => true],
-        );
-
         $types = [];
 
-        if (isset($true_states['earlier'])) {
-            if ($earlier_type === null) {
+        foreach ($true_states as $state => $_) {
+            if ($state === 'earlier') {
+                if ($earlier_type === null) {
+                    return null;
+                }
+
+                $types[] = $earlier_type;
+
+                continue;
+            }
+
+            $state_parts = explode('#', $state);
+
+            if (count($state_parts) !== 2) {
                 return null;
             }
 
-            $types[] = $earlier_type;
-        }
+            [$kind, $assign_id] = $state_parts;
+            $assigned_type = $assigned_types[(int) $assign_id] ?? null;
 
-        if (isset($true_states['full'])) {
-            $types[] = $assigned_type;
-        }
+            if ($assigned_type === null) {
+                return null;
+            }
 
-        if (isset($true_states['truthy'])) {
+            if ($kind === 'full') {
+                $types[] = $assigned_type;
+
+                continue;
+            }
+
             $truthy_builder = $assigned_type->getBuilder();
             $truthy_builder->removeType('null');
             $truthy_builder->removeType('false');
@@ -505,7 +520,7 @@ final class IfConditionalAnalyzer
         if ($expr instanceof PhpParser\Node\Expr\Assign
             && ExpressionIdentifier::getExtendedVarId($expr->var, $self, $statements_analyzer) === $var_id
         ) {
-            return [['truthy' => true], ['full' => true]];
+            return [['truthy#' . spl_object_id($expr) => true], ['full#' . spl_object_id($expr) => true]];
         }
 
         if ($expr instanceof PhpParser\Node\Expr\BooleanNot) {
@@ -562,10 +577,16 @@ final class IfConditionalAnalyzer
             return [$left_true + $right_true, $right_false];
         }
 
+        $full_states = [];
+
         foreach (self::getAssignmentsInCondition($expr) as $assign) {
             if (ExpressionIdentifier::getExtendedVarId($assign->var, $self, $statements_analyzer) === $var_id) {
-                return [['full' => true], ['full' => true]];
+                $full_states['full#' . spl_object_id($assign)] = true;
             }
+        }
+
+        if ($full_states !== []) {
+            return [$full_states, $full_states];
         }
 
         return [$incoming, $incoming];
