@@ -2646,6 +2646,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         return $this->is_static;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
+    public function isArrowFunction(): bool
+    {
+        return $this->function instanceof ArrowFunction;
+    }
+
     #[Override]
     public function getCodebase(): Codebase
     {

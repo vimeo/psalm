@@ -233,6 +233,17 @@ final class MatchTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'firstClassCallableInMatchSubject' => [
+                'code' => <<<'PHP'
+                    <?php
+                    echo match (count(...)) { default => 0 };
+                    echo match (gettype(...)) { default => 0 };
+                    echo match (get_class(...)) { default => 0 };
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
