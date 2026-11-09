@@ -57,6 +57,27 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'sameTypeFromTwoConstructionsOfAGenericClassIsOneType' => [
+                'code' => '<?php
+                    class obj {}
+
+                    /** @template TValue */
+                    class PagerOnQuery {
+                        /** @param ArrayObject<array-key, TValue> $source */
+                        public function __construct(protected ArrayObject $source) {
+                        }
+                    }
+
+                    if (random_int(0, 1)) {
+                        $items = new ArrayObject([0 => new obj]);
+                    } else {
+                        $items = new ArrayObject(["test" => new obj]);
+                    }
+
+                    $pager = new PagerOnQuery($items);',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedVariable'],
+            ],
             'closureOfAMethodOfAGenericObject' => [
                 'code' => '<?php
                     /**
@@ -5917,6 +5938,27 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'differentTypesFromTwoConstructionsOfAGenericClassAreNotOneType' => [
+                'code' => '<?php
+                    class one {}
+                    class two {}
+
+                    /** @template TValue */
+                    class PagerOnQuery {
+                        /** @param ArrayObject<array-key, TValue> $source */
+                        public function __construct(protected ArrayObject $source) {
+                        }
+                    }
+
+                    if (random_int(0, 1)) {
+                        $items = new ArrayObject([0 => new one]);
+                    } else {
+                        $items = new ArrayObject(["test" => new two]);
+                    }
+
+                    $pager = new PagerOnQuery($items);',
+                'error_message' => 'InvalidArgument',
+            ],
             'closureOfAMethodOfAnObjectWithTheTemplatesOfTheCaller' => [
                 'code' => '<?php
                     /**

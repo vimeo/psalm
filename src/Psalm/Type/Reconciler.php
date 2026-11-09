@@ -813,6 +813,17 @@ class Reconciler
                 if (!isset($existing_keys[$new_base_key])) {
                     $new_base_type = null;
 
+                    // a variable holding one literal is that literal as a key
+                    $lookup_key = $array_key;
+
+                    if ($array_key[0] === '$' && isset($existing_keys[$array_key])) {
+                        if ($existing_keys[$array_key]->isSingleStringLiteral()) {
+                            $lookup_key = '\'' . $existing_keys[$array_key]->getSingleStringLiteral()->value . '\'';
+                        } elseif ($existing_keys[$array_key]->isSingleIntLiteral()) {
+                            $lookup_key = (string) $existing_keys[$array_key]->getSingleIntLiteral()->value;
+                        }
+                    }
+
                     $atomic_types = $existing_keys[$base_key]->getAtomicTypes();
 
                     while ($atomic_types) {
@@ -880,8 +891,10 @@ class Reconciler
                             return null;
                         } elseif (!$existing_key_type_part instanceof TKeyedArray) {
                             return Type::getMixed();
-                        } elseif ($array_key[0] === '$'
-                            || ($array_key[0] !== '\'' && ArrayAnalyzer::getLiteralArrayKeyInt($array_key) === false)) {
+                        } elseif ($lookup_key[0] === '$'
+                            || ($lookup_key[0] !== '\''
+                                && ArrayAnalyzer::getLiteralArrayKeyInt($lookup_key) === false)
+                        ) {
                             if ($has_empty) {
                                 return null;
                             }
@@ -890,9 +903,9 @@ class Reconciler
                         } else {
                             $array_properties = $existing_key_type_part->properties;
 
-                            $key_parts_key = $array_key;
-                            if ($array_key[0] === '\'' || $array_key[0] === '"') {
-                                $key_parts_key = substr($array_key, 1, -1);
+                            $key_parts_key = $lookup_key;
+                            if ($lookup_key[0] === '\'' || $lookup_key[0] === '"') {
+                                $key_parts_key = substr($lookup_key, 1, -1);
                             }
 
                             if (!isset($array_properties[$key_parts_key])) {
