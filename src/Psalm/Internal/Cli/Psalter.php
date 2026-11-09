@@ -84,7 +84,7 @@ final class Psalter
 {
     private const SHORT_OPTIONS =  ['f:', 'm', 'h', 'r:', 'c:'];
 
-    private const LONG_OPTIONS = [
+    public const LONG_OPTIONS = [
         'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'file:', 'root:',
         'plugin:', 'issues:', 'list-supported-issues', 'php-version:', 'dry-run', 'safe-types',
         'find-unused-code', 'threads:', 'scan-threads:', 'codeowner:',

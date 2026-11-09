@@ -45,7 +45,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_any;
-use function end;
+use function array_key_last;
 use function in_array;
 use function str_starts_with;
 use function strtolower;
@@ -205,10 +205,29 @@ final class MethodComparator
 
         foreach ($guide_method_storage->params as $i => $guide_param) {
             if (!isset($implementer_method_storage->params[$i])) {
-                // a variadic parameter takes every argument after the ones before it
-                if ($implementer_method_storage->params !== []
-                    && end($implementer_method_storage->params)->is_variadic
-                ) {
+                // a variadic parameter takes every argument after the ones before it, so it has to accept
+                // each of the parameters of the guide that it covers
+                $variadic_index = array_key_last($implementer_method_storage->params);
+
+                if ($variadic_index !== null && $implementer_method_storage->params[$variadic_index]->is_variadic) {
+                    self::compareMethodParams(
+                        $codebase,
+                        $stmt,
+                        $implementer_classlike_storage,
+                        $guide_classlike_storage,
+                        $implementer_called_class_name,
+                        $guide_method_storage,
+                        $implementer_method_storage,
+                        $guide_param,
+                        $implementer_method_storage->params[$variadic_index],
+                        $variadic_index,
+                        $cased_guide_method_id,
+                        $cased_implementer_method_id,
+                        $prevent_method_signature_mismatch,
+                        $code_location,
+                        $suppressed_issues,
+                    );
+
                     continue;
                 }
 
@@ -653,7 +672,9 @@ final class MethodComparator
                 }
             }
 
+            // a variadic parameter takes the arguments that follow it by position, whatever their names
             if ($guide_param->name !== $implementer_param->name
+                && !$implementer_param->is_variadic
                 && $guide_method_storage->allow_named_arg_calls
                 && $implementer_classlike_storage->user_defined
                 && $implementer_param->location

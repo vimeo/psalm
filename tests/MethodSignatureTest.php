@@ -1469,6 +1469,39 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variadicParameterOfAnotherTypeThanTheOmittedParameter' => [
+                'code' => '<?php
+                    interface I {
+                        public function f(int $x, string $y): void;
+                    }
+
+                    final class C implements I {
+                        public function f(int ...$x): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'variadicParameterIsNotPassedByReferenceLikeTheOmittedParameter' => [
+                'code' => '<?php
+                    interface I {
+                        public function f(int $x, int &$y): void;
+                    }
+
+                    final class C implements I {
+                        public function f(int ...$x): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'variadicParameterPassedByReferenceWhereTheOmittedParameterIsNot' => [
+                'code' => '<?php
+                    interface I {
+                        public function f(int $x, int $y): void;
+                    }
+
+                    final class C implements I {
+                        public function f(int &...$x): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
             'fewerArgumentsThanTheOptionalOnesOfAnInterface' => [
                 'code' => '<?php
                     interface I {
