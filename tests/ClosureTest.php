@@ -58,7 +58,7 @@ final class ClosureTest extends TestCase
                     };
 
                     if (false) {}',
-                ['UndefinedVariable', 'TypeDoesNotContainType', 'TypeDoesNotContainType'],
+                ['TypeDoesNotContainType', 'TypeDoesNotContainType'],
             ],
             'possiblyUndefinedVariable' => [
                 '<?php
@@ -136,7 +136,7 @@ final class ClosureTest extends TestCase
                     $doNotContaminate = 123;
 
                     $test = 123;
-                    
+
                     $testBefore = $test;
 
                     $testInsideBefore = null;
@@ -162,14 +162,14 @@ final class ClosureTest extends TestCase
             'byRefUseSelf' => [
                 'code' => '<?php
                     $external = random_int(0, 1);
-                    
+
                     $v = function (bool $callMe) use (&$v, $external): void {
                         echo($external.PHP_EOL);
                         if ($callMe) {
                             $v(false);
                         }
                     };
-                    
+
                     $v(true);',
             ],
             'byRefUseVarChangeType' => [
