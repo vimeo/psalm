@@ -242,6 +242,7 @@ class Reconciler
                 $has_empty,
                 $inside_loop,
                 $has_object_array_access,
+                $statements_analyzer,
             );
 
             if ($result_type && $result_type->isUnionEmpty()) {
@@ -748,6 +749,7 @@ class Reconciler
         bool $has_empty,
         bool $inside_loop,
         bool &$has_object_array_access,
+        ?StatementsAnalyzer $statements_analyzer = null,
     ): ?Union {
         $key_parts = self::breakUpPathIntoParts($key);
 
@@ -767,8 +769,23 @@ class Reconciler
             $property_name = array_shift($key_parts);
             $base_key .= '::$' . $property_name;
 
+            // the class of `self::$p` and `static::$p` is the one the code is in, that of `parent::$p` its parent
+            $relative_class = match (strtolower($fq_class_name)) {
+                'self', 'static' => $statements_analyzer?->getFQCLN(),
+                'parent' => $statements_analyzer?->getParentFQCLN(),
+                default => null,
+            };
+            $fq_class_name = $relative_class ?? $fq_class_name;
+
             if (!isset($existing_keys[$base_key])) {
-                $static_property_type = self::getStaticPropertyType($codebase, $fq_class_name, $property_name);
+                // the trait that is analysed for each class using it: what it declares for the property, with
+                // `static` still standing for the class that uses it
+                $static_property_type = $relative_class !== null
+                    && $codebase->classlike_storage_provider->has($fq_class_name)
+                    && $codebase->classlike_storage_provider->get($fq_class_name)->is_trait
+                    ? $codebase->classlike_storage_provider->get($fq_class_name)->properties[$property_name]->type
+                        ?? null
+                    : self::getStaticPropertyType($codebase, $fq_class_name, $property_name);
 
                 if (!$static_property_type) {
                     return null;
