@@ -966,6 +966,7 @@ final class ArgumentsAnalyzer
         TemplateResult $template_result,
         CodeLocation $code_location,
         Context $context,
+        bool $static_is_called_class = false,
     ): ?bool {
         $in_call_map = $method_id ? InternalCallMapHandler::inCallMap((string) $method_id) : false;
 
@@ -1115,6 +1116,7 @@ final class ArgumentsAnalyzer
                             $template_result,
                             $specialize_taint,
                             $in_call_map,
+                            $static_is_called_class,
                         );
                     }
                 }
@@ -1316,6 +1318,7 @@ final class ArgumentsAnalyzer
                     $template_result,
                     $specialize_taint,
                     $in_call_map,
+                    $static_is_called_class,
                 ) === false) {
                     return false;
                 }
