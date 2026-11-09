@@ -438,7 +438,7 @@ final class CastTest extends TestCase
                 function f(Wrapper $wrapper): void {
                     $wrapped = "[{$wrapper}]";
                     $twice = "{$wrapper}{$wrapper}";
-                    /** @psalm-check-type-exact $wrapped = non-empty-string */
+                    /** @psalm-check-type-exact $wrapped = non-falsy-string */
                     /** @psalm-check-type-exact $twice = string */
                 }
             ',
@@ -451,7 +451,7 @@ final class CastTest extends TestCase
                  */
                 function f(string $class): void {
                     $prefixed = "x$class";
-                    /** @psalm-check-type-exact $prefixed = non-empty-string */
+                    /** @psalm-check-type-exact $prefixed = non-falsy-string */
                 }
             ',
         ];
@@ -464,7 +464,7 @@ final class CastTest extends TestCase
                     $prefixed = "x$value";
                     /** @psalm-check-type-exact $cast = string */
                     /** @psalm-check-type-exact $interpolated = string */
-                    /** @psalm-check-type-exact $prefixed = non-empty-string */
+                    /** @psalm-check-type-exact $prefixed = non-falsy-string */
                 }
             ',
             'assertions' => [],
@@ -486,7 +486,7 @@ final class CastTest extends TestCase
                     /** @psalm-check-type-exact $anything_cast = string */
                     /** @psalm-check-type-exact $interpolated = string */
                     /** @psalm-check-type-exact $anything_interpolated = string */
-                    /** @psalm-check-type-exact $prefixed = non-empty-string */
+                    /** @psalm-check-type-exact $prefixed = non-falsy-string */
                 }
             ',
             'assertions' => [],
