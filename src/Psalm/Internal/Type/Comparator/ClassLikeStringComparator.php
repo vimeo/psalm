@@ -47,7 +47,12 @@ final class ClassLikeStringComparator
             && $container_type_part->as === 'object'
             && !$container_type_part->as_type
         ) {
-            return true;
+            // a class name is not the name of an interface or of an enum
+            return !$input_type_part instanceof TLiteralClassString
+                || ((!$container_type_part->is_interface
+                        || $codebase->classlikes->interfaceExists($input_type_part->value))
+                    && (!$container_type_part->is_enum
+                        || $codebase->classlikes->enumExists($input_type_part->value)));
         }
 
         if ($input_type_part instanceof TClassString
