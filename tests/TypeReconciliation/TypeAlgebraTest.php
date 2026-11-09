@@ -21,6 +21,132 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'boolVarIdenticalToFalseNarrowsItsConjuncts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class U {
+                        public int $id = 1;
+                    }
+
+                    function f(?U $v, ?U $e): int {
+                        $c = $v !== null && $e === $v;
+                        if ($c === false) {
+                            return 0;
+                        }
+                        return $v->id;
+                    }
+                    PHP,
+            ],
+            'boolVarIdenticalToTrueNarrowsItsConjuncts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class U {
+                        public int $id = 1;
+                    }
+
+                    function f(?U $v, ?U $e): int {
+                        $c = $v !== null && $e === $v;
+                        if ($c === true) {
+                            return $v->id;
+                        }
+                        return 0;
+                    }
+                    PHP,
+            ],
+            'boolVarNotIdenticalToFalseNarrowsItsConjuncts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class U {
+                        public int $id = 1;
+                    }
+
+                    function f(?U $v, ?U $e): int {
+                        $c = $v !== null && $e === $v;
+                        if ($c !== false) {
+                            return $v->id;
+                        }
+                        return 0;
+                    }
+                    PHP,
+            ],
+            'boolVarNotIdenticalToTrueNarrowsItsConjuncts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class U {
+                        public int $id = 1;
+                    }
+
+                    function f(?U $v, ?U $e): int {
+                        $c = $v !== null && $e === $v;
+                        if ($c !== true) {
+                            return 0;
+                        }
+                        return $v->id;
+                    }
+                    PHP,
+            ],
+            'identityWithFalseOfNonBoolVarStillNarrows' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int|false $x): int {
+                        if ($x === false) {
+                            return 0;
+                        }
+                        return $x;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'booleanVariableNarrowingSurvivesOrWithItAsLeftOperand' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function maybeBag(): ?Bag {
+                        return null;
+                    }
+
+                    function assigned(?Bag $b, bool $c): int {
+                        $has = $b !== null;
+                        $z = $has || $c;
+                        if ($has) {
+                            echo $b->get();
+                        }
+
+                        return $z ? 1 : 0;
+                    }
+
+                    function inCondition(?Bag $b, bool $c): void {
+                        $has = $b !== null;
+                        if ($has || $c) {
+                            echo 1;
+                        }
+
+                        if ($has) {
+                            echo $b->get();
+                        }
+                    }
+
+                    function assignmentInOperand(): void {
+                        if (!($x = maybeBag()) || $x->get()) {
+                            echo 1;
+                        }
+
+                        if (!($x = maybeBag()) || $x->get()) {
+                            echo 2;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'twoVarLogicSimple' => [
                 'code' => '<?php
                     function foo(?string $a, ?string $b): string {
@@ -856,7 +982,7 @@ final class TypeAlgebraTest extends TestCase
                                 ($c >= 0x10b00 && $c <= 0x10b35) ||
                                 ($c >= 0x10b40 && $c <= 0x10b55) ||
                                 ($c >= 0x10b58 && $c <= 0x10b72) ||
-                                ($c >= 0x10b78 && $c <= 0x10b7f)
+                                $c >= 0x10b78
                             ) {
                                 return "RTL";
                             }
@@ -1358,6 +1484,49 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'booleanVariableNarrowingNotKeptInElseOfOr' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, bool $c): void {
+                        $has = $b !== null;
+                        if ($has || $c) {
+                            echo 1;
+                        } else {
+                            echo $b->get();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'narrowingOfOrLeftOperandNotKeptAfterIt' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, bool $c): void {
+                        if ($b !== null || $c) {
+                            echo 1;
+                        }
+
+                        echo $b->get();
+                    }
+                    PHP,
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'staticPropertyNarrowedToDeclaredTypeAfterEarlyReturn' => [
                 'code' => '<?php
                     final class A {

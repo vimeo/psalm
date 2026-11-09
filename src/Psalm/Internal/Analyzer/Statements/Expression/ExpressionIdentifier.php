@@ -140,6 +140,8 @@ final class ExpressionIdentifier
                     if ($object_id && $stmt->dim->name instanceof PhpParser\Node\Identifier) {
                         $offset = $object_id . '->' . $stmt->dim->name;
                     }
+                } elseif ($stmt->dim instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
+                    $offset = self::getExtendedVarId($stmt->dim, $this_class_name, $source);
                 } elseif ($stmt->dim instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $stmt->dim->name instanceof PhpParser\Node\Identifier
                     && $stmt->dim->class instanceof PhpParser\Node\Name

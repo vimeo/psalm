@@ -14,8 +14,12 @@ use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_map;
+use function implode;
+use function range;
+use function sort;
 
 use const DIRECTORY_SEPARATOR;
+use const SORT_STRING;
 
 final class BinaryOperationTest extends TestCase
 {
@@ -271,6 +275,81 @@ final class BinaryOperationTest extends TestCase
                 /** @var float */
                 $b = 4.1;
                 $a = 5 + $b;',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPowOfDifferingNumericLiteralTypesInStrictMode(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    $a = 1.5 ** 10;
+                    $b = 2 ** 0.5;
+                    $c = 2 ** 3;',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPowOfDifferingNumericTypesInStrictMode(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    /**
+                     * @param int|float $number
+                     * @param numeric $numeric
+                     */
+                    function f(int $int, float $float, $number, $numeric): void {
+                        echo $int ** $float;
+                        echo $float ** $int;
+                        echo $number ** $int;
+                        echo $numeric ** $int;
+                        $int **= $float;
+                        $float **= $int;
+                    }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPowOfNonNumericTypesInStrictModeIsStillReported(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    function f(string $s): void {
+                        echo $s ** 2;
+                    }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testDifferingNumericTypesMultiplicationInStrictModeIsStillReported(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    function f(int $int, float $float): void {
+                        echo $int * $float;
+                    }',
         );
 
         $this->expectException(CodeException::class);
@@ -646,6 +725,18 @@ final class BinaryOperationTest extends TestCase
         $this->expectExceptionMessage('ImplicitToStringCast');
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @param list<int> $suffixes
+     * @psalm-pure
+     */
+    private static function sortedLiteralUnion(string $prefix, array $suffixes): string
+    {
+        $literals = array_map(static fn(int $suffix): string => $prefix . $suffix . "'", $suffixes);
+        sort($literals, SORT_STRING);
+
+        return implode('|', $literals);
     }
 
     /**
@@ -1589,6 +1680,102 @@ final class BinaryOperationTest extends TestCase
                     '$j' => 'int<100, 110>',
                 ],
             ],
+            'coalesceStatementWithThrowOrExitNarrowsTheLeftOperand' => [
+                'code' => '<?php
+                    /** @var ?string $a */
+                    $a = null;
+                    $a ?? throw new RuntimeException();
+                    $afterThrow = $a;
+
+                    /** @var ?string $b */
+                    $b = null;
+                    $b ?? exit(1);
+                    $afterExit = $b;',
+                'assertions' => [
+                    '$afterThrow===' => 'string',
+                    '$afterExit===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'ternaryWithAThrowingBranchNarrowsByTheOtherBranch' => [
+                'code' => '<?php
+                    /** @var ?string $a */
+                    $a = null;
+                    $a !== null ? 1 : throw new RuntimeException();
+                    $afterElseThrows = $a;
+
+                    /** @var ?string $b */
+                    $b = null;
+                    isset($b) ? 1 : throw new RuntimeException();
+                    $afterIsset = $b;
+
+                    /** @var ?string $c */
+                    $c = null;
+                    $c === null ? throw new RuntimeException() : 1;
+                    $afterIfThrows = $c;',
+                'assertions' => [
+                    '$afterElseThrows===' => 'string',
+                    '$afterIsset===' => 'string',
+                    '$afterIfThrows===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceWithThrowNarrowsAnArrayOffsetAndACallArgument' => [
+                'code' => '<?php
+                    /** @var array{k?: string} $arr */
+                    $arr = [];
+                    $arr["k"] ?? throw new RuntimeException();
+                    $offset = $arr["k"];
+
+                    /** @var ?int $n */
+                    $n = null;
+                    $length = abs($n ?? throw new RuntimeException());
+                    $afterCall = $n;',
+                'assertions' => [
+                    '$offset===' => 'string',
+                    '$afterCall===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'ternaryWithAThrowingBranchKeepsTheAssignmentOfTheOtherBranch' => [
+                'code' => '<?php
+                    /** @var bool $flag */
+                    $flag = true;
+                    $flag ? ($made = 5) : throw new RuntimeException();
+                    $afterAssignment = $made;',
+                'assertions' => [
+                    '$afterAssignment===' => '5',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'elvisWithThrowNarrowsByTheTypeCheck' => [
+                'code' => '<?php
+                    /** @var mixed $n */
+                    $n = 1;
+                    is_numeric($n) ?: throw new RuntimeException();
+                    $afterElvis = $n;',
+                'assertions' => [
+                    '$afterElvis===' => 'numeric',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'ternaryWithoutAThrowingBranchKeepsTheOriginalType' => [
+                'code' => '<?php
+                    /** @var ?string $a */
+                    $a = null;
+                    $a !== null ? 1 : 2;
+                    $unchanged = $a;',
+                'assertions' => [
+                    '$unchanged===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'coalesceFilterOutNullEvenWithTernary' => [
                 'code' => '<?php
 
@@ -1649,6 +1836,68 @@ final class BinaryOperationTest extends TestCase
                     '$b===' => 'non-falsy-string',
                 ],
             ],
+            'concatMixedWithNonFalsyLiteralReturnsNonFalsyString' => [
+                'code' => '<?php
+                    /** @var mixed $m */
+                    $m = 1;
+
+                    $a = "<?xml encoding=\"UTF-8\">" . $m;
+                    $b = $m . "<?xml encoding=\"UTF-8\">";',
+                'assertions' => [
+                    '$a===' => 'non-falsy-string',
+                    '$b===' => 'non-falsy-string',
+                ],
+                'ignored_issues' => ['MixedOperand'],
+            ],
+            'concatMixedWithNonFalsyStringReturnsNonFalsyString' => [
+                'code' => '<?php
+                    /** @var mixed $m */
+                    $m = 1;
+                    /** @var non-falsy-string $s */
+                    $s = "ab";
+
+                    $a = $s . $m;
+                    $b = $m . $s;',
+                'assertions' => [
+                    '$a===' => 'non-falsy-string',
+                    '$b===' => 'non-falsy-string',
+                ],
+                'ignored_issues' => ['MixedOperand'],
+            ],
+            'concatMixedWithNonEmptyStringReturnsNonEmptyString' => [
+                'code' => '<?php
+                    /** @var mixed $m */
+                    $m = 1;
+                    /** @var non-empty-string $s */
+                    $s = "0";
+
+                    $a = $s . $m;
+                    $b = $m . $s;
+                    $c = "0" . $m;',
+                'assertions' => [
+                    '$a===' => 'non-empty-string',
+                    '$b===' => 'non-empty-string',
+                    '$c===' => 'non-empty-string',
+                ],
+                'ignored_issues' => ['MixedOperand'],
+            ],
+            'concatMixedWithPossiblyEmptyStringReturnsString' => [
+                'code' => '<?php
+                    /** @var mixed $m */
+                    $m = 1;
+                    /** @var string $s */
+                    $s = "";
+
+                    $a = $s . $m;
+                    $b = "" . $m;
+                    $c = $m . $m;',
+                'assertions' => [
+                    '$a===' => 'string',
+                    '$b===' => 'string',
+                    '$c===' => 'string',
+                ],
+                'ignored_issues' => ['MixedOperand'],
+            ],
             'unaryMinusOverflows' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1656,6 +1905,39 @@ final class BinaryOperationTest extends TestCase
                     PHP,
                 'assertions' => [
                     '$a===' => 'float(9.2233720368548E+18)',
+                ],
+            ],
+            'concatenatesLiteralsWithSmallIntRanges' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @var 'a'|'b' $a
+                     * @var int<0, 2> $c
+                     * @var int<-1, 1> $negative
+                     * @var int<0, 1> $bit
+                     * @var int<0, 62> $widest
+                     * @var int<0, 63> $tooWide
+                     * @var int<0, max> $unbounded
+                     * @var int<-9223372036854775808, 9223372036854775807> $everything
+                     */
+                    $right = $a . $c;
+                    $left = $c . $a;
+                    $both = $bit . $bit;
+                    $minus = $a . $negative;
+                    $fits = '.' . $widest;
+                    $wide = '.' . $tooWide;
+                    $open = $a . $unbounded;
+                    $all = $a . $everything;
+                    PHP,
+                'assertions' => [
+                    '$right===' => "'a0'|'a1'|'a2'|'b0'|'b1'|'b2'",
+                    '$left===' => "'0a'|'0b'|'1a'|'1b'|'2a'|'2b'",
+                    '$both===' => "'00'|'01'|'10'|'11'",
+                    '$minus===' => "'a-1'|'a0'|'a1'|'b-1'|'b0'|'b1'",
+                    '$fits===' => self::sortedLiteralUnion("'.", range(0, 62)),
+                    '$wide===' => 'non-empty-lowercase-string',
+                    '$open===' => 'non-empty-lowercase-string',
+                    '$all===' => 'non-empty-lowercase-string',
                 ],
             ],
             'invalidArrayOperations' => [
@@ -1710,6 +1992,14 @@ final class BinaryOperationTest extends TestCase
                 ],
                 'ignored_issues' => ['InvalidOperand'],
             ],
+            'firstClassCallableInSubstrComparison' => [
+                'code' => '<?php
+                    if (substr(...) === "x") {}
+                    if (substr(...) != "x") {}',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType', 'RedundantCondition'],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -1744,6 +2034,34 @@ final class BinaryOperationTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '7.4',
             ],
+            'bcMathNumberPlusNonNumericString' => [
+                'code' => '<?php
+                    namespace BcMath {
+                        final class Number {
+                            public function __construct(string $number) {}
+                        }
+                    }
+
+                    namespace {
+                        $a = new \\BcMath\\Number("2");
+                        $b = $a + "abc";
+                    }',
+                'error_message' => 'InvalidOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - Cannot add BcMath\\Number to',
+            ],
+            'bcMathNumberPlusFloat' => [
+                'code' => '<?php
+                    namespace BcMath {
+                        final class Number {
+                            public function __construct(string $number) {}
+                        }
+                    }
+
+                    namespace {
+                        $a = new \\BcMath\\Number("2");
+                        $b = $a + 0.5;
+                    }',
+                'error_message' => 'InvalidOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - Cannot add BcMath\\Number to float',
+            ],
             'shiftLeftByANegativeNumber' => [
                 'code' => '<?php
                     $a = 1 << -1;
@@ -1772,6 +2090,16 @@ final class BinaryOperationTest extends TestCase
                 'code' => '<?php
                     $a = "b" + 5;',
                 'error_message' => 'InvalidOperand',
+            ],
+            'shiftLeftByANegativeLiteralThrows' => [
+                'code' => '<?php
+                    $a = 1 << -1;',
+                'error_message' => 'NoValue',
+            ],
+            'shiftRightByANegativeLiteralThrows' => [
+                'code' => '<?php
+                    $a = 8 >> -2;',
+                'error_message' => 'NoValue',
             ],
             'addArrayToNumber' => [
                 'code' => '<?php
@@ -1907,5 +2235,44 @@ final class BinaryOperationTest extends TestCase
                 'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
+    }
+
+    public function testBcMathNumberOperations(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace BcMath {
+                    final class Number {
+                        public function __construct(string $number) {}
+                    }
+                }
+
+                namespace {
+                    $a = new \BcMath\Number("2");
+                    $b = new \BcMath\Number("4");
+                    $c = $a + $b;
+                    $d = $a - 1;
+                    $e = 2 * $b;
+                    $f = $a / "3";
+                    $g = $a % $b;
+                    $h = $a ** 2;
+                }',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+
+        $actual_vars = [];
+        foreach (['$c', '$d', '$e', '$f', '$g', '$h'] as $var) {
+            $actual_vars[$var] = (string) $context->vars_in_scope[$var];
+        }
+
+        $this->assertSame(
+            ['$c' => 'BcMath\\Number', '$d' => 'BcMath\\Number', '$e' => 'BcMath\\Number',
+                '$f' => 'BcMath\\Number', '$g' => 'BcMath\\Number', '$h' => 'BcMath\\Number'],
+            $actual_vars,
+        );
     }
 }
