@@ -808,6 +808,63 @@ final class BinaryOperationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'staticPropertyOfATraitIsIndexedByStaticClassInTheClassUsingIt' => [
+                'code' => '<?php
+                    interface Coll {}
+
+                    trait HasCollection
+                    {
+                        /** @var class-string<Coll> */
+                        protected static string $collectionClass;
+
+                        /** @var array<class-string<static>, class-string<Coll>> */
+                        protected static array $resolved = [];
+
+                        public function newCollection(): Coll
+                        {
+                            static::$resolved[static::class] ??= static::$collectionClass;
+
+                            return new static::$resolved[static::class]();
+                        }
+                    }
+
+                    abstract class Model
+                    {
+                        use HasCollection;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticPropertyOfATraitCheckedBeforeItIsCalled' => [
+                'code' => '<?php
+                    trait ResolvesDumpSource
+                    {
+                        /** @var callable|null|false */
+                        protected static $resolver;
+
+                        public function resolve(): mixed
+                        {
+                            if (static::$resolver === false) {
+                                return null;
+                            }
+
+                            if (static::$resolver) {
+                                return call_user_func(static::$resolver);
+                            }
+
+                            return null;
+                        }
+                    }
+
+                    abstract class Model
+                    {
+                        use ResolvesDumpSource;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
             'staticPropertyGuardedByANullCheckIsNotNullAfterIt' => [
                 'code' => '<?php
                     interface Container {}

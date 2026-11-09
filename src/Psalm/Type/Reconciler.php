@@ -778,7 +778,14 @@ class Reconciler
             $fq_class_name = $relative_class ?? $fq_class_name;
 
             if (!isset($existing_keys[$base_key])) {
-                $static_property_type = self::getStaticPropertyType($codebase, $fq_class_name, $property_name);
+                // the trait that is analysed for each class using it: what it declares for the property, with
+                // `static` still standing for the class that uses it
+                $static_property_type = $relative_class !== null
+                    && $codebase->classlike_storage_provider->has($fq_class_name)
+                    && $codebase->classlike_storage_provider->get($fq_class_name)->is_trait
+                    ? $codebase->classlike_storage_provider->get($fq_class_name)->properties[$property_name]->type
+                        ?? null
+                    : self::getStaticPropertyType($codebase, $fq_class_name, $property_name);
 
                 if (!$static_property_type) {
                     return null;
