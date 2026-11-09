@@ -147,6 +147,39 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'inArrayWithAValueAnEarlierConditionExcludedIsNotParadoxical' => [
+                'code' => '<?php
+                    const A = "a";
+                    const ALL = [A, "b", "c"];
+
+                    function test(string $value): int {
+                        if ($value === A) {
+                            return 1;
+                        }
+
+                        if (in_array($value, ALL, true)) {
+                            return 2;
+                        }
+
+                        return 3;
+                    }',
+                'assertions' => [],
+            ],
+            'orOfAValueAnEarlierConditionExcludedAndAnotherIsNotParadoxical' => [
+                'code' => '<?php
+                    function test(string $value): int {
+                        if ($value === "a") {
+                            return 1;
+                        }
+
+                        if ($value === "a" || $value === "b") {
+                            return 2;
+                        }
+
+                        return 3;
+                    }',
+                'assertions' => [],
+            ],
             'twoVarLogicSimple' => [
                 'code' => '<?php
                     function foo(?string $a, ?string $b): string {
@@ -1526,6 +1559,21 @@ final class TypeAlgebraTest extends TestCase
                 'error_message' => 'PossiblyNullReference',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'conditionOfOnlyValuesAnEarlierConditionExcludedIsParadoxical' => [
+                'code' => '<?php
+                    function test(string $value): int {
+                        if ($value === "a" || $value === "b") {
+                            return 1;
+                        }
+
+                        if ($value === "a" || $value === "b") {
+                            return 2;
+                        }
+
+                        return 3;
+                    }',
+                'error_message' => 'ParadoxicalCondition',
             ],
             'staticPropertyNarrowedToDeclaredTypeAfterEarlyReturn' => [
                 'code' => '<?php
