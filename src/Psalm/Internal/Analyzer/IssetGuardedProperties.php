@@ -86,6 +86,12 @@ final class IssetGuardedProperties
         }
 
         if ($node instanceof Coalesce) {
+            $property = self::getThisProperty($node->left);
+
+            if ($property !== null) {
+                $this->checked[$property] = true;
+            }
+
             $this->walkChecked($node->left, $guarded, $everything_guarded);
             $this->walk($node->right, $guarded, $everything_guarded);
 

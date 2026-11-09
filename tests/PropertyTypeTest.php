@@ -769,6 +769,30 @@ final class PropertyTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['RedundantPropertyInitializationCheck', 'RedundantCondition'],
             ],
+            'propertyReadOnlyThroughCoalesceMayBeLeftUninitialisedByAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {
+                        public function cancel(): void {}
+                    }
+
+                    final class Response {
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function canary(): ?Canary {
+                            return $this->canary ?? null;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantPropertyInitializationCheck', 'RedundantCondition'],
+            ],
             'propertyInitialisedBeforeEveryReturnOfConstructor' => [
                 'code' => '<?php
                     final class A {
@@ -3473,6 +3497,34 @@ final class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:30:33 - Property Child::$other',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'propertyReadThroughCoalesceAndWithoutAGuardIsNotInitialisedByAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {
+                        public function cancel(): void {}
+                    }
+
+                    final class Response {
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function canary(): ?Canary {
+                            return $this->canary ?? null;
+                        }
+
+                        public function close(): void {
+                            $this->canary->cancel();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:40 - Property Response::$canary',
+                'error_levels' => ['RedundantPropertyInitializationCheck', 'RedundantCondition'],
             ],
             'propertyNotInitializedByAnInterfaceStaticMethodCalledInTheConstructor' => [
                 'code' => '<?php
