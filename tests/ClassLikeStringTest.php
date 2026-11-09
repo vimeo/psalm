@@ -11,6 +11,8 @@ use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ClassLikeStringTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -205,6 +207,48 @@ final class ClassLikeStringTest extends TestCase
                     function checkTwo(): bool {
                         return (!class_exists(First::class) || !class_exists(Second::class)) || First::foo();
                     }',
+            ],
+            'staticInAListParameterOfAStaticCallNamingAClass' => [
+                'code' => '<?php
+                    class Example {
+                        private int $v = 1;
+
+                        /** @param list<static> $xs */
+                        public static function contains(array $xs, int $v): bool {
+                            foreach ($xs as $x) {
+                                if ($x->v === $v) {
+                                    return true;
+                                }
+                            }
+
+                            return false;
+                        }
+                    }
+
+                    Example::contains([new Example(), new Example()], 1);',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'staticInAStaticCallNamingAClassIsThatClass' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @param class-string<static> $class */
+                        public static function classString(string $class): void {}
+
+                        /** @param static $object */
+                        public static function object($object): void {}
+                    }
+
+                    class Bar extends Foo {}
+
+                    Foo::classString(Foo::class);
+                    Foo::classString(Bar::class);
+                    Bar::classString(Bar::class);
+                    Foo::object(new Foo);
+                    Foo::object(new Bar);
+                    Bar::object(new Bar);',
+                'assertions' => [],
+                'ignored_issues' => [],
             ],
             'interfaceAndEnumLiteralsForInterfaceAndEnumStrings' => [
                 'code' => <<<'PHP'
@@ -1189,6 +1233,78 @@ final class ClassLikeStringTest extends TestCase
                         new \\Doesnt\\Really();
                     }',
                 'error_message' => 'Class, interface or enum named Doesnt\\Really does not exist',
+            ],
+            'staticInAStaticCallNamingASubclassRejectsTheParentClassString' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @param class-string<static> $class */
+                        public static function classString(string $class): void {}
+                    }
+
+                    class Bar extends Foo {}
+
+                    Bar::classString(Foo::class);',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:38 - Argument 1 of Bar::classString expects class-string<Bar>, but parent type Foo::class provided',
+            ],
+            'staticInAForwardingStaticCallStaysLateBound' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @param class-string<static> $class */
+                        public static function classString(string $class): void {}
+
+                        public static function forward(): void {
+                            static::classString(Foo::class);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:49 - Argument 1 of Foo::classString expects class-string<Foo&static>, but parent type Foo::class provided',
+            ],
+            'staticInASelfStaticCallStaysLateBound' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @param class-string<static> $class */
+                        public static function classString(string $class): void {}
+
+                        public static function forward(): void {
+                            self::classString(Foo::class);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:47 - Argument 1 of Foo::classString expects class-string<Foo&static>, but parent type Foo::class provided',
+            ],
+            'staticInAParentStaticCallStaysLateBound' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @param class-string<static> $class */
+                        public static function classString(string $class): void {}
+                    }
+
+                    class Bar extends Foo {
+                        public static function forward(): void {
+                            parent::classString(Foo::class);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:49 - Argument 1 of Foo::classString expects class-string<Foo&static>, but parent type Foo::class provided',
+            ],
+            'staticInANonStaticMethodCalledByClassNameStaysLateBound' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @param static $object */
+                        public function object($object): void {}
+
+                        public function forward(): void {
+                            Foo::object(new Foo);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:41 - Argument 1 of Foo::object expects Foo&static, but parent type Foo provided',
+            ],
+            'staticInAnInstanceCallStaysLateBound' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @param static $object */
+                        public function object($object): void {}
+                    }
+
+                    (new Foo)->object(new Foo);',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:39 - Argument 1 of Foo::object expects Foo&static, but parent type Foo provided',
             ],
             'classLiteralForInterfaceString' => [
                 'code' => <<<'PHP'
