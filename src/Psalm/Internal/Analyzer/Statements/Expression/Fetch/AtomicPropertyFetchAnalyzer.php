@@ -29,6 +29,7 @@ use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
@@ -880,6 +881,8 @@ final class AtomicPropertyFetchAnalyzer
         ClassLikeStorage $property_class_storage,
         ClassLikeStorage $property_declaring_class_storage,
     ): Union {
+        $lhs_type_part = StarProjection::readArguments($lhs_type_part, $codebase);
+
         $template_types = CallAnalyzer::getTemplateTypesForCall(
             $codebase,
             $property_declaring_class_storage,

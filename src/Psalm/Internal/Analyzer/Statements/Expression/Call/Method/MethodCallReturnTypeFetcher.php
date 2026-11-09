@@ -26,6 +26,7 @@ use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -103,6 +104,11 @@ final class MethodCallReturnTypeFetcher
             return Type::getClosure();
         }
 
+        // a provider sees a `*` argument as its template's bound, like the members of the class
+        $lhs_type_params = $lhs_type_part instanceof TGenericObject
+            ? StarProjection::readArguments($lhs_type_part, $codebase)->type_params
+            : null;
+
         if ($codebase->methods->return_type_provider->has($premixin_method_id->fq_class_name)) {
             $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
                 $statements_analyzer,
@@ -111,7 +117,7 @@ final class MethodCallReturnTypeFetcher
                 $stmt,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->name),
-                $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null,
+                $lhs_type_params,
             );
 
             if ($return_type_candidate) {
@@ -143,7 +149,7 @@ final class MethodCallReturnTypeFetcher
                     $stmt,
                     $context,
                     new CodeLocation($statements_analyzer->getSource(), $stmt->name),
-                    $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null,
+                    $lhs_type_params,
                     $fq_class_name,
                     $method_name,
                 );

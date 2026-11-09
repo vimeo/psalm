@@ -1689,6 +1689,22 @@ final class AnnotationTest extends TestCase
                         }
                     };',
             ],
+            'phpstanParamWithStarProjectionNextToPsalmParam' => [
+                'code' => '<?php
+                    /**
+                     * @template TFirst
+                     * @template TSecond
+                     */
+                    final class Context {}
+
+                    /**
+                     * @psalm-param Context<int, string> $parent
+                     * @phpstan-param Context<*, *> $parent
+                     */
+                    function f(Context $parent): Context {
+                        return $parent;
+                    }',
+            ],
         ];
     }
 

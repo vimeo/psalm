@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
@@ -64,6 +66,8 @@ final class GenericTypeComparator
             $container_type_params_covariant,
         );
 
+        $input_bounds = null;
+
         $atomic_comparison_result_type_params = null;
         if ($atomic_comparison_result) {
             if (!$atomic_comparison_result->replacement_atomic_type) {
@@ -80,6 +84,37 @@ final class GenericTypeComparator
             }
 
             $container_param = $container_type_part->type_params[$i];
+
+            // `*` fits any argument, and an argument left out of the container (`@param Pair $p`) fits `*`
+            if (StarProjection::isStar($container_param)
+                || ($container_param->from_template_default && StarProjection::isStar($input_param))
+            ) {
+                continue;
+            }
+
+            // a `*` argument is some unknown type within its template's bound: it fits only a covariant argument
+            // holding that whole bound
+            if (StarProjection::isStar($input_param)) {
+                $input_bounds ??= $input_type_part instanceof TGenericObject
+                    ? TemplateStandinTypeReplacer::getMappedGenericTypeParams(
+                        $codebase,
+                        StarProjection::readArguments($input_type_part, $codebase),
+                        $container_type_part,
+                    )
+                    : [];
+
+                if (!($container_type_params_covariant[$i] ?? false)
+                    || !UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $input_bounds[$i] ?? Type::getMixed(),
+                        $container_param,
+                    )
+                ) {
+                    $all_types_contain = false;
+                }
+
+                continue;
+            }
 
             // a param standing for `never` (an empty construction's type
             // variable included) is widened to the container's param: the

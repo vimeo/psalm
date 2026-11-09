@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use AssertionError;
 use Psalm\Codebase;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
@@ -96,6 +97,9 @@ final class ClassTemplateParamCollector
         $e = $static_class_storage->template_extended_params;
 
         if ($lhs_type_part instanceof TGenericObject) {
+            // members of a `Pair<int, *>` see the bound of the template a `*` stands for
+            $lhs_type_part = StarProjection::readArguments($lhs_type_part, $codebase);
+
             if ($class_storage === $static_class_storage && $class_storage->template_types) {
                 $lhs_type_params = TemplateDefaults::fillTypeArguments(
                     $lhs_type_part->type_params,
