@@ -99,8 +99,8 @@ Setting this to `"false"` hides all issues with `Mixed` types in Psalm’s outpu
   resolveFromConfigFile="[bool]"
 />
 ```
-If this is enabled, relative directories mentioned in the config file will be resolved relative to the location
-of the config file. If it is disabled, or absent they will be resolved relative to the working directory of the Psalm process.
+If this is enabled (the default), relative directories mentioned in the config file will be resolved relative to the location
+of the config file. If it is disabled, they will be resolved relative to the working directory of the Psalm process.
 
 New versions of Psalm enable this option when generating config files. Older versions did not include it.
 
@@ -547,7 +547,7 @@ Whether or not to report issues only for files that were passed explicitly as ar
   cacheDirectory="[string]"
 >
 ```
-The directory used to store Psalm's cache data - if you specify one (and it does not already exist), its parent directory must already exist, otherwise Psalm will throw an error.
+The directory used to store Psalm's cache data. Psalm creates it recursively when initializing the cache.
 
 Defaults to `$XDG_CACHE_HOME/psalm`. If `$XDG_CACHE_HOME` is either not set or empty, a default equal to `$HOME/.cache/psalm` is used or `sys_get_temp_dir() . '/psalm'` when not defined.
 

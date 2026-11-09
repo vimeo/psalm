@@ -403,6 +403,11 @@ final class StaticPropertyAssignmentAnalyzer
 
             $other_class = substr($other_id, 0, $other_separator);
 
+            // the offsets and properties of the very property that is assigned stay as they are
+            if ($other_class === $assigned_class) {
+                continue;
+            }
+
             if (self::mayBeTheSameClass($codebase, $assigned_class, $other_class)) {
                 $context->remove($other_id);
             }

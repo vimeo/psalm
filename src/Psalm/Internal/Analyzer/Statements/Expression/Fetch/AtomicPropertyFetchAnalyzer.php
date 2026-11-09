@@ -573,11 +573,13 @@ final class AtomicPropertyFetchAnalyzer
                 );
             }
 
-            if ($context->self && !NamespaceAnalyzer::isWithinAny($context->self, $property_storage->internal)) {
+            $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+            if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $property_storage->internal)) {
                 IssueBuffer::maybeAdd(
                     new InternalProperty(
                         $property_id . ' is internal to ' . InternalClass::listToPhrase($property_storage->internal)
-                            . ' but called from ' . $context->self,
+                            . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id,
                     ),
@@ -805,10 +807,13 @@ final class AtomicPropertyFetchAnalyzer
                 new VirtualIdentifier('__get', $stmt->name->getAttributes()),
                 [
                     new VirtualArg(
-                        new VirtualString(
-                            $prop_name,
-                            $stmt->name->getAttributes(),
-                        ),
+                        // the name as written keeps its type (`A::class` is a class-string)
+                        $stmt->name instanceof PhpParser\Node\Expr
+                            ? $stmt->name
+                            : new VirtualString(
+                                $prop_name,
+                                $stmt->name->getAttributes(),
+                            ),
                     ),
                 ],
             );
