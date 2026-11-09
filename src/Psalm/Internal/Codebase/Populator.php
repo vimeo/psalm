@@ -894,6 +894,20 @@ final class Populator
         $this->inheritMethodsFromParent($storage, $trait_storage);
         $this->inheritPropertiesFromParent($storage, $trait_storage);
 
+        // the visibility a trait gives to the methods it uses from another one, unless the class changes it again,
+        // declares the method itself or uses the one of another trait for it
+        $trait_name_lc = strtolower($trait_storage->name);
+
+        foreach ($trait_storage->trait_visibility_map as $method_name_lc => $visibility) {
+            if (isset($storage->methods[$method_name_lc])
+                || isset($storage->trait_excluded_methods[$method_name_lc][$trait_name_lc])
+            ) {
+                continue;
+            }
+
+            $storage->trait_visibility_map[$method_name_lc] ??= $visibility;
+        }
+
         $this->extendTemplateParams($storage, $trait_storage, false);
 
         $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
@@ -1720,6 +1734,25 @@ final class Populator
         }
     }
 
+    /**
+     * A property imported from a trait is declared by the trait, not by the class using it
+     *
+     * @psalm-capabilities read-props
+     */
+    private function isPrivateProperty(ClassLikeStorage $storage, string $property_name): bool
+    {
+        $declaring_class = $storage->declaring_property_ids[$property_name] ?? null;
+
+        $declaring_storage = $declaring_class !== null
+            && strtolower($declaring_class) !== strtolower($storage->name)
+            && $this->classlike_storage_provider->has($declaring_class)
+                ? $this->classlike_storage_provider->get($declaring_class)
+                : $storage;
+
+        return isset($declaring_storage->properties[$property_name])
+            && $declaring_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE;
+    }
+
     private function inheritPropertiesFromParent(
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage,
@@ -1734,10 +1767,7 @@ final class Populator
                 continue;
             }
 
-            if (!$parent_storage->is_trait
-                && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-            ) {
+            if (!$parent_storage->is_trait && $this->isPrivateProperty($parent_storage, $property_name)) {
                 continue;
             }
 
@@ -1753,10 +1783,7 @@ final class Populator
                 continue;
             }
 
-            if (!$parent_storage->is_trait
-                && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-            ) {
+            if (!$parent_storage->is_trait && $this->isPrivateProperty($parent_storage, $property_name)) {
                 continue;
             }
 
@@ -1765,10 +1792,7 @@ final class Populator
 
         // register where they're declared
         foreach ($parent_storage->inheritable_property_ids as $property_name => $inheritable_property_id) {
-            if (!$parent_storage->is_trait
-                && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-            ) {
+            if (!$parent_storage->is_trait && $this->isPrivateProperty($parent_storage, $property_name)) {
                 continue;
             }
 
