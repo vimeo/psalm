@@ -28,6 +28,14 @@ final class StarProjection
     /**
      * @psalm-pure
      */
+    public static function create(bool $from_docblock): Union
+    {
+        return new Union([new TStarProjection($from_docblock)], ['from_docblock' => $from_docblock]);
+    }
+
+    /**
+     * @psalm-pure
+     */
     public static function isStar(Union $type): bool
     {
         return $type->isSingle() && $type->getSingleAtomic() instanceof TStarProjection;

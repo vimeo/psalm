@@ -793,6 +793,60 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'starProjectionStaysUnknownWhenNarrowedToItsClass' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    /** @return Box<*>|string */
+                    function boxOrString(): Box|string {
+                        throw new Exception();
+                    }
+
+                    $item = boxOrString();
+                    $box = $item instanceof Box ? $item : null;',
+                'assertions' => [
+                    '$box===' => 'Box<*>|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionStaysUnknownWhenNarrowedToAChild' => [
+                'code' => '<?php
+                    /**
+                     * @template TFirst
+                     * @template TSecond of object
+                     */
+                    class Pair {}
+
+                    /**
+                     * @template TChild of object
+                     * @extends Pair<int, TChild>
+                     */
+                    final class Child extends Pair {}
+
+                    /**
+                     * @template TChild of object
+                     * @template TOwn
+                     * @extends Pair<int, TChild>
+                     */
+                    final class ChildWithItsOwnTemplate extends Pair {}
+
+                    /** @return Pair<int, *> */
+                    function pair(): Pair {
+                        throw new Exception();
+                    }
+
+                    $pair = pair();
+                    $child = $pair instanceof Child ? $pair : null;
+                    $with_own = $pair instanceof ChildWithItsOwnTemplate ? $pair : null;',
+                'assertions' => [
+                    '$child===' => 'Child<*>|null',
+                    '$with_own===' => 'ChildWithItsOwnTemplate<*, *>|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

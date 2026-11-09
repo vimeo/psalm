@@ -77,7 +77,6 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
-use Psalm\Type\Atomic\TStarProjection;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
@@ -836,10 +835,7 @@ final class TypeParser
 
         foreach ($parse_tree->children as $i => $child_tree) {
             if ($child_tree instanceof Value && $child_tree->value === StarProjection::NAME) {
-                $generic_params[] = new Union(
-                    [new TStarProjection($from_docblock)],
-                    ['from_docblock' => $from_docblock],
-                );
+                $generic_params[] = StarProjection::create($from_docblock);
 
                 continue;
             }
