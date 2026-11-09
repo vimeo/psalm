@@ -735,6 +735,77 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'privateTraitPropertyInitializedByTheUsingClassIsNotCheckedInSubclasses' => [
+                'code' => '<?php
+                    trait IdTrait {
+                        private int $id;
+
+                        private function initializeId(): void {
+                            $this->id = 5;
+                        }
+
+                        public function id(): int {
+                            return $this->id;
+                        }
+                    }
+
+                    class BaseUser {
+                        use IdTrait;
+
+                        public function __construct() {
+                            $this->initializeId();
+                        }
+                    }
+
+                    class Admin extends BaseUser {}
+
+                    class Client extends BaseUser {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }',
+            ],
+            'privateTemplatedPropertyInitializedByAFinalParentConstructorChain' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    class Box {
+                        /**
+                         * @return Box<int>
+                         */
+                        public static function factory(): self {
+                            /** @var Box<int> $instance */
+                            $instance = new self();
+
+                            return $instance;
+                        }
+                    }
+
+                    abstract class Base {
+                        final public function __construct() {
+                            $this->init();
+                        }
+
+                        abstract protected function init(): void;
+                    }
+
+                    final class Child extends Base {
+                        /** @var Box<int> */
+                        private $box;
+
+                        protected function init(): void {
+                            $this->box = Box::factory();
+                        }
+
+                        public function get(): Box {
+                            return $this->box;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticCallOfAnInterfaceMethodInAConstructorHasItsReturnType' => [
                 'code' => '<?php
                     interface Limits {
@@ -3243,6 +3314,86 @@ final class PropertyTypeTest extends TestCase
                 'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:29 - Type string for $book->name is always isset',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'privateTemplatedPropertyNotInitializedByAFinalParentConstructorChain' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    class Box {
+                        /**
+                         * @return Box<int>
+                         */
+                        public static function factory(): self {
+                            /** @var Box<int> $instance */
+                            $instance = new self();
+
+                            return $instance;
+                        }
+                    }
+
+                    abstract class Base {
+                        final public function __construct() {
+                            $this->init();
+                        }
+
+                        abstract protected function init(): void;
+                    }
+
+                    final class Child extends Base {
+                        /** @var Box<int> */
+                        private $box;
+
+                        /** @var Box<int> */
+                        private $other;
+
+                        protected function init(): void {
+                            $this->box = Box::factory();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:30:33 - Property Child::$other',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'privateTraitPropertyIsNotVisibleInASubclass' => [
+                'code' => '<?php
+                    trait IdTrait {
+                        private int $id = 1;
+                    }
+
+                    class BaseUser {
+                        use IdTrait;
+                    }
+
+                    class Admin extends BaseUser {
+                        public function id(): int {
+                            return $this->id;
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:36 - Instance property Admin::$id is not defined',
+            ],
+            'privateTraitPropertyNotInitializedIsStillReportedInTheUsingClass' => [
+                'code' => '<?php
+                    trait IdTrait {
+                        private int $id;
+
+                        public function id(): int {
+                            return $this->id;
+                        }
+                    }
+
+                    class BaseUser {
+                        use IdTrait;
+
+                        public function __construct() {}
+                    }
+
+                    class Admin extends BaseUser {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:27 - Property BaseUser::$id',
             ],
             'privateTemplatedPropertyNotInitializedByAFinalParentConstructorChain' => [
                 'code' => '<?php
