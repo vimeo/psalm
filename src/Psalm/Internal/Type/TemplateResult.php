@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_replace_recursive;
@@ -46,6 +48,13 @@ final class TemplateResult
      * @var list<Union>
      */
     public array $upper_bounds_unintersectable_types = [];
+
+    /**
+     * `static` of the call and whether it is final, as the return type is expanded with them after replacement
+     */
+    public string|TNamedObject|TTemplateParam|null $static_class_type = null;
+
+    public bool $static_class_is_final = false;
 
     /**
      * @param array<string, array<string, Union>> $template_types

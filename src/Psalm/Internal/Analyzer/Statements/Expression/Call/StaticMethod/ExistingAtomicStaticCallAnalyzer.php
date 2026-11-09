@@ -178,6 +178,12 @@ final class ExistingAtomicStaticCallAnalyzer
                 true,
             )->is_static;
 
+        // the params are checked with `static` of the called class, and that class exactly for a named static call;
+        // a template receiver stays one (see ArgumentsAnalyzer::handleClosureArg())
+        $template_result->static_class_type = self::getTemplateStaticType($lhs_type_part) ?? $method_id->fq_class_name;
+        $template_result->static_class_is_final = $static_is_called_class
+            || $codebase->classlike_storage_provider->get($method_id->fq_class_name)->final;
+
         if (CallAnalyzer::checkMethodArgs(
             $method_id,
             $args,
@@ -646,6 +652,9 @@ final class ExistingAtomicStaticCallAnalyzer
                 $return_type_candidate,
             );
 
+            $template_result->static_class_type = $static_type;
+            $template_result->static_class_is_final = $final;
+
             if ($template_result->lower_bounds) {
                 $return_type_candidate = TypeExpander::expandUnion(
                     $codebase,
@@ -720,16 +729,8 @@ final class ExistingAtomicStaticCallAnalyzer
     ): array {
         $context_final = false;
 
-        if ($lhs_type_part instanceof TTemplateParam) {
-            $static_type = $lhs_type_part;
-        } elseif ($lhs_type_part instanceof TTemplateParamClass) {
-            $static_type = new TTemplateParam(
-                $lhs_type_part->param_name,
-                $lhs_type_part->as_type
-                    ? new Union([$lhs_type_part->as_type])
-                    : Type::getObject(),
-                $lhs_type_part->defining_class,
-            );
+        if ($template_static_type = self::getTemplateStaticType($lhs_type_part)) {
+            $static_type = $template_static_type;
         } elseif ($stmt->class instanceof PhpParser\Node\Name
             && count($stmt->class->getParts()) === 1
             && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
@@ -760,6 +761,26 @@ final class ExistingAtomicStaticCallAnalyzer
                         || $class_storage->final
                         || $context_final),
         ];
+    }
+
+    /**
+     * `static` of a call on a template receiver (`$t::`, `$class::` with `class-string<T>`)
+     *
+     * @psalm-pure
+     */
+    private static function getTemplateStaticType(Atomic $lhs_type_part): ?TTemplateParam
+    {
+        if ($lhs_type_part instanceof TTemplateParamClass) {
+            return new TTemplateParam(
+                $lhs_type_part->param_name,
+                $lhs_type_part->as_type
+                    ? new Union([$lhs_type_part->as_type])
+                    : Type::getObject(),
+                $lhs_type_part->defining_class,
+            );
+        }
+
+        return $lhs_type_part instanceof TTemplateParam ? $lhs_type_part : null;
     }
 
     /**

@@ -259,6 +259,10 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $template_result->template_types += $method_storage->template_types;
         }
 
+        $template_result->static_class_type = $static_type;
+        $template_result->static_class_is_final = $static_type instanceof TNamedObject
+            && $codebase->classlike_storage_provider->get($static_type->value)->final;
+
         if ($codebase->store_node_types
             && !$stmt->isFirstClassCallable()
             && !$context->collect_initializations

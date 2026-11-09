@@ -564,6 +564,30 @@ final class ArgumentsAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
+        $called_method_id = $method_id !== null && MethodIdentifier::isValidMethodIdReference($method_id)
+            ? MethodIdentifier::fromMethodIdReference($method_id)
+            : null;
+        $static_class_type = $template_result->static_class_type;
+        $static_class_is_final = $template_result->static_class_is_final;
+
+        if ($called_method_id === null
+            || $codebase->methods->getDeclaringMethodId($called_method_id) === null
+            // a template receiver would be reduced to its bound by the hint (see below)
+            || ($static_class_type !== null
+                && !is_string($static_class_type)
+                && (new Union([$static_class_type]))->hasTemplate())
+        ) {
+            // pseudo methods check their arguments against the declared types as they are
+            $static_class_type = null;
+        } elseif ($static_class_type === null) {
+            $static_class_type = $called_method_id->fq_class_name;
+            $static_class_is_final = $codebase->classlike_storage_provider->get($static_class_type)->final;
+        }
+
+        $expand_static = static fn(Union $type): Union => $static_class_type !== null
+            ? TypeExpander::expandStatic($codebase, $type, $static_class_type, $static_class_is_final)
+            : $type;
+
         if (($argument_offset === 1 && in_array($method_id, self::ARRAY_FILTERLIKE, true) && count($args) === 2)
             || ($argument_offset === 0 && $method_id === 'array_map' && count($args) >= 2)
         ) {
@@ -641,28 +665,44 @@ final class ArgumentsAnalyzer
             }
         }
 
-        $replace_template_result = new TemplateResult(
-            $new_bounds,
-            [],
-        );
-        unset($new_bounds);
+        /** @param array<string, array<string, Union>> $bounds */
+        $replace = static function (Union $type, array $bounds) use ($codebase, $statements_analyzer, $context): Union {
+            $replace_template_result = new TemplateResult($bounds, []);
 
-        $replaced_type = TemplateStandinTypeReplacer::replace(
-            $replaced_type,
-            $replace_template_result,
-            $codebase,
-            $statements_analyzer,
-            null,
-            null,
-            null,
-            $context->calling_method_id ?: $context->calling_function_id,
-        );
+            return TemplateInferredTypeReplacer::replace(
+                TemplateStandinTypeReplacer::replace(
+                    $type,
+                    $replace_template_result,
+                    $codebase,
+                    $statements_analyzer,
+                    null,
+                    null,
+                    null,
+                    $context->calling_method_id ?: $context->calling_function_id,
+                ),
+                $replace_template_result,
+                $codebase,
+            );
+        };
 
-        $replaced_type = TemplateInferredTypeReplacer::replace(
-            $replaced_type,
-            $replace_template_result,
-            $codebase,
-        );
+        // an untyped param takes the declared types with `static` of the call, as the argument is checked against
+        // them, before the bounds, which may hold the `static` of the caller, are put in them; a typed param is
+        // narrowed to the hint, so it keeps the `static` it is declared with, the caller's
+        $untyped_bounds = $new_bounds;
+        foreach ($template_result->template_types as $k => $template_map) {
+            foreach ($template_map as $kk => $template_type) {
+                if (($new_bounds[$k][$kk] ?? null) === $template_type) {
+                    $untyped_bounds[$k][$kk] = $expand_static($template_type);
+                }
+            }
+        }
+
+        $untyped_type = $expand_static($replaced_type);
+        $untyped_replaced_type = $untyped_type === $replaced_type && $untyped_bounds === $new_bounds
+            ? null
+            : $replace($untyped_type, $untyped_bounds);
+        $replaced_type = $replace($replaced_type, $new_bounds);
+        $untyped_replaced_type ??= $replaced_type;
 
         $closure_id = strtolower($statements_analyzer->getFilePath())
             . ':' . $arg->value->getLine()
@@ -691,7 +731,9 @@ final class ArgumentsAnalyzer
             }
 
             if (!$has_different_docblock_type) {
-                foreach ($replaced_type->getAtomicTypes() as $replaced_type_part) {
+                $hint_type = $param_storage->type && !$param_type_inferred ? $replaced_type : $untyped_replaced_type;
+
+                foreach ($hint_type->getAtomicTypes() as $replaced_type_part) {
                     if ($replaced_type_part instanceof TCallable
                         || $replaced_type_part instanceof TClosure
                     ) {

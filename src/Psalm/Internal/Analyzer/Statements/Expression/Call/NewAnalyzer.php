@@ -1726,6 +1726,8 @@ final class NewAnalyzer extends CallAnalyzer
             return null;
         }
 
+        $template_result->static_class_type = $fq_class_name;
+
         $self_out_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
             $self_out_candidate,
             $template_result,
