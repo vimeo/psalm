@@ -289,6 +289,10 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                         $use_context->vars_in_scope[$use_var_id]->setProperties(['by_ref' => true]);
                     $use_context->references_to_external_scope[$use_var_id] = true;
 
+                    if (isset($context->bound_globals[$use_var_id])) {
+                        $use_context->bound_globals[$use_var_id] = $context->bound_globals[$use_var_id];
+                    }
+
                     // shared with the enclosing scope, plus what that scope needs to write it
                     $use_context->captured_by_ref[$use_var_id]
                         = AssignmentAnalyzer::getExternalWriteCapabilities($context, $use_var_id);
@@ -440,49 +444,41 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 if (!isset($context->vars_possibly_in_scope[$use_var_id])) {
                     if ($context->check_variables) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new UndefinedVariable(
                                 'Cannot find referenced variable ' . $use_var_id,
                                 new CodeLocation($statements_analyzer->getSource(), $use->var),
                             ),
                             $statements_analyzer->getSuppressedIssues(),
-                        )) {
-                            return false;
-                        }
+                        );
 
-                        return null;
+                        continue;
                     }
                 }
 
                 $first_appearance = $statements_analyzer->getFirstAppearance($use_var_id);
 
                 if ($first_appearance) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new PossiblyUndefinedVariable(
                             'Possibly undefined variable ' . $use_var_id . ', first seen on line ' .
                                 $first_appearance->getLineNumber(),
                             new CodeLocation($statements_analyzer->getSource(), $use->var),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
-                    )) {
-                        return false;
-                    }
+                    );
 
                     continue;
                 }
 
                 if ($context->check_variables) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new UndefinedVariable(
                             'Cannot find referenced variable ' . $use_var_id,
                             new CodeLocation($statements_analyzer->getSource(), $use->var),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
-                    )) {
-                        return false;
-                    }
-
-                    continue;
+                    );
                 }
             }
         }

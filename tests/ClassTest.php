@@ -5,8 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_filter;
+use function array_values;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -14,6 +20,40 @@ final class ClassTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testAnUndefinedClassOfTheSameNativeAndDocblockTypeIsReportedOnce(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @param UndefinedClass $a
+                 */
+                function foo(UndefinedClass $a): void {
+                    echo 1;
+                }
+
+                final class A {
+                    /** @var UndefinedClass */
+                    public UndefinedClass $a;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => $issue->type === 'UndefinedClass',
+        ));
+
+        // once for the parameter, and once for the property: at its docblock or at its native type
+        self::assertCount(2, $issues);
+        self::assertSame(3, $issues[0]->line_from);
+        self::assertContains($issues[1]->line_from, [10, 11]);
+    }
 
     /**
      * @psalm-capabilities read-props|write-this-props|write-props
@@ -54,6 +94,110 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'consistentConstructorClassUsingATraitConstructorKeepsTheOneOfTheTrait' => [
+                'code' => '<?php
+                    trait HasName {
+                        public function __construct(public string $name, public int $age) {}
+                    }
+
+                    class Base {
+                        public function __construct(bool $flag) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        use HasName;
+                    }
+
+                    $child = new Child("name", 5);',
+            ],
+            'consistentConstructorClassKeepsTheConstructorOfItsParent' => [
+                'code' => '<?php
+                    class Base {
+                        public function __construct(string $name) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        public static function create(): static {
+                            return new static("hello");
+                        }
+                    }
+
+                    $direct = new Child("direct");
+                    $created = Child::create();
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Failure extends ErrorException {}
+
+                    $native = new ErrorException("message", 0, E_WARNING, "file.php", 1);
+                    $failure = new Failure("message", 0, E_WARNING, "file.php", 1);',
+            ],
+            'childOfAConsistentConstructorClassMatchesTheConstructorItInherits' => [
+                'code' => '<?php
+                    class Base {
+                        public function __construct(string $name) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {}
+
+                    class GrandChild extends Child {
+                        public function __construct(string $name, int $optional = 0) {}
+                    }',
+            ],
+            'classesOfBothBranchesOfAnUnknownAnd' => [
+                'code' => '<?php
+                    if (rand(0, 1) && rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();
+                    new Second();',
+            ],
+            'classesOfBothBranchesOfAnUnknownLogicalAnd' => [
+                'code' => '<?php
+                    if (rand(0, 1) and rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();
+                    new Second();',
+            ],
+            'classesOfBothBranchesOfAnUnknownOr' => [
+                'code' => '<?php
+                    if (rand(0, 1) || rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();
+                    new Second();',
+            ],
+            'classesOfBothBranchesOfAnUnknownLogicalOr' => [
+                'code' => '<?php
+                    if (rand(0, 1) or rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();
+                    new Second();',
+            ],
             'overrideProtectedAccessLevelToPublic' => [
                 'code' => '<?php
                     class A {
@@ -536,6 +680,128 @@ final class ClassTest extends TestCase
                         $a->foo();
                     }',
             ],
+            'classAliasEnumCase' => [
+                'code' => '<?php
+                    enum Suit { case Hearts; }
+                    class_alias(Suit::class, "SuitAlias");
+
+                    $case = SuitAlias::Hearts;',
+                'assertions' => [
+                    '$case===' => 'enum(Suit::Hearts)',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classAliasEnumCaseThroughClassString' => [
+                'code' => '<?php
+                    enum Suit { case Hearts; }
+                    class_alias(Suit::class, "SuitAlias");
+
+                    /** @param SuitAlias::class $enum */
+                    function hearts(string $enum): Suit {
+                        return $enum::Hearts;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classAliasClassLiteralKeepsAliasSpelling' => [
+                'code' => '<?php
+                    enum Suit {}
+                    class_alias(Suit::class, "SuitAlias");
+                    interface HasLabel {}
+                    class_alias(HasLabel::class, "LabelAlias");
+
+                    $enum = SuitAlias::class;
+                    $interface = LabelAlias::class;',
+                'assertions' => [
+                    '$enum===' => 'SuitAlias::class',
+                    '$interface===' => 'LabelAlias::class',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classAliasInterfaceConstant' => [
+                'code' => '<?php
+                    interface HasLabel {
+                        /** @var string */
+                        public const LABEL = "x";
+                    }
+                    class_alias(HasLabel::class, "LabelAlias");
+
+                    function f(): string {
+                        return LabelAlias::LABEL;
+                    }',
+            ],
+            'classAliasAttribute' => [
+                'code' => '<?php
+                    #[Attribute]
+                    final class Tag {}
+                    class_alias(Tag::class, "TagAlias");
+
+                    #[Tag, TagAlias]
+                    final class Tagged {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classAliasTraitInitializedInConstructor' => [
+                'code' => '<?php
+                    trait Greets {
+                        private string $greeting;
+                        private function init(): void {
+                            $this->greeting = "hi";
+                        }
+                    }
+                    class_alias(Greets::class, "GreetsAlias");
+
+                    final class Greeter {
+                        use GreetsAlias;
+                        public function __construct() {
+                            $this->init();
+                        }
+                    }',
+            ],
+            'classAliasPropertiesOf' => [
+                'code' => '<?php
+                    final class Row {
+                        public int $id = 1;
+                    }
+                    class_alias(Row::class, "RowAlias");
+
+                    /** @param properties-of<RowAlias> $p */
+                    function id(array $p): int {
+                        return $p["id"];
+                    }',
+            ],
+            'classAliasImportType' => [
+                'code' => '<?php
+                    /** @psalm-type Row = array{id: int} */
+                    final class Rows {}
+                    class_alias(Rows::class, "RowsAlias");
+
+                    /** @psalm-import-type Row from RowsAlias */
+                    final class UsesRow {
+                        /** @param Row $r */
+                        public function id(array $r): int {
+                            return $r["id"];
+                        }
+                    }',
+            ],
+            'classAliasImportTypeInIntersection' => [
+                'code' => '<?php
+                    /** @psalm-type Row = array{id: int} */
+                    final class Rows {}
+                    class_alias(Rows::class, "RowsAlias");
+
+                    /** @psalm-import-type Row from RowsAlias */
+                    final class UsesRow {
+                        /** @param Row&array{name: string} $r */
+                        public function id(array $r): int {
+                            return $r["id"];
+                        }
+                    }',
+            ],
             'resourceAndNumericSoftlyReserved' => [
                 'code' => '<?php
                     namespace {
@@ -776,6 +1042,138 @@ final class ClassTest extends TestCase
                     '$a===' => 'iter<int, a&static>',
                 ],
             ],
+            'preventDoubleStaticResolutionAfterUnionWithNull' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+                    }
+
+                    /** @template T */
+                    interface Bag {
+                        /** @return static<int> */
+                        public function map(): static;
+                    }
+
+                    /** @return Bag<string> */
+                    function bag(): Bag {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T|null>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }
+
+                    $bag = bag();
+                    $a = box($bag->map());
+                    $b = $a->same();
+                    $c = $b->same();',
+                'assertions' => [
+                    '$a===' => 'Box<Bag<int>&static|null>',
+                    '$b===' => 'Box<Bag<int>&static|null>',
+                    '$c===' => 'Box<Bag<int>&static|null>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'preventDoubleStaticResolutionAfterUnionOfStatics' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+                    }
+
+                    /** @template T */
+                    interface Bag {
+                        /** @return static<int> */
+                        public function toInt(): static;
+
+                        /** @return static<float> */
+                        public function toFloat(): static;
+                    }
+
+                    /** @return Bag<string> */
+                    function bag(): Bag {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }
+
+                    $bag = bag();
+                    $a = box(rand(0, 1) ? $bag->toInt() : $bag->toFloat());
+                    $b = $a->same();',
+                'assertions' => [
+                    '$b===' => 'Box<Bag<float>&static|Bag<int>&static>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'preventDoubleStaticResolutionAfterClosureInference' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+
+                        /**
+                         * @template U
+                         * @param Closure(T): U $f
+                         * @return Box<U>
+                         */
+                        public function apply(Closure $f): self {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @template T */
+                    interface Bag {
+                        /** @return static<int> */
+                        public function map(): static;
+                    }
+
+                    /** @return Bag<string> */
+                    function bag(): Bag {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }
+
+                    $a = box(bag()->map())->apply(fn($x) => $x);
+                    $b = $a->same();',
+                'assertions' => [
+                    '$a===' => 'Box<Bag<int>&static>',
+                    '$b===' => 'Box<Bag<int>&static>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'allowTraversableImplementationAlongWithIteratorAggregate' => [
                 'code' => '<?php
                     /**
@@ -978,6 +1376,168 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'consistentConstructorClassUsingATraitConstructorDoesNotTakeTheOneOfTheParent' => [
+                'code' => '<?php
+                    trait HasName {
+                        public function __construct(public string $name, public int $age) {}
+                    }
+
+                    class Base {
+                        public function __construct(bool $flag) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        use HasName;
+                    }
+
+                    $child = new Child(true);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'consistentConstructorClassWithoutAParentConstructorTakesNoArguments' => [
+                'code' => '<?php
+                    class Base {}
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        public static function create(): static {
+                            return new static("hello");
+                        }
+                    }',
+                'error_message' => 'TooManyArguments',
+            ],
+            'undefinedClassParamWithTemplateDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $a
+                     */
+                    function foo(UndefinedClass $a): void {
+                        echo 1;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'undefinedClassParamWithMixedDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $a
+                     */
+                    function foo(UndefinedClass $a): void {
+                        echo 1;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'undefinedClassPropertyWithMixedDocblock' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var mixed */
+                        public UndefinedClass $a;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'undefinedClassPropertyWithTemplateDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class A {
+                        /** @var T */
+                        public UndefinedClass $a;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'elseOfAKnownTrueAndIsNotDeclared' => [
+                'code' => '<?php
+                    if (function_exists("strlen") && function_exists("strpos")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new Second();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'elseOfAKnownTrueLogicalAndIsNotDeclared' => [
+                'code' => '<?php
+                    if (function_exists("strlen") and function_exists("strpos")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new Second();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'elseOfAKnownTrueOrIsNotDeclared' => [
+                'code' => '<?php
+                    if (function_exists("strlen") || rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new Second();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'elseOfAKnownTrueLogicalOrIsNotDeclared' => [
+                'code' => '<?php
+                    if (rand(0, 1) or function_exists("strlen")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new Second();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'ifOfAKnownFalseAndIsNotDeclared' => [
+                'code' => '<?php
+                    if (!function_exists("strlen") && rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'ifOfAKnownFalseLogicalAndIsNotDeclared' => [
+                'code' => '<?php
+                    if (rand(0, 1) and !function_exists("strlen")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'ifOfAKnownFalseOrIsNotDeclared' => [
+                'code' => '<?php
+                    if (!function_exists("strlen") || !function_exists("strpos")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'ifOfAKnownFalseLogicalOrIsNotDeclared' => [
+                'code' => '<?php
+                    if (!function_exists("strlen") or !function_exists("strpos")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();',
+                'error_message' => 'UndefinedClass',
+            ],
             'undefinedClass' => [
                 'code' => '<?php
                     (new Foo());',
@@ -1537,6 +2097,57 @@ final class ClassTest extends TestCase
                     PHP,
                 'error_message' => 'DuplicateProperty',
                 'error_levels' => [],
+            ],
+            'classAliasRepeatedNonRepeatableAttribute' => [
+                'code' => '<?php
+                    #[Attribute]
+                    final class Tag {}
+                    class_alias(Tag::class, "TagAlias");
+
+                    #[TagAlias, TagAlias]
+                    final class Tagged {}',
+                'error_message' => 'Attribute TagAlias is not repeatable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'classAliasDocblockConstant' => [
+                'code' => '<?php
+                    final class Level {
+                        public const A = "a";
+                        public const B = "b";
+                    }
+                    class_alias(Level::class, "LevelAlias");
+
+                    /** @param LevelAlias::A|LevelAlias::B $v */
+                    function f(string $v): void {}
+                    f("c");',
+                'error_message' => 'expects \'a\'|\'b\', but \'c\' provided',
+            ],
+            'classAliasReflectionGetAttributes' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_METHOD)]
+                    final class Tag {}
+                    class_alias(Tag::class, "TagAlias");
+
+                    final class Tagged {}
+                    (new ReflectionClass(Tagged::class))->getAttributes("TagAlias");',
+                'error_message' => 'Attribute TagAlias cannot be used on a class',
+                'error_levels' => ['ArgumentTypeCoercion'],
+                'php_version' => '8.0',
+            ],
+            'classAliasCallableArray' => [
+                'code' => '<?php
+                    final class Num {
+                        public static function twice(int $i): int {
+                            return $i * 2;
+                        }
+                    }
+                    class_alias(Num::class, "NumAlias");
+
+                    /** @param callable(string):int $f */
+                    function takeWrong(callable $f): void {}
+                    takeWrong(["NumAlias", "twice"]);',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }

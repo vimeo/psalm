@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
@@ -67,7 +68,8 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
-use function array_filter;
+use function array_flip;
+use function array_intersect_key;
 use function array_keys;
 use function array_map;
 use function array_search;
@@ -75,8 +77,6 @@ use function count;
 use function explode;
 use function in_array;
 use function strtolower;
-
-use const ARRAY_FILTER_USE_KEY;
 
 /**
  * @internal
@@ -162,7 +162,7 @@ final class AtomicPropertyFetchAnalyzer
         // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
         if ($lhs_type_part instanceof TObject
             || (
-                in_array(strtolower($lhs_type_part->value), Config::getInstance()->getUniversalObjectCrates(), true)
+                $statements_analyzer->getCodebase()->classlikes->isUniversalObjectCrate($lhs_type_part->value)
                 && $intersection_types === []
             )
         ) {
@@ -223,17 +223,21 @@ final class AtomicPropertyFetchAnalyzer
                 $has_valid_fetch_type = true;
                 $statements_analyzer->node_data->setType(
                     $stmt,
-                    new Union([
-                        new TString(),
-                        new TInt(),
-                    ]),
+                    self::combineWithTypeOfEarlierParts(
+                        $statements_analyzer,
+                        $stmt,
+                        new Union([
+                            new TString(),
+                            new TInt(),
+                        ]),
+                    ),
                 );
             } elseif ($prop_name === 'value' && $class_storage->enum_type !== null && $class_storage->enum_cases) {
                 $has_valid_fetch_type = true;
-                self::handleEnumValue($statements_analyzer, $stmt, $stmt_var_type, $class_storage);
+                self::handleEnumValue($statements_analyzer, $stmt, $stmt_var_type, $class_storage, $lhs_type_part);
             } elseif ($prop_name === 'name') {
                 $has_valid_fetch_type = true;
-                self::handleEnumName($statements_analyzer, $stmt, $stmt_var_type, $class_storage);
+                self::handleEnumName($statements_analyzer, $stmt, $stmt_var_type, $class_storage, $lhs_type_part);
             } else {
                 self::handleNonExistentProperty(
                     $statements_analyzer,
@@ -296,12 +300,38 @@ final class AtomicPropertyFetchAnalyzer
                         $is_static_access,
                     );
 
+                    // the shape only narrows the type: taint flows through the class's own property
+                    $shape_type = $statements_analyzer->node_data->getType($stmt);
+
+                    if ($shape_type) {
+                        self::processTaints(
+                            $statements_analyzer,
+                            $stmt,
+                            $shape_type,
+                            $property_id,
+                            $class_storage,
+                            $in_assignment,
+                            $context,
+                        );
+
+                        $statements_analyzer->node_data->setType($stmt, $shape_type);
+                    }
+
                     return;
                 }
             }
 
-            if ($class_storage->namedMixins) {
-                foreach ($class_storage->getNamedMixinsForLookup() as $mixin) {
+            $has_named_mixins = (bool) $class_storage->namedMixins;
+            $matched_mixin = false;
+            $templated_mixins = $class_storage->templatedMixins
+                ? self::resolveTemplatedMixins($codebase, $class_storage, $lhs_type_part)
+                : [];
+
+            if ($has_named_mixins || $templated_mixins) {
+                // named mixins come last so they keep precedence (last match wins)
+                $mixins = [...$templated_mixins, ...$class_storage->getNamedMixinsForLookup()];
+
+                foreach ($mixins as $mixin) {
                     $new_property_id = $mixin->value . '::$' . $prop_name;
 
                     try {
@@ -322,6 +352,7 @@ final class AtomicPropertyFetchAnalyzer
                         )
                             || isset($new_class_storage->pseudo_property_get_types['$' . $prop_name]))
                     ) {
+                        $matched_mixin = true;
                         $fq_class_name = $mixin->value;
                         $lhs_type_part = $mixin;
                         $class_storage = $new_class_storage;
@@ -333,7 +364,9 @@ final class AtomicPropertyFetchAnalyzer
                         $property_id = $new_property_id;
                     }
                 }
-            } elseif ($intersection_types !== [] && !$class_storage->final) {
+            }
+
+            if (!$has_named_mixins && !$matched_mixin && $intersection_types !== [] && !$class_storage->final) {
                 foreach ($intersection_types as $intersection_type) {
                     self::analyze(
                         $statements_analyzer,
@@ -510,6 +543,8 @@ final class AtomicPropertyFetchAnalyzer
             $declaring_property_class,
         );
 
+        $unset_charged = false;
+
         if (isset($declaring_class_storage->properties[$prop_name])) {
             self::checkPropertyDeprecation($prop_name, $declaring_property_class, $stmt, $statements_analyzer);
 
@@ -551,7 +586,7 @@ final class AtomicPropertyFetchAnalyzer
             }
 
             if (UnsetAnalyzer::writesFetchedProperty($context, $stmt, $property_storage->type)) {
-                InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
+                $unset_charged = InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
                     $statements_analyzer,
                     $stmt,
                     $property_id,
@@ -586,15 +621,17 @@ final class AtomicPropertyFetchAnalyzer
 
         if (!self::isFreeToAccess($statements_analyzer, $stmt, $class_storage)) {
             if (UnsetAnalyzer::writesFetchedProperty($context, $stmt, $class_property_type)) {
-                $statements_analyzer->signalMutation(
-                    $stmt_var_id === '$this'
-                        ? Capabilities::WRITE_THIS_PROPS
-                        : Capabilities::WRITE_PROPS,
-                    $context,
-                    'unsetting a property on a mutable object',
-                    ImpurePropertyAssignment::class,
-                    $stmt,
-                );
+                if (!$unset_charged) {
+                    $statements_analyzer->signalMutation(
+                        $stmt_var_id === '$this'
+                            ? Capabilities::WRITE_THIS_PROPS
+                            : Capabilities::WRITE_PROPS,
+                        $context,
+                        'unsetting a property on a mutable object',
+                        ImpurePropertyAssignment::class,
+                        $stmt,
+                    );
+                }
             } else {
                 $statements_analyzer->signalMutation(
                     Capabilities::READ_PROPS,
@@ -749,7 +786,10 @@ final class AtomicPropertyFetchAnalyzer
                     $context,
                 );
 
-                $statements_analyzer->node_data->setType($stmt, $stmt_type);
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    Type::combineUnionTypes($stmt_type, $statements_analyzer->node_data->getType($stmt)),
+                );
 
                 return false;
             }
@@ -1119,28 +1159,30 @@ final class AtomicPropertyFetchAnalyzer
         PropertyFetch $stmt,
         Union $stmt_var_type,
         ClassLikeStorage $class_storage,
+        Atomic $lhs_type_part,
     ): void {
-        $relevant_enum_cases = array_filter(
-            $stmt_var_type->getAtomicTypes(),
-            static fn(Atomic $type): bool => $type instanceof TEnumCase,
-        );
-        $relevant_enum_case_names = array_map(
-            static fn(TEnumCase $enumCase): string => $enumCase->case_name,
-            $relevant_enum_cases,
-        );
+        $relevant_enum_case_names = self::getReachableEnumCaseNames($stmt_var_type, $class_storage, $lhs_type_part);
 
-        if (empty($relevant_enum_case_names)) {
+        if ($relevant_enum_case_names === []) {
+            return;
+        }
+
+        if ($relevant_enum_case_names === null) {
             $relevant_enum_case_names = array_keys($class_storage->enum_cases);
         }
 
         $statements_analyzer->node_data->setType(
             $stmt,
-            empty($relevant_enum_case_names)
-                ? Type::getNonEmptyString()
-                : new Union(array_map(
-                    static fn(string $name): TString => Type::getAtomicStringFromLiteral($name),
-                    $relevant_enum_case_names,
-                )),
+            self::combineWithTypeOfEarlierParts(
+                $statements_analyzer,
+                $stmt,
+                $relevant_enum_case_names === []
+                    ? Type::getNonEmptyString()
+                    : new Union(array_map(
+                        static fn(string $name): TString => Type::getAtomicStringFromLiteral($name),
+                        $relevant_enum_case_names,
+                    )),
+            ),
         );
     }
 
@@ -1149,25 +1191,17 @@ final class AtomicPropertyFetchAnalyzer
         PropertyFetch $stmt,
         Union $stmt_var_type,
         ClassLikeStorage $class_storage,
+        Atomic $lhs_type_part,
     ): void {
-        $relevant_enum_cases = array_filter(
-            $stmt_var_type->getAtomicTypes(),
-            static fn(Atomic $type): bool => $type instanceof TEnumCase,
-        );
-        $relevant_enum_case_names = array_map(
-            static fn(TEnumCase $enumCase): string => $enumCase->case_name,
-            $relevant_enum_cases,
-        );
+        $relevant_enum_case_names = self::getReachableEnumCaseNames($stmt_var_type, $class_storage, $lhs_type_part);
 
-        $enum_cases = $class_storage->enum_cases;
-        if (!empty($relevant_enum_case_names)) {
-            // If we have a known subset of enum cases, include only those
-            $enum_cases = array_filter(
-                $enum_cases,
-                static fn(string $key) => in_array($key, $relevant_enum_case_names, true),
-                ARRAY_FILTER_USE_KEY,
-            );
+        if ($relevant_enum_case_names === []) {
+            return;
         }
+
+        $enum_cases = $relevant_enum_case_names === null
+            ? $class_storage->enum_cases
+            : array_intersect_key($class_storage->enum_cases, array_flip($relevant_enum_case_names));
 
         $case_values = [];
 
@@ -1179,8 +1213,64 @@ final class AtomicPropertyFetchAnalyzer
         /** @psalm-suppress ArgumentTypeCoercion */
         $statements_analyzer->node_data->setType(
             $stmt,
-            new Union($case_values),
+            self::combineWithTypeOfEarlierParts($statements_analyzer, $stmt, new Union($case_values)),
         );
+    }
+
+    /**
+     * The type of an enum's `value` or `name` fetch is that of every part of the receiver together. A part that is
+     * mixed already has its own fetch reported, and its type must not make the enum's value mixed too.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function combineWithTypeOfEarlierParts(
+        StatementsAnalyzer $statements_analyzer,
+        PropertyFetch $stmt,
+        Union $type,
+    ): Union {
+        $earlier_parts = $statements_analyzer->node_data->getType($stmt);
+
+        if ($earlier_parts === null || $earlier_parts->hasMixed()) {
+            return $type;
+        }
+
+        return Type::combineUnionTypes($type, $earlier_parts);
+    }
+
+    /**
+     * The names of the cases of the enum of $class_storage the receiver can be: null when it can be any of them,
+     * and an empty list when $lhs_type_part is not the first atomic type of that enum (the first one stands for
+     * all of them, so a union of many cases is not processed once per case).
+     *
+     * @return list<string>|null
+     * @psalm-capabilities read-props
+     */
+    private static function getReachableEnumCaseNames(
+        Union $stmt_var_type,
+        ClassLikeStorage $class_storage,
+        Atomic $lhs_type_part,
+    ): ?array {
+        $enum_name = strtolower($class_storage->name);
+        $case_names = [];
+
+        foreach ($stmt_var_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject || strtolower($atomic_type->value) !== $enum_name) {
+                continue;
+            }
+
+            if ($case_names === [] && $atomic_type !== $lhs_type_part) {
+                return [];
+            }
+
+            if (!$atomic_type instanceof TEnumCase) {
+                return null;
+            }
+
+            $case_names[] = $atomic_type->case_name;
+        }
+
+        // the receiver is a template param or an intersection, which stands for the enum without naming its cases
+        return $case_names === [] ? null : $case_names;
     }
 
     /**
@@ -1281,8 +1371,16 @@ final class AtomicPropertyFetchAnalyzer
             $override_property_visibility = $interface_storage->override_property_visibility;
 
             $intersects_with_enum = false;
+            $intersects_with_shape_property = false;
 
             foreach ($intersection_types as $intersection_type) {
+                if ($intersection_type instanceof TObjectWithProperties
+                    && $stmt->name instanceof PhpParser\Node\Identifier
+                    && isset($intersection_type->properties[$stmt->name->name])
+                ) {
+                    $intersects_with_shape_property = true;
+                }
+
                 if ($intersection_type instanceof TNamedObject
                     && $codebase->classExists($intersection_type->value)
                 ) {
@@ -1310,7 +1408,7 @@ final class AtomicPropertyFetchAnalyzer
             $has_get_hook = $codebase->analysis_php_version_id >= 8_04_00 &&
                 $interface_property?->hook_get !== null;
 
-            if (!$class_exists && !$is_enum_interface && !$has_get_hook) {
+            if (!$class_exists && !$is_enum_interface && !$has_get_hook && !$intersects_with_shape_property) {
                 if (IssueBuffer::accepts(
                     new NoInterfaceProperties(
                         'Interfaces cannot have properties',
@@ -1349,6 +1447,55 @@ final class AtomicPropertyFetchAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * Resolves `@mixin T` declarations to concrete classes for this receiver, using its
+     * generic arguments or the `@extends` arguments of the class it is an instance of.
+     * Mixins that resolve to a union (e.g. `Wrapper<A|B>`) are skipped: no single class owns the property.
+     *
+     * @return list<TNamedObject>
+     */
+    private static function resolveTemplatedMixins(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        Atomic $lhs_type_part,
+    ): array {
+        $resolved_mixins = [];
+
+        foreach ($class_storage->templatedMixins as $mixin) {
+            try {
+                $defining_storage = $codebase->classlike_storage_provider->get($mixin->defining_class);
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+
+            $template_params = ClassTemplateParamCollector::collect(
+                $codebase,
+                $defining_storage,
+                $class_storage,
+                null,
+                $lhs_type_part,
+            );
+
+            if ($template_params === null) {
+                continue;
+            }
+
+            $resolved = TemplateInferredTypeReplacer::replace(
+                new Union([$mixin]),
+                new TemplateResult([], $template_params),
+                $codebase,
+            );
+
+            $resolved_atomic = $resolved->isSingle() ? $resolved->getSingleAtomic() : null;
+
+            if ($resolved_atomic instanceof TNamedObject) {
+                $resolved_mixins[] = $resolved_atomic;
+            }
+        }
+
+        return $resolved_mixins;
     }
 
     private static function handleNonExistentProperty(
@@ -1404,7 +1551,10 @@ final class AtomicPropertyFetchAnalyzer
             );
 
             $has_valid_fetch_type = true;
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                Type::combineUnionTypes($stmt_type, $statements_analyzer->node_data->getType($stmt)),
+            );
 
             return;
         }

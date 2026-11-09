@@ -12,6 +12,7 @@ use Composer\Semver\VersionParser;
 use DOMAttr;
 use DOMDocument;
 use DOMElement;
+use FilesystemIterator;
 use Generator;
 use InvalidArgumentException;
 use JsonException;
@@ -42,6 +43,7 @@ use Psalm\Internal\Lz4Serializer;
 use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
 use Psalm\Internal\Provider\AddRemoveTaints\JsonEncodeTainter;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Internal\ZstdSerializer;
 use Psalm\Issue\ArgumentIssue;
 use Psalm\Issue\ClassConstantIssue;
 use Psalm\Issue\ClassIssue;
@@ -58,8 +60,11 @@ use Psalm\Plugin\PluginInterface;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Type\TaintKind;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use RuntimeException;
 use SimpleXMLElement;
+use SplFileInfo;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 use UnexpectedValueException;
@@ -121,6 +126,7 @@ use function rtrim;
 use function scandir;
 use function sha1;
 use function simplexml_import_dom;
+use function sort;
 use function str_contains;
 use function str_ends_with;
 use function str_replace;
@@ -162,6 +168,8 @@ final class Config
     public const INIT_PROJECT_FILES_NOW = false;
 
     final public const DEFAULT_BASELINE_NAME = 'psalm-baseline.xml';
+    private const ZSTD_MINIMUM_VERSION = '0.15.0';
+
     private const DEFAULT_FILE_NAMES = [
         'psalm.xml',
         'psalm.xml.dist',
@@ -189,7 +197,6 @@ final class Config
         'symfony/framework-bundle' => 'Psalm\SymfonyPsalmPlugin\Plugin',
         'laravel/framework' => 'Psalm\LaravelPlugin\Plugin',
         'orchestra/testbench' => 'Psalm\LaravelPlugin\Plugin',
-        'sabre/event' => 'Psalm\SabreEventPlugin\Plugin',
     ];
 
     /**
@@ -358,11 +365,13 @@ final class Config
 
     public bool $allow_bool_to_literal_bool_comparison = true;
 
+    public bool $strict_nullable_comparison = false;
+
     public bool $remember_property_assignments_after_call = true;
 
     public bool $use_igbinary = false;
 
-    /** @var 'lz4'|'deflate'|'off' */
+    /** @var 'zstd'|'lz4'|'deflate'|'off' */
     public string $compressor = 'off';
 
     public bool $allow_string_standin_for_class = false;
@@ -437,6 +446,8 @@ final class Config
     public bool $ensure_array_int_offsets_exist = false;
 
     public bool $ensure_override_attribute = true;
+
+    public bool $suggest_purity_annotations = false;
 
     /**
      * @var array<lowercase-string, bool>
@@ -605,6 +616,8 @@ final class Config
         "geos" => null,
         "gmp" => null,
         "ibm_db2" => null,
+        "imagick" => null,
+        "memcached" => null,
         "mongodb" => null,
         "mysqli" => null,
         "pdo" => null,
@@ -898,6 +911,39 @@ final class Config
     }
 
     /**
+     * @param list<string> $warnings
+     * @return 'zstd'|'lz4'|'deflate'|'off'
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function resolveCompressor(string $requested, array &$warnings): string
+    {
+        $has_zstd = function_exists('zstd_compress') && function_exists('zstd_uncompress')
+            && version_compare((string) phpversion('zstd'), self::ZSTD_MINIMUM_VERSION, '>=');
+        $has_zlib = function_exists('gzinflate') && function_exists('gzdeflate');
+        $automatic = $has_zstd ? 'zstd' : ($has_zlib ? 'deflate' : 'off');
+
+        [$compressor, $missing] = match ($requested) {
+            'zstd' => ['zstd', $has_zstd ? null : 'ext-zstd ' . self::ZSTD_MINIMUM_VERSION . ' or later'],
+            'lz4' => [
+                'lz4',
+                function_exists('lz4_compress') && function_exists('lz4_uncompress') ? null : 'ext-lz4',
+            ],
+            'deflate' => ['deflate', $has_zlib ? null : 'ext-zlib'],
+            'off' => ['off', null],
+            default => [$automatic, null],
+        };
+        if ($missing === null) {
+            return $compressor;
+        }
+
+        $warnings[] = $missing . ' is missing, '
+            . ($automatic === 'off' ? 'cache compression disabled' : "using $automatic cache compression")
+            . ' (compressor="' . $requested . '" in the config)';
+
+        return $automatic;
+    }
+
+    /**
      * @param positive-int $line_number 1-based line number
      * @return int 0-based byte offset
      * @throws OutOfBoundsException
@@ -1057,6 +1103,7 @@ final class Config
             'respectIncludeOnce' => 'respect_include_once',
             'strictBinaryOperands' => 'strict_binary_operands',
             'allowBoolToLiteralBoolComparison' => 'allow_bool_to_literal_bool_comparison',
+            'strictNullableComparison' => 'strict_nullable_comparison',
             'rememberPropertyAssignmentsAfterCall' => 'remember_property_assignments_after_call',
             'disableVarParsing' => 'disable_var_parsing',
             'allowStringToStandInForClass' => 'allow_string_standin_for_class',
@@ -1074,6 +1121,7 @@ final class Config
             'ensureArrayStringOffsetsExist' => 'ensure_array_string_offsets_exist',
             'ensureArrayIntOffsetsExist' => 'ensure_array_int_offsets_exist',
             'ensureOverrideAttribute' => 'ensure_override_attribute',
+            'suggestPurityAnnotations' => 'suggest_purity_annotations',
             'reportMixedIssues' => 'show_mixed_issues',
             'skipChecksOnUnresolvableIncludes' => 'skip_checks_on_unresolvable_includes',
             'sealAllMethods' => 'seal_all_methods',
@@ -1213,26 +1261,10 @@ final class Config
             $config->use_igbinary = version_compare($igbinary_version, '2.0.5') >= 0;
         }
 
-        if (isset($config_xml['compressor'])) {
-            $compressor = (string) $config_xml['compressor'];
-            if ($compressor === 'lz4') {
-                if (function_exists('lz4_compress') && function_exists('lz4_uncompress')) {
-                    $config->compressor = 'lz4';
-                } else {
-                    $config->config_warnings[] = 'ext-lz4 is missing, cache compression disabled'
-                        . ' (compressor="lz4" in the config)';
-                }
-            } elseif ($compressor === 'deflate') {
-                if (function_exists('gzinflate') && function_exists('gzdeflate')) {
-                    $config->compressor = 'deflate';
-                } else {
-                    $config->config_warnings[] = 'ext-zlib is missing, cache compression disabled'
-                        . ' (compressor="deflate" in the config)';
-                }
-            }
-        } elseif (function_exists('gzinflate') && function_exists('gzdeflate')) {
-            $config->compressor = 'deflate';
-        }
+        $config->compressor = self::resolveCompressor(
+            (string) ($config_xml['compressor'] ?? 'auto'),
+            $config->config_warnings,
+        );
 
         if (isset($config_xml['findUnusedCode'])) {
             $attribute_text = (string) $config_xml['findUnusedCode'];
@@ -1475,34 +1507,48 @@ final class Config
             }
         }
 
-        if (isset($config_xml->stubs) && isset($config_xml->stubs->file)) {
-            /** @var SimpleXMLElement $stub_file */
-            foreach ($config_xml->stubs->file as $stub_file) {
-                $stub_file_name = (string)$stub_file['name'];
-                if (!Path::isAbsolute($stub_file_name)) {
-                    $stub_file_name = $config->base_dir . DIRECTORY_SEPARATOR . $stub_file_name;
-                }
-                $file_path = realpath($stub_file_name);
-
-                if (!$file_path) {
-                    throw new ConfigException(
-                        'Cannot resolve stubfile path '
-                            . $config->base_dir
-                            . DIRECTORY_SEPARATOR
-                            . $stub_file['name'],
-                    );
-                }
-
-                if (isset($stub_file['preloadClasses'])) {
-                    $preload_classes = (string)$stub_file['preloadClasses'];
-
-                    if ($preload_classes === 'true' || $preload_classes === '1') {
-                        $config->addPreloadedStubFile($file_path);
-                    } else {
-                        $config->addStubFile($file_path);
+        if (isset($config_xml->stubs)) {
+            // the files and directories are registered in the order they are listed, as a stub may need another
+            foreach ($config_xml->stubs->children() ?? [] as $stub) {
+                if ($stub->getName() === 'file') {
+                    $stub_file_name = (string)$stub['name'];
+                    if (!Path::isAbsolute($stub_file_name)) {
+                        $stub_file_name = $config->base_dir . DIRECTORY_SEPARATOR . $stub_file_name;
                     }
-                } else {
-                    $config->addStubFile($file_path);
+                    $file_path = realpath($stub_file_name);
+
+                    if (!$file_path) {
+                        throw new ConfigException('Cannot resolve stubfile path ' . $stub_file_name);
+                    }
+
+                    $config->addStubFileFromXml($file_path, $stub);
+                } elseif ($stub->getName() === 'directory') {
+                    $stub_directory_name = (string)$stub['name'];
+                    if (!Path::isAbsolute($stub_directory_name)) {
+                        $stub_directory_name = $config->base_dir . DIRECTORY_SEPARATOR . $stub_directory_name;
+                    }
+                    $directory_path = realpath($stub_directory_name);
+
+                    if ($directory_path === false || !is_dir($directory_path)) {
+                        throw new ConfigException('Cannot resolve stubs directory path ' . $stub_directory_name);
+                    }
+
+                    $stub_file_paths = [];
+                    foreach (new RecursiveIteratorIterator(
+                        new RecursiveDirectoryIterator($directory_path, FilesystemIterator::SKIP_DOTS),
+                    ) as $file) {
+                        assert($file instanceof SplFileInfo);
+                        if (in_array($file->getExtension(), ['php', 'phpstub'], true)) {
+                            $stub_file_paths[] = $file->getPathname();
+                        }
+                    }
+
+                    // a stub may use the classes of another one, so keep the order the same on every machine
+                    sort($stub_file_paths);
+
+                    foreach ($stub_file_paths as $file_path) {
+                        $config->addStubFileFromXml($file_path, $stub);
+                    }
                 }
             }
         }
@@ -1573,7 +1619,6 @@ final class Config
                                 $base_dir,
                             );
                         } else {
-                            /** @var string $key */
                             $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
                                 $issue_handler,
                                 $base_dir,
@@ -1896,7 +1941,10 @@ final class Config
                 self::requirePath($pluginclas_class_path);
             } else {
                 if (!class_exists($pluginClassName)) {
-                    throw new UnexpectedValueException($pluginClassName . ' is not a known class');
+                    throw new UnexpectedValueException(
+                        $pluginClassName . ' is not a known class:'
+                        . ' is the Composer package that provides it installed?',
+                    );
                 }
             }
             if (!is_a($pluginClassName, PluginInterface::class, true)) {
@@ -2442,9 +2490,6 @@ final class Config
         return null;
     }
 
-    /**
-     * @psalm-mutation-free
-     */
     public function getReportingLevelForFunction(string $issue_type, string $function_id): ?string
     {
         $level = null;
@@ -2638,10 +2683,20 @@ final class Config
             $core_generic_files[] = $stringable_path;
         }
 
+        if (PHP_VERSION_ID < 8_06_00 && $codebase->analysis_php_version_id >= 8_06_00) {
+            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php86.phpstub';
+
+            if (!file_exists($stringable_path)) {
+                throw new UnexpectedValueException('Cannot locate PHP 8.6 classes');
+            }
+
+            $core_generic_files[] = $stringable_path;
+        }
+
         // Genuinely-new classes from every version live in PhpVersionedClasses.phpstub (always
         // loaded via internal_stubs). When the running PHP is older than the newest of them, its
         // reflection cannot provide them, so preload the file too.
-        if (PHP_VERSION_ID < 8_05_00) {
+        if (PHP_VERSION_ID < 8_06_00) {
             $versioned_classes_path = dirname(__DIR__, 2) . '/stubs/PhpVersionedClasses.phpstub';
 
             if (!file_exists($versioned_classes_path)) {
@@ -2763,6 +2818,11 @@ final class Config
 
         if ($codebase->analysis_php_version_id >= 8_04_00) {
             $this->internal_stubs[] = $stubsDir . 'Php84.phpstub';
+        }
+
+        if ($codebase->analysis_php_version_id >= 8_06_00) {
+            $this->internal_stubs[] = $stubsDir . 'Php86.phpstub';
+            $this->internal_stubs[] = $stubsDir . 'Php86Functions.phpstub';
         }
 
         $ext_stubs_dir = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs" . DIRECTORY_SEPARATOR . "extensions";
@@ -3239,6 +3299,21 @@ final class Config
         $this->stub_files[$stub_file] = $stub_file;
     }
 
+    private function addStubFileFromXml(string $file_path, SimpleXMLElement $stub): void
+    {
+        if (isset($stub['preloadClasses'])) {
+            $preload_classes = (string)$stub['preloadClasses'];
+
+            if ($preload_classes === 'true' || $preload_classes === '1') {
+                $this->addPreloadedStubFile($file_path);
+
+                return;
+            }
+        }
+
+        $this->addStubFile($file_path);
+    }
+
     /**
      * @psalm-mutation-free
      */
@@ -3341,7 +3416,7 @@ final class Config
 
     public function addUniversalObjectCrate(string $class): void
     {
-        if (!class_exists($class)) {
+        if (!class_exists($class) && !interface_exists($class)) {
             throw new UnexpectedValueException($class . ' is not a known class');
         }
         $this->universal_object_crates[] = strtolower($class);
@@ -3363,6 +3438,7 @@ final class Config
     {
         $s = $this->use_igbinary ? new IgbinarySerializer : new NativeSerializer();
         return match ($this->compressor) {
+            'zstd' => new ZstdSerializer($s),
             'deflate' => new GzipSerializer($s),
             'lz4' => new Lz4Serializer($s),
             'off' => $s

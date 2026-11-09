@@ -260,7 +260,12 @@ final class Psalm
             // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
             /** @return list<ClassLoader> */
             static fn(): array =>
-                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir),
+                CliUtils::requireAutoloaders(
+                    $current_dir,
+                    isset($options['r']),
+                    $vendor_dir,
+                    !array_key_exists('v', $options),
+                ),
         );
 
         $run_taint_analysis = self::shouldRunTaintAnalysis($options);
@@ -1219,7 +1224,13 @@ final class Psalm
             // based on the errors we find
             $init_source_dir = $args[0] ?? null;
 
-            Creator::createBareConfig($current_dir, $init_source_dir, $vendor_dir);
+            try {
+                Creator::createBareConfig($current_dir, $init_source_dir, $vendor_dir);
+            } catch (ConfigCreationException $e) {
+                fwrite(STDERR, $e->getMessage() . PHP_EOL);
+                exit(1);
+            }
+
             $config = Config::getInstance();
             $config->setComposerClassLoader($autoloaders);
         } else {
