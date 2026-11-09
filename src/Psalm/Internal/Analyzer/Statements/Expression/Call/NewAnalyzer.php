@@ -19,12 +19,14 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTy
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -80,6 +82,7 @@ use function array_values;
 use function count;
 use function in_array;
 use function is_int;
+use function is_string;
 use function ltrim;
 use function preg_match;
 use function reset;
@@ -413,26 +416,132 @@ final class NewAnalyzer extends CallAnalyzer
     }
 
     /**
-     * Whether the child classes keep the constructor's signature: it is a marked one, or PHP checks it against the
-     * one an implemented interface declares
+     * The constructors the implemented interfaces declare: PHP checks the one of every child class against them
      *
+     * @return list<MethodStorage>
      * @psalm-capabilities read-props
      */
-    private static function hasPreservedConstructorSignature(Codebase $codebase, ClassLikeStorage $storage): bool
+    private static function getInterfaceConstructors(Codebase $codebase, ClassLikeStorage $storage): array
     {
+        $constructors = [];
+
+        foreach ($storage->class_implements as $interface_lc => $_) {
+            if ($codebase->classlike_storage_provider->has($interface_lc)) {
+                $interface_storage = $codebase->classlike_storage_provider->get($interface_lc);
+
+                if (isset($interface_storage->methods['__construct'])) {
+                    $constructors[] = $interface_storage->methods['__construct'];
+                }
+            }
+        }
+
+        return $constructors;
+    }
+
+    /**
+     * Whether the child classes accept the arguments: the constructor is a marked one, or the arguments fit the
+     * constructor of an implemented interface. A child may rename the parameters, so named arguments don't fit.
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     */
+    private static function childConstructorsAcceptArgs(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        ClassLikeStorage $storage,
+        array $args,
+    ): bool {
         if ($storage->preserve_constructor_signature) {
             return true;
         }
 
-        foreach ($storage->class_implements as $interface_lc => $_) {
-            if ($codebase->classlike_storage_provider->has($interface_lc)
-                && isset($codebase->classlike_storage_provider->get($interface_lc)->methods['__construct'])
-            ) {
-                return true;
+        foreach (self::getInterfaceConstructors($codebase, $storage) as $constructor) {
+            $params = $constructor->params;
+            $last_param = $params === [] ? null : $params[count($params) - 1];
+
+            foreach ($args as $offset => $arg) {
+                $param = $params[$offset] ?? ($last_param?->is_variadic ? $last_param : null);
+                // the arguments of `new $class_name()` are not all analysed yet: read their type without analysing
+                $arg_type = $statements_analyzer->node_data->getType($arg->value)
+                    ?? ($arg->value instanceof PhpParser\Node\Expr\Variable && is_string($arg->value->name)
+                        ? $context->vars_in_scope['$' . $arg->value->name] ?? null
+                        : SimpleTypeInferer::infer(
+                            $codebase,
+                            $statements_analyzer->node_data,
+                            $arg->value,
+                            $statements_analyzer->getAliases(),
+                        ));
+
+                if ($arg->name
+                    || $arg->unpack
+                    || !$param
+                    || !$arg_type
+                    || ($param->type && !UnionTypeComparator::isContainedBy($codebase, $arg_type, $param->type))
+                ) {
+                    continue 2;
+                }
             }
+
+            return true;
         }
 
         return false;
+    }
+
+    private static function checkNewStatic(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        PhpParser\Node\Expr\New_ $stmt,
+        ClassLikeStorage $storage,
+        string $fq_class_name,
+        bool $args_analyzed,
+    ): void {
+        // whether the arguments fit an interface's constructor is only known once they are analysed
+        if ($args_analyzed !== (!$storage->preserve_constructor_signature
+            && self::getInterfaceConstructors($codebase, $storage) !== [])
+        ) {
+            return;
+        }
+
+        if (!self::childConstructorsAcceptArgs(
+            $statements_analyzer,
+            $codebase,
+            $context,
+            $storage,
+            $stmt->getArgs(),
+        )) {
+            IssueBuffer::maybeAdd(
+                new UnsafeInstantiation(
+                    'Cannot safely instantiate class ' . $fq_class_name . ' with "new static" as'
+                    . ' its constructor might change in child classes',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        } elseif (self::hasTemplatesInferredByConstructor($codebase, $storage)
+            && !$storage->enforce_template_inheritance
+        ) {
+            $source = $statements_analyzer->getSource();
+
+            if ($source instanceof FunctionLikeAnalyzer) {
+                $function_storage = $source->getFunctionLikeStorage($statements_analyzer);
+
+                if ($function_storage->return_type
+                    && preg_match('/\bstatic\b/', $function_storage->return_type->getId())
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new UnsafeGenericInstantiation(
+                            'Cannot safely instantiate generic class ' . $fq_class_name
+                                . ' with "new static" as'
+                                . ' its generic parameters may be constrained in child classes.',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
+            }
+        }
     }
 
     private static function analyzeNamedConstructor(
@@ -448,38 +557,7 @@ final class NewAnalyzer extends CallAnalyzer
         $storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
         if ($from_static) {
-            if (!self::hasPreservedConstructorSignature($codebase, $storage)) {
-                IssueBuffer::maybeAdd(
-                    new UnsafeInstantiation(
-                        'Cannot safely instantiate class ' . $fq_class_name . ' with "new static" as'
-                        . ' its constructor might change in child classes',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } elseif (self::hasTemplatesInferredByConstructor($codebase, $storage)
-                && !$storage->enforce_template_inheritance
-            ) {
-                $source = $statements_analyzer->getSource();
-
-                if ($source instanceof FunctionLikeAnalyzer) {
-                    $function_storage = $source->getFunctionLikeStorage($statements_analyzer);
-
-                    if ($function_storage->return_type
-                        && preg_match('/\bstatic\b/', $function_storage->return_type->getId())
-                    ) {
-                        IssueBuffer::maybeAdd(
-                            new UnsafeGenericInstantiation(
-                                'Cannot safely instantiate generic class ' . $fq_class_name
-                                    . ' with "new static" as'
-                                    . ' its generic parameters may be constrained in child classes.',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
-                    }
-                }
-            }
+            self::checkNewStatic($statements_analyzer, $codebase, $context, $stmt, $storage, $fq_class_name, false);
         }
 
         // if we're not calling this constructor via new static()
@@ -549,14 +627,20 @@ final class NewAnalyzer extends CallAnalyzer
 
             $template_result ??= new TemplateResult([], []);
 
-            if (self::checkMethodArgs(
+            $args_analyzed = self::checkMethodArgs(
                 $method_id,
                 $stmt->getArgs(),
                 $template_result,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer,
-            ) === false) {
+            ) !== false;
+
+            if ($from_static) {
+                self::checkNewStatic($statements_analyzer, $codebase, $context, $stmt, $storage, $fq_class_name, true);
+            }
+
+            if (!$args_analyzed) {
                 return;
             }
 
@@ -1365,7 +1449,13 @@ final class NewAnalyzer extends CallAnalyzer
                             $lhs_type_part->as_type->value,
                         );
 
-                        if (!self::hasPreservedConstructorSignature($codebase, $as_storage)) {
+                        if (!self::childConstructorsAcceptArgs(
+                            $statements_analyzer,
+                            $codebase,
+                            $context,
+                            $as_storage,
+                            $stmt->getArgs(),
+                        )) {
                             IssueBuffer::maybeAdd(
                                 new UnsafeInstantiation(
                                     'Cannot safely instantiate class ' . $lhs_type_part->as_type->value
@@ -1422,7 +1512,13 @@ final class NewAnalyzer extends CallAnalyzer
                                 $lhs_type_part->as_type->value,
                             );
 
-                            if (!self::hasPreservedConstructorSignature($codebase, $as_storage)) {
+                            if (!self::childConstructorsAcceptArgs(
+                                $statements_analyzer,
+                                $codebase,
+                                $context,
+                                $as_storage,
+                                $stmt->getArgs(),
+                            )) {
                                 IssueBuffer::maybeAdd(
                                     new UnsafeInstantiation(
                                         'Cannot safely instantiate class ' . $lhs_type_part->as_type->value
