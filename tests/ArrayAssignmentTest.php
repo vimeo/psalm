@@ -126,6 +126,35 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'coalesceAssignmentOnTwoOptionalKeysOfAnArrayWithAShapeIntersection' => [
+                'code' => '<?php
+                    /** @var array{name?: string, age?: int}&array $data */
+                    $data = [];
+                    $data["name"] ??= "noname";
+                    $data["age"] ??= 90;',
+                'assertions' => [
+                    '$data' => 'array{age: int, name: string, ...<array-key, mixed>}',
+                ],
+            ],
+            'arrayKeyOfAnIgnoredNullableReturnIsNotNullable' => [
+                'code' => '<?php
+                    class TestModel
+                    {
+                        /** @psalm-ignore-nullable-return */
+                        public function getName(): ?string
+                        {
+                            return mt_rand(1, 100) > 1 ? "foo" : null;
+                        }
+                    }
+
+                    $model = new TestModel();
+                    $a = [$model->getName() => ["bar" => "baz"]];
+                    $b = [$model->getName() => 1, "x" => 2];',
+                'assertions' => [
+                    '$a===' => 'non-empty-array<string, array{bar: \'baz\'}>',
+                    '$b===' => 'array{x: 2, ...<string, 1>}',
+                ],
+            ],
             'keyedArrayWithKeysThatAreTypeOperators' => [
                 'code' => '<?php
                     /**
@@ -2331,6 +2360,50 @@ final class ArrayAssignmentTest extends TestCase
                     ];
                 ',
             ],
+            'assignToNestedKeyOfListWithForeachKey' => [
+                'code' => '<?php
+                    /**
+                     * @param list<array{name: string}> $list
+                     * @return list<array{name: string}>
+                     */
+                    function setNames(array $list): array {
+                        foreach ($list as $index => $value) {
+                            if ($value["name"] === "bar") {
+                                $list[$index]["name"] = "baz";
+                            }
+                        }
+
+                        return $list;
+                    }
+
+                    /**
+                     * @param list<list<int>> $list
+                     * @return list<list<int>>
+                     */
+                    function appendToItems(array $list): array {
+                        foreach ($list as $index => $value) {
+                            $list[$index][] = 1;
+                        }
+
+                        return $list;
+                    }',
+            ],
+            'assignWithStaticClassOffsetKeepsTheKeyTypeOfTheProperty' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    abstract class Singleton {
+                        /** @var array<class-string<static>, static> */
+                        private static array $instances = [];
+
+                        protected function __construct() {}
+
+                        public static function getInstance(): static {
+                            return self::$instances[static::class] ??= new static();
+                        }
+                    }',
+            ],
             'assignToListWithForeachKey' => [
                 'code' => '<?php
                     /**
@@ -2728,6 +2801,50 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assignToNestedKeyOfListWithUnrelatedKeyIsNotAList' => [
+                'code' => '<?php
+                    /**
+                     * @param list<array{name: string}> $list
+                     * @return list<array{name: string}>
+                     */
+                    function setName(array $list, int $key): array {
+                        $list[$key]["name"] = "baz";
+
+                        return $list;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'arrayKeyOfAnIgnoredNullableReturnDoesNotHideAnotherNullableKey' => [
+                'code' => '<?php
+                    class TestModel
+                    {
+                        /** @psalm-ignore-nullable-return */
+                        public function getName(): ?string
+                        {
+                            return mt_rand(1, 100) > 1 ? "foo" : null;
+                        }
+                    }
+
+                    function f(TestModel $model, ?string $key): array
+                    {
+                        return [$model->getName() => 1, $key => 2];
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+            ],
+            'arrayKeyOfANullableReturnIsInvalid' => [
+                'code' => '<?php
+                    class TestModel
+                    {
+                        public function getName(): ?string
+                        {
+                            return mt_rand(1, 100) > 1 ? "foo" : null;
+                        }
+                    }
+
+                    $model = new TestModel();
+                    $a = [$model->getName() => 1];',
+                'error_message' => 'InvalidArrayOffset',
+            ],
             'templateBoundedByDecimalIntStringIsNotItsKeyType' => [
                 'code' => '<?php
                     /**
