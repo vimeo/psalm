@@ -1084,7 +1084,21 @@ final class TemplateStandinTypeReplacer
         if ($input_type && !$template_result->readonly) {
             $valid_input_atomic_types = [];
 
+            // a template bounded by a class-string (the one generated for a parameter used in a conditional
+            // return type) is as good as its bound
+            $input_atomic_types = [];
+
             foreach ($input_type->getAtomicTypes() as $input_atomic_type) {
+                if ($input_atomic_type instanceof TTemplateParam) {
+                    foreach ($input_atomic_type->as->getAtomicTypes() as $bound_atomic_type) {
+                        $input_atomic_types[] = $bound_atomic_type;
+                    }
+                } else {
+                    $input_atomic_types[] = $input_atomic_type;
+                }
+            }
+
+            foreach ($input_atomic_types as $input_atomic_type) {
                 if ($input_atomic_type instanceof TLiteralClassString) {
                     $valid_input_atomic_types[] = new TNamedObject(
                         $input_atomic_type->value,
