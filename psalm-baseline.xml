@@ -572,12 +572,6 @@
       <code><![CDATA[$var_type]]></code>
       <code><![CDATA[$var_type]]></code>
     </ImplicitToStringCast>
-    <InvalidOperand>
-      <code><![CDATA[$var_id+1]]></code>
-      <code><![CDATA[$var_id+1]]></code>
-      <code><![CDATA[$var_id+1]]></code>
-      <code><![CDATA[$var_id+1]]></code>
-    </InvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
