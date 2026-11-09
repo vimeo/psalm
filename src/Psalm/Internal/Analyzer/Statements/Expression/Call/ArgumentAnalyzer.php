@@ -2033,9 +2033,9 @@ final class ArgumentAnalyzer
         Context $context,
         bool $specialize_taint,
         bool $in_call_map,
-        ?string $named_argument = null,
-        bool $unpacked_argument = false,
-        ?int $positional_arguments = null,
+        ?string $named_argument,
+        bool $unpacked_argument,
+        ?int $positional_arguments,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -2140,7 +2140,8 @@ final class ArgumentAnalyzer
         // them, as well as to the parameter of its method. But that parameter is also where the calls on the
         // classes extending it go when they inherit the method, which can't run those overrides: what the call
         // dispatches to the overrides goes through a node of its own, not the parameter. That node is shared by
-        // the virtual calls of the method on the class, so that their number doesn't multiply its paths.
+        // the virtual calls of the method on the class that bind the argument alike (see getForDispatch()), so that
+        // their number doesn't multiply its paths.
         $dispatch_node = null;
 
         if ($taint_flow_graph
@@ -2156,11 +2157,6 @@ final class ArgumentAnalyzer
                     ? DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset)
                     : $argument_offset;
 
-                // what an override takes of an argument the variadic collects depends on its name and on how many
-                // positional arguments precede it, or on its being unpacked
-                $named_argument = $function_param->is_variadic ? $named_argument : null;
-                $unpacked_argument = $function_param->is_variadic && $unpacked_argument;
-
                 $dispatch_node = DataFlowNode::getForDispatch(
                     $cased_method_id,
                     $param_offset,
@@ -2169,9 +2165,6 @@ final class ArgumentAnalyzer
                     $unpacked_argument,
                     $positional_arguments,
                 );
-
-                // which parameter takes a named argument is unknown after an unpack, as for an unpacked one
-                $unpacked_argument = $unpacked_argument || ($named_argument !== null && $positional_arguments === null);
 
                 if ($taint_flow_graph->isEmptyDispatch($dispatch_node)) {
                     $dispatch_node = null;
@@ -2207,36 +2200,35 @@ final class ArgumentAnalyzer
                             continue;
                         }
 
-                        // The parameter of an override specialized by call, in the specialization keyed by the
-                        // location of the method, which the dispatch of its returns leaves (see
-                        // MethodCallReturnTypeFetcher::getReturnDispatchNode()): what its body returns of the
-                        // argument then reaches the call.
                         $dependent_offset = $param_offset;
                         $dependent_param = $function_param;
 
-                        if ($function_param->is_variadic && !$unpacked_argument) {
-                            // the declared variadic's name says nothing about the parameter of an override that
-                            // takes the argument: a positional one by its position, a named one by its name
+                        // an override binds the argument by its own parameters: a positional one by its position, a
+                        // named one by its name (an unpacked one still by the declared parameter's name, see #13026)
+                        if ($is_override && $dependent_storage && !$unpacked_argument) {
                             $dependent_param = null;
 
-                            if ($named_argument !== null && $positional_arguments !== null && $dependent_storage) {
-                                $named_offset = DataFlowNode::getParameterOffsetOfNamedArgument(
+                            if ($named_argument !== null) {
+                                $dependent_offset = DataFlowNode::getParameterOffsetOfNamedArgument(
                                     $dependent_storage,
                                     $named_argument,
                                 );
 
                                 // none takes it, or the positional arguments already filled it (PHP throws)
-                                if ($named_offset === null
-                                    || ($named_offset < $positional_arguments
-                                        && !$dependent_storage->params[$named_offset]->is_variadic)
+                                if ($dependent_offset === null
+                                    || ($positional_arguments !== null
+                                        && $dependent_offset < $positional_arguments
+                                        && !$dependent_storage->params[$dependent_offset]->is_variadic)
                                 ) {
                                     continue;
                                 }
-
-                                $dependent_offset = $named_offset;
                             }
                         }
 
+                        // The parameter of an override specialized by call, in the specialization keyed by the
+                        // location of the method, which the dispatch of its returns leaves (see
+                        // MethodCallReturnTypeFetcher::getReturnDispatchNode()): what its body returns of the
+                        // argument then reaches the call.
                         if ($is_override
                             && $dependent_storage
                             && $dependent_storage->location
@@ -2267,7 +2259,7 @@ final class ArgumentAnalyzer
                             ) ?? DataFlowNode::getForCallableArg(
                                 'inherited-method',
                                 $dependent_classlike_storage->name . '::' . $cased_method_name,
-                                $param_offset,
+                                $dependent_offset,
                             );
                         }
 

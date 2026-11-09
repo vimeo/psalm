@@ -1045,7 +1045,8 @@ final class ArgumentsAnalyzer
             }
         }
 
-        // PHP binds no positional argument after a named one, so this holds for each named argument of the call
+        // the same for each named argument, as PHP rejects a positional argument after a named one; unknown after an
+        // unpack, whose length isn't known
         $positional_arguments = $has_packed_var ? null : $positional_arguments;
 
         $last_param = $function_params

@@ -187,8 +187,9 @@ final class DataFlowNode implements Stringable
      * overrides of the classes extending it: shared by all those calls, so it has no location. The calls
      * specialized to their location have one of their own, which only goes to the overrides.
      *
-     * What an override takes of an argument the variadic collects depends on its name (case-sensitive) and the
-     * number of positional arguments before it (null: an unpack precedes), or on its being unpacked.
+     * An override binds a named argument by its name (case-sensitive), unless the positional arguments before it
+     * (null: unknown, after an unpack) filled that parameter, and an unpacked one otherwise than a positional one:
+     * those calls have a node per binding.
      *
      * @psalm-pure
      */
@@ -202,12 +203,15 @@ final class DataFlowNode implements Stringable
     ): self {
         $label = ($specialized_calls ? 'specialized ' : '') . 'dispatch of ' . $cased_method_id
             . '#' . ($argument_offset + 1);
-        $collected = ($named_argument !== null
-                ? ' named ' . $named_argument . ' after ' . ($positional_arguments ?? 'unpack')
-                : '')
-            . ($unpacked_argument ? ' unpacked' : '');
+        $binding = '';
 
-        return self::make(strtolower($label) . $collected, $label . $collected, null);
+        if ($named_argument !== null) {
+            $binding = ' named ' . $named_argument . ' after ' . ($positional_arguments ?? 'unpack');
+        } elseif ($unpacked_argument) {
+            $binding = ' unpacked';
+        }
+
+        return self::make(strtolower($label) . $binding, $label . $binding, null);
     }
 
     /**
