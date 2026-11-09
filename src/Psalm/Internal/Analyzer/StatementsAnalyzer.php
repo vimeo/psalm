@@ -390,6 +390,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 && $stmt->expr instanceof PhpParser\Node\Expr\FuncCall
                 && $stmt->expr->name instanceof PhpParser\Node\Name
                 && $stmt->expr->name->getParts() === ['define']
+                && !$stmt->expr->isPartialFunctionApplication()
                 && isset($stmt->expr->getArgs()[1])
             ) {
                 $const_name = ConstFetchAnalyzer::getConstName(
@@ -520,6 +521,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                     && $stmt->expr instanceof PhpParser\Node\Expr\Assign)
                 && !$stmt instanceof PhpParser\Node\Stmt\Foreach_
                 && !$stmt instanceof PhpParser\Node\Stmt\Return_
+                && !$stmt instanceof PhpParser\Node\Stmt\Property
             ) {
                 $file_path = $statements_analyzer->getRootFilePath();
 
@@ -542,6 +544,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                             $statements_analyzer->getAliases(),
                             $template_type_map,
                             $file_storage->type_aliases,
+                            $stmt instanceof PhpParser\Node\Stmt\ClassConst,
                         );
                 } catch (IncorrectDocblockException $e) {
                     IssueBuffer::maybeAdd(
