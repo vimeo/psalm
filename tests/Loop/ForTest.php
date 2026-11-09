@@ -32,6 +32,15 @@ final class ForTest extends TestCase
                     '$i===' => 'int<4, 4>',
                 ],
             ],
+            'preDecrementInConditionOfALoopAlwaysEnteredHoldsTheValueTheLoopExitsWith' => [
+                'code' => '<?php
+                    for ($i = 5; --$i > 0;) {
+                        echo $i;
+                    }',
+                'assertions' => [
+                    '$i===' => 'int<0, 0>',
+                ],
+            ],
             'narrowedPropertyOfLoopVariableIsKeptWhenTheVariableIsReassigned' => [
                 'code' => '<?php
                     final class Node {

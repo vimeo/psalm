@@ -26,6 +26,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_intersect_key;
 use function array_keys;
 use function array_merge;
 use function array_unique;
@@ -687,7 +688,15 @@ final class LoopAnalyzer
             || in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);
 
         if ($always_enters_loop && $can_leave_loop) {
+            // the loop is left where the condition is false: what the condition assigns keeps the type it exits with
+            $condition_exit_vars = array_intersect_key(
+                $context->vars_in_scope,
+                self::getVarIdsAssignedIn($pre_conditions, $context->self),
+            );
+
             self::setLoopVars($inner_loop_context, $context, $loop_scope);
+
+            $context->vars_in_scope = [...$context->vars_in_scope, ...$condition_exit_vars];
         }
 
         $for_context->loop_scope = null;

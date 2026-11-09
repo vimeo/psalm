@@ -31,6 +31,18 @@ final class WhileTest extends TestCase
                     '$i===' => 'int<0, 0>',
                 ],
             ],
+            'preDecrementInConditionOfALoopAlwaysEnteredKeepsTheValuesABreakLeaves' => [
+                'code' => '<?php
+                    $i = 5;
+                    while (--$i > 0) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }',
+                'assertions' => [
+                    '$i===' => 'int<0, 5>',
+                ],
+            ],
             'postDecrementInConditionHoldsTheValueTheLoopExitsWith' => [
                 'code' => '<?php
                     $i = 5;
