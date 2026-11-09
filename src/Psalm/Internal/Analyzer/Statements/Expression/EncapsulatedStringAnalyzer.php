@@ -17,13 +17,10 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
-use Psalm\Type\Atomic\TLiteralFloat;
-use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
-use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
@@ -43,6 +40,7 @@ final class EncapsulatedStringAnalyzer
         $parent_nodes = [];
 
         $non_empty = false;
+        $has_never_part = false;
 
         // only "" and "0" are falsy: a part that is neither can't leave the string one of them, and neither
         // can two parts that are not empty
@@ -87,6 +85,10 @@ final class EncapsulatedStringAnalyzer
                     $part,
                 );
 
+                if (!$casted_part_type->allLiterals()) {
+                    $all_literals = false;
+                }
+
                 $codebase = $statements_analyzer->getCodebase();
                 $non_falsy = $non_falsy || UnionTypeComparator::isContainedBy(
                     $codebase,
@@ -99,25 +101,9 @@ final class EncapsulatedStringAnalyzer
                     Type::getNonEmptyString(),
                 ) ? 1 : 0;
                 $non_falsy = $non_falsy || $non_empty_parts > 1;
-                $non_empty = $non_empty || $non_falsy;
 
-                if (!$casted_part_type->allLiterals()) {
-                    $all_literals = false;
-                } elseif (!$non_empty) {
-                    // Check if all literals are nonempty
-                    $non_empty = true;
-                    foreach ($casted_part_type->getAtomicTypes() as $atomic_literal) {
-                        if (!$atomic_literal instanceof TLiteralInt
-                            && !$atomic_literal instanceof TNonspecificLiteralInt
-                            && !$atomic_literal instanceof TLiteralFloat
-                            && !$atomic_literal instanceof TNonEmptyNonspecificLiteralString
-                            && !($atomic_literal instanceof TLiteralString && $atomic_literal->value !== "")
-                        ) {
-                            $non_empty = false;
-                            break;
-                        }
-                    }
-                }
+                $non_empty = $non_empty || $non_falsy || self::isNonEmpty($casted_part_type);
+                $has_never_part = $has_never_part || $casted_part_type->isNever();
 
                 if ($literal_string !== null) {
                     if ($casted_part_type->isSingleLiteral()) {
@@ -187,31 +173,35 @@ final class EncapsulatedStringAnalyzer
             $statements_analyzer->node_data->setLiteralPrefixes($stmt, $literal_prefixes);
         }
 
-        if (count($stmt->parts) === 1 && $single_part_type !== null) {
+        if ($has_never_part) {
+            $stmt_type = Type::getNever();
+        } elseif (count($stmt->parts) === 1 && $single_part_type !== null) {
             // e.g. "$int" is the same string as (string) $int
             $stmt_type = $single_part_type->setParentNodes($parent_nodes);
-        } elseif ($non_empty) {
-            if ($literal_string !== null) {
-                $stmt_type = new Union(
-                    [Type::getAtomicStringFromLiteral($literal_string)],
-                    ['parent_nodes' => $parent_nodes],
-                );
-            } elseif ($all_literals) {
-                $stmt_type = new Union(
-                    [new TNonEmptyNonspecificLiteralString()],
-                    ['parent_nodes' => $parent_nodes],
-                );
-            } elseif ($non_falsy) {
-                $stmt_type = new Union(
-                    [new TNonFalsyString()],
-                    ['parent_nodes' => $parent_nodes],
-                );
-            } else {
-                $stmt_type = new Union(
-                    [new TNonEmptyString()],
-                    ['parent_nodes' => $parent_nodes],
-                );
+        } elseif ($literal_string !== null) {
+            $stmt_type = new Union(
+                [Type::getAtomicStringFromLiteral($literal_string)],
+                ['parent_nodes' => $parent_nodes],
+            );
+        } elseif ($literal_prefixes_extendable && count($literal_prefixes) > 1) {
+            // every part is a known literal string, so all of the string is
+            $literal_types = [];
+
+            foreach ($literal_prefixes as $literal_value) {
+                $literal_types[] = Type::getAtomicStringFromLiteral($literal_value);
             }
+
+            $stmt_type = new Union($literal_types, ['parent_nodes' => $parent_nodes]);
+        } elseif ($non_empty) {
+            if ($all_literals) {
+                $non_empty_type = new TNonEmptyNonspecificLiteralString();
+            } elseif ($non_falsy) {
+                $non_empty_type = new TNonFalsyString();
+            } else {
+                $non_empty_type = new TNonEmptyString();
+            }
+
+            $stmt_type = new Union([$non_empty_type], ['parent_nodes' => $parent_nodes]);
         } elseif ($all_literals) {
             $stmt_type = new Union(
                 [new TNonspecificLiteralString()],
@@ -225,6 +215,23 @@ final class EncapsulatedStringAnalyzer
         }
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+        return true;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isNonEmpty(Union $casted_part_type): bool
+    {
+        foreach ($casted_part_type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TNonEmptyString
+                && !$atomic instanceof TNonEmptyNonspecificLiteralString
+                && !($atomic instanceof TLiteralString && $atomic->value !== '')
+            ) {
+                return false;
+            }
+        }
 
         return true;
     }
