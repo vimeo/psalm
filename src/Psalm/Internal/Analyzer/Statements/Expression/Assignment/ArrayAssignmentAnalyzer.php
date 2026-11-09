@@ -63,6 +63,7 @@ use function implode;
 use function is_string;
 use function preg_match;
 use function sort;
+use function spl_object_id;
 use function str_contains;
 use function str_starts_with;
 use function strlen;
@@ -1250,6 +1251,7 @@ final class ArrayAssignmentAnalyzer
     ): void {
         $var_id_additions = [];
         $written_offsets = [];
+        $existing_offsets = [];
 
         $root_var = end($child_stmts)->var;
 
@@ -1304,6 +1306,9 @@ final class ArrayAssignmentAnalyzer
             }
 
             $extended_var_id = $root_var_id . implode('', $var_id_additions);
+
+            $existing_offsets[spl_object_id($child_stmt)] = isset($context->vars_in_scope[$extended_var_id])
+                && !$context->vars_in_scope[$extended_var_id]->possibly_undefined;
 
             if ($parent_var_id && isset($context->vars_in_scope[$parent_var_id])) {
                 $array_type = $context->vars_in_scope[$parent_var_id];
@@ -1384,22 +1389,7 @@ final class ArrayAssignmentAnalyzer
             self::removeAliasedOffsets($context, $root_var_id, $written_offsets);
         }
 
-        if ($statements_analyzer->data_flow_graph
-            && $root_var_id !== null
-            && isset($context->references_to_external_scope[$root_var_id])
-            && $root_var instanceof Variable && is_string($root_var->name)
-            && $root_var_id === '$' . $root_var->name
-        ) {
-            // Array is a reference to an external scope, mark it as used
-            $statements_analyzer->data_flow_graph->addPath(
-                DataFlowNode::getForAssignment(
-                    $root_var_id,
-                    new CodeLocation($statements_analyzer->getSource(), $root_var),
-                ),
-                DataFlowNode::getForVariableUse(),
-                'variable-use',
-            );
-        }
+        self::markExternalReferenceAsUsed($statements_analyzer, $context, $root_var_id, $root_var);
 
         if ($root_var_id
             && $full_var_id
@@ -1419,7 +1409,46 @@ final class ArrayAssignmentAnalyzer
             $context->possibly_assigned_var_ids[$extended_var_id] = true;
         }
 
-        array_shift($child_stmts);
+        $outermost_child_stmt = array_shift($child_stmts);
+
+        if ($child_stmts && ($existing_offsets[spl_object_id($outermost_child_stmt)] ?? false)) {
+            // the root array is what the outermost key is eventually written to
+            $parent_var_id = $root_var_id;
+            $offset_already_existed = true;
+        }
+
+        self::updateParentTypes(
+            $statements_analyzer,
+            $codebase,
+            $context,
+            $child_stmts,
+            $existing_offsets,
+            $root_var_id,
+            $root_type,
+            $current_type,
+            $current_dim,
+            $var_id_additions,
+        );
+    }
+
+    /**
+     * @param list<PhpParser\Node\Expr\ArrayDimFetch> $child_stmts
+     * @param array<int, bool> $existing_offsets
+     * @param list<string> $var_id_additions
+     */
+    private static function updateParentTypes(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        array $child_stmts,
+        array $existing_offsets,
+        ?string $root_var_id,
+        Union &$root_type,
+        Union &$current_type,
+        ?PhpParser\Node\Expr &$current_dim,
+        array &$var_id_additions,
+    ): void {
+        $previous_child_stmt = null;
 
         // only update as many child stmts are we were able to process above
         foreach ($child_stmts as $child_stmt) {
@@ -1439,7 +1468,15 @@ final class ArrayAssignmentAnalyzer
                     $key_values,
                 );
             } else {
-                if (!$current_dim) {
+                if (!$current_dim
+                    || self::isExistingOffsetOfList(
+                        $statements_analyzer,
+                        $child_stmt_type,
+                        $current_dim,
+                        $previous_child_stmt !== null
+                            && ($existing_offsets[spl_object_id($previous_child_stmt)] ?? false),
+                    )
+                ) {
                     $array_assignment_type = Type::getList($current_type);
                 } else {
                     $key_type = $statements_analyzer->node_data->getType($current_dim);
@@ -1475,6 +1512,7 @@ final class ArrayAssignmentAnalyzer
 
             $current_type = $child_stmt_type;
             $current_dim = $child_stmt->dim;
+            $previous_child_stmt = $child_stmt;
 
             array_pop($var_id_additions);
 
@@ -1516,6 +1554,46 @@ final class ArrayAssignmentAnalyzer
                 }
             }
         }
+    }
+
+    private static function markExternalReferenceAsUsed(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        ?string $root_var_id,
+        PhpParser\Node\Expr $root_var,
+    ): void {
+        if ($statements_analyzer->data_flow_graph
+            && $root_var_id !== null
+            && isset($context->references_to_external_scope[$root_var_id])
+            && $root_var instanceof Variable && is_string($root_var->name)
+            && $root_var_id === '$' . $root_var->name
+        ) {
+            // Array is a reference to an external scope, mark it as used
+            $statements_analyzer->data_flow_graph->addPath(
+                DataFlowNode::getForAssignment(
+                    $root_var_id,
+                    new CodeLocation($statements_analyzer->getSource(), $root_var),
+                ),
+                DataFlowNode::getForVariableUse(),
+                'variable-use',
+            );
+        }
+    }
+
+    /**
+     * Writing to an offset that is known to exist, with an int key, leaves a list a list.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isExistingOffsetOfList(
+        StatementsAnalyzer $statements_analyzer,
+        Union $array_type,
+        PhpParser\Node\Expr $dim,
+        bool $offset_existed,
+    ): bool {
+        return $offset_existed
+            && $array_type->hasList()
+            && $statements_analyzer->node_data->getType($dim)?->isInt() === true;
     }
 
     /**
