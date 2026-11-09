@@ -1147,6 +1147,7 @@ final class PreloaderList {
         \Psalm\Issue\FalseOperand::class,
         \Psalm\Issue\ForbiddenCode::class,
         \Psalm\Issue\FunctionIssue::class,
+        \Psalm\Issue\HiddenGeneratorReturn::class,
         \Psalm\Issue\IfThisIsMismatch::class,
         \Psalm\Issue\ImmutableDependency::class,
         \Psalm\Issue\ImplementationRequirementViolation::class,
