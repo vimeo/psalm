@@ -2160,7 +2160,7 @@ final class ArrayFunctionCallTest extends TestCase
                     $true = array_column([[true, 1]], 1, 0);
                     $float = array_column([[1.5, 1]], 1, 0);
                     $mixed = array_column([[null, 1], ["a", 2]], 1, 0);
-                    $object = array_column([[new stdClass, 1]], 1, 0);
+                    $stringable = array_column([[new class { public function __toString(): string { return ""; } }, 1]], 1, 0);
                     $string = array_column([["a", 1]], 1, 0);',
                 'assertions' => [
                     '$null===' => "non-empty-array<'', 1>",
@@ -2168,7 +2168,7 @@ final class ArrayFunctionCallTest extends TestCase
                     '$true===' => 'non-empty-array<1, 1>',
                     '$float===' => 'non-empty-array<int, 1>',
                     '$mixed===' => "non-empty-array<''|'a', 1|2>",
-                    '$object===' => 'non-empty-array<array-key, 1>',
+                    '$stringable===' => 'non-empty-array<string, 1>',
                     '$string===' => "non-empty-array<'a', 1>",
                 ],
             ],
@@ -3807,6 +3807,27 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayColumnIndexColumnOfAnObjectIsNotAnArrayKey' => [
+                'code' => '<?php
+                    $result = array_column([[new stdClass, 1]], 1, 0);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:31 - The index column has the type stdClass',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayColumnIndexColumnOfAnArrayIsNotAnArrayKey' => [
+                'code' => '<?php
+                    $result = array_column([[[], 1]], 1, 0);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayColumnIndexColumnMayBeAnObject' => [
+                'code' => '<?php
+                    $result = array_column([[new stdClass, 1], ["a", 2]], 1, 0);',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'arrayFilterUseMethodOnInferableInt' => [
                 'code' => '<?php
                     $a = array_filter([1, 2, 3, 4], function ($i) { return $i->foo(); });',
