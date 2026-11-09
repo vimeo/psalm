@@ -100,6 +100,7 @@ use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_pop;
+use function array_shift;
 use function array_values;
 use function assert;
 use function count;
@@ -125,6 +126,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
      * @var array<string, Union>
      */
     public array $inferred_property_types = [];
+
+    /** @var array<string, true>|null */
+    private ?array $properties_only_read_under_isset = null;
 
     /**
      * @param PhpParser\Node\Stmt\Class_|PhpParser\Node\Stmt\Enum_ $class
@@ -1099,6 +1103,49 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         }
     }
 
+    /**
+     * @return array<string, true>
+     */
+    private function getPropertiesOnlyReadUnderIsset(): array
+    {
+        if ($this->properties_only_read_under_isset !== null) {
+            return $this->properties_only_read_under_isset;
+        }
+
+        $codebase = $this->getCodebase();
+        $stmts = $this->class->stmts;
+        $traits_to_read = array_keys(
+            $codebase->classlike_storage_provider->get($this->fq_class_name)->used_traits,
+        );
+        $read_traits = [];
+
+        // what the methods of the traits do with the property counts too
+        while ($trait_name = array_shift($traits_to_read)) {
+            // a trait may be used through a class_alias() name
+            $trait_name = strtolower($codebase->classlikes->getUnAliasedName($trait_name));
+
+            if (isset($read_traits[$trait_name])) {
+                continue;
+            }
+
+            $read_traits[$trait_name] = true;
+
+            try {
+                $trait_node = $codebase->classlikes->getTraitNode($trait_name);
+            } catch (UnexpectedValueException) {
+                continue;
+            }
+
+            $stmts = [...$stmts, ...$trait_node->stmts];
+            $traits_to_read = [
+                ...$traits_to_read,
+                ...array_keys($codebase->classlike_storage_provider->get($trait_name)->used_traits),
+            ];
+        }
+
+        return $this->properties_only_read_under_isset = IssetGuardedProperties::find($stmts);
+    }
+
     private function checkPropertyInitialization(
         Codebase $codebase,
         Config $config,
@@ -1392,6 +1439,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $method_context->vars_possibly_in_scope['$this'] = true;
             $method_context->calling_method_id = strtolower($fq_class_name) . '::__construct';
 
+            $method_context->constructor_exits = new ConstructorExits(
+                $constructor_analyzer->getFunctionLikeStorage(),
+            );
+
             $constructor_analyzer->analyze(
                 $method_context,
                 new NodeDataProvider(),
@@ -1406,6 +1457,34 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $end_type = new Union([new TVoid()], ['initialized' => false]);
                 } else {
                     $end_type = $method_context->vars_in_scope['$this->' . $property_name];
+                }
+
+                // the property has to be initialised wherever the constructor returns, and at its end if reachable
+                $exit_types = [];
+
+                // a private property that the class only reads where isset() holds may be left uninitialised on
+                // purpose, so only the end of the constructor decides
+                if ($property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                    || !isset($this->getPropertiesOnlyReadUnderIsset()[$property_name])
+                ) {
+                    foreach ($method_context->constructor_exits->states as $exit_state) {
+                        $exit_types[] = $exit_state['$this->' . $property_name]
+                            ?? new Union([new TVoid()], ['initialized' => false]);
+                    }
+                }
+
+                if ($exit_types !== []) {
+                    if (!$method_context->has_returned) {
+                        $exit_types[] = $end_type;
+                    }
+
+                    foreach ($exit_types as $exit_type) {
+                        $end_type = $exit_type;
+
+                        if (!$exit_type->initialized) {
+                            break;
+                        }
+                    }
                 }
 
                 $constructor_class_property_storage = $property_storage;
