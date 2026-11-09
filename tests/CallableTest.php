@@ -2983,6 +2983,28 @@ final class CallableTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument',
             ],
+            'byReferenceVariadicFunctionNameIsNotCallableWithValue' => [
+                'code' => '<?php
+                    function bump(int &...$numbers): void {
+                        foreach ($numbers as &$number) {
+                            $number++;
+                        }
+                    }
+
+                    /** @param callable(int): void $closure */
+                    function takesValueCallable(callable $closure): void {}
+
+                    takesValueCallable("bump");',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:40',
+            ],
+            'byReferenceVariadicClosureIsNotCallableWithValue' => [
+                'code' => '<?php
+                    /** @param callable(int): void $closure */
+                    function takesValueCallable(callable $closure): void {}
+
+                    takesValueCallable(function (int &...$numbers): void {});',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:40',
+            ],
             'byReferenceClosureIsNotCallableWithValue' => [
                 'code' => '<?php
                     /** @param callable(int): void $closure */
