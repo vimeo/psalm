@@ -69,23 +69,6 @@ final class TestConfig extends Config
             );
         }
 
-        $this->setCustomErrorLevel(
-            'MissingImmutableAnnotation',
-            Config::REPORT_SUPPRESS,
-        );
-        $this->setCustomErrorLevel(
-            'MissingPureAnnotation',
-            Config::REPORT_SUPPRESS,
-        );
-        $this->setCustomErrorLevel(
-            'MissingAbstractPureAnnotation',
-            Config::REPORT_SUPPRESS,
-        );
-        $this->setCustomErrorLevel(
-            'MissingInterfaceImmutableAnnotation',
-            Config::REPORT_SUPPRESS,
-        );
-
         $this->project_files = self::$cached_project_files;
         $this->setIncludeCollector(new IncludeCollector());
 
@@ -212,10 +195,11 @@ final class TestConfig extends Config
         }
 
         $functions_by_returned_class = [];
-        foreach (InternalCallMapHandler::getCallMap() as $function => [$return_type]) {
+        foreach (InternalCallMapHandler::getCallMap() as $function => $signature) {
             if (str_contains($function, '::')) {
                 continue;
             }
+            $return_type = $signature[0] ?? $signature[-1] ?? '';
             preg_match_all('/[a-z_\\\\][a-z0-9_\\\\]*/i', $return_type, $matches);
             foreach ($matches[0] as $class) {
                 $functions_by_returned_class[strtolower(ltrim($class, '\\'))][] = strtolower($function);

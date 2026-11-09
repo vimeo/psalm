@@ -29,6 +29,8 @@ use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseXor;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedConcatOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedDivisionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedMultiplicationOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShiftLeft;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShiftRight;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
@@ -124,6 +126,14 @@ final class ExpressionResolver
 
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
                 return new UnresolvedBitwiseAnd($left, $right);
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft) {
+                return new UnresolvedShiftLeft($left, $right);
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight) {
+                return new UnresolvedShiftRight($left, $right);
             }
         }
 
@@ -366,18 +376,30 @@ final class ExpressionResolver
             return $enter_negated === null ? null : !$enter_negated;
         }
 
-        if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
+        if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+        ) {
             $enter_conditional_left = self::enterConditional($codebase, $file_path, $expr->left);
             $enter_conditional_right = self::enterConditional($codebase, $file_path, $expr->right);
 
-            return $enter_conditional_left !== false && $enter_conditional_right !== false;
+            if ($enter_conditional_left === false || $enter_conditional_right === false) {
+                return false;
+            }
+
+            return $enter_conditional_left === true && $enter_conditional_right === true ? true : null;
         }
 
-        if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
+        if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+        ) {
             $enter_conditional_left = self::enterConditional($codebase, $file_path, $expr->left);
             $enter_conditional_right = self::enterConditional($codebase, $file_path, $expr->right);
 
-            return $enter_conditional_left !== false || $enter_conditional_right !== false;
+            if ($enter_conditional_left === true || $enter_conditional_right === true) {
+                return true;
+            }
+
+            return $enter_conditional_left === false && $enter_conditional_right === false ? false : null;
         }
 
         if ($codebase->register_autoload_files) {
