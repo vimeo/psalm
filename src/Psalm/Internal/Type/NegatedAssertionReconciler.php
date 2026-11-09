@@ -39,8 +39,6 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_filter;
-use function array_merge;
-use function array_values;
 use function count;
 use function strtolower;
 
@@ -221,15 +219,7 @@ final class NegatedAssertionReconciler extends Reconciler
             && ($assertion->getAtomicType() instanceof TArray
                 || $assertion->getAtomicType() instanceof TKeyedArray)
         ) {
-            //if both types are arrays, try to combine them
-            $combined_type = TypeCombiner::combine(
-                array_merge(array_values($existing_var_type->getAtomicTypes()), [$assertion->getAtomicType()]),
-                $codebase,
-            );
-            $existing_var_type->removeType('array');
-            if ($combined_type->isSingle()) {
-                $existing_var_type->addType($combined_type->getSingleAtomic());
-            }
+            // an array that isn't of the asserted array type is of the existing one
         } elseif (!$is_equality) {
             $assertion_type = $assertion->getAtomicType();
 
