@@ -1454,6 +1454,56 @@ final class TraitTest extends TestCase
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
             ],
+            'constructorCallsMethodOfNestedTraitThatTheOuterTraitOverrides' => [
+                'code' => '<?php
+                    class MyClass {
+                        use Outer;
+
+                        public function __construct(string $text) {
+                            $this->setContent($text);
+                        }
+                    }
+
+                    trait Outer {
+                        use Inner;
+
+                        public function setContent(string $text): void {
+                            echo $text;
+                        }
+                    }
+
+                    trait Inner {
+                        protected string $content;
+
+                        public function setContent(string $text): void {
+                            $this->content = $text;
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'constructorCallsMethodOfATraitThatTheClassOverrides' => [
+                'code' => '<?php
+                    trait Inner {
+                        protected string $content;
+
+                        public function setContent(string $text): void {
+                            $this->content = $text;
+                        }
+                    }
+
+                    class MyClass {
+                        use Inner;
+
+                        public function __construct(string $text) {
+                            $this->setContent($text);
+                        }
+
+                        public function setContent(string $text): void {
+                            echo $text;
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
             'docblockPropertyTypeNotContainedBySignatureTypeSelf' => [
                 'code' => '<?php
                     class Child {}

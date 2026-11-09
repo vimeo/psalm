@@ -235,15 +235,13 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 ) {
                     $method_analyzer = new MethodAnalyzer($trait_stmt, $trait_analyzer);
 
-                    $actual_method_id = $method_analyzer->getMethodId();
+                    // only the method PHP calls is analyzed: a class that overrides the method of a trait
+                    // doesn't run the one of the trait
+                    $analyzed_method_id = $method_analyzer->getMethodId($context->self ?: $this->fq_class_name);
+                    $declaring_method_id = $codebase->methods->getDeclaringMethodId($analyzed_method_id);
 
-                    if ($context->self && $context->self !== $this->fq_class_name) {
-                        $analyzed_method_id = $method_analyzer->getMethodId($context->self);
-                        $declaring_method_id = $codebase->methods->getDeclaringMethodId($analyzed_method_id);
-
-                        if ((string) $actual_method_id !== (string) $declaring_method_id) {
-                            break;
-                        }
+                    if ((string) $method_analyzer->getMethodId() !== (string) $declaring_method_id) {
+                        continue;
                     }
 
                     $method_analyzer->analyze(
