@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Internal\Scope\IfScope;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
@@ -249,7 +250,15 @@ final class IfConditionalAnalyzer
                     $assigned_type,
                 );
 
-                if ($body_type !== null) {
+                // only to narrow what the analysis of the condition already left for the body
+                if ($body_type !== null
+                    && isset($if_context->vars_in_scope[$assigned_var_id])
+                    && UnionTypeComparator::isContainedBy(
+                        $statements_analyzer->getCodebase(),
+                        $body_type,
+                        $if_context->vars_in_scope[$assigned_var_id],
+                    )
+                ) {
                     $if_context->vars_in_scope[$assigned_var_id] = $body_type;
                 }
             }
