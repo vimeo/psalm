@@ -669,6 +669,47 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'privateTemplatedPropertyInitializedByAFinalParentConstructorChain' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    class Box {
+                        /**
+                         * @return Box<int>
+                         */
+                        public static function factory(): self {
+                            /** @var Box<int> $instance */
+                            $instance = new self();
+
+                            return $instance;
+                        }
+                    }
+
+                    abstract class Base {
+                        final public function __construct() {
+                            $this->init();
+                        }
+
+                        abstract protected function init(): void;
+                    }
+
+                    final class Child extends Base {
+                        /** @var Box<int> */
+                        private $box;
+
+                        protected function init(): void {
+                            $this->box = Box::factory();
+                        }
+
+                        public function get(): Box {
+                            return $this->box;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticCallOfAnInterfaceMethodInAConstructorHasItsReturnType' => [
                 'code' => '<?php
                     interface Limits {
@@ -3188,6 +3229,46 @@ final class PropertyTypeTest extends TestCase
                     function f(): int|stdClass { return 1; }
                     f()->name = "x";',
                 'error_message' => 'PossiblyInvalidPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - f() with possible non-object type',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'privateTemplatedPropertyNotInitializedByAFinalParentConstructorChain' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    class Box {
+                        /**
+                         * @return Box<int>
+                         */
+                        public static function factory(): self {
+                            /** @var Box<int> $instance */
+                            $instance = new self();
+
+                            return $instance;
+                        }
+                    }
+
+                    abstract class Base {
+                        final public function __construct() {
+                            $this->init();
+                        }
+
+                        abstract protected function init(): void;
+                    }
+
+                    final class Child extends Base {
+                        /** @var Box<int> */
+                        private $box;
+
+                        /** @var Box<int> */
+                        private $other;
+
+                        protected function init(): void {
+                            $this->box = Box::factory();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:30:33 - Property Child::$other',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
