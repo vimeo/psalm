@@ -5,13 +5,61 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
+
+use const DIRECTORY_SEPARATOR;
 
 final class EnumTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function testAMixedPartOfTheReceiverDoesNotMakeTheValueOfTheEnumPartMixed(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                enum Suit: string {
+                    case Hearts = "h";
+                    case Spades = "s";
+                }
+
+                function collect(array $items, mixed $first): array {
+                    $keys = [];
+                    $suit = $first;
+
+                    foreach ($items as $_) {
+                        $keys[$suit->value] = true;
+                        $suit = Suit::Spades;
+                    }
+
+                    return $keys;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                [9, 'MixedAssignment'],
+                [12, 'MixedPropertyFetch'],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->type],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
 
     /**
      * @psalm-pure
@@ -20,6 +68,99 @@ final class EnumTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'enumPropertiesOfUnionsOfSeveralEnums' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Letter: string {
+                        case A = 'a';
+                        case B = 'b';
+                        case C = 'c';
+                    }
+
+                    enum Number: int {
+                        case A = 10;
+                        case X = 20;
+                    }
+
+                    /** @var Letter::B|Letter::C|Number::X $cases */
+                    $cases = Number::X;
+                    $caseValue = $cases->value;
+                    $caseName = $cases->name;
+
+                    /** @var Letter|Number::X $bare */
+                    $bare = Number::X;
+                    $bareValue = $bare->value;
+                    $bareName = $bare->name;
+
+                    /** @var Letter::A|Number::A $same */
+                    $same = Number::A;
+                    $sameName = $same->name;
+                    $sameValue = $same->value;
+
+                    /**
+                     * @template T of Letter
+                     * @param T $letter
+                     */
+                    function templated(Letter $letter): void {
+                        $value = $letter->value;
+                        $name = $letter->name;
+                        echo $value, $name;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$caseValue===' => "'b'|'c'|20",
+                    '$caseName===' => "'B'|'C'|'X'",
+                    '$bareValue===' => "'a'|'b'|'c'|20",
+                    '$bareName===' => "'A'|'B'|'C'|'X'",
+                    '$sameName===' => "'A'",
+                    '$sameValue===' => "'a'|10",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumPropertiesOfNullableAndUnionedEnums' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Letter: string {
+                        case A = 'a';
+                        case B = 'b';
+                    }
+
+                    enum Digit: string {
+                        case One = '1';
+                    }
+
+                    function nullable(?Letter $letter): void {
+                        $value = $letter->value ?? 'none';
+                        $name = $letter->name ?? 'none';
+                        if (isset($letter->value)) {
+                            echo $letter->value;
+                        }
+                        echo $value, $name;
+                    }
+
+                    function viaInterface(?BackedEnum $enum): void {
+                        echo $enum->value ?? 'none';
+                        echo $enum->name ?? 'none';
+                    }
+
+                    /** @var Letter|Digit $either */
+                    $either = Digit::One;
+                    $value = $either->value;
+                    $name = $either->name;
+
+                    /** @var Letter|Digit|null $maybe */
+                    $maybe = null;
+                    $maybeValue = $maybe->value ?? 'none';
+                    PHP,
+                'assertions' => [
+                    '$value===' => "'1'|'a'|'b'",
+                    '$name===' => "'A'|'B'|'One'",
+                    '$maybeValue===' => "'1'|'a'|'b'|'none'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'enumInterfaceMethodRetainsDocumentaryReturn' => [
                 'code' => '<?php
                     enum Status: string implements JsonSerializable {
@@ -831,6 +972,54 @@ final class EnumTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'tryFromWithValueOfTemplate' => [
+                'code' => '<?php
+                    enum Suit: string {
+                        case Hearts = "h";
+                        case Spades = "s";
+                    }
+
+                    /**
+                     * @template T of Suit
+                     */
+                    final class Box {
+                        /** @var value-of<T> */
+                        public $value = "h";
+
+                        public function get(): void {
+                            /** @psalm-trace $suit */
+                            $suit = Suit::tryFrom($this->value);
+                        }
+                    }
+                ',
+                'error_message' => 'Trace - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:29 - $suit: enum(Suit::Hearts)|enum(Suit::Spades)|null',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'fromWithValueOfTemplate' => [
+                'code' => '<?php
+                    enum Suit: string {
+                        case Hearts = "h";
+                        case Spades = "s";
+                    }
+
+                    /**
+                     * @template T of Suit
+                     */
+                    final class Box {
+                        /** @var value-of<T> */
+                        public $value = "h";
+
+                        public function get(): void {
+                            /** @psalm-trace $suit */
+                            $suit = Suit::from($this->value);
+                        }
+                    }
+                ',
+                'error_message' => 'Trace - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:29 - $suit: enum(Suit::Hearts)|enum(Suit::Spades',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'enumValueIsNot' => [
                 'code' => '<?php
                     enum Suit: string {

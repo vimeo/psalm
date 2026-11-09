@@ -210,7 +210,10 @@ final class InstancePropertyAssignmentAnalyzer
 
             if ($type_match_found && $union_comparison_results->replacement_union_type) {
                 if ($var_id) {
-                    $context->vars_in_scope[$var_id] = $union_comparison_results->replacement_union_type;
+                    $context->vars_in_scope[$var_id] = $union_comparison_results->replacement_union_type
+                        ->setProperties([
+                            'initialized_class' => ($context->vars_in_scope[$var_id] ?? null)?->initialized_class,
+                        ]);
                 }
             }
 
@@ -1441,6 +1444,21 @@ final class InstancePropertyAssignmentAnalyzer
             ) {
                 $property_id = $self_property_id;
             }
+        }
+
+        // a private property of the current class, assigned on an object of a child class
+        if ($context->self !== null
+            && $fq_class_name !== $context->self
+            && !$codebase->propertyExists($property_id, false, $statements_analyzer, $context)
+            && $codebase->classlikes->classExtends($fq_class_name, $context->self)
+            && $codebase->propertyExists(
+                $context->self . '::$' . $prop_name,
+                false,
+                $statements_analyzer,
+                $context,
+            )
+        ) {
+            $property_id = $context->self . '::$' . $prop_name;
         }
 
         if ($statements_analyzer->data_flow_graph
