@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Scanner;
 
+use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Storage\Capabilities;
 
@@ -59,7 +60,7 @@ final class FunctionDocblockComment
     public ?array $if_this_is = null;
 
     /**
-     * @var array<int, array{name:string, type:string, line_number: int}>
+     * @var array<int, array{name:string, type:string, line_number: int, start: int, end: int}>
      */
     public array $globals = [];
 
@@ -148,6 +149,13 @@ final class FunctionDocblockComment
      * @var list<InvalidDocblock>
      */
     public array $docblock_issues = [];
+
+    /**
+     * Issues found while scanning the docblock, for FunctionLikeDocblockScanner to add to those of the file
+     *
+     * @var list<CodeIssue>
+     */
+    public array $scan_issues = [];
 
     /**
      * Whether or not to ignore the nullability of this function's return type
