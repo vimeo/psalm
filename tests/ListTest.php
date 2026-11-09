@@ -22,6 +22,22 @@ final class ListTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'keyedDestructuringOfATypedValueIsNotAMixedAssignment' => [
+                'code' => '<?php
+                    /** @return array{name: string, tags: list<string>} */
+                    function row(): array {
+                        return ["name" => "x", "tags" => []];
+                    }
+
+                    ["name" => $name, "tags" => $tags] = row();
+
+                    /** @var mixed $mixed */
+                    $mixed = 1;
+                    /** @psalm-suppress MixedAssignment */
+                    ["a" => $suppressed] = ["a" => $mixed];
+
+                    echo $name . implode(",", $tags);',
+            ],
             'destructureAKeyFromEachTypeOfAUnion' => [
                 'code' => '<?php
                     /** @return array{author: int}|ArrayObject<string, string> */
@@ -233,6 +249,30 @@ final class ListTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'keyedDestructuringOfAMixedValueIsAMixedAssignment' => [
+                'code' => '<?php
+                    /** @return array{name: mixed} */
+                    function row(): array {
+                        return ["name" => "x"];
+                    }
+
+                    ["name" => $name] = row();
+
+                    echo strlen((string) $name);',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32 - Unable to determine the type that $name is being assigned to',
+            ],
+            'keyedDestructuringOfAMixedValueFromAMapIsAMixedAssignment' => [
+                'code' => '<?php
+                    /** @return array<string, mixed> */
+                    function row(): array {
+                        return [];
+                    }
+
+                    ["name" => $name] = row();
+
+                    echo strlen((string) $name);',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32 - Unable to determine the type that $name is being assigned to',
+            ],
             'thisVarWithBadType' => [
                 'code' => '<?php
                     class A {
