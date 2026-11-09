@@ -400,6 +400,26 @@ final class MethodSignatureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'abstractConstructorCompatibleChild' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    class B extends A {
+                        public function __construct(int $a, int $b = 0) {}
+                    }
+                    new B(1);',
+            ],
+            'nonAbstractConstructorMayDiffer' => [
+                'code' => '<?php
+                    abstract class A {
+                        public function __construct(int $a) {}
+                    }
+                    class B extends A {
+                        public function __construct(string $a) {}
+                    }
+                    new B("a");',
+            ],
             'staticReturnOfAnInheritedMethodSatisfiesAnInterface' => [
                 'code' => '<?php
                     interface ModelInterface {
@@ -1429,6 +1449,38 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'returnTypeMessageOfAMethodWithOneKeepsItsType' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function run(): string;
+                    }
+
+                    class B extends A {
+                        public function run(): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => "MethodSignatureMismatch - src" . DIRECTORY_SEPARATOR . "somefile.php:7:25 - Method B::run"
+                    . " with return type 'int' is different to return type 'string' of inherited method A::run",
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'returnTypeMessageOfAMethodWithoutOneIsMixed' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function run(): array|false;
+                    }
+
+                    class B extends A {
+                        public function run() {
+                            return false;
+                        }
+                    }',
+                'error_message' => "MethodSignatureMismatch - src" . DIRECTORY_SEPARATOR . "somefile.php:7:25 - Method B::run"
+                    . " with return type 'mixed' is different to return type",
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'staticReturnOfAnInheritedMethodDoesNotSatisfyAnUnrelatedInterface' => [
                 'code' => '<?php
                     interface OtherInterface {
@@ -2066,6 +2118,37 @@ final class MethodSignatureTest extends TestCase
 
                     class BadAChild extends A {
                         public function __construct(string $s) {}
+                    }',
+                'error_message' => 'ConstructorSignatureMismatch',
+            ],
+            'abstractConstructorParamTypeMismatch' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    class B extends A {
+                        public function __construct(string $a) {}
+                    }',
+                'error_message' => 'ConstructorSignatureMismatch',
+            ],
+            'abstractConstructorMoreRequiredParams' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    class B extends A {
+                        public function __construct(int $a, int $b) {}
+                    }',
+                'error_message' => 'ConstructorSignatureMismatch',
+            ],
+            'abstractConstructorInGrandparent' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    abstract class B extends A {}
+                    class C extends B {
+                        public function __construct(string $a) {}
                     }',
                 'error_message' => 'ConstructorSignatureMismatch',
             ],

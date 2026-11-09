@@ -2113,11 +2113,6 @@ final class ConfigTest extends TestCase
                 '<psalm></psalm>',
                 ['Psalm\LaravelPlugin\Plugin'],
             ],
-            'requiredSabreEvent' => [
-                ['composer.json' => '{"require": {"sabre/event": "^5"}}'],
-                '<psalm></psalm>',
-                ['Psalm\SabreEventPlugin\Plugin'],
-            ],
             'requiredLibrariesOfSeveralPlugins' => [
                 [
                     'composer.json' => '{"require": {"laravel/framework": "^12", "psr/log": "^3"}, '
@@ -2133,9 +2128,12 @@ final class ConfigTest extends TestCase
                 ['Psalm\PhpUnitPlugin\Plugin'],
             ],
             'requiredLibraryInBothSections' => [
-                ['composer.json' => '{"require": {"sabre/event": "^5"}, "require-dev": {"sabre/event": "^5"}}'],
+                [
+                    'composer.json' => '{"require": {"mockery/mockery": "^1"}, '
+                        . '"require-dev": {"mockery/mockery": "^1"}}',
+                ],
                 '<psalm></psalm>',
-                ['Psalm\SabreEventPlugin\Plugin'],
+                ['Psalm\MockeryPlugin\Plugin'],
             ],
             'requiredLibraryOfAnEnabledPlugin' => [
                 ['composer.json' => '{"require-dev": {"phpunit/phpunit": "^12"}}'],
@@ -2237,6 +2235,39 @@ final class ConfigTest extends TestCase
         );
 
         $this->assertContains('datetime', $this->project_analyzer->getConfig()->getUniversalObjectCrates());
+    }
+
+    public function testSetsUniversalObjectCratesOfAnInterface(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <universalObjectCrates>
+                        <class name="Countable" />
+                    </universalObjectCrates>
+                </psalm>',
+            ),
+        );
+
+        $this->assertContains('countable', $this->project_analyzer->getConfig()->getUniversalObjectCrates());
+    }
+
+    public function testRejectsAnUnknownUniversalObjectCrate(): void
+    {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage('NoSuchUniversalObjectCrate is not a known class');
+
+        TestConfig::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <universalObjectCrates>
+                    <class name="NoSuchUniversalObjectCrate" />
+                </universalObjectCrates>
+            </psalm>',
+        );
     }
 
     public function testInferPropertyTypesFromConstructorIsRead(): void
