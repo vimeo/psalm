@@ -25,8 +25,10 @@ use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\FalsableReturnStatement;
+use Psalm\Issue\HiddenGeneratorReturn;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnStatement;
 use Psalm\Issue\LessSpecificReturnStatement;
@@ -40,14 +42,22 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_values;
 use function count;
 use function explode;
 use function implode;
@@ -115,12 +125,21 @@ final class ReturnAnalyzer
         return null;
     }
 
-    private static function substituteIdenticalTemplateParam(
+    /**
+     * @param bool $substitute_template_param whether a literal equal to a template variable is that variable
+     */
+    private static function getReturnedType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $expr,
-        Union $expr_type,
         Context $context,
-    ): Union {
+        bool $substitute_template_param,
+    ): ?Union {
+        $expr_type = $statements_analyzer->node_data->getType($expr);
+
+        if ($expr_type === null || !$substitute_template_param) {
+            return $expr_type;
+        }
+
         $template_type = self::getTemplateParamEqualToLiteral($expr_type, $context, $statements_analyzer);
 
         if ($template_type === null) {
@@ -241,16 +260,7 @@ final class ReturnAnalyzer
                 return;
             }
 
-            $stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr);
-
-            if ($stmt_expr_type && !$var_comment_type) {
-                $stmt_expr_type = self::substituteIdenticalTemplateParam(
-                    $statements_analyzer,
-                    $stmt->expr,
-                    $stmt_expr_type,
-                    $context,
-                );
-            }
+            $stmt_expr_type = self::getReturnedType($statements_analyzer, $stmt->expr, $context, !$var_comment_type);
 
             if ($var_comment_type) {
                 $stmt_type = $var_comment_type;
@@ -290,7 +300,7 @@ final class ReturnAnalyzer
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
         if ($context->finally_scope) {
-            foreach ($context->vars_in_scope as $var_id => &$type) {
+            foreach ($context->vars_in_scope as $var_id => $type) {
                 if (isset($context->finally_scope->vars_in_scope[$var_id])) {
                     $context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $context->finally_scope->vars_in_scope[$var_id],
@@ -298,8 +308,7 @@ final class ReturnAnalyzer
                         $statements_analyzer->getCodebase(),
                     );
                 } else {
-                    $type = $type->setPossiblyUndefined(true, true);
-                    $context->finally_scope->vars_in_scope[$var_id] = $type;
+                    $context->finally_scope->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true, true);
                 }
             }
         }
@@ -309,28 +318,7 @@ final class ReturnAnalyzer
         if ($source instanceof FunctionLikeAnalyzer
             && $source->getSource() instanceof TraitAnalyzer
         ) {
-            // the body of a method of a trait is analyzed as one of each class using it: what it returns is
-            // returned by the calls of the method on that class (see FunctionLikeAnalyzer::getBodyMethodId())
-            FunctionLikeAnalyzer::taintByRefParamsOut($codebase, $context);
-
-            $storage = $source->getFunctionLikeStorage($statements_analyzer);
-
-            if ($stmt->expr && $storage->location) {
-                self::handleTaints(
-                    $statements_analyzer,
-                    $stmt,
-                    $source->getCorrectlyCasedMethodId($context->self),
-                    TypeExpander::expandUnion(
-                        $codebase,
-                        $stmt_type,
-                        $context->self,
-                        $context->self,
-                        $context->parent,
-                    ),
-                    $storage,
-                    $context,
-                );
-            }
+            self::analyzeReturnInTraitMethod($statements_analyzer, $stmt, $stmt_type, $context);
         } elseif ($source instanceof FunctionLikeAnalyzer) {
             $source->addReturnTypes($context);
 
@@ -453,8 +441,17 @@ final class ReturnAnalyzer
                         }
                     }
 
-                    if ($local_return_type->isGenerator() && $storage->has_yield) {
-                        return;
+                    if ($storage->has_yield) {
+                        $local_return_type = self::getGeneratorReturnTypeToCheck(
+                            $statements_analyzer,
+                            $stmt,
+                            $local_return_type,
+                            $cased_method_id,
+                        );
+
+                        if ($local_return_type === null) {
+                            return;
+                        }
                     }
 
                     if ($stmt_type->hasMixed()) {
@@ -734,12 +731,198 @@ final class ReturnAnalyzer
     }
 
     /**
+     * The body of a method of a trait is analyzed as one of each class using it: what it returns is returned by
+     * the calls of the method on that class (see FunctionLikeAnalyzer::getBodyMethodId()). Its value is not
+     * checked against the return type, except for a value returned by a generator through a declared type
+     * without Generator.
+     */
+    private static function analyzeReturnInTraitMethod(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\Return_ $stmt,
+        Union $stmt_type,
+        Context $context,
+    ): void {
+        $source = $statements_analyzer->getSource();
+
+        if (!$source instanceof FunctionLikeAnalyzer) {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        FunctionLikeAnalyzer::taintByRefParamsOut($codebase, $context);
+
+        $storage = $source->getFunctionLikeStorage($statements_analyzer);
+        $cased_method_id = $source->getCorrectlyCasedMethodId($context->self);
+
+        if ($stmt->expr && $storage->location) {
+            self::handleTaints(
+                $statements_analyzer,
+                $stmt,
+                $cased_method_id,
+                TypeExpander::expandUnion(
+                    $codebase,
+                    $stmt_type,
+                    $context->self,
+                    $context->self,
+                    $context->parent,
+                ),
+                $storage,
+                $context,
+            );
+        }
+
+        if ($storage->has_yield && $storage->return_type && !$storage->return_type->hasMixed()) {
+            $declared_type = TypeExpander::expandUnion(
+                $codebase,
+                $storage->return_type,
+                $context->self,
+                $context->self,
+                $context->parent,
+            );
+
+            $trait_name = $source->getFQCLN();
+
+            if ($trait_name !== null && $context->self !== null) {
+                // what the class using the trait gave to the templates of the trait
+                $found_generic_params = ClassTemplateParamCollector::collect(
+                    $codebase,
+                    $codebase->classlike_storage_provider->get($trait_name),
+                    $codebase->classlike_storage_provider->get($context->self),
+                    $storage->cased_name === null ? null : strtolower($storage->cased_name),
+                    null,
+                    true,
+                );
+
+                if ($found_generic_params !== null) {
+                    $declared_type = TemplateInferredTypeReplacer::replace(
+                        $declared_type,
+                        new TemplateResult([], $found_generic_params),
+                        $codebase,
+                    );
+                }
+            }
+
+            self::getGeneratorReturnTypeToCheck($statements_analyzer, $stmt, $declared_type, $cased_method_id);
+        }
+    }
+
+    /**
+     * What the value returned by a function containing `yield` is checked against: the TReturn of the declared
+     * Generator, or null when there is nothing to check
+     */
+    private static function getGeneratorReturnTypeToCheck(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\Return_ $stmt,
+        Union $declared_type,
+        string $cased_method_id,
+    ): ?Union {
+        $expr = $stmt->expr;
+        $source = $statements_analyzer->getSource();
+
+        // an arrow function implicitly returns its expression, which says nothing about the generator's return value
+        if ($expr === null || ($source instanceof FunctionLikeAnalyzer && $source->isArrowFunction())) {
+            return null;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $return_types = [];
+
+        if (!self::collectGeneratorReturnTypes($codebase, $declared_type, $return_types) || !$return_types) {
+            if (!$statements_analyzer->node_data->getType($stmt)?->isNull()) {
+                IssueBuffer::maybeAdd(
+                    new HiddenGeneratorReturn(
+                        'The value returned by the generator ' . $cased_method_id
+                            . ' can\'t be read through its declared return type \''
+                            . $declared_type->getId() . '\', which has no Generator',
+                        new CodeLocation($statements_analyzer->getSource(), $expr),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
+            return null;
+        }
+
+        $return_type = TypeCombiner::combine($return_types, $codebase);
+
+        return $return_type->hasMixed() ? null : $return_type;
+    }
+
+    /**
+     * Collects what a `return` of a function containing `yield` may return. Every alternative of the declared
+     * type (with its intersected types and template bound) contributes the TReturn of its Generator, or mixed
+     * if it has no Generator but could be one.
+     *
+     * @param list<Atomic> $return_types
+     * @return bool whether the declared type has a Generator
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function collectGeneratorReturnTypes(
+        Codebase $codebase,
+        Union $declared_type,
+        array &$return_types,
+    ): bool {
+        $has_generator = false;
+
+        foreach ($declared_type->getAtomicTypes() as $atomic) {
+            $parts = [$atomic];
+
+            if ($atomic instanceof TNamedObject
+                || $atomic instanceof TTemplateParam
+                || $atomic instanceof TIterable
+            ) {
+                $parts = [...$parts, ...array_values($atomic->getIntersectionTypes())];
+            }
+
+            $generator_types = [];
+            $other_types = [];
+
+            foreach ($parts as $part) {
+                if ($part instanceof TTemplateParam) {
+                    $bound_types = [];
+
+                    if (self::collectGeneratorReturnTypes($codebase, $part->as, $bound_types)) {
+                        $generator_types = [...$generator_types, ...$bound_types];
+                    } else {
+                        $other_types = [...$other_types, ...$bound_types];
+                    }
+                } elseif ($part instanceof TNamedObject && strtolower($part->value) === 'generator') {
+                    $generator_return_type = $part instanceof TGenericObject ? ($part->type_params[3] ?? null) : null;
+
+                    foreach ($generator_return_type?->getAtomicTypes() ?? [new TMixed()] as $return_atomic) {
+                        $generator_types[] = $return_atomic;
+                    }
+                } elseif ($part instanceof TMixed
+                    || $part instanceof TIterable
+                    || $part instanceof TArray
+                    || $part instanceof TKeyedArray
+                    || $part instanceof TObject
+                    || ($part instanceof TNamedObject
+                        && $codebase->classExtendsOrImplements('Generator', $part->value))
+                ) {
+                    $other_types[] = new TMixed();
+                }
+            }
+
+            if ($generator_types) {
+                $has_generator = true;
+                $return_types = [...$return_types, ...$generator_types];
+            } else {
+                $return_types = [...$return_types, ...$other_types];
+            }
+        }
+
+        return $has_generator;
+    }
+
+    /**
      * Callers treat what a method returning `$this` gives back as their receiver, so the method,
      * and every override of it, must return nothing else.
      *
      * @psalm-mutation-free
      */
-    private static function mustReturnThis(
+    public static function mustReturnThis(
         Codebase $codebase,
         MethodStorage $storage,
         MethodIdentifier $method_id,
