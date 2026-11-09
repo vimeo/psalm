@@ -26,6 +26,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\GenericTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateDefaults;
@@ -2730,22 +2731,27 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
         $template_result = new TemplateResult([], $lower_bounds);
 
+        $expected_params = [];
+        $actual_params = [];
+
         foreach (array_keys($required_storage->template_types) as $offset => $template_name) {
             if (!isset($required->type_params[$offset], $given_params[$template_name])) {
-                continue;
+                return true;
             }
 
-            $expected = TemplateInferredTypeReplacer::replace(
+            $expected_params[] = TemplateInferredTypeReplacer::replace(
                 $required->type_params[$offset],
                 $template_result,
                 $codebase,
             );
-
-            if (!UnionTypeComparator::isContainedBy($codebase, $given_params[$template_name], $expected)) {
-                return false;
-            }
+            $actual_params[] = $given_params[$template_name];
         }
 
-        return true;
+        // as the arguments of a type are compared: by the variance the required class declares for each
+        return GenericTypeComparator::isContainedBy(
+            $codebase,
+            new TGenericObject($required_storage->name, $actual_params),
+            new TGenericObject($required_storage->name, $expected_params),
+        );
     }
 }
