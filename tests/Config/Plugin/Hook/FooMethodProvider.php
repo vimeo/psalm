@@ -16,6 +16,8 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
+use function in_array;
+
 /**
  * @psalm-suppress UnusedClass registered as a plugin via test config, instantiated by reflection
  */
@@ -41,7 +43,7 @@ final class FooMethodProvider implements
     public static function doesMethodExist(MethodExistenceProviderEvent $event): ?bool
     {
         $method_name_lowercase = $event->getMethodNameLowercase();
-        if ($method_name_lowercase === 'magicmethod' || $method_name_lowercase === 'magicmethod2') {
+        if (in_array($method_name_lowercase, ['magicmethod', 'magicmethod2', 'magicmethod3'], true)) {
             return true;
         }
 
@@ -57,6 +59,13 @@ final class FooMethodProvider implements
         $method_name_lowercase = $event->getMethodNameLowercase();
         if ($method_name_lowercase === 'magicmethod' || $method_name_lowercase === 'magicmethod2') {
             return [new FunctionLikeParameter('first', false, Type::getString(), Type::getString())];
+        }
+
+        if ($method_name_lowercase === 'magicmethod3') {
+            // a call has a location
+            $type = $event->getCodeLocation() !== null ? Type::getString() : Type::getInt();
+
+            return [new FunctionLikeParameter('first', false, $type, $type)];
         }
 
         return null;
