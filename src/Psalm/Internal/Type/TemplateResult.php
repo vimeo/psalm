@@ -85,6 +85,11 @@ final class TemplateResult
         $instance->lower_bounds = $lower_bounds;
         $instance->template_types = [...$instance->template_types, ...$result->template_types];
 
+        if ($instance->static_class_type === null) {
+            $instance->static_class_type = $result->static_class_type;
+            $instance->static_class_is_final = $result->static_class_is_final;
+        }
+
         return $instance;
     }
 }
