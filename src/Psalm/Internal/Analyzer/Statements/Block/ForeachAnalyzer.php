@@ -810,6 +810,8 @@ final class ForeachAnalyzer
         }
 
         if ($iterator_type->isNullable() && !$iterator_type->ignore_nullable_issues) {
+            $always_non_empty_array = false;
+
             IssueBuffer::maybeAdd(
                 new PossiblyNullIterator(
                     'Cannot iterate over nullable var ' . $iterator_type,
@@ -822,6 +824,8 @@ final class ForeachAnalyzer
         }
 
         if ($iterator_type->isFalsable() && !$iterator_type->ignore_falsable_issues) {
+            $always_non_empty_array = false;
+
             IssueBuffer::maybeAdd(
                 new PossiblyFalseIterator(
                     'Cannot iterate over falsable var ' . $iterator_type,
