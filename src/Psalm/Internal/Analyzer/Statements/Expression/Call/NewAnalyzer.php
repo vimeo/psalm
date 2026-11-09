@@ -550,6 +550,7 @@ final class NewAnalyzer extends CallAnalyzer
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer,
+                false,
                 $overload,
             ) === false) {
                 return;

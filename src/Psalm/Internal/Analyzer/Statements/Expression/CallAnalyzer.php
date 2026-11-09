@@ -287,6 +287,7 @@ abstract class CallAnalyzer
         Context $context,
         CodeLocation $code_location,
         StatementsAnalyzer $statements_analyzer,
+        bool $static_is_called_class = false,
         ?FunctionLikeStorage $overload = null,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
@@ -373,6 +374,7 @@ abstract class CallAnalyzer
             $template_result,
             $code_location,
             $context,
+            $static_is_called_class,
         ) === false) {
             return false;
         }
