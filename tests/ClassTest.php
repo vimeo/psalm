@@ -1488,6 +1488,23 @@ final class ClassTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'newStaticWithFewerArgumentsThanTheConstructorOfTheInterfaceRequires' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct(int $x, int $y);
+                    }
+
+                    abstract class Base implements Buildable {
+                        public function __construct(int $x, int $y = 0) {}
+
+                        public static function build(): static {
+                            return new static(5);
+                        }
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'newStaticWithANamedArgumentOfTheConstructorOfTheInterface' => [
                 'code' => '<?php
                     interface Buildable {

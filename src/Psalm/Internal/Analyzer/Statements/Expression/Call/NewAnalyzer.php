@@ -459,6 +459,11 @@ final class NewAnalyzer extends CallAnalyzer
             $params = $constructor->params;
             $last_param = $params === [] ? null : $params[count($params) - 1];
 
+            // a child constructor may require every parameter of the interface one
+            if (count($args) < ($constructor->required_param_count ?? count($params))) {
+                continue;
+            }
+
             foreach ($args as $offset => $arg) {
                 $param = $params[$offset] ?? ($last_param?->is_variadic ? $last_param : null);
                 // the arguments of `new $class_name()` are not all analysed yet: read their type without analysing
