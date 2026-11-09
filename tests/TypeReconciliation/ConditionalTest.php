@@ -21,6 +21,35 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'chainedAssignmentOfAConditionIsFalseWhereTheConditionIsFalse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(?stdClass $definition): void {
+                        if ($isSimple = $isRoot = null === $definition) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $isSimple = false */
+                        /** @psalm-check-type-exact $isRoot = false */
+                        /** @psalm-check-type-exact $definition = stdClass */
+                    }
+
+                    function g(?stdClass $definition): void {
+                        if ($isSimple = $isRoot = null === $definition) {
+                            echo "root";
+                        } elseif ($definition instanceof stdClass) {
+                            echo "definition";
+                        }
+
+                        if (!$isRoot || $isSimple) {
+                            echo "not the root, or simple";
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'nonFinalClassCanBeIdenticalToIterable' => [
                 'code' => <<<'PHP'
                     <?php
