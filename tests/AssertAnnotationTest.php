@@ -4075,6 +4075,24 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'assertNonEmptyArrayOnAPossiblyEmptyArray' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert non-empty-array $things
+                     */
+                    function exceptionIfEmpty(array $things): void {
+                        if (!$things) {
+                            throw new Exception("empty");
+                        }
+                    }
+
+                    /** @var array<int, string> $arr */
+                    $arr = [];
+                    exceptionIfEmpty($arr);',
+                'assertions' => [
+                    '$arr===' => 'non-empty-array<int, string>',
+                ],
+            ],
         ];
     }
 
@@ -4085,6 +4103,23 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertNonEmptyArrayOnANonEmptyArray' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert non-empty-array $things
+                     */
+                    function exceptionIfEmpty(array $things): void {
+                        if (!$things) {
+                            throw new Exception("empty");
+                        }
+                    }
+
+                    /** @param non-empty-array<int, string> $arr */
+                    function f(array $arr): void {
+                        exceptionIfEmpty($arr);
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
             'negatedInstanceofOfAClosedClassEliminatesItsInheritors' => [
                 'code' => '<?php
                     /**
