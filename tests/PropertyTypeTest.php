@@ -669,6 +669,113 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'privateTraitPropertyInitializedByTheUsingClassIsNotCheckedInSubclasses' => [
+                'code' => '<?php
+                    trait IdTrait {
+                        private int $id;
+
+                        private function initializeId(): void {
+                            $this->id = 5;
+                        }
+
+                        public function id(): int {
+                            return $this->id;
+                        }
+                    }
+
+                    class BaseUser {
+                        use IdTrait;
+
+                        public function __construct() {
+                            $this->initializeId();
+                        }
+                    }
+
+                    class Admin extends BaseUser {}
+
+                    class Client extends BaseUser {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }',
+            ],
+            'privateTemplatedPropertyInitializedByAFinalParentConstructorChain' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    class Box {
+                        /**
+                         * @return Box<int>
+                         */
+                        public static function factory(): self {
+                            /** @var Box<int> $instance */
+                            $instance = new self();
+
+                            return $instance;
+                        }
+                    }
+
+                    abstract class Base {
+                        final public function __construct() {
+                            $this->init();
+                        }
+
+                        abstract protected function init(): void;
+                    }
+
+                    final class Child extends Base {
+                        /** @var Box<int> */
+                        private $box;
+
+                        protected function init(): void {
+                            $this->box = Box::factory();
+                        }
+
+                        public function get(): Box {
+                            return $this->box;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticCallOfAnInterfaceMethodInAConstructorHasItsReturnType' => [
+                'code' => '<?php
+                    interface Limits {
+                        public static function minimum(): int;
+                    }
+
+                    abstract class Value implements Limits {
+                        public int $value;
+
+                        public function __construct(int $value) {
+                            $minimum = self::minimum();
+                            $static_minimum = static::minimum();
+
+                            if ($value < $minimum || $value < $static_minimum) {
+                                throw new InvalidArgumentException((string) $minimum);
+                            }
+
+                            $this->value = $value;
+                        }
+                    }',
+            ],
+            'staticMethodWithABodyCalledInAConstructorKeepsItsReturnType' => [
+                'code' => '<?php
+                    class Value {
+                        public int $value;
+
+                        public function __construct() {
+                            $default = self::defaultValue();
+                            $this->value = $default;
+                        }
+
+                        public static function defaultValue(): int {
+                            return 1;
+                        }
+                    }',
+            ],
             'assignPrivatePropertyOfCurrentClassOnChildInstance' => [
                 'code' => '<?php
                     class A {
@@ -2731,6 +2838,41 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'issetOfUninitializedPropertyInConstructor' => [
+                'code' => '<?php
+                    class X {
+                        private string $x;
+
+                        /** @param string[] $a */
+                        public function __construct(array $a) {
+                            foreach ($a as $key => $val) {
+                                if ($key === "x") {
+                                    $this->x = $val;
+                                }
+                            }
+
+                            $this->x ??= "";
+                        }
+                    }
+
+                    class Y {
+                        private string $y;
+
+                        public function __construct() {
+                            $this->y ??= "";
+                        }
+                    }
+
+                    class Z {
+                        private string $z;
+
+                        public function __construct() {
+                            if (!isset($this->z)) {
+                                $this->z = "";
+                            }
+                        }
+                    }',
+            ],
             'memoizePropertyAfterSetting' => [
                 'code' => '<?php
                     class A {
@@ -3086,6 +3228,101 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'privateTraitPropertyIsNotVisibleInASubclass' => [
+                'code' => '<?php
+                    trait IdTrait {
+                        private int $id = 1;
+                    }
+
+                    class BaseUser {
+                        use IdTrait;
+                    }
+
+                    class Admin extends BaseUser {
+                        public function id(): int {
+                            return $this->id;
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:36 - Instance property Admin::$id is not defined',
+            ],
+            'privateTraitPropertyNotInitializedIsStillReportedInTheUsingClass' => [
+                'code' => '<?php
+                    trait IdTrait {
+                        private int $id;
+
+                        public function id(): int {
+                            return $this->id;
+                        }
+                    }
+
+                    class BaseUser {
+                        use IdTrait;
+
+                        public function __construct() {}
+                    }
+
+                    class Admin extends BaseUser {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:27 - Property BaseUser::$id',
+            ],
+            'privateTemplatedPropertyNotInitializedByAFinalParentConstructorChain' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    class Box {
+                        /**
+                         * @return Box<int>
+                         */
+                        public static function factory(): self {
+                            /** @var Box<int> $instance */
+                            $instance = new self();
+
+                            return $instance;
+                        }
+                    }
+
+                    abstract class Base {
+                        final public function __construct() {
+                            $this->init();
+                        }
+
+                        abstract protected function init(): void;
+                    }
+
+                    final class Child extends Base {
+                        /** @var Box<int> */
+                        private $box;
+
+                        /** @var Box<int> */
+                        private $other;
+
+                        protected function init(): void {
+                            $this->box = Box::factory();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:30:33 - Property Child::$other',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyNotInitializedByAnInterfaceStaticMethodCalledInTheConstructor' => [
+                'code' => '<?php
+                    interface Limits {
+                        public static function minimum(): int;
+                    }
+
+                    abstract class Value implements Limits {
+                        public int $value;
+
+                        public function __construct() {
+                            echo self::minimum();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
             'assignPrivatePropertyOfCurrentClassOnChildInstanceChecksItsType' => [
                 'code' => '<?php
                     class A {
