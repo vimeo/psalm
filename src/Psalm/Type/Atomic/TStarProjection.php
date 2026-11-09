@@ -13,7 +13,7 @@ use Psalm\Type\Atomic;
  * stands for some unknown type. Any argument fits it, and reading the template gives its bound.
  *
  * @psalm-immutable
- * @api
+ * @internal
  */
 final class TStarProjection extends Atomic
 {
