@@ -66,6 +66,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use ReflectionProperty;
 use UnexpectedValueException;
 
+use function array_key_first;
 use function array_keys;
 use function array_merge;
 use function array_pop;
@@ -262,8 +263,12 @@ class Reconciler
 
                         if ($new_type_part_part instanceof NotNestedAssertions) {
                             $nested_negated = !$negated;
+                            // the negation is in the assertions now: what they are reconciled for is unchanged
+                            $data = self::negateNestedAssertions($data);
+                            $data_negated = $negated;
                         } else {
                             $nested_negated = $negated;
+                            $data_negated = $negated;
                         }
 
                         [$existing_types, $_] = self::reconcileKeyedTypes(
@@ -277,7 +282,7 @@ class Reconciler
                             $template_type_map,
                             $inside_loop,
                             $code_location,
-                            $nested_negated,
+                            $data_negated,
                         );
 
                         $new_type_part_part = $nested_negated ? new Falsy() : new Truthy();
@@ -1430,6 +1435,30 @@ class Reconciler
                 $changed_var_ids[$base_key] = true;
             }
         }
+    }
+
+    /**
+     * The negation of a single assertion on a single key is the negated assertion on that key. The negation of
+     * several is an alternative, which says nothing of each of them.
+     *
+     * @param array<string, list<list<Assertion>>> $assertions
+     * @return array<string, list<list<Assertion>>>
+     * @psalm-pure
+     */
+    private static function negateNestedAssertions(array $assertions): array
+    {
+        if (count($assertions) !== 1) {
+            return [];
+        }
+
+        $key = array_key_first($assertions);
+        $key_assertions = $assertions[$key];
+
+        if (count($key_assertions) !== 1 || count($key_assertions[0]) !== 1) {
+            return [];
+        }
+
+        return [$key => [[$key_assertions[0][0]->getNegation()]]];
     }
 
     /**
