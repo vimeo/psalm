@@ -51,7 +51,7 @@ final class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface,
 
             // a method imported from a trait under another name (`use T { foo as bar; }`) is cased as that name, unless
             // the method the call resolves to has that name itself (the class declares its own `bar()`)
-            if (strtolower($expected_name) !== strtolower((string) $expr->name)) {
+            if ($expected_name === null || strtolower($expected_name) !== strtolower((string) $expr->name)) {
                 $called_class_storage = $codebase->classlike_storage_provider->get(
                     explode('::', $event->getMethodId())[0],
                 );
