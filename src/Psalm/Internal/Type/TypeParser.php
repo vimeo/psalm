@@ -117,6 +117,7 @@ use function preg_match;
 use function preg_replace;
 use function reset;
 use function str_contains;
+use function str_ends_with;
 use function str_starts_with;
 use function stripslashes;
 use function strlen;
@@ -260,14 +261,18 @@ final class TypeParser
 
         $first_class = array_keys($template_type_map[$template_param_name])[0];
 
-        $conditional_type = self::getTypeFromTree(
-            $parse_tree->condition->children[0],
-            $codebase,
-            null,
-            $template_type_map,
-            $type_aliases,
-            $from_docblock,
-        );
+        $condition_tree = $parse_tree->condition->children[0];
+
+        $conditional_type = self::isFalsyKeyword($condition_tree)
+            ? self::getFalsyUnion($from_docblock)
+            : self::getTypeFromTree(
+                $condition_tree,
+                $codebase,
+                null,
+                $template_type_map,
+                $type_aliases,
+                $from_docblock,
+            );
 
         $if_type = self::getTypeFromTree(
             $parse_tree->children[0],
@@ -313,6 +318,42 @@ final class TypeParser
             $from_docblock,
             $subject_type,
         );
+    }
+
+    /**
+     * `empty` is an alias of `never`, which no value is of; as a condition `empty` and `falsy` mean PHP's `empty()`.
+     * The token as written tells the keyword from a class named `falsy`, e.g. `\falsy`, an alias or `falsy::VALUE`.
+     *
+     * @psalm-mutation-free
+     */
+    private static function isFalsyKeyword(ParseTree $parse_tree): bool
+    {
+        if (!$parse_tree instanceof Value) {
+            return false;
+        }
+
+        $keyword = $parse_tree->text ?? $parse_tree->value;
+
+        return ($keyword === 'empty' || $keyword === 'falsy')
+            && ($parse_tree->value === $keyword || str_ends_with($parse_tree->value, '\\' . $keyword));
+    }
+
+    /**
+     * The values `empty()` is true for
+     *
+     * @psalm-pure
+     */
+    private static function getFalsyUnion(bool $from_docblock): Union
+    {
+        return new Union([
+            new TFalse($from_docblock),
+            new TLiteralInt(0, $from_docblock),
+            new TLiteralFloat(0.0, $from_docblock),
+            TLiteralString::make('', $from_docblock),
+            TLiteralString::make('0', $from_docblock),
+            new TNull($from_docblock),
+            Type::getEmptyArrayAtomic(),
+        ], ['from_docblock' => $from_docblock]);
     }
 
     /**
