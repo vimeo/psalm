@@ -26,6 +26,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\GenericTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateDefaults;
@@ -1569,7 +1570,13 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $extension_requirement = $codebase->classlikes->getUnAliasedName(
                     $trait_storage->extension_requirement,
                 );
-                $extensionRequirementMet = in_array($extension_requirement, $storage->parent_classes);
+                $extensionRequirementMet = in_array($extension_requirement, $storage->parent_classes)
+                    && self::requirementTypeArgumentsAreMet(
+                        $codebase,
+                        $storage,
+                        $trait_storage,
+                        $trait_storage->extension_requirement_type,
+                    );
 
                 if (!$extensionRequirementMet) {
                     IssueBuffer::maybeAdd(
@@ -1583,9 +1590,15 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
 
-            foreach ($trait_storage->implementation_requirements as $implementation_requirement) {
-                $implementation_requirement = $codebase->classlikes->getUnAliasedName($implementation_requirement);
-                $implementationRequirementMet = in_array($implementation_requirement, $storage->class_implements);
+            foreach ($trait_storage->implementation_requirements as $declared_requirement) {
+                $implementation_requirement = $codebase->classlikes->getUnAliasedName($declared_requirement);
+                $implementationRequirementMet = in_array($implementation_requirement, $storage->class_implements)
+                    && self::requirementTypeArgumentsAreMet(
+                        $codebase,
+                        $storage,
+                        $trait_storage,
+                        $trait_storage->implementation_requirement_types[$declared_requirement] ?? null,
+                    );
 
                 if (!$implementationRequirementMet) {
                     IssueBuffer::maybeAdd(
@@ -2686,5 +2699,63 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * The type arguments a trait gives the class its `@psalm-require-extends` or `@psalm-require-implements` names must
+     * be the ones the class gives it, once the templates of the trait are bound by the `@use` of the class
+     */
+    private static function requirementTypeArgumentsAreMet(
+        Codebase $codebase,
+        ClassLikeStorage $storage,
+        ClassLikeStorage $trait_storage,
+        ?TGenericObject $required,
+    ): bool {
+        if ($required === null) {
+            return true;
+        }
+
+        $required_name = $codebase->classlikes->getUnAliasedName($required->value);
+        $required_storage = $codebase->classlike_storage_provider->get($required_name);
+        $given_params = $storage->template_extended_params[$required_storage->name] ?? null;
+
+        if ($given_params === null || $required_storage->template_types === null) {
+            return true;
+        }
+
+        $lower_bounds = [];
+
+        foreach ($storage->template_extended_params[$trait_storage->name] ?? [] as $template_name => $bound) {
+            $lower_bounds[$template_name][$trait_storage->name] = $bound;
+        }
+
+        $template_result = new TemplateResult([], $lower_bounds);
+
+        $expected_params = [];
+        $actual_params = [];
+
+        foreach (array_keys($required_storage->template_types) as $offset => $template_name) {
+            if (!isset($required->type_params[$offset], $given_params[$template_name])) {
+                return true;
+            }
+
+            $expected_params[] = TemplateInferredTypeReplacer::replace(
+                $required->type_params[$offset],
+                $template_result,
+                $codebase,
+            );
+            $actual_params[] = $given_params[$template_name];
+        }
+
+        if ($expected_params === [] || $actual_params === []) {
+            return true;
+        }
+
+        // as the arguments of a type are compared: by the variance the required class declares for each
+        return GenericTypeComparator::isContainedBy(
+            $codebase,
+            new TGenericObject($required_storage->name, $actual_params),
+            new TGenericObject($required_storage->name, $expected_params),
+        );
     }
 }
