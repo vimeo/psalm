@@ -888,7 +888,12 @@ final class Context
             $property_name = substr($root_id, $class_length + 3);
 
             if (!isset($mutated_classes[$property_name])
-                || !self::isMutatedStaticPropertyClass($codebase, $class_name, $mutated_classes[$property_name])
+                || !self::isMutatedStaticPropertyClass(
+                    $codebase,
+                    $class_name,
+                    $property_name,
+                    $mutated_classes[$property_name],
+                )
             ) {
                 continue;
             }
@@ -920,31 +925,40 @@ final class Context
     private static function isMutatedStaticPropertyClass(
         Codebase $codebase,
         string $class_name,
+        string $property_name,
         array $mutated_class_names,
     ): bool {
         $class_name_lc = strtolower($class_name);
 
         // `self::$p`, `static::$p` and `parent::$p` of the caller can be the property of any of them
-        if (in_array($class_name_lc, ['self', 'static', 'parent'], true)
-            || isset($mutated_class_names[$class_name_lc])
-        ) {
+        if (in_array($class_name_lc, ['self', 'static', 'parent'], true)) {
             return true;
         }
 
-        if (!$codebase->classOrInterfaceExists($class_name)) {
-            return false;
-        }
+        $declaring_class = self::getStaticPropertyDeclaringClass($codebase, $class_name, $property_name);
 
         foreach ($mutated_class_names as $mutated_class_name => $_) {
-            if ($codebase->classOrInterfaceExists($mutated_class_name)
-                && ($codebase->classExtends($class_name, $mutated_class_name)
-                    || $codebase->classExtends($mutated_class_name, $class_name))
+            // a class that redeclares the property has a property of its own
+            if (self::getStaticPropertyDeclaringClass($codebase, $mutated_class_name, $property_name)
+                === $declaring_class
             ) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private static function getStaticPropertyDeclaringClass(
+        Codebase $codebase,
+        string $class_name,
+        string $property_name,
+    ): string {
+        $declaring_class = $codebase->classOrInterfaceExists($class_name)
+            ? $codebase->properties->getDeclaringClassForProperty($class_name . '::$' . $property_name, true)
+            : null;
+
+        return strtolower($declaring_class ?? $class_name);
     }
 
     /**

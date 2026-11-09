@@ -775,6 +775,49 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'staticPropertyRedeclaredByAChildClassIsAnotherPropertyThanTheOneAssigned' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $flag = false;
+                    }
+
+                    final class Child extends Base {
+                        public static bool $flag = false;
+
+                        public static function prepare(): void {
+                            Base::$flag = true;
+                        }
+
+                        public static function run(): void {
+                            Child::$flag = false;
+                            self::prepare();
+
+                            /** @psalm-check-type-exact $flag = false */
+                            $flag = Child::$flag;
+                        }
+                    }',
+            ],
+            'firstClassCallableOfAMethodThatAssignsAStaticPropertyKeepsItsType' => [
+                'code' => '<?php
+                    final class Counter {
+                        public static bool $ready = false;
+
+                        public static function prepare(): void {
+                            self::$ready = true;
+                        }
+
+                        public static function run(): void {
+                            self::$ready = false;
+                            $callback = self::prepare(...);
+
+                            /** @psalm-check-type-exact $ready = false */
+                            $ready = self::$ready;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'staticArrayPropertyChangedByAMethodIsForgottenAfterTheCall' => [
                 'code' => '<?php
                     final class Queue {
