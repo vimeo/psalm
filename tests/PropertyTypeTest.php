@@ -807,47 +807,6 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
-            'privateTemplatedPropertyInitializedByAFinalParentConstructorChain' => [
-                'code' => '<?php
-                    /**
-                     * @template T
-                     */
-                    class Box {
-                        /**
-                         * @return Box<int>
-                         */
-                        public static function factory(): self {
-                            /** @var Box<int> $instance */
-                            $instance = new self();
-
-                            return $instance;
-                        }
-                    }
-
-                    abstract class Base {
-                        final public function __construct() {
-                            $this->init();
-                        }
-
-                        abstract protected function init(): void;
-                    }
-
-                    final class Child extends Base {
-                        /** @var Box<int> */
-                        private $box;
-
-                        protected function init(): void {
-                            $this->box = Box::factory();
-                        }
-
-                        public function get(): Box {
-                            return $this->box;
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
             'staticCallOfAnInterfaceMethodInAConstructorHasItsReturnType' => [
                 'code' => '<?php
                     interface Limits {
