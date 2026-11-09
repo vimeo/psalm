@@ -9,6 +9,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class WhileTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -21,6 +23,17 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'preIncrementInAConditionThatHoldsForTheFirstValueIsNotNeverTrue' => [
+                'code' => '<?php
+                    $try = 8;
+                    $name = null;
+                    while (++$try < 10) {
+                        $name = "thing";
+                    }',
+                'assertions' => [
+                    '$try===' => 'int<10, 10>',
+                ],
+            ],
             'preDecrementInConditionHoldsTheValueTheLoopExitsWith' => [
                 'code' => '<?php
                     $i = 5;
@@ -973,6 +986,15 @@ final class WhileTest extends TestCase
                     }
                     echo $name;',
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
+                'error_levels' => ['TypeDoesNotContainType'],
+            ],
+            'preIncrementInAConditionThatFailsForTheFirstValueIsNeverTrue' => [
+                'code' => '<?php
+                    $try = 9;
+                    while (++$try < 10) {
+                        $name = "thing";
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:28 - Type int<10, max> for $try is never <10',
             ],
             'variableAssignedInALoopWhoseConditionFailsForTheInitialLiteralIsPossiblyUndefined' => [
                 'code' => '<?php
@@ -992,6 +1014,15 @@ final class WhileTest extends TestCase
                     }
                     echo $name;',
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
+                'error_levels' => ['TypeDoesNotContainType'],
+            ],
+            'preDecrementInAConditionThatFailsForTheFirstValueIsNeverTrue' => [
+                'code' => '<?php
+                    $try = 1;
+                    while (--$try > 0) {
+                        $name = "thing";
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:28 - Type int<min, 0> for $try is never >0',
             ],
             'variableAssignedInALoopOverAnUnknownStartIsPossiblyUndefined' => [
                 'code' => '<?php
