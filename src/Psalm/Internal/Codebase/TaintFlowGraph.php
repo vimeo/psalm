@@ -650,9 +650,6 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
-     * @psalm-external-mutation-free
-     */
-    /**
      * The graph of a forked worker goes back to the main process serialized. Nodes share CodeLocation objects, and
      * PHP's own unserialize() finds the object a back-reference to one points to by walking its list of the values
      * read so far from the start, 1018 at a time: with hundreds of thousands of nodes that takes minutes. So each
@@ -808,7 +805,7 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
-     * @psalm-capabilities read-props|write-this-props|write-refs
+     * @psalm-external-mutation-free
      */
     public function addGraph(self $other): void
     {

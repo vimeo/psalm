@@ -211,6 +211,42 @@ final class TaintFlowGraphTest extends TestCase
     }
 
     /**
+     * A node of the sources, sinks or generator sent nodes that is the node of its id is written once, so after a
+     * round trip it must still be the same object as that node, and one that is a different object must stay one.
+     */
+    public function testNodesSharedWithSourcesSinksAndSentNodesStayShared(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $location = new Raw('$a = 1;', $file_path, 'somefile.php', 0, 4);
+
+        $graph = new TaintFlowGraph();
+        $source = DataFlowNode::getForAssignment('$source', $location);
+        $graph->addNode($source);
+        $graph->addSource($source);
+        $sink = DataFlowNode::getForAssignment('$sink', $location);
+        $graph->addSink($sink);
+        $sent = DataFlowNode::getForAssignment('$sent', $location);
+        $graph->addNode($sent);
+        $graph->addGenerator($sent, $sent);
+        // A source with the id of a node, but not that node
+        $graph->addNode(DataFlowNode::getForAssignment('$other', $location));
+        $other_source = DataFlowNode::getForAssignment('$other', $location);
+        $graph->addSource($other_source);
+
+        /** @var TaintFlowGraph $unserialized */
+        $unserialized = unserialize(serialize($graph));
+        $this->assertEquals($graph, $unserialized);
+
+        $read = fn(string $property): array => (array) (fn(): mixed => $this->$property)->call($unserialized);
+        $nodes = $read('nodes');
+
+        $this->assertSame($nodes[$source->id], $read('sources')[$source->id]);
+        $this->assertSame($nodes[$sink->id], $read('sinks')[$sink->id]);
+        $this->assertSame($nodes[$sent->id], $read('generator_sent_nodes')[$sent->id]);
+        $this->assertNotSame($nodes[$other_source->id], $read('sources')[$other_source->id]);
+    }
+
+    /**
      * Two files can add the same path between two nodes, changing taints differently: a flow takes either, so
      * the taint one of them keeps reaches the sink, whichever graph is merged first.
      */
