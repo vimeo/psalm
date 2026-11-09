@@ -126,6 +126,69 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'coalesceAssignmentOnTwoOptionalKeysOfAnArrayWithAShapeIntersection' => [
+                'code' => '<?php
+                    /** @var array{name?: string, age?: int}&array $data */
+                    $data = [];
+                    $data["name"] ??= "noname";
+                    $data["age"] ??= 90;',
+                'assertions' => [
+                    '$data' => 'array{age: int, name: string, ...<array-key, mixed>}',
+                ],
+            ],
+            'arrayKeyOfAnIgnoredNullableReturnIsNotNullable' => [
+                'code' => '<?php
+                    class TestModel
+                    {
+                        /** @psalm-ignore-nullable-return */
+                        public function getName(): ?string
+                        {
+                            return mt_rand(1, 100) > 1 ? "foo" : null;
+                        }
+                    }
+
+                    $model = new TestModel();
+                    $a = [$model->getName() => ["bar" => "baz"]];
+                    $b = [$model->getName() => 1, "x" => 2];',
+                'assertions' => [
+                    '$a===' => 'non-empty-array<string, array{bar: \'baz\'}>',
+                    '$b===' => 'array{x: 2, ...<string, 1>}',
+                ],
+            ],
+            'keyedArrayWithKeysThatAreTypeOperators' => [
+                'code' => '<?php
+                    /**
+                     * @param array{as?: string, of: int, is: bool} $shape
+                     * @return array{as: string, of: int}
+                     */
+                    function read(array $shape): array {
+                        return [
+                            "as" => $shape["as"] ?? "x",
+                            "of" => $shape["of"],
+                        ];
+                    }
+
+                    /** @var array{as: int} $check */
+                    $check = ["as" => 1];
+                    $value = $check["as"];',
+                'assertions' => ['$value===' => 'int'],
+            ],
+            'typeOperatorsAfterAShapeKeyStayOperators' => [
+                'code' => '<?php
+                    /**
+                     * @template T as array{as: int}
+                     * @param T $shape
+                     * @return (T is array{as: 1} ? string : int)
+                     */
+                    function pick(array $shape): string|int {
+                        return $shape["as"] === 1 ? "one" : 2;
+                    }
+
+                    $result = pick(["as" => 2]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'mixedOrStringOffsetAssignedToAnEmptyArrayMakesAnArrayKey' => [
                 'code' => '<?php
                     /** @var list<mixed> $items */
@@ -2297,6 +2360,22 @@ final class ArrayAssignmentTest extends TestCase
                     ];
                 ',
             ],
+            'assignWithStaticClassOffsetKeepsTheKeyTypeOfTheProperty' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    abstract class Singleton {
+                        /** @var array<class-string<static>, static> */
+                        private static array $instances = [];
+
+                        protected function __construct() {}
+
+                        public static function getInstance(): static {
+                            return self::$instances[static::class] ??= new static();
+                        }
+                    }',
+            ],
             'assignToListWithForeachKey' => [
                 'code' => '<?php
                     /**
@@ -2694,6 +2773,37 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayKeyOfAnIgnoredNullableReturnDoesNotHideAnotherNullableKey' => [
+                'code' => '<?php
+                    class TestModel
+                    {
+                        /** @psalm-ignore-nullable-return */
+                        public function getName(): ?string
+                        {
+                            return mt_rand(1, 100) > 1 ? "foo" : null;
+                        }
+                    }
+
+                    function f(TestModel $model, ?string $key): array
+                    {
+                        return [$model->getName() => 1, $key => 2];
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+            ],
+            'arrayKeyOfANullableReturnIsInvalid' => [
+                'code' => '<?php
+                    class TestModel
+                    {
+                        public function getName(): ?string
+                        {
+                            return mt_rand(1, 100) > 1 ? "foo" : null;
+                        }
+                    }
+
+                    $model = new TestModel();
+                    $a = [$model->getName() => 1];',
+                'error_message' => 'InvalidArrayOffset',
+            ],
             'templateBoundedByDecimalIntStringIsNotItsKeyType' => [
                 'code' => '<?php
                     /**
