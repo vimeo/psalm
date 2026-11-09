@@ -251,6 +251,77 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedArrayAssertionKeepsTheExistingArrayType' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert-if-true array<string, string> $value
+                     */
+                    function isStringMap($value): bool {
+                        return true;
+                    }
+
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert-if-true array{name: string} $value
+                     */
+                    function isNamed($value): bool {
+                        return true;
+                    }
+
+                    /** @param list<int> $numbers */
+                    function withMap(array $numbers): void {
+                        if (!isStringMap($numbers)) {
+                            /** @psalm-check-type-exact $numbers = list<int> */;
+                        }
+                    }
+
+                    /** @param list<int> $numbers */
+                    function withShape(array $numbers): void {
+                        if (!isNamed($numbers)) {
+                            /** @psalm-check-type-exact $numbers = list<int> */;
+                        }
+                    }',
+            ],
+            'assertIfTrueAndIfFalseOfAUnionTypeKeepEveryMember' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-assert-if-true int|string $value
+                     */
+                    function isIntOrString(mixed $value): bool {
+                        return is_int($value) || is_string($value);
+                    }
+
+                    /**
+                     * @psalm-assert-if-false int|string $value
+                     */
+                    function isNotIntOrString(mixed $value): bool {
+                        return !is_int($value) && !is_string($value);
+                    }
+
+                    function test(mixed $a, int|string|null $b, mixed $c): void {
+                        if (isIntOrString($a)) {
+                            /** @psalm-check-type-exact $a = int|string */
+                        }
+
+                        if (isIntOrString($b)) {
+                            /** @psalm-check-type-exact $b = int|string */
+                        } else {
+                            /** @psalm-check-type-exact $b = null */
+                        }
+
+                        if (isNotIntOrString($c)) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $c = int|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'assertIfTrueAndFalseKeepEveryAlternativeOfAUnion' => [
                 'code' => '<?php
                     /** @psalm-assert-if-true \'a\'|\'b\' $x */
