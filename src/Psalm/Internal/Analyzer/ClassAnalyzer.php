@@ -28,6 +28,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -81,6 +82,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -115,6 +117,9 @@ use function substr;
  */
 final class ClassAnalyzer extends ClassLikeAnalyzer
 {
+    /** Set on the call of the constructor that stands for it when the initialization of properties is checked */
+    public const FAKE_CONSTRUCTOR_CALL_ATTRIBUTE = 'fake_constructor_call';
+
     /**
      * @var array<string, Union>
      */
@@ -276,9 +281,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             );
         }
 
-        foreach ($storage->docblock_issues as $docblock_issue) {
-            IssueBuffer::maybeAdd($docblock_issue);
-        }
+        self::reportDocblockIssues($this, $storage, $storage->suppressed_issues + $this->getSuppressedIssues());
 
         $parent_fq_class_name = $this->parent_fq_class_name;
 
@@ -534,6 +537,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
                 $member_stmts[] = $stmt;
+                AttributesAnalyzer::reportPlaceholders($this, $stmt->attrGroups, $this->getSuppressedIssues());
 
                 foreach ($stmt->consts as $const) {
                     if ($const->name->toLowerString() === 'class') {
@@ -565,6 +569,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         }
                     }
                 }
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\EnumCase) {
+                AttributesAnalyzer::reportPlaceholders($this, $stmt->attrGroups, $this->getSuppressedIssues());
             }
         }
 
@@ -841,16 +847,21 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
                     $template_result = new TemplateResult([], $lower_bounds);
 
-                    $guide_property_type = TemplateInferredTypeReplacer::replace(
-                        $guide_property_type,
-                        $template_result,
+                    // `Foo<A>` and `Foo<A, Default>` are the same type
+                    $guide_property_type = TemplateDefaults::fillNested(
+                        TemplateInferredTypeReplacer::replace($guide_property_type, $template_result, $codebase),
+                        $codebase->classlike_storage_provider,
                         $codebase,
                     );
-                    $property_type = TemplateInferredTypeReplacer::replace(
-                        $property_type,
-                        $template_result,
+                    $property_type = TemplateDefaults::fillNested(
+                        TemplateInferredTypeReplacer::replace($property_type, $template_result, $codebase),
+                        $codebase->classlike_storage_provider,
                         $codebase,
                     );
+
+                    // an imported type alias is the type it stands for
+                    $guide_property_type = TypeExpander::expandUnion($codebase, $guide_property_type, null, null, null);
+                    $property_type = TypeExpander::expandUnion($codebase, $property_type, null, null, null);
 
                     if ($guide_property_storage->readonly
                         && UnionTypeComparator::isContainedBy(
@@ -970,7 +981,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if ($property_type_location && !$fleshed_out_type->isMixed()) {
+            $has_docblock_over_signature = $property_storage->signature_type
+                && $property_storage->type?->getId() !== $property_storage->signature_type->getId();
+
+            if ($property_type_location && (!$fleshed_out_type->isMixed() || $has_docblock_over_signature)) {
                 $stmt = array_filter(
                     $stmts,
                     static fn($stmt): bool => $stmt instanceof PhpParser\Node\Stmt\Property
@@ -1005,10 +1019,19 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 if ($property_storage->signature_type) {
                     $union_comparison_result = new TypeComparisonResult();
 
+                    // `self` of a property of a trait is the class that uses it, as in the type compared with
+                    $signature_type = TypeExpander::expandUnion(
+                        $codebase,
+                        $property_storage->signature_type,
+                        $fq_class_name,
+                        $fq_class_name,
+                        $parent_fq_class_name,
+                    );
+
                     if (!UnionTypeComparator::isContainedBy(
                         $codebase,
                         $fleshed_out_type,
-                        $property_storage->signature_type,
+                        $signature_type,
                         false,
                         false,
                         $union_comparison_result,
@@ -1019,10 +1042,30 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                                 'Parameter '
                                     . $property_class_name . '::$' . $property_name
                                     . ' has wrong type \'' . $fleshed_out_type .
-                                    '\', should be \'' . $property_storage->signature_type . '\'',
+                                    '\', should be \'' . $signature_type->getId() . '\'',
                                 $property_type_location,
                             ),
                         );
+                    }
+
+                    if ($property_storage->signature_type_location && $has_docblock_over_signature) {
+                        // only the classes: the docblock type replaces the native one everywhere else
+                        $signature_classes = array_filter(
+                            $property_storage->signature_type->getAtomicTypes(),
+                            static fn(Atomic $atomic): bool => $atomic instanceof TNamedObject
+                                && !self::isReservedClassName($atomic->value),
+                        );
+
+                        if ($signature_classes) {
+                            /** @psalm-suppress UnusedMethodCall This call has the side effect of creating issues */
+                            (new Union($signature_classes))->check(
+                                $statements_source,
+                                $property_storage->signature_type_location,
+                                $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
+                                [],
+                                false,
+                            );
+                        }
                     }
                 }
             }
@@ -1259,6 +1302,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
                 $fake_call_attributes = $fake_constructor_attributes
                     + [
+                        self::FAKE_CONSTRUCTOR_CALL_ATTRIBUTE => true,
                         'comments' => [new PhpParser\Comment\Doc(
                             '/** @psalm-suppress InaccessibleMethod */',
                             $class->extends->getLine(),
@@ -1704,6 +1748,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             && isset($project_analyzer->getIssuesToFix()['MissingPropertyType'])
             && !$codebase->config->suppressesIssueType($this->getSuppressedIssues(), 'MissingPropertyType')
             && $suggested_type
+            // a type can't be added to a single property of `public $a, $b;`
+            && count($stmt->props) === 1
         ) {
             if ($suggested_type->hasMixed() || $suggested_type->isNull()) {
                 return;
@@ -1959,7 +2005,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     /**
      * @psalm-mutation-free
      */
-    private static function getThisObjectType(
+    public static function getThisObjectType(
         ClassLikeStorage $class_storage,
         string $original_fq_classlike_name,
     ): TNamedObject {

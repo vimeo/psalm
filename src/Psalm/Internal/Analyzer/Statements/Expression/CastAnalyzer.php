@@ -37,6 +37,7 @@ use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClosedResource;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -281,6 +282,11 @@ final class CastAnalyzer
                         || $type instanceof TKeyedArray
                     ) {
                         $permissible_atomic_types[] = $type;
+                    } elseif ($type instanceof TClosure
+                        || ($type instanceof TNamedObject && strtolower($type->value) === 'closure')
+                    ) {
+                        // a closure has no properties: it becomes the only element
+                        $permissible_atomic_types[] = TKeyedArray::make([new Union([$type])], null, null, true);
                     } elseif ($type instanceof TObjectWithProperties) {
                         $array_type = $type->properties === []
                             ? Type::getArrayAtomic()
@@ -351,7 +357,9 @@ final class CastAnalyzer
 
         IssueBuffer::maybeAdd(
             new UnrecognizedExpression(
-                'Psalm does not understand the cast ' . $stmt::class,
+                $stmt instanceof PhpParser\Node\Expr\Cast\Unset_
+                    ? 'The (unset) cast was removed in PHP 8.0'
+                    : 'Psalm does not understand the cast ' . $stmt::class,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
             ),
             $statements_analyzer->getSuppressedIssues(),
@@ -752,6 +760,7 @@ final class CastAnalyzer
         Union $stmt_type,
         PhpParser\Node\Expr $stmt,
         bool $explicit_cast = false,
+        bool $report_issues = true,
     ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -883,7 +892,7 @@ final class CastAnalyzer
             $invalid_casts[] = $atomic_type->getId();
         }
 
-        if ($invalid_casts) {
+        if ($invalid_casts && $report_issues) {
             if ($valid_strings || $castable_types) {
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidCast(

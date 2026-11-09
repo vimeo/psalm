@@ -844,9 +844,10 @@ final class TaintFlowGraph extends DataFlowGraph
      * Which function-likes a generator can come from is only known once the whole graph is built: they
      * are the generator function-likes whose return nodes reach the parent nodes of the generator. The
      * search for them goes backwards from those parent nodes, matching the calls it leaves through
-     * their arguments with the ones it entered through their returns, as the resolution walk does. It
-     * stops at the first such return node of each path: a generator a generator yields is not linked,
-     * nor one from a function-like without a body (unknown origin).
+     * their arguments with the ones it entered through their returns, as the resolution walk does. A
+     * link made during the search gives a node already searched from a new predecessor: the search goes
+     * on from it matching any call. It stops at the first such return node of each path: a generator a
+     * generator yields is not linked, nor one from a function-like without a body (unknown origin).
      *
      * What is sent to the generator of a specialized call goes into its specialization, so that it only
      * reaches that call's body walk.
@@ -869,6 +870,7 @@ final class TaintFlowGraph extends DataFlowGraph
             $queue = [];
             $visited = [];
             $stacks_per_node = [];
+            $searched = [];
 
             foreach ($generator_ids as $generator_id => $_) {
                 $queue[] = [$generator_id, []];
@@ -877,11 +879,26 @@ final class TaintFlowGraph extends DataFlowGraph
 
             while ($queue) {
                 [$id, $calls] = array_pop($queue);
+                $searched[$id] = true;
 
                 [$unspecialized_id, $specialization_key] = self::splitSpecializedId($id);
 
                 if (isset($this->generator_sent_nodes[$unspecialized_id])) {
-                    $this->linkGeneratorSend($reverse, $send_node, $unspecialized_id, $specialization_key);
+                    $new_predecessors = $this->linkGeneratorSend(
+                        $reverse,
+                        $send_node,
+                        $unspecialized_id,
+                        $specialization_key,
+                    );
+
+                    foreach ($new_predecessors as $linked_id => $from_id) {
+                        // reached from $linked_id with any of its call stacks: any call matches
+                        if (isset($searched[$linked_id]) && !isset($visited[$from_id . "\0"])) {
+                            $visited[$from_id . "\0"] = true;
+                            $stacks_per_node[$from_id] = ($stacks_per_node[$from_id] ?? 0) + 1;
+                            $queue[] = [$from_id, []];
+                        }
+                    }
 
                     continue;
                 }
@@ -938,6 +955,7 @@ final class TaintFlowGraph extends DataFlowGraph
      *
      * @param array<string, array<string, true>> $reverse see getReverseEdges()
      * @param-out array<string, array<string, true>> $reverse
+     * @return array<string, string> the nodes that got a new predecessor in $reverse => that predecessor
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private function linkGeneratorSend(
@@ -945,23 +963,36 @@ final class TaintFlowGraph extends DataFlowGraph
         DataFlowNode $send_node,
         string $return_node_id,
         ?string $specialization_key,
-    ): void {
+    ): array {
         $sent_node = $this->generator_sent_nodes[$return_node_id];
+        $new_predecessors = [];
 
         if ($specialization_key !== null) {
+            $unspecialized_id = $sent_node->id;
+
             $sent_node = $sent_node->withSpecialization(
-                $sent_node->id . self::SPECIALIZATION_SEPARATOR . $specialization_key,
-                $sent_node->id,
+                $unspecialized_id . self::SPECIALIZATION_SEPARATOR . $specialization_key,
+                $unspecialized_id,
                 $specialization_key,
                 null,
             );
+
+            if (!isset($reverse[$unspecialized_id][$sent_node->id])) {
+                $new_predecessors[$unspecialized_id] = $sent_node->id;
+            }
 
             $this->addNode($sent_node);
             self::linkSpecialization($reverse, $sent_node->id);
         }
 
         $this->addPath($send_node, $sent_node, 'generator-send');
-        $reverse[$sent_node->id][$send_node->id] = true;
+
+        if (!isset($reverse[$sent_node->id][$send_node->id])) {
+            $reverse[$sent_node->id][$send_node->id] = true;
+            $new_predecessors[$sent_node->id] = $send_node->id;
+        }
+
+        return $new_predecessors;
     }
 
     /**

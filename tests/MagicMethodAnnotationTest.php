@@ -260,6 +260,27 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodNamedLikeATypeKeyword' => [
+                'code' => '<?php
+                    /**
+                     * @method static string callable(int $a)
+                     * @method int Closure()
+                     * @method float pure(string $s): float
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments) { return null; }
+                        public static function __callStatic(string $name, array $arguments) { return null; }
+                    }
+
+                    $a = Foo::callable(1);
+                    $b = (new Foo)->Closure();
+                    $c = (new Foo)->pure("x");',
+                'assertions' => [
+                    '$a===' => 'string',
+                    '$b===' => 'int',
+                    '$c===' => 'float',
+                ],
+            ],
             'trailingReturnTypes' => [
                 'code' => '<?php
                     class ParentClass {
@@ -1347,6 +1368,49 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$d' => 'list<int>',
                 ],
             ],
+            'staticPseudoMethodAnalyzesNarrowingArgumentOnce' => [
+                'code' => '<?php
+                    /** @method static int foo(DateTimeImmutable $x) */
+                    final class StatPseudo
+                    {
+                        public static function __callStatic(string $name, array $arguments): mixed
+                        {
+                            return 1;
+                        }
+                    }
+
+                    function f(?DateTimeImmutable $d): void
+                    {
+                        StatPseudo::foo($d ?? throw new LogicException());
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticCallOnUnionOfMagicAndRealClassAnalyzesNarrowingArgumentOnce' => [
+                'code' => '<?php
+                    final class Real
+                    {
+                        public static function foo(?DateTimeImmutable $d): void {}
+                    }
+
+                    /** @psalm-no-seal-methods */
+                    final class Magic
+                    {
+                        public static function __callStatic(string $name, array $arguments): mixed
+                        {
+                            return 1;
+                        }
+                    }
+
+                    function f(Magic|Real $o, ?DateTimeImmutable $d): void
+                    {
+                        $o::foo($d ?? throw new LogicException());
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1357,6 +1421,14 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'invalidMagicMethodKeepsItsNameInTheMessage' => [
+                'code' => '<?php
+                    /**
+                     * @method callable(int)
+                     */
+                    class Foo {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:27 - callable(int) is not a valid method',
+            ],
             'wildcardPurityPropagatesImpureClosure' => [
                 'code' => '<?php
                     /**

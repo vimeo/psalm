@@ -582,15 +582,13 @@ final class SwitchCaseAnalyzer
             && isset($case_context->vars_in_scope[$switch_var_id])
             && $case_context->vars_in_scope[$switch_var_id]->isNever()
         ) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new ParadoxicalCondition(
                     'All possible case statements have been met, default is impossible here',
                     new CodeLocation($statements_analyzer->getSource(), $case),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
-            )) {
-                return false;
-            }
+            );
         }
 
         // if we're leaving this block, add vars to outer for loop scope

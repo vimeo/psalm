@@ -202,6 +202,12 @@ final class TaintFlowResolution
     private const MAX_FILTERS = 64;
 
     /**
+     * The taints reportFlow() reports the most general of for a flow, dropping the others: they depend on each other,
+     * so they are never told apart from a call's taints when sinks are replayed (see getSinkCallerTaints())
+     */
+    private const URL_TAINTS = TaintKind::INPUT_SSRF | TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH;
+
+    /**
      * The kinds of entries: specialized call entries, and convergences (see enterConvergence())
      */
     private const ENTRY_CALL = 0;
@@ -729,6 +735,43 @@ final class TaintFlowResolution
      * @var array<int, array<string, array{string, int, int, list<array{int, int, int, int}>}>>
      */
     private array $entry_sinks = [];
+
+    /**
+     * Entry => source id => taint => the call outside any context with that source that stands for the calls with
+     * it when the sinks of the entry are replayed (see getSinkCallerTaints())
+     *
+     * @var array<int, array<string, array<int, int>>>
+     */
+    private array $entry_sink_origins = [];
+
+    /**
+     * Entry => call => the taints for which it stands for the calls with its source (see getSinkCallerTaints())
+     *
+     * @var array<int, array<int, int>>
+     */
+    private array $entry_sink_callers = [];
+
+    /**
+     * Entry => call outside any context => the taints looked at so far (see getSinkCallerTaints())
+     *
+     * @var array<int, array<int, int>>
+     */
+    private array $entry_sink_caller_taints = [];
+
+    /**
+     * Entry => call outside any context => its order among those, as they enter the entry
+     *
+     * @var array<int, array<int, int>>
+     */
+    private array $entry_sink_ranks = [];
+
+    /**
+     * Entry => sink key => the sinks replayed through every call: those whose walk adds taints, or that URL_TAINTS
+     * apply to (see addEntrySink())
+     *
+     * @var array<int, array<string, true>>
+     */
+    private array $entry_unshared_sinks = [];
 
     /**
      * Caller links: the state of the outermost call a trace returns to, and the link of the calls inside it
@@ -2650,10 +2693,27 @@ final class TaintFlowResolution
 
         $this->addEntryTaints($entry, $caller);
 
-        if ($this->entry_kinds[$entry] === self::ENTRY_CALL) {
-            foreach ($this->entry_sinks[$entry] as [$sink_id, , , $reaches]) {
-                foreach ($reaches as [$state, $link, $kept, $added]) {
-                    $this->addSinkThroughCaller($sink_id, $state, $link, $kept, $added, $caller);
+        if ($this->entry_kinds[$entry] === self::ENTRY_CALL && $this->entry_sinks[$entry] !== []) {
+            $sink_taints = $this->getSinkCallerTaints($entry, $caller);
+
+            if ($sink_taints !== 0) {
+                foreach ($this->entry_sinks[$entry] as [$sink_id, , $sink_added, $reaches]) {
+                    $sink_added |= $sink_taints | $this->sinks[$sink_id]->taints & self::URL_TAINTS;
+
+                    foreach ($reaches as [$state, $link, $kept, $added]) {
+                        $kept &= $sink_added | $this->state_added[$state];
+                        $this->addSinkThroughCaller($sink_id, $state, $link, $kept, $added, $caller);
+                    }
+                }
+            } else {
+                foreach ($this->entry_unshared_sinks[$entry] ?? [] as $sink_key => $_) {
+                    [$sink_id, , $sink_added, $reaches] = $this->entry_sinks[$entry][$sink_key];
+                    $sink_added |= $this->sinks[$sink_id]->taints & self::URL_TAINTS;
+
+                    foreach ($reaches as [$state, $link, $kept, $added]) {
+                        $kept &= $sink_added | $this->state_added[$state];
+                        $this->addSinkThroughCaller($sink_id, $state, $link, $kept, $added, $caller);
+                    }
                 }
             }
         }
@@ -3556,9 +3616,93 @@ final class TaintFlowResolution
         $reaches[] = [$state, $link, $new_kept, $new_added];
         $this->entry_sinks[$entry][$sink_key] = [$sink_id, $sink[1] | $new_kept, $sink[2] | $new_added, $reaches];
 
-        foreach ($this->entry_callers[$entry] as $caller => $_) {
-            $this->addSinkThroughCaller($sink_id, $state, $link, $new_kept, $new_added, $caller);
+        // A taint the walk also adds may have its source in the walk: that sink is replayed through every call. So are
+        // the URL kinds, which reportFlow() drops by each other in a call: they stay in one with its other kinds.
+        $unshared_kept = $new_kept
+            & ($sink[2] | $added | $this->state_added[$state] | $this->sinks[$sink_id]->taints & self::URL_TAINTS);
+        $shared_kept = $new_kept & ~$unshared_kept;
+
+        if (!isset($this->entry_sink_origins[$entry])) {
+            $this->entry_sink_origins[$entry] = [];
+
+            foreach ($this->entry_callers[$entry] as $caller => $_) {
+                $this->getSinkCallerTaints($entry, $caller);
+            }
         }
+
+        if ($unshared_kept !== 0 || $new_added !== 0) {
+            $this->entry_unshared_sinks[$entry][$sink_key] = true;
+        }
+
+        // in the order of the calls, as the first to report a finding decides its trace
+        foreach ($this->entry_callers[$entry] as $caller => $_) {
+            $taints = $shared_kept === 0
+                ? 0
+                : ($this->state_contexts[$caller] === -1
+                    && ($this->state_added[$caller] & ~($this->entry_sink_caller_taints[$entry][$caller] ?? 0)) !== 0
+                    ? $this->getSinkCallerTaints($entry, $caller)
+                    : $this->entry_sink_callers[$entry][$caller] ?? 0);
+            $caller_kept = ($shared_kept & $taints) | $unshared_kept;
+
+            if ($caller_kept !== 0 || $new_added !== 0) {
+                $this->addSinkThroughCaller($sink_id, $state, $link, $caller_kept, $new_added, $caller);
+            }
+        }
+    }
+
+    /**
+     * The taints for which call $caller of $entry stands for the others when the sinks of the entry are replayed
+     * (see addEntrySink()). reportFlow() identifies a finding by sink, predecessor, source and taint: of the calls
+     * outside any context with the same source for a taint, only the first of them reports it, so only that one is
+     * replayed for it. A call inside a context, and a taint whose source isn't certain (see buildTrace()) or that
+     * reportFlow() drops by another (see URL_TAINTS), are replayed as they are.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function getSinkCallerTaints(int $entry, int $caller): int
+    {
+        if ($this->state_contexts[$caller] !== -1) {
+            $this->entry_sink_callers[$entry][$caller] = self::ALL_TAINTS;
+
+            return self::ALL_TAINTS;
+        }
+
+        if (!isset($this->entry_sink_ranks[$entry][$caller])) {
+            $this->entry_sink_ranks[$entry][$caller] = count($this->entry_sink_ranks[$entry] ?? []);
+        }
+
+        $taints = $this->state_added[$caller] & ~($this->entry_sink_caller_taints[$entry][$caller] ?? 0);
+        $this->entry_sink_caller_taints[$entry][$caller] = $this->state_added[$caller];
+
+        for ($taint = 1; $taints !== 0; $taint <<= 1) {
+            if (($taints & $taint) === 0) {
+                continue;
+            }
+
+            $taints &= ~$taint;
+            $trace = $this->buildTrace($caller, 0, $taint, true);
+            $origin = $trace[0][0] ?? null;
+
+            // without a certain source, the call stands for itself
+            if ($origin !== null && isset($this->sources[$origin])) {
+                $first = $this->entry_sink_origins[$entry][$origin][$taint] ?? null;
+
+                if ($first !== null) {
+                    if ($this->entry_sink_ranks[$entry][$caller] > $this->entry_sink_ranks[$entry][$first]) {
+                        continue;
+                    }
+
+                    // a call before it gets the taint later: it reports the sinks reached from now on
+                    $this->entry_sink_callers[$entry][$first] &= ~$taint;
+                }
+
+                $this->entry_sink_origins[$entry][$origin][$taint] = $caller;
+            }
+
+            $this->entry_sink_callers[$entry][$caller] = ($this->entry_sink_callers[$entry][$caller] ?? 0) | $taint;
+        }
+
+        return $this->entry_sink_callers[$entry][$caller] ?? 0;
     }
 
     /**
@@ -3833,10 +3977,12 @@ final class TaintFlowResolution
      * entered by. That's the innermost call it left (a flow reported through the calls entering a body walk,
      * or that left it through them) if any, else the first call to enter it.
      *
+     * With $stable_origin, returns no trace if later taints could change its origin.
+     *
      * @return list<array{string, int}>
      * @psalm-mutation-free
      */
-    private function buildTrace(int $state, int $link, int $taint): array
+    private function buildTrace(int $state, int $link, int $taint, bool $stable_origin = false): array
     {
         $callers = $this->pushCallers([], $link);
 
@@ -3849,6 +3995,12 @@ final class TaintFlowResolution
         $steps = [];
 
         while (true) {
+            // An added edge can trace an arbitrary incoming taint. Its origin may change when a call gets more
+            // taints, so it can't identify interchangeable callers (see getSinkCallerTaints()).
+            if ($stable_origin && $which === self::TRACE_ANY) {
+                return [];
+            }
+
             if (isset($this->root_entries[$state])
                 && ($which !== self::TRACE_ADDED || $this->findReach($state, $taint, $which, $before) === null)
             ) {
@@ -3860,6 +4012,12 @@ final class TaintFlowResolution
                 if ($callers) {
                     $state = array_pop($callers);
                 } else {
+                    $taint_entry = $context !== -1 && $this->entry_bases[$context] === $entry ? $context : $entry;
+
+                    if ($stable_origin && (($this->entry_taints[$taint_entry] ?? 0) & $taint) === 0) {
+                        return [];
+                    }
+
                     // one of the flows entering the walk with the taint, through the filter of it the trace came
                     $state = ($context !== -1 && $this->entry_bases[$context] === $entry
                         ? $this->findTaintCaller($context, $taint)
@@ -3869,6 +4027,11 @@ final class TaintFlowResolution
                 }
 
                 $context = $this->state_contexts[$state];
+
+                // A kept taint of a nested caller may later get an added origin, which getTraced() would prefer.
+                if ($stable_origin && $context !== -1 && ($this->state_added[$state] & $taint) === 0) {
+                    return [];
+                }
 
                 // back to a call the trace already left (going after a taint a convergence got first from
                 // somewhere else, see findTaintCaller()): it ends there rather than loop

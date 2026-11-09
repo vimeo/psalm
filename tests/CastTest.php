@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use const DIRECTORY_SEPARATOR;
 
 final class CastTest extends TestCase
 {
+    use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
     /**
@@ -197,6 +201,25 @@ final class CastTest extends TestCase
                 }
             ',
         ];
+        yield 'closureCastToArrayIsAListOfTheClosure' => [
+            'code' => '<?php
+                /**
+                 * @param Closure(string): void|non-empty-list<Closure(string): void> $writers
+                 */
+                function write_to(mixed $writers, string $message): void {
+                    $writers = (array) $writers;
+                    $writers[0]($message);
+                }
+
+                $closure = static fn(): int => 1;
+                $cast = (array) $closure;
+            ',
+            'assertions' => [
+                '$cast===' => 'list{Closure[pure]():1}',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.1',
+        ];
         yield 'floatIsCastToANonNumericStringWhenInfiniteOrNotANumber' => [
             'code' => '<?php
                 /** @param numeric $numeric */
@@ -303,6 +326,23 @@ final class CastTest extends TestCase
             'assertions' => [
                 '$string===' => "'-1'|'-2'|'-3'|'-4'|'-5'|'0'|'1'|'2'|'3'",
             ],
+        ];
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerInvalidCodeParse(): iterable
+    {
+        yield 'unsetCastIsRemovedInPhpEight' => [
+            'code' => '<?php
+                $foo = 1;
+                (unset) $foo;',
+            'error_message' => 'UnrecognizedExpression - src' . DIRECTORY_SEPARATOR
+                . 'somefile.php:3:17 - The (unset) cast was removed in PHP 8.0',
+            'error_levels' => [],
+            'php_version' => '8.0',
         ];
     }
 }

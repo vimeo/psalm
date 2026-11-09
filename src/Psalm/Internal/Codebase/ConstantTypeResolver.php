@@ -25,6 +25,8 @@ use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseXor;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedConcatOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedDivisionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedMultiplicationOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShift;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShiftLeft;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
@@ -41,6 +43,7 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
@@ -60,6 +63,22 @@ use function spl_object_id;
  */
 final class ConstantTypeResolver
 {
+    private static function resolveShift(UnresolvedShift $c, Atomic $left, Atomic $right): Atomic
+    {
+        if ($left instanceof TLiteralInt && $right instanceof TLiteralInt) {
+            // a negative shift throws, as it does in ArithmeticOpAnalyzer
+            if ($right->value < 0) {
+                return new TNever();
+            }
+
+            return self::getLiteralTypeFromScalarValue(
+                $c instanceof UnresolvedShiftLeft ? $left->value << $right->value : $left->value >> $right->value,
+            );
+        }
+
+        return new TInt();
+    }
+
     public static function resolve(
         ClassLikes $classlikes,
         UnresolvedConstantComponent $c,
@@ -72,6 +91,8 @@ final class ConstantTypeResolver
             throw new CircularReferenceException('Found a circular reference');
         }
 
+        $visited_constant_ids[$c_id] = true;
+
         if ($c instanceof ScalarValue) {
             return self::getLiteralTypeFromScalarValue($c->value);
         }
@@ -81,13 +102,13 @@ final class ConstantTypeResolver
                 $classlikes,
                 $c->left,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true],
+                $visited_constant_ids,
             );
             $right = self::resolve(
                 $classlikes,
                 $c->right,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true],
+                $visited_constant_ids,
             );
 
             if ($left instanceof TMixed || $right instanceof TMixed) {
@@ -117,6 +138,10 @@ final class ConstantTypeResolver
                 return self::resolveBitwiseOp($c, $left, $right);
             }
 
+            if ($c instanceof UnresolvedShift) {
+                return self::resolveShift($c, $left, $right);
+            }
+
             if ($c instanceof UnresolvedAdditionOp
                 || $c instanceof UnresolvedSubtractionOp
                 || $c instanceof UnresolvedDivisionOp
@@ -134,6 +159,11 @@ final class ConstantTypeResolver
                     }
 
                     if ($c instanceof UnresolvedDivisionOp) {
+                        // a division by zero throws, so the constant has no value
+                        if ($right->value == 0) {
+                            return new TNever();
+                        }
+
                         return self::getLiteralTypeFromScalarValue($left->value / $right->value);
                     }
 
@@ -159,19 +189,19 @@ final class ConstantTypeResolver
                 $classlikes,
                 $c->cond,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true],
+                $visited_constant_ids,
             );
             $if = $c->if ? self::resolve(
                 $classlikes,
                 $c->if,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true],
+                $visited_constant_ids,
             ) : null;
             $else = self::resolve(
                 $classlikes,
                 $c->else,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true],
+                $visited_constant_ids,
             );
 
             if ($cond instanceof TLiteralFloat
@@ -204,7 +234,7 @@ final class ConstantTypeResolver
                         $classlikes,
                         $entry->array,
                         $statements_analyzer,
-                        $visited_constant_ids + [$c_id => true],
+                        $visited_constant_ids,
                     );
 
                     if ($spread_array instanceof TArray && $spread_array->isEmptyArray()) {
@@ -226,7 +256,7 @@ final class ConstantTypeResolver
                         $classlikes,
                         $entry->key,
                         $statements_analyzer,
-                        $visited_constant_ids + [$c_id => true],
+                        $visited_constant_ids,
                     );
 
                     if (!$key_type instanceof TLiteralInt
@@ -255,7 +285,7 @@ final class ConstantTypeResolver
                     $classlikes,
                     $entry->value,
                     $statements_analyzer,
-                    $visited_constant_ids + [$c_id => true],
+                    $visited_constant_ids,
                 )]);
 
                 $properties[$key_value] = $value_type;
@@ -280,7 +310,7 @@ final class ConstantTypeResolver
                 $c->name,
                 ReflectionProperty::IS_PRIVATE,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true],
+                $visited_constant_ids,
             );
 
             if ($found_type) {
@@ -293,14 +323,14 @@ final class ConstantTypeResolver
                 $classlikes,
                 $c->array,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true],
+                $visited_constant_ids,
             );
 
             $offset_type = self::resolve(
                 $classlikes,
                 $c->offset,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true],
+                $visited_constant_ids,
             );
 
             if ($var_type instanceof TKeyedArray
@@ -343,7 +373,7 @@ final class ConstantTypeResolver
                                     $classlikes,
                                     $value,
                                     $statements_analyzer,
-                                    $visited_constant_ids + [$c_id => true],
+                                    $visited_constant_ids,
                                 );
                             } else {
                                 return $value;
