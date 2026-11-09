@@ -838,19 +838,16 @@ final class Context
      *
      * @param array<string, bool> $mutations MethodStorage::$static_property_mutations
      * @param string $called_class the class the method is called on: what `static` stands for
-     * @param string $declaring_class the class that declares the method: what `self` stands for
+     * @param string $appearing_class the class the method appears in, as its own or through a trait it uses: what
+     *                                `self` stands for
      */
     public function resetMutatedStaticProperties(
         array $mutations,
         string $called_class,
-        string $declaring_class,
+        string $appearing_class,
         Codebase $codebase,
     ): void {
-        // a method of a trait runs as a method of the class that uses it
-        $self_class = $codebase->classlike_storage_provider->has($declaring_class)
-            && $codebase->classlike_storage_provider->get($declaring_class)->is_trait
-            ? $called_class
-            : $declaring_class;
+        $self_class = $appearing_class;
 
         // the classes a mutated property can belong to, by its name
         $mutated_classes = [];

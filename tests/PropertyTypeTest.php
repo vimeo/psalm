@@ -868,6 +868,35 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'selfInAMethodOfATraitIsTheClassUsingTheTraitNotTheClassItIsCalledOn' => [
+                'code' => '<?php
+                    trait Prepares {
+                        public static function prepare(): void {
+                            self::$flag = true;
+                        }
+                    }
+
+                    class Base {
+                        use Prepares;
+
+                        public static bool $flag = false;
+                    }
+
+                    final class Child extends Base {
+                        public static bool $flag = false;
+
+                        public static function run(): void {
+                            Child::$flag = false;
+                            Base::$flag = false;
+                            Child::prepare();
+
+                            /** @psalm-check-type-exact $child = false */
+                            $child = Child::$flag;
+                            /** @psalm-check-type-exact $base = bool */
+                            $base = Base::$flag;
+                        }
+                    }',
+            ],
             'staticArrayPropertyChangedByAMethodIsForgottenAfterTheCall' => [
                 'code' => '<?php
                     final class Queue {
