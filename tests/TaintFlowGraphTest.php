@@ -25,6 +25,7 @@ use function serialize;
 use function sort;
 use function str_repeat;
 use function str_starts_with;
+use function substr_count;
 use function unserialize;
 
 use const JSON_THROW_ON_ERROR;
@@ -170,6 +171,79 @@ final class TaintFlowGraphTest extends TestCase
             $reverse,
             'Taint issues must not depend on the order partial graphs are merged in',
         );
+    }
+
+    /**
+     * A forked worker's graph reaches the main process serialized (see TaintFlowGraph::__serialize()). The graph
+     * merged from it must be the same as the one merged from the worker's own object, and its nodes must not share
+     * objects in the serialized string: PHP's unserialize() is slow to resolve a reference to one.
+     */
+    public function testGraphMergedAfterSerializationIsTheSame(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $location = new Raw(str_repeat('$a = 1;', 10), $file_path, 'somefile.php', 0, 4);
+
+        $graph = new TaintFlowGraph();
+        $previous = null;
+        foreach (range(1, 12_000) as $i) {
+            $node = DataFlowNode::getForAssignment('$var' . $i, $location);
+            $graph->addNode($node);
+            if ($previous !== null) {
+                $graph->addPath($previous, $node, '=');
+            }
+            $previous = $node;
+        }
+        $graph->addSink(DataFlowNode::getForAssignment('$sink', $location));
+        $graph->addSource(DataFlowNode::getForAssignment('$source', $location));
+
+        $serialized = serialize($graph);
+        $this->assertSame(0, substr_count($serialized, ';r:') + substr_count($serialized, '{r:'));
+
+        $expected = new TaintFlowGraph();
+        $expected->addGraph($graph);
+
+        /** @var TaintFlowGraph $unserialized */
+        $unserialized = unserialize($serialized);
+        $actual = new TaintFlowGraph();
+        $actual->addGraph($unserialized);
+
+        $this->assertEquals($expected, $actual);
+    }
+
+    /**
+     * A node of the sources, sinks or generator sent nodes that is the node of its id is written once, so after a
+     * round trip it must still be the same object as that node, and one that is a different object must stay one.
+     */
+    public function testNodesSharedWithSourcesSinksAndSentNodesStayShared(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $location = new Raw('$a = 1;', $file_path, 'somefile.php', 0, 4);
+
+        $graph = new TaintFlowGraph();
+        $source = DataFlowNode::getForAssignment('$source', $location);
+        $graph->addNode($source);
+        $graph->addSource($source);
+        $sink = DataFlowNode::getForAssignment('$sink', $location);
+        $graph->addSink($sink);
+        $sent = DataFlowNode::getForAssignment('$sent', $location);
+        $graph->addNode($sent);
+        $graph->addGenerator($sent, $sent);
+        // A source with the id of a node, but not that node
+        $graph->addNode(DataFlowNode::getForAssignment('$other', $location));
+        $other_source = DataFlowNode::getForAssignment('$other', $location);
+        $graph->addSource($other_source);
+
+        /** @var TaintFlowGraph $unserialized */
+        $unserialized = unserialize(serialize($graph));
+        $this->assertEquals($graph, $unserialized);
+
+        $read = fn(string $property): array => (array) (fn(): mixed => $this->$property)->call($unserialized);
+        $nodes = $read('nodes');
+
+        $this->assertSame($nodes[$source->id], $read('sources')[$source->id]);
+        $this->assertSame($nodes[$sink->id], $read('sinks')[$sink->id]);
+        $this->assertSame($nodes[$sent->id], $read('generator_sent_nodes')[$sent->id]);
+        $this->assertNotSame($nodes[$other_source->id], $read('sources')[$other_source->id]);
     }
 
     /**
