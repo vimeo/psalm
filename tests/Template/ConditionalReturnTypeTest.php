@@ -2056,6 +2056,48 @@ final class ConditionalReturnTypeTest extends TestCase
                 ],
                 'ignored_issues' => ['InvalidArgument', 'MissingClosureParamType'],
             ],
+            'typedClosureParamOfCallableOfStaticInTraitKeepsItsDeclaredType' => [
+                'code' => '<?php
+                    class Model {}
+
+                    trait BuildsQueries {
+                        public function paginate(): void {
+                            $add = function (self $builder, int $i) use (&$add): void {
+                                $builder->where(function (self $second) use ($add, $i): void {
+                                    $add($second, $i + 1);
+                                });
+                            };
+
+                            $add($this, 0);
+                        }
+                    }
+
+                    /** @template TModel of Model */
+                    class EloquentBuilder {
+                        use BuildsQueries;
+
+                        /**
+                         * @param (Closure(static): mixed)|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+                    }
+
+                    class QueryBuilder {
+                        use BuildsQueries;
+
+                        /**
+                         * @param Closure|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+                    }',
+                'ignored_issues' => ['InvalidArgument'],
+            ],
         ];
     }
 
@@ -2092,6 +2134,44 @@ final class ConditionalReturnTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'untypedClosureParamOfCallableOfStaticInTraitIsNotSharedWithOtherUsers' => [
+                'code' => '<?php
+                    trait Filters {
+                        public function run(): void {
+                            $this->where(function ($query): void {
+                                $query->extra();
+                            });
+                        }
+                    }
+
+                    final class EloquentBuilder {
+                        use Filters;
+
+                        /**
+                         * @param (Closure(static): mixed)|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+
+                        public function extra(): void {}
+                    }
+
+                    final class QueryBuilder {
+                        use Filters;
+
+                        /**
+                         * @param Closure|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'Method QueryBuilder::extra does not exist',
+                'error_levels' => ['InvalidArgument'],
             ],
         ];
     }

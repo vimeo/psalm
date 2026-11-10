@@ -712,7 +712,9 @@ final class ArgumentsAnalyzer
             }
 
             if (!$has_different_docblock_type) {
-                $hint_type = $param_storage->type && !$param_type_inferred ? $replaced_type : $untyped_replaced_type;
+                // a param declared with a type keeps master's hint also once it was narrowed by an earlier pass (type
+                // inferred), as the closure's storage is shared by every class using a trait it is in
+                $hint_type = $param_storage->signature_type !== null ? $replaced_type : $untyped_replaced_type;
 
                 foreach ($hint_type->getAtomicTypes() as $replaced_type_part) {
                     if ($replaced_type_part instanceof TCallable

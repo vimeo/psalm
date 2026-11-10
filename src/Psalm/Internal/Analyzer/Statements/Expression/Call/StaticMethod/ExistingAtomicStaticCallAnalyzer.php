@@ -179,8 +179,9 @@ final class ExistingAtomicStaticCallAnalyzer
             )->is_static;
 
         // the arguments, the hints of closure params and the conditionals of the return type are read with `static` of
-        // the call only when it is that class: forwarding calls and template classes keep `static` as declared
-        if ($static_is_called_class) {
+        // the call only when it is that class: forwarding calls and template classes keep `static` as declared, and so
+        // does a call in a trait, whose closures every class using it shares
+        if ($static_is_called_class && !CallAnalyzer::isInTrait($statements_analyzer)) {
             $template_result->static_class_type = $method_id->fq_class_name;
             $template_result->static_class_is_final = true;
         }

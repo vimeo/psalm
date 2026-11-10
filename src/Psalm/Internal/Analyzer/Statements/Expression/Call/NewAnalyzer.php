@@ -632,8 +632,11 @@ final class NewAnalyzer extends CallAnalyzer
             }
 
             $template_result ??= new TemplateResult([], []);
-            $template_result->static_class_type = $fq_class_name;
-            $template_result->static_class_is_final = $storage->final;
+
+            if (!self::isInTrait($statements_analyzer)) {
+                $template_result->static_class_type = $fq_class_name;
+                $template_result->static_class_is_final = $storage->final;
+            }
 
             $args_analyzed = self::checkMethodArgs(
                 $method_id,
@@ -1728,7 +1731,9 @@ final class NewAnalyzer extends CallAnalyzer
             return null;
         }
 
-        $template_result->static_class_type = $fq_class_name;
+        if (!self::isInTrait($statements_analyzer)) {
+            $template_result->static_class_type = $fq_class_name;
+        }
 
         $self_out_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
             $self_out_candidate,
