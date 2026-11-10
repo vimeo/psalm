@@ -632,6 +632,8 @@ final class NewAnalyzer extends CallAnalyzer
             }
 
             $template_result ??= new TemplateResult([], []);
+            $template_result->static_class_type = $fq_class_name;
+            $template_result->static_class_is_final = $storage->final;
 
             $args_analyzed = self::checkMethodArgs(
                 $method_id,

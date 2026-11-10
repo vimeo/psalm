@@ -1962,6 +1962,71 @@ final class ConditionalReturnTypeTest extends TestCase
                     }',
                 'ignored_issues' => ['InvalidArgument'],
             ],
+            'untypedClosureParamOfCallableOfStaticInForwardingCallKeepsMastersHint' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param callable(static): mixed $callback */
+                        public function each(callable $callback): void {}
+                    }
+
+                    class Child extends Base {
+                        public function onlyChild(): void {}
+
+                        public function run(): void {
+                            parent::each(function ($item): void {
+                                /** @psalm-check-type-exact $item = Child&static */;
+                                $item->onlyChild();
+                            });
+                        }
+                    }',
+                'ignored_issues' => ['InvalidArgument'],
+            ],
+            'paramConditionalOnStaticParamOfNamedStaticCallFromAnotherClass' => [
+                'code' => '<?php
+                    class Node {
+                        /**
+                         * @param static|null $other
+                         * @return ($other is null ? int : string)
+                         */
+                        public static function cmp(?self $other = null) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    class Leaf extends Node {}
+
+                    final class Other {
+                        public static function run(Leaf $leaf): void {
+                            $result = Leaf::cmp($leaf);
+                            /** @psalm-check-type-exact $result = string */;
+                        }
+                    }',
+            ],
+            'paramConditionalOnUntypedCallableOfStaticOnIntersectionReceiver' => [
+                'code' => '<?php
+                    interface HasName {}
+
+                    class IBox {
+                        /**
+                         * @param (callable(static): mixed)|null $callback
+                         * @return ($callback is null ? int : static)
+                         */
+                        public function tap(?callable $callback = null) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @return IBox&HasName */
+                    function named(): IBox {
+                        throw new RuntimeException();
+                    }
+
+                    $tapped = named()->tap(fn ($_x): int => 1);',
+                'assertions' => [
+                    '$tapped===' => 'IBox&HasName',
+                ],
+                'ignored_issues' => ['InvalidArgument', 'MissingClosureParamType'],
+            ],
         ];
     }
 

@@ -564,28 +564,9 @@ final class ArgumentsAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        $called_method_id = $method_id !== null && MethodIdentifier::isValidMethodIdReference($method_id)
-            ? MethodIdentifier::fromMethodIdReference($method_id)
-            : null;
         $static_class_type = $template_result->static_class_type;
-        $static_class_is_final = $template_result->static_class_is_final;
-
-        if ($called_method_id === null
-            || $codebase->methods->getDeclaringMethodId($called_method_id) === null
-            // a template receiver would be reduced to its bound by the hint (see below)
-            || ($static_class_type !== null
-                && !is_string($static_class_type)
-                && (new Union([$static_class_type]))->hasTemplate())
-        ) {
-            // pseudo methods check their arguments against the declared types as they are
-            $static_class_type = null;
-        } elseif ($static_class_type === null) {
-            $static_class_type = $called_method_id->fq_class_name;
-            $static_class_is_final = $codebase->classlike_storage_provider->get($static_class_type)->final;
-        }
-
         $expand_static = static fn(Union $type): Union => $static_class_type !== null
-            ? TypeExpander::expandStatic($codebase, $type, $static_class_type, $static_class_is_final)
+            ? TypeExpander::expandStatic($codebase, $type, $static_class_type, $template_result->static_class_is_final)
             : $type;
 
         if (($argument_offset === 1 && in_array($method_id, self::ARRAY_FILTERLIKE, true) && count($args) === 2)

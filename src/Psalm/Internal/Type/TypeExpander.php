@@ -141,7 +141,7 @@ final class TypeExpander
     public static function expandStatic(
         Codebase $codebase,
         Union $type,
-        string|TNamedObject|TTemplateParam $static_class_type,
+        string|TNamedObject $static_class_type,
         bool $final,
     ): Union {
         $static_visitor = new ContainsStaticVisitor();

@@ -8,8 +8,6 @@ use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\TypeVisitor\ConditionalSubjectReplacer;
-use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
-use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -68,9 +66,14 @@ final class TemplateInferredTypeReplacer
 
         $types = [];
 
-        foreach ($union->getAtomicTypes() as $key => $declared_atomic_type) {
+        foreach ($union->getAtomicTypes() as $key => $atomic_type) {
             $should_set = true;
-            $atomic_type = $declared_atomic_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
+
+            if ($atomic_type instanceof TConditional && $codebase) {
+                $atomic_type = self::expandStaticOfCall($codebase, $atomic_type, $template_result);
+            }
+
+            $atomic_type = $atomic_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
 
             if ($atomic_type instanceof TTemplateParam) {
                 $template_type = self::replaceTemplateParam(
@@ -211,7 +214,6 @@ final class TemplateInferredTypeReplacer
 
                 $atomic_type = $atomic_type->setTypes($intersected_types);
             } elseif ($atomic_type instanceof TConditional
-                && $declared_atomic_type instanceof TConditional
                 && $codebase
             ) {
                 /** @psalm-suppress ImpureMethodCall */
@@ -219,7 +221,6 @@ final class TemplateInferredTypeReplacer
                     $template_result,
                     $codebase,
                     $atomic_type,
-                    $declared_atomic_type,
                     $inferred_lower_bounds,
                 );
 
@@ -451,7 +452,6 @@ final class TemplateInferredTypeReplacer
         TemplateResult $template_result,
         Codebase $codebase,
         TConditional &$atomic_type,
-        TConditional $declared_type,
         array $inferred_lower_bounds,
     ): Union {
         $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
@@ -491,18 +491,6 @@ final class TemplateInferredTypeReplacer
 
         $as_type = $atomic_type->as_type;
         $conditional_type = $atomic_type->conditional_type;
-        $static_class_type = $template_result->static_class_type;
-
-        if ($template_type
-            && $subject_type === null
-            && $static_class_type !== null
-            && self::isDecidedInCalledClass($template_result, $declared_type, $inferred_lower_bounds)
-        ) {
-            $final = $template_result->static_class_is_final;
-            $as_type = TypeExpander::expandStatic($codebase, $as_type, $static_class_type, $final);
-            $conditional_type = TypeExpander::expandStatic($codebase, $conditional_type, $static_class_type, $final);
-        }
-
         $if_type = $atomic_type->if_type;
         $else_type = $atomic_type->else_type;
 
@@ -685,37 +673,37 @@ final class TemplateInferredTypeReplacer
     }
 
     /**
-     * Whether the template of a param conditional is only bound by arguments and its constraint and condition are
-     * declared types: the arguments were checked against the params with `static` of the called class, so they are
-     * compared in that class. Other bounds (fallbacks, defaults, upper bounds) and types put in them may hold the
-     * `static` of the caller; a bound holding the declared `static` (a closure hinted with the unexpanded param) is
-     * compared with the declared types as they are.
+     * A param conditional with `static` of the call in its constraint and condition, before the bounds, which may hold
+     * the `static` of the caller, are put in them: only when its template is bound by arguments alone (fallbacks and
+     * defaults have no argument offset), as they were checked against the params with that `static`
      *
-     * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
      * @psalm-capabilities read-props
      */
-    private static function isDecidedInCalledClass(
-        TemplateResult $template_result,
+    private static function expandStaticOfCall(
+        Codebase $codebase,
         TConditional $conditional,
-        array $inferred_lower_bounds,
-    ): bool {
-        if (isset($template_result->upper_bounds[$conditional->param_name][$conditional->defining_class])) {
-            return false;
+        TemplateResult $template_result,
+    ): TConditional {
+        $static_class_type = $template_result->static_class_type;
+        $bounds = $template_result->lower_bounds[$conditional->param_name][$conditional->defining_class] ?? [];
+
+        if ($static_class_type === null || $conditional->subject_type !== null || !$bounds) {
+            return $conditional;
         }
 
-        foreach ($inferred_lower_bounds[$conditional->param_name][$conditional->defining_class] ?? [] as $bound) {
-            $static_visitor = new ContainsStaticVisitor(true);
-            $static_visitor->traverse($bound->type);
-
-            if ($bound->from_constraint_fallback || $bound->arg_offset === null || $static_visitor->matches()) {
-                return false;
+        foreach ($bounds as $bound) {
+            if ($bound->arg_offset === null) {
+                return $conditional;
             }
         }
 
-        $template_collector = new TemplateTypeCollector(true);
-        $template_collector->traverseArray([$conditional->as_type, $conditional->conditional_type]);
+        $final = $template_result->static_class_is_final;
 
-        return !$template_collector->getTemplateTypes();
+        /** @psalm-suppress ImpureMethodCall TypeExpander only reads the codebase, as in replaceConditional() */
+        return $conditional->setTypes(
+            TypeExpander::expandStatic($codebase, $conditional->as_type, $static_class_type, $final),
+            TypeExpander::expandStatic($codebase, $conditional->conditional_type, $static_class_type, $final),
+        );
     }
 
     /**
