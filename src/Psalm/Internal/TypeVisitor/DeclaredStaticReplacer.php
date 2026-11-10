@@ -54,12 +54,14 @@ final class DeclaredStaticReplacer extends MutableTypeVisitor
                 ? $this->static_class_type
                 : $this->static_class_type->value;
 
-            // `static<A, B>` keeps the type arguments it is declared with, unless the class of the call binds the
-            // templates itself (a subclass extending `Bag<int>`): then it is that class as is
+            // `static<A, B>` keeps the type arguments it is declared with (template defaults complete them), unless the
+            // class of the call binds the templates itself (a subclass extending `Bag<int>`): then it is that class
+            $template_count = $this->codebase->classlike_storage_provider->has($static_class)
+                ? count($this->codebase->classlike_storage_provider->get($static_class)->template_types ?? [])
+                : 0;
+
             if ($this->static_class_type instanceof TGenericObject
-                || ($this->codebase->classlike_storage_provider->has($static_class)
-                    && count($this->codebase->classlike_storage_provider->get($static_class)->template_types ?? [])
-                        === count($type->type_params))
+                || ($template_count > 0 && count($type->type_params) <= $template_count)
             ) {
                 $type = $type->setValueIsStatic($static_class, !$this->final, true);
 

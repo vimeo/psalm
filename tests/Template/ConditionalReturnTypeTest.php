@@ -2688,6 +2688,22 @@ final class ConditionalReturnTypeTest extends TestCase
                         echo 1;
                     });',
             ],
+            'untypedClosureParamOfCallableOfGenericStaticKeepsArgsCompletedByTemplateDefaults' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B = string
+                     */
+                    final class Box {
+                        /** @param Closure(static<int>): void $callback */
+                        public static function each(Closure $callback): void {}
+                    }
+
+                    Box::each(function ($box): void {
+                        /** @psalm-check-type-exact $box = Box<int, string> */
+                        echo 1;
+                    });',
+            ],
         ];
     }
 
