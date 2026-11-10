@@ -1147,6 +1147,62 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'safe_types' => true,
                 'allow_backwards_incompatible_changes' => true,
             ],
+            'staticPropertyFetch' => [
+                'input' => '<?php
+                    final class Holder
+                    {
+                        public static int $count = 0;
+                    }
+
+                    function fromStatic()
+                    {
+                        return Holder::$count;
+                    }
+                    ',
+                'output' => '<?php
+                    final class Holder
+                    {
+                        public static int $count = 0;
+                    }
+
+                    function fromStatic(): int
+                    {
+                        return Holder::$count;
+                    }
+                    ',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+                'allow_backwards_incompatible_changes' => true,
+            ],
+            'selfStaticPropertyFetch' => [
+                'input' => '<?php
+                    final class Holder
+                    {
+                        public static string $name = "";
+
+                        public static function get()
+                        {
+                            return self::$name;
+                        }
+                    }
+                    ',
+                'output' => '<?php
+                    final class Holder
+                    {
+                        public static string $name = "";
+
+                        public static function get(): string
+                        {
+                            return self::$name;
+                        }
+                    }
+                    ',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+                'allow_backwards_incompatible_changes' => true,
+            ],
         ];
     }
 }
