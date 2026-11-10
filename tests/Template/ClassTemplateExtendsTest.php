@@ -5250,6 +5250,48 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'composedParentArgumentBindsInheritedMembers' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+
+                        /** @param T $value */
+                        public function __invoke(mixed $value): void {}
+                    }
+
+                    /**
+                     * @template TModel of object
+                     * @extends Base<Box<TModel>>
+                     */
+                    final class Composed extends Base {}
+
+                    /** @param callable(Box<stdClass>): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /**
+                     * @template TModel of object
+                     * @param Composed<TModel> $composed
+                     * @return Box<TModel>
+                     */
+                    function value(Composed $composed): Box {
+                        return $composed->value;
+                    }
+
+                    /** @param Composed<stdClass> $composed */
+                    function f(Composed $composed): void {
+                        $value = $composed->value;
+                        /** @psalm-check-type-exact $value = Box<stdClass> */
+                        takesCallback($composed);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -6688,6 +6730,32 @@ final class ClassTemplateExtendsTest extends TestCase
                     /** @extends Two<string> */
                     final class OneArg extends Two {}',
                 'error_message' => 'OneArg has missing template params when extending Two, expecting 2',
+            ],
+            'composedParentArgumentOfAPropertyIsInvariant' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /**
+                     * @template TModel of object
+                     * @extends Base<Box<TModel>>
+                     */
+                    final class Composed extends Base {}
+
+                    /** @param Box<object> $box */
+                    function takesBox(Box $box): void {}
+
+                    /** @param Composed<stdClass> $composed */
+                    function f(Composed $composed): void {
+                        takesBox($composed->value);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:22:34 - Argument 1 of takesBox expects Box<object>, but Box<stdClass> provided',
             ],
         ];
     }
