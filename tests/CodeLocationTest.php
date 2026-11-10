@@ -10,6 +10,7 @@ use PHPUnit\Framework\TestCase as BaseTestCase;
 use PhpParser\Comment\Doc;
 use PhpParser\Node\Scalar\String_;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\Raw;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -146,6 +147,42 @@ final class CodeLocationTest extends BaseTestCase
 
         $this->assertSame('int', $location->getSelectedText());
         $this->assertSame(4, $location->getLineNumber());
+    }
+
+    /**
+     * TaintFlowGraph writes the locations of its nodes as these fields, with the file path and name kept once per file.
+     */
+    public function testSerializedFieldsRebuildTheSameLocation(): void
+    {
+        $contents = "<?php\n/* 漢字 */ function f(): ?\\DateTime { return null; }\n";
+        $function = 'function f(): ?\\DateTime { return null; }';
+        $node = new String_('x', [
+            'startFilePos' => strpos($contents, $function),
+            'endFilePos' => strpos($contents, $function) + strlen($function) - 1,
+            'startLine' => 2,
+        ]);
+        $this->file_provider->registerFile(self::FILE, $contents);
+
+        $previous = new Raw($contents, self::FILE, self::FILE, 6, 12);
+        $calculated = new CodeLocation(
+            $this->file_analyzer,
+            $node,
+            $previous,
+            false,
+            CodeLocation::FUNCTION_RETURN_TYPE,
+        );
+        // what the location calculates from the file is written too
+        $this->assertSame('?\\DateTime', $calculated->getSelectedText());
+
+        foreach ([$calculated, $previous, new CodeLocation($this->file_analyzer, $node)] as $location) {
+            $rebuilt = CodeLocation::fromSerializedFields(
+                $location->toSerializedFields(1),
+                [['other.php', 'other.php'], [$location->file_path, $location->file_name]],
+            );
+
+            $this->assertEquals($location, $rebuilt);
+            $this->assertSame($location::class, $rebuilt::class);
+        }
     }
 
     private function locate(

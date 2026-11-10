@@ -211,6 +211,43 @@ final class TaintFlowGraphTest extends TestCase
     }
 
     /**
+     * Each location is written as a list of its fields, with its file path and name once per file: as objects, the
+     * locations were half of what a worker sends, and unserialize() kept all their properties until it had read the
+     * whole string.
+     */
+    public function testLocationsAreWrittenAsFieldsWithTheirFileOnce(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $file_contents = str_repeat('$a = 1;', 1_000);
+
+        $graph = new TaintFlowGraph();
+        $previous = null;
+        foreach (range(0, 999) as $i) {
+            $location = new Raw($file_contents, $file_path, 'somefile.php', $i * 7, $i * 7 + 2);
+            $node = DataFlowNode::getForAssignment('$var' . $i, $location);
+            $graph->addNode($node);
+            if ($previous !== null) {
+                $graph->addPath($previous, $node, '=');
+            }
+            $previous = $node;
+        }
+
+        $serialized = serialize($graph);
+        $this->assertSame(0, substr_count($serialized, 'O:22:"Psalm\CodeLocation\Raw"'));
+        $this->assertSame(1, substr_count($serialized, $file_path));
+
+        $expected = new TaintFlowGraph();
+        $expected->addGraph($graph);
+
+        /** @var TaintFlowGraph $unserialized */
+        $unserialized = unserialize($serialized);
+        $actual = new TaintFlowGraph();
+        $actual->addGraph($unserialized);
+
+        $this->assertEquals($expected, $actual);
+    }
+
+    /**
      * A node of the sources, sinks or generator sent nodes that is the node of its id is written once, so after a
      * round trip it must still be the same object as that node, and one that is a different object must stay one.
      */

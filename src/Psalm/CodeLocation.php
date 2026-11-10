@@ -10,8 +10,11 @@ use PhpParser;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Storage\ImmutableNonCloneableTrait;
+use ReflectionClass;
 use UnexpectedValueException;
 
+use function array_combine;
+use function array_keys;
 use function explode;
 use function max;
 use function mb_strcut;
@@ -31,6 +34,11 @@ use function trim;
 use const PREG_OFFSET_CAPTURE;
 
 /**
+ * @psalm-type SerializedLocation = list{
+ *     class-string<CodeLocation>,
+ *     int, int, int, int, int, int, int, bool, int, int, int, int, int, int,
+ *     string, ?string, ?int, ?int, ?int, ?int, bool, ?CodeLocation,
+ * }
  * @psalm-immutable
  * @api
  */
@@ -161,6 +169,63 @@ class CodeLocation
      * @see \Psalm\Storage\UnserializeMemoryUsageSuppressionTrait
      * @psalm-external-mutation-free
      */
+    /**
+     * The fields of this location as TaintFlowGraph::__serialize() writes them, with $file_index, the index of its
+     * file path and name in a list the graph writes once, in place of them.
+     *
+     * @internal
+     * @return SerializedLocation
+     * @psalm-mutation-free
+     */
+    public function toSerializedFields(int $file_index): array
+    {
+        return [
+            static::class,
+            $file_index,
+            $this->raw_line_number,
+            $this->end_line_number,
+            $this->raw_file_start,
+            $this->raw_file_end,
+            $this->file_start,
+            $this->file_end,
+            $this->single_line,
+            $this->preview_start,
+            $this->preview_end,
+            $this->selection_start,
+            $this->selection_end,
+            $this->column_from,
+            $this->column_to,
+            $this->snippet,
+            $this->text,
+            $this->docblock_start,
+            $this->docblock_start_line_number,
+            $this->docblock_line_number,
+            $this->regex_type,
+            $this->have_recalculated,
+            $this->previous_location,
+        ];
+    }
+
+    /**
+     * The location toSerializedFields() wrote as $fields, with its file path and name in $files.
+     *
+     * @internal
+     * @param SerializedLocation $fields
+     * @param list<array{string, string}> $files
+     */
+    public static function fromSerializedFields(array $fields, array $files): self
+    {
+        /** @psalm-suppress ImpureMethodCall it only creates an object, as unserialize() does */
+        $location = (new ReflectionClass($fields[0]))->newInstanceWithoutConstructor();
+        // the fields after the class and the file are in the order of PROPERTY_KEYS_FOR_UNSERIALIZE
+        $fields[0] = $files[$fields[1]][0];
+        $fields[1] = $files[$fields[1]][1];
+        /** @psalm-suppress UnusedMethodCall it sets the properties of the new object */
+        $location->__unserialize(array_combine(array_keys(self::PROPERTY_KEYS_FOR_UNSERIALIZE), $fields));
+
+        return $location;
+    }
+
     public function __unserialize(array $properties): void
     {
         foreach (self::PROPERTY_KEYS_FOR_UNSERIALIZE as $key => $property_name) {

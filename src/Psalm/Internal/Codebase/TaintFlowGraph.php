@@ -64,6 +64,7 @@ use const SORT_STRING;
 
 /**
  * @psalm-import-type SerializedNode from DataFlowNode
+ * @psalm-import-type SerializedLocation from CodeLocation
  * @internal
  */
 final class TaintFlowGraph extends DataFlowGraph
@@ -657,6 +658,11 @@ final class TaintFlowGraph extends DataFlowGraph
      * locations, and nothing in the nodes is shared. A node of the sources, sinks or generator sent nodes that is
      * also the node of its id is written as null.
      *
+     * Each location is written as a list of its fields (CodeLocation::toSerializedFields()), with the index of its
+     * file in one list of file paths and names. As objects, the locations were half of the serialized graph, and
+     * unserialize() keeps the properties of every object it calls __unserialize() on until it has read the whole
+     * string.
+     *
      * @return array<string, mixed>
      * @psalm-capabilities read-props
      */
@@ -675,7 +681,15 @@ final class TaintFlowGraph extends DataFlowGraph
             $locations,
             $location_indexes,
         );
-        $data['locations'] = $locations;
+        $files = [];
+        $file_indexes = [];
+        $data['locations'] = [];
+        foreach ($locations as $location) {
+            $file_index = $file_indexes[$location->file_path] ??= count($files);
+            $files[$file_index] = [$location->file_path, $location->file_name];
+            $data['locations'][] = $location->toSerializedFields($file_index);
+        }
+        $data['location_files'] = $files;
 
         return $data;
     }
@@ -686,14 +700,18 @@ final class TaintFlowGraph extends DataFlowGraph
      *     sources: array<string, SerializedNode|null>,
      *     sinks: array<string, SerializedNode|null>,
      *     generator_sent_nodes: array<string, SerializedNode|null>,
-     *     locations: list<CodeLocation>,
+     *     locations: list<SerializedLocation>,
+     *     location_files: list<array{string, string}>,
      *     ...<string, mixed>
      * } $data
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     public function __unserialize(array $data): void
     {
-        $locations = $data['locations'];
+        $locations = [];
+        foreach ($data['locations'] as $fields) {
+            $locations[] = CodeLocation::fromSerializedFields($fields, $data['location_files']);
+        }
 
         $nodes = [];
         foreach ($data['nodes'] as $id => $fields) {
@@ -705,7 +723,14 @@ final class TaintFlowGraph extends DataFlowGraph
         $this->sinks = self::unserializeNodes($data['sinks'], $nodes, $locations);
         $this->generator_sent_nodes = self::unserializeNodes($data['generator_sent_nodes'], $nodes, $locations);
 
-        unset($data['nodes'], $data['sources'], $data['sinks'], $data['generator_sent_nodes'], $data['locations']);
+        unset(
+            $data['nodes'],
+            $data['sources'],
+            $data['sinks'],
+            $data['generator_sent_nodes'],
+            $data['locations'],
+            $data['location_files'],
+        );
 
         /** @psalm-suppress MixedAssignment */
         foreach ($data as $property => $value) {
