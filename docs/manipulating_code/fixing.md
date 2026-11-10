@@ -35,7 +35,7 @@ vendor/bin/psalter --plugin=vendor/vimeo/psalm/examples/plugins/ClassUnqualifier
 
 The above example plugin converts all unnecessarily qualified classnames in your code to shorter aliased versions.
 
-Issues reported by plugins can be fixed the same way, when the plugin [supports it](../running_psalm/plugins/authoring_plugins.md#fixing-plugin-issues-with-psalter).
+Plugins enabled in `psalm.xml` can also make the issues they report fixable with `--issues`, when [they support it](../running_psalm/plugins/authoring_plugins.md#fixing-plugin-issues-with-psalter).
 
 ## Supported fixes
 
