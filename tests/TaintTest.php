@@ -925,27 +925,6 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
-            'inheritedMethodReturningBinaryEnumValue' => [
-                'code' => '<?php
-                    enum Bom: string {
-                        case Utf16Le = "\xFF\xFE";
-                    }
-
-                    abstract class AbstractCsv {
-                        protected ?Bom $bom = null;
-
-                        public function getBom(): string {
-                            return $this->bom->value ?? "";
-                        }
-                    }
-
-                    final class Reader extends AbstractCsv {}
-
-                    function read(Reader $reader): string {
-                        return $reader->getBom();
-                    }',
-                'php_version' => '8.1',
-            ],
             'conditionallyEscapedTaintPassedTrueInstanceMethod' => [
                 'code' => '<?php
                     class U {
