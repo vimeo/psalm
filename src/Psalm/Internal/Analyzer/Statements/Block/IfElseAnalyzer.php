@@ -291,6 +291,7 @@ final class IfElseAnalyzer
         // the else runs when every operand of an `||` was evaluated and falsy, so what they assigned is known there
         if (!$if_scope->post_leaving_if_context
             && ($stmt->else || $stmt->elseifs)
+            && array_filter($assigned_in_conditional_var_ids) !== []
             && ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
                 || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr)
         ) {

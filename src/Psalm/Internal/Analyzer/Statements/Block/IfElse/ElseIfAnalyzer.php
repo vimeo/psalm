@@ -87,6 +87,20 @@ final class ElseIfAnalyzer
             }
         }
 
+        // the else runs when every operand of an `||` was evaluated and falsy, so what they assigned is known there
+        if (array_filter($assigned_in_conditional_var_ids) !== []
+            && ($elseif->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                || $elseif->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr)
+        ) {
+            IfAnalyzer::addConditionallyAssignedVarsToContext(
+                $statements_analyzer,
+                $elseif->cond,
+                clone $post_if_context,
+                $else_context,
+                $assigned_in_conditional_var_ids,
+            );
+        }
+
         $mixed_var_ids = [];
 
         foreach ($elseif_context->vars_in_scope as $var_id => $type) {

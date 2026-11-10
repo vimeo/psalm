@@ -207,8 +207,9 @@ final class TernaryAnalyzer
         $t_else_context = clone $context;
 
         // the else runs when every operand of an `||` was evaluated and falsy, so what they assigned is known there
-        if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
-            || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+        if (array_filter($assigned_in_conditional_var_ids) !== []
+            && ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr)
         ) {
             IfAnalyzer::addConditionallyAssignedVarsToContext(
                 $statements_analyzer,

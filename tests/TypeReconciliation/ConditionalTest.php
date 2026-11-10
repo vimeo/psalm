@@ -66,15 +66,77 @@ final class ConditionalTest extends TestCase
                     '$r===' => '1|non-empty-array<array-key, string>',
                 ],
             ],
-            'ternaryElseKnowsVarAssignedAtStartOfOrCondition' => [
+            'ternaryElseKnowsVarAssignedInNonNegatedOrCondition' => [
+                'code' => '<?php
+                    function getN(): ?int { return null; }
+                    function check(): bool { return true; }
+                    $r = (check() || ($d = getN())) ? 1 : $d;',
+                'assertions' => [
+                    '$r===' => '0|1|null',
+                ],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'ternaryElseKnowsPropertyAssignedInOrCondition' => [
                 'code' => '<?php
                     /** @return string[] */
                     function getData(): array { return []; }
                     function check(): bool { return true; }
-                    $r = (!($data = getData()) || check()) ? 1 : $data;',
-                'assertions' => [
-                    '$r===' => '1|non-empty-array<array-key, string>',
-                ],
+                    final class Holder { public mixed $p = null; }
+                    function run(Holder $o): void {
+                        $r = (check() || !($o->p = getData())) ? 1 : $o->p;
+                        /** @psalm-check-type-exact $r = 1|non-empty-array<array-key, string> */;
+                    }',
+            ],
+            'elseifOwnElseKnowsVarAssignedInOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    function run(bool $x): void {
+                        if ($x) {
+                            $r = 1;
+                        } elseif (check() || !($d = getData())) {
+                            $r = 2;
+                        } else {
+                            $r = $d;
+                        }
+                        /** @psalm-check-type-exact $r = 1|2|non-empty-array<array-key, string> */;
+                    }',
+            ],
+            'elseifOwnElseKnowsVarAssignedInNonNegatedOrCondition' => [
+                'code' => '<?php
+                    function getN(): ?int { return null; }
+                    function check(): bool { return true; }
+                    function run(bool $x): void {
+                        $r = 0;
+                        if ($x) {
+                            $r = 1;
+                        } elseif (check() || ($d = getN())) {
+                            $r = 2;
+                        } else {
+                            $r = $d;
+                        }
+                        /** @psalm-check-type-exact $r = 0|1|2|null */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'elseifOwnElseKnowsPropertyAssignedInOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    final class Holder { public mixed $p = null; }
+                    function run(Holder $o, bool $x): void {
+                        if ($x) {
+                            $r = 1;
+                        } elseif (check() || !($o->p = getData())) {
+                            $r = 2;
+                        } else {
+                            $r = $o->p;
+                        }
+                        /** @psalm-check-type-exact $r = 1|2|non-empty-array<array-key, string> */;
+                    }',
             ],
             'ternaryElseKnowsVarAssignedInLongOrCondition' => [
                 'code' => '<?php
@@ -106,19 +168,6 @@ final class ConditionalTest extends TestCase
                     '$r===' => '1|non-empty-array<array-key, string>',
                 ],
             ],
-            'nonFinalClassCanBeIdenticalToIterable' => [
-                'code' => <<<'PHP'
-                    <?php
-                    class Foo {}
-
-                    function f(Foo $x, iterable $i): bool {
-                        return $x === $i;
-                    }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
             'chainedAssignmentOfAConditionIsFalseWhereTheConditionIsFalse' => [
                 'code' => <<<'PHP'
                     <?php
@@ -142,6 +191,19 @@ final class ConditionalTest extends TestCase
                         if (!$isRoot || $isSimple) {
                             echo "not the root, or simple";
                         }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nonFinalClassCanBeIdenticalToIterable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+
+                    function f(Foo $x, iterable $i): bool {
+                        return $x === $i;
                     }
                     PHP,
                 'assertions' => [],
