@@ -2219,6 +2219,95 @@ final class ConditionalReturnTypeTest extends TestCase
                         }
                     }',
             ],
+            'untypedClosureParamOfCallableOfStaticInNamedCallOfInstanceMethodIsTheCallersStatic' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param callable(static): mixed $callback */
+                        public function each(callable $callback): void {}
+                    }
+
+                    class Child extends Base {
+                        public function onlyChild(): void {}
+
+                        public function run(): void {
+                            Base::each(function ($item): void {
+                                /** @psalm-check-type-exact $item = Child&static */
+                                $item->onlyChild();
+                            });
+                        }
+                    }',
+            ],
+            'staticReturnOfNamedCallOfInstanceMethodIsTheCallersStatic' => [
+                'code' => '<?php
+                    class RBase {
+                        /** @return static */
+                        public function me() {
+                            return $this;
+                        }
+                    }
+
+                    class RChild extends RBase {
+                        public function run(): void {
+                            $me = RBase::me();
+                            /** @psalm-check-type-exact $me = RChild&static */
+                            $me->run();
+                        }
+                    }',
+            ],
+            'classStringOfStaticReturnOfNamedCallOfInstanceMethodIsTheCallersStatic' => [
+                'code' => '<?php
+                    class RBase {
+                        /** @return class-string<static> */
+                        public function name(): string {
+                            return static::class;
+                        }
+                    }
+
+                    class RChild extends RBase {
+                        public function run(): void {
+                            $name = RBase::name();
+                            /** @psalm-check-type-exact $name = class-string<RChild&static> */
+                            echo $name;
+                        }
+                    }',
+            ],
+            'firstClassCallableOfNamedCallOfInstanceMethodReturnsTheCallersStatic' => [
+                'code' => '<?php
+                    class RBase {
+                        /** @return static */
+                        public function me() {
+                            return $this;
+                        }
+                    }
+
+                    class RChild extends RBase {
+                        public function run(): void {
+                            $me = RBase::me(...);
+                            $result = $me();
+                            /** @psalm-check-type-exact $result = RChild&static */
+                            $result->run();
+                        }
+                    }',
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableOfMagicStaticMethodFromASubclass' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param list<mixed> $args */
+                        public static function __callStatic(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    class Child extends Base {
+                        public function run(): void {
+                            $magic = Base::magic(...);
+                            /** @psalm-check-type $magic = Closure */
+                            $magic();
+                        }
+                    }',
+                'php_version' => '8.1',
+            ],
             'staticParamOfConstructorOfNonFinalClass' => [
                 'code' => '<?php
                     class Node {

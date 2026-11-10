@@ -1121,7 +1121,6 @@
       <code><![CDATA[!$context->self]]></code>
       <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$context->self]]></code>
-      <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$found_generic_params]]></code>
       <code><![CDATA[$found_generic_params]]></code>
       <code><![CDATA[$self_class_storage->template_extended_params]]></code>

@@ -182,12 +182,7 @@ final class ExistingAtomicStaticCallAnalyzer
         ) {
             $template_result->static_class_type = $method_id->fq_class_name;
             $template_result->static_class_is_final = true;
-        } elseif ($stmt->class instanceof PhpParser\Node\Name
-            && count($stmt->class->getParts()) === 1
-            && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
-            && $lhs_type_part instanceof TNamedObject
-            && $context->self !== null
-        ) {
+        } elseif (self::forwardsStaticOfCaller($codebase, $stmt, $lhs_type_part, $context)) {
             $self_storage = $codebase->classlike_storage_provider->get($context->self);
             $template_result->static_class_type = ClassAnalyzer::getThisObjectType($self_storage, $context->self)
                 ->setIsStatic(!$self_storage->final);
@@ -745,12 +740,7 @@ final class ExistingAtomicStaticCallAnalyzer
                     : Type::getObject(),
                 $lhs_type_part->defining_class,
             );
-        } elseif ($stmt->class instanceof PhpParser\Node\Name
-            && count($stmt->class->getParts()) === 1
-            && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
-            && $lhs_type_part instanceof TNamedObject
-            && $context->self
-        ) {
+        } elseif (self::forwardsStaticOfCaller($codebase, $stmt, $lhs_type_part, $context)) {
             $self_storage = $codebase->classlike_storage_provider->get($context->self);
             $static_type = ClassAnalyzer::getThisObjectType($self_storage, $context->self);
             $context_final = $self_storage->final;
@@ -775,6 +765,49 @@ final class ExistingAtomicStaticCallAnalyzer
                         || $class_storage->final
                         || $context_final),
         ];
+    }
+
+    /**
+     * Whether the call keeps the late static binding of its caller: `self::`, `static::`, `parent::`, and an instance
+     * method called with `$this` by the name of a class the caller extends
+     *
+     * @psalm-assert-if-true TNamedObject $lhs_type_part
+     * @psalm-assert-if-true !null $context->self
+     */
+    private static function forwardsStaticOfCaller(
+        Codebase $codebase,
+        StaticCall $stmt,
+        Atomic $lhs_type_part,
+        Context $context,
+    ): bool {
+        if (!$stmt->class instanceof PhpParser\Node\Name
+            || !$lhs_type_part instanceof TNamedObject
+            || $context->self === null
+        ) {
+            return false;
+        }
+
+        if (count($stmt->class->getParts()) === 1
+            && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
+        ) {
+            return true;
+        }
+
+        if (!$stmt->name instanceof PhpParser\Node\Identifier
+            || !isset($context->vars_in_scope['$this'])
+            || !$codebase->classExtendsOrImplements($context->self, $lhs_type_part->value)
+        ) {
+            return false;
+        }
+
+        // a first-class callable of a magic method (`__callStatic`) has no method to look up
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId(
+            new MethodIdentifier($lhs_type_part->value, strtolower($stmt->name->name)),
+            true,
+        );
+
+        return $declaring_method_id !== null
+            && !$codebase->methods->getStorage($declaring_method_id, true)->is_static;
     }
 
     /**
