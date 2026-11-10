@@ -13,6 +13,7 @@ use Psalm\Type\MutableTypeVisitor;
 use Psalm\Type\TypeNode;
 
 use function array_shift;
+use function count;
 use function is_string;
 use function strtolower;
 
@@ -49,17 +50,22 @@ final class DeclaredStaticReplacer extends MutableTypeVisitor
         }
 
         if ($type instanceof TGenericObject) {
-            // `static<A, B>` keeps the type arguments it is declared with
-            $type = $type->setValueIsStatic(
-                is_string($this->static_class_type) ? $this->static_class_type : $this->static_class_type->value,
-                !$this->final,
-                true,
-            );
+            $static_class = is_string($this->static_class_type)
+                ? $this->static_class_type
+                : $this->static_class_type->value;
 
-            return null;
-        }
+            // `static<A, B>` keeps the type arguments it is declared with, unless the class of the call binds the
+            // templates itself (a subclass extending `Bag<int>`): then it is that class as is
+            if ($this->static_class_type instanceof TGenericObject
+                || ($this->codebase->classlike_storage_provider->has($static_class)
+                    && count($this->codebase->classlike_storage_provider->get($static_class)->template_types ?? [])
+                        === count($type->type_params))
+            ) {
+                $type = $type->setValueIsStatic($static_class, !$this->final, true);
 
-        if ($type->extra_types) {
+                return null;
+            }
+        } elseif ($type->extra_types) {
             // `static&I` as DeclaredStaticIntersectionMarker gives it: expanded as the parsed `I` marked static is
             $extra_types = $type->extra_types;
             $intersected = array_shift($extra_types);

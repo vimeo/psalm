@@ -266,10 +266,17 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             && (strtolower($static_type->value) === strtolower($method_id->fq_class_name)
                 || $codebase->classExtendsOrImplements($static_type->value, $method_id->fq_class_name))
         ) {
-            // `static` is the class of a value receiver (an enum case, a closure), not the value
-            $template_result->static_class_type = $static_type instanceof TEnumCase || $static_type instanceof TClosure
+            // `static` is the class of a value receiver (an enum case, a closure), not the value, and keeps only the
+            // intersections that hold for the whole class (classes, interfaces, templates), not `object{...}` or other
+            // refinements of this value
+            $static_class_type = $static_type instanceof TEnumCase || $static_type instanceof TClosure
                 ? new TNamedObject($static_type->value)
                 : $static_type;
+            $template_result->static_class_type = $static_class_type->setIntersectionTypes(array_filter(
+                $static_class_type->extra_types,
+                static fn(Atomic $extra_type): bool => $extra_type instanceof TNamedObject
+                    || $extra_type instanceof TTemplateParam,
+            ));
             $template_result->static_class_is_final = $codebase->classlike_storage_provider->get($static_type->value)
                 ->final;
         }

@@ -2649,6 +2649,45 @@ final class ConditionalReturnTypeTest extends TestCase
                         $query->where(function (object $_q): void {});
                     }',
             ],
+            'typedClosureParamOfCallableOfStaticOnRefinedReceiverIsTheClass' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @param Closure(static): mixed $callback */
+                        public function visit(Closure $callback): void {}
+
+                        public function __get(string $_name): string {
+                            return "";
+                        }
+                    }
+
+                    /** @param Box&object{value: string} $box */
+                    function demo(Box $box): void {
+                        $box->visit(function (Box $item): void {
+                            /** @psalm-check-type-exact $item = Box */
+                            echo 1;
+                        });
+                    }',
+            ],
+            'closureParamOfCallableOfGenericStaticOnSubclassBindingTheTemplatesIsThatClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Bag {
+                        /** @param Closure(static<int>): void $callback */
+                        public function each(Closure $callback): void {}
+                    }
+
+                    /** @extends Bag<int> */
+                    final class IntBag extends Bag {}
+
+                    (new IntBag())->each(function ($bag): void {
+                        /** @psalm-check-type-exact $bag = IntBag */
+                        echo 1;
+                    });
+                    (new IntBag())->each(function (IntBag $bag): void {
+                        /** @psalm-check-type-exact $bag = IntBag */
+                        echo 1;
+                    });',
+            ],
         ];
     }
 
