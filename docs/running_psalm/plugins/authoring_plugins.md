@@ -175,15 +175,19 @@ final class Plugin implements PluginEntryPointInterface, PluginFixableIssuesInte
 }
 ```
 
-The plugin's hooks add their file replacements only when `Codebase::shouldFixIssue()` says Psalter was asked to fix the issue there:
+The plugin's hooks add their file replacements only when `Codebase::shouldFixIssue()` says Psalter was asked to fix the issue and nothing suppresses it there (`@psalm-suppress` or the config's issue handlers):
 
 ```php
-if ($event->getCodebase()->shouldFixIssue('UnspecificEqualsAssertion', $source->getSuppressedIssues())) {
+$issue = new UnspecificEqualsAssertion($message, new CodeLocation($source, $call));
+
+if ($event->getCodebase()->shouldFixIssue($issue, $source->getSuppressedIssues())) {
     $event->setFileReplacements([new FileManipulation($start, $end, 'assertSame')]);
+} else {
+    IssueBuffer::accepts($issue, $source->getSuppressedIssues(), true);
 }
 ```
 
-Otherwise they report the issue as usual; passing `true` as the third argument of `IssueBuffer::accepts()` makes Psalm suggest the fix at the end of its report.
+Passing `true` as the third argument of `IssueBuffer::accepts()` makes Psalm suggest the fix at the end of its report.
 
 Only plugins enabled with `<pluginClass>` (or enabled automatically because the project requires their library) can declare fixable issues. They require `psalm/psalm-plugin-api` `^0.4.2`.
 
