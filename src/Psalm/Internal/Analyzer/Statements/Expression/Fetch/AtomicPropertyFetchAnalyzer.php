@@ -1363,7 +1363,7 @@ final class AtomicPropertyFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         PhpParser\Node\Expr\PropertyFetch $stmt,
-        TNamedObject $lhs_type_part,
+        TNamedObject &$lhs_type_part,
         string $prop_name,
         array $intersection_types,
         bool &$class_exists,
@@ -1390,6 +1390,7 @@ final class AtomicPropertyFetchAnalyzer
                         && isset($codebase->classlike_storage_provider->get($intersection_type->value)
                             ->declaring_property_ids[$property_name])
                     ) {
+                        $lhs_type_part = $intersection_type;
                         $fq_class_name = $intersection_type->value;
                         $class_exists = true;
                         return;
@@ -1408,6 +1409,7 @@ final class AtomicPropertyFetchAnalyzer
                 if ($intersection_type instanceof TNamedObject
                     && $codebase->classExists($intersection_type->value)
                 ) {
+                    $lhs_type_part = $intersection_type;
                     $fq_class_name = $intersection_type->value;
                     $class_exists = true;
                     return;
@@ -1428,7 +1430,8 @@ final class AtomicPropertyFetchAnalyzer
             $hook_interface = self::findInterfaceWithPropertyHook($codebase, $lhs_type_part, $prop_name, false);
 
             if ($hook_interface !== null) {
-                $fq_class_name = $hook_interface;
+                $lhs_type_part = $hook_interface;
+                $fq_class_name = $hook_interface->value;
             } elseif (!$is_enum_interface && !$intersects_with_shape_property) {
                 if (IssueBuffer::accepts(
                     new NoInterfaceProperties(
@@ -1478,7 +1481,7 @@ final class AtomicPropertyFetchAnalyzer
         TNamedObject $lhs_type_part,
         string $prop_name,
         bool $is_write,
-    ): ?string {
+    ): ?TNamedObject {
         if ($codebase->analysis_php_version_id < 8_04_00) {
             return null;
         }
@@ -1498,7 +1501,7 @@ final class AtomicPropertyFetchAnalyzer
             $property = $codebase->classlike_storage_provider->get($declaring_interface)->properties[$prop_name];
 
             if (($is_write ? $property->hook_set : $property->hook_get) !== null) {
-                return $type_part->value;
+                return $type_part;
             }
         }
 

@@ -906,6 +906,100 @@ final class InterfaceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'interfacePropertyWithGenericGetHookAfterPlainInterface' => [
+                'code' => '<?php
+                    interface A {}
+
+                    /** @template T */
+                    interface B {
+                        /** @var T */
+                        public mixed $bar { get; }
+                    }
+
+                    /** @return A&B<int> */
+                    function getIt(): A&B {
+                        throw new RuntimeException();
+                    }
+
+                    $x = getIt()->bar;',
+                'assertions' => [
+                    '$x===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'interfacePropertyWithGenericGetHookBeforePlainInterface' => [
+                'code' => '<?php
+                    interface A {}
+
+                    /** @template T */
+                    interface B {
+                        /** @var T */
+                        public mixed $bar { get; }
+                    }
+
+                    /** @return B<int>&A */
+                    function getIt(): B&A {
+                        throw new RuntimeException();
+                    }
+
+                    $x = getIt()->bar;',
+                'assertions' => [
+                    '$x===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'interfacePropertyWithGenericGetHookOnThreeMemberIntersection' => [
+                'code' => '<?php
+                    interface A {}
+                    interface C {}
+
+                    /** @template T */
+                    interface B {
+                        /** @var T */
+                        public mixed $bar { get; }
+                    }
+
+                    /** @return A&C&B<int> */
+                    function getIt(): A&C&B {
+                        throw new RuntimeException();
+                    }
+
+                    $x = getIt()->bar;',
+                'assertions' => [
+                    '$x===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'genericClassPropertyFetchedThroughIntersectionWithInterface' => [
+                'code' => '<?php
+                    interface A {}
+
+                    /** @template T */
+                    class Box {
+                        /** @var T */
+                        public mixed $value;
+
+                        /** @param T $value */
+                        public function __construct(mixed $value) {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /** @return A&Box<int> */
+                    function getIt(): A&Box {
+                        throw new RuntimeException();
+                    }
+
+                    $x = getIt()->value;',
+                'assertions' => [
+                    '$x===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 

@@ -1282,7 +1282,7 @@ final class InstancePropertyAssignmentAnalyzer
                     );
 
                 if ($hook_interface !== null) {
-                    $fq_class_name = $hook_interface;
+                    $fq_class_name = $hook_interface->value;
                 } elseif (!$class_exists) {
                     if (IssueBuffer::accepts(
                         new NoInterfaceProperties(
