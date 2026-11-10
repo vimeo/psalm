@@ -162,48 +162,30 @@ You can also use more complex rules in the `<issueHandler />` element, as you ca
 
 ## Fixing plugin issues with Psalter
 
-A plugin class can declare the issues it knows how to fix. Psalter then accepts them in `--issues`, fixes them with `--issues=all` and lists them with `--list-supported-issues`, and the plugin's hooks add their file replacements when `Codebase::shouldFixIssue()` is true:
+A plugin class can declare the issues it knows how to fix. Psalter then accepts them in `--issues`, includes them in `--issues=all` and lists them with `--list-supported-issues`:
 
 ```php
 final class Plugin implements PluginEntryPointInterface, PluginFixableIssuesInterface
 {
-    // __invoke() registers AssertSameSuggestionHandler as usual
-
+    #[Override]
     public function getFixableIssues(?SimpleXMLElement $config = null): array
     {
         return [UnspecificEqualsAssertion::class];
     }
 }
+```
 
-final class AssertSameSuggestionHandler implements AfterMethodCallAnalysisInterface
-{
-    public static function afterMethodCallAnalysis(AfterMethodCallAnalysisEvent $event): void
-    {
-        // ... $name is the `assertEquals` identifier of the call
-        $suppressed_issues = $event->getStatementsSource()->getSuppressedIssues();
+The plugin's hooks add their file replacements only when `Codebase::shouldFixIssue()` says Psalter was asked to fix the issue there:
 
-        if ($event->getCodebase()->shouldFixIssue(UnspecificEqualsAssertion::getIssueType(), $suppressed_issues)) {
-            $event->setFileReplacements([
-                new FileManipulation($name->getStartFilePos(), $name->getEndFilePos() + 1, 'assertSame'),
-            ]);
-
-            return;
-        }
-
-        // is_fixable: Psalm suggests `--alter --issues=UnspecificEqualsAssertion` at the end of its report
-        IssueBuffer::accepts($issue, $suppressed_issues, true);
-    }
+```php
+if ($event->getCodebase()->shouldFixIssue('UnspecificEqualsAssertion', $source->getSuppressedIssues())) {
+    $event->setFileReplacements([new FileManipulation($start, $end, 'assertSame')]);
 }
 ```
 
-```bash
-vendor/bin/psalter --issues=UnspecificEqualsAssertion  # assertEquals() becomes assertSame(), unless the issue is suppressed there
-vendor/bin/psalter --issues=all                        # assertEquals() becomes assertSame()
-vendor/bin/psalter --issues=MissingReturnType          # assertEquals() unchanged
-vendor/bin/psalm                                       # UnspecificEqualsAssertion reported
-```
+Otherwise they report the issue as usual; passing `true` as the third argument of `IssueBuffer::accepts()` makes Psalm suggest the fix at the end of its report.
 
-Only plugins enabled with `<pluginClass>` (or enabled automatically because the project requires their library) can declare fixable issues, and a plugin implementing `PluginFixableIssuesInterface` requires `psalm/psalm-plugin-api` `^0.4.2`.
+Only plugins enabled with `<pluginClass>` (or enabled automatically because the project requires their library) can declare fixable issues. They require `psalm/psalm-plugin-api` `^0.4.2`.
 
 ## Upgrading file-based plugin to composer-based version
 
