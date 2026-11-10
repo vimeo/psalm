@@ -21,6 +21,101 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assignmentInAPlainIfKeepsTheTypeAfterIt' => [
+                'code' => '<?php
+                    /** @return (callable(int): bool)|null */
+                    function handler() {
+                        return null;
+                    }
+
+                    if ($handler = handler()) {
+                        if (\\is_array($handler)) {
+                            echo "array";
+                        }
+                    }',
+                'assertions' => [
+                    '$handler===' => 'callable[impure](int):bool|null',
+                ],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.3',
+            ],
+            'assignmentInTheRightOperandOfAndIsEitherTypeInTheElse' => [
+                'code' => '<?php
+                    function fetch(): ?string {
+                        return rand(0, 1) ? "a" : null;
+                    }
+
+                    function check(bool $a): void {
+                        $v = new stdClass();
+
+                        if ($a && ($v = fetch())) {
+                            echo "found";
+                        } else {
+                            /** @psalm-check-type-exact $v = null|stdClass|string */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'assignmentInTheRightOperandOfAndIsEitherTypeInTheElseOfAnElseif' => [
+                'code' => '<?php
+                    function fetch(): ?string {
+                        return rand(0, 1) ? "a" : null;
+                    }
+
+                    function check(bool $a, bool $b): void {
+                        $v = new stdClass();
+
+                        if ($b) {
+                            echo "b";
+                        } elseif ($a && ($v = fetch())) {
+                            /** @psalm-check-type-exact $v = non-falsy-string */;
+                        } else {
+                            /** @psalm-check-type-exact $v = null|stdClass|string */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'assignmentInTheRightOperandOfAndInAWhileIsNarrowedInTheBody' => [
+                'code' => '<?php
+                    function fetch(): ?string {
+                        return rand(0, 1) ? "a" : null;
+                    }
+
+                    function check(bool $a): void {
+                        $v = new stdClass();
+
+                        while ($a && ($v = fetch())) {
+                            /** @psalm-check-type-exact $v = non-falsy-string */;
+                            $a = false;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'assignmentInTheRightOperandOfAnAndInAGuardClauseIsSetAfterIt' => [
+                'code' => '<?php
+                    function fetch(): ?string {
+                        return rand(0, 1) ? "a" : null;
+                    }
+
+                    function check(bool $a): void {
+                        $v = new stdClass();
+
+                        if (!$a || !($v = fetch())) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $v = non-falsy-string */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
             'assignmentComparedWithTrueIsNarrowedInTheBody' => [
                 'code' => '<?php
                     function label(): string {

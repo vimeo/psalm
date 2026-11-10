@@ -250,15 +250,17 @@ final class IfConditionalAnalyzer
                 $outer_context->vars_in_scope[$assigned_var_id] = $post_if_context->vars_in_scope[$assigned_var_id];
             }
 
-            // the body only runs on the paths that make the condition true
-            $body_type = self::getTypeWhereConditionIsTrue(
-                $statements_analyzer,
-                $true_states,
-                $pre_condition_vars_in_scope[$assigned_var_id] ?? null,
-                $assigned_types,
-            );
+            // where the assignment may be skipped, the body only runs on the paths that make the condition true;
+            // it only narrows what the analysis of the condition already left for the body
+            $body_type = isset($true_states['earlier'])
+                ? self::getTypeWhereConditionIsTrue(
+                    $statements_analyzer,
+                    $true_states,
+                    $pre_condition_vars_in_scope[$assigned_var_id] ?? null,
+                    $assigned_types,
+                )
+                : null;
 
-            // only to narrow what the analysis of the condition already left for the body
             if ($body_type !== null
                 && isset($if_context->vars_in_scope[$assigned_var_id])
                 && UnionTypeComparator::isContainedBy(
