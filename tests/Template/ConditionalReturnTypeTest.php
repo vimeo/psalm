@@ -21,12 +21,12 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'conditionalOnEmptyOfAnOptionalKeyIsTheKeyTypeWhenSet' => [
+            'conditionalOnNeverOfAnOptionalKeyIsTheKeyTypeWhenSet' => [
                 'code' => '<?php
                     /**
                      * @template TReturnOpt as "string"|"int"|"float"
                      * @param array{ret?: TReturnOpt} $opts
-                     * @return (TReturnOpt is empty ? "stringEmpty" : TReturnOpt)
+                     * @return (TReturnOpt is never ? "stringEmpty" : TReturnOpt)
                      */
                     function test(array $opts = []): string {
                         return "stringEmpty";
@@ -39,12 +39,28 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$set===' => "'int'",
                 ],
             ],
-            'conditionalOnEmptyIsOnlyTrueForNever' => [
+            'conditionalOnNeverIsOnlyTrueForNever' => [
                 'code' => '<?php
                     /**
                      * @template T as string|int
                      * @param T $t
                      * @return (T is never ? "e" : T)
+                     */
+                    function f($t) { return $t; }
+
+                    $zero = f(0);
+                    $text = f("abc");',
+                'assertions' => [
+                    '$zero===' => '0',
+                    '$text===' => "'abc'",
+                ],
+            ],
+            'conditionalOnNotNeverKeepsTheTypeOfAValue' => [
+                'code' => '<?php
+                    /**
+                     * @template T as string|int
+                     * @param T $t
+                     * @return (T is not never ? T : "e")
                      */
                     function f($t) { return $t; }
 
