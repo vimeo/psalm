@@ -357,6 +357,9 @@ final class InstancePropertyFetchAnalyzer
     }
 
     /**
+     * Whether a typed property may be read before anything set it: it has no default, is not promoted, and no
+     * constructor of the class or its parents assigns it
+     *
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private static function isLeftUninitialized(
@@ -376,20 +379,37 @@ final class InstancePropertyFetchAnalyzer
 
         $storage = $codebase->classlike_storage_provider->get($object_atomic->value);
 
-        if (isset($storage->declaring_method_ids['__construct'])
-            || !isset($storage->declaring_property_ids[$property_name])
-        ) {
+        if (!isset($storage->declaring_property_ids[$property_name])) {
             return false;
         }
 
         $property = $codebase->classlike_storage_provider->get($storage->declaring_property_ids[$property_name])
             ->properties[$property_name] ?? null;
 
-        return $property !== null
-            && $property->type !== null
-            && !$property->has_default
-            && !$property->is_promoted
-            && !$property->is_static;
+        if ($property === null
+            || $property->type === null
+            || $property->has_default
+            || $property->is_promoted
+            || $property->is_static
+        ) {
+            return false;
+        }
+
+        $class_storages = [$storage];
+
+        foreach ($storage->parent_classes as $parent_class) {
+            if ($codebase->classlike_storage_provider->has($parent_class)) {
+                $class_storages[] = $codebase->classlike_storage_provider->get($parent_class);
+            }
+        }
+
+        foreach ($class_storages as $class_storage) {
+            if (isset($class_storage->methods['__construct']->this_property_mutations[$property_name])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static function handleScopedProperty(
@@ -402,6 +422,13 @@ final class InstancePropertyFetchAnalyzer
         bool $in_assignment,
     ): void {
         $stmt_type = $context->vars_in_scope[$var_id];
+
+        // a value that is read is set, whatever an earlier isset() of the property asked (reading an
+        // uninitialized property is an error)
+        if ($stmt_type->possibly_undefined && !$context->inside_isset && !$in_assignment) {
+            $stmt_type = $stmt_type->setPossiblyUndefined(false);
+            $context->vars_in_scope[$var_id] = $stmt_type;
+        }
 
         // we don't need to check anything
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
