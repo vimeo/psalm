@@ -50,6 +50,45 @@ final class ExtensionRequirementTest extends TestCase
                 trait ImposesPhpstanExtensionRequirements { }
             ',
         );
+
+        $this->addFile(
+            'generic_wider_trait.php',
+            '<?php
+                namespace ExtensionRequirements\Generic;
+
+                /** @psalm-require-extends GenericBase<int|string> */
+                trait ImposesWiderGenericExtensionRequirement { }
+            ',
+        );
+
+        $this->addFile(
+            'generic_covariant_trait.php',
+            '<?php
+                namespace ExtensionRequirements\Generic;
+
+                /** @template-covariant T */
+                class CovariantBase { }
+
+                /** @psalm-require-extends CovariantBase<int|string> */
+                trait ImposesCovariantExtensionRequirement { }
+            ',
+        );
+
+        $this->addFile(
+            'generic_trait.php',
+            '<?php
+                namespace ExtensionRequirements\Generic;
+
+                /** @template T */
+                class GenericBase { }
+
+                /**
+                 * @template T
+                 * @psalm-require-extends GenericBase<T>
+                 */
+                trait ImposesGenericExtensionRequirement { }
+            ',
+        );
     }
 
     /**
@@ -76,6 +115,82 @@ final class ExtensionRequirementTest extends TestCase
 
                     class Valid extends MyBaseClass {
                         use ImposesPhpstanExtensionRequirements;
+                    }
+                ',
+            ],
+            'genericRequirementWithTheSameTypeArgument' => [
+                'code' => '<?php
+                    use ExtensionRequirements\Generic\GenericBase;
+                    use ExtensionRequirements\Generic\ImposesGenericExtensionRequirement;
+
+                    /** @extends GenericBase<string> */
+                    class Valid extends GenericBase {
+                        /** @use ImposesGenericExtensionRequirement<string> */
+                        use ImposesGenericExtensionRequirement;
+                    }
+                ',
+            ],
+            'genericRequirementKeepsTheTypeOfTheTemplateOfTheTrait' => [
+                'code' => '<?php
+                    /** @template T */
+                    class A {
+                        /** @param T $a */
+                        public function __construct(protected readonly mixed $a) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @psalm-require-extends A<T>
+                     */
+                    trait C {
+                        /** @return T */
+                        public function a() {
+                            return $this->a;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @extends A<T>
+                     */
+                    class B extends A {
+                        /** @use C<T> */
+                        use C;
+                    }
+
+                    /** @var B<string> $b */
+                    $b = new B("x");
+                    $result = $b->a();
+                ',
+                'assertions' => [
+                    '$result' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'genericRequirementOfACovariantTemplateWithAWiderTypeArgument' => [
+                'code' => '<?php
+                    use ExtensionRequirements\Generic\CovariantBase;
+                    use ExtensionRequirements\Generic\ImposesCovariantExtensionRequirement;
+
+                    /** @extends CovariantBase<int> */
+                    class Valid extends CovariantBase {
+                        use ImposesCovariantExtensionRequirement;
+                    }
+                ',
+            ],
+            'extendsGenericBaseClass' => [
+                'code' => '<?php
+                    use ExtensionRequirements\Generic\GenericBase;
+                    use ExtensionRequirements\Generic\ImposesGenericExtensionRequirement;
+
+                    /**
+                     * @template T
+                     * @extends GenericBase<T>
+                     */
+                    class Valid extends GenericBase {
+                        /** @use ImposesGenericExtensionRequirement<T> */
+                        use ImposesGenericExtensionRequirement;
                     }
                 ',
             ],
@@ -108,6 +223,43 @@ final class ExtensionRequirementTest extends TestCase
                     }
                 ',
                 'error_message' => 'requires using class to extend',
+            ],
+            'genericRequirementWithAnotherTypeArgument' => [
+                'code' => '<?php
+                    use ExtensionRequirements\Generic\GenericBase;
+                    use ExtensionRequirements\Generic\ImposesGenericExtensionRequirement;
+
+                    /** @extends GenericBase<string> */
+                    class Invalid extends GenericBase {
+                        /** @use ImposesGenericExtensionRequirement<int> */
+                        use ImposesGenericExtensionRequirement;
+                    }
+                ',
+                'error_message' => 'requires using class to extend ExtensionRequirements\Generic\GenericBase',
+            ],
+            'genericRequirementOfAnInvariantTemplateWithAWiderTypeArgument' => [
+                'code' => '<?php
+                    use ExtensionRequirements\Generic\GenericBase;
+                    use ExtensionRequirements\Generic\ImposesWiderGenericExtensionRequirement;
+
+                    /** @extends GenericBase<int> */
+                    class Invalid extends GenericBase {
+                        use ImposesWiderGenericExtensionRequirement;
+                    }
+                ',
+                'error_message' => 'requires using class to extend ExtensionRequirements\Generic\GenericBase',
+            ],
+            'doesNotExtendGenericBaseClass' => [
+                'code' => '<?php
+                    use ExtensionRequirements\Generic\ImposesGenericExtensionRequirement;
+
+                    /** @template T */
+                    class Invalid {
+                        /** @use ImposesGenericExtensionRequirement<T> */
+                        use ImposesGenericExtensionRequirement;
+                    }
+                ',
+                'error_message' => 'requires using class to extend ExtensionRequirements\Generic\GenericBase',
             ],
         ];
     }
