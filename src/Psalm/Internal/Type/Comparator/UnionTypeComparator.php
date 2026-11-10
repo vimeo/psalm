@@ -526,7 +526,7 @@ final class UnionTypeComparator
 
                     if ($some_type_coerced && (!$some_to_string_cast || $remaining_types_coerced)) {
                         $union_comparison_result->type_coerced = true;
-                    } elseif ($some_type_coerced && $some_to_string_cast) {
+                    } elseif ($some_to_string_cast) {
                         $union_comparison_result->type_coerced = false;
                     }
 
