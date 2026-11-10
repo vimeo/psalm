@@ -2761,6 +2761,29 @@ final class ConditionalReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
+            'untypedClosureParamOnUnionReceiverIsEachAtomInAPassWithoutHint' => [
+                'code' => '<?php
+                    class ZA {
+                        /** @param Closure(static): mixed $c */
+                        public function where(Closure $c): void {}
+
+                        public function onlyA(): void {}
+                    }
+
+                    class ZB {
+                        public function where(Closure $c): void {}
+                    }
+
+                    final class ZUser {
+                        /** @param ZA|ZB $x */
+                        public function plain($x): void {
+                            $x->where(function ($q): void {
+                                $q->onlyA();
+                            });
+                        }
+                    }',
+                'error_message' => 'Method ZB::onlyA does not exist',
+            ],
         ];
     }
 }
