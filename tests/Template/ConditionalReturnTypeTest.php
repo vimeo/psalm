@@ -2798,6 +2798,44 @@ final class ConditionalReturnTypeTest extends TestCase
                         return $type;
                     }',
             ],
+            'typedClosureParamOfCallableOfStaticOrOtherMarksOnlyTheStaticAtom' => [
+                'code' => '<?php
+                    class Other {}
+
+                    class Base {
+                        /** @param callable(static|Other): void $callback */
+                        public function each(callable $callback): void {}
+
+                        public function run(): void {
+                            $this->each(function (Base|Other $value): void {
+                                /** @psalm-check-type-exact $value = Base&static|Other */
+                                echo get_class($value);
+                            });
+                        }
+                    }',
+                'php_version' => '8.0',
+            ],
+            'typedClosureParamOfCallableOfListOfStaticKeepsTheList' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @param callable(list<static>): void $callback */
+                        public function visit(callable $callback): void {}
+
+                        public function name(): string {
+                            return "box";
+                        }
+
+                        public function run(): void {
+                            $this->visit(function (array $items): void {
+                                /** @psalm-check-type-exact $items = list<Box&static> */
+                                foreach ($items as $item) {
+                                    echo $item->name();
+                                }
+                            });
+                        }
+                    }',
+                'ignored_issues' => ['InvalidArgument'],
+            ],
         ];
     }
 

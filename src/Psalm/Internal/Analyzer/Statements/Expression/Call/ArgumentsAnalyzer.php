@@ -738,10 +738,12 @@ final class ArgumentsAnalyzer
 
         // the caller's own late static type, not resolved yet: a receiver `$this` or `new static`, or a forwarding
         // call. The result of a call returning `static` is resolved, on `$this` as on another instance
-        $static_is_callers = !$template_result->static_class_is_final
+        $callers_static = !$template_result->static_class_is_final
             && $static_class_type instanceof TNamedObject
             && $static_class_type->is_static
-            && !$static_class_type->is_static_resolved;
+            && !$static_class_type->is_static_resolved
+                ? $static_class_type
+                : null;
 
         $closure_id = strtolower($statements_analyzer->getFilePath())
             . ':' . $arg->value->getLine()
@@ -788,7 +790,7 @@ final class ArgumentsAnalyzer
                             $untyped_replaced_type,
                             $closure_param_offset,
                             $param_storage->signature_type,
-                            $static_is_callers,
+                            $callers_static,
                         );
 
                     if ($pass_type) {
@@ -860,10 +862,13 @@ final class ArgumentsAnalyzer
     }
 
     /**
-     * The type a param declared with $declared_type takes for this analysis of the closure. A hint that holds the
-     * declared `static` does not narrow it to the class of the call, whose instances at runtime may be of any subclass
-     * (another atomic of a union receiver, another class using a trait, another loop pass): it keeps the declared type,
-     * marked static when the call's `static` is the caller's own and the hint is of the declared type.
+     * The type a param declared with $declared_type takes for this analysis of the closure, null for the one the
+     * closure's storage gives it. A hint holding the declared `static` gives it master's narrowing: the class of the
+     * call differs per pass (another atomic of a union receiver, another class using a trait, another loop pass)
+     * while the closure is one. Only when the call's `static` is the caller's own ($callers_static) the atoms that
+     * come from the declared `static` are that late static type: resolved where master's narrowing has them, else
+     * the atoms of the declared type that hold the class, marked static. For another receiver a narrowing to a bare
+     * `static`, which the closure would read as its own class, keeps the declared type.
      */
     private static function getTypedClosureParamPassType(
         Codebase $codebase,
@@ -871,7 +876,7 @@ final class ArgumentsAnalyzer
         Union $resolved_hint_type,
         int $closure_param_offset,
         Union $declared_type,
-        bool $static_is_callers,
+        ?TNamedObject $callers_static,
     ): ?Union {
         $resolved_param_type = self::inferClosureParamType($codebase, $resolved_hint_type, $closure_param_offset, null);
 
@@ -886,21 +891,51 @@ final class ArgumentsAnalyzer
             return self::inferClosureParamType($codebase, $resolved_hint_type, $closure_param_offset, $declared_type);
         }
 
-        if (!$static_is_callers
-            || !UnionTypeComparator::isContainedBy($codebase, $resolved_param_type, $declared_type)
-        ) {
-            return $declared_type;
+        $narrowed_type = self::inferClosureParamType(
+            $codebase,
+            $declared_hint_type,
+            $closure_param_offset,
+            $declared_type,
+        );
+
+        if ($callers_static === null) {
+            if ($narrowed_type === null) {
+                return null;
+            }
+
+            foreach ($narrowed_type->getAtomicTypes() as $narrowed_atomic) {
+                if ($narrowed_atomic instanceof TNamedObject
+                    && in_array(strtolower($narrowed_atomic->value), ['static', '$this'], true)
+                ) {
+                    return $declared_type;
+                }
+            }
+
+            return null;
         }
 
-        $static_atomics = [];
+        if ($narrowed_type !== null) {
+            (new DeclaredStaticReplacer($codebase, $callers_static, false))->traverse($narrowed_type);
+
+            return $narrowed_type;
+        }
+
+        $callers_static_class = new Union([$callers_static]);
+        $marked = false;
+        $declared_atomics = [];
 
         foreach ($declared_type->getAtomicTypes() as $declared_atomic) {
-            $static_atomics[] = $declared_atomic instanceof TNamedObject
-                ? $declared_atomic->setIsStatic(true, true)
-                : $declared_atomic;
+            if ($declared_atomic instanceof TNamedObject
+                && UnionTypeComparator::isContainedBy($codebase, $callers_static_class, new Union([$declared_atomic]))
+            ) {
+                $declared_atomic = $declared_atomic->setIsStatic(true, true);
+                $marked = true;
+            }
+
+            $declared_atomics[] = $declared_atomic;
         }
 
-        return $declared_type->setTypes($static_atomics);
+        return $marked ? $declared_type->setTypes($declared_atomics) : null;
     }
 
     /**
