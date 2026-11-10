@@ -1000,6 +1000,110 @@ final class InterfaceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'interfacePropertyWithGetHookReadOnInterfaceAndClassIntersection' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    interface L {
+                        public bool $x { get; set; }
+                    }
+
+                    function test(L&Foo $o): bool {
+                        return $o->x;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'interfacePropertyWithSetHookOnInterfaceAndClassIntersection' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    interface L {
+                        public bool $x { get; set; }
+                    }
+
+                    function test(L&Foo $o): void {
+                        $o->x = true;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'interfacePropertyWithSetHookOnClassAndInterfaceIntersection' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    interface L {
+                        public bool $x { get; set; }
+                    }
+
+                    function test(Foo&L $o): void {
+                        $o->x = true;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'interfacePropertyWithSetHookAfterInstanceofNarrowing' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    interface L {
+                        public bool $x { get; set; }
+                    }
+
+                    function test(Foo $o): void {
+                        if ($o instanceof L) {
+                            $o->x = true;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'interfacePropertyWithHooksOnAbstractClassIntersection' => [
+                'code' => '<?php
+                    abstract class C {}
+
+                    interface L {
+                        public bool $x { get; set; }
+                    }
+
+                    function write(C&L $o): void {
+                        $o->x = true;
+                    }
+
+                    function read(C&L $o): bool {
+                        return $o->x;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'classPropertyWinsOverInterfaceHookInIntersection' => [
+                'code' => '<?php
+                    class Decl {
+                        public int $x = 1;
+                    }
+
+                    interface L {
+                        public int $x { get; set; }
+                    }
+
+                    function classFirst(Decl&L $o): int {
+                        $o->x = 5;
+                        return $o->x;
+                    }
+
+                    function interfaceFirst(L&Decl $o): int {
+                        $o->x = 5;
+                        return $o->x;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
@@ -1075,6 +1179,120 @@ final class InterfaceTest extends TestCase
                         $a->bar = true;
                     }',
                 'error_message' => 'NoInterfaceProperties',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'noInterfacePropertyAssignmentToGetHookOnInterfaceAndClassIntersection' => [
+                'code' => '<?php
+                    class Foo {}
+                    interface G {
+                        public bool $y { get; }
+                    }
+
+                    function fooFoo(G&Foo $o): void {
+                        $o->y = true;
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'noInterfacePropertyAssignmentToGetHookOnClassAndInterfaceIntersection' => [
+                'code' => '<?php
+                    class Foo {}
+                    interface G {
+                        public bool $y { get; }
+                    }
+
+                    function fooFoo(Foo&G $o): void {
+                        $o->y = true;
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'noInterfacePropertyAssignmentToGetHookAfterInstanceofNarrowing' => [
+                'code' => '<?php
+                    class Foo {}
+                    interface G {
+                        public bool $y { get; }
+                    }
+
+                    function fooFoo(Foo $o): void {
+                        if ($o instanceof G) {
+                            $o->y = true;
+                        }
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'noInterfacePropertyFetchOnInterfaceAndClassIntersection' => [
+                'code' => '<?php
+                    class Foo {}
+                    interface L {
+                        public bool $x { get; set; }
+                    }
+
+                    function fooFoo(L&Foo $o): void {
+                        echo $o->missing;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'noInterfacePropertyAssignmentOnInterfaceAndClassIntersection' => [
+                'code' => '<?php
+                    class Foo {}
+                    interface L {
+                        public bool $x { get; set; }
+                    }
+
+                    function fooFoo(L&Foo $o): void {
+                        $o->missing = true;
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'noInterfacePropertyAssignmentOnFinalClassAndInterfaceIntersection' => [
+                'code' => '<?php
+                    final class Fin {}
+                    interface L {
+                        public bool $x { get; set; }
+                    }
+
+                    function fooFoo(Fin&L $o): void {
+                        $o->x = true;
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'noInterfacePropertyAssignmentOnInterfaceAndFinalClassIntersection' => [
+                'code' => '<?php
+                    final class Fin {}
+                    interface L {
+                        public bool $x { get; set; }
+                    }
+
+                    function fooFoo(L&Fin $o): void {
+                        $o->x = true;
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'noInterfacePropertyFetchOnInterfaceAndFinalClassIntersection' => [
+                'code' => '<?php
+                    final class Fin {}
+                    interface L {
+                        public bool $x { get; set; }
+                    }
+
+                    function fooFoo(L&Fin $o): void {
+                        echo $o->x;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
                 'error_levels' => [],
                 'php_version' => '8.4',
             ],
