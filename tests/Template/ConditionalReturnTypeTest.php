@@ -2817,7 +2817,7 @@ final class ConditionalReturnTypeTest extends TestCase
             ],
             'typedClosureParamOfCallableOfListOfStaticKeepsTheList' => [
                 'code' => '<?php
-                    final class Box {
+                    class Box {
                         /** @param callable(list<static>): void $callback */
                         public function visit(callable $callback): void {}
 
@@ -2834,7 +2834,6 @@ final class ConditionalReturnTypeTest extends TestCase
                             });
                         }
                     }',
-                'ignored_issues' => ['InvalidArgument'],
             ],
             'typedClosureParamOfCallableOfClassOrStaticKeepsTheClass' => [
                 'code' => '<?php
