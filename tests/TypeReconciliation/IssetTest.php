@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -13,6 +16,63 @@ final class IssetTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function testIssetNarrowingOfObjectShapeIsForgottenAfterACallWhenPropertiesAreForgotten(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param object{bar?: string} $foo */
+                function check(object $foo): void {
+                    if (isset($foo->bar)) {
+                        clearBar($foo);
+                        requiresBar($foo);
+                    }
+                }
+
+                function clearBar(object $foo): void {
+                    unset($foo->bar);
+                }
+
+                /** @param object{bar: string} $foo */
+                function requiresBar(object $foo): void {
+                    echo $foo->bar;
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidArgument');
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testDeclaredPropertyOfObjectShapeIsKeptAfterACallWhenPropertiesAreForgotten(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param object{bar: string} $foo */
+                function check(object $foo): void {
+                    echo $foo->bar;
+                    addOther($foo);
+                    requiresBar($foo);
+                }
+
+                function addOther(object $foo): void {
+                    $foo->other = 1;
+                }
+
+                /** @param object{bar: string} $foo */
+                function requiresBar(object $foo): void {
+                    echo $foo->bar;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 
     /**
      * @psalm-pure
@@ -1143,6 +1203,38 @@ final class IssetTest extends TestCase
                         echo $test[0];
                     }',
             ],
+            'issetNarrowsObjectShapeAfterAnEarlyReturn' => [
+                'code' => '<?php
+                    /** @param object{bar?: string} $foo */
+                    function check(object $foo): void {
+                        if (!isset($foo->bar)) {
+                            return;
+                        }
+
+                        requiresBar($foo);
+                    }
+
+                    /** @param object{bar: string} $foo */
+                    function requiresBar(object $foo): void {
+                        echo $foo->bar;
+                    }',
+            ],
+            'declaredRequiredPropertyOfObjectShapeSurvivesAnUnrelatedUnset' => [
+                'code' => '<?php
+                    /** @param object{bar: string, baz?: string} $foo */
+                    function check(object $foo): void {
+                        if (isset($foo->baz)) {
+                            unset($foo->baz);
+                        }
+
+                        requiresBar($foo);
+                    }
+
+                    /** @param object{bar: string} $foo */
+                    function requiresBar(object $foo): void {
+                        echo $foo->bar;
+                    }',
+            ],
             'issetNarrowsOptionalPropertyOfObjectShape' => [
                 'code' => '<?php
                     /** @param object{bar?: string} $foo */
@@ -1359,6 +1451,72 @@ final class IssetTest extends TestCase
                         }
                     }',
                 'error_message' => 'ReferenceConstraintViolation',
+            ],
+            'issetNarrowingOfObjectShapeIsForgottenAfterUnset' => [
+                'code' => '<?php
+                    /** @param object{bar?: string} $foo */
+                    function check(object $foo): void {
+                        if (isset($foo->bar)) {
+                            unset($foo->bar);
+                            requiresBar($foo);
+                        }
+                    }
+
+                    /** @param object{bar: string} $foo */
+                    function requiresBar(object $foo): void {
+                        echo $foo->bar;
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'issetNarrowingOfObjectShapeIsForgottenAfterAssigningTheProperty' => [
+                'code' => '<?php
+                    /** @param object{bar?: string} $foo */
+                    function check(object $foo): void {
+                        if (isset($foo->bar)) {
+                            $foo->bar = null;
+                            requiresBar($foo);
+                        }
+                    }
+
+                    /** @param object{bar: string} $foo */
+                    function requiresBar(object $foo): void {
+                        echo $foo->bar;
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'issetNarrowingOfObjectShapeIsForgottenAfterTheBranch' => [
+                'code' => '<?php
+                    /** @param object{bar?: string} $foo */
+                    function check(object $foo): void {
+                        if (isset($foo->bar)) {
+                            echo 1;
+                        }
+
+                        requiresBar($foo);
+                    }
+
+                    /** @param object{bar: string} $foo */
+                    function requiresBar(object $foo): void {
+                        echo $foo->bar;
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'typeNarrowingOfObjectShapePropertyIsForgottenAfterTheBranch' => [
+                'code' => '<?php
+                    /** @param object{bar: ?string} $foo */
+                    function check(object $foo): void {
+                        if ($foo->bar !== null) {
+                            echo 1;
+                        }
+
+                        requiresBar($foo);
+                    }
+
+                    /** @param object{bar: string} $foo */
+                    function requiresBar(object $foo): void {
+                        echo $foo->bar;
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'issetOfOptionalPropertyOfObjectShapeDoesNotLeakOutOfTheBranch' => [
                 'code' => '<?php

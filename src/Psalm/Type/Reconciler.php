@@ -1589,8 +1589,10 @@ class Reconciler
                 && !$base_atomic_type->properties[$property_name]->equals($narrowed_type)
             ) {
                 $properties = $base_atomic_type->properties;
+                $narrowed_from = $base_atomic_type->narrowed_from;
+                $narrowed_from[$property_name] ??= $properties[$property_name];
                 $properties[$property_name] = $narrowed_type;
-                $base_atomic_type = $base_atomic_type->setProperties($properties);
+                $base_atomic_type = $base_atomic_type->setProperties($properties)->setNarrowedFrom($narrowed_from);
                 $changed = true;
             }
 
