@@ -4,27 +4,17 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Internal;
 
-use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\Cli\Psalm;
 use Psalm\Tests\TestConfig;
 
 use function extension_loaded;
+use function function_exists;
 use function max;
 
 final class CliThreadsTest extends TestCase
 {
-    #[Override]
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        if (!extension_loaded('pcntl') || !extension_loaded('posix')) {
-            $this->markTestSkipped('getThreads() always returns 1 without pcntl and posix');
-        }
-    }
-
     /**
      * @return iterable<string,array{int,array<string,mixed>,?int}>
      * @psalm-pure
@@ -48,6 +38,9 @@ final class CliThreadsTest extends TestCase
         $config = new TestConfig();
         $config->scan_threads = $config_scan_threads !== null ? max(1, $config_scan_threads) : null;
 
-        $this->assertSame($expected, Psalm::getThreads($options, $config, true));
+        $can_fork = extension_loaded('pcntl') && extension_loaded('posix') && function_exists('pcntl_fork');
+
+        // without forking support Psalm runs single-threaded whatever the options say
+        $this->assertSame($can_fork ? $expected : 1, Psalm::getThreads($options, $config, true));
     }
 }
