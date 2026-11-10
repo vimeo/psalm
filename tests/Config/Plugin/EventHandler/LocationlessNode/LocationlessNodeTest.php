@@ -25,6 +25,9 @@ use const DIRECTORY_SEPARATOR;
 
 final class LocationlessNodeTest extends TestCase
 {
+    /**
+     * @psalm-suppress MissingParentCall The plugin fixture supplies its own fallback Psalm and parser versions.
+     */
     #[Override]
     public static function setUpBeforeClass(): void
     {

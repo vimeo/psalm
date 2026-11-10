@@ -20,6 +20,9 @@ use function substr;
 
 final class JsonOutputTest extends TestCase
 {
+    /**
+     * @psalm-suppress MissingParentCall The report fixture needs its own analyzer and reporting configuration.
+     */
     #[Override]
     public function setUp(): void
     {

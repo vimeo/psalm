@@ -38,6 +38,9 @@ final class ExtraFilesTest extends TestCase
 
     private Codebase $codebase;
 
+    /**
+     * @psalm-suppress MissingParentCall The analyzer must use the fixture configuration with extra files.
+     */
     #[Override]
     public function setUp(): void
     {

@@ -32,6 +32,9 @@ use const JSON_THROW_ON_ERROR;
 
 final class ReportOutputTest extends TestCase
 {
+    /**
+     * @psalm-suppress MissingParentCall The report fixture needs its own analyzer and reporting configuration.
+     */
     #[Override]
     public function setUp(): void
     {

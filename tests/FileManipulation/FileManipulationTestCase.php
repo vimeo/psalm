@@ -23,6 +23,7 @@ abstract class FileManipulationTestCase extends TestCase
 
     /**
      * @psalm-external-mutation-free
+     * @psalm-suppress MissingParentCall The test builds an analyzer with the fixer options for each data set.
      */
     #[Override]
     public function setUp(): void

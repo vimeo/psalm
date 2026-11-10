@@ -27,6 +27,9 @@ use const DIRECTORY_SEPARATOR;
 
 final class AddTaintsInterfaceTest extends TestCase
 {
+    /**
+     * @psalm-suppress MissingParentCall The plugin fixture supplies its own fallback Psalm and parser versions.
+     */
     #[Override]
     public static function setUpBeforeClass(): void
     {
@@ -121,6 +124,7 @@ final class AddTaintsInterfaceTest extends TestCase
 
     /**
      * @psalm-external-mutation-free
+     * @psalm-suppress MissingParentCall Each test builds an analyzer with its taint plugin configuration.
      */
     #[Override]
     public function setUp(): void

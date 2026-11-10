@@ -39,6 +39,9 @@ final class ConfigFileTest extends TestCase
         $argv = [];
     }
 
+    /**
+     * @psalm-suppress MissingParentCall This fixture needs a temporary config file only.
+     */
     #[Override]
     public function setUp(): void
     {
@@ -52,6 +55,7 @@ final class ConfigFileTest extends TestCase
     public function tearDown(): void
     {
         @unlink($this->file_path);
+        parent::tearDown();
     }
 
     #[Test]

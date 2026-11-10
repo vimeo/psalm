@@ -35,6 +35,9 @@ use function stripos;
 
 final class TypeParseTest extends TestCase
 {
+    /**
+     * @psalm-suppress MissingParentCall The fixture keeps the analyzer's default PHP version.
+     */
     #[Override]
     public function setUp(): void
     {

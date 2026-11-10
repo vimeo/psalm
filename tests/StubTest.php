@@ -49,6 +49,7 @@ final class StubTest extends TestCase
 
     /**
      * @psalm-external-mutation-free
+     * @psalm-suppress MissingParentCall Each test builds an analyzer with the stubs under test.
      */
     #[Override]
     public function setUp(): void

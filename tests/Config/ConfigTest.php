@@ -102,6 +102,9 @@ final class ConfigTest extends TestCase
         new TestConfig();
     }
 
+    /**
+     * @psalm-suppress MissingParentCall Each test constructs its analyzer with the configuration under test.
+     */
     #[Override]
     public function setUp(): void
     {

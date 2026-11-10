@@ -23,6 +23,7 @@ final class PropertyMoveTest extends TestCase
 
     /**
      * @psalm-external-mutation-free
+     * @psalm-suppress MissingParentCall The migration test creates its own analyzer for the input files.
      */
     #[Override]
     public function setUp(): void

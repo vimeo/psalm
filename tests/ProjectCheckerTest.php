@@ -53,6 +53,7 @@ final class ProjectCheckerTest extends TestCase
 
     /**
      * @psalm-external-mutation-free
+     * @psalm-suppress MissingParentCall Each test builds an analyzer with its own cache providers.
      */
     #[Override]
     public function setUp(): void

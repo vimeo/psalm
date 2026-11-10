@@ -62,6 +62,7 @@ final class PluginTest extends TestCase
 
     /**
      * @psalm-external-mutation-free
+     * @psalm-suppress MissingParentCall Each test constructs its analyzer with the plugin configuration under test.
      */
     #[Override]
     public function setUp(): void

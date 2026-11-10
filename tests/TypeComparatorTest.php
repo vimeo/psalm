@@ -30,6 +30,9 @@ use function is_int;
 
 final class TypeComparatorTest extends TestCase
 {
+    /**
+     * @psalm-suppress MissingParentCall The fixture keeps the analyzer's default PHP version.
+     */
     #[Override]
     public function setUp(): void
     {
