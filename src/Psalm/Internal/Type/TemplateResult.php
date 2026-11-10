@@ -49,8 +49,9 @@ final class TemplateResult
     public array $upper_bounds_unintersectable_types = [];
 
     /**
-     * `static` of the call when it is known before the arguments are analyzed (a template receiver or a forwarding call
-     * has none) and whether it is final: the arguments are checked, and the return type is expanded, with them
+     * `static` of the call when it is known before the arguments are analyzed (a template receiver and a `@mixin`
+     * receiver have none) and whether it is that class exactly: the arguments, the hints of closure params, the
+     * template constraints and the conditionals of the return type read them
      */
     public string|TNamedObject|null $static_class_type = null;
 

@@ -39,7 +39,6 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\VirtualName;
-use Psalm\StatementsSource;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsType;
@@ -285,19 +284,6 @@ abstract class CallAnalyzer
     }
 
     /**
-     * Whether $source is code of a trait: it is analyzed once for each class using the trait, which share its closures
-     * (and the param types the hints of closure arguments write in them)
-     */
-    public static function isInTrait(StatementsSource $source): bool
-    {
-        while (!$source instanceof ClassLikeAnalyzer && ($parent_source = $source->getSource()) !== $source) {
-            $source = $parent_source;
-        }
-
-        return $source instanceof TraitAnalyzer;
-    }
-
-    /**
      * @param  list<PhpParser\Node\Arg>   $args
      */
     public static function checkMethodArgs(
@@ -307,7 +293,6 @@ abstract class CallAnalyzer
         Context $context,
         CodeLocation $code_location,
         StatementsAnalyzer $statements_analyzer,
-        bool $static_is_called_class = false,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -393,7 +378,6 @@ abstract class CallAnalyzer
             $template_result,
             $code_location,
             $context,
-            $static_is_called_class,
         ) === false) {
             return false;
         }

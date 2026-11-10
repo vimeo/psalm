@@ -1315,7 +1315,7 @@ final class ClassLikeStringTest extends TestCase
                             parent::classString(Foo::class);
                         }
                     }',
-                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:49 - Argument 1 of Foo::classString expects class-string<Foo&static>, but parent type Foo::class provided',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:49 - Argument 1 of Foo::classString expects class-string<Bar&static>, but parent type Foo::class provided',
             ],
             'staticInANonStaticMethodCalledByClassNameStaysLateBound' => [
                 'code' => '<?php

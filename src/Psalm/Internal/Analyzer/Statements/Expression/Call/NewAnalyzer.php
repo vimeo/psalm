@@ -633,10 +633,11 @@ final class NewAnalyzer extends CallAnalyzer
 
             $template_result ??= new TemplateResult([], []);
 
-            if (!self::isInTrait($statements_analyzer)) {
-                $template_result->static_class_type = $fq_class_name;
-                $template_result->static_class_is_final = $storage->final;
-            }
+            $template_result->static_class_type = $fq_class_name;
+            // `new X` makes exactly an X
+            $template_result->static_class_is_final = $storage->final
+                || ($stmt->class instanceof PhpParser\Node\Name
+                    && !in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true));
 
             $args_analyzed = self::checkMethodArgs(
                 $method_id,
@@ -1731,9 +1732,7 @@ final class NewAnalyzer extends CallAnalyzer
             return null;
         }
 
-        if (!self::isInTrait($statements_analyzer)) {
-            $template_result->static_class_type = $fq_class_name;
-        }
+        $template_result->static_class_type = $fq_class_name;
 
         $self_out_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
             $self_out_candidate,

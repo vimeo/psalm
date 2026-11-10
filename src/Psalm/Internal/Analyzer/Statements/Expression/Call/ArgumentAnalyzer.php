@@ -147,6 +147,8 @@ final class ArgumentAnalyzer
         'usort',
     ];
     /**
+     * @param  string|TNamedObject|null $static_class_type `static` of the call, with $static_class_is_final whether
+     *                                                     it is that class exactly
      * @param  array<string, array<string, Union>> $class_generic_params
      * @return false|null
      */
@@ -155,7 +157,7 @@ final class ArgumentAnalyzer
         ?string $cased_method_id,
         ?MethodIdentifier $method_id,
         ?string $self_fq_class_name,
-        ?string $static_fq_class_name,
+        string|TNamedObject|null $static_class_type,
         CodeLocation $function_call_location,
         ?FunctionLikeStorage $function_storage,
         ?FunctionLikeParameter $function_param,
@@ -169,7 +171,7 @@ final class ArgumentAnalyzer
         ?TemplateResult $template_result,
         bool $specialize_taint,
         bool $in_call_map,
-        bool $static_is_called_class = false,
+        bool $static_class_is_final = false,
     ): ?bool {
         if ($arg->getAttribute(self::NOT_PASSED) === true) {
             return null;
@@ -269,7 +271,7 @@ final class ArgumentAnalyzer
             $cased_method_id,
             $method_id,
             $self_fq_class_name,
-            $static_fq_class_name,
+            $static_class_type,
             $function_call_location,
             $function_storage,
             $function_param,
@@ -283,7 +285,7 @@ final class ArgumentAnalyzer
             $template_result,
             $specialize_taint,
             $in_call_map,
-            $static_is_called_class,
+            $static_class_is_final,
         ) === false) {
             return false;
         }
@@ -301,7 +303,7 @@ final class ArgumentAnalyzer
         ?string $cased_method_id,
         ?MethodIdentifier $method_id,
         ?string $self_fq_class_name,
-        ?string $static_fq_class_name,
+        string|TNamedObject|null $static_class_type,
         CodeLocation $function_call_location,
         ?FunctionLikeStorage $function_storage,
         FunctionLikeParameter $function_param,
@@ -315,7 +317,7 @@ final class ArgumentAnalyzer
         ?TemplateResult $template_result,
         bool $specialize_taint,
         bool $in_call_map,
-        bool $static_is_called_class,
+        bool $static_class_is_final,
     ): ?bool {
         if (!$function_param->type) {
             if (!$codebase->infer_types_from_usage && !$statements_analyzer->data_flow_graph) {
@@ -343,20 +345,30 @@ final class ArgumentAnalyzer
             $parent_class = $classlike_storage->parent_class;
             $static_classlike_storage = $classlike_storage;
 
+            $static_fq_class_name = $static_class_type instanceof TNamedObject
+                ? $static_class_type->value
+                : $static_class_type;
+
             if ($static_fq_class_name && $static_fq_class_name !== $self_fq_class_name) {
                 $static_classlike_storage = $codebase->classlike_storage_provider->get($static_fq_class_name);
             }
         }
 
+        // the receiver keeps its type arguments in the expansion of the declared `static`
+        $static_type = $static_class_type instanceof TNamedObject
+            ? $static_class_type
+            : $static_classlike_storage->name ?? null;
+        $static_class_is_final = $static_class_is_final || ($static_classlike_storage->final ?? false);
+
         $param_type = TypeExpander::expandUnion(
             $codebase,
             $param_type,
             $classlike_storage->name ?? null,
-            $static_classlike_storage->name ?? null,
+            $static_type,
             $parent_class,
             true,
             false,
-            ($static_classlike_storage->final ?? false) || $static_is_called_class,
+            $static_class_is_final,
             true,
         );
 
@@ -458,6 +470,9 @@ final class ArgumentAnalyzer
                 $arg_type_param,
             );
 
+            // the declared `static` was expanded before the bounds were put in the type; this expansion gets the
+            // receiver's class name, not its atom, so the caller's late static types the bounds may hold do not take
+            // the receiver's type arguments (with an exact class TypeExpander still rewrites them, #13511)
             $param_type = TypeExpander::expandUnion(
                 $codebase,
                 $param_type,
@@ -466,7 +481,7 @@ final class ArgumentAnalyzer
                 $parent_class,
                 true,
                 false,
-                ($static_classlike_storage->final ?? false) || $static_is_called_class,
+                $static_class_is_final,
                 true,
             );
         }

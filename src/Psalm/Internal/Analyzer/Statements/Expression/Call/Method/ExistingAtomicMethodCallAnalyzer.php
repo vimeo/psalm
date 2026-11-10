@@ -46,6 +46,7 @@ use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -259,16 +260,16 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $template_result->template_types += $method_storage->template_types;
         }
 
-        // a template (or intersection) receiver keeps `static` as declared, which the return type expansion resolves;
-        // so does one the method is not of (a `@mixin` user), as the arguments are checked with the method's class,
-        // and a call in a trait, whose closures every class using it shares
+        // a template receiver keeps `static` as declared, which the return type expansion resolves; so does one the
+        // method is not of (a `@mixin` user), as the arguments are checked with the method's class
         if ($static_type instanceof TNamedObject
-            && !$static_type->extra_types
             && (strtolower($static_type->value) === strtolower($method_id->fq_class_name)
                 || $codebase->classExtendsOrImplements($static_type->value, $method_id->fq_class_name))
-            && !self::isInTrait($statements_analyzer)
         ) {
-            $template_result->static_class_type = $static_type;
+            // `static` is the class of a value receiver (an enum case, a closure), not the value
+            $template_result->static_class_type = $static_type instanceof TEnumCase || $static_type instanceof TClosure
+                ? new TNamedObject($static_type->value)
+                : $static_type;
             $template_result->static_class_is_final = $codebase->classlike_storage_provider->get($static_type->value)
                 ->final;
         }
