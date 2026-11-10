@@ -822,6 +822,90 @@ final class InterfaceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'interfacePropertyWithGetHookAfterInstanceofNarrowing' => [
+                'code' => '<?php
+                    interface FieldInterface {}
+
+                    interface LabelableInterface {
+                        public bool $hasLabel { get; }
+                    }
+
+                    function test(FieldInterface $field): bool {
+                        if ($field instanceof LabelableInterface) {
+                            $label = $field->hasLabel;
+                            return $label;
+                        }
+
+                        return false;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'interfacePropertyWithSetHookOnIntersection' => [
+                'code' => '<?php
+                    interface FieldInterface {}
+
+                    interface LabelableInterface {
+                        public bool $hasLabel { set; }
+                    }
+
+                    function test(FieldInterface&LabelableInterface $field): void {
+                        $field->hasLabel = true;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'interfacePropertyWithGetHookFetchedByLiteralName' => [
+                'code' => '<?php
+                    interface I {
+                        public string $value { get; }
+                    }
+
+                    function test(I $r): string {
+                        return $r->{"value"};
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'interfacePropertyWithGetHookOnThreeMemberIntersection' => [
+                'code' => '<?php
+                    interface FieldInterface {}
+                    interface RequiredInterface {}
+
+                    interface LabelableInterface {
+                        public bool $hasLabel { get; }
+                    }
+
+                    function test(FieldInterface $field): bool {
+                        if ($field instanceof RequiredInterface && $field instanceof LabelableInterface) {
+                            return $field->hasLabel;
+                        }
+
+                        return false;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'interfacePropertyWithHooksInheritedFromParentInterface' => [
+                'code' => '<?php
+                    interface LabelableInterface {
+                        public bool $hasLabel { get; set; }
+                    }
+
+                    interface CheckboxInterface extends LabelableInterface {}
+
+                    function test(CheckboxInterface $checkbox): bool {
+                        $checkbox->hasLabel = true;
+                        return $checkbox->hasLabel;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
@@ -873,6 +957,32 @@ final class InterfaceTest extends TestCase
                         $a->bar = 5;
                     }',
                 'error_message' => 'NoInterfaceProperties',
+            ],
+            'noInterfacePropertyFetchOnIntersection' => [
+                'code' => '<?php
+                    interface A {}
+                    interface B {}
+
+                    function fooFoo(A&B $a): void {
+                        if ($a->bar) {}
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'noInterfacePropertyAssignmentToGetHookOnIntersection' => [
+                'code' => '<?php
+                    interface A {}
+                    interface B {
+                        public bool $bar { get; }
+                    }
+
+                    function fooFoo(A&B $a): void {
+                        $a->bar = true;
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+                'error_levels' => [],
+                'php_version' => '8.4',
             ],
             'interfacePropertyWithHooksBeforePhp84' => [
                 'code' => '<?php

@@ -198,6 +198,7 @@ final class AtomicPropertyFetchAnalyzer
                 $codebase,
                 $stmt,
                 $lhs_type_part,
+                $prop_name,
                 $intersection_types,
                 $class_exists,
                 $interface_exists,
@@ -1363,6 +1364,7 @@ final class AtomicPropertyFetchAnalyzer
         Codebase $codebase,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         TNamedObject $lhs_type_part,
+        string $prop_name,
         array $intersection_types,
         bool &$class_exists,
         bool &$interface_exists,
@@ -1423,14 +1425,11 @@ final class AtomicPropertyFetchAnalyzer
                 || in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name))
                 || $intersects_with_enum;
 
-            // Since PHP 8.4 interfaces can have hook properties
-            $interface_property = $stmt->name instanceof PhpParser\Node\Identifier
-                ? $interface_storage->properties[$stmt->name->name] ?? null
-                : null;
-            $has_get_hook = $codebase->analysis_php_version_id >= 8_04_00 &&
-                $interface_property?->hook_get !== null;
+            $hook_interface = self::findInterfaceWithPropertyHook($codebase, $lhs_type_part, $prop_name, false);
 
-            if (!$class_exists && !$is_enum_interface && !$has_get_hook && !$intersects_with_shape_property) {
+            if ($hook_interface !== null) {
+                $fq_class_name = $hook_interface;
+            } elseif (!$is_enum_interface && !$intersects_with_shape_property) {
                 if (IssueBuffer::accepts(
                     new NoInterfaceProperties(
                         'Interfaces cannot have properties',
@@ -1469,6 +1468,41 @@ final class AtomicPropertyFetchAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * Since PHP 8.4 interfaces can declare hooked properties; checks every interface of an intersection.
+     */
+    public static function findInterfaceWithPropertyHook(
+        Codebase $codebase,
+        TNamedObject $lhs_type_part,
+        string $prop_name,
+        bool $is_write,
+    ): ?string {
+        if ($codebase->analysis_php_version_id < 8_04_00) {
+            return null;
+        }
+
+        foreach ([$lhs_type_part, ...$lhs_type_part->getIntersectionTypes()] as $type_part) {
+            if (!$type_part instanceof TNamedObject || !$codebase->interfaceExists($type_part->value)) {
+                continue;
+            }
+
+            $declaring_interface = $codebase->classlike_storage_provider->get($type_part->value)
+                ->declaring_property_ids[$prop_name] ?? null;
+
+            if ($declaring_interface === null) {
+                continue;
+            }
+
+            $property = $codebase->classlike_storage_provider->get($declaring_interface)->properties[$prop_name];
+
+            if (($is_write ? $property->hook_set : $property->hook_get) !== null) {
+                return $type_part->value;
+            }
+        }
+
+        return null;
     }
 
     /**
