@@ -66,6 +66,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_filter;
 use function array_reduce;
 use function array_reverse;
 use function array_slice;
@@ -921,12 +922,31 @@ final class ArgumentsAnalyzer
         }
 
         $callers_static_class = new Union([$callers_static]);
+        $non_static_arms = [];
+
+        foreach ($declared_param_type?->getAtomicTypes() ?? [] as $hint_arm) {
+            if (!$hint_arm instanceof TNamedObject
+                || !in_array(strtolower($hint_arm->value), ['static', '$this'], true)
+            ) {
+                $non_static_arms[] = new Union([$hint_arm]);
+            }
+        }
+
         $marked = false;
         $declared_atomics = [];
 
         foreach ($declared_type->getAtomicTypes() as $declared_atomic) {
+            // an atom a non-static arm of the hint also gives keeps master's value, unmarked
             if ($declared_atomic instanceof TNamedObject
                 && UnionTypeComparator::isContainedBy($codebase, $callers_static_class, new Union([$declared_atomic]))
+                && !array_filter(
+                    $non_static_arms,
+                    static fn(Union $arm): bool => UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $arm,
+                        new Union([$declared_atomic]),
+                    ),
+                )
             ) {
                 $declared_atomic = $declared_atomic->setIsStatic(true, true);
                 $marked = true;

@@ -2836,6 +2836,20 @@ final class ConditionalReturnTypeTest extends TestCase
                     }',
                 'ignored_issues' => ['InvalidArgument'],
             ],
+            'typedClosureParamOfCallableOfClassOrStaticKeepsTheClass' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param callable(Base|static): mixed $callback */
+                        public function each(callable $callback): void {}
+
+                        public function run(): void {
+                            $this->each(function (Base $value): void {
+                                /** @psalm-check-type-exact $value = Base */
+                                echo get_class($value);
+                            });
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -2970,6 +2984,20 @@ final class ConditionalReturnTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'Method ZB::onlyA does not exist',
+            ],
+            'typedClosureParamOfCallableOfClassOrStaticIsNotTheLateStaticClass' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param callable(Base|static): mixed $callback */
+                        public function each(callable $callback): void {}
+
+                        public function run(): void {
+                            $this->each(function (Base $value): static {
+                                return $value;
+                            });
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
     }
