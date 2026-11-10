@@ -2027,6 +2027,35 @@ final class ConditionalReturnTypeTest extends TestCase
                 ],
                 'ignored_issues' => ['InvalidArgument', 'MissingClosureParamType'],
             ],
+            'paramConditionalOnUntypedCallableOfStaticThroughMixinKeepsMastersResult' => [
+                'code' => '<?php
+                    class MixTarget {
+                        /**
+                         * @param (callable(static): mixed)|null $callback
+                         * @return ($callback is null ? int : static)
+                         */
+                        public function tap(?callable $callback = null) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @mixin MixTarget */
+                    class MixUser {
+                        /**
+                         * @param list<mixed> $args
+                         * @return mixed
+                         */
+                        public function __call(string $name, array $args) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    $tapped = (new MixUser())->tap(fn ($_t): int => 1);',
+                'assertions' => [
+                    '$tapped===' => 'MixUser&static',
+                ],
+                'ignored_issues' => ['InvalidArgument', 'MissingClosureParamType'],
+            ],
         ];
     }
 

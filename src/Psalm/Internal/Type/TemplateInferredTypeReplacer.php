@@ -699,7 +699,7 @@ final class TemplateInferredTypeReplacer
 
         $final = $template_result->static_class_is_final;
 
-        /** @psalm-suppress ImpureMethodCall TypeExpander only reads the codebase, as in replaceConditional() */
+        /** @psalm-suppress ImpureMethodCall reads codebase storage (constant types may be memoized) */
         return $conditional->setTypes(
             TypeExpander::expandStatic($codebase, $conditional->as_type, $static_class_type, $final),
             TypeExpander::expandStatic($codebase, $conditional->conditional_type, $static_class_type, $final),
