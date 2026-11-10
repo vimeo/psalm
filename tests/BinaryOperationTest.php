@@ -1243,6 +1243,29 @@ final class BinaryOperationTest extends TestCase
                         func("asdasdasd $a");
                     }',
             ],
+            'interpolatedStringIntAndHeredocParts' => [
+                'code' => '<?php
+                    /**
+                     * @param positive-int $pos
+                     * @param negative-int $neg
+                     */
+                    function foo(int $pos, int $neg, int $any, string $any_string) : void {
+                        $positive = "$pos$any_string";
+                        $negative = "{$neg}x";
+                        $two_ints = "{$any}{$any}";
+                        $one_int = "{$any}$any_string";
+                        $heredoc = <<<TXT
+                        -$any_string
+                        TXT;
+                        echo $positive, $negative, $two_ints, $one_int, $heredoc;
+
+                        /** @psalm-check-type-exact $positive = non-falsy-string */
+                        /** @psalm-check-type-exact $negative = non-falsy-string */
+                        /** @psalm-check-type-exact $two_ints = non-falsy-string */
+                        /** @psalm-check-type-exact $one_int = non-empty-string */
+                        /** @psalm-check-type-exact $heredoc = non-falsy-string */
+                    }',
+            ],
             'interpolatedStringNonFalsyParts' => [
                 'code' => '<?php
                     /**
@@ -1888,6 +1911,14 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'interpolatedStringEndingInZeroIsNotNonFalsy' => [
+                'code' => '<?php
+                    /** @return non-falsy-string */
+                    function foo(string $s) : string {
+                        return "{$s}0";
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
             'bcMathNumberPlusNonNumericString' => [
                 'code' => '<?php
                     namespace BcMath {

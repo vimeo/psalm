@@ -17,6 +17,8 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
@@ -46,6 +48,8 @@ final class EncapsulatedStringAnalyzer
         // can two parts that are not empty
         $non_falsy = false;
         $non_empty_parts = 0;
+        $non_falsy_string_type = Type::getNonFalsyString();
+        $non_empty_string_type = Type::getNonEmptyString();
 
         $all_literals = true;
 
@@ -90,15 +94,13 @@ final class EncapsulatedStringAnalyzer
                 }
 
                 $codebase = $statements_analyzer->getCodebase();
-                $non_falsy = $non_falsy || UnionTypeComparator::isContainedBy(
-                    $codebase,
-                    $casted_part_type,
-                    Type::getNonFalsyString(),
-                );
+                $non_falsy = $non_falsy
+                    || self::isIntWithoutZero($part_type)
+                    || UnionTypeComparator::isContainedBy($codebase, $casted_part_type, $non_falsy_string_type);
                 $non_empty_parts += UnionTypeComparator::isContainedBy(
                     $codebase,
                     $casted_part_type,
-                    Type::getNonEmptyString(),
+                    $non_empty_string_type,
                 ) ? 1 : 0;
                 $non_falsy = $non_falsy || $non_empty_parts > 1;
 
@@ -215,6 +217,26 @@ final class EncapsulatedStringAnalyzer
         }
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+        return true;
+    }
+
+    /**
+     * An int that is never 0 is never "0" as a string either
+     *
+     * @psalm-pure
+     */
+    private static function isIntWithoutZero(Union $part_type): bool
+    {
+        foreach ($part_type->getAtomicTypes() as $atomic) {
+            if (!($atomic instanceof TLiteralInt && $atomic->value !== 0)
+                && !($atomic instanceof TIntRange
+                    && (($atomic->min_bound !== null && $atomic->min_bound > 0)
+                        || ($atomic->max_bound !== null && $atomic->max_bound < 0)))
+            ) {
+                return false;
+            }
+        }
 
         return true;
     }
