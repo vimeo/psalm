@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
@@ -32,7 +33,11 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
 use function explode;
+use function in_array;
+use function strcspn;
+use function strpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -206,6 +211,7 @@ final class StaticPropertyAssignmentAnalyzer
             $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
 
             if ($var_id) {
+                self::forgetAliasesOfStaticProperty($codebase, $context, $var_id);
                 $context->vars_in_scope[$var_id] = $assignment_value_type;
             }
 
@@ -357,10 +363,68 @@ final class StaticPropertyAssignmentAnalyzer
             }
 
             if ($var_id) {
+                self::forgetAliasesOfStaticProperty($codebase, $context, $var_id);
                 $context->vars_in_scope[$var_id] = $assignment_value_type;
             }
         }
 
         return null;
+    }
+
+    /**
+     * `self::$p`, `static::$p`, `parent::$p` and `Foo::$p` can name the same property: what is known of the others
+     * does not hold after one of them is written
+     */
+    private static function forgetAliasesOfStaticProperty(
+        Codebase $codebase,
+        Context $context,
+        string $var_id,
+    ): void {
+        $separator = strpos($var_id, '::$');
+
+        if ($separator === false) {
+            return;
+        }
+
+        $assigned_class = substr($var_id, 0, $separator);
+        $property_end = strcspn($var_id, '[-', $separator + 3);
+        $property_id = substr($var_id, $separator + 3, $property_end);
+
+        foreach ($context->vars_in_scope as $other_id => $_) {
+            $other_separator = strpos($other_id, '::$');
+
+            if ($other_separator === false
+                || $other_id === $var_id
+                || substr($other_id, $other_separator + 3, strcspn($other_id, '[-', $other_separator + 3))
+                    !== $property_id
+            ) {
+                continue;
+            }
+
+            $other_class = substr($other_id, 0, $other_separator);
+
+            // the offsets and properties of the very property that is assigned stay as they are
+            if ($other_class === $assigned_class) {
+                continue;
+            }
+
+            if (self::mayBeTheSameClass($codebase, $assigned_class, $other_class)) {
+                $context->remove($other_id);
+            }
+        }
+    }
+
+    private static function mayBeTheSameClass(Codebase $codebase, string $first, string $second): bool
+    {
+        $relative = ['self', 'static', 'parent'];
+
+        if (in_array(strtolower($first), $relative, true) || in_array(strtolower($second), $relative, true)) {
+            return true;
+        }
+
+        return strtolower($first) === strtolower($second)
+            || ($codebase->classOrInterfaceExists($first)
+                && $codebase->classOrInterfaceExists($second)
+                && ($codebase->classExtends($first, $second) || $codebase->classExtends($second, $first)));
     }
 }
