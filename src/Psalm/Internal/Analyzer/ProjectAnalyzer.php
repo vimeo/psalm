@@ -194,9 +194,9 @@ final class ProjectAnalyzer
 
     /** The issues to fix that `--issues=all` leaves out */
     private const NAMED_ISSUES_TO_FIX = [
-        'MissingImmutableAnnotation',
-        'MissingPureAnnotation',
-        'MissingThrowsDocblock',
+        'MissingImmutableAnnotation', // opt-in by design (#4036), reported only with suggestPurityAnnotations
+        'MissingPureAnnotation', // same as MissingImmutableAnnotation
+        'MissingThrowsDocblock', // reported only with checkForThrowsDocblock (#7918)
     ];
 
     /** Bytes of parsed statements getMethodMutations() may keep per process (not a user setting, for now) */

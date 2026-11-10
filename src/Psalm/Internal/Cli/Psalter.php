@@ -170,7 +170,7 @@ final class Psalter
                     possible, use --issues=all
 
                 --list-supported-issues
-                    Display the list of issues that psalter knows how to fix, those of the configured plugins included
+                    Display the list of issues that psalter knows how to fix
 
                 --find-unused-code
                     Include unused code as a candidate for removal
