@@ -812,6 +812,12 @@ abstract class CallAnalyzer
                 );
             } elseif (isset($context->vars_in_scope[$var_possibilities->var_id])) {
                 $assertion_var_id = $var_possibilities->var_id;
+            } elseif (AssertionFinder::splitArgumentOffsetVarId($var_possibilities->var_id) !== null) {
+                $assertion_var_id = AssertionFinder::getArgumentOffsetVarId(
+                    $var_possibilities->var_id,
+                    $args,
+                    $statements_analyzer,
+                );
             } elseif (str_contains($var_possibilities->var_id, '->')) {
                 $exploded = explode('->', $var_possibilities->var_id);
 

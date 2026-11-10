@@ -73,7 +73,6 @@ use function preg_match;
 use function preg_replace;
 use function str_contains;
 use function str_ends_with;
-use function str_replace;
 use function str_starts_with;
 use function strlen;
 use function strtolower;
@@ -1692,7 +1691,9 @@ final class FunctionLikeDocblockScanner
                         continue 2;
                     }
 
-                    if (str_starts_with($assertion['param_name'], $param->name.'->')) {
+                    if (str_starts_with($assertion['param_name'], $param->name.'->')
+                        || str_starts_with($assertion['param_name'], $param->name.'[')
+                    ) {
                         $storage->assertions[] = new Possibilities(
                             substr_replace($assertion['param_name'], (string) $i, 0, strlen($param->name)),
                             $assertion_type_parts,
@@ -1746,9 +1747,11 @@ final class FunctionLikeDocblockScanner
                         continue 2;
                     }
 
-                    if (str_starts_with($assertion['param_name'], $param->name.'->')) {
+                    if (str_starts_with($assertion['param_name'], $param->name.'->')
+                        || str_starts_with($assertion['param_name'], $param->name.'[')
+                    ) {
                         $storage->if_true_assertions[] = new Possibilities(
-                            str_replace($param->name, (string) $i, $assertion['param_name']),
+                            substr_replace($assertion['param_name'], (string) $i, 0, strlen($param->name)),
                             $assertion_type_parts,
                         );
                         continue 2;
@@ -1800,9 +1803,11 @@ final class FunctionLikeDocblockScanner
                         continue 2;
                     }
 
-                    if (str_starts_with($assertion['param_name'], $param->name.'->')) {
+                    if (str_starts_with($assertion['param_name'], $param->name.'->')
+                        || str_starts_with($assertion['param_name'], $param->name.'[')
+                    ) {
                         $storage->if_false_assertions[] = new Possibilities(
-                            str_replace($param->name, (string) $i, $assertion['param_name']),
+                            substr_replace($assertion['param_name'], (string) $i, 0, strlen($param->name)),
                             $assertion_type_parts,
                         );
                         continue 2;
