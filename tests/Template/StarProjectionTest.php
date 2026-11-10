@@ -5,9 +5,32 @@ declare(strict_types=1);
 namespace Psalm\Tests\Template;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Psalm\Context;
+use Psalm\Exception\CodeException;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TTemplateIndexedAccess;
+use Psalm\Type\Atomic\TTemplateKeyOf;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplatePropertiesOf;
+use Psalm\Type\Atomic\TTemplateValueOf;
+
+use function array_column;
+use function array_unique;
+use function array_values;
+use function basename;
+use function dirname;
+use function glob;
+use function property_exists;
+use function sort;
+use function sprintf;
+use function str_ends_with;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -1445,6 +1468,264 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'starProjectionNestedIntersectionWithACallbackKeepsItsReadableStructure' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    abstract class Box {
+                        /** @return T */
+                        abstract public function get(): object;
+                    }
+
+                    /** @template T of object */
+                    abstract class Source {
+                        /** @return Box<Countable&Box<Closure(T): void>> */
+                        abstract public function boxes(): Box;
+                    }
+
+                    /** @param Source<*> $source */
+                    function read(Source $source): int {
+                        return count($source->boxes()->get());
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionCallbackGivenABoxOfACallableReadsTheCallable' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    abstract class Box {
+                        /** @return T */
+                        abstract public function get(): object;
+                    }
+
+                    /** @template T of object */
+                    abstract class Source {
+                        /** @param Closure(Box<Closure(T): void>): void $callback */
+                        abstract public function each(Closure $callback): void;
+                    }
+
+                    function takesClosure(Closure $callback): void {}
+
+                    /** @param Source<*> $source */
+                    function read(Source $source): void {
+                        $source->each(function (Box $box): void {
+                            takesClosure($box->get());
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionInheritedClassStringReadsTheNarrowerBound' => [
+                'code' => '<?php
+                    abstract class Model {}
+                    final class User extends Model {}
+
+                    /** @template T of Model */
+                    abstract class Base {
+                        /** @return class-string<T> */
+                        abstract public function className(): string;
+
+                        /** @param Closure(class-string<T>): void $callback */
+                        abstract public function eachClass(Closure $callback): void;
+                    }
+
+                    /**
+                     * @template T of User
+                     * @extends Base<T>
+                     */
+                    abstract class Child extends Base {}
+
+                    /** @param class-string<User> $class */
+                    function takesUserClass(string $class): void {}
+
+                    /** @param Child<*> $child */
+                    function f(Child $child): void {
+                        takesUserClass($child->className());
+                        $child->eachClass(function ($class): void {
+                            takesUserClass($class);
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionKeyOfInACallbackOfAGenericMethodIsRead' => [
+                'code' => '<?php
+                    /** @template TArr of array<string, int> */
+                    final class Holder {
+                        /**
+                         * @template R
+                         * @param Closure(key-of<TArr>): R $cb
+                         * @return list<R>
+                         */
+                        public function mapKeys(Closure $cb): array {
+                            return [];
+                        }
+                    }
+
+                    /** @return Holder<*> */
+                    function holder(): Holder {
+                        return new Holder();
+                    }
+
+                    $keys = holder()->mapKeys(fn($k) => $k);',
+                'assertions' => [
+                    '$keys===' => 'list<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionCallbackReadsKeyOfAndValueOfTheBound' => [
+                'code' => '<?php
+                    /** @template TArr of array<string, int> */
+                    final class Holder {
+                        /** @param Closure(key-of<TArr>, value-of<TArr>): void $cb */
+                        public function each(Closure $cb): void {}
+                    }
+
+                    function takesString(string $s): void {}
+
+                    function takesInt(int $i): void {}
+
+                    /** @param array<string, int> $a */
+                    function takesArray(array $a): void {}
+
+                    /** @param Holder<*> $h */
+                    function f(Holder $h): void {
+                        $h->each(function (string $k, int $v): void {
+                            echo $k . "x", $v + 1;
+                            takesArray([$k => $v]);
+                        });
+                        $h->each(function ($k, $v): void {
+                            takesString($k);
+                            takesInt($v + 1);
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionCallbackReadsPropertiesOfAndAnIndexedAccessOfTheBound' => [
+                'code' => '<?php
+                    final class Model {
+                        public int $id = 0;
+                    }
+
+                    /** @template TModel of Model */
+                    final class MHolder {
+                        /** @param Closure(properties-of<TModel>): void $cb */
+                        public function withProps(Closure $cb): void {}
+                    }
+
+                    /**
+                     * @template TArr of array{a: DateTime, b: stdClass}
+                     * @template TKey of key-of<TArr>
+                     */
+                    final class Lookup {
+                        /** @param Closure(TArr[TKey]): void $cb */
+                        public function with(Closure $cb): void {}
+                    }
+
+                    /**
+                     * @param MHolder<*> $m
+                     * @param Lookup<*, "a"> $l
+                     * @param Lookup<array{a: DateTime, b: stdClass}, *> $l2
+                     */
+                    function f(MHolder $m, Lookup $l, Lookup $l2): void {
+                        $m->withProps(function (array $_p): void {});
+                        $l->with(function (object $_v): void {});
+                        $l2->with(function (object $_v): void {});
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionShapeSlotAcceptingNothingMakesTheShapeAcceptNothing' => [
+                'code' => self::SHAPE_BOX . '
+                    /** @return Box<*> */
+                    function box(): Box {
+                        throw new Exception();
+                    }
+
+                    $shape = box()->shape;
+                    $consumer = box()->consumer();
+                    box()->setOptional([]);
+                    box()->setPossiblyEmptyList([]);',
+                'assertions' => [
+                    '$shape===' => 'array{value: object}',
+                    '$consumer===' => 'Closure[impure](never):void',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionObjectShapeIsReadLikeAProperty' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Holder {
+                        /** @param Closure(T): void $callback */
+                        public function __construct(public Closure $callback) {}
+                    }
+
+                    /**
+                     * @template X
+                     * @param object{callback: X} $object
+                     * @return X
+                     */
+                    function callbackOf(object $object): mixed {
+                        return $object->callback;
+                    }
+
+                    /** @return Holder<*> */
+                    function holder(): Holder {
+                        throw new Exception();
+                    }
+
+                    $callback = callbackOf(holder());',
+                'assertions' => [
+                    '$callback===' => 'Closure[impure](never):void',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionCallbackReadsTheExpandedBound' => [
+                'code' => '<?php
+                    final class Consts {
+                        public const MAP = ["a" => 1, "b" => 2];
+                        public const STATE_ON = "on";
+                        public const STATE_OFF = "off";
+                    }
+
+                    /** @template TState of Consts::STATE_* */
+                    final class States {
+                        /** @param Closure(TState): void $callback */
+                        public function each(Closure $callback): void {}
+                    }
+
+                    /** @template TValue of value-of<Consts::MAP> */
+                    final class Values {
+                        /** @param Closure(TValue): void $callback */
+                        public function each(Closure $callback): void {}
+                    }
+
+                    /**
+                     * @param States<*> $states
+                     * @param Values<*> $values
+                     */
+                    function f(States $states, Values $values): void {
+                        $states->each(function ($state): void {
+                            /** @psalm-check-type-exact $state = "off"|"on" */
+                        });
+                        $states->each(function (string $_state): void {});
+                        $values->each(function ($value): void {
+                            /** @psalm-check-type-exact $value = 1|2 */
+                        });
+                        $values->each(function (int $_value): void {});
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -2247,6 +2528,8 @@ final class StarProjectionTest extends TestCase
                         $source->get(1)->set(new stdClass());
                     }',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:22:46 - Argument 1 of Box::set expects never, but stdClass provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'starProjectionSelfOutKeepsTheReceiverUnknown' => [
                 'code' => '<?php
@@ -2316,6 +2599,386 @@ final class StarProjectionTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:41 - Argument 1 of Mapped::mapOut expects callable[impure]():never, but Closure[pure]():A provided',
             ],
+            'starProjectionOtherInstanceKeyOfAcceptsNothing' => [
+                'code' => '<?php
+                    /**
+                     * @template TArr of array<string, int>
+                     * @template TKey of key-of<TArr>
+                     * @template TModel of object
+                     */
+                    abstract class Node {
+                        /** @param key-of<TArr> $key */
+                        abstract public function setKey(mixed $key): void;
+
+                        /**
+                         * @param Node<*, *, *> $next
+                         * @param key-of<TArr> $key
+                         */
+                        public function transfer(Node $next, mixed $key): void {
+                            $next->setKey($key);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:43 - Argument 1 of Node::setKey expects never',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionOtherInstanceValueOfAcceptsNothing' => [
+                'code' => '<?php
+                    /**
+                     * @template TArr of array<string, int>
+                     * @template TKey of key-of<TArr>
+                     * @template TModel of object
+                     */
+                    abstract class Node {
+                        /** @param value-of<TArr> $value */
+                        abstract public function setValue(mixed $value): void;
+
+                        /**
+                         * @param Node<*, *, *> $next
+                         * @param value-of<TArr> $value
+                         */
+                        public function transfer(Node $next, mixed $value): void {
+                            $next->setValue($value);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:45 - Argument 1 of Node::setValue expects never',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionOtherInstanceIndexedAccessAcceptsNothing' => [
+                'code' => '<?php
+                    /**
+                     * @template TArr of array<string, int>
+                     * @template TKey of key-of<TArr>
+                     * @template TModel of object
+                     */
+                    abstract class Node {
+                        /** @param TArr[TKey] $value */
+                        abstract public function setIndexed(mixed $value): void;
+
+                        /**
+                         * @param Node<*, *, *> $next
+                         * @param TArr[TKey] $value
+                         */
+                        public function transfer(Node $next, mixed $value): void {
+                            $next->setIndexed($value);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:47 - Argument 1 of Node::setIndexed expects never',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionOtherInstancePropertiesOfAcceptsNothing' => [
+                'code' => '<?php
+                    /**
+                     * @template TArr of array<string, int>
+                     * @template TKey of key-of<TArr>
+                     * @template TModel of object
+                     */
+                    abstract class Node {
+                        /** @param properties-of<TModel> $properties */
+                        abstract public function setProperties(mixed $properties): void;
+
+                        /**
+                         * @param Node<*, *, *> $next
+                         * @param properties-of<TModel> $properties
+                         */
+                        public function transfer(Node $next, mixed $properties): void {
+                            $next->setProperties($properties);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:50 - Argument 1 of Node::setProperties expects never',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionNarrowedByInstanceofAcceptsNothing' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param T $value */
+                        public function set(object $value): void {}
+                    }
+
+                    /** @param Box<*>|stdClass $any */
+                    function f(object $any): void {
+                        if ($any instanceof Box) {
+                            $any->set(new stdClass());
+                        }
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:39 - Argument 1 of Box::set expects never, but stdClass provided',
+            ],
+            'starProjectionShapeParamAcceptsNothing' => [
+                'code' => self::SHAPE_BOX . '
+                    /** @param Box<*> $box */
+                    function f(Box $box): void {
+                        $box->setShape([]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:31:40 - Argument 1 of Box::setShape expects never, but array<never, never> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionSealedListParamAcceptsNothing' => [
+                'code' => self::SHAPE_BOX . '
+                    /** @param Box<*> $box */
+                    function f(Box $box): void {
+                        $box->setList([]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:31:39 - Argument 1 of Box::setList expects never, but array<never, never> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionNonEmptyListParamAcceptsNothing' => [
+                'code' => self::SHAPE_BOX . '
+                    /** @param Box<*> $box */
+                    function f(Box $box): void {
+                        $box->setNonEmptyList([]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:31:47 - Argument 1 of Box::setNonEmptyList expects never, but array<never, never> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionShapePropertyAcceptsNothing' => [
+                'code' => self::SHAPE_BOX . '
+                    /** @param Box<*> $box */
+                    function f(Box $box): void {
+                        $box->shape = [];
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:31:39 - $box->shape with declared type \'never\' cannot be assigned type \'array',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionNonEmptyListReturnedByACallbackAcceptsNothing' => [
+                'code' => self::SHAPE_BOX . '
+                    /** @param Box<*> $box */
+                    function f(Box $box): void {
+                        $box->setFactory(fn(): array => []);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:31:42 - Argument 1 of Box::setFactory expects Closure[impure]():never, but Closure[pure]():array<never, never> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionShapeHandedToACallableAcceptsNothing' => [
+                'code' => self::SHAPE_BOX . '
+                    /** @param Box<*> $box */
+                    function f(Box $box): void {
+                        $box->consumer()([]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:31:42 - Argument 1 expects never, but array<never, never> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionObjectShapeOfAClassStringMapOfCallablesAcceptsNothing' => [
+                'code' => '<?php
+                    abstract class Model {}
+
+                    /** @template T of object */
+                    final class Holder {
+                        /** @var class-string-map<K of Model, Closure(T): K> */
+                        public array $map = [];
+                    }
+
+                    /** @param object{map: class-string-map<K of Model, Closure(stdClass): K>} $object */
+                    function call(object $object): void {}
+
+                    /** @param Holder<*> $holder */
+                    function f(Holder $holder): void {
+                        call($holder);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:30 - Argument 1 of call expects object{map:class-string-map<K as Model, Closure[impure](stdClass):K:class-string-map as Model>}, but parent type Holder<*> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionObjectShapeOfACallableAcceptsNothing' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Holder {
+                        /** @param Closure(T): void $callback */
+                        public function __construct(public Closure $callback) {}
+                    }
+
+                    /** @param object{callback: Closure(stdClass): void} $object */
+                    function call(object $object): void {
+                        ($object->callback)(new stdClass());
+                    }
+
+                    /** @param Holder<*> $holder */
+                    function f(Holder $holder): void {
+                        call($holder);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:30 - Argument 1 of call expects object{callback:Closure[impure](stdClass):void}, but parent type Holder<*> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
         ];
+    }
+
+    private const SHAPE_BOX = '<?php
+                    /** @template T of object */
+                    abstract class Box {
+                        /** @var array{value: T} */
+                        public array $shape;
+
+                        /** @param array{value: T} $shape */
+                        abstract public function setShape(array $shape): void;
+
+                        /** @param array{value?: T} $shape */
+                        abstract public function setOptional(array $shape): void;
+
+                        /** @param list{T} $list */
+                        abstract public function setList(array $list): void;
+
+                        /** @param non-empty-list<T> $list */
+                        abstract public function setNonEmptyList(array $list): void;
+
+                        /** @param list<T> $list */
+                        abstract public function setPossiblyEmptyList(array $list): void;
+
+                        /** @param Closure(): non-empty-list<T> $factory */
+                        abstract public function setFactory(Closure $factory): void;
+
+                        /** @return Closure(array{value: T}): void */
+                        abstract public function consumer(): Closure;
+                    }
+';
+
+    private const TEMPLATE_ATOMIC_CODE = '<?php
+        final class Model {
+            public int $id = 0;
+        }
+
+        /** @template T */
+        final class Box {}
+
+        /**
+         * @template T of object
+         * @template TArr of array{a: DateTime, b: Model}
+         * @template TKey of key-of<TArr>
+         * @template TModel of Model
+         */
+        abstract class Holder {
+            /** @return %1$s */
+            abstract public function read(): mixed;
+
+            /** @param %1$s $value */
+            abstract public function write(mixed $value): void;
+
+            /** @return Box<%1$s> */
+            abstract public function box(): Box;
+
+            /**
+             * @template R
+             * @param Closure(%1$s): R $callback
+             * @return R
+             */
+            abstract public function map(Closure $callback): mixed;
+        }
+
+        /** @return Holder<*, *, *, *> */
+        function holder(): Holder {
+            throw new Exception();
+        }
+
+        %2$s';
+
+    /**
+     * Each template atomic of a `*` receiver's member where a value is handed out (`read`: the return type,
+     * `callback`: what a callback is given), where one is passed in (`write`: a parameter) and as an invariant
+     * argument (`nested`: a `Box` of it returned). Every template atomic reads the unknown type alike: through what
+     * is known of it where it is handed out, as nothing where it is passed in, and `*` when nested. An expectation
+     * ending in ` provided` is the issue reported.
+     *
+     * @return array<string, array{class-string<Atomic>, string, string}>
+     * @psalm-pure
+     */
+    public static function providerTemplateAtomicByPosition(): array
+    {
+        // the closure's parameter keeps `properties-of<Model>` unexpanded, as on a `Holder<object, ..., Model>`
+        $properties_handed_to_callback = 'Argument 1 of Holder::map expects Closure[impure](array{id: int}):array{id: '
+            . 'int}, but Closure[pure](properties-of<Model>):array{id: int} provided';
+
+        $rows = [
+            [TTemplateParam::class, 'T', 'new stdClass()', 'object', 'object', 'stdClass'],
+            [TTemplateParamClass::class, 'class-string<T>', 'stdClass::class', 'class-string', 'class-string', 'stdClass::class'],
+            [TTemplateKeyOf::class, 'key-of<TArr>', '"a"', "'a'|'b'", "'a'|'b'", "'a'"],
+            [TTemplateValueOf::class, 'value-of<TArr>', 'new DateTime()', 'DateTime|Model', 'DateTime|Model', 'DateTime'],
+            [TTemplatePropertiesOf::class, 'properties-of<TModel>', '["id" => 1]', 'array{id: int}', $properties_handed_to_callback, 'array{id: 1}'],
+            [TTemplateIndexedAccess::class, 'TArr[TKey]', 'new DateTime()', 'DateTime|Model', 'DateTime|Model', 'DateTime'],
+            [TConditional::class, '(T is DateTime ? int : string)', '1', 'int|string', 'int|string', '1'],
+        ];
+
+        $cases = [];
+
+        foreach ($rows as [$atomic_class, $type, $written, $read, $handed_to_callback, $written_type]) {
+            $positions = [
+                'read' => ['$result = holder()->read();', $read],
+                'callback' => ['$result = holder()->map(fn($value) => $value);', $handed_to_callback],
+                'write' => [
+                    'holder()->write(' . $written . ');',
+                    'Argument 1 of Holder::write expects never, but ' . $written_type . ' provided',
+                ],
+                'nested' => ['$result = holder()->box();', 'Box<*>'],
+            ];
+
+            foreach ($positions as $position => [$code, $expected]) {
+                $cases[$type . ' ' . $position] = [
+                    $atomic_class,
+                    sprintf(self::TEMPLATE_ATOMIC_CODE, $type, $code),
+                    $expected,
+                ];
+            }
+        }
+
+        return $cases;
+    }
+
+    /**
+     * @param class-string<Atomic> $_atomic_class
+     */
+    #[DataProvider('providerTemplateAtomicByPosition')]
+    public function testTemplateAtomicByPosition(string $_atomic_class, string $code, string $expected): void
+    {
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, $code);
+
+        if (str_ends_with($expected, ' provided')) {
+            $this->expectException(CodeException::class);
+            $this->expectExceptionMessage($expected);
+        }
+
+        $context = new Context();
+        $this->analyzeFile($file_path, $context);
+
+        $this->assertSame($expected, $context->vars_in_scope['$result']->getId(true));
+    }
+
+    /**
+     * A template atomic (an atomic type with a defining class) missing from StarProjection::TEMPLATE_ATOMICS has no
+     * rule for `*`; one missing from the table above has none checked
+     */
+    public function testEveryTemplateAtomicIsEnumerated(): void
+    {
+        $files = glob(dirname(__DIR__, 2) . '/src/Psalm/Type/Atomic/*.php');
+        $this->assertNotFalse($files);
+        $template_atomics = [];
+
+        foreach ($files as $file) {
+            $class = 'Psalm\\Type\\Atomic\\' . basename($file, '.php');
+
+            if (property_exists($class, 'defining_class')) {
+                $template_atomics[] = $class;
+            }
+        }
+
+        $tabled = array_values(array_unique(array_column(self::providerTemplateAtomicByPosition(), 0)));
+        $enumerated = StarProjection::TEMPLATE_ATOMICS;
+
+        sort($template_atomics);
+        sort($tabled);
+        sort($enumerated);
+
+        $this->assertSame($template_atomics, $enumerated);
+        $this->assertSame($template_atomics, $tabled);
     }
 }
