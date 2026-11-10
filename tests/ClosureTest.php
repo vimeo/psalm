@@ -121,6 +121,51 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'methodCallableOfAStringAndOfAnArrayWithParamConditionalReturn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class C {
+                        /** @return ($x is string ? int : bool) */
+                        public function m(string|int $x): int|bool {
+                            return is_string($x) ? 1 : true;
+                        }
+
+                        /** @return ($x is string ? int : bool) */
+                        public static function s(string|int $x): int|bool {
+                            return is_string($x) ? 1 : true;
+                        }
+                    }
+
+                    /**
+                     * @template A
+                     * @template U
+                     * @param callable(A): U $c
+                     * @param A $a
+                     * @return U
+                     */
+                    function run(callable $c, $a) {
+                        return $c($a);
+                    }
+
+                    function check(C $c): void {
+                        $string = Closure::fromCallable('C::s');
+                        $viaString = $string('a');
+                        /** @psalm-check-type-exact $viaString = bool|int */
+
+                        $viaArray = run([$c, 'm'], 'a');
+                        /** @psalm-check-type-exact $viaArray = bool|int */
+
+                        $viaClassArray = run([C::class, 's'], 'a');
+                        /** @psalm-check-type-exact $viaClassArray = bool|int */
+
+                        $viaStringTemplate = run('C::s', 'a');
+                        /** @psalm-check-type-exact $viaStringTemplate = bool|int */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'paramOutOfMethodClosureResolvesSelfAndStatic' => [
                 'code' => <<<'PHP'
                     <?php

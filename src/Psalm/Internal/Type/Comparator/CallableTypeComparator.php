@@ -311,7 +311,6 @@ final class CallableTypeComparator
         Codebase $codebase,
         MethodIdentifier $method_id,
         ?TCallable $container_type_part,
-        bool $expand_callable = false,
         ?Atomic $callable_object = null,
     ): ?TCallable {
         if (!$codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
@@ -401,39 +400,37 @@ final class CallableTypeComparator
                 }
             }
 
-            if ($expand_callable) {
-                // the templates generated for the parameters are resolved, those of the caller are not the method's
-                $generated_templates = [];
+            // the templates generated for the parameters are resolved, those of the caller are not the method's
+            $generated_templates = [];
 
-                foreach ($method_storage->template_types ?? [] as $template_name => $defining_types) {
-                    if (str_starts_with($template_name, 'TGeneratedFromParam')) {
-                        $generated_templates[$template_name] = $defining_types;
-                    }
+            foreach ($method_storage->template_types ?? [] as $template_name => $defining_types) {
+                if (str_starts_with($template_name, 'TGeneratedFromParam')) {
+                    $generated_templates[$template_name] = $defining_types;
                 }
-
-                if ($generated_templates !== []) {
-                    $replaced = TemplateInferredTypeReplacer::replace(
-                        new Union([$callable]),
-                        new TemplateResult([], $generated_templates),
-                        $codebase,
-                    )->getSingleAtomic();
-
-                    if ($replaced instanceof TCallable) {
-                        $callable = $replaced;
-                    }
-                }
-
-                $closure = self::getClosureOfMethod(
-                    $codebase,
-                    $callable->params ?? [],
-                    $callable->return_type,
-                    $callable->getCapabilities(),
-                    $method_storage->defining_fqcln,
-                    $method_fqcln,
-                );
-
-                $callable = $callable->replace($closure->params, $closure->return_type);
             }
+
+            if ($generated_templates !== []) {
+                $replaced = TemplateInferredTypeReplacer::replace(
+                    new Union([$callable]),
+                    new TemplateResult([], $generated_templates),
+                    $codebase,
+                )->getSingleAtomic();
+
+                if ($replaced instanceof TCallable) {
+                    $callable = $replaced;
+                }
+            }
+
+            $closure = self::getClosureOfMethod(
+                $codebase,
+                $callable->params ?? [],
+                $callable->return_type,
+                $callable->getCapabilities(),
+                $method_storage->defining_fqcln,
+                $method_fqcln,
+            );
+
+            $callable = $callable->replace($closure->params, $closure->return_type);
 
             return $callable;
         } catch (UnexpectedValueException) {
@@ -449,7 +446,7 @@ final class CallableTypeComparator
      * @param CapabilitySet $capabilities
      * @param bool $exact_static whether `static` is the class itself, as for `C::m(...)`, and not a subclass of it
      */
-    public static function getClosureOfMethod(
+    private static function getClosureOfMethod(
         Codebase $codebase,
         array $method_params,
         ?Union $return_type,
@@ -695,7 +692,6 @@ final class CallableTypeComparator
                     $codebase,
                     $method_id,
                     $container_type_part,
-                    $expand_callable,
                     $callable_object,
                 );
 
