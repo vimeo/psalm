@@ -1400,6 +1400,7 @@ final class AtomicPropertyFetchAnalyzer
             }
 
             $first_class_type = null;
+            $intersects_with_final_class = false;
 
             foreach ($intersection_types as $intersection_type) {
                 if ($intersection_type instanceof TObjectWithProperties
@@ -1413,6 +1414,8 @@ final class AtomicPropertyFetchAnalyzer
                     && $codebase->classExists($intersection_type->value)
                 ) {
                     $first_class_type ??= $intersection_type;
+                    $intersects_with_final_class = $intersects_with_final_class
+                        || $codebase->classlike_storage_provider->get($intersection_type->value)->final;
                 } elseif ($intersection_type instanceof TNamedObject
                     && (in_array($intersection_type->value, ['UnitEnum', 'BackedEnum'], true)
                         || in_array('UnitEnum', $codebase->getParentInterfaces($intersection_type->value)))
@@ -1422,7 +1425,7 @@ final class AtomicPropertyFetchAnalyzer
             }
 
             $hook_interface = $first_class_type !== null
-                && $codebase->classlike_storage_provider->get($first_class_type->value)->final
+                && ($intersects_with_final_class || $intersects_with_shape_property)
                 ? null
                 : self::findInterfaceWithPropertyHook($codebase, $lhs_type_part, $prop_name, false);
 

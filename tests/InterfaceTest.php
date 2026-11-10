@@ -1084,23 +1084,56 @@ final class InterfaceTest extends TestCase
             'classPropertyWinsOverInterfaceHookInIntersection' => [
                 'code' => '<?php
                     class Decl {
-                        public int $x = 1;
+                        public int $v = 1;
                     }
 
                     interface L {
-                        public int $x { get; set; }
+                        public string $v { get; }
                     }
 
-                    function classFirst(Decl&L $o): int {
-                        $o->x = 5;
-                        return $o->x;
+                    /** @return Decl&L */
+                    function classFirst(): Decl&L {
+                        throw new RuntimeException();
                     }
 
-                    function interfaceFirst(L&Decl $o): int {
-                        $o->x = 5;
-                        return $o->x;
-                    }',
-                'assertions' => [],
+                    /** @return L&Decl */
+                    function interfaceFirst(): L&Decl {
+                        throw new RuntimeException();
+                    }
+
+                    $v = classFirst()->v;
+                    $w = interfaceFirst()->v;',
+                'assertions' => [
+                    '$v===' => 'int',
+                    '$w===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'interfacePropertyWithObjectShapePropertyKeepsShapeType' => [
+                'code' => '<?php
+                    class C {}
+
+                    interface L {
+                        public mixed $x { get; }
+                    }
+
+                    /** @return L&C&object{x: int} */
+                    function interfaceFirst(): L&C {
+                        throw new RuntimeException();
+                    }
+
+                    /** @return C&L&object{x: int} */
+                    function classFirst(): C&L {
+                        throw new RuntimeException();
+                    }
+
+                    $x = interfaceFirst()->x;
+                    $y = classFirst()->x;',
+                'assertions' => [
+                    '$x===' => 'int',
+                    '$y===' => 'int',
+                ],
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
@@ -1279,6 +1312,97 @@ final class InterfaceTest extends TestCase
                         $o->x = true;
                     }',
                 'error_message' => 'UndefinedPropertyAssignment',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'noInterfacePropertyFetchOnInterfaceAndFinalClassWithPlainClassIntersection' => [
+                'code' => '<?php
+                    class C {}
+                    final class Fin extends C {}
+                    interface L {
+                        public bool $x { get; set; }
+                    }
+
+                    function fooFoo(L&C&Fin $o): bool {
+                        return $o->x;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'noInterfacePropertyAssignmentOnInterfaceAndFinalClassWithPlainClassIntersection' => [
+                'code' => '<?php
+                    class C {}
+                    final class Fin extends C {}
+                    interface L {
+                        public bool $x { get; set; }
+                    }
+
+                    function fooFoo(L&C&Fin $o): void {
+                        $o->x = true;
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'noInterfacePropertyAssignmentOnClassWithFinalMemberAndInterfaceIntersection' => [
+                'code' => '<?php
+                    class C {}
+                    final class Fin extends C {}
+                    interface L {
+                        public bool $x { get; set; }
+                    }
+
+                    function fooFoo(C&Fin&L $o): void {
+                        $o->x = true;
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'readonlyPrivateParentPropertyAssignedThroughChildAndInterfaceIntersection' => [
+                'code' => '<?php
+                    interface L {
+                        public int $x { get; set; }
+                    }
+
+                    class ParentClass {
+                        private readonly int $x;
+
+                        public function __construct() {
+                            $this->x = 1;
+                        }
+
+                        public function write(Child&L $o): void {
+                            $o->x = 2;
+                        }
+                    }
+
+                    class Child extends ParentClass {}',
+                'error_message' => 'InaccessibleProperty',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'readonlyPrivateParentPropertyAssignedThroughInterfaceAndChildIntersection' => [
+                'code' => '<?php
+                    interface L {
+                        public int $x { get; set; }
+                    }
+
+                    class ParentClass {
+                        private readonly int $x;
+
+                        public function __construct() {
+                            $this->x = 1;
+                        }
+
+                        public function write(L&Child $o): void {
+                            $o->x = 2;
+                        }
+                    }
+
+                    class Child extends ParentClass {}',
+                'error_message' => 'InaccessibleProperty',
                 'error_levels' => [],
                 'php_version' => '8.4',
             ],
