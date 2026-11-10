@@ -15,9 +15,7 @@ use Psalm\Exception\UnsupportedIssueToFixException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\IncludeCollector;
-use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\AfterEveryFunctionCallAnalysisInterface;
@@ -27,8 +25,8 @@ use Psalm\PluginRegistrationSocket;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
 use Psalm\Tests\Config\Plugin\FixableIssuePlugin;
+use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
-use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
 use function array_fill_keys;
@@ -46,7 +44,7 @@ use function sprintf;
 
 use const DIRECTORY_SEPARATOR;
 
-final class PluginTest extends TestCase
+final class PluginTest extends DeferredAnalyzerTestCase
 {
     #[Override]
     public static function setUpBeforeClass(): void
@@ -58,17 +56,6 @@ final class PluginTest extends TestCase
         $argv = [];
 
         new TestConfig();
-    }
-
-    /**
-     * @psalm-external-mutation-free
-     * @psalm-suppress MissingParentCall Each test constructs its analyzer with the plugin configuration under test.
-     */
-    #[Override]
-    public function setUp(): void
-    {
-        RuntimeCaches::clearAll();
-        $this->file_provider = new FakeFileProvider();
     }
 
     private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer

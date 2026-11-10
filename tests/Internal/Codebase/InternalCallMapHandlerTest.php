@@ -227,12 +227,11 @@ final class InternalCallMapHandlerTest extends TestCase
 
     private static Codebase $codebase;
 
-    /**
-     * @psalm-suppress MissingParentCall The suite creates a shared codebase for reflecting the runtime call map.
-     */
     #[Override]
     public static function setUpBeforeClass(): void
     {
+        parent::setUpBeforeClass();
+
         $project_analyzer = new ProjectAnalyzer(
             new TestConfig(),
             new Providers(

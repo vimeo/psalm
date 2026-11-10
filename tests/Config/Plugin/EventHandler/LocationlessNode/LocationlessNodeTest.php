@@ -25,9 +25,6 @@ use const DIRECTORY_SEPARATOR;
 
 final class LocationlessNodeTest extends TestCase
 {
-    /**
-     * @psalm-suppress MissingParentCall The plugin fixture supplies its own fallback Psalm and parser versions.
-     */
     #[Override]
     public static function setUpBeforeClass(): void
     {
@@ -40,6 +37,8 @@ final class LocationlessNodeTest extends TestCase
         if (!defined('PHP_PARSER_VERSION')) {
             define('PHP_PARSER_VERSION', '4.0.0');
         }
+
+        parent::setUpBeforeClass();
     }
 
     private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer

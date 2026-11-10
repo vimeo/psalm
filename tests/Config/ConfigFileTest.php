@@ -10,8 +10,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Psalm\Config;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\PluginManager\ConfigFile;
-use Psalm\Internal\RuntimeCaches;
-use Psalm\Tests\TestCase;
+use Psalm\Tests\DeferredAnalyzerTestCase;
 
 use function assert;
 use function file_get_contents;
@@ -25,7 +24,7 @@ use function unlink;
 use const PHP_EOL;
 
 #[Group('PluginManager')]
-final class ConfigFileTest extends TestCase
+final class ConfigFileTest extends DeferredAnalyzerTestCase
 {
     private string $file_path;
 
@@ -39,13 +38,11 @@ final class ConfigFileTest extends TestCase
         $argv = [];
     }
 
-    /**
-     * @psalm-suppress MissingParentCall This fixture needs a temporary config file only.
-     */
     #[Override]
     public function setUp(): void
     {
-        RuntimeCaches::clearAll();
+        parent::setUp();
+
         $temp_name = tempnam(sys_get_temp_dir(), 'psalm-test-config');
         assert($temp_name !== false);
         $this->file_path = $temp_name;

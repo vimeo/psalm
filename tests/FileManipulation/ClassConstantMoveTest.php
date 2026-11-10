@@ -4,34 +4,19 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\FileManipulation;
 
-use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
+use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
-use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
 use function strpos;
 
-final class ClassConstantMoveTest extends TestCase
+final class ClassConstantMoveTest extends DeferredAnalyzerTestCase
 {
     protected ProjectAnalyzer $project_analyzer;
-
-    /**
-     * @psalm-external-mutation-free
-     * @psalm-suppress MissingParentCall The migration test creates its own analyzer for the input files.
-     */
-    #[Override]
-    public function setUp(): void
-    {
-        RuntimeCaches::clearAll();
-
-        $this->file_provider = new FakeFileProvider();
-    }
 
     /**
      * @param array<string, string> $migrations

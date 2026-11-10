@@ -23,9 +23,7 @@ use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\ErrorHandler;
-use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Issue\PossiblyNullReference;
 use Psalm\Issue\TooManyArguments;
@@ -33,8 +31,8 @@ use Psalm\Issue\UndefinedFunction;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
 use Psalm\Tests\Config\Plugin\TestPluginIssue;
 use Psalm\Tests\Config\Plugin\TestPluginIssueDefaultLevel;
+use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
-use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use Throwable;
 use UnexpectedValueException;
@@ -80,7 +78,7 @@ use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const JSON_UNESCAPED_SLASHES;
 
-final class ConfigTest extends TestCase
+final class ConfigTest extends DeferredAnalyzerTestCase
 {
     protected ProjectAnalyzer $project_analyzer;
 
@@ -102,14 +100,11 @@ final class ConfigTest extends TestCase
         new TestConfig();
     }
 
-    /**
-     * @psalm-suppress MissingParentCall Each test constructs its analyzer with the configuration under test.
-     */
     #[Override]
     public function setUp(): void
     {
-        RuntimeCaches::clearAll();
-        $this->file_provider = new FakeFileProvider();
+        parent::setUp();
+
         $this->original_error_handler = set_error_handler(null);
         restore_error_handler();
         $this->original_exception_handler = set_exception_handler(null);

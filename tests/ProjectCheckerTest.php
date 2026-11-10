@@ -10,12 +10,10 @@ use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
-use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Psalm\Internal\Provider\FileStorageCacheProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
@@ -35,7 +33,7 @@ use function realpath;
 
 use const DIRECTORY_SEPARATOR;
 
-final class ProjectCheckerTest extends TestCase
+final class ProjectCheckerTest extends DeferredAnalyzerTestCase
 {
     protected ProjectAnalyzer $project_analyzer;
 
@@ -49,17 +47,6 @@ final class ProjectCheckerTest extends TestCase
         $argv = [];
 
         new TestConfig();
-    }
-
-    /**
-     * @psalm-external-mutation-free
-     * @psalm-suppress MissingParentCall Each test builds an analyzer with its own cache providers.
-     */
-    #[Override]
-    public function setUp(): void
-    {
-        RuntimeCaches::clearAll();
-        $this->file_provider = new FakeFileProvider();
     }
 
     private function getProjectAnalyzerWithConfig(Config $config, bool $init_files = true): ProjectAnalyzer

@@ -15,9 +15,7 @@ use Psalm\Exception\InvalidClasslikeOverrideException;
 use Psalm\Exception\InvalidMethodOverrideException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
-use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function array_values;
@@ -33,7 +31,7 @@ use function substr;
 
 use const DIRECTORY_SEPARATOR;
 
-final class StubTest extends TestCase
+final class StubTest extends DeferredAnalyzerTestCase
 {
     #[Override]
     public static function setUpBeforeClass(): void
@@ -45,17 +43,6 @@ final class StubTest extends TestCase
         $argv = [];
 
         new TestConfig();
-    }
-
-    /**
-     * @psalm-external-mutation-free
-     * @psalm-suppress MissingParentCall Each test builds an analyzer with the stubs under test.
-     */
-    #[Override]
-    public function setUp(): void
-    {
-        RuntimeCaches::clearAll();
-        $this->file_provider = new FakeFileProvider();
     }
 
     private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer

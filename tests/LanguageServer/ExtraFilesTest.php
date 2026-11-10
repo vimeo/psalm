@@ -13,9 +13,7 @@ use Psalm\Internal\LanguageServer\ClientConfiguration;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\LanguageServer\PathMapper;
 use Psalm\Internal\LanguageServer\Progress;
-use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 
@@ -38,16 +36,9 @@ final class ExtraFilesTest extends TestCase
 
     private Codebase $codebase;
 
-    /**
-     * @psalm-suppress MissingParentCall The analyzer must use the fixture configuration with extra files.
-     */
     #[Override]
-    public function setUp(): void
+    protected function setUpProjectAnalyzer(): void
     {
-        RuntimeCaches::clearAll();
-
-        $this->file_provider = new FakeFileProvider();
-
         $config = Config::loadFromXML(
             dirname(__DIR__, 2),
             '<?xml version="1.0"?>
