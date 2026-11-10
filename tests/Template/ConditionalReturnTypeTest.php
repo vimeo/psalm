@@ -2961,7 +2961,7 @@ final class ConditionalReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
-            'untypedClosureParamOnUnionReceiverIsEachAtomInAPassWithoutHint' => [
+            'untypedClosureParamOnUnionReceiverReusesTheHintOfAnotherAtom' => [
                 'code' => '<?php
                     class ZA {
                         /** @param Closure(static): mixed $c */

@@ -706,7 +706,9 @@ final class ArgumentsAnalyzer
         $replaced_type = $replace($replaced_type, $new_bounds);
 
         // a template of the method itself (a param conditional's) is bound by a static call only after its arguments:
-        // its constraint is the hint, as the template types give it for an instance call
+        // its constraint is the hint, as the template types give it for an instance call. Static calls and `new` do not
+        // put the method's templates in TemplateResult before the arguments: that would bring the instance path's
+        // template-constraint bugs (#11368, #13511) to them (true positives such as `Str::contains` lost)
         if ($static_class_type !== null
             && !$template_result->template_types
             && $method_id !== null
@@ -801,7 +803,9 @@ final class ArgumentsAnalyzer
 
                 // this call gives the param no hint: a typed param keeps its declared type; an untyped one reads the
                 // hint an earlier pass over the closure left (another atomic of a union receiver, another class using
-                // the trait) with `static` of this call, not with the class the closure is written in
+                // the trait) with `static` of this call, not with the class the closure is written in. A heuristic: a
+                // bare `Closure` param says nothing of what the closure gets, and the usual case is a builder pair or
+                // trait users whose methods all pass `$this` to it
                 if (!$newly_inferred_type
                     && !isset($pass_types[$closure_param_offset])
                     && $static_class_type !== null
